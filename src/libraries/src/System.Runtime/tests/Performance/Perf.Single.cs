@@ -11,16 +11,30 @@ namespace System.Tests
 {
     public class Perf_Single
     {
+        // NOTE: Consider duplicating any tests added here in Perf.Double.cs
+
         private volatile string _string;
 
         [Benchmark]
-        [InlineData(104234.343f, 1_000_000)]
-        [InlineData(float.MaxValue, 100_000)]
-        [InlineData(float.MinValue, 100_000)]
-        [InlineData(float.MinValue / 2, 100_000)]
-        [InlineData(float.NaN, 10_000_000)]
-        [InlineData(float.PositiveInfinity, 10_000_000)]
-        [InlineData(float.Epsilon, 100_000)]
+        [InlineData(float.NegativeInfinity, 10_000_000)]    // Negative Infinity
+        [InlineData(float.MinValue, 100_000)]               // Min Negative Normal
+        [InlineData(-3.14159265f, 1_000_000)]               // Negative pi
+        [InlineData(-2.71828183f, 1_000_000)]               // Negative e
+        [InlineData(-1.0f, 1_000_000)]                      // Negative One
+        [InlineData(-1.17549435E-38f, 100_000)]             // Max Negative Normal
+        [InlineData(-1.17549421E-38f, 100_000)]             // Min Negative Subnormal
+        [InlineData(-float.Epsilon, 100_000)]               // Max Negative Subnormal (Negative Epsilon)
+        [InlineData(-0.0f, 10_000_000)]                     // Negative Zero
+        [InlineData(float.NaN, 10_000_000)]                 // NaN
+        [InlineData(0.0f, 10_000_000)]                      // Positive Zero
+        [InlineData(float.Epsilon, 100_000)]                // Min Positive Subnormal (Positive Epsilon)
+        [InlineData(1.17549421E-38f, 100_000)]              // Max Positive Subnormal
+        [InlineData(1.17549435E-38f, 100_000)]              // Min Positive Normal
+        [InlineData(1.0f, 1_000_000)]                       // Positive One
+        [InlineData(2.71828183f, 1_000_000)]                // Positive e
+        [InlineData(3.14159265f, 1_000_000)]                // Positive pi
+        [InlineData(float.MaxValue, 100_000)]               // Max Positive Normal
+        [InlineData(float.PositiveInfinity, 10_000_000)]    // Positive Infinity
         public void DefaultToString(float number, int innerIterations)
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -36,12 +50,25 @@ namespace System.Tests
         }
 
         [Benchmark]
-        [InlineData("zh", 104234.343f, 1_000_000)]
-        [InlineData("zh", float.MaxValue, 100_000)]
-        [InlineData("zh", float.MinValue, 100_000)]
-        [InlineData("zh", float.NaN, 20_000_000)]
-        [InlineData("zh", float.PositiveInfinity, 20_000_000)]
-        [InlineData("zh", 0.0, 4_000_000)]
+        [InlineData("zh", float.NegativeInfinity, 10_000_000)]  // Negative Infinity
+        [InlineData("zh", float.MinValue, 100_000)]             // Min Negative Normal
+        [InlineData("zh", -3.14159265f, 1_000_000)]             // Negative pi
+        [InlineData("zh", -2.71828183f, 1_000_000)]             // Negative e
+        [InlineData("zh", -1.0f, 1_000_000)]                    // Negative One
+        [InlineData("zh", -1.17549435E-38f, 100_000)]           // Max Negative Normal
+        [InlineData("zh", -1.17549421E-38f, 100_000)]           // Min Negative Subnormal
+        [InlineData("zh", -float.Epsilon, 100_000)]             // Max Negative Subnormal (Negative Epsilon)
+        [InlineData("zh", -0.0f, 10_000_000)]                   // Negative Zero
+        [InlineData("zh", float.NaN, 10_000_000)]               // NaN
+        [InlineData("zh", 0.0f, 10_000_000)]                    // Positive Zero
+        [InlineData("zh", float.Epsilon, 100_000)]              // Min Positive Subnormal (Positive Epsilon)
+        [InlineData("zh", 1.17549421E-38f, 100_000)]            // Max Positive Subnormal
+        [InlineData("zh", 1.17549435E-38f, 100_000)]            // Min Positive Normal
+        [InlineData("zh", 1.0f, 1_000_000)]                     // Positive One
+        [InlineData("zh", 2.71828183f, 1_000_000)]              // Positive e
+        [InlineData("zh", 3.14159265f, 1_000_000)]              // Positive pi
+        [InlineData("zh", float.MaxValue, 100_000)]             // Max Positive Normal
+        [InlineData("zh", float.PositiveInfinity, 10_000_000)]  // Positive Infinity
         public void ToStringWithCultureInfo(string cultureName, float number, int innerIterations)
         {
             CultureInfo cultureInfo = new CultureInfo(cultureName);
@@ -61,41 +88,84 @@ namespace System.Tests
         {
             string[] formats =
             {
-                "R",
-                "G",
-                "G9",
-                "E",
-                "F50"
+                "R",    // Roundtrip
+                "G",    // General
+                "E",    // Exponential
+                "F",    // Fixed Point
             };
 
-            float[] normalTestValues =
+            string[] precisions =
             {
-                0.0f,
-                250.0f,
+                "",     // Default
+                "0",    // Zero
+                "1",    // One
+                "2",    // Two
+                "3",    // Three
+                "4",    // Four
+                "5",    // Five
+                "6",    // Single, Lower Significant Digits of Precision
+                "9",    // Single, Upper Significant Digits of Precision
+                "12",   // Single, IEEE defined 'H' Digits of Precision
+                "15",   // Double, Lower Significant Digits of Precision
+                "17",   // Double, Upper Significant Digits of Precision
+                "20",   // Double, IEEE defined 'H' Digits of Precision
+                "50",   // Soft Maximum
+                "99",   // Maximum
             };
 
-            float[] edgeTestValues =
+            float[] specialTestValues =     // 10_000_000 iterations
             {
-                float.MaxValue,
-                float.MinValue,
-                float.Epsilon,
+                float.NegativeInfinity,     // Negative Infinity
+                -0.0f,                      // Negative Zero
+                float.NaN,                  // NaN
+                0.0f,                       // Positive Zero
+                float.PositiveInfinity,     // Positive Infinity
+            };
+
+            float[] normalTestValues =      // 1_000_000 iterations
+            {
+                -3.14159265f,               // Negative pi
+                -2.71828183f,               // Negative e
+                -1.0f,                      // Negative One
+                1.0f,                       // Positive One
+                2.71828183f,                // Positive e
+                3.14159265f,                // Positive pi
+            };
+
+            float[] edgeTestValues =        // 100_000 iterations
+            {
+                float.MinValue,             // Min Negative Normal
+                -1.17549435E-38f,           // Max Negative Normal
+                -1.17549421E-38f,           // Min Negative Subnormal
+                -float.Epsilon,             // Max Negative Subnormal (Negative Epsilon)
+                float.Epsilon,              // Min Positive Subnormal (Positive Epsilon)
+                1.17549421E-38f,            // Max Positive Subnormal
+                1.17549435E-38f,            // Min Positive Normal
+                float.MaxValue,             // Max Positive Normal
             };
 
             foreach (string format in formats)
             {
-                foreach (float testValue in normalTestValues)
+                foreach (string precision in precisions)
                 {
-                    yield return new object[] { format, testValue, 2_000_000 };
-                }
+                    var specifier = format + precision;
 
-                foreach (float testValue in edgeTestValues)
-                {
-                    yield return new object[] { format, testValue, 100_000 };
+                    foreach (float testValue in specialTestValues)
+                    {
+                        yield return new object[] { specifier, testValue, 10_000_000 };
+                    }
+
+                    foreach (float testValue in normalTestValues)
+                    {
+                        yield return new object[] { specifier, testValue, 1_000_000 };
+                    }
+
+                    foreach (float testValue in edgeTestValues)
+                    {
+                        yield return new object[] { specifier, testValue, 100_000 };
+                    }
                 }
             }
-
-            yield return new object[] { "G", float.PositiveInfinity, 20_000_000 };
-            yield return new object[] { "G", float.NaN, 20_000_000 };
         }
 
         [Benchmark]
