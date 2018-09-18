@@ -12,7 +12,6 @@ namespace System.Xml.Serialization
     using System.Globalization;
     using System.Threading;
     using System.Diagnostics;
-    using System.Linq;
     using System.Collections.Generic;
     using System.Xml.Extensions;
     using System.Xml;

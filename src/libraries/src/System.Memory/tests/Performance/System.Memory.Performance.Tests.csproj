@@ -1,9 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}</ProjectGuid>
+    <IncludePartialFacadeTests Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IncludePartialFacadeTests>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
+  <ItemGroup Condition="'$(IncludePartialFacadeTests)' == 'true'">
+    <!-- Tests specific to the fast span -->
+    <Compile Include="Perf.Span.Contains.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Perf.Base64EncodeDecode.cs" />
     <Compile Include="Perf.Memory.Slice.cs" />
