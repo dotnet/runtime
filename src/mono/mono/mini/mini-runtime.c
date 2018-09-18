@@ -3098,6 +3098,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		buf_size = mono_arch_dyn_call_get_buf_size (info->dyn_call_info);
 		buf = g_alloca (buf_size);
+		memset (buf, 0, buf_size);
 		g_assert (buf);
 
 		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf);
