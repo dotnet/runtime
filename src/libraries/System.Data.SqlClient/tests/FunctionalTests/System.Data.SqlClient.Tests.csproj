@@ -27,6 +27,9 @@
     <Compile Include="TestTdsServer.cs" />
     <Compile Include="..\ManualTests\DataCommon\DataTestUtility.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="SqlFacetAttributeTest.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ManualTests\SQL\UdtTest\UDTs\Address\Address.csproj">
       <Project>{d1392b54-998a-4f27-bc17-4ce149117bcc}</Project>

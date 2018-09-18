@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS' AND '$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Data\SqlClient\PoolBlockingPeriod.cs" />
+    <Compile Include="Microsoft\SqlServer\Server\SqlFacetAttribute.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />

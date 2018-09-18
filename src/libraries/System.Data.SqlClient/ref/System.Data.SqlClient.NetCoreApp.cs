@@ -5,6 +5,19 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace Microsoft.SqlServer.Server
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue | System.AttributeTargets.Parameter, AllowMultiple=false, Inherited=false)]
+    public partial class SqlFacetAttribute : System.Attribute
+    {
+        public SqlFacetAttribute() { }
+        public bool IsFixedLength { get { throw null; } set { } }
+        public bool IsNullable { get { throw null; } set { } }
+        public int MaxSize { get { throw null; } set { } }
+        public int Precision { get { throw null; } set { } }
+        public int Scale { get { throw null; } set { } }
+    }
+}
 namespace System.Data.SqlClient
 {
     public partial class SqlDataReader : System.Data.Common.IDbColumnSchemaGenerator
