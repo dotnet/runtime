@@ -42,6 +42,44 @@ else()
     windows/gcenv.windows.cpp)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
+if (WIN32)
+  set(GC_HEADERS
+    env/common.h
+    env/etmdummy.h
+    env/gcenv.base.h
+    env/gcenv.ee.h
+    env/gcenv.h
+    env/gcenv.interlocked.h
+    env/gcenv.interlocked.inl
+    env/gcenv.object.h
+    env/gcenv.os.h
+    env/gcenv.structs.h
+    env/gcenv.sync.h
+    env/gcenv.windows.inl
+    env/volatile.h
+    gc.h
+    gcconfig.h
+    gcdesc.h
+    gcenv.ee.standalone.inl
+    gcenv.inl
+    gcevent_serializers.h
+    gcevents.h
+    gceventstatus.h
+    gchandletableimpl.h
+    gcimpl.h
+    gcinterface.dac.h
+    gcinterface.ee.h
+    gcinterface.h
+    gcpriv.h
+    gcrecord.h
+    gcscan.h
+    handletable.h
+    handletable.inl
+    handletablepriv.h
+    objecthandle.h
+    softwarewritewatch.h)
+endif(WIN32)
+
 if(WIN32)
   set (GC_LINK_LIBRARIES
     ${STATIC_MT_CRT_LIB}
@@ -50,6 +88,8 @@ if(WIN32)
 else()
   set (GC_LINK_LIBRARIES)
 endif(WIN32)
+
+list(APPEND GC_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
