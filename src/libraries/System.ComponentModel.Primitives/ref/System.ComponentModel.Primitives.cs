@@ -184,6 +184,13 @@ namespace System.ComponentModel
         public InitializationEventAttribute(string eventName) { }
         public string EventName { get; }
     }
+    public partial class InvalidAsynchronousStateException : System.ArgumentException
+    {
+        public InvalidAsynchronousStateException() { }
+        public InvalidAsynchronousStateException(string message) { }
+        public InvalidAsynchronousStateException(string message, System.Exception innerException) { }
+        protected InvalidAsynchronousStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
     public partial class InvalidEnumArgumentException : System.ArgumentException
     {
         public InvalidEnumArgumentException() { }
