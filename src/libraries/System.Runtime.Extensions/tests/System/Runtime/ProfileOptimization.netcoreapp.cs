@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -11,34 +12,43 @@ namespace System.Runtime.Tests
 {
     public class ProfileOptimizationTest : RemoteExecutorTestBase
     {
-        private readonly ITestOutputHelper _output;
-
-        public ProfileOptimizationTest(ITestOutputHelper output) => _output = output;
-
         [Fact]
         public void ProfileOptimization_CheckFileExists()
         {
-            string tmpProfileFilePath = GetTestFileName();
-            string tmpTestFileName = Path.Combine(Path.GetDirectoryName(tmpProfileFilePath), Path.GetRandomFileName());
+            string profileFile = GetTestFileName();
 
-            _output.WriteLine($"We'll test write permission on path '{tmpTestFileName}'");
-
-            RemoteInvoke((profileFilePath, testFileName) =>
+            RemoteInvoke((_profileFile) =>
             {
-                // after test fail tracked by https://github.com/dotnet/corefx/issues/31792
-                // we suspect that the reason is something related to write permission to the location
-                // to prove that we added a simple write to file in same location of profile file directory path
-                // ProfileOptimization/Multi-Core JIT could fail silently
-                File.WriteAllText(testFileName, "42");
+                // tracking down why test sporadically fails on RedHat69
+                // write to the file first to check permissions
+                // See https://github.com/dotnet/corefx/issues/31792
+                File.WriteAllText(_profileFile, "42");
 
-                ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(profileFilePath));
-                ProfileOptimization.StartProfile(Path.GetFileName(profileFilePath));
+                // Verify this write succeeded
+                Assert.True(File.Exists(_profileFile), $"'{_profileFile}' does not exist");
+                Assert.True(new FileInfo(_profileFile).Length > 0, $"'{_profileFile}' is empty");
 
-            }, tmpProfileFilePath, tmpTestFileName).Dispose();
+                // Delete the file and verify the delete
+                File.Delete(_profileFile);
+                Assert.True(!File.Exists(_profileFile), $"'{_profileFile} ought to not exist now");
 
-            FileInfo fileInfo = new FileInfo(tmpProfileFilePath);
-            Assert.True(fileInfo.Exists);
-            Assert.True(fileInfo.Length > 0);
+                // Perform the test work
+                ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(_profileFile));
+                ProfileOptimization.StartProfile(Path.GetFileName(_profileFile));
+
+            }, profileFile).Dispose();
+
+            // profileFile should deterministically exist now -- if not, wait 5 seconds
+            bool existed = File.Exists(profileFile);
+            if (!existed)
+            {
+                Thread.Sleep(5000);
+            }
+
+            Assert.True(File.Exists(profileFile), $"'{profileFile}' does not exist");
+            Assert.True(new FileInfo(profileFile).Length > 0, $"'{profileFile}' is empty");
+
+            Assert.True(existed, $"'{profileFile}' did not immediately exist, but did exist 5 seconds later");
         }
     }
 }
