@@ -82,11 +82,23 @@ namespace R2RDump
 
         public BaseUnwindInfo UnwindInfo { get; }
 
+        public EHInfo EHInfo { get; }
+
         public DebugInfo DebugInfo { get; }
 
         public RuntimeFunction() { }
 
-        public RuntimeFunction(int id, int startRva, int endRva, int unwindRva, int codeOffset, R2RMethod method, BaseUnwindInfo unwindInfo, BaseGcInfo gcInfo, DebugInfo debugInfo)
+        public RuntimeFunction(
+            int id, 
+            int startRva, 
+            int endRva, 
+            int unwindRva, 
+            int codeOffset, 
+            R2RMethod method, 
+            BaseUnwindInfo unwindInfo, 
+            BaseGcInfo gcInfo, 
+            EHInfo ehInfo,
+            DebugInfo debugInfo)
         {
             Id = id;
             StartAddress = startRva;
@@ -121,6 +133,7 @@ namespace R2RDump
             }
             CodeOffset = codeOffset;
             method.GcInfo = gcInfo;
+            EHInfo = ehInfo;
         }
 
         public override string ToString()
@@ -177,6 +190,13 @@ namespace R2RDump
                 }
             }
             sb.AppendLine();
+
+            if (EHInfo != null)
+            {
+                sb.AppendLine($@"EH info @ {EHInfo.EHInfoRVA:X4}, #clauses = {EHInfo.EHClauses.Length}");
+                EHInfo.WriteTo(sb);
+                sb.AppendLine();
+            }
 
             if (DebugInfo != null)
             {
