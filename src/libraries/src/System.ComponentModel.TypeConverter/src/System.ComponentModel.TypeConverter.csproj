@@ -67,7 +67,6 @@
     <Compile Include="System\ComponentModel\IExtenderProvider.cs" />
     <Compile Include="System\ComponentModel\IListSource.cs" />
     <Compile Include="System\ComponentModel\InterlockedBitVector32.cs" />
-    <Compile Include="System\ComponentModel\InvalidAsynchronousStateException.cs" />
     <Compile Include="System\InvariantComparer.cs" />
     <Compile Include="System\ComponentModel\ITypedList.cs" />
     <Compile Include="System\ComponentModel\MemberDescriptor.cs" />
