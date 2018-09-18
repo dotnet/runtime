@@ -12,6 +12,16 @@
 #include "perfinfo.h"
 #include "pal.h"
 
+// The code addresses are actually native image offsets during crossgen. Print
+// them as 32-bit numbers for consistent output when cross-targeting and to
+// make the output more compact.
+
+#ifdef CROSSGEN_COMPILE
+#define FMT_CODE_ADDR "%08x"
+#else
+#define FMT_CODE_ADDR "%p"
+#endif
+
 PerfMap * PerfMap::s_Current = nullptr;
 
 // Initialize the map for the process - called from EEStartupHelper.
@@ -173,7 +183,7 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize)
         // Build the map file line.
         StackScratchBuffer scratch;
         SString line;
-        line.Printf("%p %x %s\n", pCode, codeSize, fullMethodSignature.GetANSI(scratch));
+        line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, fullMethodSignature.GetANSI(scratch));
 
         // Write the line.
         WriteLine(line);
@@ -253,7 +263,7 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 
         // Build the map file line.
         SString line;
-        line.Printf("%p %x stub<%d> %s<%s>\n", pCode, codeSize, ++(s_Current->m_StubsMapped), stubType, stubOwner);
+        line.Printf(FMT_CODE_ADDR " %x stub<%d> %s<%s>\n", pCode, codeSize, ++(s_Current->m_StubsMapped), stubType, stubOwner);
 
         // Write the line.
         s_Current->WriteLine(line);
