@@ -1613,7 +1613,7 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 {
 	if (*gr > S390_LAST_ARG_REG) {
 		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
-		ainfo->reg	    = STK_BASE;
+		ainfo->reg	= STK_BASE;
 		ainfo->offset   = sz->stack_size;
 		ainfo->regtype  = RegTypeStructByAddrOnStack; 
 		sz->stack_size += sizeof (gpointer);
@@ -2242,7 +2242,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 		/*--------------------------------------------------*/
 		/* inst->backend.is_pinvoke indicates native sized  */
-		/* value typs this is used by the pinvoke wrappers  */
+		/* value types this is used by the pinvoke wrappers */
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
@@ -2417,7 +2417,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	ArgInfo *ainfo = NULL;
 	int stackSize;    
 	MonoMethodHeader *header;
-	int frmReg;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -2441,10 +2440,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	}
 
 	header = cfg->header;
-	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
-		frmReg = s390_r11;
-	else
-		frmReg = STK_BASE;
 
 	for (i = 0; i < n; ++i) {
 		MonoType *t;
@@ -2515,30 +2510,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			if (ainfo->regtype == RegTypeStructByAddr) {
-				/* 
-				 * We use OP_OUTARG_VT to copy the valuetype to a stack location, then
-				 * use the normal OUTARG opcodes to pass the address of the location to
-				 * the callee.
-				 */
-				int treg = mono_alloc_preg (cfg);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, treg, 
-							 frmReg, ainfo->offparm);
-				mono_call_inst_add_outarg_reg (cfg, call, treg, ainfo->reg, FALSE);
-			} else if (ainfo->regtype == RegTypeStructByAddrOnStack) {
-				/* The address of the valuetype is passed on the stack */
-				int treg = mono_alloc_preg (cfg);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, treg, 
-							 frmReg, ainfo->offparm);
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG,
-							     ainfo->reg, ainfo->offset, treg);
-
-				if (cfg->compute_gc_maps) {
-					MonoInst *def;
-
-					EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, t);
-				}
-			}
 			break;
 		}
 		case RegTypeBase :
@@ -2571,6 +2542,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	    (!sig->pinvoke) &&
 	    (i == sig->sentinelpos)) {
 		emit_sig_cookie (cfg, call, cinfo);
+	}
+
+	if (cinfo->struct_ret) {
+		MonoInst *vtarg;
+
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+		vtarg->sreg1 = call->vret_var->dreg;
+		vtarg->dreg = mono_alloc_preg (cfg);
+		MONO_ADD_INS (cfg->cbb, vtarg);
+
+		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->struct_ret, FALSE);
 	}
 }
 
@@ -2619,7 +2601,21 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	} else {
 		ERROR_DECL (error);
 		MonoMethodHeader *header;
-		int srcReg;
+		MonoInst *vtcopy = mono_compile_create_var (cfg, m_class_get_byval_arg (src->klass), OP_LOCAL);
+		MonoInst *load;
+		int ovf_size = ainfo->vtsize,
+		    srcReg;
+		guint32 size;
+
+		/* FIXME: alignment? */
+		if (call->signature->pinvoke) {
+			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
+			vtcopy->backend.is_pinvoke = 1;
+		} else {
+			size = mini_type_stack_size (m_class_get_byval_arg (src->klass), NULL);
+		}
+		if (size > 0)
+			g_assert (ovf_size > 0);
 
 		header = mono_method_get_header_checked (cfg->method, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
@@ -2628,14 +2624,19 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		else
 			srcReg = STK_BASE;
 
-		MONO_EMIT_NEW_MOVE (cfg, srcReg, ainfo->offparm,
-							 src->dreg, 0, size);
+		EMIT_NEW_VARLOADA (cfg, load, vtcopy, vtcopy->inst_vtype);
+		mini_emit_memcpy (cfg, load->dreg, 0, src->dreg, 0, size, TARGET_SIZEOF_VOID_P);
 
-		if (cfg->compute_gc_maps) {
-			MonoInst *def;
+		if (ainfo->reg == STK_BASE) {
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, srcReg, ainfo->offset, load->dreg);
 
-			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, m_class_get_byval_arg (ins->klass));
-		}
+			if (cfg->compute_gc_maps) {
+				MonoInst *def;
+
+				EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, m_class_get_byval_arg (ins->klass));
+			}
+		} else
+			mono_call_inst_add_outarg_reg (cfg, call, load->dreg, ainfo->reg, FALSE);
 	}
 }
 
@@ -4264,6 +4265,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ear (code, s390_r1, 1);
 			s390_stg (code, ins->sreg1, s390_r13, s390_r1, 0);
 			}
+			break;
+		case OP_TAILCALL_PARAMETER :
+			// This opcode helps compute sizes, i.e.
+			// of the subsequent OP_TAILCALL, but contributes no code.
+			g_assert (ins->next);
 			break;
 		case OP_TAILCALL :
 		case OP_TAILCALL_MEMBASE : {
