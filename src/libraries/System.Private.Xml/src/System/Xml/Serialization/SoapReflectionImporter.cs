@@ -11,7 +11,6 @@ namespace System.Xml.Serialization
     using System.Collections;
     using System.ComponentModel;
     using System.Threading;
-    using System.Linq;
     using System.Xml;
     using System.Xml.Serialization;
 
