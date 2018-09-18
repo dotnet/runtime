@@ -4499,7 +4499,7 @@ HRESULT __stdcall CreatePdb(CORINFO_ASSEMBLY_HANDLE hAssembly, BSTR pNativeImage
     {
         pModule = moduleIterator.GetModule();
 
-        if (pModule->HasNativeImage() || pModule->IsReadyToRun())
+        if (pModule->HasNativeOrReadyToRunImage())
         {
 #if !defined(NO_NGENPDB)
             IfFailThrow(pdbWriter.WritePDBDataForModule(pModule));
