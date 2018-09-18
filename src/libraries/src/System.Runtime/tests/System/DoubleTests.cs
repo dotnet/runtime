@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -12,6 +13,11 @@ namespace System.Tests
     public partial class DoubleTests : RemoteExecutorTestBase
     {
         // NOTE: Consider duplicating any tests added here in SingleTests.cs
+
+        private static ulong DoubleToUInt64Bits(double value)
+        {
+            return Unsafe.As<double, ulong>(ref value);
+        }
 
         [Theory]
         [InlineData("a")]
@@ -94,6 +100,7 @@ namespace System.Tests
         public static void Epsilon()
         {
             Assert.Equal(4.9406564584124654E-324, double.Epsilon);
+            Assert.Equal(0x00000000_00000001u, DoubleToUInt64Bits(double.Epsilon));
         }
 
         [Theory]
@@ -212,24 +219,28 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(1.7976931348623157E+308, double.MaxValue);
+            Assert.Equal(0x7FEFFFFF_FFFFFFFFu, DoubleToUInt64Bits(double.MaxValue));
         }
 
         [Fact]
         public static void MinValue()
         {
             Assert.Equal(-1.7976931348623157E+308, double.MinValue);
+            Assert.Equal(0xFFEFFFFF_FFFFFFFFu, DoubleToUInt64Bits(double.MinValue));
         }
 
         [Fact]
         public static void NaN()
         {
             Assert.Equal(0.0 / 0.0, double.NaN);
+            Assert.Equal(0xFFF80000_00000000u, DoubleToUInt64Bits(double.NaN));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
             Assert.Equal(-1.0 / 0.0, double.NegativeInfinity);
+            Assert.Equal(0xFFF00000_00000000u, DoubleToUInt64Bits(double.NegativeInfinity));
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -381,6 +392,7 @@ namespace System.Tests
         public static void PositiveInfinity()
         {
             Assert.Equal(1.0 / 0.0, double.PositiveInfinity);
+            Assert.Equal(0x7FF00000_00000000u, DoubleToUInt64Bits(double.PositiveInfinity));
         }
 
         public static IEnumerable<object[]> ToString_TestData()
