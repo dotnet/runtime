@@ -82,7 +82,7 @@
     <ProcessedOSGroup>$(OSGroup.ToLower())</ProcessedOSGroup>
     <ProcessedOSGroup Condition="'$(TargetsWindows)' == 'true'">windows</ProcessedOSGroup>
     <ProcessedArchGroup>$(ArchGroup.ToLower())</ProcessedArchGroup>
-    <ContainerName Condition="'$(ContainerName)' == ''">corefx-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(ProcessedOSGroup)-$(ProcessedArchGroup)</ContainerName>
+    <ContainerName Condition="'$(ContainerName)' == '' And '$(IsOfficial)' != ''">corefx-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(ProcessedOSGroup)-$(ProcessedArchGroup)</ContainerName>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
