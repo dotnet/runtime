@@ -22,7 +22,7 @@ namespace System.Tests
         [Theory]
         [InlineData("a")]
         [InlineData(234.0)]
-        public void CompareTo_ObjectNotFloat_ThrowsArgumentException(object value)
+        public static void CompareTo_ObjectNotFloat_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((float)123).CompareTo(value));
         }
@@ -39,7 +39,7 @@ namespace System.Tests
         [InlineData(float.NaN, float.NaN, 0)]
         [InlineData(float.NaN, 0.0f, -1)]
         [InlineData(234.0f, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)
             {
@@ -134,7 +134,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void GetTypeCode_Invoke_ReturnsSingle()
+        public static void GetTypeCode_Invoke_ReturnsSingle()
         {
             Assert.Equal(TypeCode.Single, 0.0f.GetTypeCode());
         }
@@ -219,14 +219,14 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
-            Assert.Equal(0x7FFFFFFFu,  SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0x7F7FFFFFu,  SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
         public static void MinValue()
         {
             Assert.Equal(-3.40282347E+38f, float.MinValue);
-            Assert.Equal(0xFFFFFFFFu, SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0xFF7FFFFFu, SingleToUInt32Bits(float.MinValue));
         }
 
         [Fact]
@@ -403,7 +403,7 @@ namespace System.Tests
             yield return new object[] { 4567.89101f, "G", null, "4567.891" };
             yield return new object[] { float.MaxValue, "G", null, "3.402823E+38" };
 
-            yield return new object[] { float.Epsilon, "G", null, "float.Epsilon" };
+            yield return new object[] { float.Epsilon, "G", null, "1.401298E-45" };
             yield return new object[] { float.NaN, "G", null, "NaN" };
 
             yield return new object[] { 2468.0f, "N", null, "2,468.00" };
@@ -430,7 +430,7 @@ namespace System.Tests
             yield return new object[] { -2468.0f, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { float.Epsilon, "G", invariantFormat, "float.Epsilon" };
+            yield return new object[] { float.Epsilon, "G", invariantFormat, "1.401298E-45" };
             yield return new object[] { float.NaN, "G", invariantFormat, "NaN" };
             yield return new object[] { float.PositiveInfinity, "G", invariantFormat, "Infinity" };
             yield return new object[] { float.NegativeInfinity, "G", invariantFormat, "-Infinity" };
