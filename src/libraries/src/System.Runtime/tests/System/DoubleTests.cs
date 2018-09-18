@@ -16,13 +16,13 @@ namespace System.Tests
 
         private static ulong DoubleToUInt64Bits(double value)
         {
-            return Unsafe.As<double, ulong>(ref value);
+            return (ulong)(BitConverter.DoubleToInt64Bits(value));
         }
 
         [Theory]
         [InlineData("a")]
         [InlineData(234.0f)]
-        public void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
+        public static void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => ((double)123).CompareTo(value));
         }
@@ -39,7 +39,7 @@ namespace System.Tests
         [InlineData(double.NaN, double.NaN, 0)]
         [InlineData(double.NaN, 0.0, -1)]
         [InlineData(234.0, null, 1)]
-        public void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
+        public static void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
         {
             if (value is double d2)
             {
@@ -134,7 +134,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void GetTypeCode_Invoke_ReturnsDouble()
+        public static void GetTypeCode_Invoke_ReturnsDouble()
         {
             Assert.Equal(TypeCode.Double, 0.0.GetTypeCode());
         }
@@ -405,7 +405,7 @@ namespace System.Tests
             yield return new object[] { 4567.89101, "G", null, "4567.89101" };
             yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
 
-            yield return new object[] { double.Epsilon, "G", null, "double.Epsilon" };
+            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
             yield return new object[] { double.NaN, "G", null, "NaN" };
 
             yield return new object[] { 2468.0, "N", null, "2,468.00" };
@@ -432,7 +432,7 @@ namespace System.Tests
             yield return new object[] { -2468.0, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { double.Epsilon, "G", invariantFormat, "double.Epsilon" };
+            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
             yield return new object[] { double.NaN, "G", invariantFormat, "NaN" };
             yield return new object[] { double.PositiveInfinity, "G", invariantFormat, "Infinity" };
             yield return new object[] { double.NegativeInfinity, "G", invariantFormat, "-Infinity" };
