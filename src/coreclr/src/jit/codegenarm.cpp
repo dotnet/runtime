@@ -206,7 +206,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 //    Mul and div are not handled here.
 //    See the assert below for the operators that are handled.
 
-void CodeGen::genCodeForBinary(GenTree* treeNode)
+void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
     const genTreeOps oper       = treeNode->OperGet();
     regNumber        targetReg  = treeNode->gtRegNum;

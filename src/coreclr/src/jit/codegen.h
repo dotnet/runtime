@@ -764,7 +764,7 @@ protected:
 
     void genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree);
     void genCodeForTreeNode(GenTree* treeNode);
-    void genCodeForBinary(GenTree* treeNode);
+    void genCodeForBinary(GenTreeOp* treeNode);
 
 #if defined(_TARGET_X86_)
     void genCodeForLongUMod(GenTreeOp* node);
