@@ -118,6 +118,11 @@ namespace R2RDump
         public string CompilerIdentifier { get; }
 
         /// <summary>
+        /// Exception lookup table is used to map runtime function addresses to EH clauses.
+        /// </summary>
+        public EHLookupTable EHLookupTable { get; }
+
+        /// <summary>
         /// List of import sections present in the R2R executable.
         /// </summary>
         public IList<R2RImportSection> ImportSections { get; }
@@ -183,6 +188,9 @@ namespace R2RDump
                     MetadataReader = PEReader.GetMetadataReader();
 
                     ParseDebugInfo();
+
+                    R2RSection exceptionInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
+                    EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
 
                     R2RMethods = new List<R2RMethod>();
                     if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
@@ -380,7 +388,26 @@ namespace R2RDump
                         }
                     }
 
-                    RuntimeFunction rtf = new RuntimeFunction(runtimeFunctionId, startRva, endRva, unwindRva, codeOffset, method, unwindInfo, gcInfo, _runtimeFunctionToDebugInfo.GetValueOrDefault(runtimeFunctionId));
+                    EHInfo ehInfo = null;
+
+                    EHInfoLocation ehInfoLocation;
+                    if (EHLookupTable.RuntimeFunctionToEHInfoMap.TryGetValue(startRva, out ehInfoLocation))
+                    {
+                        ehInfo = new EHInfo(this, ehInfoLocation.EHInfoRVA, startRva, GetOffset(ehInfoLocation.EHInfoRVA), ehInfoLocation.ClauseCount);
+                    }
+
+                    RuntimeFunction rtf = new RuntimeFunction(
+                        runtimeFunctionId,
+                        startRva,
+                        endRva,
+                        unwindRva,
+                        codeOffset,
+                        method,
+                        unwindInfo,
+                        gcInfo,
+                        ehInfo,
+                        _runtimeFunctionToDebugInfo.GetValueOrDefault(runtimeFunctionId));
+
                     method.RuntimeFunctions.Add(rtf);
                     runtimeFunctionId++;
                     codeOffset += rtf.Size;
