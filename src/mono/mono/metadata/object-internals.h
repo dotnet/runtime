@@ -916,12 +916,12 @@ TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 typedef struct {
 	MonoObject object;
+	guint32 AttrsImpl;	
 	MonoReflectionType *ClassImpl;
 	MonoObject *DefaultValueImpl;
 	MonoObject *MemberImpl;
 	MonoString *NameImpl;
 	gint32 PositionImpl;
-	guint32 AttrsImpl;
 	MonoObject *MarshalAsImpl;
 } MonoReflectionParameter;
 

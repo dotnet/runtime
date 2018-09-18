@@ -647,6 +647,10 @@ HANDLES(ICALL(MMETHI_1, "get_method_info", ves_icall_get_method_info))
 HANDLES(ICALL(MMETHI_2, "get_parameter_info", ves_icall_System_Reflection_MonoMethodInfo_get_parameter_info))
 HANDLES(ICALL(MMETHI_3, "get_retval_marshal", ves_icall_System_MonoMethodInfo_get_retval_marshal))
 
+ICALL_TYPE(PARAMI, "System.Reflection.MonoParameterInfo", MPARAMI_1)
+HANDLES(ICALL(MPARAMI_1, "GetMetadataToken", ves_icall_reflection_get_token))
+HANDLES(ICALL(MPARAMI_2, "GetTypeModifiers", ves_icall_ParameterInfo_GetTypeModifiers))
+
 ICALL_TYPE(MPROP, "System.Reflection.MonoProperty", MPROP_1)
 HANDLES(ICALL(MPROP_1, "get_metadata_token", ves_icall_reflection_get_token))
 HANDLES(ICALL(MPROP_2, "internal_from_handle_type", ves_icall_System_Reflection_PropertyInfo_internal_from_handle_type))
@@ -655,10 +659,6 @@ ICALL_TYPE(MPROPI, "System.Reflection.MonoPropertyInfo", MPROPI_1)
 HANDLES(ICALL(MPROPI_1, "GetTypeModifiers", ves_icall_MonoPropertyInfo_GetTypeModifiers))
 ICALL(MPROPI_3, "get_default_value", ves_icall_property_info_get_default_value)
 HANDLES(ICALL(MPROPI_2, "get_property_info", ves_icall_MonoPropertyInfo_get_property_info))
-
-ICALL_TYPE(PARAMI, "System.Reflection.ParameterInfo", PARAMI_1)
-HANDLES(ICALL(PARAMI_1, "GetMetadataToken", ves_icall_reflection_get_token))
-HANDLES(ICALL(PARAMI_2, "GetTypeModifiers", ves_icall_ParameterInfo_GetTypeModifiers))
 
 ICALL_TYPE(RTFIELD, "System.Reflection.RtFieldInfo", RTFIELD_1)
 ICALL(RTFIELD_1, "UnsafeGetValue", ves_icall_MonoField_GetValueInternal)
