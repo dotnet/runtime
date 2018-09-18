@@ -1,11 +1,11 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType
 {
-	class ClassUsedFromInterfaceHasInterfaceMethodKept {
+	class StructUsedFromConcreteTypeHasInterfaceMethodRemoved {
 		public static void Main ()
 		{
-			IFoo a = new A ();
+			A a = new A ();
 			a.Foo ();
 		}
 
@@ -20,7 +20,6 @@ namespace Mono.Linker.Tests.Cases.VirtualMethods
 
 		[Kept]
 		public interface IFoo {
-			[Kept]
 			void Foo ();
 		}
 	}

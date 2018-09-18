@@ -1,6 +1,6 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods {
+namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
 	class VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly {
 		public static void Main ()
 		{

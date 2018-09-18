@@ -1,10 +1,10 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods {
-	class ClassImplemtingInterfaceMethodsThroughBaseClass5 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
+	class ClassImplemtingInterfaceMethodsThroughBaseClass4 {
 		public static void Main ()
 		{
-			new A ();
+			new A ().Foo ();
 		}
 
 		[Kept]
@@ -14,6 +14,7 @@ namespace Mono.Linker.Tests.Cases.VirtualMethods {
 
 		[KeptMember (".ctor()")]
 		class B {
+			[Kept]
 			public void Foo ()
 			{
 			}
@@ -21,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.VirtualMethods {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (B))]
-		[KeptInterface (typeof (IFoo))]
+		[KeptInterface (typeof (IFoo))] // FIXME: Why is it not removed
 		class A : B, IFoo {
 			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
 		}

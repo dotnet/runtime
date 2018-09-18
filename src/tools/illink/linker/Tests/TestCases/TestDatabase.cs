@@ -21,11 +21,6 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix("Basic.");
 		}
 
-		public static IEnumerable<TestCaseData> VirtualMethodsTests()
-		{
-			return NUnitCasesByPrefix("VirtualMethods.");
-		}
-
 		public static IEnumerable<TestCaseData> AttributeTests()
 		{
 			return NUnitCasesByPrefix("Attributes.");
@@ -99,6 +94,26 @@ namespace Mono.Linker.Tests.TestCases
 		public static IEnumerable<TestCaseData> AdvancedTests ()
 		{
 			return NUnitCasesByPrefix ("Advanced.");
+		}
+		
+		public static IEnumerable<TestCaseData> InheritanceInterfaceTests ()
+		{
+			return NUnitCasesByPrefix ("Inheritance.Interfaces.");
+		}
+		
+		public static IEnumerable<TestCaseData> InheritanceAbstractClassTests ()
+		{
+			return NUnitCasesByPrefix ("Inheritance.AbstractClasses.");
+		}
+		
+		public static IEnumerable<TestCaseData> InheritanceVirtualMethodsTests ()
+		{
+			return NUnitCasesByPrefix ("Inheritance.VirtualMethods.");
+		}
+		
+		public static IEnumerable<TestCaseData> InheritanceComplexTests ()
+		{
+			return NUnitCasesByPrefix ("Inheritance.Complex.");
 		}
 
 		public static TestCaseCollector CreateCollector ()

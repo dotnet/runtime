@@ -1,17 +1,18 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 {
-	class StructUsedFromInterfaceHasInterfaceMethodKept {
+	class ClassUsedFromConcreteTypeHasInterfaceMethodRemoved {
 		public static void Main ()
 		{
-			IFoo a = new A ();
+			A a = new A ();
 			a.Foo ();
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		struct A : IFoo {
+		class A : IFoo {
 			[Kept]
 			public void Foo ()
 			{
@@ -20,7 +21,6 @@ namespace Mono.Linker.Tests.Cases.VirtualMethods
 
 		[Kept]
 		public interface IFoo {
-			[Kept]
 			void Foo ();
 		}
 	}

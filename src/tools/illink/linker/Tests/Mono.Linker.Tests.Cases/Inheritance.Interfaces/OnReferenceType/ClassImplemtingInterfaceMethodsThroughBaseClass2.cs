@@ -1,19 +1,22 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods {
-	class ClassImplemtingInterfaceMethodsThroughBaseClass3 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
+	class ClassImplemtingInterfaceMethodsThroughBaseClass2 {
 		public static void Main ()
 		{
-			new B ().Foo ();
+			new B ();
+			IFoo i = null;
+			i.Foo ();
 		}
 
 		interface IFoo {
+			[Kept]
 			void Foo ();
 		}
 
 		[KeptMember (".ctor()")]
 		class B {
-			[Kept]
+			[Kept] // FIXME: Should be removed
 			public void Foo ()
 			{
 			}

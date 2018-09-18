@@ -166,6 +166,29 @@
     <Compile Include="Basic\UsedStructIsKept.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
+    <Compile Include="Inheritance.AbstractClasses\UnusedAbstractMethodRemoved.cs" />
+    <Compile Include="Inheritance.AbstractClasses\UnusedVirtualMethodRemoved.cs" />
+    <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfAbstractMethodIsKept.cs" />
+    <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfVirtualMethodIsKept.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplementingInterfaceMethodsNested.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplemtingInterfaceMethodsThroughBaseClass2.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplemtingInterfaceMethodsThroughBaseClass3.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplemtingInterfaceMethodsThroughBaseClass4.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplemtingInterfaceMethodsThroughBaseClass5.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplemtingInterfaceMethodsThroughBaseClass6.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassUsedFromInterfaceHasInterfaceMethodKept.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\TypeGetsMarkedThatImplementsAlreadyMarkedInterfaceMethod.cs" />
+    <Compile Include="Inheritance.Interfaces\OnValueType\StructImplementingInterfaceMethodsNested.cs" />
+    <Compile Include="Inheritance.Interfaces\OnValueType\StructUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
+    <Compile Include="Inheritance.Interfaces\OnValueType\StructUsedFromInterfaceHasInterfaceMethodKept.cs" />
+    <Compile Include="Inheritance.VirtualMethods\HarderToDetectUnusedVirtualMethodGetsRemoved.cs" />
+    <Compile Include="Inheritance.VirtualMethods\UnusedTypeWithOverrideOfVirtualMethodIsRemoved.cs" />
+    <Compile Include="Inheritance.VirtualMethods\UnusedVirtualMethodRemoved.cs" />
+    <Compile Include="Inheritance.VirtualMethods\UsedOverrideOfVirtualMethodIsKept.cs" />
+    <Compile Include="Inheritance.VirtualMethods\UsedTypeWithOverrideOfVirtualMethodHasOverrideKept.cs" />
+    <Compile Include="Inheritance.VirtualMethods\VirtualMethodGetsPerservedIfBaseMethodGetsInvoked.cs" />
+    <Compile Include="Inheritance.VirtualMethods\VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly.cs" />
     <Compile Include="Libraries\CanLinkPublicApisOfLibrary.cs" />
     <Compile Include="Libraries\DefaultLibraryLinkBehavior.cs" />
     <Compile Include="Libraries\Dependencies\UserAssemblyActionWorks_Lib.cs" />
@@ -305,10 +328,6 @@
     <Compile Include="TypeForwarding\TypeForwarderOnlyAssembliesRemoved.cs" />
     <Compile Include="TypeForwarding\TypeForwarderOnlyAssembliesKept.cs" />
     <Compile Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.cs" />
-    <Compile Include="VirtualMethods\ClassUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
-    <Compile Include="VirtualMethods\ClassUsedFromInterfaceHasInterfaceMethodKept.cs" />
-    <Compile Include="VirtualMethods\StructUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
-    <Compile Include="VirtualMethods\StructUsedFromInterfaceHasInterfaceMethodKept.cs" />
     <Compile Include="CoreLink\CopyOfCoreLibrariesKeepsUnusedTypes.cs" />
     <Compile Include="CoreLink\LinkingOfCoreLibrariesRemovesUnusedMethods.cs" />
     <Compile Include="CoreLink\LinkingOfCoreLibrariesRemovesUnusedTypes.cs" />
@@ -355,24 +374,13 @@
     <Compile Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.cs" />
     <Compile Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.cs" />
     <Compile Include="References\ReferencesAreRemovedWhenAllUsagesAreRemoved.cs" />
-    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass2.cs" />
-    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass3.cs" />
-    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass4.cs" />
-    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass5.cs" />
-    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass6.cs" />
-    <Compile Include="VirtualMethods\HarderToDetectUnusedVirtualMethodGetsRemoved.cs" />
     <Compile Include="Basic\UnusedClassGetsRemoved.cs" />
     <Compile Include="Basic\UnusedNestedClassGetsRemoved.cs" />
     <Compile Include="Statics\UnusedStaticMethodGetsRemoved.cs" />
-    <Compile Include="VirtualMethods\UnusedVirtualMethodRemoved.cs" />
-    <Compile Include="VirtualMethods\UsedVirtualMethodNotRemoved.cs" />
     <Compile Include="Generics\UsedOverloadedGenericMethodInGenericClassIsNotStripped.cs" />
     <Compile Include="Generics\UsedOverloadedGenericMethodInstanceInGenericClassIsNotStripped.cs" />
     <Compile Include="Generics\UsedOverloadedGenericMethodWithNoParametersIsNotStripped.cs" />
     <Compile Include="Statics\UnusedStaticConstructorGetsRemoved.cs" />
-    <Compile Include="VirtualMethods\TypeGetsMarkedThatImplementsAlreadyMarkedInterfaceMethod.cs" />
-    <Compile Include="VirtualMethods\VirtualMethodGetsPerservedIfBaseMethodGetsInvoked.cs" />
-    <Compile Include="VirtualMethods\VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly.cs" />
     <Compile Include="TypeForwarding\MissingTargetReference.cs" />
     <None Include="TypeForwarding\Dependencies\TypeForwarderMissingReference.il" />
     <Compile Include="Basic\UsedInterfaceIsKept.cs" />
@@ -446,6 +454,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Attributes.StructLayout\" />
+    <Folder Include="Inheritance.Complex" />
     <Folder Include="Reflection\Dependencies\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
