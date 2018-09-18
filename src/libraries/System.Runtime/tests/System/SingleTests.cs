@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -12,6 +13,11 @@ namespace System.Tests
     public partial class SingleTests : RemoteExecutorTestBase
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
+
+        private static uint SingleToUInt32Bits(float value)
+        {
+            return Unsafe.As<float, uint>(ref value);
+        }
 
         [Theory]
         [InlineData("a")]
@@ -94,6 +100,7 @@ namespace System.Tests
         public static void Epsilon()
         {
             Assert.Equal(1.40129846E-45f, float.Epsilon);
+            Assert.Equal(0x00000001u, SingleToUInt32Bits(float.Epsilon));
         }
 
         [Theory]
@@ -212,25 +219,28 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
+            Assert.Equal(0x7FFFFFFFu,  SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
         public static void MinValue()
         {
             Assert.Equal(-3.40282347E+38f, float.MinValue);
-                                
+            Assert.Equal(0xFFFFFFFFu, SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
         public static void NaN()
         {
             Assert.Equal(0.0f / 0.0f, float.NaN);
+            Assert.Equal(0xFFC00000u, SingleToUInt32Bits(float.NaN));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
             Assert.Equal(-1.0f / 0.0f, float.NegativeInfinity);
+            Assert.Equal(0xFF800000u, SingleToUInt32Bits(float.NegativeInfinity));
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -380,6 +390,7 @@ namespace System.Tests
         public static void PositiveInfinity()
         {
             Assert.Equal(1.0f / 0.0f, float.PositiveInfinity);
+            Assert.Equal(0x7F800000u, SingleToUInt32Bits(float.PositiveInfinity));
         }
 
         public static IEnumerable<object[]> ToString_TestData()
