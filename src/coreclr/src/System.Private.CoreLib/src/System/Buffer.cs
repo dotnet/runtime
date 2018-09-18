@@ -6,23 +6,20 @@
 #define HAS_CUSTOM_BLOCKS
 #endif
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.Security;
 using System.Runtime;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 using Internal.Runtime.CompilerServices;
 
 #if BIT64
 using nint = System.Int64;
 using nuint = System.UInt64;
-#else // BIT64
+#else
 using nint = System.Int32;
 using nuint = System.UInt32;
-#endif // BIT64
+#endif
 
 namespace System
 {
@@ -41,10 +38,32 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool IsPrimitiveTypeArray(Array array);
 
-        // Gets a particular byte out of the array.  The array must be an
-        // array of primitives.  
+        // Gets the length of the array in bytes.  The array must be an
+        // array of primitives.
         //
-        // This essentially does the following: 
+        // This essentially does the following:
+        // return array.length * sizeof(array.UnderlyingElementType).
+        //
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern int _ByteLength(Array array);
+
+        public static int ByteLength(Array array)
+        {
+            // Is the array present?
+            if (array == null)
+                throw new ArgumentNullException(nameof(array));
+
+            // Is it of primitive types?
+            if (!IsPrimitiveTypeArray(array))
+                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
+
+            return _ByteLength(array);
+        }
+
+        // Gets a particular byte out of the array.  The array must be an
+        // array of primitives.
+        //
+        // This essentially does the following:
         // return ((byte*)array) + index.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -68,9 +87,9 @@ namespace System
         }
 
         // Sets a particular byte in an the array.  The array must be an
-        // array of primitives.  
+        // array of primitives.
         //
-        // This essentially does the following: 
+        // This essentially does the following:
         // *(((byte*)array) + index) = value.
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -94,29 +113,6 @@ namespace System
             _SetByte(array, index, value);
         }
 
-
-        // Gets a particular byte out of the array.  The array must be an
-        // array of primitives.  
-        //
-        // This essentially does the following: 
-        // return array.length * sizeof(array.UnderlyingElementType).
-        //
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern int _ByteLength(Array array);
-
-        public static int ByteLength(Array array)
-        {
-            // Is the array present?
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-
-            // Is it of primitive types?
-            if (!IsPrimitiveTypeArray(array))
-                throw new ArgumentException(SR.Arg_MustBePrimArray, nameof(array));
-
-            return _ByteLength(array);
-        }
-
         // This is currently used by System.IO.UnmanagedMemoryStream
         internal static unsafe void ZeroMemory(byte* dest, long len)
         {
@@ -128,6 +124,32 @@ namespace System
         internal static unsafe void ZeroMemory(byte* dest, nuint len)
         {
             SpanHelpers.ClearWithoutReferences(ref *dest, len);
+        }
+
+        // The attributes on this method are chosen for best JIT performance. 
+        // Please do not edit unless intentional.
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
+        {
+            if (sourceBytesToCopy > destinationSizeInBytes)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
+            }
+            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
+        }
+
+        // The attributes on this method are chosen for best JIT performance. 
+        // Please do not edit unless intentional.
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
+        {
+            if (sourceBytesToCopy > destinationSizeInBytes)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
+            }
+            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
         }
 
         internal static unsafe void Memcpy(byte[] dest, int destIndex, byte* src, int srcIndex, int len)
@@ -158,9 +180,6 @@ namespace System
             }
         }
 
-        // This is tricky to get right AND fast, so lets make it useful for the whole Fx.
-        // E.g. System.Runtime.WindowsRuntime!WindowsRuntimeBufferExtensions.MemCopy uses it.
-
         // This method has a slightly different behavior on arm and other platforms.
         // On arm this method behaves like memcpy and does not handle overlapping buffers.
         // While on other platforms it behaves like memmove and handles overlapping buffers.
@@ -174,8 +193,8 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void Memcpy(byte* dest, byte* src, int len)
         {
-            Debug.Assert(len >= 0, "Negative length in memcopy!");
-            Memmove(dest, src, (uint)len);
+            Debug.Assert(len >= 0, "Negative length in memcpy!");
+            Memmove(dest, src, (nuint)len);
         }
 #endif // ARM
 
@@ -200,8 +219,10 @@ namespace System
 #endif // AMD64 || (BIT32 && !ARM)
 
             // P/Invoke into the native version when the buffers are overlapping.
-
-            if (((nuint)dest - (nuint)src < len) || ((nuint)src - (nuint)dest < len)) goto PInvoke;
+            if (((nuint)dest - (nuint)src < len) || ((nuint)src - (nuint)dest < len))
+            {
+                goto PInvoke;
+            }
 
             byte* srcEnd = src + len;
             byte* destEnd = dest + len;
@@ -209,7 +230,7 @@ namespace System
             if (len <= 16) goto MCPY02;
             if (len > 64) goto MCPY05;
 
-            MCPY00:
+        MCPY00:
             // Copy bytes which are multiples of 16 and leave the remainder for MCPY01 to handle.
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
@@ -248,7 +269,7 @@ namespace System
             *(int*)(dest + 44) = *(int*)(src + 44);             // [0,48]
 #endif
 
-            MCPY01:
+        MCPY01:
             // Unconditionally copy the last 16 bytes using destEnd and srcEnd and return.
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
@@ -264,7 +285,7 @@ namespace System
 #endif
             return;
 
-            MCPY02:
+        MCPY02:
             // Copy the first 8 bytes and then unconditionally copy the last 8 bytes and return.
             if ((len & 24) == 0) goto MCPY03;
             Debug.Assert(len >= 8 && len <= 16);
@@ -279,7 +300,7 @@ namespace System
 #endif
             return;
 
-            MCPY03:
+        MCPY03:
             // Copy the first 4 bytes and then unconditionally copy the last 4 bytes and return.
             if ((len & 4) == 0) goto MCPY04;
             Debug.Assert(len >= 4 && len < 8);
@@ -302,12 +323,13 @@ namespace System
             {
                 goto PInvoke;
             }
+
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
             Debug.Assert(len > 64 && len <= CopyThreshold);
             nuint n = len >> 6;
 
-            MCPY06:
+        MCPY06:
 #if HAS_CUSTOM_BLOCKS
             *(Block64*)dest = *(Block64*)src;
 #elif BIT64
@@ -357,10 +379,10 @@ namespace System
 #endif
             return;
 
-            PInvoke:
+        PInvoke:
             _Memmove(dest, src, len);
         }
-        
+
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void Memmove<T>(ref T destination, ref T source, nuint elementCount)
@@ -410,8 +432,7 @@ namespace System
             const nuint CopyThreshold = 512;
 #endif // AMD64 || (BIT32 && !ARM)
 
-            // P/Invoke into the native version when the buffers are overlapping.            
-
+            // P/Invoke into the native version when the buffers are overlapping.
             if (((nuint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len))
             {
                 goto BuffersOverlap;
@@ -427,8 +448,8 @@ namespace System
             if (len > 64)
                 goto MCPY05;
 
-MCPY00:
-// Copy bytes which are multiples of 16 and leave the remainder for MCPY01 to handle.
+        MCPY00:
+            // Copy bytes which are multiples of 16 and leave the remainder for MCPY01 to handle.
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref dest) = Unsafe.As<byte, Block16>(ref src); // [0,16]
@@ -468,8 +489,8 @@ MCPY00:
             Unsafe.As<byte, int>(ref Unsafe.Add(ref dest, 44)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref src, 44)); // [0,48]
 #endif
 
-MCPY01:
-// Unconditionally copy the last 16 bytes using destEnd and srcEnd and return.
+        MCPY01:
+            // Unconditionally copy the last 16 bytes using destEnd and srcEnd and return.
             Debug.Assert(len > 16 && len <= 64);
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block16>(ref Unsafe.Add(ref destEnd, -16)) = Unsafe.As<byte, Block16>(ref Unsafe.Add(ref srcEnd, -16));
@@ -484,8 +505,8 @@ MCPY01:
 #endif
             return;
 
-MCPY02:
-// Copy the first 8 bytes and then unconditionally copy the last 8 bytes and return.
+        MCPY02:
+            // Copy the first 8 bytes and then unconditionally copy the last 8 bytes and return.
             if ((len & 24) == 0)
                 goto MCPY03;
             Debug.Assert(len >= 8 && len <= 16);
@@ -500,8 +521,8 @@ MCPY02:
 #endif
             return;
 
-MCPY03:
-// Copy the first 4 bytes and then unconditionally copy the last 4 bytes and return.
+        MCPY03:
+            // Copy the first 4 bytes and then unconditionally copy the last 4 bytes and return.
             if ((len & 4) == 0)
                 goto MCPY04;
             Debug.Assert(len >= 4 && len < 8);
@@ -509,8 +530,8 @@ MCPY03:
             Unsafe.As<byte, int>(ref Unsafe.Add(ref destEnd, -4)) = Unsafe.As<byte, int>(ref Unsafe.Add(ref srcEnd, -4));
             return;
 
-MCPY04:
-// Copy the first byte. For pending bytes, do an unconditionally copy of the last 2 bytes and return.
+        MCPY04:
+            // Copy the first byte. For pending bytes, do an unconditionally copy of the last 2 bytes and return.
             Debug.Assert(len < 4);
             if (len == 0)
                 return;
@@ -520,18 +541,19 @@ MCPY04:
             Unsafe.As<byte, short>(ref Unsafe.Add(ref destEnd, -2)) = Unsafe.As<byte, short>(ref Unsafe.Add(ref srcEnd, -2));
             return;
 
-MCPY05:
-// PInvoke to the native version when the copy length exceeds the threshold.
+        MCPY05:
+            // PInvoke to the native version when the copy length exceeds the threshold.
             if (len > CopyThreshold)
             {
                 goto PInvoke;
             }
+
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
             Debug.Assert(len > 64 && len <= CopyThreshold);
             nuint n = len >> 6;
 
-MCPY06:
+        MCPY06:
 #if HAS_CUSTOM_BLOCKS
             Unsafe.As<byte, Block64>(ref dest) = Unsafe.As<byte, Block64>(ref src);
 #elif BIT64
@@ -583,14 +605,14 @@ MCPY06:
 #endif
             return;
 
-BuffersOverlap:
+        BuffersOverlap:
             // If the buffers overlap perfectly, there's no point to copying the data.
             if (Unsafe.AreSame(ref dest, ref src))
             {
                 return;
             }
 
-PInvoke:
+        PInvoke:
             _Memmove(ref dest, ref src, len);
         }
 
@@ -615,43 +637,12 @@ PInvoke:
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern unsafe void __Memmove(byte* dest, byte* src, nuint len);
 
-        // The attributes on this method are chosen for best JIT performance. 
-        // Please do not edit unless intentional.
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        [CLSCompliant(false)]
-        public static unsafe void MemoryCopy(void* source, void* destination, long destinationSizeInBytes, long sourceBytesToCopy)
-        {
-            if (sourceBytesToCopy > destinationSizeInBytes)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
-            }
-            Memmove((byte*)destination, (byte*)source, checked((nuint)sourceBytesToCopy));
-        }
-
-
-        // The attributes on this method are chosen for best JIT performance. 
-        // Please do not edit unless intentional.
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        [CLSCompliant(false)]
-        public static unsafe void MemoryCopy(void* source, void* destination, ulong destinationSizeInBytes, ulong sourceBytesToCopy)
-        {
-            if (sourceBytesToCopy > destinationSizeInBytes)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sourceBytesToCopy);
-            }
-#if BIT64
-            Memmove((byte*)destination, (byte*)source, sourceBytesToCopy);
-#else // BIT64
-            Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));
-#endif // BIT64
-        }
-        
-#if HAS_CUSTOM_BLOCKS        
+#if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
         private struct Block16 { }
 
         [StructLayout(LayoutKind.Sequential, Size = 64)]
-        private struct Block64 { } 
-#endif // HAS_CUSTOM_BLOCKS         
+        private struct Block64 { }
+#endif // HAS_CUSTOM_BLOCKS
     }
 }
