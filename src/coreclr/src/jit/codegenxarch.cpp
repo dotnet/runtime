@@ -670,11 +670,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 {
     assert(treeNode->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD));
 
-    // We shouldn't be seeing GT_MOD on float/double args as it should get morphed into a
-    // helper call by front-end.  Similarly we shouldn't be seeing GT_UDIV and GT_UMOD
-    // on float/double args.
-    assert(treeNode->OperIs(GT_DIV) || !varTypeIsFloating(treeNode));
-
     GenTree* dividend = treeNode->gtOp1;
 
 #ifdef _TARGET_X86_
@@ -692,80 +687,56 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     var_types  targetType = treeNode->TypeGet();
     emitter*   emit       = getEmitter();
 
+    // Node's type must be int/native int, small integer types are not
+    // supported and floating point types are handled by genCodeForBinary.
+    assert(varTypeIsIntOrI(targetType));
     // dividend is in a register.
     assert(dividend->isUsedFromReg());
 
     genConsumeOperands(treeNode->AsOp());
-    if (varTypeIsFloating(targetType))
-    {
-        // Floating point div/rem operation
-        assert(oper == GT_DIV || oper == GT_MOD);
+    // dividend must be in RAX
+    genCopyRegIfNeeded(dividend, REG_RAX);
 
-        if (dividend->gtRegNum == targetReg)
+    // zero or sign extend rax to rdx
+    if (oper == GT_UMOD || oper == GT_UDIV)
+    {
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
+    }
+    else
+    {
+        emit->emitIns(INS_cdq, size);
+        // the cdq instruction writes RDX, So clear the gcInfo for RDX
+        gcInfo.gcMarkRegSetNpt(RBM_RDX);
+    }
+
+    // Perform the 'targetType' (64-bit or 32-bit) divide instruction
+    instruction ins;
+    if (oper == GT_UMOD || oper == GT_UDIV)
+    {
+        ins = INS_div;
+    }
+    else
+    {
+        ins = INS_idiv;
+    }
+
+    emit->emitInsBinary(ins, size, treeNode, divisor);
+
+    // DIV/IDIV instructions always store the quotient in RAX and the remainder in RDX.
+    // Move the result to the desired register, if necessary
+    if (oper == GT_DIV || oper == GT_UDIV)
+    {
+        if (targetReg != REG_RAX)
         {
-            emit->emitInsBinary(genGetInsForOper(treeNode->gtOper, targetType), size, treeNode, divisor);
-        }
-        else if (divisor->isUsedFromReg() && divisor->gtRegNum == targetReg)
-        {
-            // It is not possible to generate 2-operand divss or divsd where reg2 = reg1 / reg2
-            // because divss/divsd reg1, reg2 will over-write reg1.  Therefore, in case of AMD64
-            // LSRA has to make sure that such a register assignment is not generated for floating
-            // point div/rem operations.
-            noway_assert(
-                !"GT_DIV/GT_MOD (float): case of reg2 = reg1 / reg2, LSRA should never generate such a reg assignment");
-        }
-        else
-        {
-            inst_RV_RV(ins_Copy(targetType), targetReg, dividend->gtRegNum, targetType);
-            emit->emitInsBinary(genGetInsForOper(treeNode->gtOper, targetType), size, treeNode, divisor);
+            inst_RV_RV(INS_mov, targetReg, REG_RAX, targetType);
         }
     }
     else
     {
-        // dividend must be in RAX
-        genCopyRegIfNeeded(dividend, REG_RAX);
-
-        // zero or sign extend rax to rdx
-        if (oper == GT_UMOD || oper == GT_UDIV)
+        assert((oper == GT_MOD) || (oper == GT_UMOD));
+        if (targetReg != REG_RDX)
         {
-            instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_EDX);
-        }
-        else
-        {
-            emit->emitIns(INS_cdq, size);
-            // the cdq instruction writes RDX, So clear the gcInfo for RDX
-            gcInfo.gcMarkRegSetNpt(RBM_RDX);
-        }
-
-        // Perform the 'targetType' (64-bit or 32-bit) divide instruction
-        instruction ins;
-        if (oper == GT_UMOD || oper == GT_UDIV)
-        {
-            ins = INS_div;
-        }
-        else
-        {
-            ins = INS_idiv;
-        }
-
-        emit->emitInsBinary(ins, size, treeNode, divisor);
-
-        // DIV/IDIV instructions always store the quotient in RAX and the remainder in RDX.
-        // Move the result to the desired register, if necessary
-        if (oper == GT_DIV || oper == GT_UDIV)
-        {
-            if (targetReg != REG_RAX)
-            {
-                inst_RV_RV(INS_mov, targetReg, REG_RAX, targetType);
-            }
-        }
-        else
-        {
-            assert((oper == GT_MOD) || (oper == GT_UMOD));
-            if (targetReg != REG_RDX)
-            {
-                inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
-            }
+            inst_RV_RV(INS_mov, targetReg, REG_RDX, targetType);
         }
     }
     genProduceReg(treeNode);
@@ -773,7 +744,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 
 //------------------------------------------------------------------------
 // genCodeForBinary: Generate code for many binary arithmetic operators
-// This method is expected to have called genConsumeOperands() before calling it.
 //
 // Arguments:
 //    treeNode - The binary operation for which we are generating code.
@@ -782,22 +752,33 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
 //    None.
 //
 // Notes:
-//    Mul and div variants have special constraints on x64 so are not handled here.
-//    See teh assert below for the operators that are handled.
+//    Integer MUL and DIV variants have special constraints on x64 so are not handled here.
+//    See the assert below for the operators that are handled.
 
-void CodeGen::genCodeForBinary(GenTree* treeNode)
+void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
+#ifdef DEBUG
+    bool isValidOper = treeNode->OperIs(GT_ADD, GT_SUB);
+    if (varTypeIsFloating(treeNode->TypeGet()))
+    {
+        isValidOper |= treeNode->OperIs(GT_MUL, GT_DIV);
+    }
+    else
+    {
+        isValidOper |= treeNode->OperIs(GT_AND, GT_OR, GT_XOR);
+#ifndef _TARGET_64BIT_
+        isValidOper |= treeNode->OperIs(GT_ADD_LO, GT_ADD_HI, GT_SUB_LO, GT_SUB_HI);
+#endif
+    }
+    assert(isValidOper);
+#endif
+
+    genConsumeOperands(treeNode);
+
     const genTreeOps oper       = treeNode->OperGet();
     regNumber        targetReg  = treeNode->gtRegNum;
     var_types        targetType = treeNode->TypeGet();
     emitter*         emit       = getEmitter();
-
-#if defined(_TARGET_64BIT_)
-    assert(oper == GT_OR || oper == GT_XOR || oper == GT_AND || oper == GT_ADD || oper == GT_SUB);
-#else  // !defined(_TARGET_64BIT_)
-    assert(oper == GT_OR || oper == GT_XOR || oper == GT_AND || oper == GT_ADD_LO || oper == GT_ADD_HI ||
-           oper == GT_SUB_LO || oper == GT_SUB_HI || oper == GT_ADD || oper == GT_SUB);
-#endif // !defined(_TARGET_64BIT_)
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -918,6 +899,10 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
     var_types targetType = treeNode->TypeGet();
     emitter*  emit       = getEmitter();
 
+    // Node's type must be int or long (only on x64), small integer types are not
+    // supported and floating point types are handled by genCodeForBinary.
+    assert(varTypeIsIntOrI(targetType));
+
     instruction ins;
     emitAttr    size                  = emitTypeSize(treeNode);
     bool        isUnsignedMultiply    = ((treeNode->gtFlags & GTF_UNSIGNED) != 0);
@@ -931,7 +916,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
     // 2-op form: reg *= rm
     // 3-op form: reg = rm * imm
 
-    genConsumeOperands(treeNode->AsOp());
+    genConsumeOperands(treeNode);
 
     // This matches the 'mul' lowering in Lowering::SetMulOpCounts()
     //
@@ -956,9 +941,6 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     if (immOp != nullptr)
     {
-        // This must be a non-floating point operation.
-        assert(!varTypeIsFloating(treeNode));
-
         // CQ: When possible use LEA for mul by imm 3, 5 or 9
         ssize_t imm = immOp->AsIntConCommon()->IconValue();
 
@@ -978,7 +960,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             if (targetReg != rmOp->gtRegNum)
             {
                 // Copy reg src to dest register
-                inst_RV_RV(ins_Copy(targetType), targetReg, rmOp->gtRegNum, targetType);
+                inst_RV_RV(INS_mov, targetReg, rmOp->gtRegNum, targetType);
             }
             inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
         }
@@ -1002,7 +984,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         }
         else
         {
-            ins = genGetInsForOper(GT_MUL, targetType);
+            ins = INS_imul;
         }
 
         // Set rmOp to the memory operand (if any)
@@ -1018,7 +1000,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         // Setup targetReg when neither of the source operands was a matching register
         if (regOp->gtRegNum != mulTargetReg)
         {
-            inst_RV_RV(ins_Copy(targetType), mulTargetReg, regOp->gtRegNum, targetType);
+            inst_RV_RV(INS_mov, mulTargetReg, regOp->gtRegNum, targetType);
         }
 
         emit->emitInsBinary(ins, size, treeNode, rmOp);
@@ -1580,9 +1562,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForNegNot(treeNode);
             break;
 
+        case GT_DIV:
+            if (varTypeIsFloating(treeNode->TypeGet()))
+            {
+                genCodeForBinary(treeNode->AsOp());
+                break;
+            }
+            __fallthrough;
         case GT_MOD:
         case GT_UMOD:
-        case GT_DIV:
         case GT_UDIV:
             genCodeForDivMod(treeNode->AsOp());
             break;
@@ -1603,11 +1591,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_ADD:
         case GT_SUB:
-            genConsumeOperands(treeNode->AsOp());
-            genCodeForBinary(treeNode);
+            genCodeForBinary(treeNode->AsOp());
             break;
 
         case GT_MUL:
+            if (varTypeIsFloating(treeNode->TypeGet()))
+            {
+                genCodeForBinary(treeNode->AsOp());
+                break;
+            }
             genCodeForMul(treeNode->AsOp());
             break;
 
