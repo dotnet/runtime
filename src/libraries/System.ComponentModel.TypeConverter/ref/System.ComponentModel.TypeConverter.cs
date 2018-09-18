@@ -8,6 +8,7 @@
 using System.Runtime.Serialization;
 
 // These types were moved down to System.Primitives
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.InvalidAsynchronousStateException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.InvalidEnumArgumentException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.Component))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.ISupportInitialize))]
@@ -303,13 +304,6 @@ namespace System.ComponentModel
     public partial class Int64Converter : System.ComponentModel.BaseNumberConverter
     {
         public Int64Converter() { }
-    }
-    public partial class InvalidAsynchronousStateException : System.ArgumentException
-    {
-        public InvalidAsynchronousStateException() { }
-        public InvalidAsynchronousStateException(string message) { }
-        public InvalidAsynchronousStateException(string message, System.Exception innerException) { }
-        protected InvalidAsynchronousStateException(SerializationInfo info, StreamingContext context) { }
     }
     public partial interface ITypeDescriptorContext : System.IServiceProvider
     {
