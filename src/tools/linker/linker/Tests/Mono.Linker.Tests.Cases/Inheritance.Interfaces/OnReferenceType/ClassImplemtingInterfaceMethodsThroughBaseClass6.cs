@@ -1,6 +1,6 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 	class ClassImplemtingInterfaceMethodsThroughBaseClass6 {
 		public static void Main ()
 		{

@@ -1,27 +1,27 @@
 ﻿using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods {
-	class ClassImplemtingInterfaceMethodsThroughBaseClass2 {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
+	class ClassImplemtingInterfaceMethodsThroughBaseClass5 {
 		public static void Main ()
 		{
-			new B ();
-			IFoo i = null;
-			i.Foo ();
+			new A ();
 		}
 
+		[Kept]
 		interface IFoo {
-			[Kept]
 			void Foo ();
 		}
 
 		[KeptMember (".ctor()")]
 		class B {
-			[Kept] // FIXME: Should be removed
 			public void Foo ()
 			{
 			}
 		}
 
+		[KeptMember (".ctor()")]
+		[KeptBaseType (typeof (B))]
+		[KeptInterface (typeof (IFoo))]
 		class A : B, IFoo {
 			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
 		}

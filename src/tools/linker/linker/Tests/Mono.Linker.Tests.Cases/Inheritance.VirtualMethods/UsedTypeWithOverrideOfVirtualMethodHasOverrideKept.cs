@@ -1,8 +1,8 @@
 ﻿using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.VirtualMethods {
-	public class UsedVirtualMethodNotRemoved {
+namespace Mono.Linker.Tests.Cases.Inheritance.VirtualMethods {
+	public class UsedTypeWithOverrideOfVirtualMethodHasOverrideKept {
 		public static void Main ()
 		{
 			new B ();
