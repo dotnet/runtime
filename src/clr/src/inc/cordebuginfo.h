@@ -294,15 +294,15 @@ public:
 
         union
         {
-            vlReg           vlReg;
-            vlStk           vlStk;
-            vlRegReg        vlRegReg;
-            vlRegStk        vlRegStk;
-            vlStkReg        vlStkReg;
-            vlStk2          vlStk2;
-            vlFPstk         vlFPstk;
-            vlFixedVarArg   vlFixedVarArg;
-            vlMemory        vlMemory;
+            ICorDebugInfo::vlReg           vlReg;
+            ICorDebugInfo::vlStk           vlStk;
+            ICorDebugInfo::vlRegReg        vlRegReg;
+            ICorDebugInfo::vlRegStk        vlRegStk;
+            ICorDebugInfo::vlStkReg        vlStkReg;
+            ICorDebugInfo::vlStk2          vlStk2;
+            ICorDebugInfo::vlFPstk         vlFPstk;
+            ICorDebugInfo::vlFixedVarArg   vlFixedVarArg;
+            ICorDebugInfo::vlMemory        vlMemory;
         };
     };
 
