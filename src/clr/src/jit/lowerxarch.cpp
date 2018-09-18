@@ -1550,60 +1550,19 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 #else
     assert(node->OperIs(GT_MUL, GT_MULHI));
 #endif
+
+    // Case of float/double mul.
+    if (varTypeIsFloating(node->TypeGet()))
+    {
+        ContainCheckFloatBinary(node);
+        return;
+    }
+
     GenTree* op1 = node->gtOp.gtOp1;
     GenTree* op2 = node->gtOp.gtOp2;
 
     bool isSafeToContainOp1 = true;
     bool isSafeToContainOp2 = true;
-
-    // Case of float/double mul.
-    if (varTypeIsFloating(node->TypeGet()))
-    {
-        assert(node->OperGet() == GT_MUL);
-
-        if (op2->IsCnsNonZeroFltOrDbl())
-        {
-            MakeSrcContained(node, op2);
-        }
-        else if (IsContainableMemoryOp(op2))
-        {
-            isSafeToContainOp2 = IsSafeToContainMem(node, op2);
-            if (isSafeToContainOp2)
-            {
-                MakeSrcContained(node, op2);
-            }
-        }
-
-        if (!op2->isContained())
-        {
-            // Since  GT_MUL is commutative, we will try to re-order operands if it is safe to
-            // generate more efficient code sequence for the case of GT_MUL(op1=memOp, op2=non-memOp)
-            if (op1->IsCnsNonZeroFltOrDbl())
-            {
-                MakeSrcContained(node, op1);
-            }
-            else if (IsContainableMemoryOp(op1))
-            {
-                isSafeToContainOp1 = IsSafeToContainMem(node, op1);
-                if (isSafeToContainOp1)
-                {
-                    MakeSrcContained(node, op1);
-                }
-            }
-        }
-
-        if (!op1->isContained() && !op2->isContained())
-        {
-            // If there are no containable operands, we can make an operand reg optional.
-            // IsSafeToContainMem is expensive so we call it at most once for each operand
-            // in this method. If we already called IsSafeToContainMem, it must have returned false;
-            // otherwise, the corresponding operand (op1 or op2) would be contained.
-            isSafeToContainOp1 = isSafeToContainOp1 && IsSafeToContainMem(node, op1);
-            isSafeToContainOp2 = isSafeToContainOp2 && IsSafeToContainMem(node, op2);
-            SetRegOptionalForBinOp(node, isSafeToContainOp1, isSafeToContainOp2);
-        }
-        return;
-    }
 
     bool     isUnsignedMultiply    = ((node->gtFlags & GTF_UNSIGNED) != 0);
     bool     requiresOverflowCheck = node->gtOverflowEx();
@@ -1743,6 +1702,47 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
             }
             SetRegOptionalForBinOp(node, isSafeToContainOp1, isSafeToContainOp2);
         }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckDivOrMod: determine which operands of a div/mod should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD));
+
+    if (varTypeIsFloating(node->TypeGet()))
+    {
+        ContainCheckFloatBinary(node);
+        return;
+    }
+
+    GenTree* dividend = node->gtGetOp1();
+    GenTree* divisor  = node->gtGetOp2();
+
+    bool divisorCanBeRegOptional = true;
+#ifdef _TARGET_X86_
+    if (dividend->OperGet() == GT_LONG)
+    {
+        divisorCanBeRegOptional = false;
+        MakeSrcContained(node, dividend);
+    }
+#endif
+
+    // divisor can be an r/m, but the memory indirection must be of the same size as the divide
+    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
+    {
+        MakeSrcContained(node, divisor);
+    }
+    else if (divisorCanBeRegOptional)
+    {
+        // If there are no containable operands, we can make an operand reg optional.
+        // Div instruction allows only divisor to be a memory op.
+        divisor->SetRegOptional();
     }
 }
 
@@ -3146,10 +3146,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
 {
-    assert(node->OperIsBinary() && varTypeIsFloating(node));
+    assert(node->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV) && varTypeIsFloating(node));
 
     // overflow operations aren't supported on float/double types.
-    assert(!node->gtOverflow());
+    assert(!node->gtOverflowEx());
 
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();

@@ -124,7 +124,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SUB:
         case GT_MUL:
             genConsumeOperands(treeNode->AsOp());
-            genCodeForBinary(treeNode);
+            genCodeForBinary(treeNode->AsOp());
             break;
 
         case GT_LSH:
