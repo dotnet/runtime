@@ -11,133 +11,12 @@ namespace System.Tests
 {
     public partial class DoubleTests : RemoteExecutorTestBase
     {
-        [Fact]
-        public static void Ctor_Empty()
-        {
-            var i = new double();
-            Assert.Equal(0, i);
-        }
-
-        [Fact]
-        public static void Ctor_Value()
-        {
-            double d = 41;
-            Assert.Equal(41, d);
-
-            d = 41.3;
-            Assert.Equal(41.3, d);
-        }
-
-        [Fact]
-        public static void MaxValue()
-        {
-            Assert.Equal(1.7976931348623157E+308, double.MaxValue);
-        }
-
-        [Fact]
-        public static void MinValue()
-        {
-            Assert.Equal(-1.7976931348623157E+308, double.MinValue);
-        }
-
-        [Fact]
-        public static void Epsilon()
-        {
-            Assert.Equal(4.9406564584124654E-324, double.Epsilon);
-        }
-
         [Theory]
-        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
-        [InlineData(double.MinValue, false)]            // Min Negative Normal
-        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
-        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
-        [InlineData(-0.0, false)]                       // Negative Zero
-        [InlineData(double.NaN, false)]                 // NaN
-        [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
-        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
-        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
-        [InlineData(double.MaxValue, false)]            // Max Positive Normal
-        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
-        public static void IsInfinity(double d, bool expected)
+        [InlineData("a")]
+        [InlineData((float)234)]
+        public void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
         {
-            Assert.Equal(expected, double.IsInfinity(d));
-        }
-
-        [Fact]
-        public static void NaN()
-        {
-            Assert.Equal(0.0 / 0.0, double.NaN);
-        }
-
-        [Theory]
-        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
-        [InlineData(double.MinValue, false)]            // Min Negative Normal
-        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
-        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
-        [InlineData(-0.0, false)]                       // Negative Zero
-        [InlineData(double.NaN, true)]                  // NaN
-        [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
-        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
-        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
-        [InlineData(double.MaxValue, false)]            // Max Positive Normal
-        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
-        public static void IsNaN(double d, bool expected)
-        {
-            Assert.Equal(expected, double.IsNaN(d));
-        }
-
-        [Fact]
-        public static void NegativeInfinity()
-        {
-            Assert.Equal(-1.0 / 0.0, double.NegativeInfinity);
-        }
-
-        [Theory]
-        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
-        [InlineData(double.MinValue, false)]            // Min Negative Normal
-        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
-        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
-        [InlineData(-0.0, false)]                       // Negative Zero
-        [InlineData(double.NaN, false)]                 // NaN
-        [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
-        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
-        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
-        [InlineData(double.MaxValue, false)]            // Max Positive Normal
-        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
-        public static void IsNegativeInfinity(double d, bool expected)
-        {
-            Assert.Equal(expected, double.IsNegativeInfinity(d));
-        }
-
-        [Fact]
-        public static void PositiveInfinity()
-        {
-            Assert.Equal(1.0 / 0.0, double.PositiveInfinity);
-        }
-
-        [Theory]
-        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
-        [InlineData(double.MinValue, false)]            // Min Negative Normal
-        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
-        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
-        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
-        [InlineData(-0.0, false)]                       // Negative Zero
-        [InlineData(double.NaN, false)]                 // NaN
-        [InlineData(0.0, false)]                        // Positive Zero
-        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
-        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
-        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
-        [InlineData(double.MaxValue, false)]            // Max Positive Normal
-        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
-        public static void IsPositiveInfinity(double d, bool expected)
-        {
-            Assert.Equal(expected, double.IsPositiveInfinity(d));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((double)123).CompareTo(value));
         }
 
         [Theory]
@@ -192,12 +71,27 @@ namespace System.Tests
             Assert.Equal(expected, Math.Sign(d1.CompareTo(value)));
         }
 
-        [Theory]
-        [InlineData("a")]
-        [InlineData((float)234)]
-        public void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
+        [Fact]
+        public static void Ctor_Empty()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => ((double)123).CompareTo(value));
+            var i = new double();
+            Assert.Equal(0, i);
+        }
+
+        [Fact]
+        public static void Ctor_Value()
+        {
+            double d = 41;
+            Assert.Equal(41, d);
+
+            d = 41.3;
+            Assert.Equal(41.3, d);
+        }
+
+        [Fact]
+        public static void Epsilon()
+        {
+            Assert.Equal(4.9406564584124654E-324, double.Epsilon);
         }
 
         [Theory]
@@ -236,94 +130,104 @@ namespace System.Tests
             Assert.Equal(TypeCode.Double, 0.0.GetTypeCode());
         }
 
-        public static IEnumerable<object[]> ToString_TestData()
+        [Theory]
+        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
+        public static void IsInfinity(double d, bool expected)
         {
-            yield return new object[] { double.MinValue, "G", null, "-1.79769313486232E+308" };
-            yield return new object[] { (double)-4567, "G", null, "-4567" };
-            yield return new object[] { -4567.89101, "G", null, "-4567.89101" };
-            yield return new object[] { (double)0, "G", null, "0" };
-            yield return new object[] { (double)4567, "G", null, "4567" };
-            yield return new object[] { 4567.89101, "G", null, "4567.89101" };
-            yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
-
-            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
-            yield return new object[] { double.NaN, "G", null, "NaN" };
-
-            yield return new object[] { (double)2468, "N", null, "2,468.00" };
-
-            // Changing the negative pattern doesn't do anything without also passing in a format string
-            var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
-            yield return new object[] { (double)-6310, "G", customNegativePattern, "-6310" };
-
-            var customNegativeSignDecimalGroupSeparator = new NumberFormatInfo()
-            {
-                NegativeSign = "#",
-                NumberDecimalSeparator = "~",
-                NumberGroupSeparator = "*"
-            };
-            yield return new object[] { (double)-2468, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
-            yield return new object[] { (double)2468, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
-
-            var customNegativeSignGroupSeparatorNegativePattern = new NumberFormatInfo()
-            {
-                NegativeSign = "xx", // Set to trash to make sure it doesn't show up
-                NumberGroupSeparator = "*",
-                NumberNegativePattern = 0,
-            };
-            yield return new object[] { (double)-2468, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
-
-            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
-            yield return new object[] { double.NaN, "G", invariantFormat, "NaN" };
-            yield return new object[] { double.PositiveInfinity, "G", invariantFormat, "Infinity" };
-            yield return new object[] { double.NegativeInfinity, "G", invariantFormat, "-Infinity" };
+            Assert.Equal(expected, double.IsInfinity(d));
         }
 
-
-        [Fact]
-        public static void Test_ToString()
+        [Theory]
+        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, true)]                  // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
+        public static void IsNaN(double d, bool expected)
         {
-            RemoteInvoke(() =>
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-                foreach (var testdata in ToString_TestData())
-                {
-                    ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
-                }
-                return SuccessExitCode;
-            }).Dispose();
+            Assert.Equal(expected, double.IsNaN(d));
         }
-        
-        private static void ToString(double d, string format, IFormatProvider provider, string expected)
+
+        [Theory]
+        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
+        public static void IsNegativeInfinity(double d, bool expected)
         {
-            bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
-            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
-            {
-                if (isDefaultProvider)
-                {
-                    Assert.Equal(expected, d.ToString());
-                    Assert.Equal(expected, d.ToString((IFormatProvider)null));
-                }
-                Assert.Equal(expected, d.ToString(provider));
-            }
-            if (isDefaultProvider)
-            {
-                Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
-                Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in upper case
-                Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant(), null));
-                Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), null));
-            }
-            Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant(), provider));
-            Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), provider));
+            Assert.Equal(expected, double.IsNegativeInfinity(d));
+        }
+
+        [Theory]
+        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
+        public static void IsPositiveInfinity(double d, bool expected)
+        {
+            Assert.Equal(expected, double.IsPositiveInfinity(d));
         }
 
         [Fact]
-        public static void ToString_InvalidFormat_ThrowsFormatException()
+        public static void MaxValue()
         {
-            double d = 123;
-            Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
-            Assert.Throws<FormatException>(() => d.ToString("Y", null)); // Invalid format
+            Assert.Equal(1.7976931348623157E+308, double.MaxValue);
+        }
+
+        [Fact]
+        public static void MinValue()
+        {
+            Assert.Equal(-1.7976931348623157E+308, double.MinValue);
+        }
+
+        [Fact]
+        public static void NaN()
+        {
+            Assert.Equal(0.0 / 0.0, double.NaN);
+        }
+
+        [Fact]
+        public static void NegativeInfinity()
+        {
+            Assert.Equal(-1.0 / 0.0, double.NegativeInfinity);
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -469,6 +373,101 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => double.Parse(value, style));
                 Assert.Throws(exceptionType, () => double.Parse(value, style, NumberFormatInfo.CurrentInfo));
             }
+        }
+
+        [Fact]
+        public static void PositiveInfinity()
+        {
+            Assert.Equal(1.0 / 0.0, double.PositiveInfinity);
+        }
+
+        public static IEnumerable<object[]> ToString_TestData()
+        {
+            yield return new object[] { double.MinValue, "G", null, "-1.79769313486232E+308" };
+            yield return new object[] { (double)-4567, "G", null, "-4567" };
+            yield return new object[] { -4567.89101, "G", null, "-4567.89101" };
+            yield return new object[] { (double)0, "G", null, "0" };
+            yield return new object[] { (double)4567, "G", null, "4567" };
+            yield return new object[] { 4567.89101, "G", null, "4567.89101" };
+            yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
+
+            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
+            yield return new object[] { double.NaN, "G", null, "NaN" };
+
+            yield return new object[] { (double)2468, "N", null, "2,468.00" };
+
+            // Changing the negative pattern doesn't do anything without also passing in a format string
+            var customNegativePattern = new NumberFormatInfo() { NumberNegativePattern = 0 };
+            yield return new object[] { (double)-6310, "G", customNegativePattern, "-6310" };
+
+            var customNegativeSignDecimalGroupSeparator = new NumberFormatInfo()
+            {
+                NegativeSign = "#",
+                NumberDecimalSeparator = "~",
+                NumberGroupSeparator = "*"
+            };
+            yield return new object[] { (double)-2468, "N", customNegativeSignDecimalGroupSeparator, "#2*468~00" };
+            yield return new object[] { (double)2468, "N", customNegativeSignDecimalGroupSeparator, "2*468~00" };
+
+            var customNegativeSignGroupSeparatorNegativePattern = new NumberFormatInfo()
+            {
+                NegativeSign = "xx", // Set to trash to make sure it doesn't show up
+                NumberGroupSeparator = "*",
+                NumberNegativePattern = 0,
+            };
+            yield return new object[] { (double)-2468, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
+            yield return new object[] { double.NaN, "G", invariantFormat, "NaN" };
+            yield return new object[] { double.PositiveInfinity, "G", invariantFormat, "Infinity" };
+            yield return new object[] { double.NegativeInfinity, "G", invariantFormat, "-Infinity" };
+        }
+
+        [Fact]
+        public static void Test_ToString()
+        {
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+                foreach (var testdata in ToString_TestData())
+                {
+                    ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
+                }
+                return SuccessExitCode;
+            }).Dispose();
+        }
+        
+        private static void ToString(double d, string format, IFormatProvider provider, string expected)
+        {
+            bool isDefaultProvider = (provider == null || provider == NumberFormatInfo.CurrentInfo);
+            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            {
+                if (isDefaultProvider)
+                {
+                    Assert.Equal(expected, d.ToString());
+                    Assert.Equal(expected, d.ToString((IFormatProvider)null));
+                }
+                Assert.Equal(expected, d.ToString(provider));
+            }
+            if (isDefaultProvider)
+            {
+                Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
+                Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in upper case
+                Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant(), null));
+                Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), null));
+            }
+            Assert.Equal(expected.Replace('e', 'E'), d.ToString(format.ToUpperInvariant(), provider));
+            Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        [Fact]
+        public static void ToString_InvalidFormat_ThrowsFormatException()
+        {
+            double d = 123;
+            Assert.Throws<FormatException>(() => d.ToString("Y")); // Invalid format
+            Assert.Throws<FormatException>(() => d.ToString("Y", null)); // Invalid format
         }
     }
 }
