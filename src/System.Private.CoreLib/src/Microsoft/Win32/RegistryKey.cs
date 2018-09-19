@@ -52,6 +52,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security;
 using System.Text;
 
 namespace Microsoft.Win32
@@ -142,13 +143,6 @@ namespace Microsoft.Win32
                 EnsureNotDisposed();
                 return _keyName;
             }
-        }
-
-        // This dummy method is added to have the same implemenatation of Registry class.
-        // Its not being used anywhere.
-        public RegistryKey CreateSubKey(string subkey)
-        {
-            return null;
         }
 
         private static void FixupPath(StringBuilder path)
@@ -287,7 +281,7 @@ namespace Microsoft.Win32
             {
                 if (throwOnMissingValue)
                 {
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSubKeyValueAbsent);
+                    throw new ArgumentException(SR.Arg_RegSubKeyValueAbsent);
                 }
                 // Otherwise, just return giving no indication to the user.
                 // (For compatibility)
@@ -370,7 +364,7 @@ namespace Microsoft.Win32
             {
                 // We need to throw SecurityException here for compatibility reasons,
                 // although UnauthorizedAccessException will make more sense.
-                ThrowHelper.ThrowSecurityException(ExceptionResource.Security_RegistryPermission);
+                throw new SecurityException(SR.Security_RegistryPermission);
             }
 
             return null;
@@ -873,7 +867,7 @@ namespace Microsoft.Win32
                             {
                                 if (dataStrings[i] == null)
                                 {
-                                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetStrArrNull);
+                                    throw new ArgumentException(SR.Arg_RegSetStrArrNull);
                                 }
                                 sizeInBytes = checked(sizeInBytes + (dataStrings[i].Length + 1) * 2);
                             }
@@ -950,19 +944,19 @@ namespace Microsoft.Win32
             }
             catch (OverflowException)
             {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+                throw new ArgumentException(SR.Arg_RegSetMismatchedKind);
             }
             catch (InvalidOperationException)
             {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+                throw new ArgumentException(SR.Arg_RegSetMismatchedKind);
             }
             catch (FormatException)
             {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+                throw new ArgumentException(SR.Arg_RegSetMismatchedKind);
             }
             catch (InvalidCastException)
             {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegSetMismatchedKind);
+                throw new ArgumentException(SR.Arg_RegSetMismatchedKind);
             }
 
             if (ret == 0)
@@ -1056,7 +1050,7 @@ namespace Microsoft.Win32
         {
             if (_hkey == null)
             {
-                ThrowHelper.ThrowObjectDisposedException(_keyName, ExceptionResource.ObjectDisposed_RegKeyClosed);
+                throw new ObjectDisposedException(_keyName, SR.ObjectDisposed_RegKeyClosed);
             }
         }
 
@@ -1065,7 +1059,7 @@ namespace Microsoft.Win32
             EnsureNotDisposed();
             if (!IsWritable())
             {
-                ThrowHelper.ThrowUnauthorizedAccessException(ExceptionResource.UnauthorizedAccess_RegistryNoWrite);
+                throw new UnauthorizedAccessException(SR.UnauthorizedAccess_RegistryNoWrite);
             }
         }
 
@@ -1113,28 +1107,23 @@ namespace Microsoft.Win32
             while (nextSlash != -1)
             {
                 if ((nextSlash - current) > MaxKeyLength)
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegKeyStrLenBug);
+                    throw new ArgumentException(SR.Arg_RegKeyStrLenBug);
 
                 current = nextSlash + 1;
                 nextSlash = name.IndexOf("\\", current, StringComparison.OrdinalIgnoreCase);
             }
 
             if ((name.Length - current) > MaxKeyLength)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RegKeyStrLenBug);
+                throw new ArgumentException(SR.Arg_RegKeyStrLenBug);
         }
 
         private static void ValidateKeyView(RegistryView view)
         {
             if (view != RegistryView.Default && view != RegistryView.Registry32 && view != RegistryView.Registry64)
             {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidRegistryViewCheck, ExceptionArgument.view);
+                throw new ArgumentException(SR.Argument_InvalidRegistryViewCheck, nameof(view));
             }
         }
-
-        // Win32 constants for error handling
-        private const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
-        private const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
-        private const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
     }
 
     // the name for this API is meant to mimic FileMode, which has similar values

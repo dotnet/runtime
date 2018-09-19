@@ -574,8 +574,8 @@ namespace System
                     // read LastEntry   {(yearN, 1, 1) - MaxValue       }
 
                     // read the FirstEntry and LastEntry key values (ex: "1980", "2038")
-                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1, RegistryValueOptions.None);
-                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1, RegistryValueOptions.None);
+                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1);
+                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1);
 
                     if (first == -1 || last == -1 || first > last)
                     {
@@ -678,7 +678,7 @@ namespace System
 
         private static unsafe bool TryGetTimeZoneEntryFromRegistry(RegistryKey key, string name, out REG_TZI_FORMAT dtzi)
         {
-            byte[] regValue = key.GetValue(name, null, RegistryValueOptions.None) as byte[];
+            byte[] regValue = key.GetValue(name, null) as byte[];
             if (regValue == null || regValue.Length != sizeof(REG_TZI_FORMAT))
             {
                 dtzi = default;
@@ -744,7 +744,7 @@ namespace System
                 //
                 if (result)
                 {
-                    string registryStandardName = key.GetValue(StandardValue, string.Empty, RegistryValueOptions.None) as string;
+                    string registryStandardName = key.GetValue(StandardValue, string.Empty) as string;
                     result = string.Equals(registryStandardName, timeZone.GetStandardName(), StringComparison.Ordinal);
                 }
                 return result;
@@ -873,9 +873,9 @@ namespace System
             daylightName = string.Empty;
 
             // read the MUI_ registry keys
-            string displayNameMuiResource = key.GetValue(MuiDisplayValue, string.Empty, RegistryValueOptions.None) as string;
-            string standardNameMuiResource = key.GetValue(MuiStandardValue, string.Empty, RegistryValueOptions.None) as string;
-            string daylightNameMuiResource = key.GetValue(MuiDaylightValue, string.Empty, RegistryValueOptions.None) as string;
+            string displayNameMuiResource = key.GetValue(MuiDisplayValue, string.Empty) as string;
+            string standardNameMuiResource = key.GetValue(MuiStandardValue, string.Empty) as string;
+            string daylightNameMuiResource = key.GetValue(MuiDaylightValue, string.Empty) as string;
 
             // try to load the strings from the native resource DLL(s)
             if (!string.IsNullOrEmpty(displayNameMuiResource))
@@ -896,15 +896,15 @@ namespace System
             // fallback to using the standard registry keys
             if (string.IsNullOrEmpty(displayName))
             {
-                displayName = key.GetValue(DisplayValue, string.Empty, RegistryValueOptions.None) as string;
+                displayName = key.GetValue(DisplayValue, string.Empty) as string;
             }
             if (string.IsNullOrEmpty(standardName))
             {
-                standardName = key.GetValue(StandardValue, string.Empty, RegistryValueOptions.None) as string;
+                standardName = key.GetValue(StandardValue, string.Empty) as string;
             }
             if (string.IsNullOrEmpty(daylightName))
             {
-                daylightName = key.GetValue(DaylightValue, string.Empty, RegistryValueOptions.None) as string;
+                daylightName = key.GetValue(DaylightValue, string.Empty) as string;
             }
         }
 
