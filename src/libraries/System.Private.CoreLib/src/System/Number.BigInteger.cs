@@ -721,9 +721,11 @@ namespace System
                 }
             }
 
-            [StructLayout(LayoutKind.Sequential, Size = (MaxBlockCount * sizeof(uint)))]
+            [StructLayout(LayoutKind.Sequential, Pack = 1)]
             private struct BlocksBuffer
             {
+                private fixed uint _blocks[MaxBlockCount];
+                
                 public ref uint this[int index]
                 {
                     get
