@@ -525,6 +525,61 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(GetCounts))]
+        public static async Task AddUpdateAndRemoveManyLocals_ReferenceType_NotifyOnChange(int count)
+        {
+            string valueChangedLog = string.Empty;
+            string expectedValueChangedLog = string.Empty;
+            string GetValueChangedLogLine(string previousValue, string currentValue) =>
+                $"{previousValue ?? "(null)"} => {currentValue ?? "(null)"}{Environment.NewLine}";
+            Action<AsyncLocalValueChangedArgs<string>> valueChangedHandler =
+                args => valueChangedLog += GetValueChangedLogLine(args.PreviousValue, args.CurrentValue);
+            void VerifyValueChangedLog()
+            {
+                Assert.Equal(expectedValueChangedLog, valueChangedLog);
+                valueChangedLog = string.Empty;
+                expectedValueChangedLog = string.Empty;
+            }
+
+            var locals = new AsyncLocal<string>[count];
+
+            for (int i = 0; i < locals.Length; i++)
+            {
+                locals[i] = new AsyncLocal<string>(valueChangedHandler);
+                expectedValueChangedLog += GetValueChangedLogLine(locals[i].Value, i.ToString());
+                locals[i].Value = i.ToString();
+                VerifyValueChangedLog();
+
+                for (int j = 0; j <= i; j++)
+                {
+                    Assert.Equal(j.ToString(), locals[j].Value);
+
+                    expectedValueChangedLog += GetValueChangedLogLine(locals[j].Value, (j + 1).ToString());
+                    locals[j].Value = (j + 1).ToString();
+                    Assert.Equal((j + 1).ToString(), locals[j].Value);
+                    VerifyValueChangedLog();
+
+                    expectedValueChangedLog += GetValueChangedLogLine(locals[j].Value, j.ToString());
+                    locals[j].Value = j.ToString();
+                    Assert.Equal(j.ToString(), locals[j].Value);
+                    VerifyValueChangedLog();
+                }
+            }
+
+            for (int i = 0; i < locals.Length; i++)
+            {
+                expectedValueChangedLog += GetValueChangedLogLine(locals[i].Value, null);
+                locals[i].Value = null;
+                Assert.Null(locals[i].Value);
+                VerifyValueChangedLog();
+                for (int j = i + 1; j < locals.Length; j++)
+                {
+                    Assert.Equal(j.ToString(), locals[j].Value);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCounts))]
         public static async Task AsyncLocalsUnwind(int count)
         {
             AsyncLocal<object>[] asyncLocals = new AsyncLocal<object>[count];
