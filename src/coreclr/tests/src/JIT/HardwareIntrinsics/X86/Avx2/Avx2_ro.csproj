@@ -75,16 +75,6 @@
     <Compile Include="Blend.UInt32.85.cs" />
     <Compile Include="BlendVariable.Byte.cs" />
     <Compile Include="BlendVariable.SByte.cs" />
-    <Compile Include="BroadcastScalarToVector128.Byte.cs" />
-    <Compile Include="BroadcastScalarToVector128.SByte.cs" />
-    <Compile Include="BroadcastScalarToVector128.Int16.cs" />
-    <Compile Include="BroadcastScalarToVector128.UInt16.cs" />
-    <Compile Include="BroadcastScalarToVector128.Int32.cs" />
-    <Compile Include="BroadcastScalarToVector128.UInt32.cs" />
-    <Compile Include="BroadcastScalarToVector128.Int64.cs" />
-    <Compile Include="BroadcastScalarToVector128.UInt64.cs" />
-    <Compile Include="BroadcastScalarToVector128.Single.cs" />
-    <Compile Include="BroadcastScalarToVector128.Double.cs" />
     <Compile Include="BroadcastScalarToVector256.Byte.cs" />
     <Compile Include="BroadcastScalarToVector256.SByte.cs" />
     <Compile Include="BroadcastScalarToVector256.Int16.cs" />
