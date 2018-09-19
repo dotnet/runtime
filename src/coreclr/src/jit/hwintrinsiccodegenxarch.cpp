@@ -2304,11 +2304,7 @@ void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
         {
             assert(op2 == nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
-            // tzcnt has false dependency on the target register on Intel Sandy Bridge and Haswell processors,
-            // so insert a `XOR target, target` to break the dependency via XOR triggering register renaming.
-            regNumber targetReg = node->gtRegNum;
-            getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
-            genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()));
+            genXCNTIntrinsic(node, ins);
             break;
         }
 
@@ -2478,11 +2474,7 @@ void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
     assert(node->gtHWIntrinsicId == NI_LZCNT_LeadingZeroCount);
 
     genConsumeOperands(node);
-    // lzcnt has false dependency on the target register on Intel Sandy Bridge and Haswell processors,
-    // so insert a `XOR target, target` to break the dependency via XOR triggering register renaming.
-    regNumber targetReg = node->gtRegNum;
-    getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
-    genHWIntrinsic_R_RM(node, INS_lzcnt, emitTypeSize(node->TypeGet()));
+    genXCNTIntrinsic(node, INS_lzcnt);
     genProduceReg(node);
 }
 
@@ -2508,12 +2500,54 @@ void CodeGen::genPOPCNTIntrinsic(GenTreeHWIntrinsic* node)
     assert(node->gtHWIntrinsicId == NI_POPCNT_PopCount);
 
     genConsumeOperands(node);
-    // popcnt has false dependency on the target register on Intel Sandy Bridge, Haswell, and Skylake processors,
-    // so insert a `XOR target, target` to break the dependency via XOR triggering register renaming.
-    regNumber targetReg = node->gtRegNum;
-    getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
-    genHWIntrinsic_R_RM(node, INS_popcnt, emitTypeSize(node->TypeGet()));
+    genXCNTIntrinsic(node, INS_popcnt);
     genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genXCNTIntrinsic: Generates the code for a lzcnt/tzcnt/popcnt hardware intrinsic node, breaks false dependencies on
+// the target register
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//    ins  - The instruction being generated
+//
+void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
+{
+    // LZCNT/TZCNT/POPCNT have a false dependency on the target register on Intel Sandy Bridge, Haswell, and Skylake
+    // (POPCNT only) processors, so insert a `XOR target, target` to break the dependency via XOR triggering register
+    // renaming, but only if it's not an actual dependency.
+
+    GenTree*  op1        = node->gtGetOp1();
+    regNumber sourceReg1 = REG_NA;
+    regNumber sourceReg2 = REG_NA;
+
+    if (!op1->isContained())
+    {
+        sourceReg1 = op1->gtRegNum;
+    }
+    else if (op1->isIndir())
+    {
+        GenTreeIndir* indir   = op1->AsIndir();
+        GenTree*      memBase = indir->Base();
+
+        if (memBase != nullptr)
+        {
+            sourceReg1 = memBase->gtRegNum;
+        }
+
+        if (indir->HasIndex())
+        {
+            sourceReg2 = indir->Index()->gtRegNum;
+        }
+    }
+
+    regNumber targetReg = node->gtRegNum;
+    if ((targetReg != sourceReg1) && (targetReg != sourceReg2))
+    {
+        getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
+    }
+    genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()));
 }
 
 #endif // FEATURE_HW_INTRINSICS
