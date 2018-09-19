@@ -765,7 +765,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<short> SubtractSaturate(Vector256<short> left, Vector256<short> right) { throw null; }
         public static Vector256<byte> SubtractSaturate(Vector256<byte> left, Vector256<byte> right) { throw null; }
         public static Vector256<ushort> SubtractSaturate(Vector256<ushort> left, Vector256<ushort> right) { throw null; }
-        public static Vector256<ulong> SumAbsoluteDifferences(Vector256<byte> left, Vector256<byte> right) { throw null; }
+        public static Vector256<ushort> SumAbsoluteDifferences(Vector256<byte> left, Vector256<byte> right) { throw null; }
         public static Vector256<sbyte> UnpackHigh(Vector256<sbyte> left, Vector256<sbyte> right) { throw null; }
         public static Vector256<byte> UnpackHigh(Vector256<byte> left, Vector256<byte> right) { throw null; }
         public static Vector256<short> UnpackHigh(Vector256<short> left, Vector256<short> right) { throw null; }
@@ -932,8 +932,8 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Popcnt() { }
         public new static bool IsSupported { get { throw null; } }
-        public static int PopCount(uint value) { throw null; }
-        public static long PopCount(ulong value) { throw null; }
+        public static uint PopCount(uint value) { throw null; }
+        public static ulong PopCount(ulong value) { throw null; }
     }
     public abstract class Sse
     {
@@ -1200,7 +1200,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> MultiplyScalar(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<short> MultiplyHigh(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<ushort> MultiplyHigh(Vector128<ushort> left, Vector128<ushort> right) { throw null; }
-        public static Vector128<int> MultiplyHorizontalAdd(Vector128<short> left, Vector128<short> right) { throw null; }
+        public static Vector128<int> MultiplyAddAdjacent(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<short> MultiplyLow(Vector128<short> left, Vector128<short> right) { throw null; }
         public static Vector128<byte> Or(Vector128<byte> left, Vector128<byte> right) { throw null; }
         public static Vector128<sbyte> Or(Vector128<sbyte> left, Vector128<sbyte> right) { throw null; }
@@ -1234,7 +1234,7 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<double> SetAllVector128(double value) { throw null; }
         public static Vector128<double> SetScalarVector128(double value) { throw null; }
         public static Vector128<T> SetZeroVector128<T>() where T : struct { throw null; }
-        public static Vector128<long> SumAbsoluteDifferences(Vector128<byte> left, Vector128<byte> right) { throw null; }
+        public static Vector128<ushort> SumAbsoluteDifferences(Vector128<byte> left, Vector128<byte> right) { throw null; }
         public static Vector128<int> Shuffle(Vector128<int> value, byte control) { throw null; }
         public static Vector128<uint> Shuffle(Vector128<uint> value, byte control) { throw null; }
         public static Vector128<double> Shuffle(Vector128<double> left, Vector128<double> right, byte control) { throw null; }
