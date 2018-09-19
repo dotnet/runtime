@@ -44,22 +44,6 @@ namespace System
         // We use this explicit definition to avoid the confusion between 0.0 and -0.0.
         internal const double NegativeZero = -0.0;
 
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int GetExponent(double d)
-        {
-            var bits = BitConverter.DoubleToInt64Bits(d);
-            return (int)((bits >> 52) & 0x7FF);
-        }
-
-        [NonVersionable]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static long GetMantissa(double d)
-        {
-            var bits = BitConverter.DoubleToInt64Bits(d);
-            return (bits & 0xFFFFFFFFFFFFF);
-        }
-
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
