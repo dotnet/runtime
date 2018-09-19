@@ -4248,7 +4248,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 					(cmethod->klass == mono_defaults.systemtype_class) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 				ADD_CODE (td, MINT_MONO_LDPTR);
-				gpointer systype = mono_type_get_object_checked (domain, handle, error);
+				gpointer systype = mono_type_get_object_checked (domain, (MonoType*)handle, error);
 				goto_if_nok (error, exit);
 				ADD_CODE (td, get_data_item_index (td, systype));
 				PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
