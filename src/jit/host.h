@@ -5,13 +5,12 @@
 /*****************************************************************************/
 
 #ifdef DEBUG
-#ifndef printf
-#define printf logf
-#endif
 
-#ifndef fprintf
+#undef printf
+#define printf logf
+
+#undef fprintf
 #define fprintf flogf
-#endif
 
 class Compiler;
 class LogEnv
