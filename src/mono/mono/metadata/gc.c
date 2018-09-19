@@ -322,9 +322,11 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
-	gpointer params [1];
-	params [0] = NULL;
-	mono_runtime_try_invoke (finalizer, o, params, &exc, error);
+	if (finalizer) { // null finalizers work fine when using the vcall invoke as Object has an empty one
+		gpointer params [1];
+		params [0] = NULL;
+		mono_runtime_try_invoke (finalizer, o, params, &exc, error);
+	}
 #else
 	runtime_invoke (o, NULL, &exc, NULL);
 #endif
@@ -1292,7 +1294,9 @@ mono_gc_reference_queue_add_internal (MonoReferenceQueue *queue, MonoObject *obj
 	entry->domain = mono_object_domain (obj);
 
 	entry->gchandle = mono_gchandle_new_weakref (obj, TRUE);
+#ifndef HAVE_SGEN_GC
 	mono_object_register_finalizer (obj);
+#endif
 
 	ref_list_push (&queue->queue, entry);
 	return TRUE;
