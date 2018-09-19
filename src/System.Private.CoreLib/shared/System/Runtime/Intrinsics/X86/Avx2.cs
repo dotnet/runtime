@@ -237,6 +237,45 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<byte> BlendVariable(Vector256<byte> left, Vector256<byte> right, Vector256<byte> mask) => BlendVariable(left, right, mask);
 
         /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<short> BlendVariable(Vector256<short> left, Vector256<short> right, Vector256<short> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<ushort> BlendVariable(Vector256<ushort> left, Vector256<ushort> right, Vector256<ushort> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<int> BlendVariable(Vector256<int> left, Vector256<int> right, Vector256<int> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<uint> BlendVariable(Vector256<uint> left, Vector256<uint> right, Vector256<uint> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<long> BlendVariable(Vector256<long> left, Vector256<long> right, Vector256<long> mask) => BlendVariable(left, right, mask);
+        /// <summary>
+        /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
+        /// This intrinsic generates VPBLENDVB that needs a BYTE mask-vector, so users should correctly set each mask byte for the selected elements.
+        /// </summary>
+        public static Vector256<ulong> BlendVariable(Vector256<ulong> left, Vector256<ulong> right, Vector256<ulong> mask) => BlendVariable(left, right, mask);
+
+        /// <summary>
         /// __m128i _mm_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB xmm, xmm
         /// __m128i _mm_broadcastw_epi16 (__m128i a)
