@@ -726,9 +726,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         MONO_INST_NEW ((cfg), (inst), (OP_LCOMPARE_IMM)); \
         inst->sreg1 = sr1;									\
         if (SIZEOF_REGISTER == 4 && COMPILE_LLVM (cfg))  { 	\
-			guint64 _l = (imm);								\
-			inst->inst_imm = _l & 0xffffffff;				\
-			inst->inst_offset = _l >> 32;						\
+			inst->inst_l = (imm); \
 		} else { \
 			inst->inst_imm = (imm);		 \
 		}								 \
