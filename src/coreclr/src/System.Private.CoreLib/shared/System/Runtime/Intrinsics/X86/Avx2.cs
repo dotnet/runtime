@@ -102,6 +102,54 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<sbyte> AlignRight(Vector256<sbyte> left, Vector256<sbyte> right, byte mask) => AlignRight(left, right, mask);
 
         /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<byte> AlignRight(Vector256<byte> left, Vector256<byte> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<short> AlignRight(Vector256<short> left, Vector256<short> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<ushort> AlignRight(Vector256<ushort> left, Vector256<ushort> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<int> AlignRight(Vector256<int> left, Vector256<int> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<uint> AlignRight(Vector256<uint> left, Vector256<uint> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<long> AlignRight(Vector256<long> left, Vector256<long> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m256i _mm256_alignr_epi8 (__m256i a, __m256i b, const int count)
+        ///   VPALIGNR ymm, ymm, ymm/m256, imm8
+        /// This intrinsic generates VPALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector256<ulong> AlignRight(Vector256<ulong> left, Vector256<ulong> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
         /// __m256i _mm256_and_si256 (__m256i a, __m256i b)
         ///   VPAND ymm, ymm, ymm/m256
         /// </summary>
@@ -227,12 +275,12 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
-        ///   PBLENDVB ymm, ymm, ymm/m256, ymm
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<sbyte> BlendVariable(Vector256<sbyte> left, Vector256<sbyte> right, Vector256<sbyte> mask) => BlendVariable(left, right, mask);
         /// <summary>
         /// __m256i _mm256_blendv_epi8 (__m256i a, __m256i b, __m256i mask)
-        ///   PBLENDVB ymm, ymm, ymm/m256, ymm
+        ///   VPBLENDVB ymm, ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<byte> BlendVariable(Vector256<byte> left, Vector256<byte> right, Vector256<byte> mask) => BlendVariable(left, right, mask);
 
