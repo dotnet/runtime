@@ -28,7 +28,7 @@ namespace System
 
         private const int maxRoundingDigits = 15;
 
-        private static double doubleRoundLimit = 1e16d;
+        private const double doubleRoundLimit = 1e16d;
 
         // This table is required for the Round function which can specify the number of digits to round to
         private static double[] roundPower10Double = new double[] {
