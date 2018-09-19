@@ -340,6 +340,59 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<T> BroadcastScalarToVector128<T>(Vector128<T> value) where T : struct { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// __m128i _mm_broadcastb_epi8 (__m128i a)
+        ///   VPBROADCASTB xmm, m8
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// We provide this additional overload for the lack of pointers to managed.
+        /// </summary>
+        public static unsafe Vector128<byte> BroadcastScalarToVector128(byte* source) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_broadcastb_epi8 (__m128i a)
+        ///   VPBROADCASTB xmm, m8
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<sbyte> BroadcastScalarToVector128(sbyte* source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_broadcastw_epi16 (__m128i a)
+        ///   VPBROADCASTW xmm, m16
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<short> BroadcastScalarToVector128(short* source) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_broadcastw_epi16 (__m128i a)
+        ///   VPBROADCASTW xmm, m16
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<ushort> BroadcastScalarToVector128(ushort* source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// __m128i _mm_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD xmm, m32
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<int> BroadcastScalarToVector128(int* source) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_broadcastd_epi32 (__m128i a)
+        ///   VPBROADCASTD xmm, m32
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<uint> BroadcastScalarToVector128(uint* source) { throw new PlatformNotSupportedException(); }
+        
+        /// <summary>
+        /// __m128i _mm_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ xmm, m64
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<long> BroadcastScalarToVector128(long* source) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_broadcastq_epi64 (__m128i a)
+        ///   VPBROADCASTQ xmm, m64
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe Vector128<ulong> BroadcastScalarToVector128(ulong* source) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m256i _mm256_broadcastb_epi8 (__m128i a)
         ///   VPBROADCASTB ymm, xmm
         /// __m256i _mm256_broadcastw_epi16 (__m128i a)
@@ -358,41 +411,49 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m8
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<sbyte> BroadcastVector128ToVector256(sbyte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m8
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<byte> BroadcastVector128ToVector256(byte* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m16
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<short> BroadcastVector128ToVector256(short* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m16
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<ushort> BroadcastVector128ToVector256(ushort* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m32
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<int> BroadcastVector128ToVector256(int* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m32
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<uint> BroadcastVector128ToVector256(uint* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m64
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<long> BroadcastVector128ToVector256(long* address) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_broadcastsi128_si256 (__m128i a)
         ///   VBROADCASTI128 xmm, m64
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
         public static unsafe Vector256<ulong> BroadcastVector128ToVector256(ulong* address) { throw new PlatformNotSupportedException(); }
 
