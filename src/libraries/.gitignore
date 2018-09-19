@@ -278,3 +278,6 @@ Session.vim
 # Private test configuration and binaries.
 config.ps1
 **/IISApplications
+
+# VS debug support files
+launchSettings.json
