@@ -239,6 +239,10 @@ namespace JitBench
             {
                 return "netcoreapp3.0";
             }
+            else if (runtimeVersion.StartsWith("2.2"))
+            {
+                return "netcoreapp2.2";
+            }
             else if (runtimeVersion.StartsWith("2.1"))
             {
                 return "netcoreapp2.1";
@@ -264,6 +268,10 @@ namespace JitBench
             if (targetFrameworkMoniker == "netcoreapp3.0")
             {
                 return "3.0.100-alpha1-009410";
+            }
+            else if (targetFrameworkMoniker == "netcoreapp2.2")
+            {
+                return "2.2.100-preview2-009404";
             }
             else if (targetFrameworkMoniker == "netcoreapp2.1")
             {
