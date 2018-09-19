@@ -40,6 +40,55 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<sbyte> AlignRight(Vector128<sbyte> left, Vector128<sbyte> right, byte mask) => AlignRight(left, right, mask);
 
         /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<byte> AlignRight(Vector128<byte> left, Vector128<byte> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<short> AlignRight(Vector128<short> left, Vector128<short> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<ushort> AlignRight(Vector128<ushort> left, Vector128<ushort> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<int> AlignRight(Vector128<int> left, Vector128<int> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<uint> AlignRight(Vector128<uint> left, Vector128<uint> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<long> AlignRight(Vector128<long> left, Vector128<long> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
+        /// __m128i _mm_alignr_epi8 (__m128i a, __m128i b, int count)
+        ///   PALIGNR xmm, xmm/m128, imm8
+        /// This intrinsic generates PALIGNR that operates over bytes rather than elements of the vectors.
+        /// </summary>
+        public static Vector128<ulong> AlignRight(Vector128<ulong> left, Vector128<ulong> right, byte mask) => AlignRight(left, right, mask);
+
+        /// <summary>
         /// __m128i _mm_hadd_epi16 (__m128i a, __m128i b)
         ///   PHADDW xmm, xmm/m128
         /// </summary>
