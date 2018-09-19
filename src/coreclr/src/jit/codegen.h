@@ -958,6 +958,7 @@ protected:
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
+    void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
                                          regNumber                 nonConstImmReg,
