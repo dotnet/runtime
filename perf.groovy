@@ -39,7 +39,12 @@ def static getOSGroup(def os) {
 
                         def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                             // Set the label.
-                            label('windows_server_2016_clr_perf')
+                            if (isSmoketest) {
+                                label('Windows.Amd64.ClientRS4.DevEx.15.8.Perf')
+                            }
+                            else {
+                                label('windows_server_2016_clr_perf')
+                            }
                             wrappers {
                                 credentialsBinding {
                                     string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
@@ -102,9 +107,6 @@ def static getOSGroup(def os) {
                             }
                         }
 
-                        if (isSmoketest) {
-                            Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
-                        }
                         def archiveSettings = new ArchivalSettings()
                         archiveSettings.addFiles('bin/sandbox_logs/**/*_log.txt')
                         archiveSettings.addFiles('bin/sandbox_logs/**/*.csv')
