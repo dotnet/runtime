@@ -76,7 +76,6 @@ static FILE *mini_stats_fd;
 static void mini_usage (void);
 static void mono_runtime_set_execution_mode (MonoEEMode mode);
 static int mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
-static void mono_interp_threads_suspend_check (void);
 
 #ifdef HOST_WIN32
 /* Need this to determine whether to detach console */
@@ -2681,9 +2680,6 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 	default:
 		g_error ("Unknown execution-mode %d", mode);
 	}
-	
-	if (mono_use_interpreter)
-		mono_interp_threads_suspend_check ();
 }
 
 /**
@@ -2722,16 +2718,6 @@ mono_jit_set_trace_options (const char* options)
 		return FALSE;
 	mono_jit_trace_calls = trace_opt;
 	return TRUE;
-}
-
-static void
-mono_interp_threads_suspend_check (void)
-{
-	// FIXME: Add safepoint support and GC thread state transitions to the interpreter
-	if (mono_threads_are_safepoints_enabled ()) {
-		g_warning ("Interpreter does not support safepoints. Cannot use %s suspend with the interpreter.", mono_threads_suspend_policy_name ());
-		mono_threads_suspend_override_policy (MONO_THREADS_SUSPEND_FULL_PREEMPTIVE);
-	}
 }
 
 /**

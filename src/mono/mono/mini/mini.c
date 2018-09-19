@@ -2920,6 +2920,17 @@ mono_insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
+
+		if (info && (info->subtype == WRAPPER_SUBTYPE_INTERP_IN || info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)) {
+			/* These wrappers shouldn't do any icalls */
+			if (cfg->verbose_level > 1)
+				printf ("SKIPPING SAFEPOINTS for interp-in wrappers.\n");
+			return;
+		}
+	}
+
 	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
 	if (cfg->verbose_level > 2)
