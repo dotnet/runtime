@@ -1,0 +1,13 @@
+System.Buffers.Tests                 # timeout. baseline and jit stress.
+System.Drawing.Common.Tests          # bad result data. baseline and jit stress.
+System.Collections.Immutable.Tests   # JitStress=2
+System.Collections.Tests             # JitStress=2
+System.Linq.Expressions.Tests        # JitStress=1
+System.Linq.Tests                    # JitStress=2
+System.Net.NameResolution.Functional.Tests # baseline
+System.Net.NameResolution.Pal.Tests  # baseline
+System.Numerics.Vectors.Tests        # JitStress=2
+System.Runtime.Serialization.Formatters.Tests # baseline + many stress variants
+System.Security.Cryptography.Algorithms.Tests # bad result. baseline and jit stress.
+System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts + Tiered only
+System.Threading.Tests               # bad result. baseline
