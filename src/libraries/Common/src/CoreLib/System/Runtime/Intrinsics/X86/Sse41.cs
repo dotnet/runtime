@@ -383,6 +383,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   PMULLD xmm, xmm/m128
         /// </summary>
         public static Vector128<int> MultiplyLow(Vector128<int> left, Vector128<int> right) => MultiplyLow(left, right);
+        /// <summary>
+        /// __m128i _mm_mullo_epi32 (__m128i a, __m128i b)
+        ///   PMULLD xmm, xmm/m128
+        /// </summary>
+        public static Vector128<uint> MultiplyLow(Vector128<uint> left, Vector128<uint> right) => MultiplyLow(left, right);
 
         /// <summary>
         /// __m128i _mm_packus_epi32 (__m128i a, __m128i b)
