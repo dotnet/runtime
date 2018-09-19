@@ -456,6 +456,7 @@ void Precode::ResetTargetInterlocked()
 BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
 {
     WRAPPER_NO_CONTRACT;
+    _ASSERTE(!IsPointingToPrestub(target));
 
     PCODE expected = GetTarget();
     BOOL ret = FALSE;
@@ -498,7 +499,6 @@ BOOL Precode::SetTargetInterlocked(PCODE target, BOOL fOnlyRedirectFromPrestub)
     // Although executable code is modified on x86/x64, a FlushInstructionCache() is not necessary on those platforms due to the
     // interlocked operation above (see ClrFlushInstructionCache())
 
-    _ASSERTE(!IsPointingToPrestub());
     return ret;
 }
 
