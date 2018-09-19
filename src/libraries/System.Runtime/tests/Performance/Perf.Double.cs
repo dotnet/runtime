@@ -89,28 +89,8 @@ namespace System.Tests
             string[] formats =
             {
                 "R",    // Roundtrip
-                "G",    // General
                 "E",    // Exponential
                 "F",    // Fixed Point
-            };
-
-            string[] precisions =
-            {
-                "",     // Default
-                "0",    // Zero
-                "1",    // One
-                "2",    // Two
-                "3",    // Three
-                "4",    // Four
-                "5",    // Five
-                "6",    // Single, Lower Significant Digits of Precision
-                "9",    // Single, Upper Significant Digits of Precision
-                "12",   // Single, IEEE defined 'H' Digits of Precision
-                "15",   // Double, Lower Significant Digits of Precision
-                "17",   // Double, Upper Significant Digits of Precision
-                "20",   // Double, IEEE defined 'H' Digits of Precision
-                "50",   // Soft Maximum
-                "99",   // Maximum
             };
 
             double[] specialTestValues =    // 10_000_000 iterations
@@ -146,24 +126,19 @@ namespace System.Tests
 
             foreach (string format in formats)
             {
-                foreach (string precision in precisions)
+                foreach (float testValue in specialTestValues)
                 {
-                    var specifier = format + precision;
+                    yield return new object[] { format, testValue, 10_000_000 };
+                }
 
-                    foreach (float testValue in specialTestValues)
-                    {
-                        yield return new object[] { specifier, testValue, 10_000_000 };
-                    }
+                foreach (float testValue in normalTestValues)
+                {
+                    yield return new object[] { format, testValue, 1_000_000 };
+                }
 
-                    foreach (float testValue in normalTestValues)
-                    {
-                        yield return new object[] { specifier, testValue, 1_000_000 };
-                    }
-
-                    foreach (float testValue in edgeTestValues)
-                    {
-                        yield return new object[] { specifier, testValue, 100_000 };
-                    }
+                foreach (float testValue in edgeTestValues)
+                {
+                    yield return new object[] { format, testValue, 100_000 };
                 }
             }
         }
