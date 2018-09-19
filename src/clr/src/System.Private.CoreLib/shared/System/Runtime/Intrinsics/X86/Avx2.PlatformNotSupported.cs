@@ -1285,10 +1285,21 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector256<short> MultiplyLow(Vector256<short> left, Vector256<short> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m256i _mm256_mullo_epi16 (__m256i a, __m256i b)
+        ///   VPMULLW ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<ushort> MultiplyLow(Vector256<ushort> left, Vector256<ushort> right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// __m256i _mm256_mullo_epi32 (__m256i a, __m256i b)
         ///   VPMULLD ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<int> MultiplyLow(Vector256<int> left, Vector256<int> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m256i _mm256_mullo_epi32 (__m256i a, __m256i b)
+        ///   VPMULLD ymm, ymm, ymm/m256
+        /// </summary>
+        public static Vector256<uint> MultiplyLow(Vector256<uint> left, Vector256<uint> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m256i _mm256_or_si256 (__m256i a, __m256i b)
