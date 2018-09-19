@@ -28,7 +28,7 @@ namespace System
             1e0f, 1e1f, 1e2f, 1e3f, 1e4f, 1e5f, 1e6f
         };
 
-        private static float singleRoundLimit = 1e8f;
+        private const float singleRoundLimit = 1e8f;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Abs(float x)
