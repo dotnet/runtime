@@ -900,6 +900,11 @@ namespace System.Runtime.Intrinsics.X86
         ///   PMULLW xmm, xmm/m128
         /// </summary>
         public static Vector128<short> MultiplyLow(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        /// __m128i _mm_mullo_epi16 (__m128i a,  __m128i b)
+        ///   PMULLW xmm, xmm/m128
+        /// </summary>
+        public static Vector128<ushort> MultiplyLow(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_or_si128 (__m128i a,  __m128i b)
