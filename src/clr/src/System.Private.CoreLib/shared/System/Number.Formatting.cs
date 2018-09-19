@@ -2310,8 +2310,9 @@ SkipRounding:
 
         private static long ExtractFractionAndBiasedExponent(double value, out int exponent)
         {
-            long fraction = double.GetMantissa(value);
-            exponent = double.GetExponent(value);
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            long fraction = (bits & 0xFFFFFFFFFFFFF);
+            exponent = (int)((bits >> 52) & 0x7FF);
 
             if (exponent != 0)
             {
