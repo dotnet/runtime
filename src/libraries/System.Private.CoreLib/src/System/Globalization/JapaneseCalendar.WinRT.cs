@@ -46,12 +46,12 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        private static string[] JapaneseErasEnglishNames = new string[] { "M", "T", "S", "H" };
+        private static readonly string[] s_JapaneseErasEnglishNames = new string[] { "M", "T", "S", "H" };
 
         private static string GetJapaneseEnglishEraName(int era)
         {
             Debug.Assert(era > 0);
-            return era <= JapaneseErasEnglishNames.Length ? JapaneseErasEnglishNames[era - 1] : " ";
+            return era <= s_JapaneseErasEnglishNames.Length ? s_JapaneseErasEnglishNames[era - 1] : " ";
         }
 
         private static bool GetJapaneseEraInfo(int era, out DateTimeOffset dateOffset, out string eraName, out string abbreviatedEraName)
