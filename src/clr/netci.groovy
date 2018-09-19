@@ -994,7 +994,11 @@ def static getStressModeDisplayName(def scenario) {
         def prefixLength = 'COMPlus_'.length()
         if (k.length() >= prefixLength) {
             def modeName = k.substring(prefixLength, k.length())
-            displayStr += ' ' + modeName + '=' + v
+            if (displayStr != '') {
+                // Separate multiple variables with a space.
+                displayStr += ' '
+            }
+            displayStr += modeName + '=' + v
         }
     }
 
