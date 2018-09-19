@@ -1997,7 +1997,7 @@ mono_thread_internal_current (void)
 	return res;
 }
 
-static MonoInternalThreadHandle
+MonoInternalThreadHandle
 mono_thread_internal_current_handle (void)
 {
 	return MONO_HANDLE_NEW (MonoInternalThread, mono_thread_internal_current ());
@@ -6002,6 +6002,12 @@ mono_thread_internal_is_current (MonoInternalThread *internal)
 {
 	g_assert (internal);
 	return mono_native_thread_id_equals (mono_native_thread_id_get (), MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
+}
+
+gboolean
+mono_thread_internal_is_current_handle (MonoInternalThreadHandle internal)
+{
+	return mono_thread_internal_is_current (MONO_HANDLE_RAW (internal));
 }
 
 void

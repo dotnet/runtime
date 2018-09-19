@@ -36,27 +36,27 @@ gpointer
 mono_w32mutex_open (const gchar* utf8_name, gint32 right G_GNUC_UNUSED, gint32 *error);
 
 static void
-thread_own_mutex (MonoInternalThread *internal, gpointer handle, MonoW32Handle *handle_data)
+thread_own_mutex (MonoInternalThreadHandle internal, gpointer handle, MonoW32Handle *handle_data)
 {
 	/* if we are not on the current thread, there is a
 	 * race condition when allocating internal->owned_mutexes */
-	g_assert (mono_thread_internal_is_current (internal));
+	g_assert (mono_thread_internal_is_current_handle (internal));
 
-	if (!internal->owned_mutexes)
-		internal->owned_mutexes = g_ptr_array_new ();
+	if (!MONO_HANDLE_GETVAL (internal, owned_mutexes))
+		MONO_HANDLE_SETVAL(internal, owned_mutexes, GPtrArray*, g_ptr_array_new ());
 
-	g_ptr_array_add (internal->owned_mutexes, mono_w32handle_duplicate (handle_data));
+	g_ptr_array_add (MONO_HANDLE_GETVAL (internal, owned_mutexes), mono_w32handle_duplicate (handle_data));
 }
 
 static void
-thread_disown_mutex (MonoInternalThread *internal, gpointer handle)
+thread_disown_mutex (MonoInternalThreadHandle internal, gpointer handle)
 {
 	gboolean removed;
 
-	g_assert (mono_thread_internal_is_current (internal));
+	g_assert (mono_thread_internal_is_current_handle (internal));
 
-	g_assert (internal->owned_mutexes);
-	removed = g_ptr_array_remove (internal->owned_mutexes, handle);
+	g_assert (MONO_HANDLE_GETVAL (internal, owned_mutexes));
+	removed = g_ptr_array_remove (MONO_HANDLE_GETVAL (internal, owned_mutexes), handle);
 	g_assert (removed);
 
 	mono_w32handle_close (handle);
@@ -65,6 +65,8 @@ thread_disown_mutex (MonoInternalThread *internal, gpointer handle)
 static void
 mutex_handle_signal (MonoW32Handle *handle_data)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoW32HandleMutex *mutex_handle;
 	pthread_t tid;
 
@@ -86,7 +88,7 @@ mutex_handle_signal (MonoW32Handle *handle_data)
 		mutex_handle->recursion--;
 
 		if (mutex_handle->recursion == 0) {
-			thread_disown_mutex (mono_thread_internal_current (), handle_data);
+			thread_disown_mutex (mono_thread_internal_current_handle (), handle_data);
 
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_MUTEX, "%s: unlocking %s handle %p, tid: %p recusion : %d",
 				__func__, mono_w32handle_get_typename (handle_data->type), handle_data, (gpointer) mutex_handle->tid, mutex_handle->recursion);
@@ -95,11 +97,15 @@ mutex_handle_signal (MonoW32Handle *handle_data)
 			mono_w32handle_set_signal_state (handle_data, TRUE, FALSE);
 		}
 	}
+
+	HANDLE_FUNCTION_RETURN ();
 }
 
 static gboolean
 mutex_handle_own (MonoW32Handle *handle_data, gboolean *abandoned)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoW32HandleMutex *mutex_handle;
 
 	*abandoned = FALSE;
@@ -116,7 +122,7 @@ mutex_handle_own (MonoW32Handle *handle_data, gboolean *abandoned)
 		mutex_handle->tid = pthread_self ();
 		mutex_handle->recursion = 1;
 
-		thread_own_mutex (mono_thread_internal_current (), handle_data, handle_data);
+		thread_own_mutex (mono_thread_internal_current_handle (), handle_data, handle_data);
 	}
 
 	if (mutex_handle->abandoned) {
@@ -126,7 +132,7 @@ mutex_handle_own (MonoW32Handle *handle_data, gboolean *abandoned)
 
 	mono_w32handle_set_signal_state (handle_data, FALSE, FALSE);
 
-	return TRUE;
+	HANDLE_FUNCTION_RETURN_VAL (TRUE);
 }
 
 static gboolean
@@ -407,7 +413,7 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 		mutex_handle->recursion--;
 
 		if (mutex_handle->recursion == 0) {
-			thread_disown_mutex (mono_thread_internal_current (), handle);
+			thread_disown_mutex (mono_thread_internal_current_handle (), handle);
 
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_MUTEX, "%s: unlocking %s handle %p, tid: %p recusion : %d",
 				__func__, mono_w32handle_get_typename (handle_data->type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
@@ -467,20 +473,24 @@ cleanup:
 }
 
 void
-mono_w32mutex_abandon (MonoInternalThread *internal)
+mono_w32mutex_abandon (MonoInternalThread *internal_raw)
 {
-	g_assert (mono_thread_internal_is_current (internal));
+	HANDLE_FUNCTION_ENTER ()
 
-	if (!internal->owned_mutexes)
-		return;
+	MONO_HANDLE_DCL (MonoInternalThread, internal);
 
-	while (internal->owned_mutexes->len) {
+	g_assert (mono_thread_internal_is_current_handle (internal));
+
+	if (!MONO_HANDLE_GETVAL (internal, owned_mutexes))
+		goto exit;
+
+	while (MONO_HANDLE_GETVAL (internal, owned_mutexes)->len) {
 		MonoW32Handle *handle_data;
 		MonoW32HandleMutex *mutex_handle;
 		MonoNativeThreadId tid;
 		gpointer handle;
 
-		handle = g_ptr_array_index (internal->owned_mutexes, 0);
+		handle = g_ptr_array_index (MONO_HANDLE_GETVAL (internal, owned_mutexes), 0);
 
 		if (!mono_w32handle_lookup_and_ref (handle, &handle_data))
 			g_error ("%s: unkown handle %p", __func__, handle);
@@ -493,7 +503,7 @@ mono_w32mutex_abandon (MonoInternalThread *internal)
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_MUTEX, "%s: abandoning %s handle %p",
 			__func__, mono_w32handle_get_typename (handle_data->type), handle);
 
-		tid = MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid);
+		tid = MONO_UINT_TO_NATIVE_THREAD_ID (MONO_HANDLE_GETVAL (internal, tid));
 
 		if (!pthread_equal (mutex_handle->tid, tid))
 			g_error ("%s: trying to release mutex %p acquired by thread %p from thread %p",
@@ -516,8 +526,11 @@ mono_w32mutex_abandon (MonoInternalThread *internal)
 		mono_w32handle_unref (handle_data);
 	}
 
-	g_ptr_array_free (internal->owned_mutexes, TRUE);
-	internal->owned_mutexes = NULL;
+	g_ptr_array_free (MONO_HANDLE_GETVAL (internal, owned_mutexes), TRUE);
+	MONO_HANDLE_SETVAL(internal, owned_mutexes, GPtrArray*, NULL);
+
+exit:
+	HANDLE_FUNCTION_RETURN ();
 }
 
 MonoW32HandleNamespace*

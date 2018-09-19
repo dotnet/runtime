@@ -386,6 +386,9 @@ void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppC
 
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 
+MonoInternalThreadHandle
+mono_thread_internal_current_handle (void);
+
 void mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
@@ -494,6 +497,9 @@ mono_thread_internal_describe (MonoInternalThread *internal, GString *str);
 
 gboolean
 mono_thread_internal_is_current (MonoInternalThread *internal);
+
+gboolean
+mono_thread_internal_is_current_handle (MonoInternalThreadHandle internal);
 
 gboolean
 mono_threads_is_current_thread_in_protected_block (void);
