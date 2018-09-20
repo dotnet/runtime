@@ -1,9 +1,9 @@
 ## This list file has been produced automatically. Any changes
 ## are subject to being overwritten when reproducing this file.
-## 
+##
 ## Last Updated: 09-May-2018 17:42:09
 ## Commit: aa8dd0d8a9b1bb47e00fcd694342ed5defb46508
-## 
+##
 [int8_il_r.cmd_1]
 RelativePath=JIT\Directed\shift\int8_il_r\int8_il_r.cmd
 WorkingDir=JIT\Directed\shift\int8_il_r
@@ -91364,14 +91364,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[UnpackLow_ro.cmd_11532]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\UnpackLow_ro\UnpackLow_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\UnpackLow_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [LoadAlignedVector128_ro.cmd_11533]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse2\LoadAlignedVector128_ro\LoadAlignedVector128_ro.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\LoadAlignedVector128_ro
@@ -91815,22 +91807,6 @@ HostStyle=0
 [LoadVector128_ro.cmd_11595]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse2\LoadVector128_ro\LoadVector128_ro.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\LoadVector128_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
-[UnpackHigh_r.cmd_11596]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\UnpackHigh_r\UnpackHigh_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\UnpackHigh_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
-[PackSignedSaturate_r.cmd_11597]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\PackSignedSaturate_r\PackSignedSaturate_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\PackSignedSaturate_r
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
@@ -92378,14 +92354,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M15-SP2\b124443\b124443
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW
-HostStyle=0
-
-[PackUnsignedSaturate_ro.cmd_11679]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\PackUnsignedSaturate_ro\PackUnsignedSaturate_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\PackUnsignedSaturate_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
 [Equality.cmd_11680]
@@ -93212,14 +93180,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[PackSignedSaturate_ro.cmd_11804]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\PackSignedSaturate_ro\PackSignedSaturate_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\PackSignedSaturate_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [HorizontalAdd_r.cmd_11805]
 RelativePath=JIT\HardwareIntrinsics\X86\Avx\HorizontalAdd_r\HorizontalAdd_r.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Avx\HorizontalAdd_r
@@ -93468,14 +93428,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
-[UnpackLow_r.cmd_11838]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\UnpackLow_r\UnpackLow_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\UnpackLow_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [ReciprocalSqrtScalar_r.cmd_11839]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse\ReciprocalSqrtScalar_r\ReciprocalSqrtScalar_r.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse\ReciprocalSqrtScalar_r
@@ -93522,14 +93474,6 @@ WorkingDir=JIT\opt\FastTailCall\FastTailCallInlining
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW
-HostStyle=0
-
-[UnpackHigh_ro.cmd_11845]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\UnpackHigh_ro\UnpackHigh_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\UnpackHigh_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
 [ConvertToVector128_r.cmd_11846]
@@ -93607,14 +93551,6 @@ HostStyle=0
 [BroadcastVector128ToVector256_ro.cmd_11857]
 RelativePath=JIT\HardwareIntrinsics\X86\Avx\BroadcastVector128ToVector256_ro\BroadcastVector128ToVector256_ro.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Avx\BroadcastVector128ToVector256_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
-[PackUnsignedSaturate_r.cmd_11858]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\PackUnsignedSaturate_r\PackUnsignedSaturate_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\PackUnsignedSaturate_r
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
