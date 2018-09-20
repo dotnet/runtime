@@ -58,4 +58,4 @@ The list of probing paths ordered according to their priority. First path in the
 * Additional probing paths  
   In these paths the `|arch|/|tfm|` string can be used and will be replaced with the actual values before using the path.
   * `--additionalprobingpath` command line arguments
-  * `additionalProbingPaths` specified in `.runtimeconfig.json` for the app and each framework (highest to lowest)
+  * `additionalProbingPaths` specified in `.runtimeconfig.json` and `.runtimeconfig.dev.json` for the app and each framework (highest to lowest)
