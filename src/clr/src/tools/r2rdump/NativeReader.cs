@@ -11,6 +11,7 @@ namespace R2RDump
     class NativeReader
     {
         private const int BITS_PER_BYTE = 8;
+        private const int BITS_PER_SIZE_T = 32;
 
         /// <summary>
         /// Extracts a 64bit value from the image byte array
@@ -165,7 +166,7 @@ namespace R2RDump
                 if ((currentChunk & numEncodings) == 0)
                 {
                     // Extension bit is not set, sign-extend and we're done.
-                    int sbits = BITS_PER_BYTE - (shift + len);
+                    int sbits = BITS_PER_SIZE_T - (shift + len);
                     result <<= sbits;
                     result >>= sbits;   // This provides the sign extension
                     return result;
