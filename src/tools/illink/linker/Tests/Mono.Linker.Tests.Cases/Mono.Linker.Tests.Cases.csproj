@@ -37,16 +37,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase2.cs" />
-    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary.cs" />
-    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary.cs" />
-    <Compile Include="Advanced\Dependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib.cs" />
-    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyChained.cs" />
-    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyChainedReference.cs" />
-    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
-    <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssembly.cs" />
-    <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction.cs" />
-    <Compile Include="Advanced\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTarget.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetOnUnusedType.cs" />
@@ -202,6 +192,23 @@
     <Compile Include="LinkXml\UnusedGenericTypeWithPreserveAllHasAllMembersPreserved.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInAssemblyLibrary.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase2.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" />
+    <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyField.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyMethod.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyMethodInAssembly.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyMethodInNonReferencedAssembly.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyMethodInNonReferencedAssemblyChained.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyMethodInNonReferencedAssemblyChainedReference.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssembly.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction.cs" />
+    <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
     <Compile Include="References\Individual\CanSkipUnresolved.cs" />
     <Compile Include="References\Individual\Dependencies\CanSkipUnresolved_Library.cs" />
     <Compile Include="References\Dependencies\UserAssembliesAreLinkedByDefault_Library1.cs" />
@@ -374,22 +381,14 @@
     <Compile Include="Symbols\ReferencesWithMixedSymbolTypesAndSymbolLinkingEnabled.cs" />
     <Compile Include="Symbols\ReferenceWithMdb.cs" />
     <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabled.cs" />
-    <Compile Include="Advanced\PreserveDependencyMethod.cs" />
     <Compile Include="Attributes.StructLayout\SequentialClass.cs" />
     <Compile Include="Attributes.StructLayout\AutoClass.cs" />
     <Compile Include="Attributes.StructLayout\UnusedTypeWithSequentialLayoutIsRemoved.cs" />
     <Compile Include="Attributes.StructLayout\ExplicitClass.cs" />
     <Compile Include="Reflection\AssemblyImportedViaReflection.cs" />
     <Compile Include="Reflection\Dependencies\AssemblyDependency.cs" />
-    <Compile Include="Advanced\PreserveDependencyMethodInAssembly.cs" />
-    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInAssemblyLibrary.cs" />
-    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase.cs" />
-    <Compile Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.cs" />
-    <Compile Include="Advanced\PreserveDependencyMethodInNonReferencedAssembly.cs" />
-    <Compile Include="Advanced\PreserveDependencyField.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Advanced\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
     <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
@@ -419,6 +418,7 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveMethodsHasFieldsRemoved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
+    <Content Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsProcessedIfActionIsLink_Lib1.xml" />
@@ -447,7 +447,6 @@
   <ItemGroup>
     <Folder Include="Attributes.StructLayout\" />
     <Folder Include="Reflection\Dependencies\" />
-    <Folder Include="Advanced\Dependencies\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

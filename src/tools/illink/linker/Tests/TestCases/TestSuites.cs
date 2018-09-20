@@ -96,6 +96,12 @@ namespace Mono.Linker.Tests.TestCases
 			Run (testCase);
 		}
 		
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.PreserveDependenciesTests))]
+		public void PreserveDependenciesTests (TestCase testCase)
+		{
+			Run (testCase);
+		}
+		
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.SymbolsTests))]
 		public void SymbolsTests (TestCase testCase)
 		{

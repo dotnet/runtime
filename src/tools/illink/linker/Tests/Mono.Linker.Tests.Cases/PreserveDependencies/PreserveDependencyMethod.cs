@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Advanced {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	class PreserveDependencyMethod {
 		public static void Main ()
 		{
@@ -23,12 +23,12 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 			}
 
 			[Kept]
-			[PreserveDependency ("Dependency1()", "Mono.Linker.Tests.Cases.Advanced.C")]
-			[PreserveDependency ("Dependency2`1    (   T[]  ,   System.Int32  )  ", "Mono.Linker.Tests.Cases.Advanced.C")]
-			[PreserveDependency ("field", "Mono.Linker.Tests.Cases.Advanced.C")]
-			[PreserveDependency ("NextOne (Mono.Linker.Tests.Cases.Advanced.PreserveDependencyMethod+Nested&)", "Mono.Linker.Tests.Cases.Advanced.PreserveDependencyMethod+Nested")]
-			[PreserveDependency ("Property", "Mono.Linker.Tests.Cases.Advanced.C")]
-			[PreserveDependency ("get_Property()", "Mono.Linker.Tests.Cases.Advanced.C")]
+			[PreserveDependency ("Dependency1()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency ("Dependency2`1    (   T[]  ,   System.Int32  )  ", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency ("field", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency ("NextOne (Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested&)", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested")]
+			[PreserveDependency ("Property", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency ("get_Property()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			public static void Method ()
 			{
 			}

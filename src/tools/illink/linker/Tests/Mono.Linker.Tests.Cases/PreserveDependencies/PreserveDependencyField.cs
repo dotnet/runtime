@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Advanced {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	public class PreserveDependencyField {
 		public static void Main ()
 		{

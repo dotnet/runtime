@@ -86,6 +86,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix ("Symbols.");
 		}
 		
+		public static IEnumerable<TestCaseData> PreserveDependenciesTests ()
+		{
+			return NUnitCasesByPrefix ("PreserveDependencies.");
+		}
+		
 		public static IEnumerable<TestCaseData> LibrariesTests ()
 		{
 			return NUnitCasesByPrefix ("Libraries.");

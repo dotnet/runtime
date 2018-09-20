@@ -2,7 +2,7 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Advanced {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	[SetupLinkerUserAction ("copyused")]
 	[SetupCompileBefore ("library.dll", new [] {"Dependencies/PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib.cs"}, addAsReference: false)]
 	[RemovedAssembly ("library.dll")]
@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 		{
 		}
 
-		[PreserveDependency ("MethodPreservedViaDependencyAttribute()", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib", "library")]
+		[PreserveDependency ("MethodPreservedViaDependencyAttribute()", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib", "library")]
 		static void Dependency ()
 		{
 		}

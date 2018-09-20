@@ -1,11 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
-using Mono.Linker.Tests.Cases.Advanced.Dependencies;
+using Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Advanced {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	/// <summary>
-	/// This is an acceptable bug with the currently implementation.  Embeddeded link xml files will not be processed
+	/// This test is here to ensure that link xml embedded in an assembly used by a [PreserveDependency] is not processed if the dependency is not used
 	/// </summary>
 	[IncludeBlacklistStep (true)]
 	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
@@ -16,17 +16,15 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 		resources: new [] {"Dependencies/PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml"},
 		addAsReference: false)]
 	[KeptAssembly ("base.dll")]
-	[RemovedMemberInAssembly ("PreserveDependencyMethodInNonReferencedAssemblyLibrary.dll", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyLibrary", "UnusedMethod()")]
-	public class PreserveDependencyMethodInNonReferencedAssemblyWithEmbeddedXml {
+	[RemovedAssembly ("PreserveDependencyMethodInNonReferencedAssemblyLibrary.dll")]
+	public class PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml {
 		public static void Main ()
 		{
 			var obj = new Foo ();
 			var val = obj.Method ();
-			Dependency ();
 		}
 
-		[Kept]
-		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyLibrary", "PreserveDependencyMethodInNonReferencedAssemblyLibrary")]
+		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyLibrary", "PreserveDependencyMethodInNonReferencedAssemblyLibrary")]
 		static void Dependency ()
 		{
 		}
