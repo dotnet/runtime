@@ -6,7 +6,6 @@
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <PackageLicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</PackageLicenseUrl>
@@ -19,6 +18,10 @@
     <AssemblyOriginatorKeyFile>$(RepoRoot)tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' != 'netstandard2.0' ">
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
   </PropertyGroup>
 
   <PropertyGroup>

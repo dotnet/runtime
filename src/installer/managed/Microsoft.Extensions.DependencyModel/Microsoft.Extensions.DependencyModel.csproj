@@ -3,13 +3,32 @@
 
   <PropertyGroup>
     <Description>Abstractions for reading `.deps` files.</Description>
-    <TargetFrameworks>net451;netstandard1.3;netstandard1.6</TargetFrameworks>
-    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.3;netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>net451;netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.3;netstandard1.6;netstandard2.0</TargetFrameworks>
   </PropertyGroup>
+
+  <Choose>
+    <!--
+    Newtonsoft.Json v11.0.1 is the first verison that targets netstandard2.0. Since we added a target for netstandard2.0
+    so users aren't forced to download the 1.x dependencies, it makes sense to use this version of Newtonsoft.Json.
+    However, we still use the previous (v9.0.1) for other TFMs, so existing users don't need to upgrade their Newtonsoft.Json.
+    For example, the SDK targets net4x and is loaded in VS, so it can't upgrade to a new Newtonsoft.Json.
+    -->
+    <When Condition="'$(TargetFramework)' == 'netstandard2.0'">
+      <PropertyGroup>
+        <NewtonsoftJsonPackageVersion>11.0.1</NewtonsoftJsonPackageVersion>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <NewtonsoftJsonPackageVersion>9.0.1</NewtonsoftJsonPackageVersion>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' Or '$(TargetFramework)' == 'netstandard1.6' ">

@@ -18,7 +18,6 @@
     <PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
     <PackageReference Include="FluentAssertions" Version="4.19.4" />
     <PackageReference Include="Moq" Version="4.7.142" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="NuGet.Versioning" Version="4.0.0" />
     <PackageReference Include="Microsoft.DotNet.ProjectModel" Version="1.0.0-rc2-002702" />
     <ProjectReference Include="..\..\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
