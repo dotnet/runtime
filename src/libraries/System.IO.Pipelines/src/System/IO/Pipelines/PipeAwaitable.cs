@@ -67,7 +67,7 @@ namespace System.IO.Pipelines
             _completionState = null;
 
             completionData = default;
-            
+
             if (!ReferenceEquals(currentCompletion, s_awaitableIsCompleted) &&
                 !ReferenceEquals(currentCompletion, s_awaitableIsNotCompleted))
             {

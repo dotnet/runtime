@@ -350,6 +350,8 @@ namespace System.IO.Pipelines
                 }
 
                 // Complete reader only if new data was pushed into the pipe
+                // Avoid throwing in between completing the reader and scheduling the callback
+                // if the intent is to allow pipe to continue reading the data
                 if (!wasEmpty)
                 {
                     _readerAwaitable.Complete(out completionData);
