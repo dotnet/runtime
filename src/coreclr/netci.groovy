@@ -1560,7 +1560,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 break
             }
             if (jobRequiresLimitedHardware(architecture, os)) {
-                if ((architecture == 'arm64') && !isCoreFxScenario(scenario)) {
+                if ((architecture == 'arm64') && (os == 'Ubuntu16.04') && !isCoreFxScenario(scenario)) {
                     // These jobs are very fast on Linux/arm64 hardware, so run them daily.
                     // TODO: When the corefx jobs are made to run in parallel, run those
                     // jobs daily as well.
