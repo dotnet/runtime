@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-using Microsoft.Win32;
+using Internal.Win32;
 
 namespace System.Globalization
 {

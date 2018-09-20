@@ -10,9 +10,9 @@ using System.Security;
 using System.Text;
 using System.Threading;
 
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 
+using Internal.Win32;
 using Internal.Runtime.CompilerServices;
 
 using REG_TZI_FORMAT = Interop.Kernel32.REG_TZI_FORMAT;

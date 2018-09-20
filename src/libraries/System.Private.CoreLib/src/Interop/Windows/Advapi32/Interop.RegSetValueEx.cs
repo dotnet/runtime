@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
+#if REGISTRY_ASSEMBLY
 using Microsoft.Win32.SafeHandles;
+#else
+using Internal.Win32.SafeHandles;
+#endif
 using System;
 using System.Runtime.InteropServices;
 
@@ -16,7 +19,7 @@ internal partial class Interop
             SafeRegistryHandle hKey,
             string lpValueName,
             int Reserved,
-            RegistryValueKind dwType,
+            int dwType,
             byte[] lpData,
             int cbData);
 
@@ -25,7 +28,7 @@ internal partial class Interop
             SafeRegistryHandle hKey,
             string lpValueName,
             int Reserved,
-            RegistryValueKind dwType,
+            int dwType,
             char[] lpData,
             int cbData);
 
@@ -34,7 +37,7 @@ internal partial class Interop
             SafeRegistryHandle hKey,
             string lpValueName,
             int Reserved,
-            RegistryValueKind dwType,
+            int dwType,
             ref int lpData,
             int cbData);
 
@@ -43,7 +46,7 @@ internal partial class Interop
             SafeRegistryHandle hKey,
             string lpValueName,
             int Reserved,
-            RegistryValueKind dwType,
+            int dwType,
             ref long lpData,
             int cbData);
 
@@ -52,7 +55,7 @@ internal partial class Interop
             SafeRegistryHandle hKey,
             string lpValueName,
             int Reserved,
-            RegistryValueKind dwType,
+            int dwType,
             string lpData,
             int cbData);
     }
