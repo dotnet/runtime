@@ -1309,8 +1309,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             // TEMPORARY: make arm64 Linux innerloop jobs push jobs, not default triggered jobs, until we have experience
             //            with the machines running these jobs (and the jobs themselves), to understand how robust they are.
             // We should never get here (in the "innerloop cases) for non-PR jobs, except for this TEMPORARY exception.
+            // Only trigger the flow job, not the build job.
             assert (isInnerloopTestScenario(scenario) && (architecture == 'arm64') && (os == 'Ubuntu16.04') && (configuration == 'Checked'))
-            addGithubPushTriggerHelper(job)
+            if (isFlowJob) {
+                addGithubPushTriggerHelper(job)
+            }
             break
 
         case 'crossgen_comparison':
@@ -3644,6 +3647,12 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
     // The various "innerloop" jobs are only available as PR triggered.
 
     if (!isPR) {
+        if (isInnerloopTestScenario(scenario) && (architecture == 'arm64') && (os == 'Ubuntu16.04') && (configuration == 'Checked')) {
+            // TEMPORARY: make arm64 Linux innerloop jobs push jobs, not default triggered jobs, until we have experience
+            //            with the machines running these jobs (and the jobs themselves), to understand how robust they are.
+            return true
+        }
+
         if (isInnerloopTestScenario(scenario)) {
             return false
         }
