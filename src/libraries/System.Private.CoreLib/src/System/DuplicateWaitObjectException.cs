@@ -21,28 +21,16 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DuplicateWaitObjectException : ArgumentException
     {
-        private static volatile string s_duplicateWaitObjectMessage = null;
-
-        private static string DuplicateWaitObjectMessage
-        {
-            get
-            {
-                if (s_duplicateWaitObjectMessage == null)
-                    s_duplicateWaitObjectMessage = SR.Arg_DuplicateWaitObjectException;
-                return s_duplicateWaitObjectMessage;
-            }
-        }
-
         // Creates a new DuplicateWaitObjectException with its message 
         // string set to a default message.
         public DuplicateWaitObjectException()
-            : base(DuplicateWaitObjectMessage)
+            : base(SR.Arg_DuplicateWaitObjectException)
         {
             HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(string parameterName)
-            : base(DuplicateWaitObjectMessage, parameterName)
+            : base(SR.Arg_DuplicateWaitObjectException, parameterName)
         {
             HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
