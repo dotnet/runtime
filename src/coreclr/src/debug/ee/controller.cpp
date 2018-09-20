@@ -2730,7 +2730,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
-        DebuggerDataBreakpoint *pDataBreakpoint = new DebuggerDataBreakpoint(thread);
+        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
         pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
 
