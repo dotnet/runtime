@@ -421,6 +421,20 @@ public:
     // The Normal value is the value number of the expression when no exceptions occurred
     ValueNum VNNormalValue(ValueNumPair vnp, ValueNumKind vnk);
 
+    // Given a "vnp", get the NormalValuew for the VNK_Liberal part of that ValueNum
+    // The Normal value is the value number of the expression when no exceptions occurred
+    inline ValueNum VNLiberalNormalValue(ValueNumPair vnp)
+    {
+        return VNNormalValue(vnp, VNK_Liberal);
+    }
+
+    // Given a "vnp", get the NormalValuew for the VNK_Conservative part of that ValueNum
+    // The Normal value is the value number of the expression when no exceptions occurred
+    inline ValueNum VNConservativeNormalValue(ValueNumPair vnp)
+    {
+        return VNNormalValue(vnp, VNK_Conservative);
+    }
+
     // Given a "vnp", get the Normal values for both the liberal and conservative parts of "vnp"
     // The Normal value is the value number of the expression when no exceptions occurred
     ValueNumPair VNPNormalPair(ValueNumPair vnp);
