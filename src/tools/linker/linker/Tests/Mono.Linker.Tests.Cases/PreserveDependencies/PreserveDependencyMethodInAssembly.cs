@@ -2,9 +2,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Advanced
+namespace Mono.Linker.Tests.Cases.PreserveDependencies
 {
-	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInAssemblyLibrary", ".ctor()")]
+	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInAssemblyLibrary", ".ctor()")]
 	[SetupCompileBefore ("library.dll", new [] { "Dependencies/PreserveDependencyMethodInAssemblyLibrary.cs" })]
 	public class PreserveDependencyMethodInAssembly
 	{
@@ -14,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 		}
 
 		[Kept]
-		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInAssemblyLibrary", "library")]
+		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInAssemblyLibrary", "library")]
 		static void Dependency ()
 		{
 		}

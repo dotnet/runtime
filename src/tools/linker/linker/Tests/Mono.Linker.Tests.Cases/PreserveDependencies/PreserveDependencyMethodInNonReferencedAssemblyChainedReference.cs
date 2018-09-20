@@ -1,9 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
-using Mono.Linker.Tests.Cases.Advanced.Dependencies;
+using Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.Advanced {
+namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	[IgnoreTestCase ("Currently failing")]
 	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]
 	[SetupCompileBefore ("base2.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase2.cs" }, references: new [] { "base.dll" }, addAsReference: false)]
@@ -14,9 +14,9 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 	[KeptAssembly ("library.dll")]
 	[KeptAssembly ("reference.dll")]
 	[KeptMemberInAssembly ("base.dll", typeof (PreserveDependencyMethodInNonReferencedAssemblyBase), "Method()")]
-	[KeptMemberInAssembly ("base2.dll", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyBase2", "Method()")]
-	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary", "Method()")]
-	[KeptMemberInAssembly ("reference.dll", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary", "Method()")]
+	[KeptMemberInAssembly ("base2.dll", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyBase2", "Method()")]
+	[KeptMemberInAssembly ("library.dll", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary", "Method()")]
+	[KeptMemberInAssembly ("reference.dll", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyChainedLibrary", "Method()")]
 	public class PreserveDependencyMethodInNonReferencedAssemblyChainedReference {
 		public static void Main ()
 		{
@@ -26,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.Advanced {
 		}
 		
 		[Kept]
-		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.Advanced.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary", "library")]
+		[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies.PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary", "library")]
 		static void Dependency ()
 		{
 		}

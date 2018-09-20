@@ -1,4 +1,4 @@
-﻿namespace Mono.Linker.Tests.Cases.Advanced.Dependencies {
+﻿namespace Mono.Linker.Tests.Cases.PreserveDependencies.Dependencies {
 	public class PreserveDependencyMethodInNonReferencedAssemblyChainedReferenceLibrary : PreserveDependencyMethodInNonReferencedAssemblyBase {
 		public override string Method ()
 		{
