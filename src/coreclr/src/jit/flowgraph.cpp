@@ -18685,10 +18685,10 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             break;
 
         case GT_INDEX_ADDR:
-            // Evaluate the index first, then the array address
-            assert((tree->gtFlags & GTF_REVERSE_OPS) != 0);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
+            // Evaluate the array first, then the index....
+            assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
             fgSetTreeSeqHelper(tree->AsIndexAddr()->Arr(), isLIR);
+            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
             break;
 
         default:
