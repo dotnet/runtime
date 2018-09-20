@@ -682,38 +682,17 @@
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
   </data>
-  <data name="Arg_RegBadKeyKind" xml:space="preserve">
-    <value>The specified RegistryValueKind is an invalid value.</value>
-  </data>
   <data name="Arg_RegGetOverflowBug" xml:space="preserve">
     <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
   </data>
-  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
-    <value>Registry key name must start with a valid base key name.</value>
-  </data>
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
-  </data>
-  <data name="Arg_RegKeyStrLenBug" xml:space="preserve">
-    <value>Registry key names should not be greater than 255 characters.</value>
-  </data>
-  <data name="Arg_RegSetBadArrType" xml:space="preserve">
-    <value>RegistryKey.SetValue does not support arrays of type '{0}'. Only Byte[] and String[] are supported.</value>
-  </data>
-  <data name="Arg_RegSetMismatchedKind" xml:space="preserve">
-    <value>The type of the value object did not match the specified RegistryValueKind or the object could not be properly converted.</value>
-  </data>
-  <data name="Arg_RegSetStrArrNull" xml:space="preserve">
-    <value>RegistryKey.SetValue does not allow a String[] that contains a null String reference.</value>
   </data>
   <data name="Arg_RegSubKeyValueAbsent" xml:space="preserve">
     <value>No value exists with that name.</value>
   </data>
   <data name="Arg_RegValStrLenBug" xml:space="preserve">
     <value>Registry value names should not be greater than 16,383 characters.</value>
-  </data>
-  <data name="Arg_RemoveArgNotFound" xml:space="preserve">
-    <value>Cannot remove the specified item because it was not found in the specified Collection.</value>
   </data>
   <data name="Arg_ResMgrNotResSet" xml:space="preserve">
     <value>Type parameter must refer to a subclass of ResourceSet.</value>
@@ -3097,9 +3076,6 @@
   <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
     <value>Cannot read from a closed TextReader.</value>
   </data>
-  <data name="ObjectDisposed_RegKeyClosed" xml:space="preserve">
-    <value>Cannot access a closed registry key.</value>
-  </data>
   <data name="ObjectDisposed_ResourceSet" xml:space="preserve">
     <value>Cannot access a closed resource set.</value>
   </data>
@@ -3561,9 +3537,6 @@
   </data>
   <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
     <value>Access to the registry key '{0}' is denied.</value>
-  </data>
-  <data name="UnauthorizedAccess_RegistryNoWrite" xml:space="preserve">
-    <value>Cannot write to the registry key.</value>
   </data>
   <data name="UnauthorizedAccess_SystemDomain" xml:space="preserve">
     <value>Cannot execute an assembly in the system domain.</value>
