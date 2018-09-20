@@ -99,8 +99,9 @@ import os
 import tarfile
 import tempfile
 import re
-import sys
+import shutil
 import subprocess
+import sys
 
 ################################################################################
 # Argument Parser
@@ -525,6 +526,7 @@ def crossgen_corelib(args):
     ni_corelib_filename = os.path.join(ni_corelib_dirname, assembly_name)
     platform_assemblies_paths = [os.path.dirname(il_corelib_filename)]
     crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+    shutil.rmtree(ni_corelib_dirname, ignore_errors=True)
     save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
 def add_ni_extension(filename):
@@ -541,6 +543,7 @@ def crossgen_framework(args):
         ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
         crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
         save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+    shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
 def load_crossgen_result_from_json_file(json_filename):
     with open(json_filename, 'rt') as json_file:
@@ -585,6 +588,7 @@ def crossgen_dotnet_sdk(args):
             ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
             crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
             save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+    shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
 def print_omitted_assemblies_message(omitted_assemblies, dirname):
     print('The information for the following assemblies was omitted from "{0}" directory:'.format(dirname))
