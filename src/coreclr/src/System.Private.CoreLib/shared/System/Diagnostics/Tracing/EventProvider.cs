@@ -10,7 +10,10 @@ using System.Runtime.InteropServices;
 using System.Security;
 #if !CORECLR && !ES_BUILD_PN
 using System.Security.Permissions;
-#endif // !CORECLR && !ES_BUILD_PN
+#endif
+#if CORECLR && PLATFORM_WINDOWS
+using Internal.Win32;
+#endif
 using System.Threading;
 using System;
 
@@ -512,7 +515,7 @@ namespace System.Diagnostics.Tracing
             else
                 regKey = @"Software" + regKey;
 
-            using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regKey))
+            using (var key = Registry.LocalMachine.OpenSubKey(regKey))
             {
                 if (key != null)
                 {
@@ -595,7 +598,7 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR
                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
 #endif
-                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(regKey))
+                using (var key = Registry.LocalMachine.OpenSubKey(regKey))
                 {
                     data =  key?.GetValue(valueName, null) as byte[];
                     if (data != null)
