@@ -648,10 +648,29 @@ def static addToPeriodicView(def job) {
     }
 }
 
-def static addToViews(def job, def isPR, def architecture, def os) {
+def static addToViews(def job, def isFlowJob, def isPR, def architecture, def os, def configuration, def scenario) {
     if (isPR) {
         // No views want PR jobs currently.
         return
+    }
+
+    // We don't want to include in view any job that is only used by a flow job (because we want the views to have only the
+    // "top-level" jobs. Build only jobs are such jobs.
+    if (os == 'Windows_NT_BuildOnly') {
+        return
+    }
+
+    if (!isFlowJob) {
+        // For non-flow jobs, which ones are only used by flow jobs?
+        if ((architecture == 'arm') || (architecture == 'arm64')) {
+            if (isCoreFxScenario(scenario)) {
+                // We have corefx-specific scenario builds for each of the runs, but these are driven by flow jobs.
+                return
+            }
+
+            // We're left with the basic normal/innerloop builds. We might want to remove these from the views also, if desired.
+            // However, there are a few, like the Debug Build, that is build only, not "Build and Test", that we should leave.
+        }
     }
 
     // Add to architecture view.
@@ -2873,12 +2892,7 @@ Constants.allScenarios.each { scenario ->
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
 
-                    // We don't want to include in view any job that is only used by a flow job (because we want the views to have only the
-                    // "top-level" jobs. Build only jobs are such jobs.
-                    if (!isBuildOnly)
-                    {
-                        addToViews(newJob, isPR, architecture, os)
-                    }
+                    addToViews(newJob, false, isPR, architecture, os, configuration, scenario) // isFlowJob == false
 
                     setJobMachineAffinity(architecture, os, true, false, false, newJob) // isBuildJob = true, isTestJob = false, isFlowJob = false
 
@@ -3633,7 +3647,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
         JobReport.Report.addReference(fullTestJobName)
     }
 
-    addToViews(newFlowJob, isPR, architecture, os)
+    addToViews(newFlowJob, true, isPR, architecture, os, configuration, scenario) // isFlowJob = true
 
     setJobMachineAffinity(architecture, os, false, false, true, newFlowJob) // isBuildJob = false, isTestJob = false, isFlowJob = true
 
