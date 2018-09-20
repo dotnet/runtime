@@ -176,7 +176,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	MonoJumpInfo *ji = NULL;
 	int n_arg_regs, n_arg_fregs, framesize, i;
 	int info_offset, offset, rgctx_arg_reg_offset;
-	int caller_reg_area_offset, callee_reg_area_offset, callee_stack_area_offset;
+	int caller_reg_area_offset, callee_reg_area_offset;
 	guint8 *br_out, *br [64], *br_ret [64];
 	int b_ret_index;
 	int reg_area_size;
@@ -252,7 +252,6 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Allocate callee register area just below the caller area so it can be accessed from start_gsharedvt_call using negative offsets */
 	/* XXX figure out alignment */
 	callee_reg_area_offset = reg_area_size - ((n_arg_regs + n_arg_fregs) * 8); /* Ensure alignment */
-	callee_stack_area_offset = callee_reg_area_offset + reg_area_size;
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, reg_area_size);
 
 	/* Allocate stack area used to pass arguments to the method */

@@ -9731,7 +9731,7 @@ calli_end:
 				}
 				if (sp [0]->type == STACK_I4 || sp [0]->type == STACK_I8 || sp [0]->type == STACK_R8)
 					UNVERIFIED;
-				if (il_op != CEE_LDFLD && sp [0]->type == STACK_VTYPE)
+				if (il_op != MONO_CEE_LDFLD && sp [0]->type == STACK_VTYPE)
 					UNVERIFIED;
 			} else {
 				if (il_op == MONO_CEE_STSFLD) {

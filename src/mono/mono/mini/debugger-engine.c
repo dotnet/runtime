@@ -1030,7 +1030,6 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 	guint8 *ip;
 	int i;
 	guint32 native_offset;
-	MonoBreakpoint *bp;
 	GPtrArray *bp_reqs, *ss_reqs_orig, *ss_reqs;
 	EventKind kind = EVENT_KIND_BREAKPOINT;
 	MonoContext *ctx = rt_callbacks.tls_get_restore_state (tls);
@@ -1078,7 +1077,6 @@ mono_de_process_breakpoint (void *void_tls, gboolean from_signal)
 
 	mono_debugger_log_bp_hit (tls, method, sp.il_offset);
 
-	bp = NULL;
 	mono_de_collect_breakpoints_by_sp (&sp, ji, ss_reqs_orig, bp_reqs);
 
 	if (bp_reqs->len == 0 && ss_reqs_orig->len == 0) {
