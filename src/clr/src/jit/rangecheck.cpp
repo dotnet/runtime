@@ -75,7 +75,7 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
     ValueNumStore* vnStore = m_pCompiler->vnStore;
 
     // Get the VN for the upper limit.
-    ValueNum uLimitVN = vnStore->VNNormalValue(upper->gtVNPair, VNK_Conservative);
+    ValueNum uLimitVN = vnStore->VNConservativeNormalValue(upper->gtVNPair);
 
 #ifdef DEBUG
     JITDUMP(FMT_VN " upper bound is: ", uLimitVN);
@@ -208,8 +208,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTree* stmt, GenTree* t
     GenTree* treeIndex        = bndsChk->gtIndex;
 
     // Take care of constant index first, like a[2], for example.
-    ValueNum idxVn    = m_pCompiler->vnStore->VNNormalValue(treeIndex->gtVNPair, VNK_Conservative);
-    ValueNum arrLenVn = m_pCompiler->vnStore->VNNormalValue(bndsChk->gtArrLen->gtVNPair, VNK_Conservative);
+    ValueNum idxVn    = m_pCompiler->vnStore->VNConservativeNormalValue(treeIndex->gtVNPair);
+    ValueNum arrLenVn = m_pCompiler->vnStore->VNConservativeNormalValue(bndsChk->gtArrLen->gtVNPair);
     int      arrSize  = 0;
 
     if (m_pCompiler->vnStore->IsVNConstant(arrLenVn))
@@ -541,7 +541,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         genTreeOps cmpOper = GT_NONE;
 
         LclSsaVarDsc* ssaData     = m_pCompiler->lvaTable[lcl->gtLclNum].GetPerSsaData(lcl->gtSsaNum);
-        ValueNum      normalLclVN = m_pCompiler->vnStore->VNNormalValue(ssaData->m_vnPair, VNK_Conservative);
+        ValueNum      normalLclVN = m_pCompiler->vnStore->VNConservativeNormalValue(ssaData->m_vnPair);
 
         // Current assertion is of the form (i < len - cns) != 0
         if (curAssertion->IsCheckedBoundArithBound())
@@ -626,7 +626,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
         }
 #endif
 
-        ValueNum arrLenVN = m_pCompiler->vnStore->VNNormalValue(m_pCurBndsChk->gtArrLen->gtVNPair, VNK_Conservative);
+        ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->gtArrLen->gtVNPair);
 
         if (m_pCompiler->vnStore->IsVNConstant(arrLenVN))
         {
@@ -744,7 +744,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP 
 void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DEBUGARG(int indent))
 {
     JITDUMP("Merging assertions from pred edges of " FMT_BB " for op [%06d] " FMT_VN "\n", block->bbNum,
-            Compiler::dspTreeID(op), m_pCompiler->vnStore->VNNormalValue(op->gtVNPair, VNK_Conservative));
+            Compiler::dspTreeID(op), m_pCompiler->vnStore->VNConservativeNormalValue(op->gtVNPair));
     ASSERT_TP assertions = BitVecOps::UninitVal();
 
     // If we have a phi arg, we can get to the block from it and use its assertion out.
@@ -1059,7 +1059,7 @@ Range RangeCheck::ComputeRange(BasicBlock* block, GenTree* expr, bool monotonic 
     bool  newlyAdded = !m_pSearchPath->Set(expr, block);
     Range range      = Limit(Limit::keUndef);
 
-    ValueNum vn = m_pCompiler->vnStore->VNNormalValue(expr->gtVNPair, VNK_Conservative);
+    ValueNum vn = m_pCompiler->vnStore->VNConservativeNormalValue(expr->gtVNPair);
     // If newly added in the current search path, then reduce the budget.
     if (newlyAdded)
     {

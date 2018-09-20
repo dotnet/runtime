@@ -3666,7 +3666,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq)
 #ifdef DEBUG
         // For PtrToLoc, lib == cons.
         VNFuncApp consFuncApp;
-        assert(GetVNFunc(VNNormalValue(opA->gtVNPair, VNK_Conservative), &consFuncApp) && consFuncApp.Equals(funcApp));
+        assert(GetVNFunc(VNConservativeNormalValue(opA->gtVNPair), &consFuncApp) && consFuncApp.Equals(funcApp));
 #endif
         ValueNum fldSeqVN = VNForFieldSeq(fldSeq);
         res = VNForFunc(TYP_BYREF, VNF_PtrToLoc, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
@@ -6368,8 +6368,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
                         }
                     }
-                    else if (vnStore->GetVNFunc(vnStore->VNNormalValue(srcAddr->gtVNPair, VNK_Liberal),
-                                                &srcAddrFuncApp))
+                    else if (vnStore->GetVNFunc(vnStore->VNLiberalNormalValue(srcAddr->gtVNPair), &srcAddrFuncApp))
                     {
                         if (srcAddrFuncApp.m_func == VNF_PtrToStatic)
                         {
@@ -7232,14 +7231,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     if (obj != nullptr)
                                     {
                                         // construct the ValueNumber for 'fldMap at obj'
-                                        normVal = vnStore->VNNormalValue(obj->gtVNPair, VNK_Liberal);
+                                        normVal = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
                                     else // (staticOffset != nullptr)
                                     {
                                         // construct the ValueNumber for 'fldMap at staticOffset'
-                                        normVal = vnStore->VNNormalValue(staticOffset->gtVNPair, VNK_Liberal);
+                                        normVal = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
@@ -7502,7 +7501,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will be captured
                 // as part of the value of the composite "addr" operation...
-                ValueNum arrVN = vnStore->VNNormalValue(arr->gtVNPair, VNK_Liberal);
+                ValueNum arrVN = vnStore->VNLiberalNormalValue(arr->gtVNPair);
                 inxVN          = vnStore->VNNormalValue(inxVN);
 
                 // Additionally, relabel the address with a PtrToArrElem value number.
@@ -7636,13 +7635,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         if (obj != nullptr)
                         {
                             // construct the ValueNumber for 'fldMap at obj'
-                            ValueNum objNormVal = vnStore->VNNormalValue(obj->gtVNPair, VNK_Liberal);
+                            ValueNum objNormVal = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                             valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, objNormVal);
                         }
                         else if (staticOffset != nullptr)
                         {
                             // construct the ValueNumber for 'fldMap at staticOffset'
-                            ValueNum offsetNormVal = vnStore->VNNormalValue(staticOffset->gtVNPair, VNK_Liberal);
+                            ValueNum offsetNormVal = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                             valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, offsetNormVal);
                         }
 
