@@ -16,7 +16,7 @@ namespace System.IO.Tests
         // AppContainer restricts access to DriveFormat (::GetVolumeInformation)
         private static string driveFormat = PlatformDetection.IsInAppContainer ? string.Empty : new DriveInfo(Path.GetTempPath()).DriveFormat;
 
-        protected static bool isHFS => driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
+        protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
         protected static bool isNotHFS => !isHFS;
 
         public abstract T GetExistingItem();
