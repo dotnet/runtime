@@ -47,7 +47,8 @@ def static getCrossArchitectures(def os, def architecture, def scenario) {
 // We use this class (vs variables) so that the static functions can access data here.
 class Constants {
 
-    // We have very limited ARM64 hardware (used for ARM/ARM64 testing). So only allow certain branches to use it.
+    // We have very limited Windows ARM64 hardware (used for ARM/ARM64 testing) and Linux/arm32 and Linux/arm64 hardware.
+    // So only allow certain branches to use it.
     def static LimitedHardwareBranches = [
                'master']
 
@@ -1220,14 +1221,8 @@ def static jobRequiresLimitedHardware(def architecture, def os) {
         return true
     }
     else if (architecture == 'arm64') {
-        if (os == 'Windows_NT') {
-            // arm64 Windows hardware is limited.
-            return true
-        }
-        else {
-            // arm64 Linux hardware is fast enough to allow more frequent jobs
-            return false
-        }
+        // arm64 Windows and Linux hardware is limited.
+        return true
     }
     else {
         return false
@@ -1565,7 +1560,15 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 break
             }
             if (jobRequiresLimitedHardware(architecture, os)) {
-                addPeriodicTriggerHelper(job, '@weekly')
+                if ((architecture == 'arm64') && !isCoreFxScenario(scenario)) {
+                    // These jobs are very fast on Linux/arm64 hardware, so run them daily.
+                    // TODO: When the corefx jobs are made to run in parallel, run those
+                    // jobs daily as well.
+                    addPeriodicTriggerHelper(job, '@daily')
+                }
+                else {
+                    addPeriodicTriggerHelper(job, '@weekly')
+                }
             }
             else {
                 addPeriodicTriggerHelper(job, '@daily')
