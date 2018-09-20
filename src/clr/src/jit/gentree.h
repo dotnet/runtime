@@ -4257,8 +4257,7 @@ struct GenTreeIndexAddr : public GenTreeOp
             gtFlags |= GTF_INX_RNGCHK;
         }
 
-        // REVERSE_OPS is set because we must evaluate the index before the array address.
-        gtFlags |= GTF_EXCEPT | GTF_GLOB_REF | GTF_REVERSE_OPS;
+        gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
     }
 
 #if DEBUGGABLE_GENTREE
