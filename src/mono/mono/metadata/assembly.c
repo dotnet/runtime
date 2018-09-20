@@ -3863,13 +3863,15 @@ mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor,
 static MonoAssemblyName*
 mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_name)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	MonoAssemblyBindingInfo *info, *info2;
 	MonoImage *ppimage;
 	MonoDomain *domain;
 
 	if (aname->public_key_token [0] == 0)
-		return aname;
+		goto return_aname;
 
 	domain = mono_domain_get ();
 
@@ -3885,14 +3887,19 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 
 	if (info) {
 		if (!check_policy_versions (info, aname))
-			return aname;
+			goto return_aname;
 		
 		mono_assembly_bind_version (info, aname, dest_name);
-		return dest_name;
+		goto return_dest_name;
 	}
 
-	if (domain && domain->setup && domain->setup->configuration_file) {
-		gchar *domain_config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, error);
+	MonoAppDomainSetupHandle setup;
+	MonoStringHandle configuration_file;
+
+	if (domain
+			&& !MONO_HANDLE_IS_NULL (setup = MONO_HANDLE_NEW (MonoAppDomainSetup, domain->setup))
+			&& !MONO_HANDLE_IS_NULL (configuration_file = MONO_HANDLE_NEW_GET (MonoString, setup, configuration_file))) {
+		char *domain_config_file_name = mono_string_handle_to_utf8 (configuration_file, error);
 		/* expect this to succeed because mono_domain_set_options_from_config () did
 		 * the same thing when the domain was created. */
 		mono_error_assert_ok (error);
@@ -3910,7 +3917,6 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 		}
 
 		mono_domain_unlock (domain);
-
 	}
 
 	if (!info) {
@@ -3949,10 +3955,22 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 	mono_assembly_binding_unlock ();
 	
 	if (!info->is_valid || !check_policy_versions (info, aname))
-		return aname;
+		goto return_aname;
 
 	mono_assembly_bind_version (info, aname, dest_name);
-	return dest_name;
+	goto return_dest_name;
+
+	MonoAssemblyName* result;
+
+return_dest_name:
+	result = dest_name;
+	goto exit;
+
+return_aname:
+	result = aname;
+	goto exit;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /**
