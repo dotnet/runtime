@@ -190,8 +190,8 @@ namespace System.Memory.Tests
             new object[] { "Hello Worldbbbbbbbbbbbbbbcbbbbbbbbbbbbbbbbbbba!", "y", StringComparison.Ordinal },
             new object[] { GenerateInputString('A', 10, '5', 5), "5", StringComparison.InvariantCulture },
             new object[] { GenerateInputString('A', 100, 'X', 70), "x", StringComparison.InvariantCultureIgnoreCase },
-            new object[] { GenerateInputString('A', 100, 'X', 70), "x", StringComparison.OrdinalIgnoreCase },
-            new object[] { GenerateInputString('A', 1000, 'X', 500), "X", StringComparison.Ordinal },
+            new object[] { GenerateInputString('A', 100, 'D', 70), "d", StringComparison.OrdinalIgnoreCase },
+            new object[] { GenerateInputString('A', 1000, 'G', 500), "G", StringComparison.Ordinal },
             new object[] { GenerateInputString('\u3060', 1000, 'x', 500), "x", StringComparison.Ordinal },
             new object[] { GenerateInputString('\u3060', 100, '\u3059', 50), "\u3059", StringComparison.Ordinal }
         };

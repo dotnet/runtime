@@ -32,8 +32,8 @@ namespace System.Globalization.Tests
             new object[] { "es-ES", "$", "&", CompareOptions.IgnoreSymbols },
             new object[] { "", GenerateInputString('A', 10, '5', 5), GenerateInputString('A', 10, '5', 6), CompareOptions.Ordinal },
             new object[] { "", GenerateInputString('A', 100, 'X', 70), GenerateInputString('A', 100, 'X', 70), CompareOptions.OrdinalIgnoreCase },
-            new object[] { "ja-JP", GenerateInputString('A', 100, 'X', 70), GenerateInputString('A', 100, 'x', 70), CompareOptions.OrdinalIgnoreCase },
-            new object[] { "en-US", GenerateInputString('A', 1000, 'X', 500), GenerateInputString('A', 1000, 'X', 500), CompareOptions.None },
+            new object[] { "ja-JP", GenerateInputString('A', 100, 'D', 70), GenerateInputString('A', 100, 'd', 70), CompareOptions.OrdinalIgnoreCase },
+            new object[] { "en-US", GenerateInputString('A', 1000, 'G', 500), GenerateInputString('A', 1000, 'G', 500), CompareOptions.None },
             new object[] { "en-US", GenerateInputString('\u3060', 1000, 'x', 500), GenerateInputString('\u3060', 1000, 'x', 10), CompareOptions.None },
             new object[] { "es-ES", GenerateInputString('\u3060', 100, '\u3059', 50), GenerateInputString('\u3060', 100, '\u3059', 50), CompareOptions.Ordinal },
             new object[] { "tr-TR", GenerateInputString('\u3060', 5000, '\u3059', 2501), GenerateInputString('\u3060', 5000, '\u3059', 2500), CompareOptions.Ordinal }
