@@ -4401,6 +4401,12 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 	return result;
 }
 
+gpointer
+mono_reflection_resolve_object_handle (MonoImage *image, MonoObjectHandle obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
+{
+	return mono_reflection_resolve_object (image, MONO_HANDLE_RAW (obj), handle_class, context, error);
+}
+
 #else /* DISABLE_REFLECTION_EMIT */
 
 MonoArray*
@@ -4548,7 +4554,6 @@ ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilderHandle mb, Mon
 MonoObjectHandle
 ves_icall_ModuleBuilder_GetRegisteredToken (MonoReflectionModuleBuilderHandle mb, guint32 token, MonoError *error)
 {
-	error_init (error);
 	MonoDynamicImage *dynamic_image = MONO_HANDLE_GETVAL (mb, dynamic_image);
 	return mono_dynamic_image_get_registered_token (dynamic_image, token, error);
 }

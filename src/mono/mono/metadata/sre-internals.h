@@ -92,6 +92,9 @@ mono_reflection_type_get_handle (MonoReflectionType *ref, MonoError *error);
 gpointer
 mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
+gpointer
+mono_reflection_resolve_object_handle (MonoImage *image, MonoObjectHandle obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
+
 MonoType* mono_type_array_get_and_resolve (MonoArrayHandle array, int idx, MonoError* error);
 
 void

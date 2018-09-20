@@ -177,8 +177,8 @@ mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, Mo
 }
 #endif
 
-static MonoObject*
-lookup_dyn_token (MonoDynamicImage *assembly, guint32 token)
+static gboolean
+lookup_dyn_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle *object_handle)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -188,15 +188,19 @@ lookup_dyn_token (MonoDynamicImage *assembly, guint32 token)
 	obj = (MonoObject *)mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 	dynamic_image_unlock (assembly);
 
-	return obj;
+	if (object_handle)
+		*object_handle = MONO_HANDLE_NEW (MonoObject, obj);
+
+	return obj != NULL;
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
 MonoObjectHandle
 mono_dynamic_image_get_registered_token (MonoDynamicImage *dynimage, guint32 token, MonoError *error)
 {
-	error_init (error);
-	return MONO_HANDLE_NEW (MonoObject, lookup_dyn_token (dynimage, token));
+	MonoObjectHandle obj;
+	lookup_dyn_token (dynimage, token, &obj);
+	return obj;
 }
 #else /* DISABLE_REFLECTION_EMIT */
 MonoObjectHandle
@@ -217,7 +221,7 @@ mono_dynamic_image_get_registered_token (MonoDynamicImage *dynimage, guint32 tok
 gboolean
 mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token)
 {
-	return lookup_dyn_token (image, token) != NULL;
+	return lookup_dyn_token (image, token, NULL);
 }
 
 #ifndef DISABLE_REFLECTION_EMIT
@@ -238,14 +242,16 @@ mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token)
 gpointer
 mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean valid_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoDynamicImage *assembly = (MonoDynamicImage*)image;
-	MonoObject *obj;
+	MonoObjectHandle obj;
 	MonoClass *klass;
 
 	error_init (error);
 	
-	obj = lookup_dyn_token (assembly, token);
-	if (!obj) {
+	lookup_dyn_token (assembly, token, &obj);
+	if (MONO_HANDLE_IS_NULL (obj)) {
 		if (valid_token)
 			g_error ("Could not find required dynamic token 0x%08x", token);
 		else {
@@ -256,8 +262,8 @@ mono_reflection_lookup_dynamic_token (MonoImage *image, guint32 token, gboolean 
 
 	if (!handle_class)
 		handle_class = &klass;
-	gpointer result = mono_reflection_resolve_object (image, obj, handle_class, context, error);
-	return result;
+	gpointer result = mono_reflection_resolve_object_handle (image, obj, handle_class, context, error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 #else /* DISABLE_REFLECTION_EMIT */
 gpointer
