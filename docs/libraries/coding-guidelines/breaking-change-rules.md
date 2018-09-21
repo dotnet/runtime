@@ -163,6 +163,10 @@ Breaking Change Rules
 
 * Changing a `struct` type to a `ref struct` type and vice versa
 
+* Changing the underlying type of an enum
+
+    This is a compile-time and behavioral breaking change as well as a binary breaking change which can make attribute arguments unparsable.
+
 ### Members
 &#10003; **Allowed**
 * Adding an abstract member to a public type when there are _no accessible_ (`public` or `protected`) constructors, or the type is `sealed`
