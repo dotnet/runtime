@@ -197,13 +197,12 @@ private:
     // returns vnf(v0)  for int/INT32
     int EvalOpInt(VNFunc vnf, int v0);
 
-    // If vnf(v0, v1) would raise an exception, sets *pExcSet to the singleton set containing the exception, and
-    // returns (T)0. Otherwise, returns vnf(v0, v1).
+    // returns vnf(v0, v1).
     template <typename T>
-    T EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet);
+    T EvalOp(VNFunc vnf, T v0, T v1);
 
     // returns vnf(v0, v1)  for int/INT32
-    int EvalOpInt(VNFunc vnf, int v0, int v1, ValueNum* pExcSet);
+    int EvalOpInt(VNFunc vnf, int v0, int v1);
 
     // return vnf(v0) or vnf(v0, v1), respectively (must, of course be unary/binary ops, respectively.)
     template <typename T>
@@ -421,6 +420,20 @@ public:
     // then call VNNormalValue on that ValueNum
     // The Normal value is the value number of the expression when no exceptions occurred
     ValueNum VNNormalValue(ValueNumPair vnp, ValueNumKind vnk);
+
+    // Given a "vnp", get the NormalValuew for the VNK_Liberal part of that ValueNum
+    // The Normal value is the value number of the expression when no exceptions occurred
+    inline ValueNum VNLiberalNormalValue(ValueNumPair vnp)
+    {
+        return VNNormalValue(vnp, VNK_Liberal);
+    }
+
+    // Given a "vnp", get the NormalValuew for the VNK_Conservative part of that ValueNum
+    // The Normal value is the value number of the expression when no exceptions occurred
+    inline ValueNum VNConservativeNormalValue(ValueNumPair vnp)
+    {
+        return VNNormalValue(vnp, VNK_Conservative);
+    }
 
     // Given a "vnp", get the Normal values for both the liberal and conservative parts of "vnp"
     // The Normal value is the value number of the expression when no exceptions occurred
