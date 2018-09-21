@@ -55,42 +55,4 @@
     <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
   </Target>
 
-  <PropertyGroup Condition="'$(IsInvokableTestProject)' == 'true'">
-    <LaunchSettingsOutputFileFullPath Condition="'$(LaunchSettingsOutputFileFullPath)' == ''">$(AppDesignerFolder)/launchSettings.json</LaunchSettingsOutputFileFullPath>
-    <LaunchSettingsInputFileFullPath Condition="'$(LaunchSettingsInputFileFullPath)' == ''">$(ToolsDir)tests.targets</LaunchSettingsInputFileFullPath>
-
-    <PrepareForRunDependsOn>
-      GenerateLaunchSettingsFile;
-      $(PrepareForRunDependsOn);
-    </PrepareForRunDependsOn>
-  </PropertyGroup>
-
-  <!-- Create debug support files -->
-  <Target Name="GenerateLaunchSettingsFile"
-          Condition="'$(LaunchSettingsOutputFileFullPath)' != '' AND '$(OmitLaunchSettings)' != 'true'"
-          Inputs="$(LaunchSettingsInputFileFullPath)"
-          Outputs="$(LaunchSettingsOutputFileFullPath)">
-
-    <PropertyGroup>
-      <LaunchSettingsFileContent>
-{
-  &quot;profiles&quot;: {
-    &quot;xUnit.net Console&quot;: {
-      &quot;commandName&quot;: &quot;Executable&quot;,
-      &quot;executablePath&quot;: &quot;$(StartProgram.Replace('\', '\\'))&quot;,
-      &quot;commandLineArgs&quot;: &quot;$(StartArguments.Replace('\', '\\'))&quot;,
-      &quot;workingDirectory&quot;: &quot;$(StartWorkingDirectory.Replace('\', '\\'))&quot;
-    }
-  }
-}
-      </LaunchSettingsFileContent>
-    </PropertyGroup>
-
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(LaunchSettingsOutputFileFullPath)))" />
-    <WriteLinesToFile File="$(LaunchSettingsOutputFileFullPath)"
-                      Lines="$(LaunchSettingsFileContent)"
-                      Overwrite="true" />
-
-  </Target>
-
 </Project>
