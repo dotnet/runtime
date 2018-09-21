@@ -29,10 +29,10 @@ namespace System.Text
         private static readonly byte[] s_bigEndianPreamble = new byte[2] { 0xfe, 0xff };
         private static readonly byte[] s_littleEndianPreamble = new byte[2] { 0xff, 0xfe };
 
-        private bool isThrowException = false;
+        private readonly bool isThrowException = false;
 
-        private bool bigEndian = false;
-        private bool byteOrderMark = true;
+        private readonly bool bigEndian = false;
+        private readonly bool byteOrderMark = false;
 
         // Unicode version 2.0 character size in bytes
         public const int CharSize = 2;
@@ -44,17 +44,17 @@ namespace System.Text
 
 
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark)
-            : this(bigEndian, byteOrderMark, false)
+            : base(bigEndian ? 1201 : 1200)  //Set the data item.
         {
+            this.bigEndian = bigEndian;
+            this.byteOrderMark = byteOrderMark;
         }
 
 
         public UnicodeEncoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes)
-            : base(bigEndian ? 1201 : 1200)  //Set the data item.
+            : this(bigEndian, byteOrderMark)
         {
             this.isThrowException = throwOnInvalidBytes;
-            this.bigEndian = bigEndian;
-            this.byteOrderMark = byteOrderMark;
 
             // Encoding constructor already did this, but it'll be wrong if we're throwing exceptions
             if (this.isThrowException)
