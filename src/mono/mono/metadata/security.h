@@ -19,6 +19,7 @@
 #include <mono/utils/mono-error.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/metadata/icalls.h>
+#include "reflection-internals.h"
 
 G_BEGIN_DECLS
 
@@ -26,7 +27,6 @@ G_BEGIN_DECLS
 ICALL_EXPORT
 MonoStringHandle
 ves_icall_System_Environment_get_UserName (MonoError *error);
-
 
 /* System.Security.Principal.WindowsIdentity */
 gpointer
@@ -81,7 +81,6 @@ ICALL_EXPORT
 gboolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (MonoError *error);
 
-
 /* System.Security.Principal.WindowsPrincipal */
 ICALL_EXPORT
 gboolean
@@ -111,7 +110,6 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gu
 ICALL_EXPORT
 MonoBoolean
 ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path, MonoError *error);
-
 
 /* System.Security.Policy.Evidence */
 ICALL_EXPORT

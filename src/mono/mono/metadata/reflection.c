@@ -85,18 +85,17 @@ mono_reflection_init (void)
 /*
  * mono_class_get_ref_info:
  *
- *   Return the type builder/generic param builder corresponding to KLASS, if it exists.
+ *   Return the type builder corresponding to KLASS, if it exists.
  */
-MonoObjectHandle
+MonoReflectionTypeBuilderHandle
 mono_class_get_ref_info (MonoClass *klass)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	guint32 ref_info_handle = mono_class_get_ref_info_handle (klass);
 
 	if (ref_info_handle == 0)
-		return MONO_HANDLE_NEW (MonoObject, NULL);
-	else
-		return mono_gchandle_get_target_handle (ref_info_handle);
+		return MONO_HANDLE_NEW (MonoReflectionTypeBuilder, NULL);
+	return MONO_HANDLE_CAST (MonoReflectionTypeBuilder, mono_gchandle_get_target_handle (ref_info_handle));
 }
 
 gboolean
@@ -106,7 +105,7 @@ mono_class_has_ref_info (MonoClass *klass)
 	return 0 != mono_class_get_ref_info_handle (klass);
 }
 
-MonoObject*
+MonoReflectionTypeBuilder*
 mono_class_get_ref_info_raw (MonoClass *klass)
 {
 	/* FIXME callers of mono_class_get_ref_info_raw should use handles */
@@ -115,8 +114,7 @@ mono_class_get_ref_info_raw (MonoClass *klass)
 
 	if (ref_info_handle == 0)
 		return NULL;
-	else
-		return mono_gchandle_get_target (ref_info_handle);
+	return (MonoReflectionTypeBuilder*)mono_gchandle_get_target (ref_info_handle);
 }
 
 void
@@ -535,7 +533,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !type->byref) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		return (MonoReflectionType *)mono_class_get_ref_info_raw (klass); /* FIXME use handles */
+		return &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
 	}
 	/* This is stored in vtables/JITted code so it has to be pinned */
 	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
@@ -2140,30 +2138,30 @@ leave:
 MonoType*
 mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoType *type;
-	MonoReflectionAssembly *assembly;
-	GString *fullName;
+	MonoReflectionAssemblyHandle reflection_assembly;
+	GString *fullName = NULL;
 	GList *mod;
 
 	error_init (error);
 
 	if (image && image_is_dynamic (image))
 		type = mono_reflection_get_type_internal_dynamic (rootimage, image->assembly, info, ignorecase, error);
-	else {
+	else
 		type = mono_reflection_get_type_internal (rootimage, image, info, ignorecase, error);
-	}
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	if (type)
-		return type;
+		goto exit;
 	if (!mono_domain_has_type_resolve (mono_domain_get ()))
-		return NULL;
+		goto return_null;
 
 	if (type_resolve) {
 		if (*type_resolve) 
-			return NULL;
-		else
-			*type_resolve = TRUE;
+			goto return_null;
+		*type_resolve = TRUE;
 	}
 	
 	/* Reconstruct the type name */
@@ -2175,23 +2173,32 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	for (mod = info->nested; mod; mod = mod->next)
 		g_string_append_printf (fullName, "+%s", (char*)mod->data);
 
-	assembly = mono_domain_try_type_resolve_name ( mono_domain_get (), fullName->str, error);
-	if (!is_ok (error)) {
-		g_string_free (fullName, TRUE);
-		return NULL;
-	}
+	MonoStringHandle name_handle;
+	name_handle = mono_string_new_handle (mono_domain_get (), fullName->str, error);
+	goto_if_nok (error, return_null);
+	reflection_assembly = mono_domain_try_type_resolve_name ( mono_domain_get (), name_handle, error);
+	goto_if_nok (error, return_null);
 
-	if (assembly) {
-		if (assembly_is_dynamic (assembly->assembly))
-			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly->assembly,
+	if (MONO_HANDLE_BOOL (reflection_assembly)) {
+		MonoAssembly *assembly = MONO_HANDLE_GETVAL (reflection_assembly, assembly);
+		if (assembly_is_dynamic (assembly))
+			type = mono_reflection_get_type_internal_dynamic (rootimage, assembly,
 									  info, ignorecase, error);
 		else
-			type = mono_reflection_get_type_internal (rootimage, assembly->assembly->image, 
+			type = mono_reflection_get_type_internal (rootimage, assembly->image,
 								  info, ignorecase, error);
 	}
-	g_string_free (fullName, TRUE);
-	return_val_if_nok (error, NULL);
-	return type;
+	goto_if_nok (error, return_null);
+	goto exit;
+
+return_null:
+	type = NULL;
+	goto exit;
+
+exit:
+	if (fullName)
+		g_string_free (fullName, TRUE);
+	HANDLE_FUNCTION_RETURN_VAL (type);
 }
 
 /**
@@ -2993,13 +3000,13 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	 * need a TypeBuilder so use mono_class_get_ref_info (klass).
 	 */
 	g_assert (mono_class_has_ref_info (klass));
-	g_assert (!strcmp (m_class_get_name (mono_object_class (mono_class_get_ref_info_raw (klass))), "TypeBuilder")); /* FIXME use handles */
+	g_assert (!strcmp (m_class_get_name (mono_object_class (&mono_class_get_ref_info_raw (klass)->type.object)), "TypeBuilder")); /* FIXME use handles */
 
 	params [0] = mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (oklass), error);
 	return_val_if_nok (error, FALSE);
 
 	ERROR_DECL_VALUE (inner_error);
-	res = mono_runtime_try_invoke (method, mono_class_get_ref_info_raw (klass), params, &exc, &inner_error); /* FIXME use handles */
+	res = mono_runtime_try_invoke (method, &mono_class_get_ref_info_raw (klass)->type.object, params, &exc, &inner_error); /* FIXME use handles */
 
 	if (exc || !is_ok (&inner_error)) {
 		mono_error_cleanup (&inner_error);

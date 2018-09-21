@@ -158,6 +158,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\seq-points-data.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\handle.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\handle.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\handle-decl.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32mutex.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32semaphore.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32event.h" />

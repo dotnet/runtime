@@ -12,6 +12,7 @@
 #include <mono/metadata/handle.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/icalls.h>
+#include "reflection-internals.h"
 
 ICALL_EXPORT
 MonoAppDomainHandle

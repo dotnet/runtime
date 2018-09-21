@@ -451,6 +451,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\handle.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\handle-decl.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32mutex.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
