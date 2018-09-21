@@ -1775,6 +1775,49 @@ if test x$platform_android = xyes; then
 	AC_DEFINE(HAVE_SIGNAL,1)
 fi
 
+dnl ***********************************
+dnl *** Checks for availability of GSS dependencies (krb5, gss.framework, etc)
+dnl ***********************************
+enable_gss=no;
+AC_MSG_CHECKING(for GSS/GSS.h)
+AC_TRY_COMPILE([
+    #include <GSS/GSS.h>
+], [
+],[
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_GSSFW_HEADERS, 1, [GSS/GSS.h])
+    AC_DEFINE(HAVE_GSS_SPNEGO_MECHANISM, 1, [GSS_SPNEGO_MECHANISM])
+    enable_gss=yes
+], [
+    AC_MSG_RESULT(no)
+])
+
+AC_MSG_CHECKING(for gssapi/gssapi_ext.h)
+AC_TRY_COMPILE([
+    #include <gssapi/gssapi_ext.h>
+], [
+],[
+    AC_MSG_RESULT(yes)
+    enable_gss=yes
+], [
+    AC_MSG_RESULT(no)
+])
+
+AC_MSG_CHECKING(for GSS_SPNEGO_MECHANISM)
+AC_TRY_COMPILE([
+    #include <gssapi/gssapi_ext.h>
+    #include <gssapi/gssapi_krb5.h>
+    gss_OID_set_desc gss_mech_spnego_OID_set_desc = {.count = 1, .elements = GSS_SPNEGO_MECHANISM};
+], [
+],[
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_GSS_SPNEGO_MECHANISM, 1, [GSS_SPNEGO_MECHANISM])
+], [
+    AC_MSG_RESULT(no)
+])
+
+AM_CONDITIONAL(ENABLE_GSS, test x$enable_gss = xyes)
+
 if test x$host_win32 = xno; then
 	dnl *************************************
 	dnl *** Checks for time capabilities ***
