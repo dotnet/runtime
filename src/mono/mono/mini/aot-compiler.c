@@ -11392,7 +11392,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	/* replace the ; flags separators with spaces */
-	g_strdelimit (ld_flags, ";", ' ');
+	g_strdelimit (ld_flags, ';', ' ');
 
 	if (acfg->aot_opts.llvm_only)
 		ld_flags = g_strdup_printf ("%s %s", ld_flags, "-lstdc++");

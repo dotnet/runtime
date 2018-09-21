@@ -1284,7 +1284,7 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 		goto_if_nok (error, leave);
 	}
 	params [0] = MONO_HANDLE_RAW (fname);
-	params[1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
+	params [1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
 	params [2] = &isrefonly;
 	MonoObject *exc;
 	exc = NULL;
@@ -1453,8 +1453,7 @@ set_domain_search_path (MonoDomain *domain)
 	MonoAppDomainSetup *setup;
 	gchar **tmp;
 	gchar *search_path = NULL;
-	gint i;
-	gint npaths = 0;
+	gint npaths = 1;
 	gchar **pvt_split = NULL;
 	GError *gerror = NULL;
 	gint appbaselen = -1;
@@ -1465,30 +1464,21 @@ set_domain_search_path (MonoDomain *domain)
 	 */
 	mono_domain_assemblies_lock (domain);
 
-	if (!domain->setup) {
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
+	if (!domain->setup)
+		goto exit;
 
-	if ((domain->search_path != NULL) && !domain->setup->path_changed) {
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
+	if (domain->search_path && !domain->setup->path_changed)
+		goto exit;
+
 	setup = domain->setup;
-	if (!setup->application_base) {
-		mono_domain_assemblies_unlock (domain);
-		return; /* Must set application base to get private path working */
-	}
-
-	npaths++;
+	if (!setup->application_base)
+		goto exit; // Must set application base to get private path working
 	
 	if (setup->private_bin_path) {
 		search_path = mono_string_to_utf8_checked (setup->private_bin_path, error);
 		if (!mono_error_ok (error)) { /*FIXME maybe we should bubble up the error.*/
 			g_warning ("Could not decode AppDomain search path since it contains invalid characters");
-			mono_error_cleanup (error);
-			mono_domain_assemblies_unlock (domain);
-			return;
+			goto exit;
 		}
 	}
 	
@@ -1513,49 +1503,24 @@ set_domain_search_path (MonoDomain *domain)
 		 *
 		 * The issue was reported in bug #81446
 		 */
-
 #ifndef TARGET_WIN32
-		gint slen;
-
-		slen = strlen (search_path);
-		for (i = 0; i < slen; i++)
-			if (search_path [i] == ':')
-				search_path [i] = ';';
+		g_strdelimit (search_path, ':', ';');
 #endif
-		
 		pvt_split = g_strsplit (search_path, ";", 1000);
 		g_free (search_path);
 		for (tmp = pvt_split; *tmp; tmp++, npaths++);
 	}
 
-	if (!npaths) {
-		if (pvt_split)
-			g_strfreev (pvt_split);
-		/*
-		 * Don't do this because the first time is called, the domain
-		 * setup is not finished.
-		 *
-		 * domain->search_path = g_malloc (sizeof (char *));
-		 * domain->search_path [0] = NULL;
-		*/
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
+	g_strfreev (domain->search_path);
+	domain->search_path = NULL;
 
-	if (domain->search_path)
-		g_strfreev (domain->search_path);
-
-	tmp = (gchar **)g_malloc ((npaths + 1) * sizeof (gchar *));
+	tmp = g_new (gchar*, npaths + 1);
 	tmp [npaths] = NULL;
 
 	*tmp = mono_string_to_utf8_checked (setup->application_base, error);
 	if (!mono_error_ok (error)) {
-		mono_error_cleanup (error);
-		g_strfreev (pvt_split);
 		g_free (tmp);
-
-		mono_domain_assemblies_unlock (domain);
-		return;
+		goto exit;
 	}
 
 	domain->search_path = tmp;
@@ -1586,7 +1551,7 @@ set_domain_search_path (MonoDomain *domain)
 		}
 	}
 
-	for (i = 1; pvt_split && i < npaths; i++) {
+	for (gsize i = 1; pvt_split && i < npaths; i++) {
 		if (g_path_is_absolute (pvt_split [i - 1])) {
 			tmp [i] = g_strdup (pvt_split [i - 1]);
 		} else {
@@ -1614,15 +1579,15 @@ set_domain_search_path (MonoDomain *domain)
 		}
 	}
 	
-	if (setup->private_bin_path_probe != NULL) {
+	if (setup->private_bin_path_probe) {
 		g_free (tmp [0]);
 		tmp [0] = g_strdup ("");
 	}
 		
 	domain->setup->path_changed = FALSE;
-
+exit:
+	mono_error_cleanup (error);
 	g_strfreev (pvt_split);
-
 	mono_domain_assemblies_unlock (domain);
 }
 
@@ -1674,27 +1639,20 @@ make_sibling_path (const gchar *path, gint pathlen, const char *extension, Shado
 static gboolean
 shadow_copy_sibling (const gchar *src_pristine, gint srclen, const char *extension, ShadowCopySiblingExt extopt, const gchar *target_pristine, gint targetlen)
 {
-	gunichar2 *orig, *dest;
-	gboolean copy_result;
-	gint32 copy_error;
-	gchar *src = NULL;
+	gchar *file = NULL;
+	gunichar2 *orig = NULL;
+	gunichar2 *dest = NULL;
+	gboolean copy_result = TRUE;
 	gchar *target = NULL;
 	
-	src = make_sibling_path (src_pristine, srclen, extension, extopt);
+	char *src = make_sibling_path (src_pristine, srclen, extension, extopt);
 
 	if (IS_PORTABILITY_CASE) {
-		gchar *file = mono_portability_find_file (src, TRUE);
-
-		if (file == NULL) {
-			g_free (src);
-			return TRUE;
-		}
-
-		g_free (file);
-	} else if (!g_file_test (src, G_FILE_TEST_IS_REGULAR)) {
-		g_free (src);
-		return TRUE;
-	}
+		file = mono_portability_find_file (src, TRUE);
+		if (file == NULL)
+			goto exit;
+	} else if (!g_file_test (src, G_FILE_TEST_IS_REGULAR))
+		goto exit;
 
 	orig = g_utf8_to_utf16 (src, strlen (src), NULL, NULL, NULL);
 
@@ -1704,6 +1662,7 @@ shadow_copy_sibling (const gchar *src_pristine, gint srclen, const char *extensi
 	
 	mono_w32file_delete (dest);
 
+	gint32 copy_error;
 	copy_result = mono_w32file_copy (orig, dest, TRUE, &copy_error);
 
 	/* Fix for bug #556884 - make sure the files have the correct mode so that they can be
@@ -1711,9 +1670,10 @@ shadow_copy_sibling (const gchar *src_pristine, gint srclen, const char *extensi
 	if (copy_result)
 		copy_result = mono_w32file_set_attributes (dest, FILE_ATTRIBUTE_NORMAL);
 
+exit:
+	g_free (file);
 	g_free (orig);
 	g_free (dest);
-	
 	g_free (src);
 	g_free (target);
 	return copy_result;
@@ -1722,16 +1682,15 @@ shadow_copy_sibling (const gchar *src_pristine, gint srclen, const char *extensi
 static gint32 
 get_cstring_hash (const char *str)
 {
-	int len, i;
 	const char *p;
 	gint32 h = 0;
 	
 	if (!str || !str [0])
 		return 0;
 		
-	len = strlen (str);
+	gsize const len = strlen (str);
 	p = str;
-	for (i = 0; i < len; i++) {
+	for (gsize i = 0; i < len; i++) {
 		h = (h << 5) - h + *p;
 		p++;
 	}
@@ -1746,8 +1705,9 @@ static char *
 get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 {
 	MonoAppDomainSetup *setup;
-	char *cache_path, *appname;
-	char *userdir;
+	char *cache_path = NULL;
+	char *appname = NULL;
+	char *userdir = NULL;
 	char *location;
 
 	error_init (error);
@@ -1773,13 +1733,13 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 		}
 
 		location = g_build_filename (cache_path, appname, "assembly", "shadow", NULL);
-		g_free (appname);
-		g_free (cache_path);
 	} else {
 		userdir = g_strdup_printf ("%s-mono-cachepath", g_get_user_name ());
 		location = g_build_filename (g_get_tmp_dir (), userdir, "assembly", "shadow", NULL);
-		g_free (userdir);
 	}
+	g_free (appname);
+	g_free (cache_path);
+	g_free (userdir);
 	return location;
 }
 
@@ -1854,38 +1814,37 @@ private_file_needs_copying (const char *src, struct stat *sbuf_src, char *dest)
 static gboolean
 shadow_copy_create_ini (const char *shadow, const char *filename)
 {
-	char *dir_name;
-	char *ini_file;
-	gunichar2 *u16_ini;
-	gboolean result;
+	gunichar2 *u16_ini = NULL;
+	gboolean result = FALSE;
 	guint32 n;
-	HANDLE handle;
-	gchar *full_path;
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	gchar *full_path = NULL;
 
-	dir_name = g_path_get_dirname (shadow);
-	ini_file = g_build_filename (dir_name, "__AssemblyInfo__.ini", NULL);
+	char *dir_name = g_path_get_dirname (shadow);
+	char *ini_file = g_build_filename (dir_name, "__AssemblyInfo__.ini", NULL);
 	g_free (dir_name);
-	if (g_file_test (ini_file, G_FILE_TEST_IS_REGULAR)) {
-		g_free (ini_file);
-		return TRUE;
-	}
+	result = g_file_test (ini_file, G_FILE_TEST_IS_REGULAR);
+	if (result)
+		goto exit;
 
 	u16_ini = g_utf8_to_utf16 (ini_file, strlen (ini_file), NULL, NULL, NULL);
-	g_free (ini_file);
-	if (!u16_ini) {
-		return FALSE;
-	}
+	if (!u16_ini)
+		goto exit;
+
 	handle = mono_w32file_create (u16_ini, GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, CREATE_NEW, FileAttributes_Normal);
-	g_free (u16_ini);
-	if (handle == INVALID_HANDLE_VALUE) {
-		return FALSE;
-	}
+	if (handle == INVALID_HANDLE_VALUE)
+		goto exit;
 
 	full_path = mono_path_resolve_symlinks (filename);
-	gint32 win32error = 0;
+	gint32 win32error;
+	win32error = 0;
 	result = mono_w32file_write (handle, full_path, strlen (full_path), &n, &win32error);
+exit:
+	if (handle != INVALID_HANDLE_VALUE)
+		mono_w32file_close (handle);
+	g_free (u16_ini);
 	g_free (full_path);
-	mono_w32file_close (handle);
+	g_free (ini_file);
 	return result;
 }
 
@@ -1894,63 +1853,57 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 {
 	ERROR_DECL (error);
 	MonoAppDomainSetup *setup;
-	gchar *all_dirs;
+	gchar *all_dirs = NULL;
 	gchar **dir_ptr;
-	gchar **directories;
+	gchar **directories = NULL;
 	gchar *shadow_status_string;
-	gchar *base_dir;
+	gchar *base_dir = NULL;
 	gboolean shadow_enabled;
 	gboolean found = FALSE;
 
 	if (domain == NULL)
-		return FALSE;
+		goto exit;
 
 	setup = domain->setup;
 	if (setup == NULL || setup->shadow_copy_files == NULL)
-		return FALSE;
+		goto exit;
 
 	shadow_status_string = mono_string_to_utf8_checked (setup->shadow_copy_files, error);
-	if (!mono_error_ok (error)) {
-		mono_error_cleanup (error);
-		return FALSE;
-	}
+	if (!mono_error_ok (error))
+		goto exit;
+
 	shadow_enabled = !g_ascii_strncasecmp (shadow_status_string, "true", 4);
 	g_free (shadow_status_string);
 
 	if (!shadow_enabled)
-		return FALSE;
+		goto exit;
 
-	if (setup->shadow_copy_directories == NULL)
-		return TRUE;
+	found = (setup->shadow_copy_directories == NULL);
+	if (found)
+		goto exit;
 
 	/* Is dir_name a shadow_copy destination already? */
 	base_dir = get_shadow_assembly_location_base (domain, error);
-	if (!mono_error_ok (error)) {
-		mono_error_cleanup (error);
-		return FALSE;
-	}
+	if (!mono_error_ok (error))
+		goto exit;
 
-	if (strstr (dir_name, base_dir)) {
-		g_free (base_dir);
-		return TRUE;
-	}
-	g_free (base_dir);
+	found = !!strstr (dir_name, base_dir);
+	if (found)
+		goto exit;
 
 	all_dirs = mono_string_to_utf8_checked (setup->shadow_copy_directories, error);
-	if (!mono_error_ok (error)) {
-		mono_error_cleanup (error);
-		return FALSE;
-	}
+	if (!mono_error_ok (error))
+		goto exit;
 
 	directories = g_strsplit (all_dirs, G_SEARCHPATH_SEPARATOR_S, 1000);
 	dir_ptr = directories;
-	while (*dir_ptr) {
-		if (**dir_ptr != '\0' && !strcmp (*dir_ptr, dir_name)) {
-			found = TRUE;
-			break;
-		}
+	while (!found && *dir_ptr) {
+		found = (**dir_ptr != '\0' && !strcmp (*dir_ptr, dir_name));
 		dir_ptr++;
 	}
+exit:
+	mono_error_cleanup (error);
+	g_free (base_dir);
 	g_strfreev (directories);
 	g_free (all_dirs);
 	return found;

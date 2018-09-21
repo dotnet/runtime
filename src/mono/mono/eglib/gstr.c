@@ -914,22 +914,17 @@ g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii)
 	}
 }
 
-gchar *
-g_strdelimit (gchar *string, const gchar *delimiters, gchar new_delimiter)
+void
+g_strdelimit (gchar *string, gchar delimiter, gchar new_delimiter)
 {
 	gchar *ptr;
 
-	g_return_val_if_fail (string != NULL, NULL);
-
-	if (delimiters == NULL)
-		delimiters = G_STR_DELIMITERS;
+	g_return_if_fail (string != NULL);
 
 	for (ptr = string; *ptr; ptr++) {
-		if (strchr (delimiters, *ptr))
+		if (delimiter == *ptr)
 			*ptr = new_delimiter;
 	}
-	
-	return string;
 }
 
 gsize 

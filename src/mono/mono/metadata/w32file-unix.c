@@ -606,9 +606,8 @@ _wapi_basename (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	if (IS_PORTABILITY_SET) {
-		g_strdelimit (new_filename, "\\", '/');
-	}
+	if (IS_PORTABILITY_SET)
+		g_strdelimit (new_filename, '\\', '/');
 
 	if (IS_PORTABILITY_DRIVE && g_ascii_isalpha (new_filename[0]) && (new_filename[1] == ':')) {
 		gint len = strlen (new_filename);
@@ -628,9 +627,8 @@ _wapi_dirname (const gchar *filename)
 {
 	gchar *new_filename = g_strdup (filename), *ret;
 
-	if (IS_PORTABILITY_SET) {
-		g_strdelimit (new_filename, "\\", '/');
-	}
+	if (IS_PORTABILITY_SET)
+		g_strdelimit (new_filename, '\\', '/');
 
 	if (IS_PORTABILITY_DRIVE && g_ascii_isalpha (new_filename[0]) && (new_filename[1] == ':')) {
 		gint len = strlen (new_filename);

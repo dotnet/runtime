@@ -365,7 +365,7 @@ gchar       *g_strchomp       (gchar *str);
 void         g_strdown        (gchar *string);
 gchar       *g_strnfill       (gsize length, gchar fill_char);
 
-gchar       *g_strdelimit     (gchar *string, const gchar *delimiters, gchar new_delimiter);
+void	     g_strdelimit     (char *string, char delimiter, char new_delimiter);
 gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
 
 gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **gerror);
@@ -411,9 +411,6 @@ gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
 #define g_strstrip(a) g_strchug (g_strchomp (a))
 #endif
 #define g_ascii_strdup strdup
-
-
-#define	G_STR_DELIMITERS "_-|> <."
 
 /*
  * String type

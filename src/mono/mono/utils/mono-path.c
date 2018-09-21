@@ -51,7 +51,7 @@ mono_path_canonicalize (const char *path)
 	}
 
 #ifdef HOST_WIN32
-	g_strdelimit (abspath, "/", '\\');
+	g_strdelimit (abspath, '/', '\\');
 #endif
 	abspath = g_strreverse (abspath);
 
