@@ -1427,8 +1427,8 @@ summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	intptr_t ip = 0x0;
 	mono_get_portable_ip ((intptr_t) MONO_CONTEXT_GET_IP (ctx), &ip, NULL);
 
-	g_assert (frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE);
-	method = jinfo_get_method (frame->ji);
+	if (frame && frame->ji && frame->type != FRAME_TYPE_TRAMPOLINE)
+		method = jinfo_get_method (frame->ji);
 
 	gboolean is_managed = (method != NULL);
 
