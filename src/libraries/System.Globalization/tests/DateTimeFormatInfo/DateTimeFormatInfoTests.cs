@@ -161,5 +161,25 @@ namespace System.Globalization.Tests
                 dt = ci.DateTimeFormat.Calendar.AddMonths(dt, 1);
             }
         }
+
+        [Fact]
+        public void TestFirstYearOfJapaneseEra()
+        {
+            DateTimeFormatInfo jpnFormat = new CultureInfo("ja-JP").DateTimeFormat;
+            jpnFormat.Calendar = new JapaneseCalendar();
+
+            string pattern = "gg yyyy'\u5E74' MM'\u6708' dd'\u65E5'"; // "gg yyyy'年' MM'月' dd'日'"
+            DateTime dt = new DateTime(1989, 01, 08); // Start of Heisei Era
+
+            string formattedDate = dt.ToString(pattern, jpnFormat);
+            if (PlatformDetection.IsNetCore)
+            {
+                Assert.True(formattedDate.IndexOf("\u5143" /* 元 */, StringComparison.Ordinal) >= 0,
+                            "Expected the first year of the era be formatted with 元");
+            }
+
+            Assert.True(DateTime.TryParseExact(formattedDate, pattern, jpnFormat, DateTimeStyles.None, out DateTime parsedDate));
+            Assert.Equal(dt, parsedDate);
+        }
     }
 }
