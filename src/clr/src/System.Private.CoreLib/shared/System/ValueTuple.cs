@@ -476,7 +476,7 @@ namespace System
         public T1 Item1;
 
         /// <summary>
-        /// The current <see cref="ValueTuple{T1, T2}"/> instance's first component.
+        /// The current <see cref="ValueTuple{T1, T2}"/> instance's second component.
         /// </summary>
         public T2 Item2;
 
