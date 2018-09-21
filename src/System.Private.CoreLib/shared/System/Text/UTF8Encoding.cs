@@ -68,7 +68,7 @@ namespace System.Text
         // the standard.
         internal readonly bool _emitUTF8Identifier = false;
 
-        private bool _isThrowException = false;
+        private readonly bool _isThrowException = false;
 
 
         public UTF8Encoding() : this(false)
@@ -77,15 +77,15 @@ namespace System.Text
 
 
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier) :
-            this(encoderShouldEmitUTF8Identifier, false)
+            base(UTF8_CODEPAGE)
         {
+            _emitUTF8Identifier = encoderShouldEmitUTF8Identifier;
         }
 
 
         public UTF8Encoding(bool encoderShouldEmitUTF8Identifier, bool throwOnInvalidBytes) :
-            base(UTF8_CODEPAGE)
+            this(encoderShouldEmitUTF8Identifier)
         {
-            _emitUTF8Identifier = encoderShouldEmitUTF8Identifier;
             _isThrowException = throwOnInvalidBytes;
 
             // Encoding's constructor already did this, but it'll be wrong if we're throwing exceptions
