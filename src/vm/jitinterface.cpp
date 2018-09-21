@@ -713,6 +713,18 @@ static bool IsInSameVersionBubble(MethodDesc* pCurMD, MethodDesc *pTargetMD)
 
 #endif // FEATURE_READYTORUN_COMPILER
 
+static bool CallerAndCalleeInSystemVersionBubble(MethodDesc* pCaller, MethodDesc* pCallee)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (IsReadyToRunCompilation())
+        return pCallee->GetModule()->IsSystem() && IsInSameVersionBubble(pCaller, pCallee);
+#endif
+
+    return false;
+}
+
 
 /*********************************************************************/
 CorInfoCanSkipVerificationResult CEEInfo::canSkipVerification(
@@ -5158,8 +5170,6 @@ void CEEInfo::getCallInfo(
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
     }
 
-
-
     TypeHandle exactType = TypeHandle(pResolvedToken->hClass);
 
     TypeHandle constrainedType;
@@ -5459,8 +5469,11 @@ void CEEInfo::getCallInfo(
         pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
         pResult->nullInstanceCheck = TRUE;
     }
-    // Non-interface dispatches go through the vtable
-    else if (!pTargetMD->IsInterface() && !IsReadyToRunCompilation())
+    // Non-interface dispatches go through the vtable.
+    // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode and generate fragile-NI-like callsites for improved performance. We
+    // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
+    // performance optimization.
+    else if (!pTargetMD->IsInterface() && (!IsReadyToRunCompilation() || CallerAndCalleeInSystemVersionBubble((MethodDesc*)callerHandle, pTargetMD)))
     {
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;

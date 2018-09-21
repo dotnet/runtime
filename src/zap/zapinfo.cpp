@@ -2203,7 +2203,8 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         break;
 
     case CORINFO_VIRTUALCALL_VTABLE:
-        _ASSERTE(!IsReadyToRunCompilation());
+        // READYTORUN: FUTURE: support for vtable-based calls (currently, only calls within the CoreLib version bubble is supported, and the codegen we generate
+        // is the same as the fragile NI (because CoreLib and the runtime will always be updated together anyways - this is a special case)
         break;
 
     case CORINFO_VIRTUALCALL_LDVIRTFTN:
