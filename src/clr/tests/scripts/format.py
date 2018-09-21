@@ -32,7 +32,7 @@ def del_rw(action, name, exc):
 def main(argv):
     parser = argparse.ArgumentParser()
     required = parser.add_argument_group('required arguments')
-    required.add_argument('-a', '--arch', type=str, 
+    required.add_argument('-a', '--arch', type=str,
             default=None, help='architecture to run jit-format on')
     required.add_argument('-o', '--os', type=str,
             default=None, help='operating system')
@@ -85,13 +85,13 @@ def main(argv):
 
     print("Downloading .Net CLI")
     if platform == 'Linux':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.300/dotnet-sdk-2.1.300-linux-x64.tar.gz"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-linux-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'OSX':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.300/dotnet-sdk-2.1.300-osx-x64.tar.gz"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-osx-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
     elif platform == 'Windows_NT':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.300/dotnet-sdk-2.1.300-win-x64.zip"
+        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-win-x64.zip"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.zip')
     else:
         print('Unknown os ', os)
@@ -226,6 +226,13 @@ def main(argv):
     # shutdown the dotnet build servers before cleaning things up
     proc = subprocess.Popen(["dotnet", "build-server", "shutdown"], env=my_env)
     output,error = proc.communicate()
+
+    # shutdown all spurious dotnet processes using os shell
+    if platform == 'Linux' or platform == 'OSX':
+        subprocess.call(['killall', '-SIGTERM', '-qw', dotnet])
+    elif platform == 'Windows_NT':
+        utilpath = os.path.join(coreclr, 'tests\\scripts\\kill-all.cmd')
+        subprocess.call([utilpath, dotnet])
 
     if os.path.isdir(jitUtilsPath):
         print("Deleting " + jitUtilsPath)
