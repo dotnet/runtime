@@ -639,7 +639,7 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0)
 //
 
 template <typename T>
-T ValueNumStore::EvalOp(VNFunc vnf, T v0, T v1, ValueNum* pExcSet)
+T ValueNumStore::EvalOp(VNFunc vnf, T v0, T v1)
 {
     // Here we handle the binary ops that are the same for all types.
 
@@ -2707,7 +2707,6 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
     }
 
     ValueNum result; // left uninitialized, we are required to initialize it on all paths below.
-    ValueNum excSet = VNForEmptyExcSet();
 
     // Are both args of the same type?
     if (arg0VNtyp == arg1VNtyp)
@@ -2725,17 +2724,16 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             else
             {
                 assert(typ == TYP_INT);
-                int resultVal = EvalOp<int>(func, arg0Val, arg1Val, &excSet);
+                int resultVal = EvalOp<int>(func, arg0Val, arg1Val);
                 // Bin op on a handle results in a handle.
                 ValueNum handleVN = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;
                 if (handleVN != NoVN)
                 {
-                    assert(excSet == VNForEmptyExcSet()); // Handles aren't allowed to generate exceptions
                     result = VNForHandle(ssize_t(resultVal), GetHandleFlags(handleVN)); // Use VN for Handle
                 }
                 else
                 {
-                    result = VNWithExc(VNForIntCon(resultVal), excSet);
+                    result = VNForIntCon(resultVal);
                 }
             }
         }
@@ -2752,12 +2750,17 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             else
             {
                 assert(typ == TYP_LONG);
-                INT64    resultVal = EvalOp<INT64>(func, arg0Val, arg1Val, &excSet);
+                INT64    resultVal = EvalOp<INT64>(func, arg0Val, arg1Val);
                 ValueNum handleVN  = IsVNHandle(arg0VN) ? arg0VN : IsVNHandle(arg1VN) ? arg1VN : NoVN;
-                ValueNum resultVN  = (handleVN != NoVN)
-                                        ? VNForHandle(ssize_t(resultVal), GetHandleFlags(handleVN)) // Use VN for Handle
-                                        : VNForLongCon(resultVal);
-                result = VNWithExc(resultVN, excSet);
+
+                if (handleVN != NoVN)
+                {
+                    result = VNForHandle(ssize_t(resultVal), GetHandleFlags(handleVN)); // Use VN for Handle
+                }
+                else
+                {
+                    result = VNForLongCon(resultVal);
+                }
             }
         }
         else // both args are TYP_REF or both args are TYP_BYREF
@@ -2772,14 +2775,14 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             }
             else if (typ == TYP_INT) // We could see GT_OR of a constant ByRef and Null
             {
-                int resultVal = (int)EvalOp<INT64>(func, arg0Val, arg1Val, &excSet);
-                result        = VNWithExc(VNForIntCon(resultVal), excSet);
+                int resultVal = (int)EvalOp<INT64>(func, arg0Val, arg1Val);
+                result        = VNForIntCon(resultVal);
             }
             else // We could see GT_OR of a constant ByRef and Null
             {
                 assert((typ == TYP_BYREF) || (typ == TYP_LONG));
-                INT64 resultVal = EvalOp<INT64>(func, arg0Val, arg1Val, &excSet);
-                result          = VNWithExc(VNForByrefCon(resultVal), excSet);
+                INT64 resultVal = EvalOp<INT64>(func, arg0Val, arg1Val);
+                result          = VNForByrefCon(resultVal);
             }
         }
     }
@@ -2798,37 +2801,28 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
         }
         else if (typ == TYP_INT) // We could see GT_OR of an int and constant ByRef or Null
         {
-            int resultVal = (int)EvalOp<INT64>(func, arg0Val, arg1Val, &excSet);
-            result        = VNWithExc(VNForIntCon(resultVal), excSet);
+            int resultVal = (int)EvalOp<INT64>(func, arg0Val, arg1Val);
+            result        = VNForIntCon(resultVal);
         }
         else
         {
             assert(typ != TYP_INT);
-            ValueNum resultValx = VNForEmptyExcSet();
-            INT64    resultVal  = EvalOp<INT64>(func, arg0Val, arg1Val, &resultValx);
+            INT64 resultVal = EvalOp<INT64>(func, arg0Val, arg1Val);
 
-            // check for the Exception case
-            if (resultValx != VNForEmptyExcSet())
+            switch (typ)
             {
-                result = VNWithExc(VNForVoid(), resultValx);
-            }
-            else
-            {
-                switch (typ)
-                {
-                    case TYP_BYREF:
-                        result = VNForByrefCon(resultVal);
-                        break;
-                    case TYP_LONG:
-                        result = VNForLongCon(resultVal);
-                        break;
-                    case TYP_REF:
-                        assert(resultVal == 0); // Only valid REF constant
-                        result = VNForNull();
-                        break;
-                    default:
-                        unreached();
-                }
+                case TYP_BYREF:
+                    result = VNForByrefCon(resultVal);
+                    break;
+                case TYP_LONG:
+                    result = VNForLongCon(resultVal);
+                    break;
+                case TYP_REF:
+                    assert(resultVal == 0); // Only valid REF constant
+                    result = VNForNull();
+                    break;
+                default:
+                    unreached();
             }
         }
     }
@@ -2876,23 +2870,17 @@ ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, Va
         assert(varTypeIsFloating(typ));
         assert(arg0VNtyp == typ);
 
-        ValueNum exception = VNForEmptyExcSet();
-
         if (typ == TYP_FLOAT)
         {
-            float floatResultVal =
-                EvalOp<float>(func, GetConstantSingle(arg0VN), GetConstantSingle(arg1VN), &exception);
-            assert(exception == VNForEmptyExcSet()); // Floating point ops don't throw.
-            result = VNForFloatCon(floatResultVal);
+            float floatResultVal = EvalOp<float>(func, GetConstantSingle(arg0VN), GetConstantSingle(arg1VN));
+            result               = VNForFloatCon(floatResultVal);
         }
         else
         {
             assert(typ == TYP_DOUBLE);
 
-            double doubleResultVal =
-                EvalOp<double>(func, GetConstantDouble(arg0VN), GetConstantDouble(arg1VN), &exception);
-            assert(exception == VNForEmptyExcSet()); // Floating point ops don't throw.
-            result = VNForDoubleCon(doubleResultVal);
+            double doubleResultVal = EvalOp<double>(func, GetConstantDouble(arg0VN), GetConstantDouble(arg1VN));
+            result                 = VNForDoubleCon(doubleResultVal);
         }
     }
 
@@ -3678,7 +3666,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq)
 #ifdef DEBUG
         // For PtrToLoc, lib == cons.
         VNFuncApp consFuncApp;
-        assert(GetVNFunc(VNNormalValue(opA->gtVNPair, VNK_Conservative), &consFuncApp) && consFuncApp.Equals(funcApp));
+        assert(GetVNFunc(VNConservativeNormalValue(opA->gtVNPair), &consFuncApp) && consFuncApp.Equals(funcApp));
 #endif
         ValueNum fldSeqVN = VNForFieldSeq(fldSeq);
         res = VNForFunc(TYP_BYREF, VNF_PtrToLoc, funcApp.m_args[0], FieldSeqVNAppend(funcApp.m_args[1], fldSeqVN));
@@ -6380,8 +6368,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
                         }
                     }
-                    else if (vnStore->GetVNFunc(vnStore->VNNormalValue(srcAddr->gtVNPair, VNK_Liberal),
-                                                &srcAddrFuncApp))
+                    else if (vnStore->GetVNFunc(vnStore->VNLiberalNormalValue(srcAddr->gtVNPair), &srcAddrFuncApp))
                     {
                         if (srcAddrFuncApp.m_func == VNF_PtrToStatic)
                         {
@@ -7244,14 +7231,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     if (obj != nullptr)
                                     {
                                         // construct the ValueNumber for 'fldMap at obj'
-                                        normVal = vnStore->VNNormalValue(obj->gtVNPair, VNK_Liberal);
+                                        normVal = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
                                     else // (staticOffset != nullptr)
                                     {
                                         // construct the ValueNumber for 'fldMap at staticOffset'
-                                        normVal = vnStore->VNNormalValue(staticOffset->gtVNPair, VNK_Liberal);
+                                        normVal = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
@@ -7514,7 +7501,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will be captured
                 // as part of the value of the composite "addr" operation...
-                ValueNum arrVN = vnStore->VNNormalValue(arr->gtVNPair, VNK_Liberal);
+                ValueNum arrVN = vnStore->VNLiberalNormalValue(arr->gtVNPair);
                 inxVN          = vnStore->VNNormalValue(inxVN);
 
                 // Additionally, relabel the address with a PtrToArrElem value number.
@@ -7648,13 +7635,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         if (obj != nullptr)
                         {
                             // construct the ValueNumber for 'fldMap at obj'
-                            ValueNum objNormVal = vnStore->VNNormalValue(obj->gtVNPair, VNK_Liberal);
+                            ValueNum objNormVal = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                             valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, objNormVal);
                         }
                         else if (staticOffset != nullptr)
                         {
                             // construct the ValueNumber for 'fldMap at staticOffset'
-                            ValueNum offsetNormVal = vnStore->VNNormalValue(staticOffset->gtVNPair, VNK_Liberal);
+                            ValueNum offsetNormVal = vnStore->VNLiberalNormalValue(staticOffset->gtVNPair);
                             valAtAddr = vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, offsetNormVal);
                         }
 
@@ -8058,7 +8045,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     ValueNumPair castArgxVNP = ValueNumStore::VNPForEmptyExcSet();
     VNPUnpackExc(srcVNPair, &castArgVNP, &castArgxVNP);
 
-    // When we're considering actual value returned by a non-checking cast (or a checking cast that succeeds),
+    // When we're considering actual value returned by a non-checking cast, (hasOverflowCheck is false)
     // whether or not the source is unsigned does *not* matter for non-widening casts.
     // That is, if we cast an int or a uint to short, we just extract the first two bytes from the source
     // bit pattern, not worrying about the interpretation.  The same is true in casting between signed/unsigned
@@ -8068,26 +8055,25 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     // Important: Casts to floating point cannot be optimized in this fashion. (bug 946768)
     //
     bool srcIsUnsignedNorm = srcIsUnsigned;
-    if (genTypeSize(castToType) <= genTypeSize(castFromType) && !varTypeIsFloating(castToType))
+    if (!hasOverflowCheck && !varTypeIsFloating(castToType) && (genTypeSize(castToType) <= genTypeSize(castFromType)))
     {
         srcIsUnsignedNorm = false;
     }
 
+    VNFunc       vnFunc     = hasOverflowCheck ? VNF_CastOvf : VNF_Cast;
     ValueNum     castTypeVN = VNForCastOper(castToType, srcIsUnsignedNorm);
     ValueNumPair castTypeVNPair(castTypeVN, castTypeVN);
-    ValueNumPair castNormRes = VNPairForFunc(resultType, VNF_Cast, castArgVNP, castTypeVNPair);
+    ValueNumPair castNormRes = VNPairForFunc(resultType, vnFunc, castArgVNP, castTypeVNPair);
 
     ValueNumPair resultVNP = VNPWithExc(castNormRes, castArgxVNP);
 
     // If we have a check for overflow, add the exception information.
     if (hasOverflowCheck)
     {
-        // For overflow checking, we always need to know whether the source is unsigned.
-        castTypeVNPair.SetBoth(VNForCastOper(castToType, srcIsUnsigned));
-        ValueNumPair excSet =
-            VNPExcSetSingleton(VNPairForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP, castTypeVNPair));
-        excSet    = VNPExcSetUnion(excSet, castArgxVNP);
-        resultVNP = VNPWithExc(castNormRes, excSet);
+        ValueNumPair ovfChk = VNPairForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP, castTypeVNPair);
+        ValueNumPair excSet = VNPExcSetSingleton(ovfChk);
+        excSet              = VNPExcSetUnion(excSet, castArgxVNP);
+        resultVNP           = VNPWithExc(castNormRes, excSet);
     }
 
     return resultVNP;
