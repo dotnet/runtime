@@ -1257,7 +1257,7 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
         {
             *sig = NULL;
             *count = 0;
-            return S_FALSE;
+            return E_FAIL;
         }
 
         COR_ILMETHOD_DECODER methodDecoder(m_methodDesc->GetILHeader());
@@ -1267,7 +1267,7 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
         {
             *sig = NULL;
             *count = 0;
-            return S_FALSE;
+            return E_FAIL;
         }
 
         ULONG tokenSigLen;
