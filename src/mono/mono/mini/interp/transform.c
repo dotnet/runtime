@@ -1059,6 +1059,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp ("CompareTo", tm)) {
+			MonoType *arg = csignature->params [0];
+
+			/* on 'System.n*::CompareTo (System.n*)' variant we need to push managed
+			 * pointer instead of value */
+			if (arg->type == MONO_TYPE_VALUETYPE)
+				emit_store_value_as_local (td, arg);
+
+			/* emit call to managed conversion method */
+			return FALSE;
 		} else if (!strcmp (".cctor", tm)) {
 			/* white list */
 			return FALSE;

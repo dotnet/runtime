@@ -248,6 +248,28 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nint_compareto ()
+	{
+		if (((nint) 0).CompareTo ((nint) 0) != 0)
+			return 1;
+		if (((nint) 0).CompareTo ((nint) 1) != -1)
+			return 2;
+		if (((nint) 1).CompareTo ((nint) 0) != 1)
+			return 3;
+
+		if (((nint) 0).CompareTo ((object)(nint) 0) != 0)
+			return 4;
+		if (((nint) 0).CompareTo ((object)(nint) 1) != -1)
+			return 5;
+		if (((nint) 1).CompareTo ((object)(nint) 0) != 1)
+			return 6;
+
+		if (((nint) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
+	}
+
 	// static int test_0_nint_call_boxed_equals ()
 	// {
 	// 	object x = new nint (10);
@@ -610,6 +632,28 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nuint_compareto ()
+	{
+		if (((nuint) 0).CompareTo ((nuint) 0) != 0)
+			return 1;
+		if (((nuint) 0).CompareTo ((nuint) 1) != -1)
+			return 2;
+		if (((nuint) 1).CompareTo ((nuint) 0) != 1)
+			return 3;
+
+		if (((nuint) 0).CompareTo ((object)(nuint) 0) != 0)
+			return 4;
+		if (((nuint) 0).CompareTo ((object)(nuint) 1) != -1)
+			return 5;
+		if (((nuint) 1).CompareTo ((object)(nuint) 0) != 1)
+			return 6;
+
+		if (((nuint) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
+	}
+
 	// static int test_0_nuint_call_boxed_equals ()
 	// {
 	// 	object x = new nuint (10);
@@ -963,6 +1007,28 @@ public class BuiltinTests {
 	{
 		var x = (nfloat) float.NaN;
 		return nfloat.IsNaN (x) ? 0 : 1;
+	}
+
+	static int test_0_nfloat_compareto ()
+	{
+		if (((nfloat) 0).CompareTo ((nfloat) 0) != 0)
+			return 1;
+		if (((nfloat) 0).CompareTo ((nfloat) 1) != -1)
+			return 2;
+		if (((nfloat) 1).CompareTo ((nfloat) 0) != 1)
+			return 3;
+
+		if (((nfloat) 0).CompareTo ((object)(nfloat) 0) != 0)
+			return 4;
+		if (((nfloat) 0).CompareTo ((object)(nfloat) 1) != -1)
+			return 5;
+		if (((nfloat) 1).CompareTo ((object)(nfloat) 0) != 1)
+			return 6;
+
+		if (((nfloat) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
 	}
 
 	// static int test_0_nfloat_call_boxed_equals ()
