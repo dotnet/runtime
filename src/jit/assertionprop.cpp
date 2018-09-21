@@ -856,8 +856,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
             assertion->assertionKind     = assertionKind;
             assertion->op1.kind          = O1K_ARR_BND;
-            assertion->op1.bnd.vnIdx     = vnStore->VNNormalValue(arrBndsChk->gtIndex->gtVNPair, VNK_Conservative);
-            assertion->op1.bnd.vnLen     = vnStore->VNNormalValue(arrBndsChk->gtArrLen->gtVNPair, VNK_Conservative);
+            assertion->op1.bnd.vnIdx     = vnStore->VNConservativeNormalValue(arrBndsChk->gtIndex->gtVNPair);
+            assertion->op1.bnd.vnLen     = vnStore->VNConservativeNormalValue(arrBndsChk->gtArrLen->gtVNPair);
             goto DONE_ASSERTION;
         }
     }
@@ -932,7 +932,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 goto DONE_ASSERTION; // Don't make an assertion
             }
 
-            vn = vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative);
+            vn = vnStore->VNConservativeNormalValue(op1->gtVNPair);
             VNFuncApp funcAttr;
 
             // Try to get value number corresponding to the GC ref of the indirection
@@ -975,7 +975,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion->op1.kind       = O1K_LCLVAR;
             assertion->op1.lcl.lclNum = lclNum;
             assertion->op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
-            vn                        = vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative);
+            vn                        = vnStore->VNConservativeNormalValue(op1->gtVNPair);
         }
 
         assertion->op1.vn           = vn;
@@ -1036,10 +1036,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             //
             assertion->op1.kind         = O1K_SUBTYPE;
             assertion->op1.lcl.lclNum   = lclNum;
-            assertion->op1.vn           = vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative);
+            assertion->op1.vn           = vnStore->VNConservativeNormalValue(op1->gtVNPair);
             assertion->op1.lcl.ssaNum   = op1->AsLclVarCommon()->GetSsaNum();
             assertion->op2.u1.iconVal   = op2->gtIntCon.gtIconVal;
-            assertion->op2.vn           = vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative);
+            assertion->op2.vn           = vnStore->VNConservativeNormalValue(op2->gtVNPair);
             assertion->op2.u1.iconFlags = op2->GetIconHandleFlag();
 
             //
@@ -1057,7 +1057,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
             assertion->op1.kind       = O1K_LCLVAR;
             assertion->op1.lcl.lclNum = lclNum;
-            assertion->op1.vn         = vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative);
+            assertion->op1.vn         = vnStore->VNConservativeNormalValue(op1->gtVNPair);
             assertion->op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
             switch (op2->gtOper)
@@ -1104,7 +1104,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     assertion->op2.kind    = op2Kind;
                     assertion->op2.lconVal = 0;
-                    assertion->op2.vn      = vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative);
+                    assertion->op2.vn      = vnStore->VNConservativeNormalValue(op2->gtVNPair);
 
                     if (op2->gtOper == GT_CNS_INT)
                     {
@@ -1190,7 +1190,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
                     assertion->op2.kind       = O2K_LCLVAR_COPY;
                     assertion->op2.lcl.lclNum = lclNum2;
-                    assertion->op2.vn         = vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative);
+                    assertion->op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
                     assertion->op2.lcl.ssaNum = op2->AsLclVarCommon()->GetSsaNum();
 
                     //
@@ -1319,13 +1319,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
 
             assertion->op1.kind       = O1K_EXACT_TYPE;
             assertion->op1.lcl.lclNum = lclNum;
-            assertion->op1.vn         = vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative);
+            assertion->op1.vn         = vnStore->VNConservativeNormalValue(op1->gtVNPair);
             assertion->op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
             assert(assertion->op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM ||
                    assertion->op1.vn ==
-                       vnStore->VNNormalValue(lvaTable[lclNum].GetPerSsaData(assertion->op1.lcl.ssaNum)->m_vnPair,
-                                              VNK_Conservative));
+                       vnStore->VNConservativeNormalValue(
+                           lvaTable[lclNum].GetPerSsaData(assertion->op1.lcl.ssaNum)->m_vnPair));
 
             ssize_t  cnsValue  = 0;
             unsigned iconFlags = 0;
@@ -1340,7 +1340,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion->assertionKind  = assertionKind;
                 assertion->op2.kind       = O2K_IND_CNS_INT;
                 assertion->op2.u1.iconVal = cnsValue;
-                assertion->op2.vn         = vnStore->VNNormalValue(op2->gtOp.gtOp1->gtVNPair, VNK_Conservative);
+                assertion->op2.vn         = vnStore->VNConservativeNormalValue(op2->gtOp.gtOp1->gtVNPair);
 
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
@@ -1358,7 +1358,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 assertion->assertionKind  = assertionKind;
                 assertion->op2.kind       = O2K_IND_CNS_INT;
                 assertion->op2.u1.iconVal = cnsValue;
-                assertion->op2.vn         = vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative);
+                assertion->op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
 
                 /* iconFlags should only contain bits in GTF_ICON_HDL_MASK */
                 assert((iconFlags & ~GTF_ICON_HDL_MASK) == 0);
@@ -1436,7 +1436,7 @@ bool Compiler::optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pCon
     }
 
     // Global assertion prop
-    ValueNum vn = vnStore->VNNormalValue(tree->gtVNPair, VNK_Conservative);
+    ValueNum vn = vnStore->VNConservativeNormalValue(tree->gtVNPair);
     if (!vnStore->IsVNConstant(vn))
     {
         return false;
@@ -1768,9 +1768,9 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
     GenTree* op1 = relop->gtGetOp1();
     GenTree* op2 = relop->gtGetOp2();
 
-    ValueNum op1VN   = vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative);
-    ValueNum op2VN   = vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative);
-    ValueNum relopVN = vnStore->VNNormalValue(relop->gtVNPair, VNK_Conservative);
+    ValueNum op1VN   = vnStore->VNConservativeNormalValue(op1->gtVNPair);
+    ValueNum op2VN   = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+    ValueNum relopVN = vnStore->VNConservativeNormalValue(relop->gtVNPair);
 
     bool hasTestAgainstZero =
         (relop->gtOper == GT_EQ || relop->gtOper == GT_NE) && (op2VN == vnStore->VNZeroForType(op2->TypeGet()));
@@ -2224,7 +2224,7 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, var_types toType,
             // For local assertion prop use comparison on locals, and use comparison on vns for global prop.
             bool isEqual = optLocalAssertionProp
                                ? (curAssertion->op1.lcl.lclNum == tree->AsLclVarCommon()->GetLclNum())
-                               : (curAssertion->op1.vn == vnStore->VNNormalValue(tree->gtVNPair, VNK_Conservative));
+                               : (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair));
             if (!isEqual)
             {
                 continue;
@@ -2293,9 +2293,8 @@ AssertionIndex Compiler::optAssertionIsSubtype(GenTree* tree, GenTree* methodTab
         }
 
         // If local assertion prop use "lcl" based comparison, if global assertion prop use vn based comparison.
-        if ((optLocalAssertionProp)
-                ? (curAssertion->op1.lcl.lclNum != tree->AsLclVarCommon()->GetLclNum())
-                : (curAssertion->op1.vn != vnStore->VNNormalValue(tree->gtVNPair, VNK_Conservative)))
+        if ((optLocalAssertionProp) ? (curAssertion->op1.lcl.lclNum != tree->AsLclVarCommon()->GetLclNum())
+                                    : (curAssertion->op1.vn != vnStore->VNConservativeNormalValue(tree->gtVNPair)))
         {
             continue;
         }
@@ -2376,8 +2375,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* stmt, Gen
     }
 
     // We want to use the Normal ValueNumber when checking for constants.
-    ValueNum vnCns = vnStore->VNNormalValue(tree->gtVNPair, VNK_Conservative);
-    ValueNum vnLib = vnStore->VNNormalValue(tree->gtVNPair, VNK_Liberal);
+    ValueNum vnCns = vnStore->VNConservativeNormalValue(tree->gtVNPair);
+    ValueNum vnLib = vnStore->VNLiberalNormalValue(tree->gtVNPair);
 
     // Check if node evaluates to a constant.
     if (!vnStore->IsVNConstant(vnCns))
@@ -2897,7 +2896,7 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTree*
                 return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
             // If global assertion, perform constant propagation only if the VN's match and the lcl is non-CSE.
-            else if (curAssertion->op1.vn == vnStore->VNNormalValue(tree->gtVNPair, VNK_Conservative))
+            else if (curAssertion->op1.vn == vnStore->VNConservativeNormalValue(tree->gtVNPair))
             {
 #if FEATURE_ANYCSE
                 // Don't perform constant prop for CSE LclVars
@@ -2981,8 +2980,8 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
             continue;
         }
 
-        if ((curAssertion->op1.vn == vnStore->VNNormalValue(op1->gtVNPair, VNK_Conservative)) &&
-            (curAssertion->op2.vn == vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative)))
+        if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
+            (curAssertion->op2.vn == vnStore->VNConservativeNormalValue(op2->gtVNPair)))
         {
             return assertionIndex;
         }
@@ -3054,7 +3053,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     bool allowReverse = true;
 
     // If the assertion involves "op2" and it is a constant, then check if "op1" also has a constant value.
-    ValueNum vnCns = vnStore->VNNormalValue(op2->gtVNPair, VNK_Conservative);
+    ValueNum vnCns = vnStore->VNConservativeNormalValue(op2->gtVNPair);
     if (vnStore->IsVNConstant(vnCns))
     {
 #ifdef DEBUG
@@ -3717,9 +3716,9 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 #endif
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion->op1.bnd.vnLen == vnStore->VNNormalValue(arrBndsChk->gtArrLen->gtVNPair, VNK_Conservative))
+        if (curAssertion->op1.bnd.vnLen == vnStore->VNConservativeNormalValue(arrBndsChk->gtArrLen->gtVNPair))
         {
-            ValueNum vnCurIdx = vnStore->VNNormalValue(arrBndsChk->gtIndex->gtVNPair, VNK_Conservative);
+            ValueNum vnCurIdx = vnStore->VNConservativeNormalValue(arrBndsChk->gtIndex->gtVNPair);
 
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
@@ -4613,7 +4612,7 @@ GenTree* Compiler::optPrepareTreeForReplacement(GenTree* oldTree, GenTree* newTr
             // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
             // have GTF_EXCEPT set, even if it does not actually throw any exceptions).
             assert(!gtNodeHasSideEffects(oldTree, GTF_EXCEPT) ||
-                   vnStore->IsVNConstant(vnStore->VNNormalValue(oldTree->gtVNPair, VNK_Conservative)));
+                   vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(oldTree->gtVNPair)));
 
             ignoreRoot = true;
         }
