@@ -12,6 +12,7 @@ namespace System.Net.NetworkInformation
         public const string SnmpV6StatsFile = "/proc/net/snmp6";
         public const string Ipv4ConfigFolder = "/proc/sys/net/ipv4/conf";
         public const string Ipv6ConfigFolder = "/proc/sys/net/ipv6/conf";
+        public const string Ipv4GlobalForwardingFile = "/proc/sys/net/ipv4/ip_forward";
         public const string Ipv4RouteFile = "/proc/net/route";
         public const string Ipv6RouteFile = "/proc/net/ipv6_route";
         public const string SockstatFile = "/proc/net/sockstat";
