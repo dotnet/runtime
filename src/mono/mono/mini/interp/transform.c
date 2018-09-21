@@ -1075,6 +1075,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		} else if (!strcmp ("Parse", tm)) {
 			/* white list */
 			return FALSE;
+		} else if (!strcmp ("ToString", tm)) {
+			/* white list */
+			return FALSE;
 		} else if (!strcmp ("IsNaN", tm) || !strcmp ("IsInfinity", tm) || !strcmp ("IsNegativeInfinity", tm) || !strcmp ("IsPositiveInfinity", tm)) {
 			g_assert (type_index == 2); // nfloat only
 			/* white list */

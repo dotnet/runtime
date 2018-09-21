@@ -301,6 +301,18 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nint_tostring ()
+	{
+		int x = 1337;
+		if (((nint) x).ToString () != "1337")
+			return 1;
+		x = -1337;
+		if (((nint) x).ToString () != "-1337")
+			return 2;
+
+		return 0;
+	}
+
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	static bool decimal_cmp (decimal a, decimal b)
 	{
@@ -693,6 +705,18 @@ public class BuiltinTests {
 			return 2;
 		if (x.ToString () != "10")
 			return 3;
+		return 0;
+	}
+
+	static int test_0_nuint_tostring ()
+	{
+		int x = 1337;
+		if (((nuint) x).ToString () != "1337")
+			return 1;
+		x = -1337;
+		if (((nuint) x).ToString () == "-1337")
+			return 2;
+
 		return 0;
 	}
 
@@ -1165,6 +1189,19 @@ public class BuiltinTests {
 			return 2;
 		if (x.ToString () != "10")
 			return 3;
+		return 0;
+	}
+
+	static int test_0_nfloat_tostring ()
+	{
+		float x = 1337.0f;
+		nfloat y = (nfloat) x;
+		if (y.ToString () != "1337")
+			return 1;
+		x = -1337.0f;
+		if (((nfloat) x).ToString () != "-1337")
+			return 2;
+
 		return 0;
 	}
 
