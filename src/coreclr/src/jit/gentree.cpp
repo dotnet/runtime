@@ -16966,7 +16966,7 @@ void GenTree::ParseArrayAddressWork(Compiler*       comp,
                 break;
         }
         // If we didn't return above, must be a contribution to the non-constant part of the index VN.
-        ValueNum vn = comp->GetValueNumStore()->VNNormalValue(gtVNPair, VNK_Liberal);
+        ValueNum vn = comp->GetValueNumStore()->VNLiberalNormalValue(gtVNPair);
         if (inputMul != 1)
         {
             ValueNum mulVN = comp->GetValueNumStore()->VNForLongCon(inputMul);
