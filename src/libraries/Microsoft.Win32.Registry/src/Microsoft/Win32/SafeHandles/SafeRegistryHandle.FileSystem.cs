@@ -6,12 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Win32.SafeHandles
 {
-#if REGISTRY_ASSEMBLY
-    public
-#else
-    internal
-#endif
-    sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed partial class SafeRegistryHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         // TODO: implement this if necessary
         protected override bool ReleaseHandle() => true;

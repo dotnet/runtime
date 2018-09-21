@@ -18,32 +18,18 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.RegistryConstants.cs">
       <Link>Common\CoreLib\Interop\Windows\Advapi32\Interop.RegistryConstants.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\Registry.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\Registry.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryHive.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\RegistryHive.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryValueKind.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\RegistryValueKind.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs</Link>
     </Compile>
+    <Compile Include="Microsoft\Win32\Registry.cs" />
+    <Compile Include="Microsoft\Win32\RegistryHive.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueKind.cs" />
     <Compile Include="Microsoft\Win32\RegistryKey.cs" />
     <Compile Include="Microsoft\Win32\RegistryKeyPermissionCheck.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryOptions.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\RegistryOptions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryValueOptions.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\RegistryValueOptions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\RegistryView.cs">
-      <Link>Common\CoreLib\Microsoft\Win32\RegistryView.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Security\AccessControl\RegistryRights.cs">
-      <Link>Common\CoreLib\System\Security\AccessControl\RegistryRights.cs</Link>
-    </Compile>
+    <Compile Include="Microsoft\Win32\RegistryOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryValueOptions.cs" />
+    <Compile Include="Microsoft\Win32\RegistryView.cs" />
+    <Compile Include="System\Security\AccessControl\RegistryRights.cs" />
     <Compile Include="System\Security\AccessControl\RegistrySecurity.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND '$(TargetsWindows)' == 'true'">

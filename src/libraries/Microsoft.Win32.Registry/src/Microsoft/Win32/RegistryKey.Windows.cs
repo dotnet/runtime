@@ -57,12 +57,7 @@ using System.Security.AccessControl;
 
 namespace Microsoft.Win32
 {
-#if REGISTRY_ASSEMBLY
-    public
-#else
-    internal
-#endif
-    sealed partial class RegistryKey : MarshalByRefObject, IDisposable
+    public sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
         private void ClosePerfDataKey()
         {
@@ -815,7 +810,7 @@ namespace Microsoft.Win32
                             ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
-                                valueKind,
+                                (int)valueKind,
                                 data,
                                 checked(data.Length * 2 + 2));
                             break;
@@ -857,7 +852,7 @@ namespace Microsoft.Win32
                             ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
-                                RegistryValueKind.MultiString,
+                                Interop.Advapi32.RegistryValues.REG_MULTI_SZ,
                                 dataChars,
                                 sizeInBytes);
 
@@ -870,7 +865,7 @@ namespace Microsoft.Win32
                         ret = Interop.Advapi32.RegSetValueEx(_hkey,
                             name,
                             0,
-                            (valueKind == RegistryValueKind.None ? Interop.Advapi32.RegistryValues.REG_NONE : RegistryValueKind.Binary),
+                            (valueKind == RegistryValueKind.None ? Interop.Advapi32.RegistryValues.REG_NONE : Interop.Advapi32.RegistryValues.REG_BINARY),
                             dataBytes,
                             dataBytes.Length);
                         break;
@@ -884,7 +879,7 @@ namespace Microsoft.Win32
                             ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
-                                RegistryValueKind.DWord,
+                                Interop.Advapi32.RegistryValues.REG_DWORD,
                                 ref data,
                                 4);
                             break;
@@ -897,7 +892,7 @@ namespace Microsoft.Win32
                             ret = Interop.Advapi32.RegSetValueEx(_hkey,
                                 name,
                                 0,
-                                RegistryValueKind.QWord,
+                                Interop.Advapi32.RegistryValues.REG_QWORD,
                                 ref data,
                                 8);
                             break;
