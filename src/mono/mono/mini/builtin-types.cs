@@ -1025,10 +1025,94 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_nfloat_isinfinity ()
+	{
+		var x = (nfloat) float.NaN;
+		if (nfloat.IsInfinity (x))
+			return 1;
+		if (nfloat.IsInfinity (12))
+			return 2;
+		if (!nfloat.IsInfinity (nfloat.PositiveInfinity))
+			return 3;
+		if (!nfloat.IsInfinity (nfloat.NegativeInfinity))
+			return 4;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_isnegativeinfinity ()
+	{
+		var x = (nfloat) float.NaN;
+		if (nfloat.IsNegativeInfinity (x))
+			return 1;
+		if (nfloat.IsNegativeInfinity (12))
+			return 2;
+		if (nfloat.IsNegativeInfinity (nfloat.PositiveInfinity))
+			return 3;
+		if (!nfloat.IsNegativeInfinity (nfloat.NegativeInfinity))
+			return 4;
+
+		float f = float.NegativeInfinity;
+		nfloat n = (nfloat) f;
+		if (!nfloat.IsNegativeInfinity (n))
+			return 5;
+
+		double d = double.NegativeInfinity;
+		n = (nfloat) d;
+		if (!nfloat.IsNegativeInfinity (n))
+			return 6;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_ispositiveinfinity ()
+	{
+		var x = (nfloat) float.NaN;
+		if (nfloat.IsPositiveInfinity (x))
+			return 1;
+		if (nfloat.IsPositiveInfinity (12))
+			return 2;
+		if (!nfloat.IsPositiveInfinity (nfloat.PositiveInfinity))
+			return 3;
+		if (nfloat.IsPositiveInfinity (nfloat.NegativeInfinity))
+			return 4;
+
+		float f = float.PositiveInfinity;
+		nfloat n = (nfloat) f;
+		if (!nfloat.IsPositiveInfinity (n))
+			return 5;
+
+		double d = double.PositiveInfinity;
+		n = (nfloat) d;
+		if (!nfloat.IsPositiveInfinity (n))
+			return 6;
+
+		return 0;
+	}
+
 	static int test_0_nfloat_isnan ()
 	{
 		var x = (nfloat) float.NaN;
-		return nfloat.IsNaN (x) ? 0 : 1;
+		if (!nfloat.IsNaN (x))
+			return 1;
+		if (nfloat.IsNaN (12))
+			return 2;
+		if (nfloat.IsNaN (nfloat.PositiveInfinity))
+			return 3;
+		if (nfloat.IsNaN (nfloat.NegativeInfinity))
+			return 4;
+
+		float f = float.NaN;
+		nfloat n = (nfloat) f;
+		if (!nfloat.IsNaN (n))
+			return 5;
+
+		double d = double.NaN;
+		n = (nfloat) d;
+		if (!nfloat.IsNaN (n))
+			return 6;
+
+		return 0;
 	}
 
 	static int test_0_nfloat_compareto ()
