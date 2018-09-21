@@ -1059,10 +1059,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
 			td->ip += 5;
 			return TRUE;
-		} else if (!strcmp ("CompareTo", tm)) {
+		} else if (!strcmp ("CompareTo", tm) || !strcmp ("Equals", tm)) {
 			MonoType *arg = csignature->params [0];
 
-			/* on 'System.n*::CompareTo (System.n*)' variant we need to push managed
+			/* on 'System.n*::{CompareTo,Equals} (System.n*)' variant we need to push managed
 			 * pointer instead of value */
 			if (arg->type == MONO_TYPE_VALUETYPE)
 				emit_store_value_as_local (td, arg);
@@ -3212,6 +3212,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 			td->sp -= csignature->param_count;
 			if (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass)) {
+#if SIZEOF_VOID_P == 8
+				if (mono_class_is_magic_int (klass))
+					ADD_CODE(td, MINT_CONV_I8_U4);
+#endif
 				ADD_CODE (td, MINT_NEWOBJ_MAGIC);
 				ADD_CODE (td, get_data_item_index (td, mono_interp_get_imethod (domain, m, error)));
 				goto_if_nok (error, exit);

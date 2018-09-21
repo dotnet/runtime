@@ -270,14 +270,25 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	// static int test_0_nint_call_boxed_equals ()
-	// {
-	// 	object x = new nint (10);
-	// 	object y = new nint (10);
-	// 	if (!x.Equals (y))
-	// 		return 1;
-	// 	return 0;
-	// }
+	static int test_0_nint_call_boxed_equals ()
+	{
+		object x = new nint (10);
+		object y = new nint (10);
+		if (!x.Equals (y))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_nint_equals ()
+	{
+		if (!((nint) 0).Equals ((nint) 0))
+			return 1;
+		if (!((nint) 0).Equals ((object) (nint) 0))
+			return 2;
+		if (((nint) 0).Equals (null))
+			return 3;
+		return 0;
+	}
 
 	static int test_0_nint_call_boxed_funs ()
 	{
@@ -654,14 +665,25 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	// static int test_0_nuint_call_boxed_equals ()
-	// {
-	// 	object x = new nuint (10);
-	// 	object y = new nuint (10);
-	// 	if (!x.Equals (y))
-	// 		return 1;
-	// 	return 0;
-	// }
+	static int test_0_nuint_call_boxed_equals ()
+	{
+		object x = new nuint (10);
+		object y = new nuint (10);
+		if (!x.Equals (y))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_nuint_equals ()
+	{
+		if (!((nuint) 0).Equals ((nuint) 0))
+			return 1;
+		if (!((nuint) 0).Equals ((object) (nuint) 0))
+			return 2;
+		if (((nuint) 0).Equals (null))
+			return 3;
+		return 0;
+	}
 
 	static int test_0_nuint_call_boxed_funs ()
 	{
@@ -1031,14 +1053,25 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	// static int test_0_nfloat_call_boxed_equals ()
-	// {
-	// 	object x = new nfloat (10f);
-	// 	object y = new nfloat (10f);
-	// 	if (!x.Equals (y))
-	// 		return 1;
-	// 	return 0;
-	// }
+	static int test_0_nfloat_call_boxed_equals ()
+	{
+		object x = new nfloat (10f);
+		object y = new nfloat (10f);
+		if (!x.Equals (y))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_nfloat_equals ()
+	{
+		if (!((nfloat) 0).Equals ((nfloat) 0))
+			return 1;
+		if (!((nfloat) 0).Equals ((object) (nfloat) 0))
+			return 2;
+		if (((nfloat) 0).Equals (null))
+			return 3;
+		return 0;
+	}
 
 	static int test_0_nfloat_call_boxed_funs ()
 	{
