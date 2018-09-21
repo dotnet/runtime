@@ -2487,7 +2487,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxruntime.zip")
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxtests.zip")
-                        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/run-test.sh")
                     }
                     else if (isCrossGenComparisonScenario(scenario)) {
                         buildCommands += "${dockerCmd}\${WORKSPACE}/build-test.sh ${lowerConfiguration} ${architecture} cross generatelayoutonly"
@@ -3358,8 +3357,6 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                     shell("mkdir -p ${workspaceRelativeFxRootLinux}")
                     shell("wget --progress=dot:giga --directory-prefix=${workspaceRelativeFxRootLinux} ${inputUrlRoot}/${workspaceRelativeFxRootLinux}/fxtests.zip")
                     shell("wget --progress=dot:giga --directory-prefix=${workspaceRelativeFxRootLinux} ${inputUrlRoot}/${workspaceRelativeFxRootLinux}/fxruntime.zip")
-                    shell("wget --progress=dot:giga --directory-prefix=${workspaceRelativeFxRootLinux} ${inputUrlRoot}/${workspaceRelativeFxRootLinux}/run-test.sh")
-                    shell("chmod +x ${workspaceRelativeFxRootLinux}/run-test.sh")
                 }
                 else {
                     shell("wget --progress=dot:giga ${inputUrlRoot}/testnativebin.${lowerConfiguration}.zip")
@@ -3455,7 +3452,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
 
             if (doCoreFxTesting) {
                 shell("""\
-\${WORKSPACE}/${workspaceRelativeFxRootLinux}/run-test.sh --sequential --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin --configurationGroup Release""")
+\${WORKSPACE}/tests/scripts/run-corefx-tests.sh --sequential --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin --configurationGroup Release""")
             }
             else {
                 def runScript = "${dockerCmd}./tests/runtest.sh"
