@@ -5539,6 +5539,10 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         // We need to return the highest index for which we have a valid register.
         // Note that the gtOtherRegs array is off by one (the 0th register is gtRegNum).
         // If there's no valid register in gtOtherRegs, gtRegNum must be valid.
+        // Note that for most nodes, the set of valid registers must be contiguous,
+        // but for COPY or RELOAD there is only a valid register for the register positions
+        // that must be copied or reloaded.
+        //
         for (unsigned i = MAX_RET_REG_COUNT; i > 1; i--)
         {
             if (gtOtherRegs[i - 2] != REG_NA)
