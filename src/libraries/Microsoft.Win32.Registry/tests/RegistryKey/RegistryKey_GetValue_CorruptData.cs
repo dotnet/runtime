@@ -26,7 +26,7 @@ namespace Microsoft.Win32.RegistryTests
 
             SafeRegistryHandle handle = TestRegistryKey.Handle;
             int ret = Interop.Advapi32.RegSetValueEx(handle, TestValueName, 0,
-                RegistryValueKind.MultiString, corrupt, corrupt.Length * 2);
+                (int)RegistryValueKind.MultiString, corrupt, corrupt.Length * 2);
             Assert.Equal(0, ret);
             try
             {
@@ -54,7 +54,7 @@ namespace Microsoft.Win32.RegistryTests
 
             SafeRegistryHandle handle = TestRegistryKey.Handle;
             int ret = Interop.Advapi32.RegSetValueEx(handle, TestValueName, 0,
-                kind, contents, contents.Length);
+                (int)kind, contents, contents.Length);
             Assert.Equal(0, ret);
             try
             {
