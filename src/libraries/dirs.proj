@@ -69,4 +69,17 @@
     <Exec Command="$(TestHostRootPath)\TestILC\ilc.exe -buildSharedAssemblies -buildType ret -frameworkPath &quot;$(ILCFXInputFolder)&quot;" StandardOutputImportance="Low" Condition="Exists('$(TestHostRootPath)\TestILC\ilc.exe')" />
   </Target>
 
+    <!-- Generate launch settings support files to enable VS debugging. -->
+  <Target Name="GenerateLaunchSettingsFiles" BeforeTargets="BuildAllProjects" Condition="'$(GenerateLaunchSettings)' == 'true'">
+    <ItemGroup>
+      <!-- Keep in sync with pattern for test projects in tests.builds -->
+      <TestProjects Include="$(SourceDir)*\tests\**\*.Tests.csproj" />
+      <TestProjects Include="$(SourceDir)*\tests\**\*.Tests.vbproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(TestProjects)"
+             Targets="GenerateLaunchSettingsFile"
+             ContinueOnError="ErrorAndContinue" />
+  </Target>
+
 </Project>

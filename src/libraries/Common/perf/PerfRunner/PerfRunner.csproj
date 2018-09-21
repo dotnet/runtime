@@ -22,9 +22,4 @@
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Content Condition="'$(TargetsNetFx)' != 'true'" Include="PerfRunner.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 </Project>

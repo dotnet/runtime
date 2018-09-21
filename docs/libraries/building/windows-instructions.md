@@ -78,26 +78,16 @@ For more details, or to test an individual project, see the [developer guide top
 
 1. Open solution of interest
 2. Right click test project and select 'Set as startup project'
-3. Ctrl+F5 (Run)
+3. Select the corresponding launch profile (green arrow, i.e. `.NET Core xUnit Console`)
+4. Ctrl+F5 (Run)
 
 ### Debugging tests in Visual Studio
 
 1. Open solution of interest
 2. Right click test project and select 'Set as startup project'
 3. Set breakpoint appropriately
-4. F5 (Debug)
-
-### Debugging NETFX tests in Visual Studio
-
-Once you've built the source code for netfx from the root (`build.cmd -framework:netfx`) follow these steps:
-
-1. Build test project with the following parameters `dotnet msbuild /t:buildandtest /p:targetgroup=netfx /p:testdebugger=devenv.exe`. This will open Visual Studio with the runner as startup project and its corresponding arguments.
-2. Open project properties and fill in the next information:
-    * Debugger Type -> Managed (v4.6, v4.5, v4.0)
-    * Environment -> you need to add an environment variable as follows:
-         * DEVPATH -> `<corefxpath>\bin\testhost\netfx-Windows_NT-Debug-x64\`
-3. Set breakpoint appropriately
-4. F5 (Debug)
+4. Select the corresponding launch profile (green arrow, i.e. `.NET Core xUnit Console`)
+5. F5 (Debug)
 
 For advanced debugging using WinDBG see [Debugging CoreFX on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/debugging/windows-instructions.md)
 
@@ -107,6 +97,6 @@ the one used by the installed .NET Core SDK. This means the corefx codebase migh
 be using language features that are not understood by the IDE, which might result in errors that
 show up as red squiggles while writing code. Such errors should, however, not affect the actual compilation.
 
-* Running tests from using the VS test explorer does not currently work after we switched to running on CoreCLR. [We will be working on enabling full VS test integration](https://github.com/dotnet/corefx/issues/20627) but we don't have an ETA yet. In the meantime, use the steps above to launch/debug the tests using the console runner.
+* Running tests from using the VS test explorer does not currently work after we switched to running on CoreCLR. [We are actively working on enabling full VS test integration](https://github.com/dotnet/corefx/issues/20627) but we don't have an ETA yet. In the meantime, use the steps above to launch/debug the tests using the console runner.
 
 * If your build fails with "[...].dll - Access is denied" errors, it might be because Visual Studio/MSBuild is locking these files. Try shutting down `VBCSCompiler.exe` and `dotnet.exe` from the task manager before building again.
