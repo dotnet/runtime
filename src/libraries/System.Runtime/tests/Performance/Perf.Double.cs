@@ -14,6 +14,7 @@ namespace System.Tests
         // NOTE: Consider duplicating any tests added here in Perf.Single.cs
 
         private volatile string _string;
+        private volatile bool _bool;
 
         [Benchmark]
         [InlineData(double.NegativeInfinity, 10_000_000)]   // Negative Infinity
@@ -44,6 +45,40 @@ namespace System.Tests
                     for (int i = 0; i < innerIterations; i++)
                     {
                         _string = number.ToString();
+                    }
+                }
+            }
+        }
+
+        [Benchmark]
+        [InlineData("-∞", 10_000_000)]                      // Negative Infinity
+        [InlineData("-1.7976931348623157E+308", 100_000)]   // Min Negative Normal
+        [InlineData("-3.1415926535897931", 1_000_000)]      // Negative pi
+        [InlineData("-2.7182818284590451", 1_000_000)]      // Negative e
+        [InlineData("-1", 1_000_000)]                       // Negative One
+        [InlineData("-2.2250738585072014E-308", 100_000)]   // Max Negative Normal
+        [InlineData("-2.2250738585072009E-308", 100_000)]   // Min Negative Subnormal
+        [InlineData("-4.94065645841247E-324", 100_000)]     // Max Negative Subnormal (Negative Epsilon)
+        [InlineData("-0.0", 10_000_000)]                    // Negative Zero
+        [InlineData("NaN", 10_000_000)]                     // NaN
+        [InlineData("0", 10_000_000)]                       // Positive Zero
+        [InlineData("4.94065645841247E-324", 100_000)]      // Min Positive Subnormal (Positive Epsilon)
+        [InlineData("2.2250738585072009E-308", 100_000)]    // Max Positive Subnormal
+        [InlineData("2.2250738585072014E-308", 100_000)]    // Min Positive Normal
+        [InlineData("1", 1_000_000)]                        // Positive One
+        [InlineData("2.7182818284590451", 1_000_000)]       // Positive e
+        [InlineData("3.1415926535897931", 1_000_000)]       // Positive pi
+        [InlineData("1.7976931348623157E+308", 100_000)]    // Max Positive Normal
+        [InlineData("∞", 10_000_000)]                       // Positive Infinity
+        public void DefaultTryParse(string input, int innerIterations)
+        {
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < innerIterations; i++)
+                    {
+                        _bool = double.TryParse(input, out var result);
                     }
                 }
             }
