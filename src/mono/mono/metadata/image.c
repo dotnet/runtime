@@ -178,7 +178,7 @@ mono_install_image_loader (const MonoImageLoader *loader)
 guint32
 mono_cli_rva_image_map (MonoImage *image, guint32 addr)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
@@ -214,7 +214,7 @@ mono_cli_rva_image_map (MonoImage *image, guint32 addr)
 char *
 mono_image_rva_map (MonoImage *image, guint32 addr)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	const int top = iinfo->cli_section_count;
 	MonoSectionTable *tables = iinfo->cli_section_tables;
 	int i;
@@ -303,7 +303,7 @@ mono_images_cleanup (void)
 int
 mono_image_ensure_section_idx (MonoImage *image, int section)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoSectionTable *sect;
 	
 	g_return_val_if_fail (section < iinfo->cli_section_count, FALSE);
@@ -338,7 +338,7 @@ mono_image_ensure_section_idx (MonoImage *image, int section)
 int
 mono_image_ensure_section (MonoImage *image, const char *section)
 {
-	MonoCLIImageInfo *ii = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *ii = image->image_info;
 	int i;
 	
 	for (i = 0; i < ii->cli_section_count; i++){
@@ -975,7 +975,7 @@ pe_image_load_pe_data (MonoImage *image)
 	MonoMSDOSHeader msdos;
 	gint32 offset = 0;
 
-	iinfo = (MonoCLIImageInfo *)image->image_info;
+	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
 #ifdef HOST_WIN32
@@ -1044,7 +1044,7 @@ pe_image_load_cli_data (MonoImage *image)
 	MonoCLIImageInfo *iinfo;
 	MonoDotNetHeader *header;
 
-	iinfo = (MonoCLIImageInfo *)image->image_info;
+	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
 	/* Load the CLI header */
@@ -1318,7 +1318,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 
 	mono_image_init (image);
 
-	iinfo = (MonoCLIImageInfo *)image->image_info;
+	iinfo = image->image_info;
 	header = &iinfo->cli_header;
 
 	if (!image->metadata_only) {
@@ -1881,7 +1881,7 @@ mono_image_fixup_vtable (MonoImage *image)
 
 	g_assert (image->is_module_handle);
 
-	iinfo = (MonoCLIImageInfo*)image->image_info;
+	iinfo = image->image_info;
 	de = &iinfo->cli_cli_header.ch_vtable_fixups;
 	if (!de->rva || !de->size)
 		return;
@@ -2106,7 +2106,7 @@ mono_image_close_except_pools (MonoImage *image)
 	if (image->raw_data_allocated) {
 		/* FIXME: do we need this? (image is disposed anyway) */
 		/* image->raw_metadata and cli_sections might lie inside image->raw_data */
-		MonoCLIImageInfo *ii = (MonoCLIImageInfo *)image->image_info;
+		MonoCLIImageInfo *ii = image->image_info;
 
 		if ((image->raw_metadata > image->raw_data) &&
 			(image->raw_metadata <= (image->raw_data + image->raw_data_len)))
@@ -2195,7 +2195,7 @@ mono_image_close_except_pools (MonoImage *image)
 		mono_bitset_free (image->interface_bitset);
 	}
 	if (image->image_info){
-		MonoCLIImageInfo *ii = (MonoCLIImageInfo *)image->image_info;
+		MonoCLIImageInfo *ii = image->image_info;
 
 		g_free (ii->cli_section_tables);
 		g_free (ii->cli_sections);
@@ -2466,7 +2466,7 @@ mono_image_lookup_resource (MonoImage *image, guint32 res_id, guint32 lang_id, g
 guint32
 mono_image_get_entry_point (MonoImage *image)
 {
-	return ((MonoCLIImageInfo*)image->image_info)->cli_cli_header.ch_entry_point;
+	return image->image_info->cli_cli_header.ch_entry_point;
 }
 
 /**
@@ -2484,7 +2484,7 @@ mono_image_get_entry_point (MonoImage *image)
 const char*
 mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoCLIHeader *ch = &iinfo->cli_cli_header;
 	const char* data;
 
@@ -2596,7 +2596,7 @@ mono_image_load_file_for_image (MonoImage *image, int fileidx)
 const char*
 mono_image_get_strong_name (MonoImage *image, guint32 *size)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
 	const char* data;
 
@@ -2624,7 +2624,7 @@ mono_image_get_strong_name (MonoImage *image, guint32 *size)
 guint32
 mono_image_strong_name_position (MonoImage *image, guint32 *size)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoPEDirEntry *de = &iinfo->cli_cli_header.ch_strong_name;
 	guint32 pos;
 
@@ -2772,7 +2772,7 @@ mono_image_is_dynamic (MonoImage *image)
 gboolean
 mono_image_has_authenticode_entry (MonoImage *image)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)image->image_info;
+	MonoCLIImageInfo *iinfo = image->image_info;
 	MonoDotNetHeader *header = &iinfo->cli_header;
 	if (!header)
 		return FALSE;

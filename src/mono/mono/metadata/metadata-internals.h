@@ -280,7 +280,7 @@ struct _MonoImage {
 	char *version;
 	gint16 md_version_major, md_version_minor;
 	char *guid;
-	void *image_info;
+	MonoCLIImageInfo    *image_info;
 	MonoMemPool         *mempool; /*protected by the image lock*/
 
 	char                *raw_metadata;

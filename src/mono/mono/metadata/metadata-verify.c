@@ -338,7 +338,7 @@ bounds_check_virtual_address (VerifyContext *ctx, guint32 rva, guint32 size)
 		return FALSE;
 
 	if (ctx->stage > STAGE_PE) {
-		MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)ctx->image->image_info;
+		MonoCLIImageInfo *iinfo = ctx->image->image_info;
 		const int top = iinfo->cli_section_count;
 		MonoSectionTable *tables = iinfo->cli_section_tables;
 		int i;
@@ -700,7 +700,7 @@ verify_resources_table (VerifyContext *ctx)
 static DataDirectory
 get_data_dir (VerifyContext *ctx, int idx)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)ctx->image->image_info;
+	MonoCLIImageInfo *iinfo = ctx->image->image_info;
 	MonoPEDirEntry *entry= &iinfo->cli_header.datadir.pe_export_table;
 	DataDirectory res;
 
@@ -3522,7 +3522,7 @@ verify_exportedtype_table (VerifyContext *ctx)
 static void
 verify_manifest_resource_table (VerifyContext *ctx)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)ctx->image->image_info;
+	MonoCLIImageInfo *iinfo = ctx->image->image_info;
 	MonoCLIHeader *ch = &iinfo->cli_cli_header;
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 data [MONO_MANIFEST_SIZE], impl_table, token, resources_size;

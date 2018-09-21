@@ -1113,8 +1113,8 @@ mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname
 	else
 		aname->public_key = 0;
 
-	machine = ((MonoCLIImageInfo*)(image->image_info))->cli_header.coff.coff_machine;
-	flags = ((MonoCLIImageInfo*)(image->image_info))->cli_cli_header.ch_flags;
+	machine = image->image_info->cli_header.coff.coff_machine;
+	flags = image->image_info->cli_cli_header.ch_flags;
 	switch (machine) {
 	case COFF_MACHINE_I386:
 		/* https://bugzilla.xamarin.com/show_bug.cgi?id=17632 */

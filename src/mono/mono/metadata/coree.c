@@ -119,7 +119,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		 * loader trampolines should be used and assembly loading should
 		 * probably be delayed until the first call to an exported function.
 		 */
-		if (image->tables [MONO_TABLE_ASSEMBLY].rows && ((MonoCLIImageInfo*) image->image_info)->cli_cli_header.ch_vtable_fixups.rva)
+		if (image->tables [MONO_TABLE_ASSEMBLY].rows && image->image_info->cli_cli_header.ch_vtable_fixups.rva)
 			assembly = mono_assembly_open_predicate (file_name, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, NULL);
 
 		g_free (file_name);

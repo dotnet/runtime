@@ -68,7 +68,7 @@ get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 	MonoPEDirEntry *debug_dir_entry;
 	ImageDebugDirectory *debug_dir;
 
-	debug_dir_entry = &((MonoCLIImageInfo*)image->image_info)->cli_header.datadir.pe_debug;
+	debug_dir_entry = &image->image_info->cli_header.datadir.pe_debug;
 	if (!debug_dir_entry->size)
 		return FALSE;
 
