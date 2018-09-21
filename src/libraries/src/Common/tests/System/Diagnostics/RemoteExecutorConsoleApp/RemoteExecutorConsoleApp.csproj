@@ -19,9 +19,4 @@
       <Link>Common\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAssemblyAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="RemoteExecutorConsoleApp.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 </Project>

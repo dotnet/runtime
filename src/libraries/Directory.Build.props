@@ -363,6 +363,9 @@
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
+
+    <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
+    <GenerateLaunchSettings>true</GenerateLaunchSettings>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
