@@ -113,6 +113,7 @@ internal static partial class Interop
             ramfs = 0x858458F6,
             reiserfs = 0x52654973,
             romfs = 0x7275,
+            rootfs = 0x53464846,
             rpc_pipefs = 0x67596969,
             samba = 0x517B,
             securityfs = 0x73636673,
