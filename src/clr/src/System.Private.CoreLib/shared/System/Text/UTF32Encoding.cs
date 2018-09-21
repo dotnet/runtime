@@ -42,27 +42,27 @@ namespace System.Text
         private static readonly byte[] s_bigEndianPreamble = new byte[4] { 0x00, 0x00, 0xFE, 0xFF };
         private static readonly byte[] s_littleEndianPreamble = new byte[4] { 0xFF, 0xFE, 0x00, 0x00 };
 
-        private bool _emitUTF32ByteOrderMark = false;
-        private bool _isThrowException = false;
-        private bool _bigEndian = false;
+        private readonly bool _emitUTF32ByteOrderMark = false;
+        private readonly bool _isThrowException = false;
+        private readonly bool _bigEndian = false;
 
 
-        public UTF32Encoding() : this(false, true, false)
+        public UTF32Encoding() : this(false, true)
         {
         }
 
 
         public UTF32Encoding(bool bigEndian, bool byteOrderMark) :
-            this(bigEndian, byteOrderMark, false)
-        {
-        }
-
-
-        public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters) :
             base(bigEndian ? 12001 : 12000)
         {
             _bigEndian = bigEndian;
             _emitUTF32ByteOrderMark = byteOrderMark;
+        }
+
+
+        public UTF32Encoding(bool bigEndian, bool byteOrderMark, bool throwOnInvalidCharacters) :
+            this(bigEndian, byteOrderMark)
+        {
             _isThrowException = throwOnInvalidCharacters;
 
             // Encoding constructor already did this, but it'll be wrong if we're throwing exceptions
