@@ -3,14 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     internal static partial class Number
     {
-        private const int NumberMaxDigits = 50; // needs to == NUMBER_MAXDIGITS in coreclr's src/classlibnative/bcltype/number.h.
+        private const int NumberMaxDigits = 50;
 
         private const double Log10V2 = 0.30102999566398119521373889472449;
 
@@ -18,7 +17,7 @@ namespace System
         private const double DriftFactor = 0.69;
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        internal unsafe ref struct NumberBuffer // needs to match layout of NUMBER in coreclr's src/classlibnative/bcltype/number.h
+        internal unsafe ref struct NumberBuffer
         {
             public int precision;                       //  0
             public int scale;                           //  4
@@ -35,7 +34,7 @@ namespace System
             private struct DigitsAndNullTerminator { }
         }
 
-        internal enum NumberBufferKind // needs to match NUMBER_KIND in coreclr's src/classlibnative/bcltype/number.h
+        internal enum NumberBufferKind
         {
             Unknown = 0,
             Integer = 1,
