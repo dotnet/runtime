@@ -26,7 +26,19 @@ namespace System
         /// </summary>
         public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span)
         {
-            return span.TrimStart().TrimEnd();
+            int start = 0;
+            for (; start < span.Length; start++)
+            {
+                if (!char.IsWhiteSpace(span[start]))
+                    break;
+            }
+            int end = span.Length - 1;
+            for (; end >= start; end--)
+            {
+                if (!char.IsWhiteSpace(span[end]))
+                    break;
+            }
+            return span.Slice(start, end - start + 1);
         }
 
         /// <summary>
@@ -64,7 +76,19 @@ namespace System
         /// <param name="trimChar">The specified character to look for and remove.</param>
         public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span, char trimChar)
         {
-            return span.TrimStart(trimChar).TrimEnd(trimChar);
+            int start = 0;
+            for (; start < span.Length; start++)
+            {
+                if (span[start] != trimChar)
+                    break;
+            }
+            int end = span.Length - 1;
+            for (; end >= start; end--)
+            {
+                if (span[end] != trimChar)
+                    break;
+            }
+            return span.Slice(start, end - start + 1);
         }
 
         /// <summary>
