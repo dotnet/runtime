@@ -42,7 +42,6 @@
 #include "floatdouble.h"
 #include "floatsingle.h"
 #include "comdatetime.h"
-#include "number.h"
 #include "compatibilityswitch.h"
 #include "debugdebugger.h"
 #include "assemblyname.hpp"
