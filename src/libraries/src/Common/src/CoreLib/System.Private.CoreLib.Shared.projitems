@@ -283,6 +283,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Formatting.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Grisu3.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Number.NumberToDouble.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Number.Parsing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\NullReferenceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ObjectDisposedException.cs" />
