@@ -739,10 +739,6 @@ FCFuncStart(gWaitHandleFuncs)
     FCFuncElement("SignalAndWaitOne", WaitHandleNative::CorSignalAndWaitOneNative)
 FCFuncEnd()
 
-FCFuncStart(gNumberFuncs)
-    FCFuncElement("NumberToDouble", COMNumber::NumberToDoubleFC)
-FCFuncEnd()
-
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gVariantFuncs)
     FCFuncElement("SetFieldsObject", COMVariant::SetFieldsObject)
@@ -1304,7 +1300,6 @@ FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMar
 FCClassElement("ModuleBuilder", "System.Reflection.Emit", gCOMModuleBuilderFuncs)
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-FCClassElement("Number", "System", gNumberFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 #endif
