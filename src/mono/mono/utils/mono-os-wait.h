@@ -10,6 +10,7 @@
 
 #include <winsock2.h>
 #include <windows.h>
+#include "mono-error.h"
 
 DWORD
 mono_win32_sleep_ex (DWORD timeout, BOOL alertable);
@@ -18,7 +19,7 @@ DWORD
 mono_win32_wait_for_single_object_ex (HANDLE handle, DWORD timeout, BOOL alertable);
 
 DWORD
-mono_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOOL waitAll, DWORD timeout, BOOL alertable);
+mono_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOOL waitAll, DWORD timeout, BOOL alertable, MonoError *error);
 
 DWORD
 mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable);

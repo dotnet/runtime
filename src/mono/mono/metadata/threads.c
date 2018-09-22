@@ -2138,13 +2138,14 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 	for (;;) {
 #ifdef HOST_WIN32
 		MONO_ENTER_GC_SAFE;
-		ret =	(numhandles != 1)
-			? mono_w32handle_convert_wait_ret (mono_win32_wait_for_multiple_objects_ex(numhandles, handles, waitall, timeoutLeft, TRUE), numhandles)
-			: mono_w32handle_convert_wait_ret (mono_win32_wait_for_single_object_ex (handles [0], timeoutLeft, TRUE), 1);
+		DWORD const wait_result = (numhandles != 1)
+			? mono_win32_wait_for_multiple_objects_ex (numhandles, handles, waitall, timeoutLeft, TRUE, error)
+			: mono_win32_wait_for_single_object_ex (handles [0], timeoutLeft, TRUE);
+		ret = mono_w32handle_convert_wait_ret (wait_result, numhandles);
 		MONO_EXIT_GC_SAFE;
 #else
 		/* mono_w32handle_wait_multiple optimizes the case for numhandles == 1 */
-		ret = mono_w32handle_wait_multiple (handles, numhandles, waitall, timeoutLeft, TRUE);
+		ret = mono_w32handle_wait_multiple (handles, numhandles, waitall, timeoutLeft, TRUE, error);
 #endif /* HOST_WIN32 */
 
 		if (ret != MONO_W32HANDLE_WAIT_RET_ALERTED)
