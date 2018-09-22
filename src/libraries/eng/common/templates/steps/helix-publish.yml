@@ -1,0 +1,33 @@
+parameters:
+  HelixSource: 'pr/dotnet-github-anon-kaonashi-bot'
+  HelixType: ̓'tests/default'
+  HelixBuild: $(Build.BuildNumber)
+  HelixTargetQueues: ''
+  HelixAccessToken: ''
+  HelixPreCommands: ''
+  HelixPostCommands: ''
+  WorkItemDirectory: ''
+  WorkItemCommand: ''
+  EnableXUnitReporter: false
+  WaitForWorkItemCompletion: true
+
+steps:
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: custom
+      projects: eng/common/helixpublish.proj
+      custom: msbuild
+      arguments: '/t:test'
+    displayName: Send tests job to Helix
+    env:
+      HelixSource: $(HelixSource)
+      HelixType: $(HelixType)
+      HelixBuild: $(HelixBuild)
+      HelixTargetQueues: $(HelixTargetQueues)
+      HelixAccessToken: $(HelixAccessToken)
+      HelixPreCommands: $(HelixPreCommands)
+      HelixPostCommands: $(HelixPostCommands)
+      EnableXUnitReporter: $(EnableXUnitReporter)
+      WaitForWorkItemCompletion: $(WaitForWorkItemCompletion)
+      WorkItemDirectory: $(WorkItemDirectory)
+      WorkItemCommand: $(WorkItemCommand)
