@@ -1,22 +1,9 @@
 #!/usr/bin/env bash
 
-wait_on_pids()
-{
-  # Wait on the last processes
-  for job in $1
-  do
-    wait $job
-    if [ "$?" -ne 0 ]
-    then
-      TestsFailed=$(($TestsFailed+1))
-    fi
-  done
-}
-
 usage()
 {
     echo "Runs .NET CoreFX tests on FreeBSD, Linux, NetBSD or OSX"
-    echo "usage: run-test [options]"
+    echo "usage: run-corefx-tests [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
@@ -60,20 +47,22 @@ usage()
 
 # Handle Ctrl-C.
 function handle_ctrl_c {
-  local errorSource='handle_ctrl_c'
+    local errorSource='handle_ctrl_c'
 
-  echo ""
-  echo "Cancelling test execution."
-  exit $TestsFailed
+    echo ""
+    echo "Cancelling test execution."
+    exit $countFailedTests
 }
 
 # Register the Ctrl-C handler
 trap handle_ctrl_c INT
 
 ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # Location parameters
 # OS/ConfigurationGroup defaults
 ConfigurationGroup="Debug"
+
 OSName=$(uname -s)
 case $OSName in
     Darwin)
@@ -100,6 +89,7 @@ esac
 
 # Use uname to determine what the CPU is.
 CPUName=$(uname -p)
+
 # Some Linux platforms report unknown for platform, but the arch for machine.
 if [ "$CPUName" == "unknown" ]; then
     CPUName=$(uname -m)
@@ -109,6 +99,10 @@ case $CPUName in
     i686)
         echo "Unsupported CPU $CPUName detected, test might not succeed!"
         __Arch=x86
+        ;;
+
+    amd64)
+        __Arch=x64
         ;;
 
     x86_64)
@@ -122,9 +116,7 @@ case $CPUName in
     aarch64)
         __Arch=arm64
         ;;
-    amd64)
-        __Arch=x64
-        ;;
+
     *)
         echo "Unknown CPU $CPUName detected, configuring as if for x64"
         __Arch=x64
@@ -133,160 +125,268 @@ esac
 
 # Misc defaults
 TestSelection=".*"
-TestsFailed=0
+countTotalTests=0
+countPassedTests=0
+countFailedTests=0
+
+((processCount = 0))
+declare -a testFolders
+declare -a failedTests
+declare -a outputFilePaths
+declare -a processIds
+waitProcessIndex=
+pidNone=0
+
+function waitany {
+    local pid
+    local exitcode
+    while true; do
+        for (( i=0; i<$maxProcesses; i++ )); do
+            pid=${processIds[$i]}
+            if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+                continue
+            fi
+            if ! kill -0 $pid 2>/dev/null; then
+                wait $pid
+                exitcode=$?
+                waitProcessIndex=$i
+                processIds[$i]=$pidNone
+                return $exitcode
+            fi
+        done
+        sleep 0.1
+    done
+}
+
+function get_available_process_index {
+    local pid
+    local i=0
+    for (( i=0; i<$maxProcesses; i++ )); do
+        pid=${processIds[$i]}
+        if [ -z "$pid" ] || [ "$pid" == "$pidNone" ]; then
+            break
+        fi
+    done
+    echo $i
+}
+
+function finish_test {
+    waitany
+    local testScriptExitCode=$?
+    local finishedProcessIndex=$waitProcessIndex
+    ((--processCount))
+
+    local testFolder=${testFolders[$finishedProcessIndex]}
+    local testProject=$(basename "$testFolder")
+
+    local outputFilePath=${outputFilePaths[$finishedProcessIndex]}
+
+    echo ">>>>> ${testFolder}"
+    cat ${outputFilePath}
+    echo "<<<<<"
+
+    if [ $testScriptExitCode -ne 0 ] ; then
+        failedTests[$countFailedTests]=$testProject
+        countFailedTests=$(($countFailedTests+1))
+    else
+        countPassedTests=$(($countPassedTests+1))
+    fi
+
+    let countTotalTests++
+}
+
+function finish_remaining_tests {
+    # Finish the remaining tests in the order in which they were started
+    while ((processCount > 0)); do
+        finish_test
+    done
+}
+
+function start_test {
+    local testFolder=$1
+
+    # Check for project restrictions
+
+    testProject=`basename $1`
+
+    if [[ ! $testProject =~ $TestSelection ]]; then
+        echo "===== Skipping $testProject"
+        return
+    fi
+
+    if [ -n "$TestExcludeFile" ]; then
+        if grep -q $testProject "$TestExcludeFile" ; then
+            echo "===== Excluding $testProject"
+            return
+        fi
+    fi
+
+    dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
+    if [ ! -d "$dirName" ]; then
+        echo "===== Nothing to test in $testProject"
+        return
+    fi
+
+    if [ ! -e "$dirName/RunTests.sh" ]; then
+        echo "===== Cannot find $dirName/RunTests.sh"
+        return
+    fi
+
+    local nextProcessIndex=$(get_available_process_index)
+
+    if ((nextProcessIndex == maxProcesses)); then
+        finish_test
+        nextProcessIndex=$(get_available_process_index)
+    fi
+
+    testFolders[$nextProcessIndex]=$testFolder
+
+    outputFilePath="${testFolder}/output.txt"
+    outputFilePaths[$nextProcessIndex]=$outputFilePath
+
+    echo "===== Starting process [${nextProcessIndex}] folder ${testFolder}"
+
+    run_test "$dirName" >"$outputFilePath" 2>&1 &
+    processIds[$nextProcessIndex]=$!
+
+    ((++processCount))
+}
+
+function summarize_test_run {
+    echo ""
+    echo "======================="
+    echo "     Test Results"
+    echo "======================="
+    echo "# Tests Run        : $countTotalTests"
+    echo "# Passed           : $countPassedTests"
+    echo "# Failed           : $countFailedTests"
+    echo "======================="
+
+    if [ $countFailedTests -gt 0 ] ; then
+        echo
+        echo "===== Failed tests:"
+        for (( i=0; i<$countFailedTests; i++ )); do
+            testProject=${failedTests[$i]}
+            echo "=====     $testProject"
+        done
+    fi
+}
 
 ensure_binaries_are_present()
 {
-  if [ ! -d $Runtime ]
-  then
-    echo "error: Coreclr $OS binaries not found at $Runtime"
-    exit 1
-  fi
+    if [ ! -d $Runtime ]; then
+        echo "error: Coreclr $OS binaries not found at $Runtime"
+        exit 1
+    fi
 }
 
 # $1 is the path of list file
 read_array()
 {
-  local theArray=()
+    local theArray=()
 
-  while IFS='' read -r line || [ -n "$line" ]; do
-    theArray[${#theArray[@]}]=$line
-  done < "$1"
-  echo ${theArray[@]}
+    while IFS='' read -r line || [ -n "$line" ]; do
+        theArray[${#theArray[@]}]=$line
+    done < "$1"
+    echo ${theArray[@]}
 }
 
 run_selected_tests()
 {
-  local selectedTests=()
+    local selectedTests=()
 
-  if [ -n "$TestDirFile" ]; then
-    selectedTests=($(read_array "$TestDirFile"))
-  fi
+    if [ -n "$TestDirFile" ]; then
+        selectedTests=($(read_array "$TestDirFile"))
+    fi
 
-  if [ -n "$TestDir" ]; then
-    selectedTests[${#selectedTests[@]}]="$TestDir"
-  fi
+    if [ -n "$TestDir" ]; then
+        selectedTests[${#selectedTests[@]}]="$TestDir"
+    fi
 
-  run_all_tests ${selectedTests[@]/#/$CoreFxTests/}
+    run_all_tests ${selectedTests[@]/#/$CoreFxTests/}
 }
 
 # $1 is the name of the platform folder (e.g Unix.AnyCPU.Debug)
 run_all_tests()
 {
-  for testFolder in $@
-  do
-     run_test $testFolder &
-     pids="$pids $!"
-     numberOfProcesses=$(($numberOfProcesses+1))
-     if [ "$numberOfProcesses" -ge $maxProcesses ]; then
-       wait_on_pids "$pids"
-       numberOfProcesses=0
-       pids=""
-     fi
-  done
+    for testFolder in $@
+    do
+        start_test $testFolder
+    done
 
-  # Wait on the last processes
-  wait_on_pids "$pids"
-  pids=""
+    finish_remaining_tests
 }
 
-# $1 is the path to the test folder
+# $1 is the path to the folder with the RunTests.sh script in the test folder.
+# run_test is run in a sub-process.
 run_test()
 {
-  testProject=`basename $1`
+    local dirName="$1"
 
-  # Check for project restrictions
+    pushd $dirName > /dev/null
 
-  if [[ ! $testProject =~ $TestSelection ]]; then
-    echo "Skipping $testProject"
-    exit 0
-  fi
+    echo
+    echo "Running tests in $dirName"
+    echo "${TimeoutTool}./RunTests.sh $Runtime"
+    echo
+    ${TimeoutTool}./RunTests.sh "$Runtime"
+    exitCode=$?
 
-  if [ -n "$TestExcludeFile" ]; then
-    if grep -q $testProject "$TestExcludeFile" ; then
-      echo "Excluding $testProject"
-      exit 0
+    if [ $exitCode -ne 0 ] ; then
+        echo "error: One or more tests failed while running tests from '$fileNameWithoutExtension'.  Exit code $exitCode."
     fi
-  fi
 
-  dirName="$1/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
-  if [ ! -d "$dirName" ]; then
-    echo "Nothing to test in $testProject"
-    return
-  fi
-
-  if [ ! -e "$dirName/RunTests.sh" ]; then
-      echo "Cannot find $dirName/RunTests.sh"
-      return
-  fi
-
-  pushd $dirName > /dev/null
-
-  echo
-  echo "Running tests in $dirName"
-  echo "${TimeoutTool}./RunTests.sh $Runtime"
-  echo
-  ${TimeoutTool}./RunTests.sh "$Runtime"
-  exitCode=$?
-
-  if [ $exitCode -ne 0 ]
-  then
-      echo "error: One or more tests failed while running tests from '$fileNameWithoutExtension'.  Exit code $exitCode."
-  fi
-
-  popd > /dev/null
-  exit $exitCode
+    popd > /dev/null
+    exit $exitCode
 }
 
 coreclr_code_coverage()
 {
-  if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ]
-  then
-      echo "error: Code Coverage not supported on $OS"
-      exit 1
-  fi
+    if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ] ; then
+        echo "error: Code Coverage not supported on $OS"
+        exit 1
+    fi
 
-  if [ "$CoreClrSrc" == "" ]
-    then
-      echo "error: Coreclr source files are required to generate code coverage reports"
-      echo "Coreclr source files root path can be passed using '--coreclr-src' argument"
-      exit 1
-  fi
+    if [ "$CoreClrSrc" == "" ] ; then
+        echo "error: Coreclr source files are required to generate code coverage reports"
+        echo "Coreclr source files root path can be passed using '--coreclr-src' argument"
+        exit 1
+    fi
 
-  local coverageDir="$ProjectRoot/bin/Coverage"
-  local toolsDir="$ProjectRoot/bin/Coverage/tools"
-  local reportsDir="$ProjectRoot/bin/Coverage/reports"
-  local packageName="unix-code-coverage-tools.1.0.0.nupkg"
-  rm -rf $coverageDir
-  mkdir -p $coverageDir
-  mkdir -p $toolsDir
-  mkdir -p $reportsDir
-  pushd $toolsDir > /dev/null
+    local coverageDir="$ProjectRoot/bin/Coverage"
+    local toolsDir="$ProjectRoot/bin/Coverage/tools"
+    local reportsDir="$ProjectRoot/bin/Coverage/reports"
+    local packageName="unix-code-coverage-tools.1.0.0.nupkg"
+    rm -rf $coverageDir
+    mkdir -p $coverageDir
+    mkdir -p $toolsDir
+    mkdir -p $reportsDir
+    pushd $toolsDir > /dev/null
 
-  echo "Pulling down code coverage tools"
+    echo "Pulling down code coverage tools"
 
-  which curl > /dev/null 2> /dev/null
-  if [ $? -ne 0 ]; then
-    wget -q -O $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0
-  else
-    curl -sSL -o $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0
-  fi
+    which curl > /dev/null 2> /dev/null
+    if [ $? -ne 0 ]; then
+        wget -q -O $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0
+    else
+        curl -sSL -o $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0
+    fi
 
-  echo "Unzipping to $toolsDir"
-  unzip -q -o $packageName
+    echo "Unzipping to $toolsDir"
+    unzip -q -o $packageName
 
-  # Invoke gcovr
-  chmod a+rwx ./gcovr
-  chmod a+rwx ./$OS/llvm-cov
+    # Invoke gcovr
+    chmod a+rwx ./gcovr
+    chmod a+rwx ./$OS/llvm-cov
 
-  echo
-  echo "Generating coreclr code coverage reports at $reportsDir/coreclr.html"
-  echo "./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html"
-  echo
-  ./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html
-  exitCode=$?
-  popd > /dev/null
-  exit $exitCode
+    echo
+    echo "Generating coreclr code coverage reports at $reportsDir/coreclr.html"
+    echo "./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html"
+    echo
+    ./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html
+    exitCode=$?
+    popd > /dev/null
+    exit $exitCode
 }
 
 # Parse arguments
@@ -300,61 +400,79 @@ do
     opt="$1"
     case $opt in
         -h|--help)
-        usage
-        ;;
+            usage
+            ;;
+
         --runtime)
-        Runtime=$2
-        ;;
+            Runtime=$2
+            ;;
+
         --corefx-tests)
-        CoreFxTests=$2
-        ;;
+            CoreFxTests=$2
+            ;;
+
         --restrict-proj)
-        TestSelection=$2
-        ;;
+            TestSelection=$2
+            ;;
+
         --configurationGroup)
-        ConfigurationGroup=$2
-        ;;
+            ConfigurationGroup=$2
+            ;;
+
         --os)
-        OS=$2
-        ;;
+            OS=$2
+            ;;
+
         --arch)
-        __Arch=$2
-        ;;
+            __Arch=$2
+            ;;
+
         --coreclr-coverage)
-        CoreClrCoverage=ON
-        ;;
+            CoreClrCoverage=ON
+            ;;
+
         --coreclr-objs)
-        CoreClrObjs=$2
-        ;;
+            CoreClrObjs=$2
+            ;;
+
         --coreclr-src)
-        CoreClrSrc=$2
-        ;;
+            CoreClrSrc=$2
+            ;;
+
         --sequential)
-        RunTestSequential=1
-        ;;
+            RunTestSequential=1
+            ;;
+
         --useServerGC)
-        ((serverGC = 1))
-        ;;
+            ((serverGC = 1))
+            ;;
+
         --test-dir)
-        TestDir=$2
-        ;;
+            TestDir=$2
+            ;;
+
         --test-dir-file)
-        TestDirFile=$2
-        ;;
+            TestDirFile=$2
+            ;;
+
         --test-exclude-file)
-        TestExcludeFile=$2
-        ;;
+            TestExcludeFile=$2
+            ;;
+
         --timeout)
-        TimeoutTime=$2
-        ;;
+            TimeoutTime=$2
+            ;;
+
         --outerloop)
-        OuterLoop=""
-        ;;
+            OuterLoop=""
+            ;;
+
         --IgnoreForCI)
-        IgnoreForCI="-notrait category=IgnoreForCI"
-        ;;
+            IgnoreForCI="-notrait category=IgnoreForCI"
+            ;;
+
         *)
-        ;;
+            ;;
     esac
     shift
 done
@@ -396,25 +514,33 @@ fi
 # Is the 'timeout' tool available?
 TimeoutTool=
 if hash timeout 2>/dev/null ; then
-  TimeoutTool="timeout --kill-after=30s $TimeoutTime "
+    TimeoutTool="timeout --kill-after=30s $TimeoutTime "
 fi
 
 ensure_binaries_are_present
 
 # Walk the directory tree rooted at src bin/tests/$OS.AnyCPU.$ConfigurationGroup/
 
-TestsFailed=0
 numberOfProcesses=0
 
-if [ $RunTestSequential -eq 1 ]
-then
-    maxProcesses=1;
+# Variables for running tests in the background
+if [ `uname` = "NetBSD" ]; then
+    NumProc=$(getconf NPROCESSORS_ONLN)
+elif [ `uname` = "Darwin" ]; then
+    NumProc=$(getconf _NPROCESSORS_ONLN)
 else
-    if [ `uname` = "NetBSD" ] || [ `uname` = "FreeBSD" ]; then
-      maxProcesses=$(($(getconf NPROCESSORS_ONLN)+1))
+    if [ -x "$(command -v nproc)" ]; then
+        NumProc=$(nproc --all)
+    elif [ -x "$(command -v getconf)" ]; then
+        NumProc=$(getconf _NPROCESSORS_ONLN)
     else
-      maxProcesses=$(($(getconf _NPROCESSORS_ONLN)+1))
+        NumProc=1
     fi
+fi
+maxProcesses=$NumProc
+
+if [ $RunTestSequential -eq 1 ]; then
+    maxProcesses=1
 fi
 
 if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
@@ -429,11 +555,6 @@ then
     coreclr_code_coverage
 fi
 
-if [ "$TestsFailed" -gt 0 ]
-then
-    echo "$TestsFailed test(s) failed"
-else
-    echo "All tests passed."
-fi
+summarize_test_run
 
-exit $TestsFailed
+exit $countFailedTests
