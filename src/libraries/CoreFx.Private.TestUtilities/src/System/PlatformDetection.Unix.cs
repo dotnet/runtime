@@ -14,6 +14,7 @@ namespace System
     public static partial class PlatformDetection
     {
         public static bool IsWindowsIoTCore => false;
+        public static bool IsWindowsHomeEdition => false;
         public static bool IsWindows => false;
         public static bool IsWindows7 => false;
         public static bool IsWindows8x => false;
