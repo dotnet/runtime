@@ -72,6 +72,7 @@ namespace System
         public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } }
         public static bool IsNotOneCoreUAP { get { throw null; } }
         public static bool IsNotWindows8x { get { throw null; } }
+        public static bool IsNotWindowsHomeEdition { get { throw null; } }
         public static bool IsNotWindowsIoTCore { get { throw null; } }
         public static bool IsNotWindowsNanoServer { get { throw null; } }
         public static bool IsNotWindowsServerCore { get { throw null; } }
@@ -105,6 +106,7 @@ namespace System
         public static bool IsWindows7 { get { throw null; } }
         public static bool IsWindows8x { get { throw null; } }
         public static bool IsWindowsAndElevated { get { throw null; } }
+        public static bool IsWindowsHomeEdition { get { throw null; } }
         public static bool IsWindowsIoTCore { get { throw null; } }
         public static bool IsWindowsNanoServer { get { throw null; } }
         public static bool IsWindowsServerCore { get { throw null; } }
