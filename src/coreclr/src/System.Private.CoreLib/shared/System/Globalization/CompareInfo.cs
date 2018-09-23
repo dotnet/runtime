@@ -297,7 +297,7 @@ namespace System.Globalization
 
         public virtual int Compare(string string1, string string2)
         {
-            return (Compare(string1, string2, CompareOptions.None));
+            return Compare(string1, string2, CompareOptions.None);
         }
 
         public virtual int Compare(string string1, string string2, CompareOptions options)
