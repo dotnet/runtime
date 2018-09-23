@@ -242,6 +242,12 @@ add_image (MonoProfiler *prof, MonoImage *image)
 	if (id)
 		return id - 1;
 
+	// Dynamic images don't have a GUID set.  Moreover, we won't
+	// have a chance to AOT them.  (But perhaps they should be
+	// included in the profile, or logged, for diagnostic purposes?)
+	if (!image->guid)
+		return -1;
+
 	id = prof->id ++;
 	emit_record (prof, AOTPROF_RECORD_IMAGE, id);
 	emit_string (prof, image->assembly->aname.name);
@@ -331,6 +337,8 @@ add_class (MonoProfiler *prof, MonoClass *klass)
 		return id - 1;
 
 	image_id = add_image (prof, mono_class_get_image (klass));
+	if (image_id == -1)
+		return -1;
 
 	if (mono_class_is_ginst (klass)) {
 		MonoGenericContext *ctx = mono_class_get_context (klass);
