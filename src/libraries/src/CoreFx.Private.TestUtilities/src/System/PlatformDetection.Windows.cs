@@ -70,6 +70,28 @@ namespace System
             }
         }
 
+        public static bool IsWindowsHomeEdition
+        {
+            get
+            {
+                int productType = GetWindowsProductType();
+                switch (productType)
+                {
+                    case PRODUCT_CORE:
+                    case PRODUCT_CORE_COUNTRYSPECIFIC:
+                    case PRODUCT_CORE_N:
+                    case PRODUCT_CORE_SINGLELANGUAGE:
+                    case PRODUCT_HOME_BASIC:
+                    case PRODUCT_HOME_BASIC_N:
+                    case PRODUCT_HOME_PREMIUM:
+                    case PRODUCT_HOME_PREMIUM_N:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
         public static bool IsWindows => true;
         public static bool IsWindows7 => GetWindowsVersion() == 6 && GetWindowsMinorVersion() == 1;
         public static bool IsWindows8x => GetWindowsVersion() == 6 && (GetWindowsMinorVersion() == 2 || GetWindowsMinorVersion() == 3);
@@ -228,6 +250,14 @@ namespace System
 
         private const int PRODUCT_IOTUAP = 0x0000007B;
         private const int PRODUCT_IOTUAPCOMMERCIAL = 0x00000083;
+        private const int PRODUCT_CORE = 0x00000065;
+        private const int PRODUCT_CORE_COUNTRYSPECIFIC = 0x00000063;
+        private const int PRODUCT_CORE_N = 0x00000062;
+        private const int PRODUCT_CORE_SINGLELANGUAGE = 0x00000064;
+        private const int PRODUCT_HOME_BASIC = 0x00000002;
+        private const int PRODUCT_HOME_BASIC_N = 0x00000005;
+        private const int PRODUCT_HOME_PREMIUM = 0x00000003;
+        private const int PRODUCT_HOME_PREMIUM_N = 0x0000001A;
 
         [DllImport("kernel32.dll", SetLastError = false)]
         private static extern bool GetProductInfo(
