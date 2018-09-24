@@ -280,17 +280,25 @@ namespace System
 #if !FEATURE_PAL
         private static Lazy<bool> s_IsWindows8OrAbove = new Lazy<bool>(() => 
         {
-            ulong conditionMask = Win32Native.VerSetConditionMask(0, Win32Native.VER_MAJORVERSION, Win32Native.VER_GREATER_EQUAL);
-            conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_MINORVERSION, Win32Native.VER_GREATER_EQUAL);
-            conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMAJOR, Win32Native.VER_GREATER_EQUAL);
-            conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMINOR, Win32Native.VER_GREATER_EQUAL);
+            unsafe
+            {
+                ulong conditionMask = Win32Native.VerSetConditionMask(0, Win32Native.VER_MAJORVERSION, Win32Native.VER_GREATER_EQUAL);
+                conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_MINORVERSION, Win32Native.VER_GREATER_EQUAL);
+                conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMAJOR, Win32Native.VER_GREATER_EQUAL);
+                conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMINOR, Win32Native.VER_GREATER_EQUAL);
 
-            // Windows 8 version is 6.2
-            var version = new Win32Native.OSVERSIONINFOEX { MajorVersion = 6, MinorVersion = 2, ServicePackMajor = 0, ServicePackMinor = 0 };
-                
-            return Win32Native.VerifyVersionInfoW(version, 
-                       Win32Native.VER_MAJORVERSION | Win32Native.VER_MINORVERSION | Win32Native.VER_SERVICEPACKMAJOR | Win32Native.VER_SERVICEPACKMINOR,
-                       conditionMask);
+                // Windows 8 version is 6.2
+                var version = new Win32Native.OSVERSIONINFOEX();
+                version.dwOSVersionInfoSize = sizeof(Win32Native.OSVERSIONINFOEX);
+                version.dwMajorVersion = 6;
+                version.dwMinorVersion = 2;
+                version.wServicePackMajor = 0;
+                version.wServicePackMinor = 0;
+
+                return Win32Native.VerifyVersionInfoW(ref version,
+                           Win32Native.VER_MAJORVERSION | Win32Native.VER_MINORVERSION | Win32Native.VER_SERVICEPACKMAJOR | Win32Native.VER_SERVICEPACKMINOR,
+                           conditionMask);
+            }
         });
         internal static bool IsWindows8OrAbove => s_IsWindows8OrAbove.Value;
 #endif
