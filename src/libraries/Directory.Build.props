@@ -66,7 +66,8 @@
 
   <!-- Choose .targets files that come from Arcade rather than from buildtools -->
   <PropertyGroup>
-    <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
+    <ExcludeNotSupportedImport>true</ExcludeNotSupportedImport>
+    <ExcludePartialFacadesImport></ExcludePartialFacadesImport>
     <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
   </PropertyGroup>
 
@@ -74,8 +75,8 @@
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <!-- Import Arcade targets -->
-  <Import Project="$(PackagesDir)/$(ApiCompatPackage.ToLower())/$(ApiCompatPackageVersion)/build/$(ApiCompatPackage).targets" />
-  <Import Project="$(PackagesDir)/$(GenAPIPackage.ToLower())/$(GenAPIPackageVersion)/build/$(GenAPIPackage).targets" />
+<!--  <Import Project="$(PackagesDir)/$(ApiCompatPackage.ToLower())/$(ApiCompatPackageVersion)/build/$(ApiCompatPackage).targets" /> -->
+<!--  <Import Project="$(PackagesDir)/$(GenAPIPackage.ToLower())/$(GenAPIPackageVersion)/build/$(GenAPIPackage).targets" /> -->
   <Import Project="$(PackagesDir)/$(GenFacadesPackage.ToLower())/$(GenFacadesPackageVersion)/build/$(GenFacadesPackage).targets" />
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
