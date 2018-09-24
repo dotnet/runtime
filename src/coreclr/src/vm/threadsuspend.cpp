@@ -7473,10 +7473,9 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
         pThread->InitRegDisplay(&regDisplay, interruptedContext, true /* validContext */);
 
         BOOL unused;
-#if defined(_TARGET_AMD64_)
+
         if (IsIPInEpilog(interruptedContext, &codeInfo, &unused))
             return;
-#endif
 
         // Use StackWalkFramesEx to find the location of the return address. This will locate the
         // return address by checking relative to the caller frame's SP, which is preferable to
