@@ -17,7 +17,7 @@
     <ProjectNTfsTestILCCurrentRef>bd5a413e20ab1bf1207fafa41a4780b2f46ca092</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>bd5a413e20ab1bf1207fafa41a4780b2f46ca092</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>044092b54a7e4df96d059e2c6b83463714547bf8</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -64,7 +64,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03224-02</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03224-03</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
