@@ -2,22 +2,14 @@
   <PropertyGroup>
     <ProjectGuid>{9A8926D9-1D4C-4069-8965-A626F6CA8C29}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
-  </PropertyGroup>
-  <PropertyGroup>
     <!-- 
-        We are overriding the .json config file to include "System.Globalization.Invariant": true 
-        which will enable the globalization invariant mode.
+      Overriding the runtime config file to include "System.Globalization.Invariant": true
+      which enables the globalization invariant mode.
     -->
-    <SkipXunitRuntimeConfigCopying>true</SkipXunitRuntimeConfigCopying>
+    <RuntimeConfigPath Condition="'$(UseCoverageDedicatedRuntime)' != 'true'">$(AppDesignerFolder)/xunit.console.runtimeconfig.json</RuntimeConfigPath>
+    <RuntimeConfigPath Condition="'$(UseCoverageDedicatedRuntime)' == 'true'">$(AppDesignerFolder)/coverage.runtimeconfig.json</RuntimeConfigPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvariantMode.cs" />
-    <Content Condition="'$(UsingCoverageDedicatedRuntime)'!='true'" Include="xunit.console.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <!-- If using coverage dedicated runtime the proper runtimeconfig needs to be ussed -->
-    <Content Condition="'$(UsingCoverageDedicatedRuntime)'=='true'" Include="coverage/xunit.console.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>
