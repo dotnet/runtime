@@ -178,13 +178,14 @@ void deps_resolver_t::setup_shared_store_probes(
     {
         if (pal::directory_exists(shared))
         {
-            // Shared Store probe: DOTNET_SHARED_STORE
+            // Shared Store probe: DOTNET_SHARED_STORE environment variable
             m_probes.push_back(probe_config_t::lookup(shared));
         }
     }
 
     if (pal::directory_exists(args.dotnet_shared_store))
     {
+        // Path relative to the location of "dotnet.exe" if it's being used to run the app
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
     }
 
@@ -192,7 +193,7 @@ void deps_resolver_t::setup_shared_store_probes(
     {
         if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
         {
-            // Shared Store probe: DOTNET_SHARED_STORE
+            // Global store probe: the global location
             m_probes.push_back(probe_config_t::lookup(global_shared));
         }
     }
