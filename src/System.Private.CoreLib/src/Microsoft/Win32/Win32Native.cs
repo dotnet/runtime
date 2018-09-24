@@ -116,27 +116,20 @@ namespace Microsoft.Win32
         internal const int LMEM_ZEROINIT = 0x0040;
         internal const int LPTR = (LMEM_FIXED | LMEM_ZEROINIT);
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal class OSVERSIONINFOEX
+        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        internal unsafe struct OSVERSIONINFOEX
         {
-            public OSVERSIONINFOEX()
-            {
-                OSVersionInfoSize = (int)Marshal.SizeOf(this);
-            }
-
-            // The OSVersionInfoSize field must be set to Marshal.SizeOf(this)
-            internal int OSVersionInfoSize = 0;
-            internal int MajorVersion = 0;
-            internal int MinorVersion = 0;
-            internal int BuildNumber = 0;
-            internal int PlatformId = 0;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-            internal string CSDVersion = null;
-            internal ushort ServicePackMajor = 0;
-            internal ushort ServicePackMinor = 0;
-            internal short SuiteMask = 0;
-            internal byte ProductType = 0;
-            internal byte Reserved = 0;
+            internal int dwOSVersionInfoSize;
+            internal int dwMajorVersion;
+            internal int dwMinorVersion;
+            internal int dwBuildNumber;
+            internal int dwPlatformId;
+            internal fixed char szCSDVersion[128];
+            internal ushort wServicePackMajor;
+            internal ushort wServicePackMinor;
+            internal short wSuiteMask;
+            internal byte wProductType;
+            internal byte wReserved;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -290,8 +283,8 @@ namespace Microsoft.Win32
         internal const uint VER_SERVICEPACKMAJOR = 0x0000020;
         internal const uint VER_SERVICEPACKMINOR = 0x0000010;
         [DllImport("kernel32.dll")]
-        internal static extern bool VerifyVersionInfoW([In, Out] OSVERSIONINFOEX lpVersionInfo, uint dwTypeMask, ulong dwlConditionMask);
+        internal static extern bool VerifyVersionInfoW(ref OSVERSIONINFOEX lpVersionInfo, uint dwTypeMask, ulong dwlConditionMask);
         [DllImport("kernel32.dll")]
-        internal static extern ulong VerSetConditionMask(ulong dwlConditionMask, uint dwTypeBitMask, byte dwConditionMask);        
+        internal static extern ulong VerSetConditionMask(ulong dwlConditionMask, uint dwTypeBitMask, byte dwConditionMask);
     }
 }
