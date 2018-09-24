@@ -2699,7 +2699,7 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 }
 
 guint8*
-mono_gc_get_target_card_table (int *shift_bits, gpointer *mask)
+mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *mask)
 {
 	return sgen_get_target_card_table_configuration (shift_bits, mask);
 }

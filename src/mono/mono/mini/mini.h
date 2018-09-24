@@ -679,7 +679,7 @@ struct MonoInst {
 		union {
 			MonoInst *src;
 			MonoMethodVar *var;
-			mgreg_t const_val;
+			target_mgreg_t const_val;
 #if (SIZEOF_REGISTER > TARGET_SIZEOF_VOID_P) && (G_BYTE_ORDER == G_BIG_ENDIAN)
 			struct {
 				gpointer p[SIZEOF_REGISTER/TARGET_SIZEOF_VOID_P];

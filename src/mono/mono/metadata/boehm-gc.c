@@ -1425,10 +1425,10 @@ mono_gc_get_card_table (int *shift_bits, gpointer *card_mask)
 }
 
 guint8*
-mono_gc_get_target_card_table (int *shift_bits, gpointer *card_mask)
+mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *card_mask)
 {
 	*shift_bits = 0;
-	*card_mask = NULL;
+	*card_mask = 0;
 	return NULL;
 }
 

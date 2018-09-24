@@ -700,7 +700,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         MONO_INST_NEW ((cfg), (inst), (op)); \
         inst->dreg = dr; \
         inst->sreg1 = sr; \
-        inst->inst_imm = (mgreg_t)(imm);		\
+        inst->inst_imm = (target_mgreg_t)(imm); \
 	    MONO_ADD_INS (cfg->cbb, inst); \
 	} while (0)
 

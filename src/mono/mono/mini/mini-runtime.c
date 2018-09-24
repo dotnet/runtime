@@ -3654,8 +3654,8 @@ mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 	 * the CEE_MONO_CALLI_EXTRA_ARG implementation in the JIT depends on this.
 	 */
 	if (method->is_inflated && is_callee_gsharedvt_variable (method_ptr)) {
-		g_assert ((((mgreg_t)arg) & 1) == 0);
-		arg = (gpointer)(((mgreg_t)arg) | 1);
+		g_assert ((((gsize)arg) & 1) == 0);
+		arg = (gpointer)(((gsize)arg) | 1);
 	}
 	return arg;
 }

@@ -85,6 +85,30 @@
 #endif
 #endif
 
+// This should be portable to all C++11 implementations. It is restricted like this to be a smaller change.
+#if defined (__cplusplus) && defined (HOST_ANDROID)
+#include <cmath>
+using std::isfinite;
+using std::isunordered;
+
+// Some Android versions have global isinf
+// and using std::isinf errors, some do not.
+inline bool mono_isinf (float a)
+{
+	return std::isinf (a);
+}
+
+inline bool mono_isinf (double a)
+{
+	return std::isinf (a);
+}
+
+#else
+
+#define mono_isinf(x) isinf (x)
+
+#endif
+
 static inline void
 init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod, stackval *method_args, stackval *method_retval)
 {
@@ -3741,7 +3765,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
 			/* needed on arm64 */
-			if (isinf (sp [-1].data.f))
+			if (mono_isinf (sp [-1].data.f))
 				sp [-1].data.i = 0;
 			/* needed by wasm */
 			else if (isnan (sp [-1].data.f))

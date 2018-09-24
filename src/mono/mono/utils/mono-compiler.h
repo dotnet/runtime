@@ -26,6 +26,15 @@
 #define MONO_ATTR_FORMAT_PRINTF(fmt_pos,arg_pos)
 #endif
 
+// This should be portable to all C++11 implementations. It is restricted like this to be a smaller change.
+#if defined (__cplusplus) && (defined (HOST_WASM) || (defined (HOST_WIN32) && defined (__GNUC__)))
+#include <cmath>
+using std::trunc;
+using std::isnan;
+using std::isinf;
+using std::isnormal;
+#endif
+
 /* Deal with Microsoft C compiler differences */
 #ifdef _MSC_VER
 

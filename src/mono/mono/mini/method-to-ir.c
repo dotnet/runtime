@@ -2950,7 +2950,7 @@ void
 mini_emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 {
 	int card_table_shift_bits;
-	gpointer card_table_mask;
+	target_mgreg_t card_table_mask;
 	guint8 *card_table;
 	MonoInst *dummy_use;
 	int nursery_shift_bits;

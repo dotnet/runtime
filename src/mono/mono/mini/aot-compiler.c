@@ -10401,7 +10401,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->num_rgctx_fetch_trampolines = acfg->aot_opts.nrgctx_fetch_trampolines;
 
 	int card_table_shift_bits = 0;
-	gpointer card_table_mask = NULL;
+	target_mgreg_t card_table_mask = 0;
 
 	mono_gc_get_target_card_table (&card_table_shift_bits, &card_table_mask);
 
@@ -10413,7 +10413,7 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->long_align = MONO_ABI_ALIGNOF (gint64);
 	info->generic_tramp_num = MONO_TRAMPOLINE_NUM;
 	info->card_table_shift_bits = card_table_shift_bits;
-	info->card_table_mask = GPOINTER_TO_UINT (card_table_mask);
+	info->card_table_mask = card_table_mask;
 
 	info->tramp_page_size = acfg->tramp_page_size;
 	info->nshared_got_entries = acfg->nshared_got_entries;
