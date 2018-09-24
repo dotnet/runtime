@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
 
+  <UsingTask TaskName="GenFacadesTask" AssemblyFile="$(PackagesDir)/$(GenFacadesPackage.ToLower())/$(GenFacadesPackageVersion)/tools/netcoreapp2.1/Microsoft.DotNet.GenFacades.dll" />
   <PropertyGroup>
     <PackageConfigurations>
       netcoreapp2.0;
@@ -25,7 +26,6 @@
   </Target>
 
   <PropertyGroup>
-    <GenFacadesResponseFile>$(IntermediateOutputPath)genfacades.rsp</GenFacadesResponseFile>
     <GenFacadesSemaphoreFile>$(IntermediateOutputPath)genfacades.sempahore</GenFacadesSemaphoreFile>
   </PropertyGroup>
 
@@ -36,30 +36,36 @@
           Outputs="$(GenFacadesSemaphoreFile)">
 
     <PropertyGroup>
-      <!--<GenFacadesArgs>$(GenFacadesArgs) -contracts:"@(GenFacadesContracts, ',')"</GenFacadesArgs>-->
-      <GenFacadesArgs>$(GenFacadesArgs) -seeds:"@(GenFacadesSeeds, ',')"</GenFacadesArgs>
-      <GenFacadesArgs>$(GenFacadesArgs) -facadePath:"$(GenFacadesOutputPath)"</GenFacadesArgs>
-      <GenFacadesArgs>$(GenFacadesArgs) -producePdb:false</GenFacadesArgs>
-      <GenFacadesArgs>$(GenFacadesArgs) -assemblyFileVersion:$(AssemblyFileVersion)</GenFacadesArgs>
-      <GenFacadesArgs>$(GenFacadesArgs) -forceZeroVersionSeeds</GenFacadesArgs>
-      <!-- TODO: We should remove this flag once we have all the types for netstandard -->
-      <GenFacadesArgs>$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
+      <ProducePdb>false</ProducePdb>
+      <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
+      <GenFacadesIgnoreBuildAndRevisionMismatch>false</GenFacadesIgnoreBuildAndRevisionMismatch>
+      <GenFacadesForceZeroVersionSeeds>true</GenFacadesForceZeroVersionSeeds>
+      <GenFacadesBuildPartialReferenceFacade>false</GenFacadesBuildPartialReferenceFacade>
     </PropertyGroup>
 
-    <MakeDir Directories="$(IntermediateOutputPath)" />
-    <WriteLinesToFile File="$(GenFacadesResponseFile)" Lines="$(GenFacadesArgs)" Overwrite="true" />
+    <GenFacadesTask
+      Condition="'@(NetFxContracts)' != ''"
+      Contracts="@(NetFxContracts)"
+      Seeds="@(GenFacadesSeeds, ',')"
+      FacadePath="$(GenFacadesOutputPath)"
+      ProducePdb="$(ProducePdb)"
+      IgnoreMissingTypes="$(GenFacadesIgnoreMissingTypes)"
+      IgnoreBuildAndRevisionMismatch="$(GenFacadesIgnoreBuildAndRevisionMismatch)"
+      ForceZeroVersionSeeds="$(GenFacadesForceZeroVersionSeeds)"
+      BuildPartialReferenceFacade="$(GenFacadesBuildPartialReferenceFacade)"
+    />
 
-    <PropertyGroup>
-      <GenFacadesCmd>$(ToolHostCmd) "$(ToolsDir)GenFacades.exe"</GenFacadesCmd>
-    </PropertyGroup>
-
-    <Exec Condition="'@(NetFxContracts)' != ''"
-          Command="$(GenFacadesCmd) -contracts:&quot;@(NetFxContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;"
-          WorkingDirectory="$(ToolRuntimePath)" />
-
-    <Exec Condition="'@(NETStandardContracts)' != ''"
-          Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;"
-          WorkingDirectory="$(ToolRuntimePath)" />
+    <GenFacadesTask
+      Condition="'@(NETStandardContracts)' != ''"
+      Contracts="@(NETStandardContracts)"
+      Seeds="@(GenFacadesSeeds, ',')"
+      FacadePath="$(GenFacadesOutputPath)"
+      ProducePdb="$(ProducePdb)"
+      IgnoreMissingTypes="$(GenFacadesIgnoreMissingTypes)"
+      IgnoreBuildAndRevisionMismatch="$(GenFacadesIgnoreBuildAndRevisionMismatch)"
+      ForceZeroVersionSeeds="$(GenFacadesForceZeroVersionSeeds)"
+      BuildPartialReferenceFacade="$(GenFacadesBuildPartialReferenceFacade)"
+    />
 
     <WriteSigningRequired
         Condition="'@(NetFxContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
@@ -73,6 +79,7 @@
         StrongNameSig="Open"
         MarkerFile="$(GenFacadesOutputPath)%(NETStandardContracts.Filename)%(NETStandardContracts.Extension).requires_signing" />
 
+    <MakeDir Directories="$(IntermediateOutputPath)" />
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>
 
@@ -126,5 +133,3 @@
     </PropertyGroup>
   </Target>
 </Project>
-
-

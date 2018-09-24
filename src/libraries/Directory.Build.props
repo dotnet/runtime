@@ -59,7 +59,24 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+
+    <!-- Set up ToolHostCmd for Arcade targets -->
+    <ToolHostCmd Condition="'$(ToolHostCmd)'==''">"$(ToolsDir)dotnetcli/dotnet"</ToolHostCmd>
   </PropertyGroup>
+
+  <!-- Choose .targets files that come from Arcade rather than from buildtools -->
+  <PropertyGroup>
+    <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
+    <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
+  </PropertyGroup>
+
+  <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
+
+  <!-- Import Arcade targets -->
+  <Import Project="$(PackagesDir)/$(ApiCompatPackage.ToLower())/$(ApiCompatPackageVersion)/build/$(ApiCompatPackage).targets" />
+  <Import Project="$(PackagesDir)/$(GenAPIPackage.ToLower())/$(GenAPIPackageVersion)/build/$(GenAPIPackage).targets" />
+  <Import Project="$(PackagesDir)/$(GenFacadesPackage.ToLower())/$(GenFacadesPackageVersion)/build/$(GenFacadesPackage).targets" />
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
@@ -75,9 +92,6 @@
     <EnableDumpling>true</EnableDumpling>
     <CrashDumpFolder Condition="'$(RunningOnUnix)' != 'true'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
-
-  <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
-  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <!-- list of nuget package sources passed to nuget restore -->
   <!-- Example to consume local CoreCLR package:
