@@ -96,7 +96,7 @@ namespace System
             }
         }
 
-        private static unsafe Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() =>
+        private static readonly unsafe Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() =>
         {
             var version = new Interop.Kernel32.OSVERSIONINFOEX { dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX) };
             if (!Interop.Kernel32.GetVersionExW(ref version))
