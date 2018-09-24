@@ -68,7 +68,7 @@
   <PropertyGroup>
     <ExcludeNotSupportedImport></ExcludeNotSupportedImport>
     <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
-    <ExcludeApiCompatImport></ExcludeApiCompatImport>
+    <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
