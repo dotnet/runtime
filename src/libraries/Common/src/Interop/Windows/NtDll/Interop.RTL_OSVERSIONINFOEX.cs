@@ -9,16 +9,15 @@ internal partial class Interop
 {
     internal partial class NtDll
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct RTL_OSVERSIONINFOEX
+        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        internal unsafe struct RTL_OSVERSIONINFOEX
         {
             internal uint dwOSVersionInfoSize;
             internal uint dwMajorVersion;
             internal uint dwMinorVersion;
             internal uint dwBuildNumber;
             internal uint dwPlatformId;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-            internal string szCSDVersion;
+            internal fixed char szCSDVersion[128];
         }
     }
 }
