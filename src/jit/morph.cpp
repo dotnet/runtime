@@ -17148,20 +17148,6 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
                 noway_assert(fieldLclIndex != BAD_VAR_NUM);
 
-                if (lvaIsImplicitByRefLocal(lclNum))
-                {
-                    // Keep track of the number of appearances of each promoted implicit
-                    // byref (here during struct promotion, which happens during address-exposed
-                    // analysis); fgMakeOutgoingStructArgCopy checks the ref counts for implicit
-                    // byref params when deciding if it's legal to elide certain copies of them.
-                    // This should probably be moved LocalAddressVisitor, which does this already
-                    // for GT_LCL_VAR nodes it encounters.
-                    JITDUMP(
-                        "Incrementing ref count from %d to %d for V%02d in fgMorphStructField for promoted struct\n",
-                        varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
-                    varDsc->incLvRefCnt(1, RCS_EARLY);
-                }
-
                 tree->SetOper(GT_LCL_VAR);
                 tree->gtLclVarCommon.SetLclNum(fieldLclIndex);
                 tree->gtType = lvaTable[fieldLclIndex].TypeGet();
@@ -17236,19 +17222,6 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
 
             if (tree->TypeGet() == obj->TypeGet())
             {
-                if (lvaIsImplicitByRefLocal(lclNum))
-                {
-                    // Keep track of the number of appearances of each promoted implicit
-                    // byref (here during struct promotion, which happens during address-exposed
-                    // analysis); fgMakeOutgoingStructArgCopy checks the ref counts for implicit
-                    // byref params when deciding if it's legal to elide certain copies of them.
-                    // This should probably be moved LocalAddressVisitor, which does this already
-                    // for GT_LCL_VAR nodes it encounters.
-                    JITDUMP("Incrementing ref count from %d to %d for V%02d in fgMorphStructField for normed struct\n",
-                            varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
-                    varDsc->incLvRefCnt(1, RCS_EARLY);
-                }
-
                 tree->ChangeOper(GT_LCL_VAR);
                 tree->gtLclVarCommon.SetLclNum(lclNum);
                 tree->gtFlags &= GTF_NODE_MASK;
@@ -18153,7 +18126,12 @@ public:
         {
             MorphStructField(node, user);
         }
-        else if (node->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        else if (node->OperIs(GT_LCL_FLD))
+        {
+            MorphLocalField(node, user);
+        }
+
+        if (node->OperIsLocal())
         {
             unsigned lclNum = node->AsLclVarCommon()->GetLclNum();
 
@@ -18167,11 +18145,6 @@ public:
                 JITDUMP("LocalAddressVisitor incrementing ref count from %d to %d for V%02d\n",
                         varDsc->lvRefCnt(RCS_EARLY), varDsc->lvRefCnt(RCS_EARLY) + 1, lclNum);
                 varDsc->incLvRefCnt(1, RCS_EARLY);
-            }
-
-            if (node->OperIs(GT_LCL_FLD))
-            {
-                MorphLocalField(node, user);
             }
         }
 
