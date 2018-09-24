@@ -103,6 +103,8 @@
     <RunApiCompat>true</RunApiCompat>
     <!-- Build as portable by default -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+    <!-- Used for launchSettings.json and runtime config files. -->
+    <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
@@ -363,6 +365,13 @@
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
     <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
+
+    <!-- 
+      Set these properties early as they are consumed by some test projects.
+      TODO: Remove when https://github.com/dotnet/corefx/issues/32421 is fixed.
+    -->
+    <CodeCoverageEnabled Condition="'$(IsTestProject)' == 'true' AND '$(IsPerformanceTestProject)' != 'true' AND '$(SkipTests)' != 'true' AND '$(Coverage)' == 'true'">true</CodeCoverageEnabled>
+    <UseCoverageDedicatedRuntime Condition="'$(UseCoverageDedicatedRuntime)' == '' AND '$(CodeCoverageEnabled)' == 'true'">true</UseCoverageDedicatedRuntime>
 
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
     <GenerateLaunchSettings>true</GenerateLaunchSettings>

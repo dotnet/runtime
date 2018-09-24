@@ -2,7 +2,6 @@
   <PropertyGroup>
     <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
     <ProjectGuid>{1DD0FF15-6234-4BD6-850A-317F05479554}</ProjectGuid>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>System.Collections.Immutable</RootNamespace>
     <FileAlignment>512</FileAlignment>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
