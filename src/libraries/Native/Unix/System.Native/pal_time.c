@@ -26,21 +26,21 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 {
     int32_t result;
 #if HAVE_UTIMENSAT
-    struct timespec origTimes[2];
-    origTimes[0].tv_sec = (time_t)times[0].tv_sec;
-    origTimes[0].tv_nsec = (long)times[0].tv_nsec;
+    struct timespec updatedTimes[2];
+    updatedTimes[0].tv_sec = (time_t)times[0].tv_sec;
+    updatedTimes[0].tv_nsec = (long)times[0].tv_nsec;
 
-    origTimes[1].tv_sec = (time_t)times[1].tv_sec;
-    origTimes[1].tv_nsec = (long)times[1].tv_nsec;    
-    while (CheckInterrupted(result = utimensat(AT_FDCWD, path, origTimes, 0)));
+    updatedTimes[1].tv_sec = (time_t)times[1].tv_sec;
+    updatedTimes[1].tv_nsec = (long)times[1].tv_nsec;    
+    while (CheckInterrupted(result = utimensat(AT_FDCWD, path, updatedTimes, 0)));
 #else
-    struct timeval origTimes[2];
-    origTimes[0].tv_sec = (long)times[0].tv_sec;
-    origTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
+    struct timeval updatedTimes[2];
+    updatedTimes[0].tv_sec = (long)times[0].tv_sec;
+    updatedTimes[0].tv_usec = (int)times[0].tv_nsec / 1000;
     
-    origTimes[1].tv_sec = (long)times[1].tv_sec;
-    origTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
-    while (CheckInterrupted(result = utimes(path, origTimes)));
+    updatedTimes[1].tv_sec = (long)times[1].tv_sec;
+    updatedTimes[1].tv_usec = (int)times[1].tv_nsec / 1000;
+    while (CheckInterrupted(result = utimes(path, updatedTimes)));
 #endif
 
     return result;
