@@ -268,6 +268,7 @@ struct _MonoException {
 	MonoObject *serialization_manager;
 	MonoObject *captured_traces;
 	MonoArray  *native_trace_ips;
+	gint32 caught_in_unmanaged;
 };
 
 typedef struct {

@@ -1923,13 +1923,21 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 	if (initial_trace_ips) {
 		int len = mono_array_length (initial_trace_ips) / TRACE_IP_ENTRY_SIZE;
 
-		for (i = 0; i < (len - 1); i++) {
+		// If we catch in managed/non-wrapper, we don't save the catching frame
+		if (!mono_ex->caught_in_unmanaged)
+			len -= 1;
+
+		for (i = 0; i < len; i++) {
 			for (int j = 0; j < TRACE_IP_ENTRY_SIZE; ++j) {
 				gpointer p = mono_array_get (initial_trace_ips, gpointer, (i * TRACE_IP_ENTRY_SIZE) + j);
 				trace_ips = g_list_prepend (trace_ips, p);
 			}
 		}
 	}
+
+	// Reset the state because we're making it be caught somewhere
+	if (mono_ex->caught_in_unmanaged)
+		MONO_OBJECT_SETREF (mono_ex, caught_in_unmanaged, 0);
 
 	if (!mono_object_isinst_checked (obj, mono_defaults.exception_class, error)) {
 		mono_error_assert_ok (error);
