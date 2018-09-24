@@ -32,18 +32,6 @@ namespace Microsoft.Win32.SafeHandles
             SetHandle(handle);
         }
 
-        public SafeTokenHandle(IntPtr handle, bool ownsHandle)
-            : base(new IntPtr(DefaultInvalidHandleValue), ownsHandle)
-        {
-            SetHandle(handle);
-        }
-
-        internal void InitialSetHandle(IntPtr h)
-        {
-            Debug.Assert(IsInvalid, "Safe handle should only be set once");
-            base.handle = h;
-        }
-
         public override bool IsInvalid
         {
             get { return handle == IntPtr.Zero || handle == new IntPtr(-1); }

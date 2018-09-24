@@ -153,9 +153,6 @@
   <data name="ThreadExited" xml:space="preserve">
     <value>The request cannot be processed because the thread ({0}) has exited.</value>
   </data>
-  <data name="CantGetProcessId" xml:space="preserve">
-    <value>Cannot retrieve process identifier from the process handle.</value>
-  </data>
   <data name="ProcessDisabled" xml:space="preserve">
     <value>Process performance counter is disabled, so the requested operation cannot be performed.</value>
   </data>
