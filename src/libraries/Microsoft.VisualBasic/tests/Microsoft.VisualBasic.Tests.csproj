@@ -23,9 +23,8 @@
     <Compile Include="Microsoft/VisualBasic/CompilerServices/StandardModuleAttributeTests.cs" />
     <Compile Include="Microsoft/VisualBasic/Devices/NetworkAvailableEventArgsTests.cs" />
     <Compile Include="ConversionsTests.cs" />
-    <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="OperatorsTests.cs" />
-    <Compile Include="OperatorsTests.Comparison.cs" />
+    <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="InformationTests.cs" />
     <Compile Include="UtilsTests.cs" />
     <Compile Include="VBMathTests.cs" />
