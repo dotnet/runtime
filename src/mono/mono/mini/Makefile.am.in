@@ -390,7 +390,6 @@ endif
 endif
 
 interp_sources =	\
-	interp/hacks.h		\
 	interp/interp.h	\
 	interp/interp-internals.h	\
 	interp/interp.c	\
