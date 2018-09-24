@@ -7837,7 +7837,7 @@ BOOL IsIPInEE(void *ip)
     }
 }
 
-#if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#if defined(FEATURE_HIJACK) && (!defined(_TARGET_X86_) || defined(FEATURE_PAL))
 
 // This function is used to check if the specified IP is in the prolog or not.
 bool IsIPInProlog(EECodeInfo *pCodeInfo)
@@ -7854,6 +7854,9 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
 
     _ASSERTE(pCodeInfo->IsValid());
 
+#ifdef _TARGET_AMD64_
+
+    // Optimized version for AMD64 that doesn't need to go through the GC info decoding
     PTR_RUNTIME_FUNCTION funcEntry = pCodeInfo->GetFunctionEntry();
 
     // We should always get a function entry for a managed method
@@ -7863,8 +7866,31 @@ bool IsIPInProlog(EECodeInfo *pCodeInfo)
     PUNWIND_INFO pUnwindInfo = (PUNWIND_INFO)(pCodeInfo->GetModuleBase() + funcEntry->UnwindData);
 
     // Check if the specified IP is beyond the prolog or not.
-    DWORD dwPrologLen = pUnwindInfo->SizeOfProlog;
-    if (pCodeInfo->GetRelOffset() >= dwPrologLen)
+    DWORD prologLen = pUnwindInfo->SizeOfProlog;
+
+#else // _TARGET_AMD64_
+
+    GCInfoToken    gcInfoToken = pCodeInfo->GetGCInfoToken();
+
+#ifdef USE_GC_INFO_DECODER
+
+    GcInfoDecoder gcInfoDecoder(
+        gcInfoToken,
+        DECODE_PROLOG_LENGTH
+    );
+
+    DWORD prologLen = gcInfoDecoder.GetPrologSize();
+
+#else // USE_GC_INFO_DECODER
+
+    size_t prologLen;
+    pCodeInfo->GetCodeManager()->IsInPrologOrEpilog(0, gcInfoToken, &prologLen);
+
+#endif // USE_GC_INFO_DECODER
+
+#endif // _TARGET_AMD64_
+
+    if (pCodeInfo->GetRelOffset() >= prologLen)
     {
         fInsideProlog = false;
     }
@@ -7887,11 +7913,11 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     CONTRACTL_END;
 
     TADDR ipToCheck = GetIP(pContextToCheck);
-    
+
     _ASSERTE(pCodeInfo->IsValid());
-    
+
     // The Codeinfo should correspond to the IP we are interested in.
-    _ASSERTE(ipToCheck == pCodeInfo->GetCodeAddress());
+    _ASSERTE(PCODEToPINSTR(ipToCheck) == pCodeInfo->GetCodeAddress());
 
     // By default, assume its safe to inject the abort.
     *pSafeToInjectThreadAbort = TRUE;
@@ -7918,11 +7944,10 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     // RtlVirtualUnwind against "ipToCheck" results in a NULL personality routine, it implies that we are inside
     // the epilog.
 
-    DWORD64 imageBase = 0;
-    PUNWIND_INFO pUnwindInfo = NULL;
+    DWORD_PTR imageBase = 0;
     CONTEXT tempContext;
     PVOID HandlerData;
-    DWORD64 establisherFrame = 0;
+    DWORD_PTR establisherFrame = 0;
     PEXCEPTION_ROUTINE personalityRoutine = NULL;
 
     // Lookup the function entry for the IP
@@ -7932,7 +7957,6 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     _ASSERTE(funcEntry != NULL);
 
     imageBase = pCodeInfo->GetModuleBase();
-    pUnwindInfo = (PUNWIND_INFO)(imageBase+ funcEntry->UnwindData);
 
     ZeroMemory(&tempContext, sizeof(CONTEXT));
     CopyOSContext(&tempContext, pContextToCheck);
@@ -7955,13 +7979,15 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
         // We are in epilog. 
         fIsInEpilog = true;
 
+#ifdef _TARGET_AMD64_
         // Check if context pointers has returned the address of the stack location in the hijacked function
         // from where RBP was restored. If the address is NULL, then it implies that RBP has been popped off.
         // Since JIT64 ensures that pop of RBP is the last instruction before ret/jmp, it implies its not safe
         // to inject an abort @ this point as EstablisherFrame (which will be based
         // of RBP for managed code since that is the FramePointer register, as indicated in the UnwindInfo)
         // will be off and can result in bad managed exception dispatch.
-        if (ctxPtrs.Rbp == NULL) 
+        if (ctxPtrs.Rbp == NULL)
+#endif
         {
             *pSafeToInjectThreadAbort = FALSE;
         }
@@ -7970,7 +7996,7 @@ bool IsIPInEpilog(PTR_CONTEXT pContextToCheck, EECodeInfo *pCodeInfo, BOOL *pSaf
     return fIsInEpilog;
 }
 
-#endif // defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
+#endif // FEATURE_HIJACK && (!_TARGET_X86_ || FEATURE_PAL)
 
 #define EXCEPTION_VISUALCPP_DEBUGGER        ((DWORD) (1<<30 | 0x6D<<16 | 5000))
 
