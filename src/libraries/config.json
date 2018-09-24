@@ -142,7 +142,7 @@
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
       "values": [],
-      "defaultValue": "/flp:v=normal"
+      "defaultValue": "/flp:v=diag"
     },
     "MsBuildWarning": {
       "description": "MsBuild warning logging.",
@@ -324,7 +324,7 @@
           "settings": {
             "Project": "src/packages.builds",
             "BuildPackages": "true",
-            "MsBuildLogging":"/flp:v=normal;LogFile=build-packages.log"
+            "MsBuildLogging":"/flp:v=diag;LogFile=build-packages.log"
           }
         },
         "portable":{
@@ -348,7 +348,7 @@
           "description": "Builds and runs the tests for the given configuration.",
           "settings": {
             "Project": "src/tests.builds",
-            "MsBuildLogging":"/flp:v=normal;LogFile=build-tests.log",
+            "MsBuildLogging":"/flp:v=diag;LogFile=build-tests.log",
             "Performance": "default"
           }
         },
@@ -522,7 +522,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
-          "MsBuildLogging":"/flp:v=normal;LogFile=clean.log"
+          "MsBuildLogging":"/flp:v=diag;LogFile=clean.log"
         }
       }
     },
@@ -567,7 +567,7 @@
         "toolName": "msbuild",
         "settings": {
           "Project": "src/publish.proj",
-          "MsBuildLogging":"/flp:v=normal;LogFile=publish-packages.log"
+          "MsBuildLogging":"/flp:v=diag;LogFile=publish-packages.log"
         }
       }
     },
@@ -638,7 +638,7 @@
         "defaultAlias": "p",
         "toolName": "msbuild",
         "settings": {
-          "MsBuildLogging":"/flp:v=normal;LogFile=sync.log"
+          "MsBuildLogging":"/flp:v=diag;LogFile=sync.log"
         }
       }
     }
