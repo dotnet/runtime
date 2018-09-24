@@ -77,10 +77,10 @@
     <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
     <MaxRetryCount>1</MaxRetryCount>
-    <!-- Unique container name per build and configuration, e.g., corefx-beta-12345-01-windowsnt-x64-netcoreapp-master -->
+    <!-- Unique container name and blob prefix per build and configuration, e.g., corefx-beta-12345-01/tests-master-windowsnt-x64-netcoreapp-master -->
     <!-- Azure Storage containers can only contain [a-z, 0-9, -] in their names and $(OSGroup) is "Windows_NT" on Windows... -->
-    <RawContainerName Condition="'$(Branch)' != ''">corefx-$(Branch)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)-$(OSGroup)-$(ArchGroup)-$(TargetGroup)</RawContainerName>
-    <ContainerName Condition="'$(ContainerName)' == '' And '$(IsOfficial)' == 'true' And '$(Branch)' != ''">$([System.Text.RegularExpressions.Regex]::Replace('$(RawContainerName.ToLower())', "[^A-Za-z0-9-]+", ""))</ContainerName>
+    <ContainerName Condition="'$(ContainerName)' == '' And '$(IsOfficial)' == 'true'">corefx-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
+    <HelixBlobPrefix Condition="'$(HelixBlobPrefix)' == '' And '$(IsOfficial)' == 'true' And '$(Branch)' != ''">tests-$(Branch)-$(OSGroup)-$(ArchGroup)-$(TargetGroup)</HelixBlobPrefix>
     <!-- If this is an official build, set the test drop to be public -->
     <IsDropPublic Condition="'$(IsOffical)' == 'true'">true</IsDropPublic>
   </PropertyGroup>
