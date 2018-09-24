@@ -11,17 +11,17 @@ internal partial class Interop
     internal partial class NtDll
     {
         [DllImport(Libraries.NtDll, ExactSpelling=true)]
-        private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
+        private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOEX lpVersionInformation);
 
-        internal static string RtlGetVersion()
+        internal static unsafe string RtlGetVersion()
         {
-            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
+            var osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
             const string version = "Microsoft Windows";
-            if (RtlGetVersion(out osvi) == 0)
+            if (RtlGetVersion(ref osvi) == 0)
             {
                 return string.Format("{0} {1}.{2}.{3} {4}",
-                    version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, osvi.szCSDVersion);
+                    version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, new string(&(osvi.szCSDVersion[0])));
             }
             else
             {

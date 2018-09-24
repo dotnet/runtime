@@ -219,19 +219,19 @@ namespace System
             return productType;
         }
 
-        private static int GetWindowsMinorVersion()
+        private static unsafe int GetWindowsMinorVersion()
         {
-            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-            Assert.Equal(0, RtlGetVersion(out osvi));
+            var osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
+            Assert.Equal(0, RtlGetVersion(ref osvi));
             return (int)osvi.dwMinorVersion;
         }
 
-        private static int GetWindowsBuildNumber()
+        private static unsafe int GetWindowsBuildNumber()
         {
-            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-            Assert.Equal(0, RtlGetVersion(out osvi));
+            var osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
+            Assert.Equal(0, RtlGetVersion(ref osvi));
             return (int)osvi.dwBuildNumber;
         }
 
@@ -269,25 +269,24 @@ namespace System
         );
 
         [DllImport("ntdll.dll", ExactSpelling=true)]
-        private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
+        private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOEX lpVersionInformation);
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct RTL_OSVERSIONINFOEX
+        [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+        private unsafe struct RTL_OSVERSIONINFOEX
         {
             internal uint dwOSVersionInfoSize;
             internal uint dwMajorVersion;
             internal uint dwMinorVersion;
             internal uint dwBuildNumber;
             internal uint dwPlatformId;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-            internal string szCSDVersion;
+            internal fixed char szCSDVersion[128];
         }
 
-        private static int GetWindowsVersion()
+        private static unsafe int GetWindowsVersion()
         {
-            RTL_OSVERSIONINFOEX osvi = new RTL_OSVERSIONINFOEX();
-            osvi.dwOSVersionInfoSize = (uint)Marshal.SizeOf(osvi);
-            Assert.Equal(0, RtlGetVersion(out osvi));
+            var osvi = new RTL_OSVERSIONINFOEX();
+            osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
+            Assert.Equal(0, RtlGetVersion(ref osvi));
             return (int)osvi.dwMajorVersion;
         }
 
@@ -303,5 +302,5 @@ namespace System
         // The process handle does NOT need closing
         [DllImport("kernel32.dll", ExactSpelling = true)]
         private static extern IntPtr GetCurrentProcess();
- }
+    }
 }
