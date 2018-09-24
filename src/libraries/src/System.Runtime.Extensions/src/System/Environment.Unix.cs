@@ -311,7 +311,7 @@ namespace System
 
         public static string NewLine => "\n";
 
-        private static Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() => GetOperatingSystem(Interop.Sys.GetUnixRelease()));
+        private static readonly Lazy<OperatingSystem> s_osVersion = new Lazy<OperatingSystem>(() => GetOperatingSystem(Interop.Sys.GetUnixRelease()));
 
         private static OperatingSystem GetOperatingSystem(string release)
         {
