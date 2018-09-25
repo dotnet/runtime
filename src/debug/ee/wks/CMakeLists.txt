@@ -2,6 +2,8 @@ if (WIN32)
 
   add_precompiled_header(stdafx.h ../stdafx.cpp CORDBEE_SOURCES_WKS)
 
+  list(APPEND CORDBEE_SOURCES_WKS ${CORDBEE_HEADERS_WKS})
+
   get_include_directories(ASM_INCLUDE_DIRECTORIES)
   get_compile_definitions(ASM_DEFINITIONS)
 
