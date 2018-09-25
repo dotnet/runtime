@@ -34,6 +34,20 @@ set(CORDBDI_SOURCES
   valuehome.cpp
 )
 
+set(CORDBDI_HEADERS
+    shimpriv.h
+    shimdatatarget.h
+    classfactory.h
+    dbgtransportmanager.h
+    eventchannel.h
+    helpers.h
+    nativepipeline.h
+    rsenumerator.hpp
+    rspriv.h
+    rspriv.inl
+    symbolinfo.h)
+
+
 if(WIN32)
     #use static crt
     add_definitions(-MT)
@@ -87,8 +101,11 @@ endif(WIN32)
 
 add_precompiled_header(stdafx.h stdafx.cpp CORDBDI_SOURCES)
 
+if (WIN32)
+    convert_to_absolute_path(CORDBDI_HEADERS ${CORDBDI_HEADERS})
+    list(APPEND CORDBDI_SOURCES ${CORDBDI_HEADERS})
+endif (WIN32)
 
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
-
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
