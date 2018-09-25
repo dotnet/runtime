@@ -126,6 +126,20 @@ namespace System.Collections.Tests
             }
         }
 
+        [Fact]
+        public void Clear_OnEmptyCollection_DoesNotInvalidateEnumerator()
+        {
+            if (ModifyEnumeratorAllowed.HasFlag(ModifyOperation.Clear))
+            {
+                IDictionary dictionary = new Dictionary<string, string>();
+                IEnumerator valuesEnum = dictionary.GetEnumerator();
+
+                dictionary.Clear();
+                Assert.Empty(dictionary);
+                Assert.False(valuesEnum.MoveNext());
+            }
+        }
+
         #endregion
 
         #region ICollection tests
@@ -248,6 +262,18 @@ namespace System.Collections.Tests
                 if (dictionary.Remove(key + SubKey))
                     break;
             }
+        }
+
+        [Fact]
+        public void TryAdd_ItemAlreadyExists_DoesNotInvalidateEnumerator()
+        {
+            var dictionary = new Dictionary<string, string>();
+            dictionary.Add("a", "b");
+
+            IEnumerator valuesEnum = dictionary.GetEnumerator();
+            Assert.False(dictionary.TryAdd("a", "c"));
+
+            Assert.True(valuesEnum.MoveNext());
         }
 
         [Theory]
