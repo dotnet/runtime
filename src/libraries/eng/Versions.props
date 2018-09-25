@@ -6,9 +6,9 @@
   </PropertyGroup>
   <!-- Package names -->
   <PropertyGroup>
-    <ApiCompatPackage>Microsoft.DotNet.ApiCompat</ApiCompatPackage>
-    <GenAPIPackage>Microsoft.DotNet.GenApi</GenAPIPackage>
-    <GenFacadesPackage>Microsoft.DotNet.GenFacades</GenFacadesPackage>
+    <MicrosoftDotNetApiCompatPackage>Microsoft.DotNet.ApiCompat</MicrosoftDotNetApiCompatPackage>
+    <MicrosoftDotNetGenApiPackage>Microsoft.DotNet.GenApi</MicrosoftDotNetGenApiPackage>
+    <MicrosoftDotNetGenFacadesPackage>Microsoft.DotNet.GenFacades</MicrosoftDotNetGenFacadesPackage>
   </PropertyGroup>
   <!-- Package versions -->
   <PropertyGroup>
