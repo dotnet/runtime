@@ -16,13 +16,14 @@ namespace System.Tests
         private volatile string _string;
         private volatile bool _bool;
 
+        // Reenable commented out test cases when https://github.com/xunit/xunit/issues/1822 is fixed.
         [Benchmark]
         [InlineData(float.NegativeInfinity, 10_000_000)]    // Negative Infinity
         [InlineData(float.MinValue, 100_000)]               // Min Negative Normal
         [InlineData(-3.14159265f, 1_000_000)]               // Negative pi
         [InlineData(-2.71828183f, 1_000_000)]               // Negative e
         [InlineData(-1.0f, 1_000_000)]                      // Negative One
-        [InlineData(-1.17549435E-38f, 100_000)]             // Max Negative Normal
+        // [InlineData(-1.17549435E-38f, 100_000)]             // Max Negative Normal
         [InlineData(-1.17549421E-38f, 100_000)]             // Min Negative Subnormal
         [InlineData(-float.Epsilon, 100_000)]               // Max Negative Subnormal (Negative Epsilon)
         [InlineData(-0.0f, 10_000_000)]                     // Negative Zero
@@ -30,7 +31,7 @@ namespace System.Tests
         [InlineData(0.0f, 10_000_000)]                      // Positive Zero
         [InlineData(float.Epsilon, 100_000)]                // Min Positive Subnormal (Positive Epsilon)
         [InlineData(1.17549421E-38f, 100_000)]              // Max Positive Subnormal
-        [InlineData(1.17549435E-38f, 100_000)]              // Min Positive Normal
+        // [InlineData(1.17549435E-38f, 100_000)]              // Min Positive Normal
         [InlineData(1.0f, 1_000_000)]                       // Positive One
         [InlineData(2.71828183f, 1_000_000)]                // Positive e
         [InlineData(3.14159265f, 1_000_000)]                // Positive pi
@@ -56,7 +57,7 @@ namespace System.Tests
         [InlineData("-3.14159274", 1_000_000)]              // Negative pi
         [InlineData("-2.71828175", 1_000_000)]              // Negative e
         [InlineData("-1", 1_000_000)]                       // Negative One
-        [InlineData("-1.17549435E-38", 100_000)]            // Max Negative Normal
+        // [InlineData("-1.17549435E-38", 100_000)]            // Max Negative Normal
         [InlineData("-1.17549421E-38", 100_000)]            // Min Negative Subnormal
         [InlineData("-1.401298E-45", 100_000)]              // Max Negative Subnormal (Negative Epsilon)
         [InlineData("-0.0", 10_000_000)]                    // Negative Zero
@@ -64,7 +65,7 @@ namespace System.Tests
         [InlineData("0", 10_000_000)]                       // Positive Zero
         [InlineData("1.401298E-45", 100_000)]               // Min Positive Subnormal (Positive Epsilon)
         [InlineData("1.17549421E-38", 100_000)]             // Max Positive Subnormal
-        [InlineData("1.17549435E-38", 100_000)]             // Min Positive Normal
+        // [InlineData("1.17549435E-38", 100_000)]             // Min Positive Normal
         [InlineData("1", 1_000_000)]                        // Positive One
         [InlineData("2.71828175", 1_000_000)]               // Positive e
         [InlineData("3.14159274", 1_000_000)]               // Positive pi
@@ -90,7 +91,7 @@ namespace System.Tests
         [InlineData("zh", -3.14159265f, 1_000_000)]             // Negative pi
         [InlineData("zh", -2.71828183f, 1_000_000)]             // Negative e
         [InlineData("zh", -1.0f, 1_000_000)]                    // Negative One
-        [InlineData("zh", -1.17549435E-38f, 100_000)]           // Max Negative Normal
+        // [InlineData("zh", -1.17549435E-38f, 100_000)]           // Max Negative Normal
         [InlineData("zh", -1.17549421E-38f, 100_000)]           // Min Negative Subnormal
         [InlineData("zh", -float.Epsilon, 100_000)]             // Max Negative Subnormal (Negative Epsilon)
         [InlineData("zh", -0.0f, 10_000_000)]                   // Negative Zero
@@ -98,7 +99,7 @@ namespace System.Tests
         [InlineData("zh", 0.0f, 10_000_000)]                    // Positive Zero
         [InlineData("zh", float.Epsilon, 100_000)]              // Min Positive Subnormal (Positive Epsilon)
         [InlineData("zh", 1.17549421E-38f, 100_000)]            // Max Positive Subnormal
-        [InlineData("zh", 1.17549435E-38f, 100_000)]            // Min Positive Normal
+        // [InlineData("zh", 1.17549435E-38f, 100_000)]            // Min Positive Normal
         [InlineData("zh", 1.0f, 1_000_000)]                     // Positive One
         [InlineData("zh", 2.71828183f, 1_000_000)]              // Positive e
         [InlineData("zh", 3.14159265f, 1_000_000)]              // Positive pi
@@ -150,12 +151,12 @@ namespace System.Tests
             float[] edgeTestValues =        // 100_000 iterations
             {
                 float.MinValue,             // Min Negative Normal
-                -1.17549435E-38f,           // Max Negative Normal
+                // -1.17549435E-38f,           // Max Negative Normal
                 -1.17549421E-38f,           // Min Negative Subnormal
                 -float.Epsilon,             // Max Negative Subnormal (Negative Epsilon)
                 float.Epsilon,              // Min Positive Subnormal (Positive Epsilon)
                 1.17549421E-38f,            // Max Positive Subnormal
-                1.17549435E-38f,            // Min Positive Normal
+                // 1.17549435E-38f,            // Min Positive Normal
                 float.MaxValue,             // Max Positive Normal
             };
 
