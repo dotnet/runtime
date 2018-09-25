@@ -6,11 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 
 namespace Internal.Cryptography.Pal
 {
@@ -244,7 +245,7 @@ namespace Internal.Cryptography.Pal
 
             if (rootStoreFile != null && rootStoreFile.Exists)
             {
-                trustedCertFiles = Prepend(trustedCertFiles, rootStoreFile);
+                trustedCertFiles = trustedCertFiles.Prepend(rootStoreFile);
             }
 
             HashSet<X509Certificate2> uniqueRootCerts = new HashSet<X509Certificate2>();
@@ -299,16 +300,6 @@ namespace Internal.Cryptography.Pal
             // s_machineRootStore's nullarity is the loaded-state sentinel, so write it with Volatile.
             Debug.Assert(Monitor.IsEntered(s_machineLoadLock), "LoadMachineStores assumes a lock(s_machineLoadLock)");
             Volatile.Write(ref s_machineRootStore, rootStorePal);
-        }
-
-        private static IEnumerable<T> Prepend<T>(IEnumerable<T> current, T addition)
-        {
-            yield return addition;
-
-            foreach (T element in current)
-            {
-                yield return element;
-            }
         }
     }
 }
