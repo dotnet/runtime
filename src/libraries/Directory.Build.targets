@@ -126,7 +126,7 @@
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
 
   <!-- Import Arcade targets -->
-<!--  <Import Project="$(PackagesDir)/$(GenAPIPackage.ToLower())/$(GenAPIPackageVersion)/build/$(GenAPIPackage).targets" /> -->
+  <Import Project="$(PackagesDir)/$(GenAPIPackage.ToLower())/$(GenAPIPackageVersion)/build/$(GenAPIPackage).targets" />
   <Import Project="$(PackagesDir)/$(GenFacadesPackage.ToLower())/$(GenFacadesPackageVersion)/build/$(GenFacadesPackage).targets" />
   <Import Project="$(PackagesDir)/$(ApiCompatPackage.ToLower())/$(ApiCompatPackageVersion)/build/$(ApiCompatPackage).targets" />
 
