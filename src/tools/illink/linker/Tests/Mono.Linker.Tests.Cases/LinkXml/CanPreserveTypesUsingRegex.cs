@@ -18,3 +18,15 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		}
 	}
 }
+
+namespace Mono.Linker.Tests.Cases.LinkXml.PreserveNamespace {
+	[Kept]
+	[KeptMember (".ctor()")]
+	class Type1 {
+	}
+
+	[Kept]
+	[KeptMember (".ctor()")]
+	class Type2 {
+	}
+}
