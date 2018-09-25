@@ -36,6 +36,10 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 			[KeptBackingField]
 			public int PreservedProperty7 { get; [Kept] set; }
 
+			[Kept]
+			[KeptBackingField]
+			public int PreservedProperty8 { [Kept] get; [Kept] set; }
+
 			public int NotPreservedProperty { get; set; }
 		}
 	}
