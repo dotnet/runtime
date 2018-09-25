@@ -151,7 +151,7 @@
     <value>SerialPort does not support encoding '{0}'.  The supported encodings include ASCIIEncoding, UTF8Encoding, UnicodeEncoding, UTF32Encoding, and most single or double byte code pages.  For a complete list please see the documentation.</value>
   </data>
   <data name="Arg_InvalidSerialPort" xml:space="preserve">
-    <value>The given port name does not start with COM/com or does not resolve to a valid serial port.</value>
+    <value>The given port name ({0}) does not resolve to a valid serial port.</value>
   </data>
   <data name="Arg_InvalidSerialPortExtended" xml:space="preserve">
     <value>The given port name is invalid.  It may be a valid port, but not a serial port.</value>
