@@ -3408,7 +3408,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			else if (!aot)
 				mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 		} else {
-			piinfo->addr = mono_lookup_internal_call (method);
+			if (!aot || (method->klass == mono_defaults.string_class))
+				piinfo->addr = mono_lookup_internal_call (method);
 		}
 	}
 

@@ -8305,7 +8305,7 @@ no_icall_table (void)
  * If the method is not found, warns and returns NULL.
  */
 gpointer
-mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
+mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles)
 {
 	char *sigstart;
 	char *tmpsig;
@@ -8398,13 +8398,15 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 		if (res)
 			return res;
 
-		g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
-		g_print ("\nYour mono runtime and class libraries are out of sync.\n");
-		g_print ("The out of sync library is: %s\n", m_class_get_image (method->klass)->name);
-		g_print ("\nWhen you update one from git you need to update, compile and install\nthe other too.\n");
-		g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
-		g_print ("If you see other errors or faults after this message they are probably related\n");
-		g_print ("and you need to fix your mono install first.\n");
+		if (warn_on_missing) {
+			g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
+			g_print ("\nYour mono runtime and class libraries are out of sync.\n");
+			g_print ("The out of sync library is: %s\n", m_class_get_image (method->klass)->name);
+			g_print ("\nWhen you update one from git you need to update, compile and install\nthe other too.\n");
+			g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
+			g_print ("If you see other errors or faults after this message they are probably related\n");
+			g_print ("and you need to fix your mono install first.\n");
+		}
 
 		return NULL;
 	}
@@ -8416,7 +8418,7 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 gpointer
 mono_lookup_internal_call (MonoMethod *method)
 {
-	return mono_lookup_internal_call_full (method, NULL);
+	return mono_lookup_internal_call_full (method, TRUE, NULL);
 }
 
 /*
