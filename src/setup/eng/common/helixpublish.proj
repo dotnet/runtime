@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+
+  <ItemGroup>
+    <HelixWorkItem Include="WorkItem">
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand)</Command>
+    </HelixWorkItem>
+  </ItemGroup>
+</Project>
