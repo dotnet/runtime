@@ -172,10 +172,11 @@ namespace System.Globalization.Tests
             DateTime dt = new DateTime(1989, 01, 08); // Start of Heisei Era
 
             string formattedDate = dt.ToString(pattern, jpnFormat);
-            if (PlatformDetection.IsNetCore)
+            // Fix in netfx hasn't rolled out yet: https://github.com/dotnet/corefx/issues/32450
+            if (!PlatformDetection.IsFullFramework)
             {
                 Assert.True(formattedDate.IndexOf("\u5143" /* 元 */, StringComparison.Ordinal) >= 0,
-                            "Expected the first year of the era be formatted with 元");
+                    "Expected the first year of the era be formatted with 元");
             }
 
             Assert.True(DateTime.TryParseExact(formattedDate, pattern, jpnFormat, DateTimeStyles.None, out DateTime parsedDate));
