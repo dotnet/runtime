@@ -13,7 +13,7 @@
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <XUnitRunnerPackageId>xunit.runner.console</XUnitRunnerPackageId>
-    <XUnitRunnerTargetFramework>netcoreapp1.0</XUnitRunnerTargetFramework>
+    <XUnitRunnerTargetFramework>netcoreapp2.0</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
