@@ -73,16 +73,7 @@
     <PublishSymbolsPackageVersion>1.0.0-beta-63112-02</PublishSymbolsPackageVersion>
   </PropertyGroup>
 
-  <!-- Packages to consume from Arcade -->
-  <PropertyGroup>
-    <ApiCompatPackage>Microsoft.DotNet.ApiCompat</ApiCompatPackage>
-    <GenAPIPackage>Microsoft.DotNet.GenApi</GenAPIPackage>
-    <GenFacadesPackage>Microsoft.DotNet.GenFacades</GenFacadesPackage>
-
-    <ApiCompatPackageVersion>1.0.0-beta.18475.1</ApiCompatPackageVersion>
-    <GenAPIPackageVersion>1.0.0-beta.18475.1</GenAPIPackageVersion>
-    <GenFacadesPackageVersion>1.0.0-beta.18475.1</GenFacadesPackageVersion>
-  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)eng\Versions.props" />
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
