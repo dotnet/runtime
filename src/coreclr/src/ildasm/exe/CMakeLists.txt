@@ -35,6 +35,20 @@ set(ILDASM_SOURCES
     ../windasm.cpp
 )
 
+set(ILDASM_HEADERS
+    ../ceeload.h
+    ../dasm_sz.h
+    ../dis.h
+    ../dynamicarray.h
+    ../ildasmpch.h
+    ../resource.h
+    ../util.hpp
+)
+
+if (WIN32)
+    list(APPEND ILDASM_SOURCES ${ILDASM_HEADERS})
+endif(WIN32)
+
 _add_executable(ildasm
     ${ILDASM_SOURCES}
     ${ILDASM_RESOURCES}
