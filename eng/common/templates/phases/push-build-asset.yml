@@ -1,0 +1,26 @@
+parameters:
+  dependsOn: ''
+  queue: {}
+phases:
+  - phase: Push to B.A.R.
+    dependsOn: ${{ parameters.dependsOn }}
+    queue: ${{ parameters.queue }}
+    steps:
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        - task: DownloadBuildArtifacts@0
+          displayName: Download artifact
+          inputs:
+            artifactName: AssetManifests    
+            downloadPath: '$(Build.StagingDirectory)/Download'
+          condition: succeeded()
+        - task: AzureKeyVault@1
+          inputs:
+            azureSubscription: 'DotNet-Engineering-Services_KeyVault'
+            KeyVaultName: EngKeyVault
+            SecretsFilter: 'MaestroAccessToken'
+          condition: succeeded()
+        - script: eng\common\pushbuildassets.cmd
+            /p:ManifestZipFilePath='$(Build.StagingDirectory)/Download/AssetManifests'
+            /p:BuildAssetRegistryToken=$(MaestroAccessToken)
+            /p:MaestroApiEndpoint=https://maestro-int.westus2.cloudapp.azure.com
+          displayName: Push Build Assets
