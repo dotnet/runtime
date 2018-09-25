@@ -4,4 +4,16 @@
     <VersionPrefix>1.0.0</VersionPrefix>
     <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
   </PropertyGroup>
+  <!-- Package names -->
+  <PropertyGroup>
+    <ApiCompatPackage>Microsoft.DotNet.ApiCompat</ApiCompatPackage>
+    <GenAPIPackage>Microsoft.DotNet.GenApi</GenAPIPackage>
+    <GenFacadesPackage>Microsoft.DotNet.GenFacades</GenFacadesPackage>
+  </PropertyGroup>
+  <!-- Package versions -->
+  <PropertyGroup>
+  	<MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18475.8</MicrosoftDotNetApiCompatPackageVersion>
+  	<MicrosoftDotNetGenApiPackageVersion>1.0.0-beta.18475.8</MicrosoftDotNetGenApiPackageVersion>
+  	<MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18475.8</MicrosoftDotNetGenFacadesPackageVersion>
+  </PropertyGroup>
 </Project>
