@@ -7,7 +7,7 @@
   <!-- Package names -->
   <PropertyGroup>
     <MicrosoftDotNetApiCompatPackage>Microsoft.DotNet.ApiCompat</MicrosoftDotNetApiCompatPackage>
-    <MicrosoftDotNetGenApiPackage>Microsoft.DotNet.GenApi</MicrosoftDotNetGenApiPackage>
+    <MicrosoftDotNetGenApiPackage>Microsoft.DotNet.GenAPI</MicrosoftDotNetGenApiPackage>
     <MicrosoftDotNetGenFacadesPackage>Microsoft.DotNet.GenFacades</MicrosoftDotNetGenFacadesPackage>
   </PropertyGroup>
   <!-- Package versions -->
