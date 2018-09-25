@@ -30668,7 +30668,15 @@ void reset_memory (uint8_t* o, size_t sizeo)
         // on write watched memory.
         if (reset_mm_p)
         {
-            reset_mm_p = GCToOSInterface::VirtualReset((void*)page_start, size, true /* unlock */);
+#ifdef MULTIPLE_HEAPS
+            bool unlock_p = true;
+#else
+            // We don't do unlock because there could be many processes using workstation GC and it's
+            // bad perf to have many threads doing unlock at the same time.
+            bool unlock_p = false;
+#endif // MULTIPLE_HEAPS
+
+            reset_mm_p = GCToOSInterface::VirtualReset((void*)page_start, size, unlock_p);
         }
     }
 }
