@@ -590,11 +590,14 @@ namespace System.IO.Ports
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            if ((portName == null) ||
-                !portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) || 
+            if (portName == null)
+            {
+                 throw new ArgumentNullException(nameof(portName));
+            }
+            else if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(portName.Substring(3), out uint portNumber))
             {
-                throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
             }
 
             // Error checking done in SerialPort.
@@ -612,7 +615,7 @@ namespace System.IO.Ports
 
                 // Allowing FILE_TYPE_UNKNOWN for legitimate serial device such as USB to serial adapter device 
                 if ((fileType != Interop.Kernel32.FileTypes.FILE_TYPE_CHAR) && (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN))
-                    throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+                    throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
 
                 _handle = tempHandle;
 

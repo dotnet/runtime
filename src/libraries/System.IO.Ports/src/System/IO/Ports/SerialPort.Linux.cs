@@ -26,7 +26,11 @@ namespace System.IO.Ports
                 {
                     if (Directory.Exists(sysUsbDir + entry.Name) || File.Exists(entry.FullName + "/device/id"))
                     {
-                        ports.Add("/dev/" + entry.Name);
+                        string deviceName = "/dev/" + entry.Name;
+                        if (File.Exists(deviceName))
+                        {
+                            ports.Add(deviceName);
+                        }
                     }
                 }
 

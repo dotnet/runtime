@@ -501,7 +501,7 @@ namespace System.IO.Ports
 
             if (portName == null)
             {
-                throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+                throw new ArgumentNullException(nameof(portName));
             }
 
             // Error checking done in SerialPort.
@@ -516,7 +516,7 @@ namespace System.IO.Ports
                 }
                 else
                 {
-                    throw new ArgumentException(SR.Arg_InvalidSerialPort, nameof(portName));
+                    throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
                 }
             }
 
