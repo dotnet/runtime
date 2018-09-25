@@ -110,19 +110,13 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public void Initialize(uint numElements, uint sizeOfEachElement)
         {
-            if (sizeOfEachElement == 0)
+            try
             {
-                _numBytes = (UIntPtr)0;
+                _numBytes = checked((UIntPtr)((ulong)numElements * sizeOfEachElement));
             }
-            else
+            catch (OverflowException)
             {
-                if (IntPtr.Size == 4 && numElements > uint.MaxValue / sizeOfEachElement)
-                    throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
-
-                if (numElements >= (ulong)Uninitialized / sizeOfEachElement)
-                    throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_UIntPtrMax);
-
-                _numBytes = checked((UIntPtr)(numElements * sizeOfEachElement)); 
+                throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
             }
         }
 
