@@ -24,7 +24,24 @@ set(ILASM_SOURCES
   assembler.cpp
   prebuilt/asmparse.cpp
 )
+
+set(ILASM_HEADERS
+  asmenum.h
+  asmman.hpp
+  asmparse.h
+  asmtemplates.h
+  assembler.h
+  binstr.h
+  class.hpp
+  ilasmpch.h
+  method.hpp
+  nvpair.h
+  typar.hpp
+)
+
 if(WIN32)
+  list(APPEND ILASM_SOURCES ${ILASM_HEADERS})
+
   set(ILASM_RESOURCES Native.rc)
   add_definitions(-DFX_VER_INTERNALNAME_STR=ilasm.exe)
 endif(WIN32)
@@ -81,4 +98,3 @@ else()
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 install_clr(ilasm)
-
