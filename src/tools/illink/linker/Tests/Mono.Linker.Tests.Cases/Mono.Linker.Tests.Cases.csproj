@@ -213,8 +213,10 @@
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedGenericTypeWithPreserveAllHasAllMembersPreserved.cs" />
+    <Compile Include="LinkXml\UnusedNonRequiredTypeIsRemoved.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlWithCommentIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
+    <Compile Include="LinkXml\UsedNonRequiredTypeIsKept.cs" />
     <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInAssemblyLibrary.cs" />
     <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase.cs" />
     <Compile Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyBase2.cs" />
@@ -416,6 +418,7 @@
     <Content Include="LinkXml\UnusedGenericTypeWithPreserveAllHasAllMembersPreserved.xml" />
     <Content Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedNonRequiredTypeIsRemoved.xml" />
     <Content Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedTypeIsPresservedWhenEntireAssemblyIsPreserved.xml" />
     <Content Include="LinkXml\UnusedTypePreservedByLinkXmlIsKept.xml" />
@@ -426,6 +429,7 @@
     <Content Include="LinkXml\UnusedTypeWithPreserveMethodsHasFieldsRemoved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
+    <Content Include="LinkXml\UsedNonRequiredTypeIsKept.xml" />
     <Content Include="PreserveDependencies\Dependencies\PreserveDependencyMethodInNonReferencedAssemblyLibrary.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfNameDoesNotMatchAnAssembly_Lib1_NotMatchingName.xml" />
     <Content Include="Resources\Dependencies\EmbeddedLinkXmlFileInReferencedAssemblyIsNotProcessedIfActionIsCopy_Lib1.xml" />
