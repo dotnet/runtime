@@ -197,7 +197,7 @@ static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 static guint32 default_stacksize = 0;
 #define default_stacksize_for_thread(thread) ((thread)->stack_size? (thread)->stack_size: default_stacksize)
 
-static void context_adjust_static_data (MonoAppContext *ctx);
+static void context_adjust_static_data (MonoAppContextHandle ctx);
 static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
 static guint32 mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 align);
@@ -1401,6 +1401,13 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 
 	return_val_if_nok (error, NULL);
 	return internal;
+}
+
+MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	// FIXME invert
+	return MONO_HANDLE_NEW (MonoInternalThread, mono_thread_create_internal (domain, func, arg, flags, error));
 }
 
 /**
@@ -3127,7 +3134,7 @@ free_context (void *user_data)
 }
 
 void
-mono_threads_register_app_context (MonoAppContext *ctx, MonoError *error)
+mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error)
 {
 	error_init (error);
 	mono_threads_lock ();
@@ -3140,7 +3147,7 @@ mono_threads_register_app_context (MonoAppContext *ctx, MonoError *error)
 	if (!context_queue)
 		context_queue = mono_gc_reference_queue_new (free_context);
 
-	gpointer gch = GUINT_TO_POINTER (mono_gchandle_new_weakref (&ctx->obj, FALSE));
+	gpointer gch = GUINT_TO_POINTER (mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, ctx)));
 	g_hash_table_insert (contexts, gch, gch);
 
 	/*
@@ -3150,21 +3157,20 @@ mono_threads_register_app_context (MonoAppContext *ctx, MonoError *error)
 	 */
 	ContextStaticData *data = g_new0 (ContextStaticData, 1);
 	data->gc_handle = GPOINTER_TO_UINT (gch);
-	ctx->data = data;
+	MONO_HANDLE_SETVAL (ctx, data, ContextStaticData*, data);
 
 	context_adjust_static_data (ctx);
-	mono_gc_reference_queue_add (context_queue, &ctx->obj, data);
+	mono_gc_reference_queue_add_handle (context_queue, ctx, data);
 
 	mono_threads_unlock ();
 
-	MONO_PROFILER_RAISE (context_loaded, (ctx));
+	MONO_PROFILER_RAISE (context_loaded, (MONO_HANDLE_RAW (ctx)));
 }
 
 void
 ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContextHandle ctx, MonoError *error)
 {
-	error_init (error);
-	mono_threads_register_app_context (MONO_HANDLE_RAW (ctx), error); /* FIXME use handles in mono_threads_register_app_context */
+	mono_threads_register_app_context (ctx, error);
 }
 
 void
@@ -3184,7 +3190,6 @@ mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error)
 void
 ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContextHandle ctx, MonoError *error)
 {
-	error_init (error);
 	mono_threads_release_app_context (MONO_HANDLE_RAW (ctx), error); /* FIXME use handles in mono_threads_release_app_context */
 }
 
@@ -4519,8 +4524,9 @@ mono_alloc_static_data_slot (StaticDataInfo *static_data, guint32 size, guint32 
  * LOCKING: requires that threads_mutex is held
  */
 static void
-context_adjust_static_data (MonoAppContext *ctx)
+context_adjust_static_data (MonoAppContextHandle ctx_handle)
 {
+	MonoAppContext *ctx = MONO_HANDLE_RAW (ctx_handle);
 	if (context_static_info.offset || context_static_info.idx > 0) {
 		guint32 offset = MAKE_SPECIAL_STATIC_OFFSET (context_static_info.idx, context_static_info.offset, 0);
 		mono_alloc_static_data (&ctx->static_data, offset, ctx, FALSE);

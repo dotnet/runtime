@@ -11,8 +11,8 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#ifndef __MONO_HANDLE_0_H__
-#define __MONO_HANDLE_0_H__
+#ifndef __MONO_HANDLE_DECL_H__
+#define __MONO_HANDLE_DECL_H__
 
 #include <config.h>
 #include <glib.h>
@@ -132,4 +132,4 @@ MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
  */
 #define TYPED_VALUE_HANDLE_DECL(TYPE) TYPED_HANDLE_DECL(TYPE)
 
-#endif /* __MONO_HANDLE_0_H__ */
+#endif /* __MONO_HANDLE_DECL_H__ */

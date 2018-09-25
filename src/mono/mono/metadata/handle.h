@@ -350,7 +350,6 @@ typedef struct _MonoTypeofCastHelper *MonoTypeofCastHelper; // a pointer type un
 #define MONO_HANDLE_RAW(handle)     (MONO_TYPEOF_CAST (*(handle).__raw, mono_handle_raw ((handle).__raw)))
 #endif
 #define MONO_HANDLE_IS_NULL(handle) (mono_handle_is_null ((handle).__raw))
-#define MONO_HANDLE_BOOL(handle)   (!mono_handle_is_null ((handle).__raw))
 
 #else // MONO_TYPE_SAFE_HANDLES
 
@@ -363,9 +362,11 @@ typedef struct _MonoTypeofCastHelper *MonoTypeofCastHelper; // a pointer type un
 
 #define MONO_HANDLE_RAW(handle)     (MONO_TYPEOF_CAST ((handle)->__raw, mono_handle_raw (handle)))
 #define MONO_HANDLE_IS_NULL(handle) (mono_handle_is_null (handle))
-#define MONO_HANDLE_BOOL(handle)   (!mono_handle_is_null (handle))
 
 #endif // MONO_TYPE_SAFE_HANDLES
+
+#define MONO_BOOL(x)             (!!MONO_HANDLE_SUPPRESS (x))
+#define MONO_HANDLE_BOOL(handle) (MONO_BOOL (!MONO_HANDLE_IS_NULL (handle)))
 
 /*
 WARNING WARNING WARNING
@@ -408,12 +409,17 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 
 #endif
 
-// Get ((type)handle)->field as a handle.
+// Get handle->field as a type-handle.
 #define MONO_HANDLE_NEW_GET(TYPE,HANDLE,FIELD) (MONO_HANDLE_NEW(TYPE,MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD)))
 
 // Get handle->field, where field is not a pointer (an integer or non-managed pointer).
 #define MONO_HANDLE_GETVAL(HANDLE, FIELD) MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD)
 
+// Get handle->field as a boolean, i.e. typically compare managed pointer to NULL,
+// though any type is ok.
+#define MONO_HANDLE_GET_BOOL(handle, field) (MONO_BOOL (MONO_HANDLE_GETVAL (handle, field)))
+
+// handle->field = (type)value, for non-managed pointers
 // This would be easier to write with the gcc extension typeof,
 // but it is not widely enough implemented (i.e. Microsoft C).
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
@@ -469,6 +475,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
  * of the field.  It's the caller's responsibility to check that the object is
  * of the correct class. */
 #define MONO_HANDLE_GET_FIELD_VAL(HANDLE,TYPE,FIELD) (*(TYPE *)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, (HANDLE)), (FIELD))))
+#define MONO_HANDLE_GET_FIELD_BOOL(handle, type, field) (MONO_BOOL (MONO_HANDLE_GET_FIELD_VAL ((handle), type, (field))))
 
 #define MONO_HANDLE_NEW_GET_FIELD(HANDLE,TYPE,FIELD) MONO_HANDLE_NEW (TYPE, MONO_HANDLE_SUPPRESS (*(TYPE**)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_UNSUPPRESS (HANDLE)), (FIELD)))))
 

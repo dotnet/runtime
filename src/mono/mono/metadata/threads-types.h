@@ -94,6 +94,18 @@ mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThrea
 }
 #endif
 
+MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	return mono_thread_create_internal_handle(domain, (gpointer)func, arg, flags, error);
+}
+#endif
+
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 
 ICALL_EXPORT
@@ -374,7 +386,7 @@ void
 ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error);
 
 void
-mono_threads_register_app_context (MonoAppContext* ctx, MonoError *error);
+mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);
 void
 mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
 

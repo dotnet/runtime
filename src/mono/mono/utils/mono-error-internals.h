@@ -250,6 +250,12 @@ mono_error_set_duplicate_wait_object (MonoError *error)
 	mono_error_set_generic_error (error, "System", "DuplicateWaitObjectException", "Duplicate objects in argument.");
 }
 
+static inline void
+mono_error_set_cannot_unload_appdomain (MonoError *error, const char *message)
+{
+	mono_error_set_generic_error (error, "System", "CannotUnloadAppDomainException", "%s", message);
+}
+
 void
 mono_error_set_argument_out_of_range (MonoError *error, const char *name);
 

@@ -1711,6 +1711,8 @@ mono_threads_open_thread_handle (MonoThreadHandle *thread_handle)
 void
 mono_threads_close_thread_handle (MonoThreadHandle *thread_handle)
 {
+	if (!thread_handle)
+		return;
 	mono_refcount_dec (thread_handle);
 }
 

@@ -386,6 +386,8 @@ MONO_API MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_c
 MONO_API void mono_gc_reference_queue_free (MonoReferenceQueue *queue);
 MONO_API mono_bool mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data);
 
+#define mono_gc_reference_queue_add_handle(queue, obj, user_data) \
+	(mono_gc_reference_queue_add ((queue), MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, obj)), (user_data)))
 
 
 /* GC write barriers support */
