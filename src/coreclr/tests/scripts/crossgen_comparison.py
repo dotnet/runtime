@@ -28,18 +28,34 @@
 #  --result_dir Linux.arm_arm.Checked
 #
 # runs Hostarm/arm crossgen on System.Private.CoreLib.dll and puts all the
-# information in file Linux.arm_arm.Checked/System.Private.CoreLib.dll.json
+# information in files Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+# and System.Private.CoreLib-DebuggingFile.json
 #
-#  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib.dll.json
-#   {
-#     "AssemblyName": "System.Private.CoreLib.dll",
-#     "ReturnCode": 0,
-#     "OutputFileHash": "4d27c7f694c20974945e4f7cb43263286a18c56f4d00aac09f6124caa372ba0a",
-#     "StdErr": [],
-#     "StdOut": [
-#       "Native image /tmp/System.Private.CoreLib.dll generated successfully."
-#     ]
-#   }
+#  ~/git/coreclr$ cat Linux.arm_arm.Checked/System.Private.CoreLib-NativeOrReadyToRunImage.json
+#  {
+#    "AssemblyName": "System.Private.CoreLib",
+#    "ReturnCode": 0,
+#    "OutputFileHash": "4d27c7f694c20974945e4f7cb43263286a18c56f4d00aac09f6124caa372ba0a",
+#    "StdErr": [],
+#    "StdOut": [
+#      "Native image /tmp/tmp9ZX7gl/System.Private.CoreLib.dll generated successfully."
+#    ],
+#    "OutputFileType": "NativeOrReadyToRunImage",
+#    "OutputFileSizeInBytes": 9564160
+#  }
+#
+#  ~/git/coreclr$ cat Linux.x64_arm.Checked/System.Private.CoreLib-DebuggingFile.json
+#  {
+#    "ReturnCode": 0,
+#    "StdOut": [
+#      "Successfully generated perfmap for native assembly '/tmp/tmp9ZX7gl/System.Private.CoreLib.dll'."
+#    ],
+#    "OutputFileHash": "f4fff0d88193d3a1422f9f0806a6cea6ac6c1aab0499968c183cbb0755e1084b",
+#    "OutputFileType": "DebuggingFile",
+#    "StdErr": [],
+#    "OutputFileSizeInBytes": 1827867,
+#    "AssemblyName": "System.Private.CoreLib"
+#  }
 #
 # The following command
 #
@@ -83,8 +99,9 @@ import os
 import tarfile
 import tempfile
 import re
-import sys
+import shutil
 import subprocess
+import sys
 
 ################################################################################
 # Argument Parser
@@ -107,14 +124,14 @@ def build_argument_parser():
     corelib_parser.add_argument('--result_dir', dest='result_dirname', required=True)
     corelib_parser.set_defaults(func=crossgen_corelib)
 
-    frameworks_parser_description = """Runs crossgen on each assembly in Core_Root and 
+    framework_parser_description = """Runs crossgen on each assembly in Core_Root and
         collects information about all the runs."""
 
-    frameworks_parser = subparsers.add_parser('crossgen_framework', description=frameworks_parser_description)
-    frameworks_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
-    frameworks_parser.add_argument('--core_root', dest='core_root', required=True)
-    frameworks_parser.add_argument('--result_dir', dest='result_dirname', required=True)
-    frameworks_parser.set_defaults(func=crossgen_framework)
+    framework_parser = subparsers.add_parser('crossgen_framework', description=framework_parser_description)
+    framework_parser.add_argument('--crossgen', dest='crossgen_executable_filename', required=True)
+    framework_parser.add_argument('--core_root', dest='core_root', required=True)
+    framework_parser.add_argument('--result_dir', dest='result_dirname', required=True)
+    framework_parser.set_defaults(func=crossgen_framework)
 
     dotnet_sdk_parser_description = "Unpack .NET Core SDK archive file and runs crossgen on each assembly."
     dotnet_sdk_parser = subparsers.add_parser('crossgen_dotnet_sdk', description=dotnet_sdk_parser_description)
@@ -124,12 +141,12 @@ def build_argument_parser():
     dotnet_sdk_parser.add_argument('--result_dir', dest='result_dirname', required=True)
     dotnet_sdk_parser.set_defaults(func=crossgen_dotnet_sdk)
 
-    compare_parser_description = """Compares collected information from two crossgen scenarios - base vs diff"""
+    compare_parser_description = "Compares crossgen results in directories {base_dir} and {diff_dir}"
 
     compare_parser = subparsers.add_parser('compare', description=compare_parser_description)
     compare_parser.add_argument('--base_dir', dest='base_dirname', required=True)
     compare_parser.add_argument('--diff_dir', dest='diff_dirname', required=True)
-    compare_parser.set_defaults(func=compare)
+    compare_parser.set_defaults(func=compare_results)
 
     return parser
 
@@ -218,7 +235,6 @@ g_Framework_Assemblies = [
     'System.IO.FileSystem.Watcher.dll',
     'System.IO.IsolatedStorage.dll',
     'System.IO.MemoryMappedFiles.dll',
-    'System.IO.Pipes.AccessControl.dll',
     'System.IO.Pipes.dll',
     'System.IO.UnmanagedMemoryStream.dll',
     'System.Linq.dll',
@@ -326,32 +342,61 @@ g_Framework_Assemblies = [
     'WindowsBase.dll']
 
 class CrossGenRunner:
-    def __init__(self, crossgen_executable_filename, no_logo=True):
+    def __init__(self, crossgen_executable_filename):
         self.crossgen_executable_filename = crossgen_executable_filename
-        self.no_logo = no_logo
         self.platform_assemblies_paths_sep = ';' if sys.platform == 'win32' else ':'
 
-    """
-        Creates a subprocess running crossgen with specified set of arguments, 
-        communicates with the owner process - waits for its termination and pulls 
-        returncode, stdour, stderr.
-    """
-    def run(self, in_filename, out_filename, platform_assemblies_paths):
-        p = subprocess.Popen(self._build_args(in_filename, out_filename, platform_assemblies_paths), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        return (p.returncode, stdout.decode(), stderr.decode())
+    def crossgen_il_file(self, il_filename, ni_filename, platform_assemblies_paths):
+        """
+            Runs a subprocess "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /out {ni_filename} /in {il_filename}"
+            and returns returncode, stdour, stderr.
+        """
+        args = self._build_args_crossgen_il_file(il_filename, ni_filename, platform_assemblies_paths)
+        return self._run_with_args(args)
 
-    def _build_args(self, in_filename, out_filename, platform_assemblies_paths):
+    def create_debugging_file(self, ni_filename, debugging_files_dirname, platform_assemblies_paths):
+        """
+            Runs a subprocess "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /CreatePerfMap {debugging_files_dirname} /in {il_filename}" on Unix
+            or "{crossgen_executable_filename} /nologo /Platform_Assemblies_Paths <path[:path]> /CreatePdb {debugging_files_dirname} /in {il_filename}" on Windows
+            and returns returncode, stdour, stderr.
+        """
+        args = self._build_args_create_debugging_file(ni_filename, debugging_files_dirname, platform_assemblies_paths)
+        return self._run_with_args(args)
+
+    def _build_args_crossgen_il_file(self, il_filename, ni_filename, platform_assemblies_paths):
         args = []
         args.append(self.crossgen_executable_filename)
-        if self.no_logo:
-           args.append('/nologo')
+        args.append('/nologo')
         args.append('/Platform_Assemblies_Paths')
         args.append(self.platform_assemblies_paths_sep.join(platform_assemblies_paths))
         args.append('/out')
-        args.append(out_filename)
-        args.append(in_filename)
+        args.append(ni_filename)
+        args.append('/in')
+        args.append(il_filename)
         return args
+
+    def _build_args_create_debugging_file(self, ni_filename, debugging_files_dirname, platform_assemblies_paths):
+        args = []
+        args.append(self.crossgen_executable_filename)
+        args.append('/nologo')
+        args.append('/Platform_Assemblies_Paths')
+        args.append(self.platform_assemblies_paths_sep.join(platform_assemblies_paths))
+        args.append('/CreatePdb' if sys.platform == 'win32' else '/CreatePerfMap')
+        args.append(debugging_files_dirname)
+        args.append('/in')
+        args.append(ni_filename)
+        return args
+
+    def _run_with_args(self, args):
+        """
+            Creates a subprocess running crossgen with specified set of arguments,
+            communicates with the owner process - waits for its termination and pulls
+            returncode, stdour, stderr.
+        """
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        return (p.returncode, stdout.decode(), stderr.decode())
+
 
 def compute_file_hashsum(filename):
     """
@@ -373,13 +418,14 @@ def compute_file_hashsum(filename):
 # This describes collected during crossgen information.
 ################################################################################
 class CrossGenResult:
-    def __init__(self, assembly_name, returncode, stdout, stderr, out_file_hashsum, out_file_size_in_bytes):
+    def __init__(self, assembly_name, returncode, stdout, stderr, output_file_hashsum, output_file_size_in_bytes, output_file_type):
         self.assembly_name = assembly_name
         self.returncode = returncode
         self.stdout = stdout
         self.stderr = stderr
-        self.out_file_hashsum = out_file_hashsum
-        self.out_file_size_in_bytes = out_file_size_in_bytes
+        self.output_file_hashsum = output_file_hashsum
+        self.output_file_size_in_bytes = output_file_size_in_bytes
+        self.output_file_type = output_file_type
 
 ################################################################################
 # JSON Encoder for CrossGenResult objects.
@@ -392,8 +438,9 @@ class CrossGenResultEncoder(json.JSONEncoder):
                 'ReturnCode': obj.returncode,
                 'StdOut': obj.stdout.splitlines(),
                 'StdErr': obj.stderr.splitlines(),
-                'OutputFileHash': obj.out_file_hashsum,
-                'OutputFileSizeInBytes': obj.out_file_size_in_bytes }
+                'OutputFileHash': obj.output_file_hashsum,
+                'OutputFileSizeInBytes': obj.output_file_size_in_bytes,
+                'OutputFileType': obj.output_file_type }
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 
@@ -409,9 +456,10 @@ class CrossGenResultDecoder(json.JSONDecoder):
             returncode = dict['ReturnCode']
             stdout = dict['StdOut']
             stderr = dict['StdErr']
-            out_file_hashsum = dict['OutputFileHash']
-            out_file_size_in_bytes = dict['OutputFileSizeInBytes']
-            return CrossGenResult(assembly_name, returncode, stdout, stderr, out_file_hashsum, out_file_size_in_bytes)
+            output_file_hashsum = dict['OutputFileHash']
+            output_file_size_in_bytes = dict['OutputFileSizeInBytes']
+            output_file_type = dict['OutputFileType']
+            return CrossGenResult(assembly_name, returncode, stdout, stderr, output_file_hashsum, output_file_size_in_bytes, output_file_type)
         except KeyError:
             return dict
 
@@ -419,25 +467,67 @@ class CrossGenResultDecoder(json.JSONDecoder):
 ################################################################################
 # Helper Functions
 ################################################################################
+def get_assembly_name(il_filename):
+    basename = os.path.basename(il_filename)
+    assembly_name, _ = os.path.splitext(basename)
+    return assembly_name
 
-def crossgen_assembly(crossgen_executable_filename, in_filename, out_filename, platform_assemblies_paths):
+class FileTypes:
+    NativeOrReadyToRunImage = 'NativeOrReadyToRunImage'
+    DebuggingFile = 'DebuggingFile'
+
+def run_crossgen(crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname):
     runner = CrossGenRunner(crossgen_executable_filename)
-    returncode, stdout, stderr = runner.run(in_filename, out_filename, platform_assemblies_paths)
-    assembly_name = os.path.basename(in_filename)
-    out_file_hashsum = compute_file_hashsum(out_filename) if returncode == 0 else None
-    ouf_file_size_in_bytes = os.path.getsize(out_filename) if returncode == 0 else None
-    return CrossGenResult(assembly_name, returncode, stdout, stderr, out_file_hashsum, ouf_file_size_in_bytes)
+    returncode, stdout, stderr = runner.crossgen_il_file(il_filename, ni_filename, platform_assemblies_paths)
+    ni_file_hashsum = compute_file_hashsum(ni_filename) if returncode == 0 else None
+    ni_file_size_in_bytes = os.path.getsize(ni_filename) if returncode == 0 else None
+    assembly_name = get_assembly_name(il_filename)
+    crossgen_assembly_result = CrossGenResult(assembly_name, returncode, stdout, stderr, ni_file_hashsum, ni_file_size_in_bytes, output_file_type=FileTypes.NativeOrReadyToRunImage)
+
+    if returncode != 0:
+        return [crossgen_assembly_result]
+
+    platform_assemblies_paths = platform_assemblies_paths + [os.path.dirname(ni_filename)]
+    returncode, stdout, stderr = runner.create_debugging_file(ni_filename, debugging_files_dirname, platform_assemblies_paths)
+
+    if returncode == 0:
+        filenames = list(filter(lambda filename: not re.match("^{0}\.ni\.".format(assembly_name), filename, re.IGNORECASE) is None, os.listdir(debugging_files_dirname)))
+        assert len(filenames) == 1
+        debugging_filename = os.path.join(debugging_files_dirname, filenames[0])
+        debugging_file_hashsum = compute_file_hashsum(debugging_filename)
+        debugging_file_size_in_bytes = os.path.getsize(debugging_filename)
+    else:
+        debugging_file_hashsum = None
+        debugging_file_size_in_bytes = None
+
+    create_debugging_file_result = CrossGenResult(assembly_name, returncode, stdout, stderr, debugging_file_hashsum, debugging_file_size_in_bytes, output_file_type=FileTypes.DebuggingFile)
+
+    return [crossgen_assembly_result, create_debugging_file_result]
 
 def save_crossgen_result_to_json_file(crossgen_result, json_filename):
     with open(json_filename, 'wt') as json_file:
         json.dump(crossgen_result, json_file, cls=CrossGenResultEncoder, indent=2)
 
+def save_crossgen_results_to_json_files(crossgen_results, result_dirname):
+    for result in crossgen_results:
+        json_filename = os.path.join(result_dirname, "{0}-{1}.json".format(result.assembly_name, result.output_file_type))
+        save_crossgen_result_to_json_file(result, json_filename)
+
+def create_output_folders():
+    ni_files_dirname = tempfile.mkdtemp()
+    debugging_files_dirname = os.path.join(ni_files_dirname, "DebuggingFiles")
+    os.mkdir(debugging_files_dirname)
+    return ni_files_dirname, debugging_files_dirname
+
 def crossgen_corelib(args):
     il_corelib_filename = args.il_corelib_filename
-    ni_corelib_filename = os.path.join(tempfile.gettempdir(), os.path.basename(il_corelib_filename))
-    crossgen_result = crossgen_assembly(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, [os.path.dirname(il_corelib_filename)])
-    result_filename = os.path.join(args.result_dirname, crossgen_result.assembly_name + '.json')
-    save_crossgen_result_to_json_file(crossgen_result, result_filename)
+    assembly_name = os.path.basename(il_corelib_filename)
+    ni_corelib_dirname, debugging_files_dirname = create_output_folders()
+    ni_corelib_filename = os.path.join(ni_corelib_dirname, assembly_name)
+    platform_assemblies_paths = [os.path.dirname(il_corelib_filename)]
+    crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+    shutil.rmtree(ni_corelib_dirname, ignore_errors=True)
+    save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
 def add_ni_extension(filename):
     filename,ext = os.path.splitext(filename)
@@ -446,22 +536,25 @@ def add_ni_extension(filename):
 def crossgen_framework(args):
     global g_Framework_Assemblies
     platform_assemblies_paths = [args.core_root]
+    ni_files_dirname, debugging_files_dirname = create_output_folders()
+
     for assembly_name in g_Framework_Assemblies:
         il_filename = os.path.join(args.core_root, assembly_name)
-        ni_filename = os.path.join(tempfile.gettempdir(), add_ni_extension(assembly_name))
-        crossgen_result = crossgen_assembly(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths)
-        result_filename = os.path.join(args.result_dirname, crossgen_result.assembly_name + '.json')
-        save_crossgen_result_to_json_file(crossgen_result, result_filename)
+        ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
+        crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
+        save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+    shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
 def load_crossgen_result_from_json_file(json_filename):
     with open(json_filename, 'rt') as json_file:
         return json.load(json_file, cls=CrossGenResultDecoder)
 
-def load_crossgen_results_from_dir(dirname):
+def load_crossgen_results_from_dir(dirname, output_file_type):
     crossgen_results = []
     for filename in glob.glob(os.path.join(dirname, '*.json')):
         loaded_result = load_crossgen_result_from_json_file(filename)
-        crossgen_results.append(loaded_result)
+        if loaded_result.output_file_type == output_file_type:
+            crossgen_results.append(loaded_result)
     return crossgen_results
 
 def dotnet_sdk_enumerate_assemblies(dotnet_sdk_dirname):
@@ -477,13 +570,12 @@ def crossgen_dotnet_sdk(args):
     with tarfile.open(args.dotnet_sdk_filename) as dotnet_sdk_tarfile:
         dotnet_sdk_tarfile.extractall(dotnet_sdk_dirname)
 
-    ni_files_dirname = tempfile.mkdtemp()
-    crossgen_results = []
-
     il_corelib_filename = args.il_corelib_filename
+    ni_files_dirname, debugging_files_dirname = create_output_folders()
     ni_corelib_filename = os.path.join(ni_files_dirname, os.path.basename(il_corelib_filename))
-    corelib_result = crossgen_assembly(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, [os.path.dirname(il_corelib_filename)])
-    crossgen_results.append(corelib_result)
+    platform_assemblies_paths = [os.path.dirname(il_corelib_filename)]
+    crossgen_results = run_crossgen(args.crossgen_executable_filename, il_corelib_filename, ni_corelib_filename, platform_assemblies_paths, debugging_files_dirname)
+    save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
 
     platform_assemblies_paths = [ni_files_dirname]
 
@@ -494,12 +586,9 @@ def crossgen_dotnet_sdk(args):
         for assembly_name in assembly_names:
             il_filename = os.path.join(il_files_dirname, assembly_name)
             ni_filename = os.path.join(ni_files_dirname, add_ni_extension(assembly_name))
-            result = crossgen_assembly(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths)
-            crossgen_results.append(result)
-
-    for result in crossgen_results:
-        result_filename = os.path.join(args.result_dirname, result.assembly_name + '.json')
-        save_crossgen_result_to_json_file(result, result_filename)
+            crossgen_results = run_crossgen(args.crossgen_executable_filename, il_filename, ni_filename, platform_assemblies_paths, debugging_files_dirname)
+            save_crossgen_results_to_json_files(crossgen_results, args.result_dirname)
+    shutil.rmtree(ni_files_dirname, ignore_errors=True)
 
 def print_omitted_assemblies_message(omitted_assemblies, dirname):
     print('The information for the following assemblies was omitted from "{0}" directory:'.format(dirname))
@@ -516,67 +605,77 @@ def compare_and_print_message(base_result, diff_result, base_dirname, diff_dirna
     base_diff_are_equal = True
 
     assert base_result.assembly_name == diff_result.assembly_name
+    assert base_result.output_file_type == diff_result.output_file_type
+
     if base_result.returncode != diff_result.returncode:
         base_diff_are_equal = False
-        print_compare_result_message_helper('Return code mismatch for "{0}" assembly:'.format(base_result.assembly_name), base_result.returncode, diff_result.returncode, base_dirname, diff_dirname)
+        print_compare_result_message_helper('Return code mismatch for "{0}" assembly for files of type "{1}":'.format(base_result.assembly_name, base_result.output_file_type), base_result.returncode, diff_result.returncode, base_dirname, diff_dirname)
     elif base_result.returncode == 0 and diff_result.returncode == 0:
-        assert not base_result.out_file_hashsum is None
-        assert not base_result.out_file_size_in_bytes is None
+        assert not base_result.output_file_hashsum is None
+        assert not base_result.output_file_size_in_bytes is None
 
-        assert not diff_result.out_file_hashsum is None
-        assert not diff_result.out_file_size_in_bytes is None
+        assert not diff_result.output_file_hashsum is None
+        assert not diff_result.output_file_size_in_bytes is None
 
-        if base_result.out_file_hashsum != diff_result.out_file_hashsum:
+        if base_result.output_file_hashsum != diff_result.output_file_hashsum:
             base_diff_are_equal = False
-            print_compare_result_message_helper('Native image hash sum mismatch for "{0}" assembly:'.format(base_result.assembly_name), base_result.out_file_hashsum, diff_result.out_file_hashsum, base_dirname, diff_dirname)
+            print_compare_result_message_helper('File hash sum mismatch for "{0}" assembly for files of type "{1}":'.format(base_result.assembly_name, base_result.output_file_type), base_result.output_file_hashsum, diff_result.output_file_hashsum, base_dirname, diff_dirname)
 
-        if base_result.out_file_size_in_bytes != diff_result.out_file_size_in_bytes:
+        if base_result.output_file_size_in_bytes != diff_result.output_file_size_in_bytes:
             base_diff_are_equal = False
-            print_compare_result_message_helper('Native image size mismatch for "{0}" assembly:'.format(base_result.assembly_name), base_result.out_file_size_in_bytes, diff_result.out_file_size_in_bytes, base_dirname, diff_dirname)
+            print_compare_result_message_helper('File size mismatch for "{0}" assembly for files of type "{1}":'.format(base_result.assembly_name, base_result.output_file_type), base_result.output_file_size_in_bytes, diff_result.output_file_size_in_bytes, base_dirname, diff_dirname)
 
     return base_diff_are_equal
 
-def compare(args):
-    print('Comparing crossgen results in "{0}" and "{1}" directories'.format(args.base_dirname, args.diff_dirname))
+def compare_results(args):
+    """
+        Checks whether {base} and {diff} crossgens are "equal":
+         1. their return codes are the same;
+         2. and if they both succeeded in step 1, their outputs (native images and debugging files (i.e. pdb or perfmap files)) are the same.
+    """
+    base_diff_are_equal = True
+    for output_file_type in [FileTypes.NativeOrReadyToRunImage, FileTypes.DebuggingFile]:
+        print('Comparing crossgen results in "{0}" and "{1}" directories for files of type "{2}":'.format(args.base_dirname, args.diff_dirname, output_file_type))
 
-    base_results = load_crossgen_results_from_dir(args.base_dirname)
-    diff_results = load_crossgen_results_from_dir(args.diff_dirname)
+        base_results = load_crossgen_results_from_dir(args.base_dirname, output_file_type)
+        diff_results = load_crossgen_results_from_dir(args.diff_dirname, output_file_type)
 
-    base_assemblies = { r.assembly_name for r in base_results }
-    diff_assemblies = { r.assembly_name for r in diff_results }
-    both_assemblies = base_assemblies & diff_assemblies
+        base_assemblies = { r.assembly_name for r in base_results }
+        diff_assemblies = { r.assembly_name for r in diff_results }
+        both_assemblies = base_assemblies & diff_assemblies
 
-    # We want to see whether {base} and {diff} crossgens are "equal":
-    #  1. their return codes are the same;
-    #  2. their binary outputs (native images) are the same.
-    num_omitted_results = 0
+        num_omitted_results = 0
 
-    omitted_from_base_dir = diff_assemblies - base_assemblies
-    omitted_from_diff_dir = base_assemblies - diff_assemblies
+        omitted_from_base_dir = diff_assemblies - base_assemblies
+        omitted_from_diff_dir = base_assemblies - diff_assemblies
 
-    if len(omitted_from_base_dir) != 0:
-        num_omitted_results += len(omitted_from_base_dir)
-        print_omitted_assemblies_message(omitted_from_base_dir, args.base_dirname)
+        if len(omitted_from_base_dir) != 0:
+            num_omitted_results += len(omitted_from_base_dir)
+            base_diff_are_equal = False
+            print_omitted_assemblies_message(omitted_from_base_dir, args.base_dirname)
 
-    if len(omitted_from_diff_dir) != 0:
-        num_omitted_results += len(omitted_from_diff_dir)
-        print_omitted_assemblies_message(omitted_from_diff_dir, args.diff_dirname)
+        if len(omitted_from_diff_dir) != 0:
+            num_omitted_results += len(omitted_from_diff_dir)
+            base_diff_are_equal = False
+            print_omitted_assemblies_message(omitted_from_diff_dir, args.diff_dirname)
 
-    base_results_by_name = dict((r.assembly_name, r) for r in base_results)
-    diff_results_by_name = dict((r.assembly_name, r) for r in diff_results)
+        base_results_by_name = dict((r.assembly_name, r) for r in base_results)
+        diff_results_by_name = dict((r.assembly_name, r) for r in diff_results)
 
-    num_mismatched_results = 0
+        num_mismatched_results = 0
 
-    for assembly_name in sorted(both_assemblies):
-        base_result = base_results_by_name[assembly_name]
-        diff_result = diff_results_by_name[assembly_name]
-        if not compare_and_print_message(base_result, diff_result, args.base_dirname, args.diff_dirname):
-            num_mismatched_results += 1
+        for assembly_name in sorted(both_assemblies):
+            base_result = base_results_by_name[assembly_name]
+            diff_result = diff_results_by_name[assembly_name]
+            if not compare_and_print_message(base_result, diff_result, args.base_dirname, args.diff_dirname):
+                base_diff_are_equal = False
+                num_mismatched_results += 1
 
-    print("Number of omitted results: {0}".format(num_omitted_results))
-    print("Number of mismatched results: {0}".format(num_mismatched_results))
-    print("Total number of assemblies: {0}".format(len(both_assemblies)))
-    sys.exit(0 if (num_mismatched_results + num_omitted_results) == 0 else 1)
+        print("Number of omitted results: {0}".format(num_omitted_results))
+        print("Number of mismatched results: {0}".format(num_mismatched_results))
+        print("Total number of files compared: {0}".format(len(both_assemblies)))
+
+    sys.exit(0 if base_diff_are_equal else 1)
 
 ################################################################################
 # __main__
