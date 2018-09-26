@@ -1482,13 +1482,11 @@ int __cdecl Compiler::lvaFieldOffsetCmp(const void* field1, const void* field2)
 /*****************************************************************************
  * Is this type promotable? */
 
-void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
-                                       lvaStructPromotionInfo* StructPromotionInfo,
-                                       bool                    sortFields)
+void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd, lvaStructPromotionInfo* structPromotionInfo)
 {
     assert(eeIsValueClass(typeHnd));
 
-    if (typeHnd != StructPromotionInfo->typeHnd)
+    if (typeHnd != structPromotionInfo->typeHnd)
     {
         // sizeof(double) represents the size of the largest primitive type that we can struct promote.
         // In the future this may be changing to XMM_REGSIZE_BYTES.
@@ -1515,8 +1513,8 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         bool customLayout       = false;
         bool containsGCpointers = false;
 
-        StructPromotionInfo->typeHnd    = typeHnd;
-        StructPromotionInfo->canPromote = false;
+        structPromotionInfo->typeHnd    = typeHnd;
+        structPromotionInfo->canPromote = false;
 
         unsigned structSize = info.compCompHnd->getClassSize(typeHnd);
         if (structSize > MaxOffset)
@@ -1530,23 +1528,11 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
             return; // struct must have between 1 and MAX_NumOfFieldsInPromotableStruct fields
         }
 
-        StructPromotionInfo->fieldCnt = (BYTE)fieldCnt;
+        structPromotionInfo->fieldCnt = (BYTE)fieldCnt;
         DWORD typeFlags               = info.compCompHnd->getClassAttribs(typeHnd);
 
-        bool treatAsOverlapping = StructHasOverlappingFields(typeFlags);
-
-#if 1 // TODO-Cleanup: Consider removing this entire #if block in the future
-
-        // This method has two callers. The one in Importer.cpp passes `sortFields == false` and the other passes
-        // `sortFields == true`. This is a workaround that leaves the inlining behavior the same as before while still
-        // performing extra struct promotion when compiling the method.
-        if (!sortFields) // the condition "!sortFields" really means "we are inlining"
-        {
-            treatAsOverlapping = StructHasCustomLayout(typeFlags);
-        }
-#endif
-
-        if (treatAsOverlapping)
+        bool overlappingFields = StructHasOverlappingFields(typeFlags);
+        if (overlappingFields)
         {
             return;
         }
@@ -1573,7 +1559,7 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
 
         for (BYTE ordinal = 0; ordinal < fieldCnt; ++ordinal)
         {
-            lvaStructFieldInfo* pFieldInfo = &StructPromotionInfo->fields[ordinal];
+            lvaStructFieldInfo* pFieldInfo = &structPromotionInfo->fields[ordinal];
             pFieldInfo->fldHnd             = info.compCompHnd->getFieldInClass(typeHnd, ordinal);
             unsigned fldOffset             = info.compCompHnd->getFieldOffset(pFieldInfo->fldHnd);
 
@@ -1749,19 +1735,16 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
         }
 
         // Cool, this struct is promotable.
-        StructPromotionInfo->canPromote         = true;
-        StructPromotionInfo->requiresScratchVar = requiresScratchVar;
-        StructPromotionInfo->containsHoles      = containsHoles;
-        StructPromotionInfo->customLayout       = customLayout;
+        structPromotionInfo->canPromote         = true;
+        structPromotionInfo->requiresScratchVar = requiresScratchVar;
+        structPromotionInfo->containsHoles      = containsHoles;
+        structPromotionInfo->customLayout       = customLayout;
 
-        if (sortFields)
-        {
-            // Sort the fields according to the increasing order of the field offset.
-            // This is needed because the fields need to be pushed on stack (when referenced
-            // as a struct) in order.
-            qsort(StructPromotionInfo->fields, StructPromotionInfo->fieldCnt, sizeof(*StructPromotionInfo->fields),
-                  lvaFieldOffsetCmp);
-        }
+        // Sort the fields according to the increasing order of the field offset.
+        // This is needed because the fields need to be pushed on stack (when referenced
+        // as a struct) in order.
+        qsort(structPromotionInfo->fields, structPromotionInfo->fieldCnt, sizeof(*structPromotionInfo->fields),
+              lvaFieldOffsetCmp);
     }
     else
     {
@@ -1774,7 +1757,7 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE    typeHnd,
 /*****************************************************************************
  * Is this struct type local variable promotable? */
 
-void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* StructPromotionInfo)
+void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* structPromotionInfo)
 {
     noway_assert(lclNum < lvaCount);
 
@@ -1789,7 +1772,7 @@ void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* S
     if (varDsc->lvIsUsedInSIMDIntrinsic())
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsUsedInSIMDIntrinsic()\n", lclNum);
-        StructPromotionInfo->canPromote = false;
+        structPromotionInfo->canPromote = false;
         return;
     }
 
@@ -1798,7 +1781,7 @@ void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* S
     if (varDsc->lvIsParam && compGSReorderStackLayout)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsParam and compGSReorderStackLayout\n", lclNum);
-        StructPromotionInfo->canPromote = false;
+        structPromotionInfo->canPromote = false;
         return;
     }
 
@@ -1810,7 +1793,7 @@ void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* S
     if (varDsc->lvIsHfaRegArg())
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsHfaRegArg()\n", lclNum);
-        StructPromotionInfo->canPromote = false;
+        structPromotionInfo->canPromote = false;
         return;
     }
 
@@ -1818,7 +1801,7 @@ void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* S
     if (varDsc->lvIsMultiRegArg)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegArg\n", lclNum);
-        StructPromotionInfo->canPromote = false;
+        structPromotionInfo->canPromote = false;
         return;
     }
 #endif
@@ -1826,12 +1809,12 @@ void Compiler::lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* S
     if (varDsc->lvIsMultiRegRet)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsMultiRegRet\n", lclNum);
-        StructPromotionInfo->canPromote = false;
+        structPromotionInfo->canPromote = false;
         return;
     }
 
     CORINFO_CLASS_HANDLE typeHnd = varDsc->lvVerTypeInfo.GetClassHandle();
-    lvaCanPromoteStructType(typeHnd, StructPromotionInfo, true);
+    lvaCanPromoteStructType(typeHnd, structPromotionInfo);
 }
 
 //--------------------------------------------------------------------------------------------
@@ -1938,21 +1921,21 @@ bool Compiler::lvaShouldPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo
 /*****************************************************************************
  * Promote a struct type local */
 
-void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* StructPromotionInfo)
+void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* structPromotionInfo)
 {
     LclVarDsc* varDsc = &lvaTable[lclNum];
 
     // We should never see a reg-sized non-field-addressed struct here.
     noway_assert(!varDsc->lvRegStruct);
 
-    noway_assert(StructPromotionInfo->canPromote);
-    noway_assert(StructPromotionInfo->typeHnd == varDsc->lvVerTypeInfo.GetClassHandle());
+    noway_assert(structPromotionInfo->canPromote);
+    noway_assert(structPromotionInfo->typeHnd == varDsc->lvVerTypeInfo.GetClassHandle());
 
-    varDsc->lvFieldCnt      = StructPromotionInfo->fieldCnt;
+    varDsc->lvFieldCnt      = structPromotionInfo->fieldCnt;
     varDsc->lvFieldLclStart = lvaCount;
     varDsc->lvPromoted      = true;
-    varDsc->lvContainsHoles = StructPromotionInfo->containsHoles;
-    varDsc->lvCustomLayout  = StructPromotionInfo->customLayout;
+    varDsc->lvContainsHoles = structPromotionInfo->containsHoles;
+    varDsc->lvCustomLayout  = structPromotionInfo->customLayout;
 
 #ifdef DEBUG
     // Don't change the source to a TYP_BLK either.
@@ -1962,13 +1945,13 @@ void Compiler::lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* Stru
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nPromoting struct local V%02u (%s):", lclNum, eeGetClassName(StructPromotionInfo->typeHnd));
+        printf("\nPromoting struct local V%02u (%s):", lclNum, eeGetClassName(structPromotionInfo->typeHnd));
     }
 #endif
 
-    for (unsigned index = 0; index < StructPromotionInfo->fieldCnt; ++index)
+    for (unsigned index = 0; index < structPromotionInfo->fieldCnt; ++index)
     {
-        lvaStructFieldInfo* pFieldInfo = &StructPromotionInfo->fields[index];
+        lvaStructFieldInfo* pFieldInfo = &structPromotionInfo->fields[index];
 
         if (varTypeIsFloating(pFieldInfo->fldType) || varTypeIsSIMD(pFieldInfo->fldType))
         {
