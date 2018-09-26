@@ -5,6 +5,8 @@ if(WIN32)
     )
 endif(WIN32)
 
+list(APPEND LINK_LIBRARIES_ADDITIONAL platformdefines)
+
 # Consumed by native test assets
 SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -27,13 +29,13 @@ add_subdirectory(StringMarshalling/UTF8)
 add_subdirectory(MarshalAPI/FunctionPointer)
 add_subdirectory(MarshalAPI/IUnknown)
 add_subdirectory(SizeConst)
-add_subdirectory(DllImportAttribute/ExeFile)
 add_subdirectory(DllImportAttribute/FileNameContainDot)
 add_subdirectory(DllImportAttribute/Simple)
 
 if(WIN32)
     add_subdirectory(COM/NativeServer)
     add_subdirectory(COM/NativeClients/Primitives)
+    add_subdirectory(DllImportAttribute/ExeFile)
     add_subdirectory(IJW/FakeMscoree)
 
     # IJW isn't supported on ARM64
