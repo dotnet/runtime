@@ -45,9 +45,6 @@ namespace System.Drawing
 {
     internal sealed partial class GdiPlusStreamHelper
     {
-#if netcoreapp20
-        private const int DefaultBufferSize = 4096;
-#endif
         private Stream _stream;
 
         public unsafe GdiPlusStreamHelper(Stream stream, bool seekToOrigin)
@@ -57,16 +54,17 @@ namespace System.Drawing
             {
                 var memoryStream = new MemoryStream();
                 stream.CopyTo(memoryStream);
+                memoryStream.Position = 0;
                 _stream = memoryStream;
             }
             else
             {
                 _stream = stream;
-            }
 
-            if (seekToOrigin)
-            {
-                _stream.Seek(0, SeekOrigin.Begin);
+                if (seekToOrigin)
+                {
+                    _stream.Seek(0, SeekOrigin.Begin);
+                }
             }
 
             CloseDelegate = StreamCloseImpl;
@@ -101,7 +99,7 @@ namespace System.Drawing
             {
                 // Stream Span API isn't available in 2.0
 #if netcoreapp20
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(DefaultBufferSize, bufsz));
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(bufsz);
                 read = _stream.Read(buffer, 0, bufsz);
                 Marshal.Copy(buffer, 0, (IntPtr)buf, read);
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -140,7 +138,7 @@ namespace System.Drawing
 
             // Stream Span API isn't available in 2.0
 #if netcoreapp20
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(DefaultBufferSize, bufsz));
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(bufsz);
             Marshal.Copy((IntPtr)buf, buffer, 0, bufsz);
             _stream.Write(buffer, 0, bufsz);
             ArrayPool<byte>.Shared.Return(buffer);
