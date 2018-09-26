@@ -9,15 +9,6 @@
 #include "mdinfo.h"
 #include <ndpversion.h>
 
-// Provide custom LoadLibrary implementation.
-#define LEGACY_ACTIVATION_SHIM_LOAD_LIBRARY WszLoadLibrary
-#define LEGACY_ACTIVATION_SHIM_DEFINE_CoInitializeEE
-#include "LegacyActivationShim.h"
-
-#ifdef FEATURE_PAL
-#include <palstartupw.h>
-#endif
-
 // Global variables
 bool g_bSchema = false; 
 bool g_bRaw = false;
@@ -141,14 +132,6 @@ extern "C" int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     if (!pArg || fWantHelp)
         Usage();
 
-    
-#ifndef FEATURE_PAL
-    // Init and run.
-    CoInitialize(0);
-#endif
-
-    LegacyActivationShim::CoInitializeCor(0);
-
     hr = LegacyActivationShim::ClrCoCreateInstance(
         CLSID_CorMetaDataDispenser, NULL, CLSCTX_INPROC_SERVER, 
         IID_IMetaDataDispenserEx, (void **) &g_pDisp);
@@ -182,9 +165,5 @@ extern "C" int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         FindClose(hFind);
     }
     g_pDisp->Release();
-    LegacyActivationShim::CoUninitializeCor();
-#ifndef FEATURE_PAL
-    CoUninitialize();
-#endif
     return 0;
 }
