@@ -319,19 +319,7 @@ namespace System.Net.Http.Functional.Tests
 #if TargetsWindows
                 return true;
 #else
-                if (UseSocketsHttpHandler)
-                {
-                    return true;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    return false;
-                }
-
-                // For other Unix-based systems it's true if (and only if) the openssl backend
-                // is used with libcurl.
-                return (Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) ?? false);
+                return TestHelper.NativeHandlerSupportsSslConfiguration();
 #endif
             }
         }

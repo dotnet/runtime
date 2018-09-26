@@ -26,11 +26,11 @@ internal static partial class Interop
 #if !SYSNETHTTP_NO_OPENSSL
             string opensslVersion = Interop.Http.GetSslVersionDescription();
             if (string.IsNullOrEmpty(opensslVersion) ||
-                opensslVersion.IndexOf(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) != -1)
+                opensslVersion.IndexOf(Interop.Http.OpenSslDescriptionPrefix, StringComparison.OrdinalIgnoreCase) != -1)
             {
-                // CURL uses OpenSSL which we must initialize first to guarantee thread-safety
-                // Only initialize for OpenSSL/1.0, any newer versions may have mismatched
-                // pointers, resulting in segfaults.
+                // CURL uses OpenSSL which we must initialize first to guarantee thread-safety.
+                // We'll wake up whatever OpenSSL we're going to run against, but might later determine that
+                // they aren't compatible.
                 CryptoInitializer.Initialize();
             }
 #endif

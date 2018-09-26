@@ -55,7 +55,7 @@ namespace System.Net.Http
 
                 // Configure the options.  Our best support is when targeting OpenSSL/1.0.  For other backends,
                 // we fall back to a minimal amount of support, and may throw a PNSE based on the options requested.
-                if (CurlSslVersionDescription.IndexOf(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) != -1)
+                if (Interop.Http.HasMatchingOpenSslVersion)
                 {
                     // Register the callback with libcurl.  We need to register even if there's no user-provided
                     // server callback and even if there are no client certificates, because we support verifying
@@ -169,12 +169,12 @@ namespace System.Net.Http
             {
                 if (certProvider != null)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_clientcerts_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.OpenSsl10Description));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_clientcerts_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.RequiredOpenSslDescription));
                 }
 
                 if (easy._handler.CheckCertificateRevocationList)
                 {
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_revocation_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.OpenSsl10Description));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_revocation_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.RequiredOpenSslDescription));
                 }
 
                 if (easy._handler.ServerCertificateCustomValidationCallback != null)
@@ -187,7 +187,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_callback_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.OpenSsl10Description));
+                        throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_callback_notsupported_sslbackend, CurlVersionDescription, CurlSslVersionDescription, Interop.Http.RequiredOpenSslDescription));
                     }
                 }
                 else

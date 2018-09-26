@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -47,8 +48,67 @@ internal static partial class Interop
         [DllImport(Libraries.HttpNative, EntryPoint = "HttpNative_GetSslVersionDescription")]
         internal static extern string GetSslVersionDescription();
 
-        internal const string OpenSsl10Description = "openssl/1.0";
+        internal const string OpenSslDescriptionPrefix = "OpenSSL/";
         internal const string SecureTransportDescription = "SecureTransport";
         internal const string LibreSslDescription = "LibreSSL";
+
+#if !SYSNETHTTP_NO_OPENSSL
+        private static readonly Lazy<string> s_requiredOpenSslDescription =
+            new Lazy<string>(() => DetermineRequiredOpenSslDescription());
+
+        private static readonly Lazy<bool> s_hasMatchingOpenSsl =
+            new Lazy<bool>(() => RequiredOpenSslDescription == GetSslVersionDescription());
+
+        internal static string RequiredOpenSslDescription => s_requiredOpenSslDescription.Value;
+        internal static bool HasMatchingOpenSslVersion => s_hasMatchingOpenSsl.Value;
+
+        private static string DetermineRequiredOpenSslDescription()
+        {
+            uint ver = Interop.OpenSsl.OpenSslVersionNumber();
+
+            // OpenSSL version numbers are encoded as
+            // 0xMNNFFPPS: major (one nybble), minor (one byte, unaligned),
+            // "fix" (one byte, unaligned), patch (one byte, unaligned), status (one nybble)
+            //
+            // e.g. 1.0.2a final is 0x1000201F
+            //
+            // libcurl's OpenSSL vtls backend ignores status in the version string.
+            // Major, minor, and fix are encoded (by libcurl) as unpadded hex
+            // (0 => "0", 15 => "f", 16 => "10").
+            //
+            // Patch is encoded as in the way OpenSSL would do it.
+            // 0x00 => ""
+            // 0x01 => "a"
+            // 0x1a (26) => "z"
+            // 0x1b (27) => "za"
+            // 0x34 (52) => "zz"
+            // 0x35 (53) should probably be "zza", but it never came up, and is not currently
+            // handled correctly by libcurl (which would call it "z{").
+
+            byte patchValue = (byte)((ver & 0xFF0) >> 4);
+            string patch = string.Empty;
+
+            if (patchValue > 52)
+            {
+                Debug.Fail($"OpenSSL version ({ver:8X}) patch value ({patchValue}) is out of range");
+                throw new InvalidOperationException();
+            }
+            else if (patchValue > 26)
+            {
+                Span<char> patchStr = stackalloc char[2];
+                patchStr[0] = 'z';
+                // backtick is ('a'-1)
+                patchStr[1] = (char)('`' + (patchValue - 26));
+                patch = new string(patchStr);
+            }
+            else if (patchValue > 0)
+            {
+                // backtick is ('a'-1)
+                patch = new string((char)('`' + patchValue), 1);
+            }
+
+            return $"{OpenSslDescriptionPrefix}{ver >> 28:x}.{(byte)(ver >> 20):x}.{(byte)(ver >> 12):x}{patch}";
+        }
+#endif
     }
 }

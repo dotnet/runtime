@@ -17,7 +17,6 @@ namespace System.Net.Http.Functional.Tests
     public abstract partial class HttpClientHandler_SslProtocols_Test
     {
         private bool BackendSupportsSslConfiguration =>
-            UseSocketsHttpHandler ||
-            (Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) ?? false);
+            UseSocketsHttpHandler || TestHelper.NativeHandlerSupportsSslConfiguration();
     }
 }
