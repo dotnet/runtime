@@ -1,4 +1,4 @@
-#include "platformdefines.cpp"
+#include "platformdefines.h"
 #include <xplatform.h>
 
 inline char* CoStrDup(const char* str)
