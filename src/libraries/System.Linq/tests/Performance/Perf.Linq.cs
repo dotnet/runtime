@@ -42,6 +42,35 @@ namespace System.Linq.Tests
                     yield return new object[] { size, iteration };
         }
 
+        private static int[] QuickSortWorstCase(int n)
+        {
+            int OddPos(int k)
+            {
+                int s = k;
+                while (s * 2 < n)
+                    s *= 2;
+                return (n - 1) % s + 1;
+            }
+
+            int[] a = new int[n];
+            for (int x = 1; x <= n; x++)
+            {
+                if (x % 2 == 0)
+                {
+                    a[x / 2 - 1] = x;
+                }
+                else if (x == n)
+                {
+                    a[n / 2] = x;
+                }
+                else
+                {
+                    a[n - OddPos(x)] = x;
+                }
+            }
+            return a;
+        }
+
         private class BaseClass
         {
             public int Value;
@@ -229,6 +258,12 @@ namespace System.Linq.Tests
                     }
                 }
             }
+        }
+
+        [Benchmark]
+        public void OrderBy_TakeOne()
+        {
+            Perf_LinqTestBase.MeasureIteration(QuickSortWorstCase(10000).OrderBy(i => i).Take(1), 10);
         }
 
         #endregion
