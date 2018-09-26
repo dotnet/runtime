@@ -36,22 +36,18 @@ namespace System.SpanTests
             char[] searchFor = search.ToCharArray();
             byte[] searchForBytes = Encoding.UTF8.GetBytes(searchFor);
 
-            var index = -1;
+            var index = span.IndexOfAny(new ReadOnlySpan<byte>(searchForBytes));
             if (searchFor.Length == 1)
             {
-                index = span.IndexOf((byte)searchFor[0]);
+                Assert.Equal(index, span.IndexOf((byte)searchFor[0]));
             }
             else if (searchFor.Length == 2)
             {
-                index = span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1]);
+                Assert.Equal(index, span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1]));
             }
             else if (searchFor.Length == 3)
             {
-                index = span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]);
-            }
-            else
-            {
-                index = span.IndexOfAny(new ReadOnlySpan<byte>(searchForBytes));
+                Assert.Equal(index, span.IndexOfAny((byte)searchFor[0], (byte)searchFor[1], (byte)searchFor[2]));
             }
 
             var found = span[index];
