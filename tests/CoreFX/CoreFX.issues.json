@@ -406,5 +406,19 @@
                 }
             ]
         }
+    },
+    {
+        "name": "System.Runtime.InteropServices.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name" : "System.Runtime.InteropServices.Tests.SafeBufferTests.Initialize_NumBytesTimesSizeOfEachElement_ThrowsOverflowException",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/20132"
+                }
+            ]
+        }
     }
 ]
