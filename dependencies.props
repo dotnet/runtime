@@ -142,7 +142,7 @@
       <ElementName>PgoDataPackageVersion</ElementName>
       <PackageId>optimization.PGO.CoreCLR</PackageId>
     </XmlUpdateStep>
-    <XmlUpdateStep Include="Data">
+    <XmlUpdateStep Include="IbcData">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>IbcDataPackageVersion</ElementName>
       <PackageId>optimization.IBC.CoreCLR</PackageId>
