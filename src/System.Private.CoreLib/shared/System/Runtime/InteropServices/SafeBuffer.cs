@@ -112,7 +112,10 @@ namespace System.Runtime.InteropServices
         {
             try
             {
-                _numBytes = checked((UIntPtr)((ulong)numElements * sizeOfEachElement));
+                UIntPtr numBytes = checked((UIntPtr)((ulong)numElements * sizeOfEachElement));
+                if (numBytes == Uninitialized)
+                    throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_UIntPtrMax);
+                _numBytes = numBytes;
             }
             catch (OverflowException)
             {
