@@ -507,6 +507,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs">
+      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs</Link>
     </Compile>
