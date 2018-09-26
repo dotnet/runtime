@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
 #if TargetsWindows
             true;
 #else
-            Interop.Http.GetSslVersionDescription()?.StartsWith(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) ?? false;
+            TestHelper.NativeHandlerSupportsSslConfiguration();
 #endif
 
         private static bool CanTestCertificates =>
