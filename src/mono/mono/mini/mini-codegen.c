@@ -2346,6 +2346,7 @@ mono_opcode_to_cond (int opcode)
 	case OP_CMOV_LEQ:
 		return CMP_EQ;
 	case OP_FCNEQ:
+	case OP_RCNEQ:
 	case OP_ICNEQ:
 	case OP_IBNE_UN:
 	case OP_LBNE_UN:

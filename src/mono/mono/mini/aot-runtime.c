@@ -2724,11 +2724,36 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 	if (amodule->info.llvm_get_method) {
 		gpointer (*get_method) (int) = (gpointer (*)(int))amodule->info.llvm_get_method;
 
+#ifdef HOST_WASM
+		gsize min = 1 << 30, max = 0;
+		gsize prev = 0;
+
+		// FIXME: This depends on emscripten allocating ftnptr ids sequentially
+		for (int i = 0; i < amodule->info.nmethods; ++i) {
+			void *addr = NULL;
+
+			addr = get_method (i);
+			gsize val = (gsize)addr;
+			if (val) {
+				g_assert (val > prev);
+				if (val < min)
+					min = val;
+				else if (val > max)
+					max = val;
+				prev = val;
+			}
+		}
+		if (max) {
+			*code_start = (guint8*)min;
+			*code_end = (guint8*)(max + 1);
+		} else {
+			*code_start = NULL;
+			*code_end = NULL;
+		}
+#else
 		*code_start = (guint8 *)get_method (-1);
 		*code_end = (guint8 *)get_method (-2);
 
-		//WASM doesn't support this
-#ifndef HOST_WASM
 		g_assert (*code_end > *code_start);
 #endif
 		return;

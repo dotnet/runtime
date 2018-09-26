@@ -259,7 +259,7 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	public int test_0_nint_unboxed_member_calls ()
+	static int test_0_nint_unboxed_member_calls ()
 	{
 		var x = (nint)10;
 #if FALSE
@@ -521,7 +521,7 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	public int test_0_nuint_unboxed_member_calls ()
+	static int test_0_nuint_unboxed_member_calls ()
 	{
 		var x = (nuint)10;
 #if FALSE
@@ -780,7 +780,7 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	public int test_0_nfloat_unboxed_member_calls ()
+	static int test_0_nfloat_unboxed_member_calls ()
 	{
 		var x = (nfloat)10f;
 #if FALSE
