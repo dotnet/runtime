@@ -4,13 +4,13 @@
     <PackageConfigurations>
       netcoreapp2.0-Windows_NT;
       netcoreapp2.0-Unix;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
       net461;
       netstandard;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
       netfx;
     </BuildConfigurations>
   </PropertyGroup>
