@@ -245,7 +245,7 @@ case "$host" in
 		support_boehm=no
 		with_gc=sgen
 
-		# isinf(3) requires -lm; see isinf check below
+		# isinf(3) requires -lm
 		LDFLAGS="$LDFLAGS -lm"
 
 		# Bionic's <pthread.h> sets PTHREAD_STACK_MIN=2*PAGE_SIZE; doesn't define
@@ -570,23 +570,6 @@ AC_CHECK_FUNCS(vsyslog)
 
 # for mono/dis
 AC_CHECK_HEADERS(wchar.h)
-AC_CHECK_HEADERS(ieeefp.h)
-AC_MSG_CHECKING(for isinf)
-AC_TRY_LINK([#include <math.h>], [
-	int f = isinf (1.0);
-], [
-	AC_MSG_RESULT(yes)
-	AC_DEFINE(HAVE_ISINF, 1, [isinf available])
-], [
-	# We'll have to use signals
-	AC_MSG_RESULT(no)
-])
-# mingw
-AC_CHECK_FUNCS(_finite, , AC_MSG_CHECKING(for _finite in math.h)
-	AC_TRY_LINK([#include <math.h>], 
-	[ _finite(0.0); ], 
-	AC_DEFINE(HAVE__FINITE, 1, [Have _finite in -lm]) AC_MSG_RESULT(yes),
-	AC_MSG_RESULT(no)))
 
 # for Linux statfs support
 AC_CHECK_HEADERS(linux/magic.h)
@@ -2651,23 +2634,6 @@ if test x$host_win32 = xno; then
 		fi
 	fi
 
-	dnl *********************************
-	dnl *** Checks for math functions ***
-	dnl *********************************
-	AC_SEARCH_LIBS(sqrtf, m)
-	if test "x$has_broken_apple_cpp" != "xyes"; then
-	        AC_CHECK_FUNCS(finite, , AC_MSG_CHECKING(for finite in math.h)
-	                AC_TRY_LINK([#include <math.h>], 
-	                [ finite(0.0); ], 
-	                AC_DEFINE(HAVE_FINITE, 1, [Have finite in -lm]) AC_MSG_RESULT(yes),
-	                AC_MSG_RESULT(no)))
-	fi
-        AC_CHECK_FUNCS(isfinite, , AC_MSG_CHECKING(for isfinite in math.h)
-                AC_TRY_LINK([#include <math.h>], 
-                [ isfinite(0.0); ], 
-                AC_DEFINE(HAVE_ISFINITE, 1, [Have isfinite]) AC_MSG_RESULT(yes),
-                AC_MSG_RESULT(no)))
-
 	dnl ****************************************************************
 	dnl *** Checks for working poll() (macosx defines it but doesn't ***
 	dnl *** have it in the library (duh))                            ***
@@ -3634,21 +3600,6 @@ AC_TRY_COMPILE([#include <sys/socket.h>], [
 	# We'll have to use signals
 	AC_MSG_RESULT(no)
 ])
-
-AC_CHECK_FUNCS(trunc, , AC_MSG_CHECKING(for trunc in math.h)
-	# Simply calling trunc (0.0) is no good since gcc will optimize the call away
-	AC_TRY_LINK([#include <math.h>], 
-	[ static void *p = &trunc; ],
-	[
-		AC_DEFINE(HAVE_TRUNC) 
-		AC_MSG_RESULT(yes)
-		ac_cv_trunc=yes
-	],
-	AC_MSG_RESULT(no)))
-
-if test "x$ac_cv_truncl" != "xyes"; then
-   AC_CHECK_LIB(sunmath, aintl, [ AC_DEFINE(HAVE_AINTL, 1, [Has the 'aintl' function]) LIBS="$LIBS -lsunmath"])
-fi
 
 AC_CHECK_FUNCS(execvp)
 

@@ -161,8 +161,6 @@ G_EXTERN_C gboolean mono_fclt (double a, double b);
 
 G_EXTERN_C gboolean mono_fclt_un (double a, double b);
 
-G_EXTERN_C gboolean mono_isfinite (double a);
-
 G_EXTERN_C double   mono_fload_r4 (float *ptr);
 
 G_EXTERN_C void     mono_fstore_r4 (double val, float *ptr);

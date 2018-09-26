@@ -88,6 +88,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math-c.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>

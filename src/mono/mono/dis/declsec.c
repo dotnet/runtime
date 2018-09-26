@@ -16,6 +16,7 @@
 #include "mono/metadata/metadata.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/utils/mono-compiler.h"
+#include "mono/utils/mono-math.h"
 
 #include "declsec.h"
 #include "util.h"
@@ -113,14 +114,13 @@ declsec_20_write_value (GString *str, char type, const char *value)
 		return value + 8;
 	case MONO_TYPE_R4: {
 		float val;
-		int inf;
 		readr4 (value, &val);
-		inf = dis_isinf (val);
+		const int inf = mono_isinf (val);
 		if (inf == -1) 
 			g_string_append_printf (str, "0xFF800000"); /* negative infinity */
 		else if (inf == 1)
 			g_string_append_printf (str, "0x7F800000"); /* positive infinity */
-		else if (dis_isnan (val))
+		else if (mono_isnan (val))
 			g_string_append_printf (str, "0xFFC00000"); /* NaN */
 		else
 			g_string_append_printf (str, "%.8g", val);
@@ -128,14 +128,13 @@ declsec_20_write_value (GString *str, char type, const char *value)
 	}
 	case MONO_TYPE_R8: {
 		double val;
-		int inf;
 		readr8 (value, &val);
-		inf = dis_isinf (val);
+		const int inf = mono_isinf (val);
 		if (inf == -1) 
 			g_string_append_printf (str, "0xFFF00000000000000"); /* negative infinity */
 		else if (inf == 1)
 			g_string_append_printf (str, "0x7FFF0000000000000"); /* positive infinity */
-		else if (isnan (val))
+		else if (mono_isnan (val))
 			g_string_append_printf (str, "0xFFF80000000000000"); /* NaN */
 		else
 			g_string_append_printf (str, "%.17g", val);

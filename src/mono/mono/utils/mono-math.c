@@ -2,6 +2,8 @@
  * \file
  */
 
+#include "config.h"
+#include "glib.h"
 #include "mono-math.h"
 
 #ifndef HAVE_SIGNBIT

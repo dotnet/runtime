@@ -18,6 +18,8 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/mono-compiler.h>
+#define MONO_MATH_DECLARE_ALL 1
+#include <mono/utils/mono-math.h>
 
 #ifndef DISABLE_JIT
 
@@ -1868,7 +1870,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					MONO_INST_NEW (cfg, iargs [0], OP_ARG);
 					iargs [0]->dreg = ins->sreg1;
 
-					call = mono_emit_jit_icall (cfg, mono_isfinite, iargs);
+					call = mono_emit_jit_icall (cfg, mono_isfinite_double, iargs);
 
 					MONO_INST_NEW (cfg, cmp, OP_ICOMPARE_IMM);
 					cmp->sreg1 = call->dreg;

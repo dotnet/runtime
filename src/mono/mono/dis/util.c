@@ -14,10 +14,7 @@
 #include <math.h>
 #include "util.h"
 #include "mono/utils/mono-compiler.h"
-
-#ifdef HAVE_IEEEFP_H
-#include <ieeefp.h>
-#endif
+#include "mono/utils/mono-math.h"
 
 /**
  * \param code code to lookup in table
@@ -126,37 +123,3 @@ data_dump (const char *data, int len, const char* prefix) {
 	g_string_append_printf (str, "\n");
 	return g_string_free (str, FALSE);
 }
-
-int
-dis_isinf (double num)
-{
-#ifdef HAVE_ISINF
-	return isinf (num);
-#elif defined(HAVE_IEEEFP_H)
-	fpclass_t klass;
-
-	klass = fpclass (num);
-	if (klass == FP_NINF)
-		return -1;
-
-	if (klass == FP_PINF)
-		return 1;
-
-	return 0;
-#elif defined(HAVE__FINITE)
-	return _finite (num) ? 0 : 1;
-#else
-#error "Don't know how to implement isinf for this platform."
-#endif
-}
-
-int
-dis_isnan (double num)
-{
-#ifdef __MINGW32_VERSION
-return _isnan (num);
-#else
-return isnan (num);
-#endif
-}
-

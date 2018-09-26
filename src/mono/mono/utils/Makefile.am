@@ -1,6 +1,8 @@
 include $(top_srcdir)/mk/common.mk
 
-noinst_LTLIBRARIES = libmonoutils.la
+noinst_LTLIBRARIES = \
+	libmonomath.la \
+	libmonoutils.la
 
 if ENABLE_LLVM
 	if INTERNAL_LLVM 
@@ -303,6 +305,10 @@ libmonoutils_la_SOURCES = $(monoutils_sources) $(arch_sources)
 libmonoutils_la_CFLAGS = $(JEMALLOC_CFLAGS) @CXX_ADD_CFLAGS@
 libmonoutils_la_LDFLAGS = $(JEMALLOC_LDFLAGS)
 libmonoutilsincludedir = $(includedir)/mono-$(API_VER)/mono/utils
+libmonoutils_la_LIBADD = mono-math-c.lo
+
+libmonomath_la_SOURCES = mono-math-c.c
+libmonomath_la_CFLAGS = @CXX_REMOVE_CFLAGS@
 
 # These are public headers.
 # They should not use glib.h, G_BEGIN_DECLS, guint, etc.
@@ -324,4 +330,4 @@ if MONO_JEMALLOC_ENABLED
 SUBDIRS = jemalloc
 endif
 
-CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
