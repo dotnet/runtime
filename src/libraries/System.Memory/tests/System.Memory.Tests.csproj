@@ -48,6 +48,7 @@
     <Compile Include="Span\IndexOf.char.cs" />
     <Compile Include="Span\IndexOf.T.cs" />
     <Compile Include="Span\IndexOfAny.byte.cs" />
+    <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
@@ -115,6 +116,7 @@
     <Compile Include="ReadOnlySpan\IndexOf.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOf.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOfAny.byte.cs" />
+    <Compile Include="ReadOnlySpan\IndexOfAny.char.cs" />
     <Compile Include="ReadOnlySpan\IndexOfAny.T.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.byte.cs" />
     <Compile Include="ReadOnlySpan\IndexOfSequence.T.cs" />
