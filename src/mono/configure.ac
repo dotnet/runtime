@@ -2640,19 +2640,6 @@ if test x$host_win32 = xno; then
 	dnl ****************************************************************
 	AC_CHECK_FUNCS(poll)
 
-	dnl *************************
-	dnl *** Check for signbit ***
-	dnl *************************
-	AC_MSG_CHECKING(for signbit)
-	AC_TRY_LINK([#include <math.h>], [
-		int s = signbit(1.0);
-	], [
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(HAVE_SIGNBIT, 1, [Have signbit])
-	], [
-		AC_MSG_RESULT(no)
-	]) 
-
 	dnl **********************************
 	dnl *** epoll			   ***
 	dnl **********************************

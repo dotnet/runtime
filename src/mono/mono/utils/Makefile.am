@@ -87,7 +87,6 @@ monoutils_sources = \
 	mono-io-portability.h	\
 	monobitset.c		\
 	mono-filemap.c		\
-	mono-math.c  		\
 	mono-mmap.c  		\
 	mono-mmap-windows.c  		\
 	mono-mmap.h  		\

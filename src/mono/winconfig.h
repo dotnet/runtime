@@ -398,13 +398,6 @@
  /* Define to 1 if you have the <signal.h> header file. */
 #define HAVE_SIGNAL_H 1
 
-/* Have signbit */
-#if _MSC_VER >= 1900
-#define HAVE_SIGNBIT 1
-#else
-/* #undef HAVE_SIGNBIT */
-#endif
-
 /* Can get interface list */
 /* #undef HAVE_SIOCGIFCONF */
 
