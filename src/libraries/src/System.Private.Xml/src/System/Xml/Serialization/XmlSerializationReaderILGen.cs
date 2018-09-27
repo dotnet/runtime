@@ -799,30 +799,52 @@ namespace System.Xml.Serialization
             }
             else if (mapping.TypeDesc.FormatterName == "String")
             {
-                System.Diagnostics.Debug.Assert(source == "Reader.Value" || source == "Reader.ReadElementString()");
-                MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
-                     "get_Reader",
-                     CodeGenerator.InstanceBindingFlags,
-                     Array.Empty<Type>()
-                     );
-                MethodInfo XmlReader_method = typeof(XmlReader).GetMethod(
-                    source == "Reader.Value" ? "get_Value" : "ReadElementContentAsString",
-                    CodeGenerator.InstanceBindingFlags,
-                    Array.Empty<Type>()
-                    );
-                if (mapping.TypeDesc.CollapseWhitespace)
-                    ilg.Ldarg(0);
-                ilg.Ldarg(0);
-                ilg.Call(XmlSerializationReader_get_Reader);
-                ilg.Call(XmlReader_method);
-                if (mapping.TypeDesc.CollapseWhitespace)
+                System.Diagnostics.Debug.Assert(source == "Reader.Value" || source == "Reader.ReadElementString()" || source == "vals[i]");
+                if (source == "vals[i]")
                 {
-                    MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
-                        "CollapseWhitespace",
+                    if (mapping.TypeDesc.CollapseWhitespace)
+                        ilg.Ldarg(0);
+                    LocalBuilder locVals = ilg.GetLocal("vals");
+                    LocalBuilder locI = ilg.GetLocal("i");
+                    ilg.LoadArrayElement(locVals, locI);
+                    if (mapping.TypeDesc.CollapseWhitespace)
+                    {
+                        MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
+                            "CollapseWhitespace",
+                            CodeGenerator.InstanceBindingFlags,
+                            null,
+                            new Type[] { typeof(String) },
+                            null
+                            );
+                        ilg.Call(XmlSerializationReader_CollapseWhitespace);
+                    }
+                }
+                else
+                {
+                    MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
+                         "get_Reader",
+                         CodeGenerator.InstanceBindingFlags,
+                         Array.Empty<Type>()
+                         );
+                    MethodInfo XmlReader_method = typeof(XmlReader).GetMethod(
+                        source == "Reader.Value" ? "get_Value" : "ReadElementContentAsString",
                         CodeGenerator.InstanceBindingFlags,
-                        new Type[] { typeof(string) }
+                        Array.Empty<Type>()
                         );
-                    ilg.Call(XmlSerializationReader_CollapseWhitespace);
+                    if (mapping.TypeDesc.CollapseWhitespace)
+                        ilg.Ldarg(0);
+                    ilg.Ldarg(0);
+                    ilg.Call(XmlSerializationReader_get_Reader);
+                    ilg.Call(XmlReader_method);
+                    if (mapping.TypeDesc.CollapseWhitespace)
+                    {
+                        MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
+                            "CollapseWhitespace",
+                            CodeGenerator.InstanceBindingFlags,
+                            new Type[] { typeof(string) }
+                            );
+                        ilg.Call(XmlSerializationReader_CollapseWhitespace);
+                    }
                 }
             }
             else
