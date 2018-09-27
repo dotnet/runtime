@@ -144,6 +144,7 @@
     <Compile Include="MinScalar.Double.cs" />
     <Compile Include="Multiply.Double.cs" />
     <Compile Include="MultiplyScalar.Double.cs" />
+    <Compile Include="MultiplyAddAdjacent.Int32.cs" />
     <Compile Include="Or.Double.cs" />
     <Compile Include="Or.Byte.cs" />
     <Compile Include="Or.Int16.cs" />
@@ -223,6 +224,7 @@
     <Compile Include="SubtractSaturate.Int16.cs"/>
     <Compile Include="SubtractSaturate.UInt16.cs"/>
     <Compile Include="SubtractScalar.Double.cs" />
+    <Compile Include="SumAbsoluteDifferences.UInt16.cs" />
     <Compile Include="UnpackHigh.Double.cs" />
     <Compile Include="UnpackHigh.Int64.cs" />
     <Compile Include="UnpackHigh.UInt64.cs" />
