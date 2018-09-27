@@ -86,6 +86,8 @@
 
     <!-- Default to portable build if not explicitly set -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+
+    <OverrideRestoreOutputPath>true</OverrideRestoreOutputPath>
   </PropertyGroup>
 
   <!-- Output paths -->
