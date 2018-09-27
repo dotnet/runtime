@@ -1190,26 +1190,13 @@ namespace System.Data
                             w_id = (x_id == NIL) ? Left(px_id) : Left(Parent(x_id));
                         }
 
-                        if (x_id != NIL)
-                        {
-                            SetColor(w_id, color(px_id));
-                            SetColor(px_id, NodeColor.black);
-                            SetColor(Left(w_id), NodeColor.black);
-                            root_id = RightRotate(root_id, px_id, mainTreeNodeID);
+                        SetColor(w_id, color(px_id));
+                        SetColor(px_id, NodeColor.black);
+                        SetColor(Left(w_id), NodeColor.black);
+                        root_id = RightRotate(root_id, px_id, mainTreeNodeID);
 
-                            x_id = (root_id == NIL) ? root : root_id;
-                            px_id = Parent(x_id);
-                        }
-                        else
-                        {
-                            SetColor(w_id, color(px_id));
-                            SetColor(px_id, NodeColor.black);
-                            SetColor(Left(w_id), NodeColor.black);
-                            root_id = RightRotate(root_id, px_id, mainTreeNodeID);
-
-                            x_id = (root_id == NIL) ? root : root_id;
-                            px_id = Parent(x_id);
-                        }
+                        x_id = (root_id == NIL) ? root : root_id;
+                        px_id = Parent(x_id);
                     }
                 }
             }
