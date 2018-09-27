@@ -261,10 +261,10 @@ namespace System.Net.Http
                             // be signaled with the created connection when one is returned or
                             // space is available and the provided creation func has successfully
                             // created the connection to be used.
-                            if (NetEventSource.IsEnabled) Trace("Limit reached.  Waiting to create new connection.");
-                            var waiter = new ConnectionWaiter(this, request, cancellationToken);
+                            if (NetEventSource.IsEnabled) Trace("Connection limit reached, enqueuing waiter.");
+                            var waiter = new ConnectionWaiter();
                             EnqueueWaiter(waiter);
-                            return waiter.GetConnectionAsync();
+                            return waiter.GetConnectionAsync(this, request, cancellationToken);
                         }
 
                         // Note that we don't check for _disposed.  We may end up disposing the
