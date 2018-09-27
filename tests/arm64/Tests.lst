@@ -93308,6 +93308,14 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
+[MultiplyHorizontalAdd_ro.cmd_12141]
+RelativePath=JIT\HardwareIntrinsics\X86\Sse2\MultiplyHorizontalAdd_ro\MultiplyHorizontalAdd_ro.cmd
+WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\MultiplyHorizontalAdd_ro
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;NEW;EXCLUDED
+HostStyle=0
+
 [MoveHighToLow_r.cmd_12142]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse\MoveHighToLow_r\MoveHighToLow_r.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse\MoveHighToLow_r
@@ -93327,6 +93335,14 @@ HostStyle=0
 [StoreAlignedNonTemporal_ro.cmd_12144]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse\StoreAlignedNonTemporal_ro\StoreAlignedNonTemporal_ro.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse\StoreAlignedNonTemporal_ro
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;NEW;EXCLUDED
+HostStyle=0
+
+[Popcnt_ro.cmd_12145]
+RelativePath=JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_ro\Popcnt_ro.cmd
+WorkingDir=JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
