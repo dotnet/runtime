@@ -1243,3 +1243,15 @@ public class TypeWithMismatchBetweenAttributeAndPropertyType
         }
     }
 }
+
+[Serializable()]
+[System.Xml.Serialization.XmlType("MsgDocumentType", Namespace = "http://example.com")]
+[System.Xml.Serialization.XmlRoot("Document", Namespace = "http://example.com")]
+public partial class MsgDocumentType
+{
+    [System.Xml.Serialization.XmlAttribute("id", DataType = "ID")]
+    public string Id { get; set; }
+
+    [System.Xml.Serialization.XmlAttribute("refs", DataType = "IDREFS")]
+    public string[] Refs { get; set; }
+}
