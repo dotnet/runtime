@@ -641,6 +641,24 @@ namespace System.Net.Http
             _waitersHead = waiter;
         }
 
+        private bool HasWaiter()
+        {
+            Debug.Assert(Monitor.IsEntered(SyncObj));
+
+            if (_waitersHead != null)
+            {
+                Debug.Assert(_waitersTail != null);
+                Debug.Assert(Settings._maxConnectionsPerServer != int.MaxValue);
+                Debug.Assert(_idleConnections.Count == 0, $"With {_idleConnections} idle connections, we shouldn't have a waiter.");
+                return true;
+            }
+            else
+            {
+                Debug.Assert(_waitersTail == null);
+                return false;
+            }
+        }
+
         /// <summary>Dequeues a waiter from the waiters list.  The list must not be empty.</summary>
         /// <returns>The dequeued waiter.</returns>
         private ConnectionWaiter DequeueWaiter()
@@ -707,6 +725,24 @@ namespace System.Net.Http
             }
         }
 
+        private bool TransferConnection(HttpConnection connection)
+        {
+            Debug.Assert(Monitor.IsEntered(SyncObj));
+
+            while (HasWaiter())
+            {
+                ConnectionWaiter waiter = DequeueWaiter();
+                if (waiter.TransferConnection(connection))
+                {
+                    return true;
+                }
+
+                // Couldn't transfer to that waiter because it was cancelled.
+                // Loop and try again.
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Decrements the number of connections associated with the pool.
@@ -724,21 +760,10 @@ namespace System.Net.Http
                 // Mark the pool as not being stale.
                 _usedSinceLastCleanup = true;
 
-                while (_waitersHead != null)
+                if (TransferConnection(null))
                 {
-                    // There's at least one waiter to which we should try to logically transfer
-                    // the associated count.  Get the waiter and indicate the transfer by sending null for the connection.
-                    Debug.Assert(_idleConnections.Count == 0, $"With {_idleConnections} connections, we shouldn't have a waiter.");
-                    ConnectionWaiter waiter = DequeueWaiter();
-                    Debug.Assert(waiter != null, "Expected non-null waiter");
-
-                    if (waiter.TransferConnection(null))
-                    {
-                        return;
-                    }
-
-                    // Couldn't transfer to that waiter because it was cancelled.
-                    // Loop and try again.
+                    if (NetEventSource.IsEnabled) Trace("Transferred connection count to waiter.");
+                    return;
                 }
 
                 // There are no waiters to which the count should logically be transferred,
@@ -770,20 +795,13 @@ namespace System.Net.Http
                     // Note that while we checked connection lifetime above, we don't check idle timeout, as even if idle timeout
                     // is zero, we consider a connection that's just handed from one use to another to never actually be idle.
                     bool receivedUnexpectedData = false;
-                    if (_waitersTail != null)
+                    if (HasWaiter())
                     {
                         receivedUnexpectedData = connection.EnsureReadAheadAndPollRead();
-                        if (!receivedUnexpectedData)
+                        if (!receivedUnexpectedData && TransferConnection(connection))
                         {
-                            while (_waitersTail != null)
-                            {
-                                ConnectionWaiter waiter = DequeueWaiter();
-                                if (waiter.TransferConnection(connection))
-                                {
-                                    if (NetEventSource.IsEnabled) connection.Trace("Transferred connection returned to pool.");
-                                    return;
-                                }
-                            }
+                            if (NetEventSource.IsEnabled) connection.Trace("Transferred connection to waiter.");
+                            return;
                         }
                     }
 
