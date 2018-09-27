@@ -33,6 +33,7 @@
 #include "contractimpl.h"
 #include "generics.h"
 #include "fixuppointer.h"
+#include "gcinfotypes.h"
 
 /*
  * Forward Declarations
@@ -1802,11 +1803,13 @@ public:
         return pMTParent == NULL ? 0 : pMTParent->GetNumVirtuals();
     }
 
+    #define SIZEOF__MethodTable_ (0x10 + (6 INDEBUG(+1)) * TARGET_POINTER_SIZE)
+
     static inline DWORD GetVtableOffset()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (sizeof(MethodTable));
+        return SIZEOF__MethodTable_;
     }
 
     // Return total methods: virtual, static, and instance method slots.
@@ -4430,6 +4433,9 @@ public:
 
 };  // class MethodTable
 
+#ifndef CROSSBITNESS_COMPILE
+static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
+#endif
 #if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);
 #endif // defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
