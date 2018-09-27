@@ -474,7 +474,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(CompoundClass3<InheritedInteraface>), new Type[] { typeof(GenericInterface1<InheritedInteraface>), typeof(TI_NonGenericInterface1) })]
         [InlineData(typeof(CompoundClass4<>), new Type[] { typeof(GenericInterface1<string>), typeof(TI_NonGenericInterface1) })]
         [InlineData(typeof(CompoundClass4<string>), new Type[] { typeof(GenericInterface1<string>), typeof(TI_NonGenericInterface1) })]
-        public void ImplementedInterfaces(Type type, params Type[] expected)
+        public void ImplementedInterfaces(Type type, Type[] expected)
         {
             TypeInfo typeInfo = type.GetTypeInfo();
             Type[] implementedInterfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
