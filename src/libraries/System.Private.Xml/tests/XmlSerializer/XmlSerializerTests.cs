@@ -1725,6 +1725,22 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(result);
     }
 
+    [Fact]
+    public static void DeserializeIDREFSIntoStringTest()
+    {
+        string xmlstring = @"<?xml version = ""1.0"" encoding = ""utf-8"" ?><Document xmlns = ""http://example.com"" id = ""ID1"" refs=""ID1 ID2 ID3"" ></Document>";
+        Stream ms = GenerateStreamFromString(xmlstring);
+        XmlSerializer ser = new XmlSerializer(typeof(MsgDocumentType));
+        var value = (MsgDocumentType)ser.Deserialize(ms);
+        Assert.NotNull(value);
+        Assert.Equal("ID1", value.Id);
+        Assert.NotNull(value.Refs);
+        Assert.Equal(3, value.Refs.Count());
+        Assert.Equal("ID1", value.Refs[0]);
+        Assert.Equal("ID2", value.Refs[1]);
+        Assert.Equal("ID3", value.Refs[2]);
+    }
+
     private static bool SerializeWithDefaultValue<T>(T value, string baseline)
     {
         XmlSerializer serializer = new XmlSerializer(typeof(T));
