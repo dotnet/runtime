@@ -39,6 +39,7 @@
 #endif
 
 DWORD dwIBCLogCount = 0;
+CrstStatic IBCLogger::m_sync;
 
 #ifdef _DEBUG
 /*static*/ unsigned IbcCallback::s_highestId = 0;
@@ -117,18 +118,16 @@ IBCLoggerAwareAllocMemTracker::~IBCLoggerAwareAllocMemTracker()
 
 IBCLogger::IBCLogger()
     : dwInstrEnabled(0)
-    , m_sync(NULL)
-{ LIMITED_METHOD_CONTRACT;}
+{ 
+    LIMITED_METHOD_CONTRACT;
+    m_sync.Init(CrstIbcProfile, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
+}
 
 IBCLogger::~IBCLogger()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (m_sync)
-    {
-        delete m_sync;
-        m_sync = NULL;
-    }
+    m_sync.Destroy();
 }
 
 void IBCLogger::LogAccessThreadSafeHelperStatic(const void * p, pfnIBCAccessCallback callback)
@@ -177,7 +176,7 @@ void IBCLogger::LogAccessThreadSafeHelper(const void * p, pfnIBCAccessCallback c
     }
 }
 
-Crst * IBCLogger::GetSync()
+CrstStatic* IBCLogger::GetSync()
 {
     CONTRACTL
     {
@@ -188,18 +187,7 @@ Crst * IBCLogger::GetSync()
     }
     CONTRACTL_END;
 
-    if (!m_sync)
-    {
-        Crst * pNewSync = new Crst(CrstIbcProfile, CrstFlags(CRST_UNSAFE_ANYMODE | CRST_REENTRANCY | CRST_DEBUGGER_THREAD));
-        if (FastInterlockCompareExchangePointer(m_sync.GetPointer(), pNewSync, NULL) != NULL)
-        {
-            // We lost the race
-            delete pNewSync;
-        }
-    }
-    MemoryBarrier();
-
-    return m_sync;
+    return &m_sync;
 }
 
 void IBCLogger::DelayedCallbackPtr(pfnIBCAccessCallback callback, const void * pValue1, const void * pValue2 /*=NULL*/)
@@ -448,7 +436,7 @@ void ThreadLocalIBCInfo::CallbackHelper(const void * p, pfnIBCAccessCallback cal
 
     // Acquire the Crst lock before creating the IBCLoggingDisabler object.
     // Only one thread at a time can be processing an IBC logging event.
-    CrstHolder lock(g_IBCLogger.GetSync());
+    CrstHolder lock(IBCLogger::GetSync());
     {
         // @ToDo: methods called from here should assert that they have the lock that we just took
 
