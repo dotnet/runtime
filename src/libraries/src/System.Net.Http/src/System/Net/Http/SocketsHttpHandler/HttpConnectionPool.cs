@@ -1068,28 +1068,24 @@ namespace System.Net.Http
             public async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)> 
                 GetConnectionAsync(HttpConnectionPool pool, HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                CancellationTokenRegistration cancellationTokenRegistration = default;
-                if (cancellationToken.CanBeCanceled)
+                using (cancellationToken.Register(s => ((TaskCompletionSource<HttpConnection>)s).TrySetCanceled(), _tcs))
                 {
-                    cancellationTokenRegistration = cancellationToken.Register(() => _tcs.TrySetCanceled());
+                    HttpConnection connection = await _tcs.Task.ConfigureAwait(false);
+                    if (connection != null)
+                    {
+                        return (connection, false, null);
+                    }
                 }
 
-                HttpConnection connection = await _tcs.Task;
-
-                cancellationTokenRegistration.Dispose();
-
-                if (connection != null)
-                {
-                    return (connection, false, null);
-                }
-
-                return await pool.WaitForCreatedConnectionAsync(pool.CreateHttp11ConnectionAsync(request, cancellationToken));
+                return await pool.WaitForCreatedConnectionAsync(pool.CreateHttp11ConnectionAsync(request, cancellationToken)).ConfigureAwait(false);
             }
 
             public bool TransferConnection(HttpConnection connection)
             {
                 // The task may have been cancelled, in which case, return false to the caller so they can do something else with the connection.
-                return _tcs.TrySetResult(connection);
+                bool success = _tcs.TrySetResult(connection);
+                Debug.Assert(success || _tcs.Task.IsCanceled);
+                return success;
             }
         }
     }
