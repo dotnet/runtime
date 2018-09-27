@@ -926,7 +926,7 @@ def static isCrossGenComparisonScenario(def scenario) {
 
 def static shouldGenerateCrossGenComparisonJob(def os, def architecture, def configuration, def scenario) {
     assert isCrossGenComparisonScenario(scenario)
-    return (os == 'Ubuntu' && architecture == 'arm' && configuration == 'Checked')
+    return (os == 'Ubuntu' && architecture == 'arm' && (configuration == 'Checked' || configuration == 'Release'))
 }
 
 def static getFxBranch(def branch) {
@@ -1331,7 +1331,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             break
 
         case 'crossgen_comparison':
+            if (isFlowJob && os == 'Ubuntu' && architecture == 'arm' && (configuration == 'Checked' || configuration == 'Release')) {
+                addPeriodicTriggerHelper(job, '@daily')
+            }
             break
+
         case 'normal':
             switch (architecture) {
                 case 'x64':
@@ -1953,6 +1957,11 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                 if (architecture == 'arm64') {
                                     break
                                 }
+                                isDefaultTrigger = true
+                            }
+                            break
+                         case 'crossgen_comparison':
+                            if (os == 'Ubuntu' && architecture == 'arm' && configuration == 'Checked') {
                                 isDefaultTrigger = true
                             }
                             break
