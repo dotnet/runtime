@@ -8,8 +8,14 @@ TMP_FILE_PREFIX=$(basename $0).tmp
 BASEDIR=$(dirname $0)
 
 case "$(uname -s)" in
-	CYGWIN*) PLATFORM_PATH_SEPARATOR=';';;
-	*) PLATFORM_PATH_SEPARATOR=':';;
+	CYGWIN*)
+		PLATFORM_PATH_SEPARATOR=';'
+		PLATFORM_AOT_ARGUMENT=--aot=asmonly
+		;;
+	*)
+		PLATFORM_PATH_SEPARATOR=':'
+		PLATFORM_AOT_ARGUMENT=--aot
+		;;
 esac
 
 MONO_PATH=$BASEDIR/../../mcs/class/lib/$DEFAULT_PROFILE$PLATFORM_PATH_SEPARATOR$BASEDIR
@@ -22,7 +28,7 @@ tmp_file () {
 }
 
 clean_aot () {
-	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM *.exe.dll
+	rm -rf *.exe.so *.exe.dylib *.exe.dylib.dSYM *.exe.dll *.exe.s
 }
 
 # The test compares the generated native code size between a compilation with and without seq points.
@@ -34,7 +40,7 @@ get_methods () {
 		MONO_PATH=$1 $2 -v --compile-all=1 $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
 	else
 		clean_aot
-		MONO_PATH=$1 $2 -v --aot $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
+		MONO_PATH=$1 $2 -v $PLATFORM_AOT_ARGUMENT $3 | grep '^Method .*code length' | sed 's/emitted[^()]*//' | sort
 	fi
 }
 
@@ -43,7 +49,7 @@ get_method () {
 		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 --compile-all=1 $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
 	else
 		clean_aot
-		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 --aot $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
+		MONO_VERBOSE_METHOD="$4" MONO_PATH=$1 $2 $PLATFORM_AOT_ARGUMENT $3 | sed 's/0x[0-9a-fA-F]*/0x0/g'
 	fi
 }
 
