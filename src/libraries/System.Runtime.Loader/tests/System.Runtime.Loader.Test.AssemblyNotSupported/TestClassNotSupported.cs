@@ -6,17 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Loader.Tests
 {
-    public class TestClassNotSupported_ThreadStatic
-    {
-        [ThreadStatic]
-        public static object ThisIsAThreadStatic;
-
-        public struct S<T>
-        {
-            public T Value;
-        }
-    }
-
     public class TestClassNotSupported_FixedAddressValueType
     {
         public struct S<T>

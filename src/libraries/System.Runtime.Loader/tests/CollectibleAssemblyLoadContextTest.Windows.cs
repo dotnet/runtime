@@ -14,32 +14,6 @@ namespace System.Runtime.Loader.Tests
 
     public partial class AssemblyLoadContextTest
     {
-        class DelegateMarshallingTest : TestBase
-        {
-            [MethodImpl(MethodImplOptions.NoInlining)]
-            public void Execute()
-            {
-                // Delegate marshaling for types within collectible assemblies is not supported.
-                Assert.Throws<NotSupportedException>(() =>
-                {
-                    MethodInfo methodReference = _testClassTypes[0].GetMethod("TestDelegateMarshalling");
-                    Assert.NotNull(methodReference);
-                    methodReference.Invoke(null, BindingFlags.DoNotWrapExceptions, Type.DefaultBinder, null, null);
-                });
-            }
-        }
-
-        [Fact]
-        public static void Unsupported_DelegateMarshalling()
-        {
-            var test = new DelegateMarshallingTest();
-            test.CreateContextAndLoadAssembly();
-            test.Execute();
-            test.UnloadAndClearContext();
-            test.CheckContextUnloaded();
-        }
-
-
         class COMInteropTest : TestBase
         {
             [MethodImpl(MethodImplOptions.NoInlining)]
