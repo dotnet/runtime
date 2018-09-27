@@ -429,7 +429,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        public static void Unsupported_ThreadStaticAndFixedAddressValueType()
+        public static void Unsupported_FixedAddressValueType()
         {
             var asmName = new AssemblyName(TestAssemblyNotSupported);
             var alc = new ResourceAssemblyLoadContext(true) { LoadBy = LoadBy.Path };
@@ -440,9 +440,8 @@ namespace System.Runtime.Loader.Tests
             ReflectionTypeLoadException exception = Assert.Throws<ReflectionTypeLoadException>(() => asm.DefinedTypes);
 
             // Expecting two exceptions:
-            //  Collectible type 'System.Runtime.Loader.Tests.TestClassNotSupported_ThreadStatic' may not have Thread or Context static members
             //  Collectible type 'System.Runtime.Loader.Tests.TestClassNotSupported_FixedAddressValueType' has unsupported FixedAddressValueTypeAttribute applied to a field
-            Assert.Equal(2, exception.LoaderExceptions.Length);
+            Assert.Equal(1, exception.LoaderExceptions.Length);
             Assert.True(exception.LoaderExceptions.All(exp => exp is TypeLoadException));
         }
 
