@@ -43,7 +43,7 @@ namespace System.Net.Http
         private readonly SslClientAuthenticationOptions _sslOptionsHttp2;
 
         /// <summary>Queue of waiters waiting for a connection.  Created on demand.</summary>
-        private Queue<TaskCompletionSource<HttpConnection>> _waiters;
+        private Queue<TaskCompletionSourceWithCancellation<HttpConnection>> _waiters;
 
         /// <summary>The number of connections associated with the pool.  Some of these may be in <see cref="_idleConnections"/>, others may be in use.</summary>
         private int _associatedConnectionCount;
@@ -259,7 +259,7 @@ namespace System.Net.Http
                             // be signaled with the created connection when one is returned or
                             // space is available.
                             if (NetEventSource.IsEnabled) Trace("Connection limit reached, enqueuing waiter.");
-                            TaskCompletionSource<HttpConnection> waiter = EnqueueWaiter();
+                            TaskCompletionSourceWithCancellation<HttpConnection> waiter = EnqueueWaiter();
                             return WaitForAvailableHttp11Connection(waiter, request, cancellationToken);
                         }
 
@@ -292,15 +292,12 @@ namespace System.Net.Http
         }
 
         private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>
-            WaitForAvailableHttp11Connection(TaskCompletionSource<HttpConnection> waiterTaskSource, HttpRequestMessage request, CancellationToken cancellationToken)
+            WaitForAvailableHttp11Connection(TaskCompletionSourceWithCancellation<HttpConnection> waiter, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            using (cancellationToken.Register(s => ((TaskCompletionSource<HttpConnection>)s).TrySetCanceled(), waiterTaskSource))
+            HttpConnection connection = await waiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+            if (connection != null)
             {
-                HttpConnection connection = await waiterTaskSource.Task.ConfigureAwait(false);
-                if (connection != null)
-                {
-                    return (connection, false, null);
-                }
+                return (connection, false, null);
             }
 
             return await WaitForCreatedConnectionAsync(CreateHttp11ConnectionAsync(request, cancellationToken)).ConfigureAwait(false);
@@ -632,7 +629,7 @@ namespace System.Net.Http
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
         /// <param name="waiter">The waiter to add.</param>
-        private TaskCompletionSource<HttpConnection> EnqueueWaiter()
+        private TaskCompletionSourceWithCancellation<HttpConnection> EnqueueWaiter()
         {
             Debug.Assert(Monitor.IsEntered(SyncObj));
             Debug.Assert(Settings._maxConnectionsPerServer != int.MaxValue);
@@ -640,10 +637,10 @@ namespace System.Net.Http
 
             if (_waiters == null)
             {
-                _waiters = new Queue<TaskCompletionSource<HttpConnection>>();
+                _waiters = new Queue<TaskCompletionSourceWithCancellation<HttpConnection>>();
             }
 
-            var waiter = new TaskCompletionSource<HttpConnection>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var waiter = new TaskCompletionSourceWithCancellation<HttpConnection>();
             _waiters.Enqueue(waiter);
             return waiter;
         }
@@ -657,7 +654,7 @@ namespace System.Net.Http
 
         /// <summary>Dequeues a waiter from the waiters list.  The list must not be empty.</summary>
         /// <returns>The dequeued waiter.</returns>
-        private TaskCompletionSource<HttpConnection> DequeueWaiter()
+        private TaskCompletionSourceWithCancellation<HttpConnection> DequeueWaiter()
         {
             Debug.Assert(Monitor.IsEntered(SyncObj));
             Debug.Assert(Settings._maxConnectionsPerServer != int.MaxValue);
@@ -1043,6 +1040,29 @@ namespace System.Net.Http
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);
             public override bool Equals(object obj) => obj is CachedConnection && Equals((CachedConnection)obj);
             public override int GetHashCode() => _connection?.GetHashCode() ?? 0;
+        }
+
+        private sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
+        {
+            private CancellationToken _cancellationToken;
+
+            public TaskCompletionSourceWithCancellation() : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+            }
+
+            private void OnCancellation()
+            {
+                TrySetCanceled(_cancellationToken);
+            }
+
+            public async Task<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
+            {
+                _cancellationToken = cancellationToken;
+                using (cancellationToken.Register(s => ((TaskCompletionSourceWithCancellation<HttpConnection>)s).OnCancellation(), this))
+                {
+                    return await Task.ConfigureAwait(false);
+                }
+            }
         }
     }
 }
