@@ -1667,7 +1667,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
                     // Acquire the Crst lock before creating the IBCLoggingDisabler object.
                     // Only one thread at a time can be processing an IBC logging event.
-                    CrstHolder lock(g_IBCLogger.GetSync());
+                    CrstHolder lock(IBCLogger::GetSync());
                     {
                         IBCLoggingDisabler disableLogging( pInfo );  // runs IBCLoggingDisabler::DisableLogging
                         
