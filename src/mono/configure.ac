@@ -2634,6 +2634,11 @@ if test x$host_win32 = xno; then
 		fi
 	fi
 
+	dnl *********************************
+	dnl *** Checks for math functions ***
+	dnl *********************************
+	AC_SEARCH_LIBS(sqrtf, m)
+
 	dnl ****************************************************************
 	dnl *** Checks for working poll() (macosx defines it but doesn't ***
 	dnl *** have it in the library (duh))                            ***
