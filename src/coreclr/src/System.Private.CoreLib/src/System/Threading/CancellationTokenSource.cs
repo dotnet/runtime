@@ -601,21 +601,44 @@ namespace System.Threading
                         continue;
                     }
 
-                    // Get the callbacks from the partition, substituting in null so that anyone
-                    // else coming along (e.g. CTR.Dispose) will find the callbacks gone.
-                    CallbackNode node;
-                    bool lockTaken = false;
-                    partition.Lock.Enter(ref lockTaken); // try/finally not needed without thread aborts
+                    // Iterate through all nodes in the partition.  We remove each node prior
+                    // to processing it.  This allows for unregistration of subsequent registrations
+                    // to still be effective even as other registrations are being invoked.
+                    while (true)
                     {
-                        node = partition.Callbacks;
-                        partition.Callbacks = null;
-                    }
-                    partition.Lock.Exit(useMemoryBarrier: false);
+                        CallbackNode node;
+                        bool lockTaken = false;
+                        partition.Lock.Enter(ref lockTaken);
+                        try
+                        {
+                            // Pop the next registration from the callbacks list.
+                            node = partition.Callbacks;
+                            if (node == null)
+                            {
+                                // No more registrations to process.
+                                break;
+                            }
+                            else
+                            {
+                                Debug.Assert(node.Prev == null);
+                                if (node.Next != null) node.Next.Prev = null;
+                                partition.Callbacks = node.Next;
+                            }
 
-                    for (; node != null; node = node.Next)
-                    {
-                        // Publish the intended callback, to ensure ctr.Dispose can tell if a wait is necessary.
-                        Volatile.Write(ref _executingCallbackId, node.Id);
+                            // Publish the intended callback ID, to ensure ctr.Dispose can tell if a wait is necessary.
+                            // This write happens while the lock is held so that Dispose is either able to successfully
+                            // unregister or is guaranteed to see an accurate executing callback ID, since it takes
+                            // the same lock to remove the node from the callback list.
+                            _executingCallbackId = node.Id;
+
+                            // Now that we've grabbed the Id, reset the node's Id to 0.  This signals
+                            // to code unregistering that the node is no longer associated with a callback.
+                            node.Id = 0;
+                        }
+                        finally
+                        {
+                            partition.Lock.Exit(useMemoryBarrier: false); // no check on lockTaken needed without thread aborts
+                        }
 
                         // Invoke the callback on this thread if there's no sync context or on the
                         // target sync context if there is one.
@@ -642,6 +665,12 @@ namespace System.Threading
                             // Store the exception and continue
                             (exceptionList ?? (exceptionList = new List<Exception>())).Add(ex);
                         }
+
+                        // Drop the node. While we could add it to the free list, doing so has cost (we'd need to take the lock again)
+                        // and very limited value.  Since a source can only be canceled once, and after it's canceled registrations don't
+                        // need nodes, the only benefit to putting this on the free list would be if Register raced with cancellation
+                        // occurring, such that it could have used this free node but would instead need to allocate a new node (if
+                        // there wasn't another free node available).
                     }
                 }
             }
@@ -833,21 +862,12 @@ namespace System.Threading
             public readonly CancellationTokenSource Source;
             /// <summary>Lock that protects all state in the partition.</summary>
             public SpinLock Lock = new SpinLock(enableThreadOwnerTracking: false); // mutable struct; do not make this readonly
-            /// <summary>
-            /// The array of callbacks registered in the partition.  Slots may be empty, meaning a default value of the struct.
-            /// <see cref="NextCallbacksSlot"/> - 1 defines the last filled slot.
-            /// </summary>
-            /// <remarks>
-            /// Initialized to an array with at least 1 slot because a partition is only ever created if we're about
-            /// to store something into it.  And initialized with at most 1 slot to help optimize the common case where
-            /// there's only ever a single registration in a CTS (that and many registrations are the most common cases).
-            /// </remarks>
+            /// <summary>Doubly-linked list of callbacks registered with the partition. Callbacks are removed during unregistration and as they're invoked.</remarks>
             public CallbackNode Callbacks;
+            /// <summary>Singly-linked list of free nodes that can be used for subsequent callback registrations.</summary>
             public CallbackNode FreeNodeList;
-            /// <summary>
-            /// Every callback is assigned a unique, never-reused ID.  This defines the next available ID.
-            /// </summary>
-            public long NextAvailableId = 1; // avoid using 0, as that's the default long value and used to represent an empty slot
+            /// <summary>Every callback is assigned a unique, never-reused ID.  This defines the next available ID.</summary>
+            public long NextAvailableId = 1; // avoid using 0, as that's the default long value and used to represent an empty node
 
             public CallbackPartition(CancellationTokenSource source)
             {
@@ -864,21 +884,44 @@ namespace System.Threading
                 Lock.Enter(ref lockTaken);
                 try
                 {
-                    if (Callbacks == null || node.Id != id)
+                    if (node.Id != id)
                     {
-                        // Cancellation was already requested or the callback was already disposed.
-                        // Even though we have the node itself, it's important to check Callbacks
-                        // in order to synchronize with callback execution.
+                        // Either:
+                        // - The callback is currently or has already been invoked, in which case node.Id
+                        //   will no longer equal the assigned id, as it will have transitioned to 0.
+                        // - The registration was already disposed of, in which case node.Id will similarly
+                        //   no longer equal the assigned id, as it will have transitioned to 0 and potentially
+                        //   then to another (larger) value when reused for a new registration.
+                        // In either case, there's nothing to unregister.
                         return false;
                     }
 
-                    // Remove the registration from the list.
-                    if (node.Prev != null) node.Prev.Next = node.Next;
-                    if (node.Next != null) node.Next.Prev = node.Prev;
-                    if (Callbacks == node) Callbacks = node.Next;
+                    // The registration must still be in the callbacks list.  Remove it.
+                    if (Callbacks == node)
+                    {
+                        Debug.Assert(node.Prev == null);
+                        Callbacks = node.Next;
+                    }
+                    else
+                    {
+                        Debug.Assert(node.Prev != null);
+                        node.Prev.Next = node.Next;
+                    }
 
-                    // Clear it out and put it on the free list
-                    node.Clear();
+                    if (node.Next != null)
+                    {
+                        node.Next.Prev = node.Prev;
+                    }
+
+                    // Clear out the now unused node and put it on the singly-linked free list.
+                    // The only field we don't clear out is the associated Partition, as that's fixed
+                    // throughout the nodes lifetime, regardless of how many times its reused by
+                    // the same partition (it's never used on a different partition).
+                    node.Id = 0;
+                    node.Callback = null;
+                    node.CallbackState = null;
+                    node.ExecutionContext = null;
+                    node.SynchronizationContext = null;
                     node.Prev = null;
                     node.Next = FreeNodeList;
                     FreeNodeList = node;
@@ -909,15 +952,6 @@ namespace System.Threading
             {
                 Debug.Assert(partition != null, "Expected non-null partition");
                 Partition = partition;
-            }
-
-            public void Clear()
-            {
-                Id = 0;
-                Callback = null;
-                CallbackState = null;
-                ExecutionContext = null;
-                SynchronizationContext = null;
             }
 
             public void ExecuteCallback()
