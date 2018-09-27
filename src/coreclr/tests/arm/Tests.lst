@@ -91100,6 +91100,14 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
+[Popcnt_r.cmd_11492]
+RelativePath=JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_r\Popcnt_r.cmd
+WorkingDir=JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_r
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;NEW;EXCLUDED
+HostStyle=0
+
 [StoreLow_r.cmd_11493]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse2\StoreLow_r\StoreLow_r.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\StoreLow_r
@@ -93335,6 +93343,14 @@ HostStyle=0
 [StoreAlignedNonTemporal_ro.cmd_11828]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse\StoreAlignedNonTemporal_ro\StoreAlignedNonTemporal_ro.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse\StoreAlignedNonTemporal_ro
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS;NEW;EXCLUDED
+HostStyle=0
+
+[Popcnt_ro.cmd_11829]
+RelativePath=JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_ro\Popcnt_ro.cmd
+WorkingDir=JIT\HardwareIntrinsics\X86\Popcnt\Popcnt_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
