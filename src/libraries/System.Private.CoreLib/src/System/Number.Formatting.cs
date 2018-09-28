@@ -1770,8 +1770,8 @@ SkipRounding:
                     }
                 }
             }
-            
-            if (number.sign && section == 0)
+
+            if (number.sign && (section == 0) && (number.scale != 0))
                 sb.Append(info.NegativeSign);
 
             bool decimalWritten = false;
@@ -1929,6 +1929,9 @@ SkipRounding:
                     }
                 }
             }
+
+            if (number.sign && (section == 0) && (number.scale == 0) && (sb.Length > 0))
+                sb.Insert(0, info.NegativeSign);
         }
 
         private static void FormatCurrency(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info)

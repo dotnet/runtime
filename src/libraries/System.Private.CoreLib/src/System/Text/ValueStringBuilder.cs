@@ -139,6 +139,21 @@ namespace System.Text
             _pos += count;
         }
 
+        public void Insert(int index, string s)
+        {
+            int count = s.Length;
+
+            if (_pos > (_chars.Length - count))
+            {
+                Grow(count);
+            }
+
+            int remaining = _pos - index;
+            _chars.Slice(index, remaining).CopyTo(_chars.Slice(index + count));
+            s.AsSpan().CopyTo(_chars.Slice(index));
+            _pos += count;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(char c)
         {
