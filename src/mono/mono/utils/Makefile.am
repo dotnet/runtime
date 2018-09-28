@@ -71,6 +71,8 @@ monoutils_sources = \
 	mono-dl-wasm.c	\
 	mono-dl.h		\
 	mono-dl-windows-internals.h	\
+	mono-experiments.h	\
+	mono-experiments.c	\
 	mono-log-windows.c	\
 	mono-log-common.c	\
 	mono-log-posix.c	\
@@ -321,7 +323,7 @@ libmonoutilsinclude_HEADERS = 	\
 	mono-dl-fallback.h	\
 	mono-counters.h
 
-EXTRA_DIST = mono-embed.h mono-embed.c ../../support/libm/complex.c
+EXTRA_DIST = mono-embed.h mono-embed.c ../../support/libm/complex.c mono-experiments.def
 
 DIST_SUBDIRS = jemalloc
 

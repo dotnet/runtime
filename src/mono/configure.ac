@@ -5033,6 +5033,26 @@ AM_CONDITIONAL([ENABLE_HYBRID_SUSPEND], [test x$enable_hybrid_suspend != xno])
 
 dnl End of thread suspend policy
 
+dnl ***************************
+dnl *** feature experiments ***
+dnl ***************************
+
+dnl When adding experiments, also add to mono/utils/mono-experiments.def
+AC_ARG_ENABLE(experiment, [ --enable-experiment=LIST       Enable experimental fatures from the comma-separate LIST.  Available experiments: ],[
+
+	if test x$enable_experiment != x ; then
+		AC_DEFINE(ENABLE_EXPERIMENTS,1,[Enable feature experiments])
+	fi
+	for feature in `echo "$enable_experiment" | sed -e "s/,/ /g"`; do
+		eval "mono_experiment_test_enable_$feature='yes'"
+	done
+
+	if test "x$mono_experiment_test_enable_all" = "xyes"; then
+		true
+	fi
+
+],[])
+
 dnl **********************
 dnl *** checked builds ***
 dnl **********************
