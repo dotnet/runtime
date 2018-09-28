@@ -172,10 +172,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (_objectsArray == null)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                EnsureObjectsArray();
                 return ((DictionaryEntry)_objectsArray[index]).Value;
             }
             set
