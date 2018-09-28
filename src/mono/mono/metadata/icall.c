@@ -8433,7 +8433,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 		return NULL;
 
 	gpointer func;
-	func = mono_lookup_internal_call (m);
+	func = mono_lookup_internal_call_full (m, FALSE, NULL);
 	if (!func)
 		return NULL;
 	return icall_table.lookup_icall_symbol (func);
