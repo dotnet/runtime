@@ -26,7 +26,10 @@
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Data.DataSetExtensions" />
-    <PrereleaseLibraryPackage Include="System.Data.SqlClient" />
+    <PrereleaseLibraryPackage Include="System.Data.SqlClient">
+      <!-- SQL client defines its own version, higher than rest of master -->
+      <Version>4.7.0</Version>
+    </PrereleaseLibraryPackage>
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
