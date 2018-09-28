@@ -534,6 +534,10 @@ namespace System.Runtime.CompilerServices
             /// <summary>A delegate to the <see cref="MoveNext"/> method.</summary>
             public Action MoveNextAction => _moveNextAction ?? (_moveNextAction = new Action(MoveNext));
 
+            /// <summary>Invokes <see cref="MoveNext"/> when the box is queued to the thread pool and executed as a work item.</summary>
+            void IThreadPoolWorkItem.ExecuteWorkItem() => MoveNext();
+            void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { /* nop */ }
+
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
@@ -884,7 +888,7 @@ namespace System.Runtime.CompilerServices
     /// <summary>
     /// An interface implemented by all <see cref="AsyncStateMachineBox{TStateMachine, TResult}"/> instances, regardless of generics.
     /// </summary>
-    internal interface IAsyncStateMachineBox
+    internal interface IAsyncStateMachineBox : IThreadPoolWorkItem
     {
         /// <summary>Move the state machine forward.</summary>
         void MoveNext();
