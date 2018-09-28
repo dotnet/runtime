@@ -1145,9 +1145,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
     if (pMT->HasInstantiation())
         COMPlusThrowArgumentException(W("delegate"), W("Argument_NeedNonGenericType"));
 
-    if (pMT->Collectible())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleDelegateMarshal"));
-
     // If we are a delegate originally created from an unmanaged function pointer, we will simply return 
     // that function pointer.
     if (DELEGATE_MARKER_UNMANAGEDFPTR == pDelegate->GetInvocationCount())
@@ -1338,9 +1335,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     DelegateEEClass*    pClass      = (DelegateEEClass*)pMT->GetClass();
     MethodDesc*         pMD         = FindDelegateInvokeMethod(pMT);
 
-    if (pMT->Collectible())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleDelegateMarshal"));
-
     PREFIX_ASSUME(pClass != NULL);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1440,9 +1434,6 @@ OBJECTREF COMDelegate::ConvertWinRTInterfaceToDelegate(IUnknown *pIdentity, Meth
     CONTRACTL_END;
 
     MethodDesc*         pMD         = FindDelegateInvokeMethod(pMT);
-
-    if (pMT->Collectible())
-        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleDelegateMarshal"));
 
     if (pMD->IsSharedByGenericInstantiations())
     {
