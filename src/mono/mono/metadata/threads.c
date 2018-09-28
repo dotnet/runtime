@@ -5289,14 +5289,11 @@ mono_thread_info_get_last_managed (MonoThreadInfo *info)
 
 	/*
 	 * The suspended thread might be holding runtime locks. Make sure we don't try taking
-	 * any runtime locks while unwinding. In coop case we shouldn't safepoint in regions
-	 * where we hold runtime locks.
+	 * any runtime locks while unwinding.
 	 */
-	if (!mono_threads_are_safepoints_enabled ())
-		mono_thread_info_set_is_async_context (TRUE);
+	mono_thread_info_set_is_async_context (TRUE);
 	mono_get_eh_callbacks ()->mono_walk_stack_with_state (last_managed, mono_thread_info_get_suspend_state (info), MONO_UNWIND_SIGNAL_SAFE, &ji);
-	if (!mono_threads_are_safepoints_enabled ())
-		mono_thread_info_set_is_async_context (FALSE);
+	mono_thread_info_set_is_async_context (FALSE);
 	return ji;
 }
 
