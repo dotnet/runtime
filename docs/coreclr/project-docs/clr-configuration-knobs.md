@@ -79,7 +79,7 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags 
 -----|-------------|------|-------|---------------|-------
-`ARMEnabled` | Set it to 1 to enable ARM | `DWORD` | `UNSUPPORTED` | `(DWORD)0` | 
+`ARMEnabled` | AppDomain Resource Monitoring. Set to 1 to enable it | `DWORD` | `UNSUPPORTED` | `(DWORD)0` |
 
 #### Assembly Loader Configuration Knobs
 
