@@ -64,14 +64,12 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsAscii();
 
-#if FEATURE_COMINTEROP
         // Set extra byte for odd-sized strings that came from interop as BSTR.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void SetTrailByte(byte data);
         // Try to retrieve the extra byte - returns false if not present.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool TryGetTrailByte(out byte data);
-#endif
 
         public static string Intern(string str)
         {

@@ -149,8 +149,6 @@ FCIMPL1(INT32, COMString::Length, StringObject* str) {
 FCIMPLEND
 
 
-#ifdef FEATURE_COMINTEROP
-
 FCIMPL2(FC_BOOL_RET, COMString::FCTryGetTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
 {
     FCALL_CONTRACT;
@@ -172,8 +170,6 @@ FCIMPL2(VOID, COMString::FCSetTrailByte, StringObject* thisRefUNSAFE, UINT8 bDat
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-#endif // FEATURE_COMINTEROP
 
 // Revert to command line compilation flags
 #if defined(_MSC_VER) && defined(_TARGET_X86_)
