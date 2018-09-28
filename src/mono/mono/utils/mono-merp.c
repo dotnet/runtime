@@ -294,10 +294,7 @@ mono_merp_send (const char *merpFile, const char *crashLog, const char *werXml)
 	// // Create process to launch merp gui application
 	const char *argvOpen[] = {"/usr/bin/open", "-a", config.merpGUIPath, NULL};
 	int status = posix_spawn(NULL, "/usr/bin/open", NULL, NULL, (char *const*)(argvOpen), NULL);
-
-	// // FIXME error handling
-	if (status == 0)
-		g_error ("Could not start merp\n");
+	g_assertf (status == 0, "Could not start the Microsoft Error Reporting client (at %s). Error code: %d\n", config.merpGUIPath, status);
 
 	return;
 }
