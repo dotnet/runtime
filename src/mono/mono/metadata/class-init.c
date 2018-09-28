@@ -4069,7 +4069,7 @@ mono_get_unique_iid (MonoClass *klass)
 		} else {
 			generic_id = 0;
 		}
-		printf ("Interface: assigned id %d to %s|%s|%d\n", iid, klass->image->name, type_name, generic_id);
+		printf ("Interface: assigned id %d to %s|%s|%d\n", iid, klass->image->assembly_name, type_name, generic_id);
 		g_free (type_name);
 	}
 #endif
