@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ProjectGuid>{13CE5E71-D373-4EA6-B3CB-166FF089A42A}</ProjectGuid>
     <SkipIncludeNewtonsoftJson>true</SkipIncludeNewtonsoftJson>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
