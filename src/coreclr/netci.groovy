@@ -2385,7 +2385,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                             buildCommands += "./build.sh ${lowerConfiguration} ${architecture} skiptests"
                             buildCommands += "./build-test.sh ${lowerConfiguration} ${architecture} generatetesthostonly"
-                            buildCommands += "./tests/runtest.sh --corefxtestsall --testHostDir=\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}/testhost/ --coreclr-src=\${WORKSPACE}"
+                            buildCommands += "./tests/runtest.sh ${lowerConfiguration} --corefxtestsall --testHostDir=\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}/testhost/ --coreclr-src=\${WORKSPACE}"
                             
                             break
                             // Archive and process (only) the test results
@@ -3468,6 +3468,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
 
                 shell("""\
 ${runScript} \\
+    ${lowerConfiguration} \\
     --testRootDir=\"\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}\" \\
     --coreOverlayDir=\"\${WORKSPACE}/bin/tests/${osGroup}.${architecture}.${configuration}/Tests/Core_Root\" \\
     --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
