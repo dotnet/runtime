@@ -20,10 +20,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
 {
     public partial class BinaryFormatterTests : RemoteExecutorTestBase
     {
-        private static unsafe bool Is64Bit => sizeof(void*) == 8;
-
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
-        [ConditionalTheory(nameof(Is64Bit))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [InlineData(2 * 6_584_983 - 2)] // previous limit
         [InlineData(2 * 7_199_369 - 2)] // last pre-computed prime number
         public void SerializeHugeObjectGraphs(int limit)
