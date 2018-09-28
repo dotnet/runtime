@@ -57,10 +57,8 @@ public:
     //
     // Interop
     //
-#ifdef FEATURE_COMINTEROP
     static FCDECL2(FC_BOOL_RET, FCTryGetTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData);
     static FCDECL2(VOID,        FCSetTrailByte,    StringObject* thisRefUNSAFE, UINT8 bData);
-#endif // FEATURE_COMINTEROP
 };
 
 // Revert to command line compilation flags

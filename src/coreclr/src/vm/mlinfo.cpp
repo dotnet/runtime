@@ -2125,7 +2125,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             break;
                         }
 
-#ifdef FEATURE_COMINTEROP
                         case NATIVE_TYPE_BSTR:
                             if (builder)
                             {
@@ -2134,7 +2133,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             }
                             m_type = MARSHAL_TYPE_BSTR;
                             break;
-     
+#ifdef FEATURE_COMINTEROP     
                         case NATIVE_TYPE_ANSIBSTR:
                             if (builder)
                             {
@@ -3911,8 +3910,8 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 
                     XXXXX(NATIVE_TYPE_IUNKNOWN)
 
-#ifdef FEATURE_COMINTEROP
                     XXXXX(NATIVE_TYPE_BSTR)
+#ifdef FEATURE_COMINTEROP
                     XXXXX(NATIVE_TYPE_TBSTR)
                     XXXXX(NATIVE_TYPE_ANSIBSTR)
                     XXXXX(NATIVE_TYPE_HSTRING)
@@ -4359,11 +4358,9 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
             case MARSHAL_TYPE_DATE:
                 strRetVal = W("DATE");
                 break;
-#ifdef FEATURE_COMINTEROP
              case MARSHAL_TYPE_BSTR:
                 strRetVal = W("BSTR");
                 break;
-#endif // FEATURE_COMINTEROP
             case MARSHAL_TYPE_LPWSTR:
                 strRetVal = W("LPWSTR");
                 break;
@@ -5014,11 +5011,9 @@ void ArrayMarshalInfo::InitElementInfo(CorNativeType arrayNativeType, MarshalInf
                         m_vtElement = static_cast<VARTYPE>(isAnsi ? VT_LPSTR : VT_LPWSTR);
                     }
                     break;
-#ifdef FEATURE_COMINTEROP
                 case NATIVE_TYPE_BSTR:
                     m_vtElement = VT_BSTR;
                     break;
-#endif // FEATURE_COMINTEROP
                 case NATIVE_TYPE_LPSTR:
                     m_vtElement = VT_LPSTR;
                     break;

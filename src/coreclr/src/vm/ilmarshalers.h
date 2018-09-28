@@ -2619,7 +2619,6 @@ protected:
     virtual void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit);
 };
 
-#ifdef FEATURE_COMINTEROP
 class ILBSTRMarshaler : public ILOptimizedAllocMarshaler
 {
 public:
@@ -2648,7 +2647,7 @@ protected:
     virtual void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit);
 };
 
-
+#ifdef FEATURE_COMINTEROP
 class ILAnsiBSTRMarshaler : public ILMarshaler
 {
 public:

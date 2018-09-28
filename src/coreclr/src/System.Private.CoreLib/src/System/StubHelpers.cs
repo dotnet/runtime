@@ -208,8 +208,6 @@ namespace System.StubHelpers
         }
     }
 
-#if FEATURE_COMINTEROP
-
     internal static class BSTRMarshaler
     {
         internal static unsafe IntPtr ConvertToNative(string strManaged, IntPtr pNativeBuffer)
@@ -333,9 +331,6 @@ namespace System.StubHelpers
             }
         }
     }  // class BSTRMarshaler
-
-#endif // FEATURE_COMINTEROP
-
 
     internal static class VBByValStrMarshaler
     {
