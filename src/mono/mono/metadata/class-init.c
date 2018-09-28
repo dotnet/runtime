@@ -2675,6 +2675,53 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 	}
 }
 
+static void
+print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
+{
+	int i, icount = 0;
+
+	print_implemented_interfaces (klass);
+
+	for (i = 0; i <= klass->max_interface_id; i++)
+		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, i))
+			icount++;
+
+	printf ("VTable %s (vtable entries = %d, interfaces = %d)\n", mono_type_full_name (m_class_get_byval_arg (klass)),
+		klass->vtable_size, icount);
+
+	for (i = 0; i < cur_slot; ++i) {
+		MonoMethod *cm;
+
+		cm = vtable [i];
+		if (cm) {
+			printf ("  slot assigned: %03d, slot index: %03d %s\n", i, cm->slot,
+				mono_method_full_name (cm, TRUE));
+		}
+	}
+
+
+	if (icount) {
+		printf ("Interfaces %s.%s (max_iid = %d)\n", klass->name_space,
+			klass->name, klass->max_interface_id);
+
+		for (i = 0; i < klass->interface_count; i++) {
+			MonoClass *ic = klass->interfaces [i];
+			printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",  
+				mono_class_interface_offset (klass, ic),
+				count_virtual_methods (ic), ic->interface_id, mono_type_full_name (m_class_get_byval_arg (ic)));
+		}
+
+		for (MonoClass *k = klass->parent; k ; k = k->parent) {
+			for (i = 0; i < k->interface_count; i++) {
+				MonoClass *ic = k->interfaces [i]; 
+				printf ("  parent slot offset: %03d, method count: %03d, iid: %03d %s\n",  
+					mono_class_interface_offset (klass, ic),
+					count_virtual_methods (ic), ic->interface_id, mono_type_full_name (m_class_get_byval_arg (ic)));
+			}
+		}
+	}
+}
+
 /*
  * LOCKING: this is supposed to be called with the loader lock held.
  */
@@ -2685,7 +2732,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	MonoClass *k, *ic;
 	MonoMethod **vtable = NULL;
 	int i, max_vtsize = 0, cur_slot = 0;
-	guint32 max_iid;
 	GPtrArray *ifaces = NULL;
 	GHashTable *override_map = NULL;
 	GHashTable *override_class_map = NULL;
@@ -2747,7 +2793,6 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (cur_slot == -1) /*setup_interface_offsets fails the type.*/
 		return;
 
-	max_iid = klass->max_interface_id;
 	DEBUG_INTERFACE_VTABLE (first_non_interface_slot = cur_slot);
 
 	/* Optimized version for generic instances */
@@ -3183,50 +3228,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	}
 
 	DEBUG_INTERFACE_VTABLE (print_vtable_full (klass, klass->vtable, klass->vtable_size, first_non_interface_slot, "FINALLY", FALSE));
-	if (mono_print_vtable) {
-		int icount = 0;
-
-		print_implemented_interfaces (klass);
-		
-		for (i = 0; i <= max_iid; i++)
-			if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, i))
-				icount++;
-
-		printf ("VTable %s (vtable entries = %d, interfaces = %d)\n", mono_type_full_name (m_class_get_byval_arg (klass)),
-			klass->vtable_size, icount);
-
-		for (i = 0; i < cur_slot; ++i) {
-			MonoMethod *cm;
-	       
-			cm = vtable [i];
-			if (cm) {
-				printf ("  slot assigned: %03d, slot index: %03d %s\n", i, cm->slot,
-					mono_method_full_name (cm, TRUE));
-			}
-		}
-
-
-		if (icount) {
-			printf ("Interfaces %s.%s (max_iid = %d)\n", klass->name_space,
-				klass->name, max_iid);
-	
-			for (i = 0; i < klass->interface_count; i++) {
-				ic = klass->interfaces [i];
-				printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",  
-					mono_class_interface_offset (klass, ic),
-					count_virtual_methods (ic), ic->interface_id, mono_type_full_name (m_class_get_byval_arg (ic)));
-			}
-
-			for (k = klass->parent; k ; k = k->parent) {
-				for (i = 0; i < k->interface_count; i++) {
-					ic = k->interfaces [i]; 
-					printf ("  parent slot offset: %03d, method count: %03d, iid: %03d %s\n",  
-						mono_class_interface_offset (klass, ic),
-						count_virtual_methods (ic), ic->interface_id, mono_type_full_name (m_class_get_byval_arg (ic)));
-				}
-			}
-		}
-	}
+	if (mono_print_vtable)
+		print_vtable_layout_result (klass, vtable, cur_slot);
 
 	g_free (vtable);
 
