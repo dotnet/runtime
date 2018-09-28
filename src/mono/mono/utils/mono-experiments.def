@@ -30,3 +30,6 @@
  *     is compiled in and also enabled at runtime.
  *     It is optional to add the compile-time check, but if you add it, add the runtime check too.
  */
+#if defined(ENABLE_EXPERIMENT_null)
+EXPERIMENT(null,"https://github.com/mono/mono/issues/10877")
+#endif

@@ -49,6 +49,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
+#include <mono/utils/mono-experiments.h>
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 
@@ -535,7 +536,12 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	mono_root_domain = domain;
 
 	SET_APPDOMAIN (domain);
-	
+
+#if defined(ENABLE_EXPERIMENT_null)
+	if (mono_experiment_enabled (MONO_EXPERIMENT_null))
+		g_warning ("null experiment enabled");
+#endif
+
 	/* Get a list of runtimes supported by the exe */
 	if (exe_filename != NULL) {
 		/*
