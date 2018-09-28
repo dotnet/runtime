@@ -417,6 +417,28 @@
                 {
                     "name" : "System.Runtime.InteropServices.Tests.SafeBufferTests.Initialize_NumBytesTimesSizeOfEachElement_ThrowsOverflowException",
                     "reason" : "https://github.com/dotnet/coreclr/pull/20132"
+                },
+                {
+                    "name" : "System.Runtime.InteropServices.Tests.GetFunctionPointerForDelegateTests.GetFunctionPointerForDelegate_DelegateCollectible_ThrowsNotSupportedException",
+                    "reason" : "outdated"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Runtime.Loader.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name" : "System.Runtime.Loader.Tests.AssemblyLoadContextTest.Unsupported_DelegateMarshalling",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "System.Runtime.Loader.Tests.AssemblyLoadContextTest.Unsupported_ThreadStaticAndFixedAddressValueType",
+                    "reason" : "outdated"
                 }
             ]
         }
