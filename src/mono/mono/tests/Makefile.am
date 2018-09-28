@@ -1058,7 +1058,7 @@ endif
 if HOST_DARWIN
 
 # see https://github.com/mono/mono/issues/10845
-PLATFORM_DISABLED_TESTS += bug-80392.2.exe monitor-wait-abort.exe
+PLATFORM_DISABLED_TESTS += monitor-wait-abort.exe
 endif
 
 if AMD64
