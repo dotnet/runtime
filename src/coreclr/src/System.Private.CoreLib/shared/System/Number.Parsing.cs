@@ -32,7 +32,7 @@ namespace System
         private const int UInt64Precision = 20;
 
         /// <summary>256-element map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
-        private static readonly int[] s_charToHexLookup =
+        internal static readonly int[] s_charToHexLookup =
         {
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 15
             0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // 31
@@ -214,7 +214,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                if (!TryParseUInt32HexNumberStyle(value, styles, info, out uint hexResult, ref overflow))
+                if (!TryParseUInt32HexNumberStyle(value, styles, out uint hexResult, ref overflow))
                 {
                     ThrowOverflowOrFormatException(overflow, nameof(SR.Overflow_Int32));
                 }
@@ -247,7 +247,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                if (!TryParseUInt64HexNumberStyle(value, styles, info, out ulong hexResult, ref overflow))
+                if (!TryParseUInt64HexNumberStyle(value, styles, out ulong hexResult, ref overflow))
                 {
                     ThrowOverflowOrFormatException(overflow, nameof(SR.Overflow_Int64));
                 }
@@ -282,7 +282,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                if (!TryParseUInt32HexNumberStyle(value, styles, info, out result, ref overflow))
+                if (!TryParseUInt32HexNumberStyle(value, styles, out result, ref overflow))
                 {
                     ThrowOverflowOrFormatException(overflow, nameof(SR.Overflow_UInt32));
                 }
@@ -316,7 +316,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                if (!TryParseUInt64HexNumberStyle(value, styles, info, out result, ref overflow))
+                if (!TryParseUInt64HexNumberStyle(value, styles, out result, ref overflow))
                 {
                     ThrowOverflowOrFormatException(overflow, nameof(SR.Overflow_UInt64));
                 }
@@ -556,7 +556,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                return TryParseUInt32HexNumberStyle(value, styles, info, out Unsafe.As<int, uint>(ref result), ref overflow);
+                return TryParseUInt32HexNumberStyle(value, styles, out Unsafe.As<int, uint>(ref result), ref overflow);
             }
 
             NumberBuffer number = default;
@@ -887,7 +887,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                return TryParseUInt64HexNumberStyle(value, styles, info, out Unsafe.As<long, ulong>(ref result), ref overflow);
+                return TryParseUInt64HexNumberStyle(value, styles, out Unsafe.As<long, ulong>(ref result), ref overflow);
             }
 
             NumberBuffer number = default;
@@ -908,7 +908,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                return TryParseUInt32HexNumberStyle(value, styles, info, out result, ref overflow);
+                return TryParseUInt32HexNumberStyle(value, styles, out result, ref overflow);
             }
 
             NumberBuffer number = default;
@@ -1070,7 +1070,7 @@ namespace System
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
         private static bool TryParseUInt32HexNumberStyle(
-            ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result, ref bool failureIsOverflow)
+            ReadOnlySpan<char> value, NumberStyles styles, out uint result, ref bool failureIsOverflow)
         {
             Debug.Assert((styles & ~NumberStyles.HexNumber) == 0, "Only handles subsets of HexNumber format");
             Debug.Assert(!failureIsOverflow, $"failureIsOverflow should have been initialized to false");
@@ -1186,7 +1186,7 @@ namespace System
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
                 bool overflow = false;
-                return TryParseUInt64HexNumberStyle(value, styles, info, out result, ref overflow);
+                return TryParseUInt64HexNumberStyle(value, styles, out result, ref overflow);
             }
 
             NumberBuffer number = default;
@@ -1348,7 +1348,7 @@ namespace System
 
         /// <summary>Parses ulong limited to styles that make up NumberStyles.HexNumber.</summary>
         private static bool TryParseUInt64HexNumberStyle(
-            ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result, ref bool failureIsOverflow)
+            ReadOnlySpan<char> value, NumberStyles styles, out ulong result, ref bool failureIsOverflow)
         {
             Debug.Assert((styles & ~NumberStyles.HexNumber) == 0, "Only handles subsets of HexNumber format");
             Debug.Assert(!failureIsOverflow, $"failureIsOverflow should have been initialized to false");
