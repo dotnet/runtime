@@ -319,6 +319,12 @@ namespace System.Net.Http.Functional.Tests
 #if TargetsWindows
                 return true;
 #else
+                if (UseSocketsHttpHandler)
+                {
+                    // Socket Handler is independent of platform curl.
+                    return true;
+                }
+
                 return TestHelper.NativeHandlerSupportsSslConfiguration();
 #endif
             }
