@@ -17,7 +17,6 @@ namespace System
     public static partial class Environment
     {
         internal static readonly bool IsMac = Interop.Sys.GetUnixName() == "OSX";
-        private static Func<string, IEnumerable<string>> s_fileReadLines;
         private static Func<string, object> s_directoryCreateDirectory;
 
         private static string CurrentDirectoryCore
@@ -210,27 +209,10 @@ namespace System
             {
                 try
                 {
-                    // TODO #11151: Replace with direct usage of File.ReadLines or equivalent once we have access to System.IO.FileSystem here.
-                    Func<string, IEnumerable<string>> readLines = LazyInitializer.EnsureInitialized(ref s_fileReadLines, () =>
+                    using (var reader = new StreamReader(userDirsPath))
                     {
-                        Type fileType = Type.GetType("System.IO.File, System.IO.FileSystem, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                        if (fileType != null)
-                        {
-                            foreach (MethodInfo mi in fileType.GetTypeInfo().GetDeclaredMethods("ReadLines"))
-                            {
-                                if (mi.GetParameters().Length == 1)
-                                {
-                                    return (Func<string, IEnumerable<string>>)mi.CreateDelegate(typeof(Func<string, IEnumerable<string>>));
-                                }
-                            }
-                        }
-                        return null;
-                    });
-
-                    IEnumerable<string> lines = readLines?.Invoke(userDirsPath);
-                    if (lines != null)
-                    {
-                        foreach (string line in lines)
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
                         {
                             // Example lines:
                             // XDG_DESKTOP_DIR="$HOME/Desktop"
