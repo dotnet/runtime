@@ -2640,7 +2640,7 @@ public:
     // result of calling getMemberParent.
     virtual CorInfoType getFieldType(
                         CORINFO_FIELD_HANDLE    field,
-                        CORINFO_CLASS_HANDLE   *structType,
+                        CORINFO_CLASS_HANDLE   *structType = NULL,
                         CORINFO_CLASS_HANDLE    memberParent = NULL /* IN */
                         ) = 0;
 

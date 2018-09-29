@@ -236,8 +236,7 @@ bool Compiler::impILConsumesAddr(const BYTE* codeAddr, CORINFO_METHOD_HANDLE fnc
             CORINFO_RESOLVED_TOKEN resolvedToken;
             impResolveToken(codeAddr + sizeof(__int8), &resolvedToken, CORINFO_TOKENKIND_Field);
 
-            CORINFO_CLASS_HANDLE clsHnd;
-            var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField, &clsHnd));
+            var_types lclTyp = JITtype2varType(info.compCompHnd->getFieldType(resolvedToken.hField));
 
             // Preserve 'small' int types
             if (!varTypeIsSmall(lclTyp))

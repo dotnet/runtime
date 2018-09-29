@@ -9289,8 +9289,8 @@ CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
 /*********************************************************************/
 // Returns the basic type of the field (not the the type that declares the field)
 //
-// pTypeHnd - On return, for reference and value types, *pTypeHnd will contain 
-//            the normalized type of the field.
+// pTypeHnd - Optional. If not null then on return, for reference and value types, 
+//            *pTypeHnd will contain the normalized type of the field.
 // owner - Optional. For resolving in a generic context
 
 CorInfoType CEEInfo::getFieldType (CORINFO_FIELD_HANDLE fieldHnd, 
@@ -9322,7 +9322,10 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
 {
     STANDARD_VM_CONTRACT;
 
-    *pTypeHnd = 0;
+    if (pTypeHnd != nullptr)
+    {
+        *pTypeHnd = 0;
+    }
 
     TypeHandle clsHnd = TypeHandle();
     FieldDesc* field = (FieldDesc*) fieldHnd;
