@@ -336,6 +336,11 @@ namespace System.Tests
                 Assert.Equal(expected, guid1.Equals(guid2));
                 Assert.Equal(expected, guid1 == guid2);
                 Assert.Equal(!expected, guid1 != guid2);
+
+                if (!PlatformDetection.IsFullFramework) // https://github.com/dotnet/coreclr/pull/5191
+                {
+                    Assert.Equal(expected, guid1.GetHashCode().Equals(guid2.GetHashCode()));
+                }
             }
             Assert.Equal(expected, guid1.Equals(obj));
         }

@@ -25,6 +25,9 @@ namespace System.Diagnostics.Tests
         {
             Stopwatch watch = new Stopwatch();
             Assert.False(watch.IsRunning);
+            Assert.Equal(TimeSpan.Zero, watch.Elapsed);
+            Assert.Equal(0, watch.ElapsedTicks);
+            Assert.Equal(0, watch.ElapsedMilliseconds);
             watch.Start();
             Assert.True(watch.IsRunning);
             Sleep();
@@ -58,6 +61,8 @@ namespace System.Diagnostics.Tests
             watch.Reset();
             Assert.False(watch.IsRunning);
             Assert.Equal(TimeSpan.Zero, watch.Elapsed);
+            Assert.Equal(0, watch.ElapsedTicks);
+            Assert.Equal(0, watch.ElapsedMilliseconds);
         }
 
         [Fact]
