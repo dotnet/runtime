@@ -42,6 +42,18 @@
     <Compile Include="$(CommonTestPath)\Tests\System\SpanTestHelpers.cs">
       <Link>System\SpanTestHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IList.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IList.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\ICollection.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\ICollection.NonGeneric.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
+      <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>
+    </Compile>
     <Compile Include="Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />
@@ -116,6 +128,7 @@
     <Compile Include="System\WeakReferenceTests.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.cs" />
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
+    <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTestBase.cs" />

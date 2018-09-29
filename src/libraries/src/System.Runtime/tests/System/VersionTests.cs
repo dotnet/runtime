@@ -235,7 +235,7 @@ namespace System.Tests
             yield return new object[] { null, typeof(ArgumentNullException) }; // Input is null
 
             yield return new object[] { "", typeof(ArgumentException) }; // Input is empty
-            yield return new object[] { "1,2,3,4", typeof(ArgumentException) }; // Input has fewer than 4 version components
+            yield return new object[] { "1,2,3,4", typeof(ArgumentException) }; // Input contains invalid separator
             yield return new object[] { "1", typeof(ArgumentException) }; // Input has fewer than 2 version components
             yield return new object[] { "1.2.3.4.5", typeof(ArgumentException) }; // Input has more than 4 version components
 

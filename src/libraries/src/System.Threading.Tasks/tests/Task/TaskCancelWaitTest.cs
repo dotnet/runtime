@@ -8,7 +8,7 @@
 using Xunit;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;   // for StopWatch
+using System.Diagnostics;   // for Stopwatch
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
