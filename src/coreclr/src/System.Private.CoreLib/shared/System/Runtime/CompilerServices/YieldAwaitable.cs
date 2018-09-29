@@ -143,7 +143,7 @@ namespace System.Runtime.CompilerServices
                     TaskScheduler scheduler = TaskScheduler.Current;
                     if (scheduler == TaskScheduler.Default)
                     {
-                        ThreadPool.UnsafeQueueUserWorkItem(s => ((IAsyncStateMachineBox)s).MoveNext(), box);
+                        ThreadPool.UnsafeQueueCustomWorkItem(box, forceGlobal: true);
                     }
                     else
                     {
