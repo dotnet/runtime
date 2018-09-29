@@ -1622,10 +1622,9 @@ void Compiler::lvaCanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd, lvaStructPr
                     return;
                 }
 
-                CORINFO_CLASS_HANDLE cHnd;
-                CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fHnd, &cHnd);
-                var_types            fieldVarType = JITtype2varType(fieldCorType);
-                unsigned             fieldSize    = genTypeSize(fieldVarType);
+                CorInfoType fieldCorType = info.compCompHnd->getFieldType(fHnd);
+                var_types   fieldVarType = JITtype2varType(fieldCorType);
+                unsigned    fieldSize    = genTypeSize(fieldVarType);
 
                 // Do not promote if either not a primitive type or size equal to ptr size on
                 // target or a struct containing a single floating-point field.

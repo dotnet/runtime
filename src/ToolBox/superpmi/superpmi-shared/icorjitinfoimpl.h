@@ -508,7 +508,7 @@ CORINFO_CLASS_HANDLE getFieldClass(CORINFO_FIELD_HANDLE field);
 // 'memberParent' is typically only set when verifying.  It should be the
 // result of calling getMemberParent.
 CorInfoType getFieldType(CORINFO_FIELD_HANDLE  field,
-                         CORINFO_CLASS_HANDLE* structType,
+                         CORINFO_CLASS_HANDLE* structType = NULL,
                          CORINFO_CLASS_HANDLE  memberParent = NULL /* IN */
                          );
 
