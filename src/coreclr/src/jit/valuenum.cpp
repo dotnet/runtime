@@ -3493,10 +3493,9 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         }
 
         // Otherwise, fldHnd is a real field handle.
-        CORINFO_FIELD_HANDLE fldHnd     = fieldSeq->m_fieldHnd;
-        CORINFO_CLASS_HANDLE structType = nullptr;
+        CORINFO_FIELD_HANDLE fldHnd = fieldSeq->m_fieldHnd;
         noway_assert(fldHnd != nullptr);
-        CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fldHnd, &structType);
+        CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fldHnd);
         var_types   fieldType = JITtype2varType(fieldCit);
 
         ValueNum fieldHndVN = VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);

@@ -4245,7 +4245,14 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
     key.A = (DWORDLONG)field;
     key.B = (DWORDLONG)memberParent;
 
-    value.A = (DWORDLONG)*structType;
+    if (structType == nullptr)
+    {
+        value.A = 0;
+    }
+    else
+    {
+        value.A = (DWORDLONG)*structType;
+    }
     value.B = (DWORD)result;
 
     GetFieldType->Add(key, value);
