@@ -853,18 +853,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(m));
             }
 
-            RuntimeModule rtModule = m as RuntimeModule;
-            if (rtModule == null && m is ModuleBuilder mb)
+            if (m is RuntimeModule rtModule)
             {
-                rtModule = mb.InternalModule;
+                return GetHINSTANCE(rtModule.GetNativeHandle());
             }
 
-            if (rtModule == null)
-            {
-                throw new ArgumentNullException(nameof(m), SR.Argument_MustBeRuntimeModule);
-            }
-
-            return GetHINSTANCE(rtModule.GetNativeHandle());
+            return (IntPtr)(-1);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
