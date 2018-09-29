@@ -1294,9 +1294,6 @@
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
   </data>
-  <data name="Argument_MustBeRuntimeModule" xml:space="preserve">
-    <value>Module must be a runtime Module object.</value>
-  </data>
   <data name="Argument_MustBeRuntimeReflectionObject" xml:space="preserve">
     <value>The object must be a runtime Reflection object.</value>
   </data>

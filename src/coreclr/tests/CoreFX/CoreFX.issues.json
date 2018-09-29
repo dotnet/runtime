@@ -415,6 +415,10 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Runtime.InteropServices.Tests.GetHINSTANCETests.GetHINSTANCE_NonRuntimeModule_ThrowsArgumentNullException",
+                    "reason": "https://github.com/dotnet/coreclr/pull/30925"
+                },
+                {
                     "name" : "System.Runtime.InteropServices.Tests.SafeBufferTests.Initialize_NumBytesTimesSizeOfEachElement_ThrowsOverflowException",
                     "reason" : "https://github.com/dotnet/coreclr/pull/20132"
                 },
