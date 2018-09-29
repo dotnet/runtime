@@ -81,7 +81,7 @@ namespace System.Diagnostics
 
                 if (_elapsed < 0)
                 {
-                    // When measuring small time periods the StopWatch.Elapsed* 
+                    // When measuring small time periods the Stopwatch.Elapsed* 
                     // properties can return negative values.  This is due to 
                     // bugs in the basic input/output system (BIOS) or the hardware
                     // abstraction layer (HAL) on machines with variable-speed CPUs
@@ -148,7 +148,7 @@ namespace System.Diagnostics
 
             if (_isRunning)
             {
-                // If the StopWatch is running, add elapsed time since
+                // If the Stopwatch is running, add elapsed time since
                 // the Stopwatch is started last time. 
                 long currentTimeStamp = GetTimestamp();
                 long elapsedUntilNow = currentTimeStamp - _startTimeStamp;
