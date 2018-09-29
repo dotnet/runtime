@@ -80,6 +80,9 @@
     <TestSupportFiles Include="$(ToolsDir)NuGet.*.dll">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
+    <TestSupportFiles Include="props\Directory.Build.props">
+      <DestinationFolder>$(TestDir)</DestinationFolder>
+    </TestSupportFiles>
     <TestSupportFiles Include="**\*.targets">
       <DestinationFolder>$(TestDir)%(RecursiveDir)</DestinationFolder>
     </TestSupportFiles>
@@ -173,13 +176,15 @@
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects">
     <Message Importance="High" Text="*** Restoring ***" />
-    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
+    <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
   </Target>
   
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects">
     <Message Importance="High" Text="*** Testing ***" />
     <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" EnvironmentVariables="@(CliEnvironment)"  ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
+
+    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" Text="There were errors when building the test package projects." />
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildProjects" />

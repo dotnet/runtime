@@ -14,6 +14,10 @@
     <InboxOnTargetFramework Include="monoandroid10;xamarinmac20" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
     <InboxOnTargetFramework Include="net45" />
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>

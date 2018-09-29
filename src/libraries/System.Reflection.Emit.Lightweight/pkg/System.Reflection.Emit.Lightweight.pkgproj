@@ -16,6 +16,10 @@
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="portable-net45+wp8" />
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
