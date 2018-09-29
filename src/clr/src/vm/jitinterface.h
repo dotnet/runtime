@@ -834,9 +834,9 @@ public:
     CORINFO_CLASS_HANDLE getFieldClass (CORINFO_FIELD_HANDLE field);
 
     //@GENERICSVER: added owner parameter
-    CorInfoType getFieldType (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType,CORINFO_CLASS_HANDLE owner = NULL);
+    CorInfoType getFieldType (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
     // Internal version without JIT-EE transition
-    CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType,CORINFO_CLASS_HANDLE owner = NULL);
+    CorInfoType getFieldTypeInternal (CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType = NULL,CORINFO_CLASS_HANDLE owner = NULL);
 
     unsigned getFieldOffset (CORINFO_FIELD_HANDLE field);
 
