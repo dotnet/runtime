@@ -1482,6 +1482,15 @@ PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMe
 PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractInterface_int_.Method1_string_.exe
 
 endif # MONO_ARCH_GSHAREDVT_SUPPORTED
+
+if ARM64
+# Times out on ARM64.
+# https://github.com/mono/mono/issues/10783
+# https://jenkins.mono-project.com/job/test-mono-pull-request-arm64-fullaot+llvm/486/parsed_console/log.html
+# https://jenkins.mono-project.com/job/test-mono-pull-request-arm64-fullaot+llvm/471/parsed_console/log.html
+PLATFORM_DISABLED_TESTS += tailcall/2.exe
+endif # ARM64 FullAOT
+
 endif # FULL_AOT_TESTS
 
 if HYBRID_AOT_TESTS
