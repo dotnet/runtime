@@ -95,17 +95,17 @@ namespace
         ::printf("Byte[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Byte_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Byte_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Byte_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Byte_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<byte> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Byte_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Byte_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -118,17 +118,17 @@ namespace
         ::printf("Short[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Short_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Short_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Short_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Short_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<int16_t> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Short_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Short_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -141,17 +141,17 @@ namespace
         ::printf("UShort[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_UShort_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_UShort_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_UShort_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_UShort_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<uint16_t> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_UShort_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_UShort_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -164,17 +164,17 @@ namespace
         ::printf("Int[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Int_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Int_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Int_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Int_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<int32_t> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Int_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Int_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -187,17 +187,17 @@ namespace
         ::printf("UInt[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_UInt_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_UInt_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_UInt_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_UInt_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<uint32_t> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_UInt_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_UInt_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -210,17 +210,17 @@ namespace
         ::printf("Long[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Long_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Long_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Long_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Long_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<int64_t> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Long_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Long_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -233,17 +233,17 @@ namespace
         ::printf("ULong[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_ULong_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_ULong_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_ULong_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_ULong_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<uint64_t> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_ULong_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_ULong_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -256,17 +256,17 @@ namespace
         ::printf("Float[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Float_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Float_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Float_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Float_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<float> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Float_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Float_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
@@ -279,17 +279,17 @@ namespace
         ::printf("Double[] marshalling\n");
 
         double actual;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Double_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Double_LP_PreLen(static_cast<int>(baseData.size()), data.data(), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Double_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Double_LP_PostLen(data.data(), static_cast<int>(baseData.size()), &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
 
         actual = 0.0;
         int len;
         SafeArraySmartPtr<double> saData{ data };
-        THROW_IF_FAILED(arrayTesting->raw_Mean_Double_SafeArray_OutLen(saData, &len, &actual));
+        THROW_IF_FAILED(arrayTesting->Mean_Double_SafeArray_OutLen(saData, &len, &actual));
         THROW_FAIL_IF_FALSE(EqualByBound(expectedMean, actual));
         THROW_FAIL_IF_FALSE(len == saData.Length());
     }
