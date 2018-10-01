@@ -4,7 +4,7 @@
 
 #include <xplatform.h>
 #include <cassert>
-#include <Server.Contracts.tlh>
+#include <Server.Contracts.h>
 
 #define COM_CLIENT
 #include <Servers.h>
