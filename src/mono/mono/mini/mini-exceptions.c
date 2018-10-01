@@ -2732,6 +2732,15 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	size_t stsize = 0;
 	stack_t sa;
 	guint8 *staddr = NULL;
+#ifdef TARGET_OSX
+	/*
+	 * On macOS Mojave we are encountering a bug when changing mapping for main thread
+	 * stack pages. Stack overflow on main thread will kill the app.
+	 */
+	gboolean disable_stack_guard = pthread_main_np ();
+#else
+	gboolean disable_stack_guard = FALSE;
+#endif
 
 	if (mono_running_on_valgrind ())
 		return;
@@ -2745,16 +2754,18 @@ mono_setup_altstack (MonoJitTlsData *tls)
 
 	/*g_print ("thread %p, stack_base: %p, stack_size: %d\n", (gpointer)pthread_self (), staddr, stsize);*/
 
-	tls->stack_ovf_guard_base = staddr + mono_pagesize ();
-	tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
+	if (!disable_stack_guard) {
+		tls->stack_ovf_guard_base = staddr + mono_pagesize ();
+		tls->stack_ovf_guard_size = ALIGN_TO (8 * 4096, mono_pagesize ());
 
-	g_assert ((guint8*)&sa >= (guint8*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size);
+		g_assert ((guint8*)&sa >= (guint8*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size);
 
-	if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
-		/* mprotect can fail for the main thread stack */
-		gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED, MONO_MEM_ACCOUNT_EXCEPTIONS);
-		g_assert (gaddr == tls->stack_ovf_guard_base);
-		tls->stack_ovf_valloced = TRUE;
+		if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
+			/* mprotect can fail for the main thread stack */
+			gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED, MONO_MEM_ACCOUNT_EXCEPTIONS);
+			g_assert (gaddr == tls->stack_ovf_guard_base);
+			tls->stack_ovf_valloced = TRUE;
+		}
 	}
 
 	/* Setup an alternate signal stack */
@@ -2785,6 +2796,9 @@ mono_free_altstack (MonoJitTlsData *tls)
 
 	if (tls->signal_stack)
 		mono_vfree (tls->signal_stack, MONO_ARCH_SIGNAL_STACK_SIZE, MONO_MEM_ACCOUNT_EXCEPTIONS);
+
+	if (!tls->stack_ovf_guard_base)
+		return;
 	if (tls->stack_ovf_valloced)
 		mono_vfree (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MEM_ACCOUNT_EXCEPTIONS);
 	else
