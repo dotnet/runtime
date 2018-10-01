@@ -213,18 +213,27 @@ namespace Mono.Linker.Steps {
 			if (source == target)
 				return;
 
-			File.Copy (source, target, true);
+			CopyFileAndRemoveReadOnly (source, target);
 
 			if (!Context.LinkSymbols)
 				return;
 
 			var mdb = source + ".mdb";
 			if (File.Exists (mdb))
-				File.Copy (mdb, target + ".mdb", true);
+				CopyFileAndRemoveReadOnly (mdb, target + ".mdb");
 
 			var pdb = Path.ChangeExtension (source, "pdb");
 			if (File.Exists (pdb))
-				File.Copy (pdb, Path.ChangeExtension (target, "pdb"), true);
+				CopyFileAndRemoveReadOnly (pdb, Path.ChangeExtension (target, "pdb"));
+		}
+
+		static void CopyFileAndRemoveReadOnly (string src, string dest) {
+			File.Copy (src, dest, true);
+
+			FileAttributes attrs = File.GetAttributes (dest);
+
+			if ((attrs & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+				File.SetAttributes (dest, attrs & ~FileAttributes.ReadOnly);
 		}
 
 		protected virtual string GetAssemblyFileName (AssemblyDefinition assembly, string directory)
