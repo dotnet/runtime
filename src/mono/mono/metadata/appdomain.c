@@ -371,6 +371,8 @@ mono_get_corlib_version (void)
 	char *value;
 	MonoTypeEnum field_type;
 	const char *data = mono_class_get_field_default_value (field, &field_type);
+	if (field_type != MONO_TYPE_STRING)
+		return NULL;
 	mono_metadata_read_constant_value (data, field_type, &value, error);
 	mono_error_assert_ok (error);
 
