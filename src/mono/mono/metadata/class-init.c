@@ -1410,13 +1410,15 @@ print_implemented_interfaces (MonoClass *klass)
 	printf ("Packed interface table for class %s has size %d\n", name, klass->interface_offsets_count);
 	g_free (name);
 
-	for (i = 0; i < klass->interface_offsets_count; i++)
-		printf ("  [%03d][UUID %03d][SLOT %03d][SIZE  %03d] interface %s.%s\n", i,
+	for (i = 0; i < klass->interface_offsets_count; i++) {
+		char *ic_name = mono_type_get_full_name (klass->interfaces_packed [i]);
+		printf ("  [%03d][UUID %03d][SLOT %03d][SIZE  %03d] interface %s\n", i,
 				klass->interfaces_packed [i]->interface_id,
 				klass->interface_offsets_packed [i],
 				mono_class_get_method_count (klass->interfaces_packed [i]),
-				klass->interfaces_packed [i]->name_space,
-				klass->interfaces_packed [i]->name );
+				ic_name);
+		g_free (ic_name);
+	}
 	printf ("Interface flags: ");
 	for (i = 0; i <= klass->max_interface_id; i++)
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, i))
@@ -2829,6 +2831,9 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 					klass->methods [i]->slot = gklass->methods [i]->slot;
 		}
 
+		if (mono_print_vtable)
+			print_vtable_layout_result (klass, klass->vtable, gklass->vtable_size);
+
 		return;
 	}
 
@@ -3245,6 +3250,10 @@ fail:
 		mono_class_set_type_load_failure (klass, "VTable setup of type %s failed", name);
 	mono_error_cleanup (error);
 	g_free (name);
+	if (mono_print_vtable)
+		print_vtable_layout_result (klass, vtable, cur_slot);
+
+
 	g_free (vtable);
 	if (override_map)
 		g_hash_table_destroy (override_map);
