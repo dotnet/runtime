@@ -16,15 +16,15 @@ namespace
         ::printf("Byte test invariant: %d + %d = %d\n", a, b, expected);
 
         byte c;
-        THROW_IF_FAILED(numericTesting->raw_Add_Byte(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Byte(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_Byte_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Byte_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_Byte_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Byte_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -36,15 +36,15 @@ namespace
         ::printf("Short test invariant: %d + %d = %d\n", a, b, expected);
 
         int16_t c;
-        THROW_IF_FAILED(numericTesting->raw_Add_Short(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Short(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_Short_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Short_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_Short_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Short_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -56,15 +56,15 @@ namespace
         ::printf("UShort test invariant: %u + %u = %u\n", a, b, expected);
 
         uint16_t c;
-        THROW_IF_FAILED(numericTesting->raw_Add_UShort(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_UShort(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_UShort_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_UShort_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_UShort_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_UShort_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -76,15 +76,15 @@ namespace
         ::printf("Int test invariant: %d + %d = %d\n", a, b, expected);
 
         int32_t c;
-        THROW_IF_FAILED(numericTesting->raw_Add_Int(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Int(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_Int_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Int_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_Int_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Int_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -96,15 +96,15 @@ namespace
         ::printf("UInt test invariant: %u + %u = %u\n", a, b, expected);
 
         uint32_t c;
-        THROW_IF_FAILED(numericTesting->raw_Add_UInt(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_UInt(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_UInt_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_UInt_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_UInt_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_UInt_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -116,15 +116,15 @@ namespace
         ::printf("Long test invariant: %lld + %lld = %lld\n", a, b, expected);
 
         int64_t c;
-        THROW_IF_FAILED(numericTesting->raw_Add_Long(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Long(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_Long_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Long_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_Long_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Long_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -136,15 +136,15 @@ namespace
         ::printf("ULong test invariant: %llu + %llu = %llu\n", a, b, expected);
 
         uint64_t c;
-        THROW_IF_FAILED(numericTesting->raw_Add_ULong(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_ULong(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_ULong_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_ULong_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_ULong_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_ULong_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(expected == c);
     }
 
@@ -165,15 +165,15 @@ namespace
         ::printf("Float test invariant: %f + %f = %f\n", a, b, expected);
 
         float c;
-        THROW_IF_FAILED(numericTesting->raw_Add_Float(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Float(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_Float_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Float_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_Float_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Float_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
     }
 
@@ -185,15 +185,15 @@ namespace
         ::printf("Double test invariant: %f + %f = %f\n", a, b, expected);
 
         double c;
-        THROW_IF_FAILED(numericTesting->raw_Add_Double(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Double(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
 
         c = std::numeric_limits<decltype(c)>::max();
-        THROW_IF_FAILED(numericTesting->raw_Add_Double_Ref(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Double_Ref(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
 
         c = 0;
-        THROW_IF_FAILED(numericTesting->raw_Add_Double_Out(a, b, &c));
+        THROW_IF_FAILED(numericTesting->Add_Double_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
     }
 }

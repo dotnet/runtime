@@ -84,6 +84,44 @@ namespace Server.Contract.Servers
     internal class ErrorMarshalTestingClass
     {
     }
+
+    /// <summary>
+    /// Managed definition of CoClass 
+    /// </summary>
+    [ComImport]
+    [CoClass(typeof(DispatchTestingClass))]
+    [Guid("a5e04c1c-474e-46d2-bbc0-769d04e12b54")]
+    internal interface DispatchTesting : Server.Contract.IDispatchTesting 
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    [ComImport]
+    [Guid(Server.Contract.Guids.DispatchTesting)]
+    internal class DispatchTestingClass
+    {
+    }
+
+    /// <summary>
+    /// Managed definition of CoClass 
+    /// </summary>
+    [ComImport]
+    [CoClass(typeof(AggregationTestingClass))]
+    [Guid("98cc27f0-d521-4f79-8b63-e980e3a92974")]
+    internal interface AggregationTesting : Server.Contract.IAggregationTesting
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    [ComImport]
+    [Guid(Server.Contract.Guids.AggregationTesting)]
+    internal class AggregationTestingClass
+    {
+    }
 }
 
 #pragma warning restore IDE1006 // Naming Styles
