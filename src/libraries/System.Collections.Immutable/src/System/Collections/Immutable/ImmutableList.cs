@@ -74,6 +74,19 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Returns an immutable copy of the current contents of the builder's collection.
+        /// </summary>
+        /// <param name="builder">The builder to create the immutable list from.</param>
+        /// <returns>An immutable list.</returns>
+        [Pure]
+        public static ImmutableList<TSource> ToImmutableList<TSource>(this ImmutableList<TSource>.Builder builder)
+        {
+            Requires.NotNull(builder, nameof(builder));
+
+            return builder.ToImmutable();
+        }
+
+        /// <summary>
         /// Replaces the first equal element in the list with the specified element.
         /// </summary>
         /// <param name="list">The list to search.</param>

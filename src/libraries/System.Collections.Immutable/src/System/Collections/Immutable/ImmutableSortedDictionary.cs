@@ -163,6 +163,19 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Returns an immutable copy of the current contents of the builder's collection.
+        /// </summary>
+        /// <param name="builder">The builder to create the immutable map from.</param>
+        /// <returns>An immutable map.</returns>
+        [Pure]
+        public static ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this ImmutableSortedDictionary<TKey, TValue>.Builder builder)
+        {
+            Requires.NotNull(builder, nameof(builder));
+
+            return builder.ToImmutable();
+        }
+
+        /// <summary>
         /// Constructs an immutable sorted dictionary based on some transformation of a sequence.
         /// </summary>
         /// <typeparam name="TSource">The type of element in the sequence.</typeparam>

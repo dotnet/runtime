@@ -456,6 +456,29 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void ToImmutableArray()
+        {
+            var builder = new ImmutableArray<int>.Builder();
+            builder.AddRange(0, 1, 2);
+
+            var array = builder.ToImmutableArray();
+            Assert.Equal(0, array[0]);
+            Assert.Equal(1, array[1]);
+            Assert.Equal(2, array[2]);
+            
+            builder[1] = 5;
+            Assert.Equal(5, builder[1]);
+            Assert.Equal(1, array[1]);
+
+            builder.Clear();
+            Assert.True(builder.ToImmutableArray().IsEmpty);
+            Assert.False(array.IsEmpty);
+
+            ImmutableArray<int>.Builder nullBuilder = null;
+            AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableArray());
+        }
+
+        [Fact]
         public void CopyTo()
         {
             var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();

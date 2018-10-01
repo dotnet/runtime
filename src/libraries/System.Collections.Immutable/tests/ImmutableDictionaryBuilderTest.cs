@@ -270,6 +270,31 @@ namespace System.Collections.Immutable.Tests
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
 
+        [Fact]
+        public void ToImmutableDictionary()
+        {
+            ImmutableDictionary<int, int>.Builder builder =  ImmutableDictionary.CreateBuilder<int, int>();
+            builder.Add(0, 0);
+            builder.Add(1, 1);
+            builder.Add(2, 2);
+
+            var dictionary = builder.ToImmutableDictionary();
+            Assert.Equal(0, dictionary[0]);
+            Assert.Equal(1, dictionary[1]);
+            Assert.Equal(2, dictionary[2]);
+
+            builder[1] = 5;
+            Assert.Equal(5, builder[1]);
+            Assert.Equal(1, dictionary[1]);
+
+            builder.Clear();
+            Assert.True(builder.ToImmutableDictionary().IsEmpty);
+            Assert.False(dictionary.IsEmpty);
+
+            ImmutableDictionary<int, int>.Builder nullBuilder = null;
+            AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableDictionary());
+        }
+
         protected override IImmutableDictionary<TKey, TValue> GetEmptyImmutableDictionary<TKey, TValue>()
         {
             return ImmutableDictionary.Create<TKey, TValue>();
