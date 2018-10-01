@@ -60,7 +60,7 @@ private:
     }
 
 public: // IStringTesting
-    DEF_RAWFUNC(Add_LPStr)(
+    DEF_FUNC(Add_LPStr)(
         /*[in]*/ LPSTR a,
         /*[in]*/ LPSTR b,
         /*[out,retval]*/ LPSTR * pRetVal)
@@ -78,7 +78,7 @@ public: // IStringTesting
         *pRetVal = buf;
         return S_OK;
     }
-    DEF_RAWFUNC(Add_LPWStr)(
+    DEF_FUNC(Add_LPWStr)(
         /*[in]*/ LPWSTR a,
         /*[in]*/ LPWSTR b,
         /*[out,retval]*/ LPWSTR * pRetVal)
@@ -96,7 +96,7 @@ public: // IStringTesting
         *pRetVal = buf;
         return S_OK;
     }
-    DEF_RAWFUNC(Add_BStr)(
+    DEF_FUNC(Add_BStr)(
         /*[in]*/ BSTR a,
         /*[in]*/ BSTR b,
         /*[out,retval]*/ BSTR * pRetVal)
@@ -114,13 +114,13 @@ public: // IStringTesting
         *pRetVal = buf;
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_LPStr)(
+    DEF_FUNC(Reverse_LPStr)(
         /*[in]*/ LPSTR a,
         /*[out,retval]*/ LPSTR * pRetVal)
     {
         return Reverse(a, pRetVal);
     }
-    DEF_RAWFUNC(Reverse_LPStr_Ref)(
+    DEF_FUNC(Reverse_LPStr_Ref)(
         /*[in,out]*/ LPSTR * a,
         /*[out,retval]*/ LPSTR * pRetVal)
     {
@@ -129,26 +129,26 @@ public: // IStringTesting
         ReverseInplace(::strlen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_LPStr_InRef)(
+    DEF_FUNC(Reverse_LPStr_InRef)(
         /*[in]*/ LPSTR * a,
         /*[out,retval]*/ LPSTR * pRetVal)
     {
         return Reverse(*a, pRetVal);
     }
-    DEF_RAWFUNC(Reverse_LPStr_Out)(
+    DEF_FUNC(Reverse_LPStr_Out)(
         /*[in]*/ LPSTR a,
         /*[out]*/ LPSTR * b)
     {
         return Reverse(a, b);
     }
-    DEF_RAWFUNC(Reverse_LPStr_OutAttr)(
+    DEF_FUNC(Reverse_LPStr_OutAttr)(
         /*[in]*/ LPSTR a,
         /*[out]*/ LPSTR b)
     {
         ReverseInplace(::strlen(b), b);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPStr)(
+    DEF_FUNC(Reverse_SB_LPStr)(
         /*[in,out]*/ LPSTR a,
         /*[out,retval]*/ LPSTR * pRetVal)
     {
@@ -157,7 +157,7 @@ public: // IStringTesting
         ReverseInplace(::strlen(a), a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPStr_Ref)(
+    DEF_FUNC(Reverse_SB_LPStr_Ref)(
         /*[in,out]*/ LPSTR * a,
         /*[out,retval]*/ LPSTR * pRetVal)
     {
@@ -166,7 +166,7 @@ public: // IStringTesting
         ReverseInplace(::strlen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPStr_InRef)(
+    DEF_FUNC(Reverse_SB_LPStr_InRef)(
         /*[in]*/ LPSTR * a,
         /*[out,retval]*/ LPSTR * pRetVal)
     {
@@ -175,7 +175,7 @@ public: // IStringTesting
         ReverseInplace(::strlen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPStr_Out)(
+    DEF_FUNC(Reverse_SB_LPStr_Out)(
         /*[in,out]*/ LPSTR a,
         /*[out]*/ LPSTR * b)
     {
@@ -184,7 +184,7 @@ public: // IStringTesting
         ReverseInplace(::strlen(a), a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPStr_OutAttr)(
+    DEF_FUNC(Reverse_SB_LPStr_OutAttr)(
         /*[in,out]*/ LPSTR a,
         /*[out]*/ LPSTR b)
     {
@@ -194,13 +194,13 @@ public: // IStringTesting
         ::memcpy_s(b, byteLen, a, byteLen);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_LPWStr)(
+    DEF_FUNC(Reverse_LPWStr)(
         /*[in]*/ LPWSTR a,
         /*[out,retval]*/ LPWSTR * pRetVal)
     {
         return Reverse(a, pRetVal);
     }
-    DEF_RAWFUNC(Reverse_LPWStr_Ref)(
+    DEF_FUNC(Reverse_LPWStr_Ref)(
         /*[in,out]*/ LPWSTR * a,
         /*[out,retval]*/ LPWSTR * pRetVal)
     {
@@ -209,26 +209,26 @@ public: // IStringTesting
         ReverseInplace(::wcslen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_LPWStr_InRef)(
+    DEF_FUNC(Reverse_LPWStr_InRef)(
         /*[in]*/ LPWSTR * a,
         /*[out,retval]*/ LPWSTR * pRetVal)
     {
         return Reverse(*a, pRetVal);
     }
-    DEF_RAWFUNC(Reverse_LPWStr_Out)(
+    DEF_FUNC(Reverse_LPWStr_Out)(
         /*[in]*/ LPWSTR a,
         /*[out]*/ LPWSTR * b)
     {
         return Reverse(a, b);
     }
-    DEF_RAWFUNC(Reverse_LPWStr_OutAttr)(
+    DEF_FUNC(Reverse_LPWStr_OutAttr)(
         /*[in]*/ LPWSTR a,
         /*[out]*/ LPWSTR b)
     {
         ReverseInplace(::wcslen(b), b);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPWStr)(
+    DEF_FUNC(Reverse_SB_LPWStr)(
         /*[in,out]*/ LPWSTR a,
         /*[out,retval]*/ LPWSTR * pRetVal)
     {
@@ -237,7 +237,7 @@ public: // IStringTesting
         ReverseInplace(::wcslen(a), a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPWStr_Ref)(
+    DEF_FUNC(Reverse_SB_LPWStr_Ref)(
         /*[in,out]*/ LPWSTR * a,
         /*[out,retval]*/ LPWSTR * pRetVal)
     {
@@ -246,7 +246,7 @@ public: // IStringTesting
         ReverseInplace(::wcslen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPWStr_InRef)(
+    DEF_FUNC(Reverse_SB_LPWStr_InRef)(
         /*[in]*/ LPWSTR * a,
         /*[out,retval]*/ LPWSTR * pRetVal)
     {
@@ -255,7 +255,7 @@ public: // IStringTesting
         ReverseInplace(::wcslen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPWStr_Out)(
+    DEF_FUNC(Reverse_SB_LPWStr_Out)(
         /*[in,out]*/ LPWSTR a,
         /*[out]*/ LPWSTR * b)
     {
@@ -264,7 +264,7 @@ public: // IStringTesting
         ReverseInplace(::wcslen(a), a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_SB_LPWStr_OutAttr)(
+    DEF_FUNC(Reverse_SB_LPWStr_OutAttr)(
         /*[in,out]*/ LPWSTR a,
         /*[out]*/ LPWSTR b)
     {
@@ -274,13 +274,13 @@ public: // IStringTesting
         ::memcpy_s(b, byteLen, a, byteLen);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_BStr)(
+    DEF_FUNC(Reverse_BStr)(
         /*[in]*/ BSTR a,
         /*[out,retval]*/ BSTR * pRetVal)
     {
         return ReverseBstr(a, pRetVal);
     }
-    DEF_RAWFUNC(Reverse_BStr_Ref)(
+    DEF_FUNC(Reverse_BStr_Ref)(
         /*[in,out]*/ BSTR * a,
         /*[out,retval]*/ BSTR * pRetVal)
     {
@@ -289,19 +289,19 @@ public: // IStringTesting
         ReverseInplace(::SysStringLen(*a), *a);
         return S_OK;
     }
-    DEF_RAWFUNC(Reverse_BStr_InRef)(
+    DEF_FUNC(Reverse_BStr_InRef)(
         /*[in]*/ BSTR * a,
         /*[out,retval]*/ BSTR * pRetVal)
     {
         return ReverseBstr(*a, pRetVal);
     }
-    DEF_RAWFUNC(Reverse_BStr_Out)(
+    DEF_FUNC(Reverse_BStr_Out)(
         /*[in]*/ BSTR a,
         /*[out]*/ BSTR * b)
     {
         return ReverseBstr(a, b);
     }
-    DEF_RAWFUNC(Reverse_BStr_OutAttr)(
+    DEF_FUNC(Reverse_BStr_OutAttr)(
         /*[in]*/ BSTR a,
         /*[out]*/ BSTR b)
     {

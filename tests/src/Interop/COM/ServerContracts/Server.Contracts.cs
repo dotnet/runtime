@@ -184,6 +184,64 @@ namespace Server.Contract
         [PreserveSig]
         int Return_As_HResult(int hresultToReturn);
     }
+
+    public enum IDispatchTesting_Exception
+    {
+        Disp,
+        HResult,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct HFA_4
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
+    }
+
+    [ComVisible(true)]
+    [Guid("a5e04c1c-474e-46d2-bbc0-769d04e12b54")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface IDispatchTesting
+    {
+        void DoubleNumeric_ReturnByRef (
+            byte b1,
+            ref byte b2,
+            short s1,
+            ref short s2,
+            ushort us1,
+            ref ushort us2,
+            int i1,
+            ref int i2,
+            uint ui1,
+            ref uint ui2,
+            long l1,
+            ref long l2,
+            ulong ul1,
+            ref ulong ul2);
+
+        float Add_Float_ReturnAndUpdateByRef(float a, ref float b);
+        double Add_Double_ReturnAndUpdateByRef(double a, ref double b);
+        void TriggerException(IDispatchTesting_Exception excep, int errorCode);
+
+        // Special cases
+        HFA_4 DoubleHVAValues(ref HFA_4 input);
+    }
+
+    [ComVisible(true)]
+    [Guid("98cc27f0-d521-4f79-8b63-e980e3a92974")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IAggregationTesting
+    {
+        // Check if the current object is aggregated
+        [return: MarshalAs(UnmanagedType.VariantBool)]
+        bool IsAggregated();
+
+        // Check if the two object represent an aggregated pair
+        [return: MarshalAs(UnmanagedType.VariantBool)]
+        bool AreAggregated([MarshalAs(UnmanagedType.IUnknown)] object aggregateMaybe1, [MarshalAs(UnmanagedType.IUnknown)] object aggregateMaybe2);
+    };
 }
 
 #pragma warning restore 618 // Must test deprecated features
