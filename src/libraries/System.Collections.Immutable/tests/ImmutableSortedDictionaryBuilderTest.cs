@@ -310,6 +310,31 @@ namespace System.Collections.Immutable.Tests
             Assert.Throws<KeyNotFoundException>(() => builder.ValueRef("c"));
         }
 
+        [Fact]
+        public void ToImmutableSortedDictionary()
+        {
+            ImmutableSortedDictionary<int, int>.Builder builder = ImmutableSortedDictionary.CreateBuilder<int, int>();
+            builder.Add(1, 1);
+            builder.Add(2, 2);
+            builder.Add(3, 3);
+
+            var dictionary = builder.ToImmutableSortedDictionary();
+            Assert.Equal(1, dictionary[1]);
+            Assert.Equal(2, dictionary[2]);
+            Assert.Equal(3, dictionary[3]);
+
+            builder[2] = 5;
+            Assert.Equal(5, builder[2]);
+            Assert.Equal(2, dictionary[2]);
+
+            builder.Clear();
+            Assert.True(builder.ToImmutableSortedDictionary().IsEmpty);
+            Assert.False(dictionary.IsEmpty);
+
+            ImmutableSortedDictionary<int, int>.Builder nullBuilder = null;
+            AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableSortedDictionary());
+        }
+
         protected override IImmutableDictionary<TKey, TValue> GetEmptyImmutableDictionary<TKey, TValue>()
         {
             return ImmutableSortedDictionary.Create<TKey, TValue>();

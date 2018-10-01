@@ -376,5 +376,30 @@ namespace System.Collections.Immutable.Tests
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
             Assert.IsType<ArgumentNullException>(tie.InnerException);
         }
+
+        [Fact]
+        public void ToImmutableSortedSet()
+        {
+            ImmutableSortedSet<int>.Builder builder = ImmutableSortedSet.CreateBuilder<int>();
+            builder.Add(1);
+            builder.Add(5);
+            builder.Add(10);
+
+            var set = builder.ToImmutableSortedSet();
+            Assert.Equal(1, builder[0]);
+            Assert.Equal(5, builder[1]);
+            Assert.Equal(10, builder[2]);
+
+            builder.Remove(10);
+            Assert.False(builder.Contains(10));
+            Assert.True(set.Contains(10));
+
+            builder.Clear();
+            Assert.True(builder.ToImmutableSortedSet().IsEmpty);
+            Assert.False(set.IsEmpty);
+
+            ImmutableSortedSet<int>.Builder nullBuilder = null;
+            AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableSortedSet());
+        }
     }
 }

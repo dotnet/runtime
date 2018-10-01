@@ -157,6 +157,20 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Returns an immutable copy of the current contents of the builder's collection.
+        /// </summary>
+        /// <param name="builder">The builder to create the immutable set from.</param>
+        /// <returns>An immutable set.</returns>
+        [Pure]
+        public static ImmutableHashSet<TSource> ToImmutableHashSet<TSource>(this ImmutableHashSet<TSource>.Builder builder)
+        {
+            Requires.NotNull(builder, nameof(builder));
+
+            return builder.ToImmutable();
+        }
+
+
+        /// <summary>
         /// Enumerates a sequence exactly once and produces an immutable set of its contents.
         /// </summary>
         /// <typeparam name="TSource">The type of element in the sequence.</typeparam>

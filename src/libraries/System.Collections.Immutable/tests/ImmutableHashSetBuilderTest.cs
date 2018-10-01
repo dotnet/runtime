@@ -308,5 +308,30 @@ namespace System.Collections.Immutable.Tests
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableHashSet.CreateBuilder<int>());
         }
+
+        [Fact]
+        public void ToImmutableHashSet()
+        {
+            ImmutableHashSet<int>.Builder builder = ImmutableHashSet.CreateBuilder<int>();
+            builder.Add(1);
+            builder.Add(2);
+            builder.Add(3);
+
+            var set = builder.ToImmutableSortedSet();
+            Assert.True(builder.Contains(1));
+            Assert.True(builder.Contains(2));
+            Assert.True(builder.Contains(3));
+
+            builder.Remove(3);
+            Assert.False(builder.Contains(3));
+            Assert.True(set.Contains(3));
+
+            builder.Clear();
+            Assert.True(builder.ToImmutableHashSet().IsEmpty);
+            Assert.False(set.IsEmpty);
+
+            ImmutableHashSet<int>.Builder nullBuilder = null;
+            AssertExtensions.Throws<ArgumentNullException>("builder", () => nullBuilder.ToImmutableHashSet());
+        }
     }
 }
