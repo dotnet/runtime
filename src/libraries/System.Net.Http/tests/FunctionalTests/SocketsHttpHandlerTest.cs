@@ -558,6 +558,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Fact]
+        [ActiveIssue(30032)]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
             var releaseServer = new TaskCompletionSource<bool>();
