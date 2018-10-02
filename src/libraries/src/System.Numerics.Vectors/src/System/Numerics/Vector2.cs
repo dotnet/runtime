@@ -244,14 +244,14 @@ namespace System.Numerics
             // This compare order is very important!!!
             // We must follow HLSL behavior in the case user specified min value is bigger than max value.
             float x = value1.X;
-            x = (x > max.X) ? max.X : x;
-            x = (x < min.X) ? min.X : x;
+            x = (min.X > x) ? min.X : x;  // max(x, minx)
+            x = (max.X < x) ? max.X : x;  // min(x, maxx)
 
             float y = value1.Y;
-            y = (y > max.Y) ? max.Y : y;
-            y = (y < min.Y) ? min.Y : y;
+            y = (min.Y > y) ? min.Y : y;  // max(y, miny)
+            y = (max.Y < y) ? max.Y : y;  // min(y, maxy)
 
-            return new Vector2(x, y);
+            return new Vector2(x,y);
         }
 
         /// <summary>
