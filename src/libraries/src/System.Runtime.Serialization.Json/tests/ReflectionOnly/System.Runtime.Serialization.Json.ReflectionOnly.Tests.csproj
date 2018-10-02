@@ -3,6 +3,7 @@
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <ProjectGuid>{C99A835E-46F3-4C05-AD34-7DD84FB7466B}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />

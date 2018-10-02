@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{173F6978-B961-4D1C-84E4-06468772D019}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.CoreCLR.cs" />

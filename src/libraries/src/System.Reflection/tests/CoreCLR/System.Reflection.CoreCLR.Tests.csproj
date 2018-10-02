@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{C8049356-559D-4F34-AC17-56F3AE62C897}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyTests.CoreCLR.cs" />
