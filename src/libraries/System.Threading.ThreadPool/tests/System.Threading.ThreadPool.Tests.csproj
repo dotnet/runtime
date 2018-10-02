@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{403AD1B8-6F95-4A2E-92A2-727606ABD866}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ThreadPoolTests.cs" />
