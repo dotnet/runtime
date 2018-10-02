@@ -41,7 +41,8 @@ phases:
   queue: ${{ parameters.queue }}
 
   ${{ if ne(parameters.variables, '') }}:
-    variables: ${{ parameters.variables }}
+    variables: 
+      ${{ insert }}: ${{ parameters.variables }}
 
   steps:
   - checkout: self
