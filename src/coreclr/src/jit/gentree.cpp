@@ -2744,7 +2744,6 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
         GenTree* next = list->gtOp.gtOp2;
 
         unsigned level = 0;
-        unsigned ftreg = 0;
 
         // TODO: Do we have to compute costs differently for argument lists and
         // all other lists?
@@ -2754,7 +2753,6 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
 
         if (next != nullptr)
         {
-            ftreg |= next->gtRsvdRegs;
             if (isListCallArgs)
             {
                 if (level < nxtlvl)
@@ -2768,8 +2766,6 @@ unsigned Compiler::gtSetListOrder(GenTree* list, bool isListCallArgs, bool callA
 
         GenTree* op1 = list->gtOp.gtOp1;
         unsigned lvl = gtSetEvalOrder(op1);
-
-        list->gtRsvdRegs = (regMaskSmall)(ftreg | op1->gtRsvdRegs);
 
         // Swap the level counts
         if (list->gtFlags & GTF_REVERSE_OPS)
@@ -3090,12 +3086,8 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
  *  This function sets:
  *      1. gtCostEx to the execution complexity estimate
  *      2. gtCostSz to the code size estimate
- *      3. gtRsvdRegs to the set of fixed registers trashed by the tree
- *      4. gtFPlvl to the "floating point depth" value for node, i.e. the max. number
- *         of operands the tree will push on the x87 (coprocessor) stack. Also sets
- *         genFPstkLevel, tmpDoubleSpillMax, and possibly gtFPstLvlRedo.
- *      5. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
- *      6. DEBUG-only: clears GTF_DEBUG_NODE_MORPHED.
+ *      3. Sometimes sets GTF_ADDRMODE_NO_CSE on nodes in the tree.
+ *      4. DEBUG-only: clears GTF_DEBUG_NODE_MORPHED.
  */
 
 #ifdef _PREFAST_
@@ -3123,10 +3115,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
     /* Assume no fixed registers will be trashed */
 
-    regMaskTP ftreg = RBM_NONE; // Set of registers that will be used by the subtree
-    unsigned  level;
-    int       costEx;
-    int       costSz;
+    unsigned level;
+    int      costEx;
+    int      costSz;
 
 #ifdef DEBUG
     costEx = -1;
@@ -3384,7 +3375,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz = 1;
 
             level = gtSetEvalOrder(op1);
-            ftreg |= op1->gtRsvdRegs;
 
             /* Special handling for some operators */
 
@@ -4022,11 +4012,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                     // Encourage the first operand to be evaluated (into EAX/EDX) first */
                     lvlb -= 3;
-
-#ifdef _TARGET_XARCH_
-                    // the idiv and div instruction requires EAX/EDX
-                    ftreg |= RBM_EAX | RBM_EDX;
-#endif
                 }
                 break;
 
@@ -4057,9 +4042,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         /* We use imulEAX for TYP_LONG and overflow multiplications */
                         // Encourage the first operand to be evaluated (into EAX/EDX) first */
                         lvlb -= 4;
-
-                        // the imulEAX instruction ob x86 requires EDX:EAX
-                        ftreg |= (RBM_EAX | RBM_EDX);
 
                         /* The 64-bit imul instruction costs more */
                         costEx += 4;
@@ -4092,8 +4074,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 gtSetEvalOrder(op1);
                 level = gtSetEvalOrder(op2);
 
-                ftreg |= op1->gtRsvdRegs | op2->gtRsvdRegs;
-
                 /* GT_COMMA cost is the sum of op1 and op2 costs */
                 costEx = (op1->gtCostEx + op2->gtCostEx);
                 costSz = (op1->gtCostSz + op2->gtCostSz);
@@ -4114,7 +4094,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     level += 1;
                 }
 
-                ftreg |= op1->gtRsvdRegs | op2->gtRsvdRegs;
                 costEx = op1->gtCostEx + op2->gtCostEx;
                 costSz = op1->gtCostSz + op2->gtCostSz;
 
@@ -4161,13 +4140,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     DONE_OP1:
         assert(lvlb >= 0);
         lvl2 = gtSetEvalOrder(op2) + lvlb;
-        ftreg |= op1->gtRsvdRegs;
-        // For assignment, we execute op2 before op1, except that for block
-        // ops the destination address is evaluated first.
-        if ((oper != GT_ASG) || tree->OperIsBlkOp())
-        {
-            ftreg |= op2->gtRsvdRegs;
-        }
 
         costEx += (op1->gtCostEx + op2->gtCostEx);
         costSz += (op1->gtCostSz + op2->gtCostSz);
@@ -4252,9 +4224,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             if (varTypeIsFloating(op1->TypeGet()))
             {
-#ifdef _TARGET_XARCH_
-                ftreg |= RBM_EAX;
-#endif
                 level++;
                 lvl2++;
             }
@@ -4279,11 +4248,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 if (!op2->IsCnsIntOrI())
                 {
                     costEx += 3;
-                    if (REG_SHIFT != REG_NA)
-                    {
-                        ftreg |= RBM_SHIFT;
-                    }
-
 #ifndef _TARGET_64BIT_
                     // Variable sized LONG shifts require the use of a helper call
                     //
@@ -4293,7 +4257,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         lvl2 += 5;
                         costEx += 3 * IND_COST_EX;
                         costSz += 4;
-                        ftreg |= RBM_CALLEE_TRASH;
                     }
 #endif // !_TARGET_64BIT_
                 }
@@ -4499,7 +4462,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 costEx += thisVal->gtCostEx;
                 costSz += thisVal->gtCostSz + 1;
-                ftreg |= thisVal->gtRsvdRegs;
             }
 
             /* Evaluate the arguments, right to left */
@@ -4515,7 +4477,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 costEx += tree->gtCall.gtCallArgs->gtCostEx;
                 costSz += tree->gtCall.gtCallArgs->gtCostSz;
-                ftreg |= tree->gtCall.gtCallArgs->gtRsvdRegs;
             }
 
             /* Evaluate the temp register arguments list
@@ -4533,7 +4494,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 costEx += tree->gtCall.gtCallLateArgs->gtCostEx;
                 costSz += tree->gtCall.gtCallLateArgs->gtCostSz;
-                ftreg |= tree->gtCall.gtCallLateArgs->gtRsvdRegs;
             }
 
             if (tree->gtCall.gtCallType == CT_INDIRECT)
@@ -4551,7 +4511,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 costEx += indirect->gtCostEx + IND_COST_EX;
                 costSz += indirect->gtCostSz;
-                ftreg |= indirect->gtRsvdRegs;
             }
             else
             {
@@ -4586,27 +4545,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 costEx += 2 * IND_COST_EX;
                 costSz += 2;
-
-                /* Virtual stub calls also must reserve the VIRTUAL_STUB_PARAM reg */
-                if (tree->gtCall.IsVirtualStub())
-                {
-                    ftreg |= virtualStubParamInfo->GetRegMask();
-                }
             }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-#if defined(_TARGET_ARMARCH_)
-            if (tree->gtCall.IsR2RRelativeIndir())
-            {
-                ftreg |= RBM_R2R_INDIRECT_PARAM;
-            }
-#endif
-#endif
 
             level += 5;
             costEx += 3 * IND_COST_EX;
-            ftreg |= RBM_CALLEE_TRASH;
-
             break;
 
         case GT_ARR_ELEM:
@@ -4667,9 +4609,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
             costEx = MAX_COST; // Seriously, what could be more expensive than lock cmpxchg?
             costSz += 5;       // size of lock cmpxchg [reg+C], reg
-#ifdef _TARGET_XARCH_
-            ftreg |= RBM_EAX; // cmpxchg must be evaluated into eax.
-#endif
             break;
 
         case GT_ARR_BOUNDS_CHECK:
@@ -4783,8 +4722,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
     }
 
 DONE:
-
-    tree->gtRsvdRegs = (regMaskSmall)ftreg;
 
     // Some path through this function must have set the costs.
     assert(costEx != -1);
@@ -8321,42 +8258,6 @@ bool GenTree::gtRequestSetFlags()
     // this method returns true.
     //
     return result;
-}
-
-/*****************************************************************************/
-void GenTree::CopyTo(class Compiler* comp, const GenTree& gt)
-{
-    SetOperRaw(gt.OperGet());
-
-    gtType          = gt.gtType;
-    gtAssertionInfo = gt.gtAssertionInfo;
-
-    gtRegNum = gt.gtRegNum; // one union member.
-    CopyCosts(&gt);
-
-    gtFlags  = gt.gtFlags;
-    gtVNPair = gt.gtVNPair;
-
-    gtRsvdRegs = gt.gtRsvdRegs;
-
-    gtNext = gt.gtNext;
-    gtPrev = gt.gtPrev;
-#ifdef DEBUG
-    gtTreeID = gt.gtTreeID;
-    gtSeqNum = gt.gtSeqNum;
-#endif
-    // Largest node subtype:
-    void* remDst = reinterpret_cast<char*>(this) + sizeof(GenTree);
-    void* remSrc = reinterpret_cast<char*>(const_cast<GenTree*>(&gt)) + sizeof(GenTree);
-    memcpy(remDst, remSrc, TREE_NODE_SZ_LARGE - sizeof(GenTree));
-}
-
-void GenTree::CopyToSmall(const GenTree& gt)
-{
-    // Small node size is defined by GenTreeOp.
-    void* remDst = reinterpret_cast<char*>(this) + sizeof(GenTree);
-    void* remSrc = reinterpret_cast<char*>(const_cast<GenTree*>(&gt)) + sizeof(GenTree);
-    memcpy(remDst, remSrc, TREE_NODE_SZ_SMALL - sizeof(GenTree));
 }
 
 unsigned GenTree::NumChildren()
