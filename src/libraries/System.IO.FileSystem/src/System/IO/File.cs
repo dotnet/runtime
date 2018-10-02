@@ -642,12 +642,12 @@ namespace System.IO
 
         public static void Encrypt(string path)
         {
-            FileSystem.Encrypt(path);
+            FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
         }
 
         public static void Decrypt(string path)
         {
-            FileSystem.Decrypt(path);
+            FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
         }
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.

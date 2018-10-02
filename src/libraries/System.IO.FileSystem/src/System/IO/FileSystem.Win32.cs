@@ -17,9 +17,6 @@ namespace System.IO
     {
         public static void Encrypt(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             string fullPath = Path.GetFullPath(path);
 
             if (!Interop.Kernel32.EncryptFile(fullPath))
@@ -30,9 +27,6 @@ namespace System.IO
 
         public static void Decrypt(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             string fullPath = Path.GetFullPath(path);
 
             if (!Interop.Kernel32.DecryptFile(fullPath))
