@@ -294,7 +294,62 @@ namespace System.Numerics.Tests
 
         // A test for Clamp (Vector2f, Vector2f, Vector2f)
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Vector2ClampTest()
+        {
+            Vector2 a = new Vector2(0.5f, 0.3f);
+            Vector2 min = new Vector2(0.0f, 0.1f);
+            Vector2 max = new Vector2(1.0f, 1.1f);
+
+            // Normal case.
+            // Case N1: specified value is in the range.
+            Vector2 expected = new Vector2(0.5f, 0.3f);
+            Vector2 actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+            // Normal case.
+            // Case N2: specified value is bigger than max value.
+            a = new Vector2(2.0f, 3.0f);
+            expected = max;
+            actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+            // Case N3: specified value is smaller than max value.
+            a = new Vector2(-1.0f, -2.0f);
+            expected = min;
+            actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+            // Case N4: combination case.
+            a = new Vector2(-2.0f, 4.0f);
+            expected = new Vector2(min.X, max.Y);
+            actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+            // User specified min value is bigger than max value.
+            max = new Vector2(0.0f, 0.1f);
+            min = new Vector2(1.0f, 1.1f);
+
+            // Case W1: specified value is in the range.
+            a = new Vector2(0.5f, 0.3f);
+            expected = max;
+            actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+
+            // Normal case.
+            // Case W2: specified value is bigger than max and min value.
+            a = new Vector2(2.0f, 3.0f);
+            expected = max;
+            actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+
+            // Case W3: specified value is smaller than min and max value.
+            a = new Vector2(-1.0f, -2.0f);
+            expected = max;
+            actual = Vector2.Clamp(a, min, max);
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Clamp did not return the expected value.");
+        }
+
+        // A test for Clamp (Vector2f, Vector2f, Vector2f) for netfx only
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void Vector2ClampTestFX()
         {
             Vector2 a = new Vector2(0.5f, 0.3f);
             Vector2 min = new Vector2(0.0f, 0.1f);
