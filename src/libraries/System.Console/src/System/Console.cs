@@ -119,7 +119,7 @@ namespace System
                 StreamWriter.Null :
                 new StreamWriter(
                     stream: outputStream,
-                    encoding: new ConsoleEncoding(OutputEncoding), // This ensures no prefix is written to the stream.
+                    encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: DefaultConsoleBufferSize,
                     leaveOpen: true) { AutoFlush = true });
         }

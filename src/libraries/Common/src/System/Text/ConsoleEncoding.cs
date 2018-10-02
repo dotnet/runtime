@@ -4,6 +4,19 @@
 
 namespace System.Text
 {
+
+    internal static class EncodingExtensions
+    {
+        public static Encoding RemovePreamble(this Encoding encoding)
+        {
+            if (encoding.Preamble.Length == 0)
+            {
+                return encoding;
+            }
+            return new ConsoleEncoding(encoding);
+        }
+    }
+
     // StreamWriter calls Encoding.GetPreamble() to write the initial bits to the stream.
     // In case of Console we do not want to write the preamble as the user does not expect these bits.
     // In desktop this is handled by setting an internal property on the StreamWriter HasPreambleBeenWritten = true
