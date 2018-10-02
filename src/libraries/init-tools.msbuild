@@ -16,6 +16,9 @@
     <PackageReference Include="Microsoft.DotNet.BuildTools" Version="$(BuildToolsPackageVersion)" />
     <PackageReference Include="$(FeedTasksPackage)" Version="$(FeedTasksPackageVersion)" />
     <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetApiCompatPackage)" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetGenApiPackage)" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetGenFacadesPackage)" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />

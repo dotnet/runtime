@@ -59,6 +59,16 @@
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+
+    <!-- Set up ToolHostCmd for Arcade targets -->
+    <ToolHostCmd Condition="'$(ToolHostCmd)'==''">"$(ToolsDir)dotnetcli/dotnet"</ToolHostCmd>
+  </PropertyGroup>
+
+  <!-- Choose .targets files that come from Arcade rather than from buildtools -->
+  <PropertyGroup>
+    <ExcludeNotSupportedImport>true</ExcludeNotSupportedImport>
+    <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
+    <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
