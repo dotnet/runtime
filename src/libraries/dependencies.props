@@ -73,7 +73,7 @@
     <PublishSymbolsPackageVersion>1.0.0-beta-63112-02</PublishSymbolsPackageVersion>
   </PropertyGroup>
 
-  <Import Project="$(EngDir)Versions.props" />
+  <Import Project="$(MSBuildThisFileDirectory)eng\Versions.props" />
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
