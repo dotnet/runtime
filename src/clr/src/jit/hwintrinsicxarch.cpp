@@ -1348,6 +1348,17 @@ GenTree* Compiler::impAvxOrAvx2Intrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_AVX2_PermuteVar8x32:
+        {
+            baseType = getBaseTypeOfSIMDType(sig->retTypeSigClass);
+            // swap the two operands
+            GenTree* indexVector  = impSIMDPopStack(TYP_SIMD32);
+            GenTree* sourceVector = impSIMDPopStack(TYP_SIMD32);
+            retNode =
+                gtNewSimdHWIntrinsicNode(TYP_SIMD32, indexVector, sourceVector, NI_AVX2_PermuteVar8x32, baseType, 32);
+            break;
+        }
+
         case NI_AVX2_GatherMaskVector128:
         case NI_AVX2_GatherMaskVector256:
         {
