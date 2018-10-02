@@ -5315,8 +5315,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = (gpointer)mono_exception_from_token;
 				} else if (!strcmp (ji->data.name, "mono_throw_exception")) {
 					target = (gpointer)mono_get_throw_exception ();
-				} else if (!strcmp (ji->data.name, "mono_rethrow_exception")) {
-					target = (gpointer)mono_get_rethrow_exception ();
+				} else if (!strcmp (ji->data.name, "mono_rethrow_preserve_exception")) {
+					target = (gpointer)mono_get_rethrow_preserve_exception ();
 				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
 					MonoTrampolineType tramp_type2 = (MonoTrampolineType)atoi (ji->data.name + strlen ("trampoline_func_"));
 					target = (gpointer)mono_get_trampoline_func (tramp_type2);
@@ -5335,8 +5335,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
 				} else if (!strcmp (ji->data.name, "throw_exception_addr")) {
 					target = mono_get_throw_exception_addr ();
-				} else if (!strcmp (ji->data.name, "rethrow_exception_addr")) {
-					target = mono_get_rethrow_exception_addr ();
+				} else if (!strcmp (ji->data.name, "rethrow_preserve_exception_addr")) {
+					target = mono_get_rethrow_preserve_exception_addr ();
 				} else if (strstr (ji->data.name, "generic_trampoline_")) {
 					target = mono_aot_get_trampoline (ji->data.name);
 				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {

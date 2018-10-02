@@ -397,7 +397,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 void
-mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
+mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips);
 
 void
 mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);

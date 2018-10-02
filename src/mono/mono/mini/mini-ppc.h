@@ -384,7 +384,7 @@ void
 mono_ppc_patch (guchar *code, const guchar *target);
 
 void
-mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow);
+mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow, gboolean preserve_ips);
 
 #ifdef __mono_ppc64__
 #define MONO_PPC_32_64_CASE(c32,c64)	c64

@@ -330,7 +330,7 @@ mono_x86_get_this_arg_offset (MonoMethodSignature *sig);
 
 void
 mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
-						  mgreg_t eip, gboolean rethrow);
+						  mgreg_t eip, gboolean rethrow, gboolean preserve_ips);
 
 void
 mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index, 

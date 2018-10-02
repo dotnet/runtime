@@ -330,7 +330,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * We have an exception we want to throw in the caller's frame, so pop
 	 * the trampoline frame and throw from the caller. 
 	 */
-	S390_SET  (buf, s390_r1, (guint *)mono_get_rethrow_exception_addr ());
+	S390_SET  (buf, s390_r1, (guint *)mono_get_rethrow_preserve_exception_addr ());
 	s390_aghi (buf, STK_BASE, sizeof(trampStack_t));
 	s390_lg   (buf, s390_r1, 0, s390_r1, 0); 
 	s390_lmg  (buf, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);

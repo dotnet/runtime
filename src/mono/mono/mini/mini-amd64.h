@@ -501,7 +501,7 @@ mono_amd64_patch (unsigned char* code, gpointer target);
 void
 mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 							guint64 dummy5, guint64 dummy6,
-							MonoContext *mctx, MonoObject *exc, gboolean rethrow);
+							MonoContext *mctx, MonoObject *exc, gboolean rethrow, gboolean preserve_ips);
 
 void
 mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,

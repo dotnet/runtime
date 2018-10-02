@@ -258,7 +258,7 @@ guint8* mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, i
 
 void mono_arm_patch (guint8 *code, guint8 *target, int relocation);
 
-void mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow);
+void mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips);
 
 void mono_arm_gsharedvt_init (void);
 

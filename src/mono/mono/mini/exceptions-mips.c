@@ -177,7 +177,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 static void
-throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean rethrow)
+throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -203,6 +203,8 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} if (preserve_ips) {
+			mono_ex->catch_in_unmanaged = TRUE;
 		}
 	}
 	mono_error_assert_ok (error);
@@ -227,7 +229,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboolean rethrow)
+mono_arch_get_throw_exception_generic (guint8 *start, int size, int corlib, gboolean rethrow, gboolean preserve_ips)
 {
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -312,7 +314,31 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE);
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE, FALSE);
+	inited = 1;
+	return start;
+}
+
+/**
+ * mono_arch_get_rethrow_preserve_exception:
+ * \returns a function pointer which can be used to rethrow
+ * exceptions while avoiding modification of saved trace_ips.
+ * The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ */
+gpointer
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	static guint8 start [GENERIC_EXCEPTION_SIZE];
+	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
+	if (inited)
+		return start;
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, TRUE, TRUE);
 	inited = 1;
 	return start;
 }
@@ -341,7 +367,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, FALSE);
+	mono_arch_get_throw_exception_generic (start, sizeof (start), FALSE, FALSE, FALSE);
 	inited = 1;
 	return start;
 }
@@ -379,7 +405,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 
 	if (inited)
 		return start;
-	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE, FALSE);
+	mono_arch_get_throw_exception_generic (start, sizeof (start), TRUE, FALSE, FALSE);
 	inited = 1;
 	return start;
 }

@@ -27,7 +27,8 @@
 
 #define S390_THROWSTACK_ACCPRM		S390_MINIMAL_STACK_SIZE
 #define S390_THROWSTACK_FPCPRM		(S390_THROWSTACK_ACCPRM+sizeof(gpointer))
-#define S390_THROWSTACK_RETHROW		(S390_THROWSTACK_FPCPRM+sizeof(gulong))
+#define S390_THROWSTACK_PRESERVE_IPS (S390_THROWSTACK_FPCPRM+sizeof(gulong))
+#define S390_THROWSTACK_RETHROW		(S390_THROWSTACK_PRESERVE_IPS+sizeof(gboolean))
 #define S390_THROWSTACK_INTREGS		(S390_THROWSTACK_RETHROW+sizeof(gboolean))
 #define S390_THROWSTACK_FLTREGS		(S390_THROWSTACK_INTREGS+(16*sizeof(gulong)))
 #define S390_THROWSTACK_ACCREGS		(S390_THROWSTACK_FLTREGS+(16*sizeof(gdouble)))
@@ -72,7 +73,7 @@
 static void throw_exception (MonoObject *, unsigned long, unsigned long, 
 		 gulong *, gdouble *, gint32 *, guint, gboolean);
 static gpointer mono_arch_get_throw_exception_generic (int, MonoTrampInfo **, 
-				int, gboolean, gboolean);
+				int, gboolean, gboolean, gboolean);
 static void handle_signal_exception (gpointer);
 
 /*========================= End of Prototypes ======================*/
@@ -240,7 +241,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 static void
 throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp, 
 		 gulong *int_regs, gdouble *fp_regs, gint32 *acc_regs, 
-		 guint fpc, gboolean rethrow)
+		 guint fpc, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -269,6 +270,8 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->catch_in_unmanaged = TRUE
 		}
 	}
 	mono_error_assert_ok (error);
@@ -295,7 +298,7 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 
 static gpointer 
 mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, 
-				int corlib, gboolean rethrow, gboolean aot)
+				int corlib, gboolean rethrow, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *code, *start;
 	int alloc_size, pos, i;
@@ -358,6 +361,8 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	S390_SET  (code, s390_r1, (guint8 *)throw_exception);
 	s390_lghi (code, s390_r7, rethrow);
 	s390_stg  (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_RETHROW);
+	s390_lghi (code, s390_r7, preserve_ips);
+	s390_stg  (code, s390_r7, 0, STK_BASE, S390_THROWSTACK_PRESERVE_IPS);
 	s390_basr (code, s390_r14, s390_r1);
 	/* we should never reach this breakpoint */
 	s390_break (code);
@@ -369,6 +374,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 	if (info)
 		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" 
                                                       : (rethrow ? "rethrow_exception" 
+                                                      : (preserve_ips ? "rethrow_preserve_exception" 
                                                       : "throw_exception"), 
 						start, code - start, ji, unwind_ops);
 
@@ -396,7 +402,31 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = NULL;
 
-	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, FALSE, aot));
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, FALSE, aot, FALSE));
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- arch_get_rethrow_preserve_exception                    */
+/*                                                                  */
+/* Function	- Return a function pointer which can be used to       */
+/*                raise exceptions. This preserves the stored ips.  */
+/*                The returned function has the                     */
+/*                following signature:                              */
+/*                void (*func) (MonoException *exc);                */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer 
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, TRUE, aot, TRUE));
 }
 
 /*========================= End of Function ========================*/
@@ -419,7 +449,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = NULL;
 
-	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, TRUE, aot));
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, FALSE, TRUE, aot, FALSE));
 }
 
 /*========================= End of Function ========================*/
@@ -442,7 +472,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 	if (info)
 		*info = NULL;
 
-	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, TRUE, FALSE, aot));
+	return (mono_arch_get_throw_exception_generic (SZ_THROW, info, TRUE, FALSE, aot, FALSE));
 }	
 
 /*========================= End of Function ========================*/

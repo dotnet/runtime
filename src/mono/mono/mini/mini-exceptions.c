@@ -114,7 +114,7 @@ typedef struct
 #define TRACE_IP_ENTRY_SIZE (sizeof (ExceptionTraceIp) / sizeof (gpointer))
 
 static gpointer restore_context_func, call_filter_func;
-static gpointer throw_exception_func, rethrow_exception_func;
+static gpointer throw_exception_func, rethrow_exception_func, rethrow_preserve_exception_func;
 static gpointer throw_corlib_exception_func;
 
 static MonoFtnPtrEHCallback ftnptr_eh_callback;
@@ -216,6 +216,7 @@ mono_exceptions_init (void)
 		call_filter_func = mono_aot_get_trampoline ("call_filter");
 		throw_exception_func = mono_aot_get_trampoline ("throw_exception");
 		rethrow_exception_func = mono_aot_get_trampoline ("rethrow_exception");
+		rethrow_preserve_exception_func = mono_aot_get_trampoline ("rethrow_preserve_exception");
 	} else {
 		MonoTrampInfo *info;
 
@@ -226,6 +227,8 @@ mono_exceptions_init (void)
 		throw_exception_func = mono_arch_get_throw_exception (&info, FALSE);
 		mono_tramp_info_register (info, NULL);
 		rethrow_exception_func = mono_arch_get_rethrow_exception (&info, FALSE);
+		mono_tramp_info_register (info, NULL);
+		rethrow_preserve_exception_func = mono_arch_get_rethrow_preserve_exception (&info, FALSE);
 		mono_tramp_info_register (info, NULL);
 	}
 
@@ -266,6 +269,13 @@ mono_get_rethrow_exception (void)
 {
 	g_assert (rethrow_exception_func);
 	return rethrow_exception_func;
+}
+
+gpointer
+mono_get_rethrow_preserve_exception (void)
+{
+	g_assert (rethrow_preserve_exception_func);
+	return rethrow_preserve_exception_func;
 }
 
 gpointer
@@ -319,9 +329,9 @@ mono_get_throw_exception_addr (void)
 }
 
 gpointer
-mono_get_rethrow_exception_addr (void)
+mono_get_rethrow_preserve_exception_addr (void)
 {
-	return &rethrow_exception_func;
+	return &rethrow_preserve_exception_func;
 }
 
 static gboolean 
