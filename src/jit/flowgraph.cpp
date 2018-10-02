@@ -9496,11 +9496,8 @@ void Compiler::fgSimpleLowering()
                     }
                     else
                     {
-                        con             = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
-                        con->gtRsvdRegs = RBM_NONE;
-
-                        add             = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
-                        add->gtRsvdRegs = arr->gtRsvdRegs;
+                        con = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
+                        add = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
 
                         range.InsertAfter(arr, con, add);
                     }
