@@ -1234,6 +1234,39 @@ namespace System.Threading.Tasks.Tests
             SetSynchronizationContext(prevailingSyncCtx);
         }
 
+        [Fact]
+        public static void CancellationTokenRegistration_DisposeDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
+        {
+            var ctr0running = new ManualResetEventSlim();
+            var ctr2blocked = new ManualResetEventSlim();
+            var ctr2running = new ManualResetEventSlim();
+            var cts = new CancellationTokenSource();
+
+            CancellationTokenRegistration ctr0 = cts.Token.Register(() => ctr0running.Set());
+
+            bool ctr1Invoked = false;
+            CancellationTokenRegistration ctr1 = cts.Token.Register(() => ctr1Invoked = true);
+
+            CancellationTokenRegistration ctr2 = cts.Token.Register(() =>
+            {
+                ctr2running.Set();
+                ctr2blocked.Wait();
+            });
+
+            // Cancel.  This will trigger ctr2 to run, then ctr1, then ctr0.
+            Task.Run(() => cts.Cancel());
+            ctr2running.Wait(); // wait for ctr2 to start running
+
+            // Now that ctr2 is running, dispose ctr1. This should succeed
+            // and ctr1 should not run.
+            ctr1.Dispose();
+
+            // Allow ctr2 to continue.  ctr1 should not run.  ctr0 should, so wait for it.
+            ctr2blocked.Set();
+            ctr0running.Wait();
+            Assert.False(ctr1Invoked);
+        }
+
         #region Helper Classes and Methods
 
         private class TestingSynchronizationContext : SynchronizationContext
