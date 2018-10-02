@@ -2737,7 +2737,7 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	 * On macOS Mojave we are encountering a bug when changing mapping for main thread
 	 * stack pages. Stack overflow on main thread will kill the app.
 	 */
-	gboolean disable_stack_guard = pthread_main_np ();
+	gboolean disable_stack_guard = mono_threads_platform_is_main_thread ();
 #else
 	gboolean disable_stack_guard = FALSE;
 #endif

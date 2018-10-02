@@ -265,4 +265,9 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 	*staddr -= *stsize;
 }
 
+gboolean
+mono_threads_platform_is_main_thread (void)
+{
+	return pthread_main_np () == 1;
+}
 #endif
