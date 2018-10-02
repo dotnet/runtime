@@ -57,6 +57,7 @@
     <RestorePackagesPath Condition="'$(RestorePackagesPath)'==''">$(PackagesDir)</RestorePackagesPath>
     <NuGetPackageRoot Condition="'$(NuGetPackageRoot)'==''">$(PackagesDir)</NuGetPackageRoot>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
+    <EngDir Condition="'$(EngDir)'==''">$(ProjectDir)eng/</EngDir>
     <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
 
