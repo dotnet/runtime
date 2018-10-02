@@ -2493,11 +2493,14 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 case NI_AVX_Permute2x128:
                 case NI_AVX2_Blend:
                 case NI_AVX2_InsertVector128:
+                case NI_AVX2_MultipleSumAbsoluteDifferences:
                 case NI_AVX2_Permute2x128:
                 case NI_AVX2_Permute4x64:
                 case NI_AVX2_ShiftLeftLogical:
                 case NI_AVX2_ShiftRightArithmetic:
                 case NI_AVX2_ShiftRightLogical:
+                case NI_AVX2_ShuffleHigh:
+                case NI_AVX2_ShuffleLow:
                 {
                     assert(supportsSIMDScalarLoads == false);
 
@@ -3089,6 +3092,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_Permute2x128:
                         case NI_AVX_Shuffle:
                         case NI_AVX2_Blend:
+                        case NI_AVX2_MultipleSumAbsoluteDifferences:
                         case NI_AVX2_Permute2x128:
                         case NI_PCLMULQDQ_CarrylessMultiply:
                         {
