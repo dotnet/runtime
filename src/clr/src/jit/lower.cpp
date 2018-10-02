@@ -4368,7 +4368,6 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     {
         index->ClearContained();
     }
-    addrMode->gtRsvdRegs = addr->gtRsvdRegs;
     addrMode->gtFlags |= (addr->gtFlags & GTF_IND_FLAGS);
     addrMode->gtFlags &= ~GTF_ALL_EFFECT; // LEAs are side-effect-free.
 
