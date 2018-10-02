@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 
 // GitHub 20040: operand ordering bug with GT_INDEX_ADDR
 // Requires minopts/tier0 to repro
@@ -48,6 +49,7 @@ namespace GitHub_20040
             return currentBuffer;
         }
 
+        [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         public byte ReadByte()
         {
             int offset;
