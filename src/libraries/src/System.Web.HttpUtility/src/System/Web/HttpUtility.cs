@@ -59,7 +59,14 @@ namespace System.Web
                 string[] keys = AllKeys;
                 for (int i = 0; i < count; i++)
                 {
-                    sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(this[keys[i]]));
+                    string[] values = GetValues(keys[i]);
+                    if (values != null)
+                    {
+                        foreach (string value in values)
+                        {
+                            sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(value));
+                        }
+                    }
                 }
 
                 return sb.ToString(0, sb.Length - 1);
