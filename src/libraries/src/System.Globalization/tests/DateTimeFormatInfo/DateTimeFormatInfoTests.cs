@@ -171,16 +171,17 @@ namespace System.Globalization.Tests
             string pattern = "gg yyyy'\u5E74' MM'\u6708' dd'\u65E5'"; // "gg yyyy'年' MM'月' dd'日'"
             DateTime dt = new DateTime(1989, 01, 08); // Start of Heisei Era
 
+            string formattedDateWithGannen = "\u5E73\u6210 \u5143\u5E74 01\u6708 08\u65E5"; // 平成 元年 01月 08日
             string formattedDate = dt.ToString(pattern, jpnFormat);
-            // Fix in netfx hasn't rolled out yet: https://github.com/dotnet/corefx/issues/32450
-            if (!PlatformDetection.IsFullFramework)
-            {
-                Assert.True(formattedDate.IndexOf("\u5143" /* 元 */, StringComparison.Ordinal) >= 0,
-                    "Expected the first year of the era be formatted with 元");
-            }
 
             Assert.True(DateTime.TryParseExact(formattedDate, pattern, jpnFormat, DateTimeStyles.None, out DateTime parsedDate));
             Assert.Equal(dt, parsedDate);
+
+            // If the formatting with Gan-nen is supported, then parsing should succeed. otherwise parsing should fail.
+            Assert.True(formattedDate.IndexOf("\u5143" /* 元 */, StringComparison.Ordinal) >= 0 ==
+                        DateTime.TryParseExact(formattedDateWithGannen, pattern, jpnFormat, DateTimeStyles.None, out parsedDate),
+                        $"Parsing '{formattedDateWithGannen}' result should match if '{formattedDate}' has Gan-nen symbol"
+                        );
         }
     }
 }
