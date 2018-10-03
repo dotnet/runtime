@@ -21,7 +21,7 @@ jobs:
       make install
     displayName: 'Install new version of Mono into /tmp'
 
--job: macOS
+- job: macOS
   pool:
     vmImage: 'macOS-10.13'
 
