@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             ValueWebSocketReceiveResult r = await ws.ReceiveAsync(
                 (Memory<byte>)arraySegment,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
             return new WebSocketReceiveResult(r.Count, r.MessageType, r.EndOfMessage, ws.CloseStatus, ws.CloseStatusDescription);
         }
 

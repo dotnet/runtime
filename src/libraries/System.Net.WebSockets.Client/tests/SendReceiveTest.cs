@@ -161,7 +161,7 @@ namespace System.Net.WebSockets.Client.Tests
                             cts.Token);
                     }
 
-                    Task.WaitAll(tasks);
+                    await Task.WhenAll(tasks);
 
                     Assert.Equal(WebSocketState.Open, cws.State);
                 }
@@ -225,41 +225,38 @@ namespace System.Net.WebSockets.Client.Tests
                         tasks[i] = ReceiveAsync(cws, recvSegment, cts.Token);
                     }
 
-                    Task.WaitAll(tasks);
+                    await Task.WhenAll(tasks);
                     Assert.Equal(WebSocketState.Open, cws.State);
                 }
-                catch (AggregateException ag)
+                catch (Exception ex)
                 {
-                    foreach (var ex in ag.InnerExceptions)
+                    if (ex is InvalidOperationException)
                     {
-                        if (ex is InvalidOperationException)
-                        {
-                            Assert.Equal(
-                                ResourceHelper.GetExceptionMessage(
-                                    "net_Websockets_AlreadyOneOutstandingOperation",
-                                    "ReceiveAsync"),
-                                ex.Message);
+                        Assert.Equal(
+                            ResourceHelper.GetExceptionMessage(
+                                "net_Websockets_AlreadyOneOutstandingOperation",
+                                "ReceiveAsync"),
+                            ex.Message);
 
-                            Assert.Equal(WebSocketState.Aborted, cws.State);
-                        }
-                        else if (ex is WebSocketException)
-                        {
-                            // Multiple cases.
-                            Assert.Equal(WebSocketState.Aborted, cws.State);
+                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                    }
+                    else if (ex is WebSocketException)
+                    {
+                        // Multiple cases.
+                        Assert.Equal(WebSocketState.Aborted, cws.State);
 
-                            WebSocketError errCode = (ex as WebSocketException).WebSocketErrorCode;
-                            Assert.True(
-                                (errCode == WebSocketError.InvalidState) || (errCode == WebSocketError.Success),
-                                "WebSocketErrorCode");
-                        }
-                        else if (ex is OperationCanceledException)
-                        {
-                            Assert.Equal(WebSocketState.Aborted, cws.State);
-                        }
-                        else
-                        {
-                            Assert.True(false, "Unexpected exception: " + ex.Message);
-                        }
+                        WebSocketError errCode = (ex as WebSocketException).WebSocketErrorCode;
+                        Assert.True(
+                            (errCode == WebSocketError.InvalidState) || (errCode == WebSocketError.Success),
+                            "WebSocketErrorCode");
+                    }
+                    else if (ex is OperationCanceledException)
+                    {
+                        Assert.Equal(WebSocketState.Aborted, cws.State);
+                    }
+                    else
+                    {
+                        Assert.True(false, "Unexpected exception: " + ex.Message);
                     }
                 }
             }
@@ -381,7 +378,7 @@ namespace System.Net.WebSockets.Client.Tests
 
             Func<ClientWebSocket, LoopbackServer, Uri, Task> connectToServerThatAbortsConnection = async (clientSocket, server, url) =>
             {
-                AutoResetEvent pendingReceiveAsyncPosted =  new AutoResetEvent(false);
+                var pendingReceiveAsyncPosted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // Start listening for incoming connections on the server side.
                 Task acceptTask = server.AcceptConnectionAsync(async connection =>
@@ -390,7 +387,7 @@ namespace System.Net.WebSockets.Client.Tests
                     Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
 
                     // Wait for client-side ConnectAsync to complete and for a pending ReceiveAsync to be posted.
-                    pendingReceiveAsyncPosted.WaitOne(TimeOutMilliseconds);
+                    await pendingReceiveAsyncPosted.Task.TimeoutAfter(TimeOutMilliseconds);
 
                     // Close the underlying connection prematurely (without sending a WebSocket Close frame).
                     connection.Socket.Shutdown(SocketShutdown.Both);
@@ -405,10 +402,10 @@ namespace System.Net.WebSockets.Client.Tests
                 var recvBuffer = new byte[100];
                 var recvSegment = new ArraySegment<byte>(recvBuffer);
                 Task pendingReceiveAsync = ReceiveAsync(clientSocket, recvSegment, cts.Token);
-                pendingReceiveAsyncPosted.Set();
+                pendingReceiveAsyncPosted.SetResult(true);
 
                 // Wait for the server to close the underlying connection.
-                acceptTask.Wait(cts.Token);
+                await acceptTask.WithCancellation(cts.Token);
 
                 WebSocketException pendingReceiveException = await Assert.ThrowsAsync<WebSocketException>(() => pendingReceiveAsync);
 
