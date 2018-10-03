@@ -91,6 +91,7 @@ namespace Mono.Linker {
 				var custom_steps = new List<string> ();
 				var excluded_features = new HashSet<string> ();
 				bool dumpDependencies = false;
+				bool ignoreDescriptors = false;
 
 				bool resolver = false;
 				while (HaveMoreTokens ()) {
@@ -106,53 +107,58 @@ namespace Mono.Linker {
 						if (token.Length < 3)
 							Usage ("Option is too short");
 
-						if (token == "--skip-unresolved") {
+						switch (token) {
+						case "--skip-unresolved":
 							bool ignoreUnresolved = bool.Parse (GetParam ());
 							context.IgnoreUnresolved = ignoreUnresolved;
 							context.Resolver.IgnoreUnresolved = ignoreUnresolved;
 							continue;
-						}
-
-						if (token == "--verbose") {
+						
+						case "--verbose":
 							context.LogMessages = true;
 							continue;
-						}
 
-						if (token == "--dependencies-file") {
+						case "--dependencies-file":
 							context.Tracer.DependenciesFileName = GetParam ();
 							continue;
-						}
 
-						if (token == "--dump-dependencies") {
+						case "--dump-dependencies":
 							dumpDependencies = true;
 							continue;
-						}
 
-						if (token == "--reduced-tracing") {
+						case "--reduced-tracing":
 							context.EnableReducedTracing = bool.Parse (GetParam ());
 							continue;
-						}
 
-						if (token == "--used-attrs-only") {
+						case "--used-attrs-only":
 							context.KeepUsedAttributeTypesOnly = bool.Parse (GetParam ());
 							continue;
-						}
 
-						if (token == "--strip-security") {
+						case "--strip-security":
 							if (bool.Parse (GetParam ()))
 								p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
 							continue;
-						}
 
-						if (token == "--strip-resources") {
+						case "--strip-resources":
 							context.StripResources = bool.Parse (GetParam ());
 							continue;
-						}
 
-						if (token == "--exclude-feature") {
+						case "--exclude-feature":
 							var name = GetParam ();
 							if (!excluded_features.Contains (name))
 								excluded_features.Add (name);
+							continue;
+
+						case "--custom-step":
+							custom_steps.Add (GetParam ());
+							continue;
+
+						case "--keep-facades":
+							context.KeepTypeForwarderOnlyAssemblies = bool.Parse (GetParam ());
+							continue;
+
+						case "--ignore-descriptors":
+							ignoreDescriptors = bool.Parse (GetParam ());
 							continue;
 						}
 
@@ -186,9 +192,6 @@ namespace Mono.Linker {
 					case 'p':
 						AssemblyAction action = ParseAssemblyAction (GetParam ());
 						context.Actions [GetParam ()] = action;
-						break;
-					case 's':
-						custom_steps.Add (GetParam ());
 						break;
 					case 't':
 						context.KeepTypeForwarderOnlyAssemblies = true;
@@ -226,8 +229,7 @@ namespace Mono.Linker {
 							p.RemoveStep (typeof (RegenerateGuidStep));
 						break;
 					case 'z':
-						if (!bool.Parse (GetParam ()))
-							p.RemoveStep (typeof (BlacklistStep));
+						ignoreDescriptors = !bool.Parse (GetParam ());
 						break;
 					case 'v':
 						context.KeepMembersForDebugger = bool.Parse (GetParam ());
@@ -241,6 +243,9 @@ namespace Mono.Linker {
 				if (!resolver)
 					Usage ("No resolver was created (use -x, -a or -i)");
 
+				if (ignoreDescriptors)
+					p.RemoveStep (typeof (BlacklistStep));
+					
 				if (dumpDependencies)
 					context.Tracer.Start ();
 
@@ -364,6 +369,7 @@ namespace Mono.Linker {
 			context.CoreAction = AssemblyAction.Skip;
 			context.UserAction = AssemblyAction.Link;
 			context.OutputDirectory = "output";
+			context.StripResources = true;
 			return context;
 		}
 
@@ -373,40 +379,57 @@ namespace Mono.Linker {
 			if (msg != null)
 				Console.WriteLine ("Error: " + msg);
 #if FEATURE_ILLINK
-			Console.WriteLine ("illink [options] -x|-a|-i file");
+			Console.WriteLine ("illink [options] -a|-i|-r|-x file");
 #else
-			Console.WriteLine ("monolinker [options] -x|-a|-i file");
+			Console.WriteLine ("monolinker [options] -a|-i|-r|-x file");
 #endif
 
-			Console.WriteLine ("   --about             About the {0}", _linker);
-			Console.WriteLine ("   --version           Print the version number of the {0}", _linker);
-			Console.WriteLine ("   --skip-unresolved   Ignore unresolved types, methods, and assemblies (true or false)");
-			Console.WriteLine ("   --verbose           Log messages indicating progress and warnings");
-			Console.WriteLine ("   --dependencies-file Specify the dependencies file path, if unset the default path is used: <output directory>/linker-dependencies.xml.gz");
-			Console.WriteLine ("   --dump-dependencies Dump dependencies for the linker analyzer tool");
-			Console.WriteLine ("   --reduced-tracing   Reduces dependency output related to assemblies that will not be modified");
-			Console.WriteLine ("   --used-attrs-only   Attributes on types, methods, etc will be removed if the attribute type is not used");
-			Console.WriteLine ("   --strip-security    In linked assemblies, attributes on assemblies, types, and methods related to security will be removed");
-			Console.WriteLine ("   --strip-resources   Remove link xml resources that were processed (true or false), default to true");
-			Console.WriteLine ("   --exclude-feature   Any code which has feature-name dependency will be removed");
-			Console.WriteLine ("   -out                Specify the output directory, default to `output'");
-			Console.WriteLine ("   -c                  Action on the core assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to skip");
-			Console.WriteLine ("   -u                  Action on the user assemblies, skip, copy, copyused, addbypassngen, addbypassngenused or link, default to link");
-			Console.WriteLine ("   -p                  Action per assembly");
-			Console.WriteLine ("   -s                  Add a new step to the pipeline.");
-			Console.WriteLine ("   -t                  Keep assemblies in which only type forwarders are referenced.");
-			Console.WriteLine ("   -d                  Add a directory where the linker will look for assemblies");
-			Console.WriteLine ("   -b                  Generate debug symbols for each linked module (true or false)");
-			Console.WriteLine ("   -g                  Generate a new unique guid for each linked module (true or false)");
-			Console.WriteLine ("   -v                  Keep members needed by debugger (true or false)");
-			Console.WriteLine ("   -l                  List of i18n assemblies to copy to the output directory");
-			Console.WriteLine ("                         separated with a comma: none,all,cjk,mideast,other,rare,west");
-			Console.WriteLine ("                         default is all");
-			Console.WriteLine ("   -x                  Link from an XML descriptor");
-			Console.WriteLine ("   -a                  Link from a list of assemblies");
-			Console.WriteLine ("   -r                  Link from a list of assemblies using roots visible outside of the assembly");
-			Console.WriteLine ("   -i                  Link from an mono-api-info descriptor");
-			Console.WriteLine ("   -z                  Include default preservations (true or false), default to true");
+			Console.WriteLine ("  -a                  Link from a list of assemblies");
+			Console.WriteLine ("  -i                  Link from an mono-api-info descriptor");
+			Console.WriteLine ("  -r                  Link from a list of assemblies using roots visible outside of the assembly");
+			Console.WriteLine ("  -x                  Link from XML descriptor");
+			Console.WriteLine ("  -d <path>           Specify additional directories to search in for references");
+			Console.WriteLine ("  -b                  Update debug symbols for each linked module. Defaults to false");
+			Console.WriteLine ("  -v                  Keep members and types used by debugger. Defaults to false");
+			Console.WriteLine ("  -l <name>,<name>    List of i18n assemblies to copy to the output directory. Defaults to 'all'");
+			Console.WriteLine ("                        Valid names are 'none', 'all', 'cjk', 'mideast', 'other', 'rare', 'west'");
+			Console.WriteLine ("  --about             About the {0}", _linker);
+			Console.WriteLine ("  --verbose           Log messages indicating progress and warnings");
+			Console.WriteLine ("  --version           Print the version number of the {0}", _linker);
+			Console.WriteLine ("  --skip-unresolved   Ignore unresolved types, methods, and assemblies. Defaults to false");
+			Console.WriteLine ("  -out <path>         Specify the output directory. Defaults to 'output'");
+
+			Console.WriteLine ();
+			Console.WriteLine ("Actions");
+			Console.WriteLine ("  -c <action>         Action on the core assemblies. Defaults to 'skip'");
+			Console.WriteLine ("                        copy: Copy the files into the output directory");
+			Console.WriteLine ("                        copyused: Copy the files only when anything from the assembly is used");
+			Console.WriteLine ("                        link: Link the assembly");
+			Console.WriteLine ("                        skip: Do not process the assembly");
+			Console.WriteLine ("                        addbypassngen: Add BypassNGenAttribute to unused methods");
+			Console.WriteLine ("                        addbypassngenused: Same as addbypassngen but unused assemblies are removed");
+			Console.WriteLine ("  -u <action>         Action on the user assemblies. Defaults to 'link'");
+			Console.WriteLine ("  -p <action> <name>  Overrides the default action for an assembly");
+
+			Console.WriteLine ();
+			Console.WriteLine ("Advanced");
+			Console.WriteLine ("  --custom-step <name>      Add a custom step to the pipeline");
+			Console.WriteLine ("  --exclude-feature <name>  Any code which has a feature <name> in linked assemblies will be removed");
+			Console.WriteLine ("                              com: Support for COM Interop");
+			Console.WriteLine ("                              remoting: .NET Remoting dependencies");
+			Console.WriteLine ("                              sre: System.Reflection.Emit namespace");
+			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
+			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
+			Console.WriteLine ("  --new-mvid                Generate a new guid for each linked assembly (short -g). Defaults to true");
+			Console.WriteLine ("  --strip-resources         Remove XML descriptor resources for linked assemblies. Defaults to true");
+			Console.WriteLine ("  --strip-security          Remove metadata and code related to Code Access Security. Defaults to true");
+			Console.WriteLine ("  --used-attrs-only         Any attribute is removed if the attribute type is not used. Defaults to false");
+
+			Console.WriteLine ();
+			Console.WriteLine ("Analyzer");
+			Console.WriteLine ("  --dependencies-file <path> Specify the dependencies output. Defaults to 'output/linker-dependencies.xml.gz'");
+			Console.WriteLine ("  --dump-dependencies        Dump dependencies for the linker analyzer tool");
+			Console.WriteLine ("  --reduced-tracing          Reduces dependency output related to assemblies that will not be modified");
 			Console.WriteLine ("");
 
 			Environment.Exit (1);
