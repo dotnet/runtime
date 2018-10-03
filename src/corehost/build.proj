@@ -26,8 +26,8 @@
       <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) --stripsymbols</BuildArgs>   
     </PropertyGroup>
 
-    <RemoveDir Directories="$(CMakeBuildDir)" Condition="Exists('$(CMakeBuildDir)')" />
-    <MakeDir Directories="$(CMakeBuildDir)" />
+    <RemoveDir Directories="$(CMakeBuildDir)" Condition="Exists('$(CMakeBuildDir)') And '$(IncrementalNativeBuild)' != 'true'" />
+    <MakeDir Directories="$(CMakeBuildDir)" Condition="!(Exists('$(CMakeBuildDir)'))" />
 
     <Message Text="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" Importance="High"/>
     <Exec Command="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)"
