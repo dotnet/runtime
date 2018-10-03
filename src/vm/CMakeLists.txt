@@ -111,6 +111,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     threadpoolrequest.cpp
     threads.cpp
     threadstatics.cpp
+    tieredcompilation.cpp
     typectxt.cpp
     typedesc.cpp
     typehandle.cpp
@@ -381,7 +382,6 @@ set(VM_SOURCES_WKS
     synch.cpp
     synchronizationcontextnative.cpp
     testhookmgr.cpp
-    tieredcompilation.cpp
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp

@@ -644,6 +644,7 @@ typedef enum CorMethodImpl
     miNoInlining         =   0x0008,   // Method may not be inlined.
     miAggressiveInlining =   0x0100,   // Method should be inlined if possible.
     miNoOptimization     =   0x0040,   // Method may not be optimized.
+    miAggressiveOptimization = 0x0200, // Method may contain hot code and should be aggressively optimized.
 
     // These are the flags that are allowed in MethodImplAttribute's Value
     // property. This should include everything above except the code impl
@@ -651,7 +652,7 @@ typedef enum CorMethodImpl
     miUserMask           =   miManagedMask | miForwardRef | miPreserveSig |
                              miInternalCall | miSynchronized |
                              miNoInlining | miAggressiveInlining |
-                             miNoOptimization,
+                             miNoOptimization | miAggressiveOptimization,
 
     miMaxMethodImplVal   =   0xffff,   // Range check value
 } CorMethodImpl;
@@ -674,6 +675,7 @@ typedef enum CorMethodImpl
 #define IsMiNoInlining(x)                   ((x) & miNoInlining)
 #define IsMiAggressiveInlining(x)           ((x) & miAggressiveInlining)
 #define IsMiNoOptimization(x)               ((x) & miNoOptimization)
+#define IsMiAggressiveOptimization(x)       (((x) & (miAggressiveOptimization | miNoOptimization)) == miAggressiveOptimization)
 
 // PinvokeMap attr bits, used by DefinePinvokeMap.
 typedef enum  CorPinvokeMap
