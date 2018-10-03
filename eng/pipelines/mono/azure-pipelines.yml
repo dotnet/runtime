@@ -4,8 +4,8 @@
 # https://aka.ms/yaml
 
 pool:
-  vmImage: 'Ubuntu 16.04'
+  vmImage: 'macOS'
 
 steps:
-- script: CI_TAGS=linux-amd64,all-profiles,apidiff,csprojdiff,bclsizediff,retry-flaky-tests,pull-request scripts/ci/run-jenkins.sh
-  displayName: 'Run a one-line script'
+- script: CI_TAGS=osx-amd64 scripts/ci/run-jenkins.sh
+  displayName: 'Build + Test'
