@@ -105,10 +105,12 @@ typedef ptrdiff_t ssize_t;
 #define MONO_COLD
 #endif
 
-#ifdef __GNUC__
+#if defined (__clang__)
+#define MONO_NO_OPTIMIZATION __attribute__ ((optnone))
+#elif __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
 #define MONO_NO_OPTIMIZATION __attribute__ ((optimize("O0")))
 #else
-#define MONO_NO_OPTIMIZATION
+#define MONO_NO_OPTIMIZATION /* nothing */
 #endif
 
 #if defined (__GNUC__) && defined (__GNUC_MINOR__) && defined (__GNUC_PATCHLEVEL__)
@@ -201,4 +203,3 @@ ssize_t sendfile (int out_fd, int in_fd, __mono_off32_t* offset, size_t count);
 #endif /* HOST_ANDROID && ANDROID_UNIFIED_HEADERS */
 
 #endif /* __UTILS_MONO_COMPILER_H__*/
-
