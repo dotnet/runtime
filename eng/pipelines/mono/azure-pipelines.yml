@@ -7,10 +7,5 @@ pool:
   vmImage: 'Ubuntu 16.04'
 
 steps:
-- script: echo Hello, world!
+- script: CI_TAGS=linux-amd64,all-profiles,apidiff,csprojdiff,bclsizediff,retry-flaky-tests,pull-request scripts/ci/run-jenkins.sh
   displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
