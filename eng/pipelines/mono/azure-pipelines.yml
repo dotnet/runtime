@@ -7,5 +7,24 @@ pool:
   vmImage: 'macOS'
 
 steps:
+
 - script: CI_TAGS=osx-amd64 scripts/ci/run-jenkins.sh
   displayName: 'Build + Test'
+
+- script: |
+    ./autogen.sh --prefix=/tmp/test-install
+  displayName: 'Autogen + Configure'
+
+- script: |
+    make
+  displayName: 'Build Mono'
+
+- script: |
+    make install
+  displayName: 'Install new version of Mono into /tmp'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+    
+  displayName: 'Run a multi-line script'
