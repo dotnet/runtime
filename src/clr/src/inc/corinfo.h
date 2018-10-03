@@ -824,7 +824,7 @@ enum CorInfoFlag
     CORINFO_FLG_NOGCCHECK             = 0x00200000, // This method is FCALL that has no GC check.  Don't put alone in loops
     CORINFO_FLG_INTRINSIC             = 0x00400000, // This method MAY have an intrinsic ID
     CORINFO_FLG_CONSTRUCTOR           = 0x00800000, // This method is an instance or type initializer
-//  CORINFO_FLG_UNUSED                = 0x01000000,
+    CORINFO_FLG_AGGRESSIVE_OPT        = 0x01000000, // The method may contain hot code and should be aggressively optimized if possible
 //  CORINFO_FLG_UNUSED                = 0x02000000,
     CORINFO_FLG_NOSECURITYWRAP        = 0x04000000, // The method requires no security checks
     CORINFO_FLG_DONT_INLINE           = 0x10000000, // The method should not be inlined

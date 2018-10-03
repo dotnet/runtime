@@ -435,6 +435,15 @@ void ZapInfo::CompileMethod()
     // this they can add the hint and reduce the perf cost at runtime.
     m_pImage->m_pPreloader->PrePrepareMethodIfNecessary(m_currentMethodHandle);
 
+    DWORD methodAttribs = getMethodAttribs(m_currentMethodHandle);
+    if (methodAttribs & CORINFO_FLG_AGGRESSIVE_OPT)
+    {
+        // Skip methods marked with MethodImplOptions.AggressiveOptimization, they will be jitted instead. In the future,
+        // consider letting the JIT determine whether aggressively optimized code can/should be pregenerated for the method
+        // instead of this check.
+        return;
+    }
+
     m_jitFlags = ComputeJitFlags(m_currentMethodHandle);
 
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -443,7 +452,6 @@ void ZapInfo::CompileMethod()
         // READYTORUN: FUTURE: Producedure spliting
         m_jitFlags.Clear(CORJIT_FLAGS::CORJIT_FLAG_PROCSPLIT);
 
-        DWORD methodAttribs = getMethodAttribs(m_currentMethodHandle);
         if (!(methodAttribs & CORINFO_FLG_NOSECURITYWRAP) || (methodAttribs & CORINFO_FLG_SECURITYCHECK))
         {
             m_zapper->Warning(W("ReadyToRun: Methods with security checks not supported\n"));

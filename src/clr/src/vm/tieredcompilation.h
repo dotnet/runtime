@@ -10,13 +10,13 @@
 #ifndef TIERED_COMPILATION_H
 #define TIERED_COMPILATION_H
 
-#ifdef FEATURE_TIERED_COMPILATION
-
 // TieredCompilationManager determines which methods should be recompiled and
 // how they should be recompiled to best optimize the running code. It then
 // handles logistics of getting new code created and installed.
 class TieredCompilationManager
 {
+#ifdef FEATURE_TIERED_COMPILATION
+
 public:
 #if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
     TieredCompilationManager() {}
@@ -26,7 +26,15 @@ public:
 
     void Init(ADID appDomainId);
 
+#endif // FEATURE_TIERED_COMPILATION
+
 public:
+    static NativeCodeVersion::OptimizationTier GetInitialOptimizationTier(PTR_MethodDesc pMethodDesc);
+
+#ifdef FEATURE_TIERED_COMPILATION
+
+public:
+    static bool RequiresCallCounting(MethodDesc* pMethodDesc);
     void OnMethodCalled(MethodDesc* pMethodDesc, DWORD currentCallCount, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToTier1Ref);
     void OnMethodCallCountingStoppedWithoutTier1Promotion(MethodDesc* pMethodDesc);
     void AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc);
@@ -68,8 +76,8 @@ private:
     bool m_tier1CallCountingCandidateMethodRecentlyRecorded;
 
     CLREvent m_asyncWorkDoneEvent;
-};
 
 #endif // FEATURE_TIERED_COMPILATION
+};
 
 #endif // TIERED_COMPILATION_H
