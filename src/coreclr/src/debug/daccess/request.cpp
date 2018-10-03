@@ -3838,7 +3838,7 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     Dereference(g_gcDacGlobals->finalize_queue).EnumMem();
 
     // Enumerate the entire generation table, which has variable size
-    size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 1);
+    size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
     DacEnumMemoryRegion(dac_cast<TADDR>(g_gcDacGlobals->generation_table), gen_table_size);
 
     if (g_gcDacGlobals->generation_table.IsValid())
