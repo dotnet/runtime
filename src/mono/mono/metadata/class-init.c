@@ -2698,6 +2698,8 @@ print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 		if (cm) {
 			printf ("  slot assigned: %03d, slot index: %03d %s\n", i, cm->slot,
 				mono_method_full_name (cm, TRUE));
+		} else {
+			printf ("  slot assigned: %03d, <null>\n", i);
 		}
 	}
 
@@ -3202,6 +3204,10 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				mono_class_set_type_load_failure (klass, "Type %s has invalid vtable method slot %d with method %s", type_name, i, method_name);
 				g_free (type_name);
 				g_free (method_name);
+
+				if (mono_print_vtable)
+					print_vtable_layout_result (klass, vtable, cur_slot);
+
 				g_free (vtable);
 				return;
 			}
