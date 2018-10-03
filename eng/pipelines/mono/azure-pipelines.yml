@@ -4,7 +4,7 @@
 # https://aka.ms/yaml
 
 pool:
-  vmImage: 'Ubuntu 16.04'
+  vmImage: 'Hosted macOS'
 
 steps:
 
@@ -19,9 +19,3 @@ steps:
 - script: |
     make install
   displayName: 'Install new version of Mono into /tmp'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-    
-  displayName: 'Run a multi-line script'
