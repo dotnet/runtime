@@ -1261,8 +1261,9 @@ namespace System.Data.SqlClient
                 Debug.Assert(bytesToRead > 0, "0 byte read in TryReadByteArray");
                 if (!buff.IsEmpty)
                 {
-                    ReadOnlySpan<byte> inBuffSpan = new ReadOnlySpan<byte>(_inBuff, _inBytesUsed, bytesToRead);
-                    inBuffSpan.CopyTo(buff);
+                    var copyFrom = new ReadOnlySpan<byte>(_inBuff, _inBytesUsed, bytesToRead);
+                    var copyTo = buff.Slice(totalRead, bytesToRead);
+                    copyFrom.CopyTo(copyTo);
                 }
 
                 totalRead += bytesToRead;
