@@ -12,8 +12,8 @@
   </PropertyGroup>
   <!-- Package versions -->
   <PropertyGroup>
-  	<MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetApiCompatPackageVersion>
-  	<MicrosoftDotNetGenApiPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenApiPackageVersion>
-  	<MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetGenApiPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenApiPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenFacadesPackageVersion>
   </PropertyGroup>
 </Project>
