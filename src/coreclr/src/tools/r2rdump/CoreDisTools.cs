@@ -143,6 +143,7 @@ namespace R2RDump
                     break;
 
                 case Machine.I386:
+                    ProbeX86Quirks(rtf, imageOffset, rtfOffset, instrSize, ref instruction);
                     break;
 
                 case Machine.ArmThumb2:
@@ -156,6 +157,7 @@ namespace R2RDump
                     throw new NotImplementedException();
             }
 
+            instruction = instruction.Replace("\n", Environment.NewLine);
             return instrSize;
         }
 
@@ -170,6 +172,102 @@ namespace R2RDump
         /// <param name="instrSize">Instruction size</param>
         /// <param name="instruction">Textual representation of the instruction</param>
         private void ProbeX64Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
+        {
+            int leftBracket;
+            int rightBracketPlusOne;
+            int displacement;
+            if (TryParseRipRelative(instruction, out leftBracket, out rightBracketPlusOne, out displacement))
+            {
+                int target = rtf.StartAddress + rtfOffset + instrSize + displacement;
+                int newline = instruction.LastIndexOf('\n');
+                StringBuilder translated = new StringBuilder();
+                translated.Append(instruction, 0, leftBracket);
+                translated.AppendFormat("[0x{0:x4}]", target);
+
+                AppendImportCellName(translated, target);
+
+                translated.Append(instruction, rightBracketPlusOne, newline - rightBracketPlusOne);
+
+                translated.Append(instruction, newline, instruction.Length - newline);
+                instruction = translated.ToString();
+            }
+            else
+            {
+                ProbeCommonIntelQuirks(rtf, imageOffset, rtfOffset, instrSize, ref instruction);
+            }
+        }
+
+        /// <summary>
+        /// X86 disassembler has a bug in decoding absolute indirections, mistaking them for RIP-relative indirections
+        /// </summary>
+        /// <param name="rtf">Runtime function</param>
+        /// <param name="imageOffset">Offset within the image byte array</param>
+        /// <param name="rtfOffset">Offset within the runtime function</param>
+        /// <param name="instrSize">Instruction size</param>
+        /// <param name="instruction">Textual representation of the instruction</param>
+        private void ProbeX86Quirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
+        {
+            int leftBracket;
+            int rightBracketPlusOne;
+            int absoluteAddress;
+            if (TryParseRipRelative(instruction, out leftBracket, out rightBracketPlusOne, out absoluteAddress))
+            {
+                int target = absoluteAddress - (int)_reader.PEReader.PEHeaders.PEHeader.ImageBase;
+
+                StringBuilder translated = new StringBuilder();
+                translated.Append(instruction, 0, leftBracket);
+                translated.AppendFormat("[0x{0:x4}]", target);
+
+                AppendImportCellName(translated, target);
+
+                translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
+                instruction = translated.ToString();
+            }
+            else
+            {
+                ProbeCommonIntelQuirks(rtf, imageOffset, rtfOffset, instrSize, ref instruction);
+            }
+        }
+
+        /// <summary>
+        /// Probe quirks that have the same behavior for X86 and X64.
+        /// </summary>
+        /// <param name="rtf">Runtime function</param>
+        /// <param name="imageOffset">Offset within the image byte array</param>
+        /// <param name="rtfOffset">Offset within the runtime function</param>
+        /// <param name="instrSize">Instruction size</param>
+        /// <param name="instruction">Textual representation of the instruction</param>
+        private void ProbeCommonIntelQuirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
+        {
+            if (instrSize == 2 && IsIntelJumpInstructionWithByteOffset(imageOffset + rtfOffset))
+            {
+                sbyte offset = (sbyte)_reader.Image[imageOffset + rtfOffset + 1];
+                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
+                ReplaceRelativeOffset(ref instruction, target);
+            }
+            else if (instrSize == 5 && IsIntel1ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
+            {
+                int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 1);
+                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
+                ReplaceRelativeOffset(ref instruction, target);
+            }
+            else if (instrSize == 6 && IsIntel2ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
+            {
+                int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 2);
+                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
+                ReplaceRelativeOffset(ref instruction, target);
+            }
+        }
+
+        /// <summary>
+        /// Try to parse the [rip +- displacement] section in a disassembled instruction string.
+        /// </summary>
+        /// <param name="instruction">Disassembled instruction string</param>
+        /// <param name="leftBracket">Index of the left bracket in the instruction</param>
+        /// <param name="rightBracketPlusOne">Index of the right bracket in the instruction plus one</param>
+        /// <param name="displacement">Value of the IP-relative delta</param>
+        /// <returns></returns>
+        private bool TryParseRipRelative(string instruction, out int leftBracket, out int rightBracket, out int displacement)
         {
             int relip = instruction.IndexOf(RelIPTag);
             if (relip >= 0 && instruction.Length >= relip + RelIPTag.Length + 3)
@@ -195,45 +293,37 @@ namespace R2RDump
                         {
                             offset = -offset;
                         }
-                        int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                        int newline = instruction.LastIndexOf('\n');
-                        StringBuilder translated = new StringBuilder();
-                        translated.Append(instruction, 0, start);
-                        translated.AppendFormat("[0x{0:x4}]", target);
-                        translated.Append(instruction, relip, newline - relip);
-                        String targetName;
-                        if (_reader.ImportCellNames.TryGetValue(target, out targetName))
-                        {
-                            int fill = 61 - translated.Length;
-                            if (fill > 0)
-                            {
-                                translated.Append(' ', fill);
-                            }
-                            translated.Append(" // ");
-                            translated.Append(targetName);
-                        }
-                        translated.Append(instruction, newline, instruction.Length - newline);
-                        instruction = translated.ToString();
+                        leftBracket = start;
+                        rightBracket = relip;
+                        displacement = offset;
+                        return true;
                     }
                 }
             }
-            else if (instrSize == 2 && IsIntelJumpInstructionWithByteOffset(imageOffset + rtfOffset))
+
+            leftBracket = 0;
+            rightBracket = 0;
+            displacement = 0;
+            return false;
+        }
+
+        /// <summary>
+        /// Append import cell name to the constructed instruction string as a comment if available.
+        /// </summary>
+        /// <param name="builder"></param>
+        /// <param name="importCellRva"></param>
+        private void AppendImportCellName(StringBuilder builder, int importCellRva)
+        {
+            String targetName;
+            if (_reader.ImportCellNames.TryGetValue(importCellRva, out targetName))
             {
-                sbyte offset = (sbyte)_reader.Image[imageOffset + rtfOffset + 1];
-                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                ReplaceRelativeOffset(ref instruction, target);
-            }
-            else if (instrSize == 5 && IsIntel1ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
-            {
-                int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 1);
-                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                ReplaceRelativeOffset(ref instruction, target);
-            }
-            else if (instrSize == 6 && IsIntel2ByteJumpInstructionWithIntOffset(imageOffset + rtfOffset))
-            {
-                int offset = BitConverter.ToInt32(_reader.Image, imageOffset + rtfOffset + 2);
-                int target = rtf.StartAddress + rtfOffset + instrSize + offset;
-                ReplaceRelativeOffset(ref instruction, target);
+                int fill = 61 - builder.Length;
+                if (fill > 0)
+                {
+                    builder.Append(' ', fill);
+                }
+                builder.Append(" // ");
+                builder.Append(targetName);
             }
         }
 
