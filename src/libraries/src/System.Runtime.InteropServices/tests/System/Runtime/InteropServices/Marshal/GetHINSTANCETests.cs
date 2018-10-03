@@ -36,10 +36,17 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue(30925)]
-        public void GetHINSTANCE_NonRuntimeModule_ThrowsArgumentNullException()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void GetHINSTANCE_NonRuntimeModule_Returns_IntPtrMinusOne()
         {
-            AssertExtensions.Throws<ArgumentNullException>("m", "Module must be a runtime Module object.", () => Marshal.GetHINSTANCE(new NonRuntimeModule()));
+            Assert.Equal((IntPtr)(-1), Marshal.GetHINSTANCE(new NonRuntimeModule()));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void GetHINSTANCE_NonRuntimeModule_ThrowsArgumentNullException_NetFramework()
+        {
+            Assert.Throws<ArgumentNullException>(() => Marshal.GetHINSTANCE(new NonRuntimeModule()));
         }
 
         private class NonRuntimeModule : Module
