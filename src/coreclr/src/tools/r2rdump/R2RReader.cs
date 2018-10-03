@@ -440,27 +440,25 @@ namespace R2RDump
             while (!curParser.IsNull())
             {
                 uint rid = curParser.GetUnsigned();
-                rid = rid >> 1;
-                if (added.Contains(rid))
+                if (!added.Add(rid))
+                {
                     continue;
+                }
 
-                TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
-                string typeDefName = MetadataNameFormatter.FormatHandle(MetadataReader, typeDefHandle);
-                ExportedTypeHandle exportedTypeHandle = MetadataTokens.ExportedTypeHandle((int)rid);
-                string exportedTypeName = GetExportedTypeFullName(MetadataReader, exportedTypeHandle);
-                if (typeDefName == null && exportedTypeName == null)
+                bool isExportedType = (rid & 1) != 0;
+                rid = rid >> 1;
+
+                if (isExportedType)
                 {
-                    R2RDump.WriteWarning($"AvailableType with rid {rid} is not a TypeDef or ExportedType");
-                }
-                if (typeDefName != null)
-                {
-                    AvailableTypes.Add(typeDefName);
-                    added.Add(rid);
-                }
-                if (exportedTypeName != null)
-                {
+                    ExportedTypeHandle exportedTypeHandle = MetadataTokens.ExportedTypeHandle((int)rid);
+                    string exportedTypeName = GetExportedTypeFullName(MetadataReader, exportedTypeHandle);
                     AvailableTypes.Add("exported " + exportedTypeName);
-                    added.Add(rid);
+                }
+                else
+                {
+                    TypeDefinitionHandle typeDefHandle = MetadataTokens.TypeDefinitionHandle((int)rid);
+                    string typeDefName = MetadataNameFormatter.FormatHandle(MetadataReader, typeDefHandle);
+                    AvailableTypes.Add(typeDefName);
                 }
 
                 curParser = allEntriesEnum.GetNext();
