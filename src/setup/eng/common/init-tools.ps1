@@ -132,8 +132,7 @@ function InitializeTools() {
 }
 
 function InitializeToolset([string] $buildDriver, [string]$buildArgs) {
-  $toolsetVersion = $GlobalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
-  $toolsetLocationFile = Join-Path $ToolsetDir "$toolsetVersion.txt"
+  $toolsetLocationFile = Join-Path $ToolsetDir "$ToolsetVersion.txt"
 
   if (Test-Path $toolsetLocationFile) {
     $path = Get-Content $toolsetLocationFile -TotalCount 1
@@ -144,7 +143,7 @@ function InitializeToolset([string] $buildDriver, [string]$buildArgs) {
   }
 
   if (-not $restore) {
-    Write-Host  "Toolset version $toolsetVersion has not been restored."
+    Write-Host  "Toolset version $ToolsetVersion has not been restored."
     ExitWithExitCode 1
   }
 
@@ -209,6 +208,18 @@ function MsBuild() {
   return $lastExitCode
 }
 
+function InstallDarcCli {
+  $DarcCliPackageName = "microsoft.dotnet.darc"
+  $ToolList = Invoke-Expression "$buildDriver tool list -g"
+
+  if ($ToolList -like "*$DarcCliPackageName*") {
+    Invoke-Expression "$buildDriver tool uninstall $DarcCliPackageName -g"
+  }
+
+  Write-Host "Installing Darc CLI version $toolsetVersion..."
+  Invoke-Expression "$buildDriver tool install $DarcCliPackageName --version $toolsetVersion -v $verbosity -g"
+}
+
 try {
   $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
   $EngRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -217,6 +228,7 @@ try {
   $LogDir = Join-Path (Join-Path $ArtifactsDir "log") $configuration
   $TempDir = Join-Path (Join-Path $ArtifactsDir "tmp") $configuration
   $GlobalJson = Get-Content -Raw -Path (Join-Path $RepoRoot "global.json") | ConvertFrom-Json
+  $ToolsetVersion = $GlobalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
 
   if ($env:NUGET_PACKAGES -eq $null) {
     # Use local cache on CI to ensure deterministic build,
