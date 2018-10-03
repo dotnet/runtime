@@ -3,19 +3,38 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-pool:
-  vmImage: 'Hosted macOS'
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
 
-steps:
+  steps:
+  - script: |
+      ./autogen.sh --prefix=/tmp/test-install --disable-nls --disable-btls --disable-boehm
+    displayName: 'Autogen + Configure'
 
-- script: |
-    ./autogen.sh --prefix=/tmp/test-install --disable-nls --disable-btls --disable-boehm
-  displayName: 'Autogen + Configure'
+  - script: |
+      make
+    displayName: 'Build Mono'
 
-- script: |
-    make
-  displayName: 'Build Mono'
+  - script: |
+      make install
+    displayName: 'Install new version of Mono into /tmp'
 
-- script: |
-    make install
-  displayName: 'Install new version of Mono into /tmp'
+-job: macOS
+  pool:
+    vmImage: 'macOS-10.13'
+
+  steps:
+  - script: |
+      ./autogen.sh --prefix=/tmp/test-install --disable-nls --disable-btls --disable-boehm
+    displayName: 'Autogen + Configure'
+
+  - script: |
+      make
+    displayName: 'Build Mono'
+
+  - script: |
+      make install
+    displayName: 'Install new version of Mono into /tmp'
+
