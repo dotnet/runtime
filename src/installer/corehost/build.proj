@@ -66,10 +66,12 @@
     
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Properties="GenerateNativeVersionInfo=true;FileDescription=%(HostFiles.FileDescription);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
-             Targets="GenerateVersionHeader" />
+             Targets="GenerateVersionHeader" 
+             Condition="'$(IncrementalNativeBuild)' != 'true'"/>
     <PropertyGroup>
       <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>  
+      <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <CustomNativeToolsetDir Condition="'$(TargetArchitecture)' == 'arm64'"> toolsetdir $(NativeToolsetDir)</CustomNativeToolsetDir>      
     </PropertyGroup>
 
