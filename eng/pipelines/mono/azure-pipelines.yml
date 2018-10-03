@@ -9,7 +9,7 @@ pool:
 steps:
 
 - script: |
-    ./autogen.sh --prefix=/tmp/test-install
+    ./autogen.sh --prefix=/tmp/test-install --disable-nls --disable-btls --disable-boehm
   displayName: 'Autogen + Configure'
 
 - script: |
