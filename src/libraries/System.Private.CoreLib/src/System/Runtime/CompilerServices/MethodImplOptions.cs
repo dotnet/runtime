@@ -16,6 +16,7 @@ namespace System.Runtime.CompilerServices
         NoOptimization = 0x0040,
         PreserveSig = 0x0080,
         AggressiveInlining = 0x0100,
+        AggressiveOptimization = 0x0200,
         InternalCall = 0x1000
     }
 }
