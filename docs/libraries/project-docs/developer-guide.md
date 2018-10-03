@@ -32,7 +32,7 @@ build -?
 
 ### Build
 The CoreFX build has two logical components, the native build which produces the "shims" (which provide a stable interface between the OS and managed code) and
-the managed build which produces the MSIL code and nuget packages that make up CoreFX.
+the managed build which produces the MSIL code and NuGet packages that make up CoreFX.
 
 Calling the script `build` attempts to build both the native and managed code.
 Only use it when the parameters that you are passing to the script apply for both components. Otherwise, use the scripts `build-native` and `build-managed` respectively.
@@ -168,11 +168,11 @@ build System.Collections -framework:netfx -release
 
 ### Building individual projects
 
-You can either ues `dotnet msbuild` or `msbuild`, depending on which is in your path. As `dotnet msbuild` works on all supported environments (i.e. Unix) we will use it throughout this guide.
+You can either use `dotnet msbuild` or `msbuild`, depending on which is in your path. As `dotnet msbuild` works on all supported environments (i.e. Unix) we will use it throughout this guide.
 
 **Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
-Under the src directory is a set of directories, each of which represents a particular assembly in CoreFX. See Libary Project Guidelines section under [project-guidelines](../coding-guidelines/project-guidelines.md) for more details about the structure.
+Under the src directory is a set of directories, each of which represents a particular assembly in CoreFX. See Library Project Guidelines section under [project-guidelines](../coding-guidelines/project-guidelines.md) for more details about the structure.
 
 For example the src\System.Diagnostics.DiagnosticSource directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
@@ -474,7 +474,7 @@ The CoreFX build and test suite is a work in progress, as are the [building and 
 
 ## Testing with private CoreCLR bits
 
-Generally the CoreFx build system gets the CoreCLR from a nuget package which gets pulled down and correctly copied to the various output directories by building '\external\runtime\runtime.depproj' which gets built as part of `build.cmd/sh`. For folks that want to do builds and test runs in corefx with a local private build of coreclr you can follow these steps:
+Generally the CoreFx build system gets the CoreCLR from a NuGet package which gets pulled down and correctly copied to the various output directories by building '\external\runtime\runtime.depproj' which gets built as part of `build.cmd/sh`. For folks that want to do builds and test runs in corefx with a local private build of coreclr you can follow these steps:
 
 
 1. Build CoreCLR and note your output directory. Ex: `\coreclr\bin\Product\Windows_NT.x64.Release\` Note this will vary based on your OS/Architecture/Flavor and it is generally a good idea to use Release builds for CoreCLR when running CoreFx tests and the OS and Architecture should match what you are building in CoreFx.
@@ -499,4 +499,4 @@ To collect code coverage that includes types in System.Private.CoreLib.dll, you'
 
 `dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
 
-In order to facilitate coverage tools that perform IL rewrite a dedicated shared framework directory is created by default for coverage runs. This shared runtime is copied from the default shared test runtime (the one with version 9.9.9, e.g.: `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9`). This behavior can be overriden by adding `/p:UseCoverageDedicatedRuntime=false` to the build command used to capture code coverage, which will cause the coverage run to use the same shared runtime as a test run using the native image of System.Private.CoreLib.dll, causing loss of source coverage information for it.
+In order to facilitate coverage tools that perform IL rewrite a dedicated shared framework directory is created by default for coverage runs. This shared runtime is copied from the default shared test runtime (the one with version 9.9.9, e.g.: `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9`). This behavior can be overridden by adding `/p:UseCoverageDedicatedRuntime=false` to the build command used to capture code coverage, which will cause the coverage run to use the same shared runtime as a test run using the native image of System.Private.CoreLib.dll, causing loss of source coverage information for it.
