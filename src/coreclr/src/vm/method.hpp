@@ -1267,12 +1267,13 @@ public:
     }
 #endif
 
-    // Returns a code version that represents the first (default)
-    // code body that this method would have.
-    NativeCodeVersion GetInitialCodeVersion()
+    bool RequestedAggressiveOptimization()
     {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return NativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+        WRAPPER_NO_CONTRACT;
+
+        return
+            IsIL() && // only makes sense for IL methods, and this implies !IsNoMetadata()
+            IsMiAggressiveOptimization(GetImplAttrs());
     }
 
     // Does this method force the NativeCodeSlot to stay fixed after it

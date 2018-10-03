@@ -50,13 +50,20 @@ bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const { return
 #define CORPROF_E_RUNTIME_SUSPEND_REQUIRED 0x80131381
 
 #ifndef DACCESS_COMPILE
-NativeCodeVersionNode::NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethodDesc, ReJITID parentId) :
+NativeCodeVersionNode::NativeCodeVersionNode(
+    NativeCodeVersionId id,
+    MethodDesc* pMethodDesc,
+    ReJITID parentId,
+    NativeCodeVersion::OptimizationTier optimizationTier)
+    :
     m_pNativeCode(NULL),
     m_pMethodDesc(pMethodDesc),
     m_parentId(parentId),
     m_pNextMethodDescSibling(NULL),
     m_id(id),
-    m_optTier(NativeCodeVersion::OptimizationTier0),
+#ifdef FEATURE_TIERED_COMPILATION
+    m_optTier(optimizationTier),
+#endif
     m_flags(0)
 {}
 #endif
@@ -143,15 +150,8 @@ void NativeCodeVersionNode::SetActiveChildFlag(BOOL isActive)
 NativeCodeVersion::OptimizationTier NativeCodeVersionNode::GetOptimizationTier() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_optTier.Load();
+    return m_optTier;
 }
-#ifndef DACCESS_COMPILE
-void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationTier tier)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    m_optTier.Store(tier);
-}
-#endif
 #endif // FEATURE_TIERED_COMPILATION
 
 NativeCodeVersion::NativeCodeVersion() :
@@ -336,24 +336,9 @@ NativeCodeVersion::OptimizationTier NativeCodeVersion::GetOptimizationTier() con
     }
     else
     {
-        return NativeCodeVersion::OptimizationTier0;
+        return TieredCompilationManager::GetInitialOptimizationTier(GetMethodDesc());
     }
 }
-
-#ifndef DACCESS_COMPILE
-void NativeCodeVersion::SetOptimizationTier(NativeCodeVersion::OptimizationTier tier)
-{
-    LIMITED_METHOD_CONTRACT;
-    if (m_storageKind == StorageKind::Explicit)
-    {
-        AsNode()->SetOptimizationTier(tier);
-    }
-    else
-    {
-        _ASSERTE(!"Do not call SetOptimizationTier on default code versions - these versions are immutable");
-    }
-}
-#endif
 #endif
 
 PTR_NativeCodeVersionNode NativeCodeVersion::AsNode() const
@@ -881,11 +866,14 @@ void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
     AsNode()->SetInstrumentedILMap(cMap, rgMap);
 }
 
-HRESULT ILCodeVersion::AddNativeCodeVersion(MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion)
+HRESULT ILCodeVersion::AddNativeCodeVersion(
+    MethodDesc* pClosedMethodDesc,
+    NativeCodeVersion::OptimizationTier optimizationTier,
+    NativeCodeVersion* pNativeCodeVersion)
 {
     LIMITED_METHOD_CONTRACT;
     CodeVersionManager* pManager = GetModule()->GetCodeVersionManager();
-    HRESULT hr = pManager->AddNativeCodeVersion(*this, pClosedMethodDesc, pNativeCodeVersion);
+    HRESULT hr = pManager->AddNativeCodeVersion(*this, pClosedMethodDesc, optimizationTier, pNativeCodeVersion);
     if (FAILED(hr))
     {
         _ASSERTE(hr == E_OUTOFMEMORY);
@@ -901,7 +889,9 @@ HRESULT ILCodeVersion::GetOrCreateActiveNativeCodeVersion(MethodDesc* pClosedMet
     NativeCodeVersion activeNativeChild = GetActiveNativeCodeVersion(pClosedMethodDesc);
     if (activeNativeChild.IsNull())
     {
-        if (FAILED(hr = AddNativeCodeVersion(pClosedMethodDesc, &activeNativeChild)))
+        NativeCodeVersion::OptimizationTier optimizationTier =
+            TieredCompilationManager::GetInitialOptimizationTier(pClosedMethodDesc);
+        if (FAILED(hr = AddNativeCodeVersion(pClosedMethodDesc, optimizationTier, &activeNativeChild)))
         {
             _ASSERTE(hr == E_OUTOFMEMORY);
             return hr;
@@ -2098,7 +2088,11 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
     return S_OK;
 }
 
-HRESULT CodeVersionManager::AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion* pNativeCodeVersion)
+HRESULT CodeVersionManager::AddNativeCodeVersion(
+    ILCodeVersion ilCodeVersion,
+    MethodDesc* pClosedMethodDesc,
+    NativeCodeVersion::OptimizationTier optimizationTier,
+    NativeCodeVersion* pNativeCodeVersion)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(LockOwnedByCurrentThread());
@@ -2112,7 +2106,7 @@ HRESULT CodeVersionManager::AddNativeCodeVersion(ILCodeVersion ilCodeVersion, Me
     }
 
     NativeCodeVersionId newId = pMethodVersioningState->AllocateVersionId();
-    NativeCodeVersionNode* pNativeCodeVersionNode = new (nothrow) NativeCodeVersionNode(newId, pClosedMethodDesc, ilCodeVersion.GetVersionId());
+    NativeCodeVersionNode* pNativeCodeVersionNode = new (nothrow) NativeCodeVersionNode(newId, pClosedMethodDesc, ilCodeVersion.GetVersionId(), optimizationTier);
     if (pNativeCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;
