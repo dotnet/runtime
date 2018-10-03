@@ -52,6 +52,7 @@ namespace Mono.Linker {
 		protected readonly Dictionary<object, Dictionary<IMetadataTokenProvider, object>> custom_annotations = new Dictionary<object, Dictionary<IMetadataTokenProvider, object>> ();
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 		protected readonly HashSet<CustomAttribute> marked_attributes = new HashSet<CustomAttribute> ();
+		readonly HashSet<TypeDefinition> marked_types_with_cctor = new HashSet<TypeDefinition> ();
 
 		public AnnotationStore (LinkContext context) => this.context = context;
 
@@ -327,5 +328,16 @@ namespace Mono.Linker {
 			custom_annotations.Add (key, slots);
 			return slots;
 		}
+
+		public bool HasPreservedStaticCtor (TypeDefinition type)
+		{
+			return marked_types_with_cctor.Contains (type);
+		}
+
+		public bool SetPreservedStaticCtor (TypeDefinition type)
+		{
+			return marked_types_with_cctor.Add (type);
+		}
+
 	}
 }
