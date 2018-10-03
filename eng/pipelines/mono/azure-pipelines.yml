@@ -27,6 +27,9 @@ jobs:
 
   steps:
   - script: |
+      brew install libtool automake autoconf || brew upgrade libtool automake autoconf
+    displayName: 'Install Dependencies'
+  - script: |
       ./autogen.sh --prefix=/tmp/test-install --disable-nls --disable-btls --disable-boehm
     displayName: 'Autogen + Configure'
 
