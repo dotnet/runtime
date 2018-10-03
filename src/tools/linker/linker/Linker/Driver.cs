@@ -89,7 +89,8 @@ namespace Mono.Linker {
 
 				I18nAssemblies assemblies = I18nAssemblies.All;
 				var custom_steps = new List<string> ();
-				var excluded_features = new HashSet<string> ();
+				var excluded_features = new HashSet<string> (StringComparer.Ordinal);
+				var disabled_optimizations = new HashSet<string> (StringComparer.Ordinal);
 				bool dumpDependencies = false;
 				bool ignoreDescriptors = false;
 
@@ -159,6 +160,13 @@ namespace Mono.Linker {
 
 						case "--ignore-descriptors":
 							ignoreDescriptors = bool.Parse (GetParam ());
+							continue;
+
+						case "--disable-opt":
+							var opt = GetParam ();
+							if (!disabled_optimizations.Contains (opt))
+								disabled_optimizations.Add (opt);
+
 							continue;
 						}
 
@@ -262,6 +270,16 @@ namespace Mono.Linker {
 					var excluded = new string [excluded_features.Count];
 					excluded_features.CopyTo (excluded);
 					context.ExcludedFeatures = excluded;
+				}
+
+				if (disabled_optimizations.Count > 0) {
+					foreach (var item in disabled_optimizations) {
+						switch (item) {
+						case "beforefieldinit":
+							context.DisabledOptimizations |= CodeOptimizations.BeforeFieldInit;
+							break;
+						}
+					}
 				}
 
 				try {
@@ -414,6 +432,8 @@ namespace Mono.Linker {
 			Console.WriteLine ();
 			Console.WriteLine ("Advanced");
 			Console.WriteLine ("  --custom-step <name>      Add a custom step to the pipeline");
+			Console.WriteLine ("  --disable-opt <name>      Disable one of the default optimizations");
+			Console.WriteLine ("                              beforefieldinit: Unused static fields are removed if there is no static ctor");
 			Console.WriteLine ("  --exclude-feature <name>  Any code which has a feature <name> in linked assemblies will be removed");
 			Console.WriteLine ("                              com: Support for COM Interop");
 			Console.WriteLine ("                              remoting: .NET Remoting dependencies");
@@ -466,5 +486,11 @@ namespace Mono.Linker {
 			p.AppendStep (new OutputStep ());
 			return p;
 		}
+	}
+
+	[Flags]
+	public enum CodeOptimizations
+	{
+		BeforeFieldInit = 1 << 0,
 	}
 }

@@ -397,6 +397,10 @@
     <Compile Include="Attributes.StructLayout\ExplicitClass.cs" />
     <Compile Include="Reflection\AssemblyImportedViaReflection.cs" />
     <Compile Include="Reflection\Dependencies\AssemblyDependency.cs" />
+    <Compile Include="Statics\ExplicitStaticCtor.cs" />
+    <Compile Include="Statics\UnusedStaticFieldInitializer.cs" />
+    <Compile Include="Statics\StaticFieldInitializer.cs" />
+    <Compile Include="Statics\MixedStaticFieldInitializerAndCtor.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />

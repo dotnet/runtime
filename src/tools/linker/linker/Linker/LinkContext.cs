@@ -145,6 +145,8 @@ namespace Mono.Linker {
 
 		public string[] ExcludedFeatures { get; set; }
 
+		public CodeOptimizations DisabledOptimizations { get; set; }
+
 		public LinkContext (Pipeline pipeline)
 			: this (pipeline, new AssemblyResolver ())
 		{
@@ -358,6 +360,11 @@ namespace Mono.Linker {
 		public bool IsFeatureExcluded (string featureName)
 		{
 			return ExcludedFeatures != null && Array.IndexOf (ExcludedFeatures, featureName) >= 0;
+		}
+
+		public bool IsOptimizationEnabled (CodeOptimizations optimization)
+		{
+			return (DisabledOptimizations & optimization) == 0;
 		}
 
 		public void LogMessage (string message, params object[] values)

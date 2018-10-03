@@ -465,6 +465,11 @@ namespace Mono.Linker.Steps {
 			return true;
 		}
 
+		protected virtual bool ShoulMarkTypeConstructor (TypeDefinition type)
+		{
+			return !type.IsBeforeFieldInit && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit);
+		}
+
 		protected virtual bool ShouldMarkTopLevelCustomAttribute (AttributeProviderPair app, MethodDefinition resolvedConstructor)
 		{
 			var ca = app.Attribute;
@@ -813,6 +818,12 @@ namespace Mono.Linker.Steps {
 			MarkMarshalSpec (field);
 			DoAdditionalFieldProcessing (field);
 
+			var parent = reference.DeclaringType.Resolve ();
+			if (parent.IsBeforeFieldInit && !Annotations.HasPreservedStaticCtor (parent) && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit)) {
+				if (MarkMethodIf (parent.Methods, IsStaticConstructor))
+					Annotations.SetPreservedStaticCtor (parent);
+			}
+
 			Annotations.Mark (field);
 		}
 
@@ -907,7 +918,10 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasMethods) {
 				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
-				MarkMethodsIf (type.Methods, IsStaticConstructor);
+
+				if (ShoulMarkTypeConstructor (type) && MarkMethodIf (type.Methods, IsStaticConstructor))
+					Annotations.SetPreservedStaticCtor (type);
+
 				MarkMethodsIf (type.Methods, HasSerializationAttribute);
 			}
 
@@ -1235,6 +1249,18 @@ namespace Mono.Linker.Steps {
 			foreach (MethodDefinition method in methods)
 				if (predicate (method))
 					MarkMethod (method);
+		}
+
+		protected bool MarkMethodIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate)
+		{
+			foreach (MethodDefinition method in methods) {
+				if (predicate (method)) {
+					MarkMethod (method);
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		static bool IsDefaultConstructor (MethodDefinition method)
