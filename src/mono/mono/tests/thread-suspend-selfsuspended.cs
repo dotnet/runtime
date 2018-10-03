@@ -7,14 +7,13 @@ class Driver
 	public static void Main ()
 	{
 		bool finished = false;
-		int can_gc = 0;
+		AutoResetEvent start_gc = new AutoResetEvent (false);
 
 		Thread t1 = Thread.CurrentThread;
 
 		Thread t2 = new Thread (() => {
 			while (!finished) {
-				int local_can_gc = can_gc;
-				if (local_can_gc > 0 && Interlocked.CompareExchange (ref can_gc, local_can_gc - 1, local_can_gc) == local_can_gc)
+				if (start_gc.WaitOne (0))
 					GC.Collect ();
 
 				try {
@@ -31,7 +30,7 @@ class Driver
 		Thread.Sleep (10);
 
 		for (int i = 0; i < 50 * 40 * 5; ++i) {
-			Interlocked.Increment (ref can_gc);
+			start_gc.Set ();
 			Thread.CurrentThread.Suspend ();
 			if ((i + 1) % (50) == 0)
 				Console.Write (".");
