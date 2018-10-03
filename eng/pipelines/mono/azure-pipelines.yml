@@ -8,9 +8,6 @@ pool:
 
 steps:
 
-- script: CI_TAGS=osx-amd64 scripts/ci/run-jenkins.sh
-  displayName: 'Build + Test'
-
 - script: |
     ./autogen.sh --prefix=/tmp/test-install
   displayName: 'Autogen + Configure'
