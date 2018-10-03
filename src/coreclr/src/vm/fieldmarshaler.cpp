@@ -2036,7 +2036,6 @@ VOID LayoutUpdateNative(LPVOID *ppProtectedManagedData, SIZE_T offsetbias, Metho
     GCPROTECT_END();
 }
 
-
 VOID FmtClassUpdateNative(OBJECTREF *ppProtectedManagedData, BYTE *pNativeData, OBJECTREF *ppCleanupWorkListOnStack)
 {        
     CONTRACTL
@@ -2115,7 +2114,7 @@ VOID FmtClassUpdateCLR(OBJECTREF *ppProtectedManagedData, BYTE *pNativeData)
 // all of the native fields even if one or more of the conversions fail.
 //=======================================================================
 VOID LayoutUpdateCLR(LPVOID *ppProtectedManagedData, SIZE_T offsetbias, MethodTable *pMT, BYTE *pNativeData)
-{        
+{
     CONTRACTL
     {
         THROWS;
@@ -2128,8 +2127,8 @@ VOID LayoutUpdateCLR(LPVOID *ppProtectedManagedData, SIZE_T offsetbias, MethodTa
     // Don't try to destroy/free native the structure on exception, we may not own it. If we do own it and
     // are supposed to destroy/free it, we do it upstack (e.g. in a helper called from the marshaling stub).
 
-    FieldMarshaler* pFM                   = pMT->GetLayoutInfo()->GetFieldMarshalers();
-    UINT  numReferenceFields              = pMT->GetLayoutInfo()->GetNumCTMFields(); 
+    FieldMarshaler* pFM = pMT->GetLayoutInfo()->GetFieldMarshalers();
+    UINT  numReferenceFields = pMT->GetLayoutInfo()->GetNumCTMFields();
 
     struct _gc
     {
@@ -2137,10 +2136,10 @@ VOID LayoutUpdateCLR(LPVOID *ppProtectedManagedData, SIZE_T offsetbias, MethodTa
         OBJECTREF pOldCLRValue;
     } gc;
 
-    gc.pCLRValue    = NULL;
+    gc.pCLRValue = NULL;
     gc.pOldCLRValue = NULL;
-    LPVOID scalar    = NULL;
-    
+    LPVOID scalar = NULL;
+
     GCPROTECT_BEGIN(gc)
     GCPROTECT_BEGININTERIOR(scalar)
     {
@@ -2873,12 +2872,21 @@ VOID FieldMarshaler_NestedValueClass::NestedValueClassUpdateNativeImpl(const VOI
     }
     CONTRACTL_END;
 
+    MethodTable* pMT = GetMethodTable();
+
     // would be better to detect this at class load time (that have a nested value
     // class with no layout) but don't have a way to know
-    if (! GetMethodTable()->GetLayoutInfo())
+    if (!pMT->GetLayoutInfo())
         COMPlusThrow(kArgumentException, IDS_NOLAYOUT_IN_EMBEDDED_VALUECLASS);
 
-    LayoutUpdateNative((LPVOID*)ppProtectedCLR, startoffset, GetMethodTable(), (BYTE*)pNative, ppCleanupWorkListOnStack);
+    if (pMT->IsBlittable())
+    {
+        memcpyNoGCRefs(pNative, (BYTE*)(*ppProtectedCLR) + startoffset, pMT->GetNativeSize());
+    }
+    else
+    {
+        LayoutUpdateNative((LPVOID*)ppProtectedCLR, startoffset, pMT, (BYTE*)pNative, ppCleanupWorkListOnStack);
+    }
 }
 
 
@@ -2898,17 +2906,24 @@ VOID FieldMarshaler_NestedValueClass::NestedValueClassUpdateCLRImpl(const VOID *
     }
     CONTRACTL_END;
 
+    MethodTable* pMT = GetMethodTable();
+
     // would be better to detect this at class load time (that have a nested value
     // class with no layout) but don't have a way to know
-    if (! GetMethodTable()->GetLayoutInfo())
+    if (!pMT->GetLayoutInfo())
         COMPlusThrow(kArgumentException, IDS_NOLAYOUT_IN_EMBEDDED_VALUECLASS);
 
-    LayoutUpdateCLR( (LPVOID*)ppProtectedCLR,
-                         startoffset,
-                         GetMethodTable(),
-                         (BYTE *)pNative);
-    
-
+    if (pMT->IsBlittable())
+    {
+        memcpyNoGCRefs((BYTE*)(*ppProtectedCLR) + startoffset, pNative, pMT->GetNativeSize());
+    }
+    else
+    {
+        LayoutUpdateCLR((LPVOID*)ppProtectedCLR,
+            startoffset,
+            pMT,
+            (BYTE *)pNative);
+    }
 }
 
 
@@ -2927,7 +2942,12 @@ VOID FieldMarshaler_NestedValueClass::DestroyNativeImpl(LPVOID pNativeValue) con
     }
     CONTRACTL_END;
 
-    LayoutDestroyNative(pNativeValue, GetMethodTable());
+    MethodTable* pMT = GetMethodTable();
+
+    if (!pMT->IsBlittable())
+    {
+        LayoutDestroyNative(pNativeValue, pMT);
+    }
 }
 
 #endif // CROSSGEN_COMPILE
