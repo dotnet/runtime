@@ -3396,28 +3396,40 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			}
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDIND_I1)
+		MINT_IN_CASE(MINT_LDIND_I1_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.i = *(gint8*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_U1)
+		MINT_IN_CASE(MINT_LDIND_U1_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.i = *(guint8*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_I2)
+		MINT_IN_CASE(MINT_LDIND_I2_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.i = *(gint16*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_U2)
+		MINT_IN_CASE(MINT_LDIND_U2_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.i = *(guint16*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_I4) /* Fall through */
-		MINT_IN_CASE(MINT_LDIND_U4)
+		MINT_IN_CASE(MINT_LDIND_I4_CHECK) /* Fall through */
+		MINT_IN_CASE(MINT_LDIND_U4_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.i = *(gint32*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_I8)
+		MINT_IN_CASE(MINT_LDIND_I8_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			/* memmove handles unaligned case */
 			memmove (&sp [-1].data.l, sp [-1].data.p, sizeof (gint64));
@@ -3428,11 +3440,15 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			ip += 2;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDIND_R4)
+		MINT_IN_CASE(MINT_LDIND_R4_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.f = *(gfloat*)sp[-1].data.p;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDIND_R8)
+		MINT_IN_CASE(MINT_LDIND_R8_CHECK)
+			if (!sp[-1].data.p)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
 			sp[-1].data.f = *(gdouble*)sp[-1].data.p;
 			MINT_IN_BREAK;
