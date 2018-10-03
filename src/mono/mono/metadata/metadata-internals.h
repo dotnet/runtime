@@ -893,6 +893,8 @@ void mono_unload_interface_ids (MonoBitSet *bitset);
 
 
 MonoType *mono_metadata_type_dup (MonoImage *image, const MonoType *original);
+MonoType *mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *original, const MonoType *cmods_source);
+
 MonoMethodSignature  *mono_metadata_signature_dup_full (MonoImage *image,MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
