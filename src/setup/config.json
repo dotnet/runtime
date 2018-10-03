@@ -143,6 +143,12 @@
       "valueType": "property",
       "values": ["true", "false"],
       "defaultValue":false
+    },
+    "IncrementalNativeBuild": {
+      "description": "Enables/Disables incremental native build.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": false
     }
   },
   "commands": {
@@ -182,6 +188,12 @@
           "description": "Only build src\\src.builds project",
           "settings": {
             "Project": "src\\src.builds"
+          }
+        },
+        "corehost-build": {
+          "description": "Only build src\\corehost\\build.proj project",
+          "settings": {
+            "Project": "src\\corehost\\build.proj"
           }
         },
         "signing-validation": {
