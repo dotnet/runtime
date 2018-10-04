@@ -1262,7 +1262,7 @@ namespace System.Data.SqlClient
                 if (!buff.IsEmpty)
                 {
                     var copyFrom = new ReadOnlySpan<byte>(_inBuff, _inBytesUsed, bytesToRead);
-                    var copyTo = buff.Slice(totalRead, bytesToRead);
+                    Span<byte> copyTo = buff.Slice(totalRead, bytesToRead);
                     copyFrom.CopyTo(copyTo);
                 }
 
