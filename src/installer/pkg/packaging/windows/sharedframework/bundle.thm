@@ -28,7 +28,7 @@
         <Text Name="LearnMoreTitle" X="160" Y="200" Width="460" Height="30" TabStop="yes" FontId="2">#(loc.LearnMoreTitle)</Text>
         <Hypertext Name="WelcomeDocumentationLink" X="185" Y="238" Width="400" Height="22" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.DocumentationLink)</Hypertext>
         <Hypertext Name="PrivacyStatementLink" X="185" Y="259" Width="400" Height="22" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.PrivacyStatementLink)</Hypertext>
-        <Hypertext Name="MITLicenseLink" X="185" Y="281" Width="400" Height="22" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.MITLicenseLink)</Hypertext>
+        <Hypertext Name="EulaLink" X="185" Y="281" Width="400" Height="22" FontId="3" HideWhenDisabled="yes" DisablePrefix="yes">#(loc.EulaLink)</Hypertext>
         <Button Name="InstallButton" X="-91" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallInstallButton)</Button>
         <Button Name="WelcomeCancelButton" X="-11" Y="-11" Width="75" Height="23" TabStop="yes" FontId="0">#(loc.InstallCloseButton)</Button>
     </Page>
