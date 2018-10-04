@@ -3252,6 +3252,15 @@ namespace System
             }
         }
 
+        // Cut trailing spaces
+        private void GetLengthWithoutTrailingSpaces(string str, ref ushort length ,int idx)
+        {
+            // to avoid dereferencing ref length parameter for every update
+            ushort local = length;
+            while (local > idx && UriHelper.IsLWS(str[local - 1])) --local;
+            length = local;
+        }
+
         //
         //This method does:
         //  - Creates m_Info member
@@ -3284,14 +3293,7 @@ namespace System
 
             fixed (char* str = _string)
             {
-                // Cut trailing spaces in m_String
-                if (length > idx && UriHelper.IsLWS(str[length - 1]))
-                {
-                    --length;
-                    while (length != idx && UriHelper.IsLWS(str[--length]))
-                        ;
-                    ++length;
-                }
+                GetLengthWithoutTrailingSpaces(_string, ref length, idx);
 
                 if (IsImplicitFile)
                 {
@@ -3404,6 +3406,11 @@ namespace System
                 }
 
                 length = (ushort)_string.Length;
+                // We need to be sure that there isn't a '?' separated from the path by spaces.
+                if (_string == _originalUnicodeString)
+                {
+                    GetLengthWithoutTrailingSpaces(_string, ref length, idx);
+                }
             }
 
             fixed (char* str = _string)
@@ -3531,6 +3538,11 @@ namespace System
                     }
 
                     length = (ushort)_string.Length;
+                    // We need to be sure that there isn't a '#' separated from the query by spaces.
+                    if (_string == _originalUnicodeString)
+                    {
+                        GetLengthWithoutTrailingSpaces(_string, ref length, idx);
+                    }
                 }
             }
 
@@ -3588,6 +3600,8 @@ namespace System
                     }
 
                     length = (ushort)_string.Length;
+                    // we don't need to check _originalUnicodeString == _string because # is last part
+                    GetLengthWithoutTrailingSpaces(_string, ref length, idx);                    
                 }
             }
 
@@ -4643,10 +4657,19 @@ namespace System
                         res |= Check.DotSlashAttn;
                     }
                 }
-                else if (!needsEscaping && ((c <= '"' && c != '!') || (c >= '[' && c <= '^') || c == '>'
-                    || c == '<' || c == '`'))
+                else if (((c <= '"' && c != '!') || (c >= '[' && c <= '^') || c == '>'
+                        || c == '<' || c == '`'))
                 {
-                    needsEscaping = true;
+                    if (!needsEscaping) needsEscaping = true;
+
+                    // The check above validates only that we have valid IRI characters, which is not enough to
+                    // conclude that we have a valid canonical IRI.
+                    // If we have an IRI with Flags.HasUnicode, we need to set Check.NotIriCanonical so that the 
+                    // path, query, and fragment will be validated.
+                    if ((_flags & Flags.HasUnicode) != 0 && _iriParsing)
+                    {
+                        res |= Check.NotIriCanonical;
+                    }
                 }
                 else if (c == '%')
                 {
