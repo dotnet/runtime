@@ -455,5 +455,89 @@
             "classes": null,
             "methods": null
         }
+    },
+    {
+        "name": "Microsoft.VisualBasic.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToChar_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToSingle_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToBoolean_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToSByte_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToDouble_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToDecimal_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToByte_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToLong_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToUShort_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToUInteger_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToInteger_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToShort_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "Microsoft.VisualBasic.Tests.ConversionsTests.ToULong_InvalidObject_ThrowsInvalidCastException",
+                    "reason" : "outdated"
+                }
+            ]
+        }
+    },
+    {
+        "name": "System.Numerics.Vectors.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name" : "System.Numerics.Tests.Vector2Tests.Vector2ClampTest",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "System.Numerics.Tests.Vector3Tests.Vector3ClampTest",
+                    "reason" : "outdated"
+                },
+                {
+                    "name" : "System.Numerics.Tests.Vector4Tests.Vector4ClampTest",
+                    "reason" : "outdated"
+                }
+            ]
+        }
     }
 ]
