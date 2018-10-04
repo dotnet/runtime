@@ -1201,8 +1201,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't send fragments")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't send fragments")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't handle fragments according to https://tools.ietf.org/html/rfc7231#section-7.1.2")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Doesn't handle fragments according to https://tools.ietf.org/html/rfc7231#section-7.1.2")]
         [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
@@ -1215,8 +1215,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsCurlHandler)
             {
-                // Starting with libcurl 7.20, "fragment part of URLs are no longer sent to the server".
-                // So CurlHandler doesn't send fragments.
+                // libcurl doesn't append fragment component to CURLINFO_EFFECTIVE_URL after redirect
                 return;
             }
 
@@ -1261,7 +1260,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotEmpty(secondRequest.Result);
                     string[] statusLineParts = secondRequest.Result[0].Split(' ');
                     Assert.Equal(3, statusLineParts.Length);
-                    Assert.Equal(expectedUrl.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.SafeUnescaped), statusLineParts[1]);
+                    Assert.Equal(expectedUrl.GetComponents(UriComponents.PathAndQuery, UriFormat.SafeUnescaped), statusLineParts[1]);
 
                     // Make sure the request message was updated with the correct redirected location.
                     using (HttpResponseMessage response = await getResponse)

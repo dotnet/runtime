@@ -392,7 +392,7 @@ namespace System.Net.Http
                             await WriteDecimalInt32Async(request.RequestUri.Port).ConfigureAwait(false);
                         }
                     }
-                    await WriteStringAsync(request.RequestUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped)).ConfigureAwait(false);
+                    await WriteStringAsync(request.RequestUri.PathAndQuery).ConfigureAwait(false);
                 }
 
                 // Fall back to 1.1 for all versions other than 1.0
