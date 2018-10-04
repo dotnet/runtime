@@ -204,7 +204,7 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gboolean
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		} if (preserve_ips) {
-			mono_ex->catch_in_unmanaged = TRUE;
+			mono_ex->caught_in_unmanaged = TRUE;
 		}
 	}
 	mono_error_assert_ok (error);

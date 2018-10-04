@@ -188,7 +188,7 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow, gb
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
 		} else (preserve_ips) {
-			mono_ex->catch_in_unmanaged = NULL;
+			mono_ex->caught_in_unmanaged = NULL;
 		}
 	}
 	mono_error_assert_ok (error);
