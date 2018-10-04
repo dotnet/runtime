@@ -109,7 +109,7 @@
 
   <Target Name="VerifyClosure"
           DependsOnTargets="GetClosureFiles"
-          AfterTargets="Build"
+          AfterTargets="ValidatePackage"
           Inputs="%(ClosureFile.FileSet)"
           Outputs="batching-on-FileSet-metadata">
     <ItemGroup>
@@ -129,7 +129,7 @@
 
   <Target Name="VerifyDuplicateTypes"
           DependsOnTargets="GetClosureFiles"
-          AfterTargets="Build"
+          AfterTargets="ValidatePackage"
           Inputs="%(ClosureFile.FileSet)"
           Outputs="batching-on-FileSet-metadata">
     <PropertyGroup>
@@ -154,7 +154,7 @@
 
   <Target Name="VerifyNETStandard"
           DependsOnTargets="GetClosureFiles"
-          AfterTargets="Build"
+          AfterTargets="ValidatePackage"
           Inputs="%(ClosureFile.FileSet)"
           Outputs="batching-on-FileSet-metadata">
 
