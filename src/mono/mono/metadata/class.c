@@ -72,6 +72,7 @@ static MonoClass *mono_class_from_mono_type_internal (MonoType *type);
 static gboolean mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces);
 
 GENERATE_GET_CLASS_WITH_CACHE (valuetype, "System", "ValueType")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (handleref, "System.Runtime.InteropServices", "HandleRef")
 
 static
 MonoImage *

@@ -80,6 +80,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (unhandled_exception_event_args, "System", 
 static GENERATE_GET_CLASS_WITH_CACHE (sta_thread_attribute, "System", "STAThreadAttribute")
 static GENERATE_GET_CLASS_WITH_CACHE (activation_services, "System.Runtime.Remoting.Activation", "ActivationServices")
 
+static GENERATE_GET_CLASS_WITH_CACHE (asyncresult, "System.Runtime.Remoting.Messaging", "AsyncResult");
 
 #define ldstr_lock() mono_coop_mutex_lock (&ldstr_section)
 #define ldstr_unlock() mono_coop_mutex_unlock (&ldstr_section)
@@ -7977,7 +7978,7 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
-	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new_checked (domain, mono_defaults.asyncresult_class, error);
+	MonoAsyncResult *res = (MonoAsyncResult *)mono_object_new_checked (domain, mono_class_get_asyncresult_class (), error);
 	return_val_if_nok (error, NULL);
 	MonoObject *context = mono_runtime_capture_context (domain, error);
 	return_val_if_nok (error, NULL);

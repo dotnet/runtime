@@ -114,7 +114,8 @@ MonoDelegateHandle
 mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error);
 
 /* Lazy class loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (string_builder, "System.Text", "StringBuilder");
+//used by marshal-ilgen.c
+GENERATE_TRY_GET_CLASS_WITH_CACHE (stringbuilder, "System.Text", "StringBuilder");
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_function_pointer_attribute, "System.Runtime.InteropServices", "UnmanagedFunctionPointerAttribute");
 
 static MonoImage*
@@ -833,8 +834,8 @@ mono_string_builder_new (int starting_string_length)
 		MonoMethodDesc *desc;
 		MonoMethod *m;
 
-		string_builder_class = mono_class_get_string_builder_class ();
-		g_assert (string_builder_class);
+		string_builder_class = mono_class_try_get_stringbuilder_class ();
+		g_assert (string_builder_class); //TODO don't swallow the error
 		desc = mono_method_desc_new (":.ctor(int)", FALSE);
 		m = mono_method_desc_search_in_class (desc, string_builder_class);
 		g_assert (m);
@@ -1501,7 +1502,7 @@ mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec 
 		return TRUE;
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_CLASS:
-		if (t->data.klass == mono_defaults.stringbuilder_class) {
+		if (t->data.klass == mono_class_try_get_stringbuilder_class ()) {
 			gboolean need_free;
 			mono_marshal_get_ptr_to_stringbuilder_conv (piinfo, spec, &need_free);
 			return need_free;
@@ -3264,7 +3265,7 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 			
 	switch (t->type) {
 	case MONO_TYPE_VALUETYPE:
-		if (t->data.klass == mono_defaults.handleref_class)
+		if (t->data.klass == mono_class_try_get_handleref_class ())
 			return get_marshal_cb ()->emit_marshal_handleref (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 		
 		return get_marshal_cb ()->emit_marshal_vtype (m, argnum, t, spec, conv_arg, conv_arg_type, action);

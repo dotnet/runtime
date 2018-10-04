@@ -901,7 +901,6 @@ typedef struct {
 	MonoClass *array_class;
 	MonoClass *delegate_class;
 	MonoClass *multicastdelegate_class;
-	MonoClass *asyncresult_class;
 	MonoClass *manualresetevent_class;
 	MonoClass *typehandle_class;
 	MonoClass *fieldhandle_class;
@@ -922,25 +921,18 @@ typedef struct {
 	MonoClass *appdomain_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
-	MonoClass *stringbuilder_class;
-	MonoClass *math_class;
 	MonoClass *stack_frame_class;
-	MonoClass *stack_trace_class;
 	MonoClass *marshal_class;
 	MonoClass *typed_reference_class;
 	MonoClass *argumenthandle_class;
 	MonoClass *monitor_class;
 	MonoClass *generic_ilist_class;
 	MonoClass *generic_nullable_class;
-	MonoClass *handleref_class;
 	MonoClass *attribute_class;
-	MonoClass *customattribute_data_class;
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
-	MonoClass *threadpool_wait_callback_class;
 	MonoMethod *threadpool_perform_wait_callback_method;
-	MonoClass *console_class;
 } MonoDefaults;
 
 #ifdef DISABLE_REMOTING
@@ -1007,6 +999,7 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (valuetype)
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
 

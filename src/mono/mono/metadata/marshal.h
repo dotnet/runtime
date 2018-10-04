@@ -33,6 +33,10 @@ typedef const gunichar2 *mono_bstr_const;
 		mono_marshal_find_nonzero_bit_offset ((guint8*)&tmp, sizeof (tmp), (byte_offset), (bitmask)); \
 	} while (0)
 
+
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(stringbuilder)
+
+
 /*
  * This structure holds the state kept by the emit_ marshalling functions.
  * This is exported so it can be used by cominterop.c.

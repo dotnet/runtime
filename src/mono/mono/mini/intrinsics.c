@@ -19,6 +19,7 @@
 #include <mono/utils/mono-memory-model.h>
 
 static GENERATE_GET_CLASS_WITH_CACHE (runtime_helpers, "System.Runtime.CompilerServices", "RuntimeHelpers")
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 /* optimize the simple GetGenericValueImpl/SetGenericValueImpl generic icalls */
 static MonoInst*
@@ -132,7 +133,7 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 	}
 	/* The LLVM backend supports these intrinsics */
-	if (cmethod->klass == mono_defaults.math_class) {
+	if (cmethod->klass == mono_class_try_get_math_class ()) {
 		if (strcmp (cmethod->name, "Sin") == 0) {
 			opcode = OP_SIN;
 		} else if (strcmp (cmethod->name, "Cos") == 0) {
@@ -1155,7 +1156,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				mini_set_inline_failure (cfg, "MethodBase:GetCurrentMethod ()");
 			return ins;
 		}
-	} else if (cmethod->klass == mono_defaults.math_class) {
+	} else if (cmethod->klass == mono_class_try_get_math_class ()) {
 		/* 
 		 * There is general branchless code for Min/Max, but it does not work for 
 		 * all inputs:

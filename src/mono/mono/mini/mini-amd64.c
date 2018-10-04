@@ -56,6 +56,9 @@ static gboolean optimize_for_xen = TRUE;
 #define optimize_for_xen 0
 #endif
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
+
+
 #define IS_IMM32(val) ((((guint64)val) >> 32) == 0)
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
@@ -8249,7 +8252,7 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 	MonoInst *ins = NULL;
 	int opcode = 0;
 
-	if (cmethod->klass == mono_defaults.math_class) {
+	if (cmethod->klass == mono_class_try_get_math_class ()) {
 		if (strcmp (cmethod->name, "Sin") == 0) {
 			opcode = OP_SIN;
 		} else if (strcmp (cmethod->name, "Cos") == 0) {

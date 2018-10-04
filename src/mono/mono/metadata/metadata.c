@@ -6385,7 +6385,7 @@ handle_enum:
 			t = mono_class_enum_basetype (type->data.klass)->type;
 			goto handle_enum;
 		}
-		if (type->data.klass == mono_defaults.handleref_class){
+		if (type->data.klass == mono_class_try_get_handleref_class ()){
 			*conv = MONO_MARSHAL_CONV_HANDLEREF;
 			return MONO_NATIVE_INT;
 		}
