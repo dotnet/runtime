@@ -4526,6 +4526,10 @@ public:
     }
     */
 
+    // Called during AssemblyLoadContext teardown to clean up all structures
+    // associated with thread statics for the specific Module
+    void DeleteThreadStaticData(ModuleIndex index);
+
 protected:
     
     // Called during AD teardown to clean up any references this 

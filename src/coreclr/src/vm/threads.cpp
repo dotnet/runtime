@@ -9136,6 +9136,28 @@ void Thread::DeleteThreadStaticData()
 
 //+----------------------------------------------------------------------------
 //
+//  Method:     Thread::DeleteThreadStaticData   public
+//
+//  Synopsis:   Delete the static data for the given module. This is called
+//              when the AssemblyLoadContext unloads.
+//
+//
+//+----------------------------------------------------------------------------
+
+void Thread::DeleteThreadStaticData(ModuleIndex index)
+{
+    for (SIZE_T i = 0; i < m_TLBTableSize; ++i)
+    {
+        ThreadLocalBlock * pTLB = m_pTLBTable[i];
+        if (pTLB != NULL)
+        {
+            pTLB->FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
+        }
+    }
+}
+
+//+----------------------------------------------------------------------------
+//
 //  Method:     Thread::DeleteThreadStaticData   protected
 //
 //  Synopsis:   Delete the static data for the given appdomain. This is called

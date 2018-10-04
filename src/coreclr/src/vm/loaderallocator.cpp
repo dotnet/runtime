@@ -701,6 +701,8 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
     return ret;
 } // LoaderAllocator::Destroy
 
+#define MAX_LOADERALLOCATOR_HANDLE 0x40000000
+
 // Returns NULL if the managed LoaderAllocator object was already collected.
 LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 {
@@ -714,32 +716,6 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
 
     LOADERHANDLE retVal;
 
-    GCPROTECT_BEGIN(value);
-    CrstHolder ch(&m_crstLoaderAllocator);
-
-    retVal = AllocateHandle_Unlocked(value);
-    GCPROTECT_END();
-
-    return retVal;
-}
-
-#define MAX_LOADERALLOCATOR_HANDLE 0x40000000
-
-// Returns NULL if the managed LoaderAllocator object was already collected.
-LOADERHANDLE LoaderAllocator::AllocateHandle_Unlocked(OBJECTREF valueUNSAFE)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    
-    _ASSERTE(m_crstLoaderAllocator.OwnedByCurrentThread());
-    
-    UINT_PTR retVal;
-
     struct _gc
     {
         OBJECTREF value;
@@ -752,57 +728,106 @@ LOADERHANDLE LoaderAllocator::AllocateHandle_Unlocked(OBJECTREF valueUNSAFE)
 
     GCPROTECT_BEGIN(gc);
 
-    gc.value = valueUNSAFE;
+    gc.value = value;
 
+    // The handle table is read locklessly, be careful
+    if (IsCollectible())
     {
-        // The handle table is read locklessly, be careful
-        if (IsCollectible())
-        {
-            gc.loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
-            if (gc.loaderAllocator == NULL)
-            {   // The managed LoaderAllocator is already collected, we cannot allocate any exposed managed objects for it
-                retVal = NULL;
-            }
-            else
-            {
-                DWORD slotsUsed = gc.loaderAllocator->GetSlotsUsed();
-
-                if (slotsUsed > MAX_LOADERALLOCATOR_HANDLE)
-                {
-                    COMPlusThrowOM();
-                }
-                gc.handleTable = gc.loaderAllocator->GetHandleTable();
-
-                /* If we need to enlarge the table, do it now. */
-                if (slotsUsed >= gc.handleTable->GetNumComponents())
-                {
-                    gc.handleTableOld = gc.handleTable;
-
-                    DWORD newSize = gc.handleTable->GetNumComponents() * 2;
-                    gc.handleTable = (PTRARRAYREF)AllocateObjectArray(newSize, g_pObjectClass);
-
-                    /* Copy out of old array */
-                    memmoveGCRefs(gc.handleTable->GetDataPtr(), gc.handleTableOld->GetDataPtr(), slotsUsed * sizeof(Object *));
-                    gc.loaderAllocator->SetHandleTable(gc.handleTable);
-                }
-
-                gc.handleTable->SetAt(slotsUsed, gc.value);
-                gc.loaderAllocator->SetSlotsUsed(slotsUsed + 1);
-                retVal = (UINT_PTR)((slotsUsed + 1) << 1);
-            }
+        gc.loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
+        if (gc.loaderAllocator == NULL)
+        {   // The managed LoaderAllocator is already collected, we cannot allocate any exposed managed objects for it
+            retVal = NULL;
         }
         else
         {
-            OBJECTREF* pRef = GetDomain()->AllocateObjRefPtrsInLargeTable(1);
-            SetObjectReference(pRef, gc.value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
-            retVal = (((UINT_PTR)pRef) + 1);
+            DWORD slotsUsed;
+            DWORD numComponents;
+
+            do
+            {
+                {
+                    CrstHolder ch(&m_crstLoaderAllocator);
+
+                    gc.handleTable = gc.loaderAllocator->GetHandleTable();
+
+                    if (!m_freeHandleIndexesStack.IsEmpty())
+                    {
+                        // Reuse a handle slot that was previously freed
+                        DWORD freeHandleIndex = m_freeHandleIndexesStack.Pop();
+                        gc.handleTable->SetAt(freeHandleIndex, gc.value);
+                        retVal = (UINT_PTR)((freeHandleIndex + 1) << 1);
+                        break;
+                    }
+
+                    slotsUsed = gc.loaderAllocator->GetSlotsUsed();
+
+                    if (slotsUsed > MAX_LOADERALLOCATOR_HANDLE)
+                    {
+                        COMPlusThrowOM();
+                    }
+
+                    numComponents = gc.handleTable->GetNumComponents();
+
+                    if (slotsUsed < numComponents)
+                    {
+                        // The handle table is large enough, allocate next slot from it
+                        gc.handleTable->SetAt(slotsUsed, gc.value);
+                        gc.loaderAllocator->SetSlotsUsed(slotsUsed + 1);
+                        retVal = (UINT_PTR)((slotsUsed + 1) << 1);
+                        break;
+                    }
+                }
+
+                // We need to enlarge the handle table
+                gc.handleTableOld = gc.handleTable;
+
+                DWORD newSize = numComponents * 2;
+                gc.handleTable = (PTRARRAYREF)AllocateObjectArray(newSize, g_pObjectClass);
+
+                {
+                    CrstHolder ch(&m_crstLoaderAllocator);
+
+                    if (gc.loaderAllocator->GetHandleTable() == gc.handleTableOld)
+                    {
+                        /* Copy out of old array */
+                        memmoveGCRefs(gc.handleTable->GetDataPtr(), gc.handleTableOld->GetDataPtr(), slotsUsed * sizeof(Object *));
+                        gc.loaderAllocator->SetHandleTable(gc.handleTable);
+                    }
+                    else
+                    {
+                        // Another thread has beaten us on enlarging the handle array, use the handle table it has allocated
+                        gc.handleTable = gc.loaderAllocator->GetHandleTable();
+                    }
+
+                    numComponents = gc.handleTable->GetNumComponents();
+
+                    if (slotsUsed < numComponents)
+                    {
+                        // The handle table is large enough, allocate next slot from it
+                        gc.handleTable->SetAt(slotsUsed, gc.value);
+                        gc.loaderAllocator->SetSlotsUsed(slotsUsed + 1);
+                        retVal = (UINT_PTR)((slotsUsed + 1) << 1);
+                        break;
+                    }
+                }
+
+                // Loop in the unlikely case that another thread has beaten us on the handle array enlarging, but
+                // all the slots were used up before the current thread was scheduled.
+            } 
+            while (true); 
         }
+    }
+    else
+    {
+        OBJECTREF* pRef = GetDomain()->AllocateObjRefPtrsInLargeTable(1);
+        SetObjectReference(pRef, gc.value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
+        retVal = (((UINT_PTR)pRef) + 1);
     }
 
     GCPROTECT_END();
 
-    return (LOADERHANDLE)retVal;
-} // LoaderAllocator::AllocateHandle_Unlocked
+    return retVal;
+}
 
 OBJECTREF LoaderAllocator::GetHandleValue(LOADERHANDLE handle)
 {
@@ -820,18 +845,32 @@ OBJECTREF LoaderAllocator::GetHandleValue(LOADERHANDLE handle)
     return objRet;
 }
 
-void LoaderAllocator::ClearHandle(LOADERHANDLE handle)
+void LoaderAllocator::FreeHandle(LOADERHANDLE handle)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
         PRECONDITION(handle != NULL);
     }
     CONTRACTL_END;
 
     SetHandleValue(handle, NULL);
+
+    if ((((UINT_PTR)handle) & 1) == 0)
+    {
+        // The slot value doesn't have the low bit set, so it is an index to the handle table.
+        // In this case, push the index of the handle to the stack of freed indexes for
+        // reuse.
+        CrstHolder ch(&m_crstLoaderAllocator);
+
+        UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
+        // The Push can fail due to OOM. Ignore this failure, it is better than crashing. The
+        // only effect is that the slot will not be reused in the future if the runtime survives
+        // the low memory situation.
+        m_freeHandleIndexesStack.Push((DWORD)index);
+    }
 }
 
 OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJECTREF valueUNSAFE, OBJECTREF compareUNSAFE)
@@ -860,34 +899,32 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
     gc.value = valueUNSAFE;
     gc.compare = compareUNSAFE;
 
-    /* The handle table is read locklessly, be careful */
+    if ((((UINT_PTR)handle) & 1) != 0)
     {
+        OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
+        gc.previous = *ptr;
+        if ((*ptr) == gc.compare)
+        {
+            SetObjectReference(ptr, gc.value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
+        }
+    }
+    else
+    {
+        /* The handle table is read locklessly, be careful */
         CrstHolder ch(&m_crstLoaderAllocator);
 
-        if ((((UINT_PTR)handle) & 1) != 0)
-        {
-            OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-            gc.previous = *ptr;
-            if ((*ptr) == gc.compare)
-            {
-                SetObjectReference(ptr, gc.value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
-            }
-        }
-        else
-        {
-            _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
+        _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
 
-            UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
-            LOADERALLOCATORREF loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
-            PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
+        UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
+        LOADERALLOCATORREF loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
+        PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
 
-            gc.previous = handleTable->GetAt(index);
-            if (gc.previous == gc.compare)
-            {
-                handleTable->SetAt(index, gc.value);
-            }
+        gc.previous = handleTable->GetAt(index);
+        if (gc.previous == gc.compare)
+        {
+            handleTable->SetAt(index, gc.value);
         }
-    } // End critical section
+    }
 
     retVal = gc.previous;
     GCPROTECT_END();
@@ -899,35 +936,35 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
         PRECONDITION(handle != NULL);
     }
     CONTRACTL_END;
 
+    GCX_COOP();
+
     GCPROTECT_BEGIN(value);
 
-    // The handle table is read locklessly, be careful
+    // If the slot value does have the low bit set, then it is a simple pointer to the value
+    // Otherwise, we will need a more complicated operation to clear the value.
+    if ((((UINT_PTR)handle) & 1) != 0)
     {
+        OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
+        SetObjectReference(ptr, value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
+    }
+    else
+    {
+        // The handle table is read locklessly, be careful
         CrstHolder ch(&m_crstLoaderAllocator);
 
-        // If the slot value does have the low bit set, then it is a simple pointer to the value
-        // Otherwise, we will need a more complicated operation to clear the value.
-        if ((((UINT_PTR)handle) & 1) != 0)
-        {
-            OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-            SetObjectReference(ptr, value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
-        }
-        else
-        {
-            _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
+        _ASSERTE(!ObjectHandleIsNull(m_hLoaderAllocatorObjectHandle));
 
-            UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
-            LOADERALLOCATORREF loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
-            PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
-            handleTable->SetAt(index, value);
-        }
+        UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
+        LOADERALLOCATORREF loaderAllocator = (LOADERALLOCATORREF)ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
+        PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
+        handleTable->SetAt(index, value);
     }
 
     GCPROTECT_END();
@@ -1001,7 +1038,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     m_pDomain = pDomain;
 
-    m_crstLoaderAllocator.Init(CrstLoaderAllocator);
+    m_crstLoaderAllocator.Init(CrstLoaderAllocator, (CrstFlags)CRST_UNSAFE_COOPGC);
 
     //
     // Initialize the heaps

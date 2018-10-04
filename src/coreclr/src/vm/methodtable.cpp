@@ -3489,7 +3489,7 @@ void MethodTable::DoRunClassInitThrowing()
                 if (hNewInitException != NULL && 
                     InterlockedCompareExchangeT((&pEntry->m_hInitException), hNewInitException, hOrigInitException) != hOrigInitException)
                 {
-                    pEntry->m_pLoaderAllocator->ClearHandle(hNewInitException);
+                    pEntry->m_pLoaderAllocator->FreeHandle(hNewInitException);
                 }
             }
         }
@@ -4042,7 +4042,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
 
         if (FastInterlockCompareExchangePointer(&(EnsureWritablePages(GetWriteableDataForWrite())->m_hExposedClassObject), exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
-            pLoaderAllocator->ClearHandle(exposedClassObjectHandle);
+            pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
         }
 
         GCPROTECT_END();

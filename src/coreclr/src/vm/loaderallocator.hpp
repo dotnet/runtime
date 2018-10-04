@@ -93,6 +93,38 @@ public:
     COUNT_T Hash();
 };
 
+// Segmented stack to store freed handle indices
+class SegmentedHandleIndexStack
+{
+    // Segment of the stack
+    struct Segment
+    {
+        static const int Size = 64;
+
+        Segment* m_prev;
+        DWORD    m_data[Size];
+    };
+
+    // Segment containing the TOS
+    Segment * m_TOSSegment = NULL;
+    // One free segment to prevent rapid delete / new if pop / push happens rapidly
+    // at the boundary of two segments.
+    Segment * m_freeSegment = NULL;
+    // Index of the top of stack in the TOS segment
+    int       m_TOSIndex = Segment::Size;
+
+public:
+
+    // Push the value to the stack. If the push cannot be done due to OOM, return false;
+    inline bool Push(DWORD value);
+
+    // Pop the value from the stack
+    inline DWORD Pop();
+
+    // Check if the stack is empty.
+    inline bool IsEmpty();
+};
+
 class StringLiteralMap;
 class VirtualCallStubManager;
 template <typename ELEMENT>
@@ -210,8 +242,9 @@ private:
 
     SList<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
 
+    SegmentedHandleIndexStack m_freeHandleIndexesStack;
+
 #ifndef DACCESS_COMPILE
-    LOADERHANDLE AllocateHandle_Unlocked(OBJECTREF value);
 
 public:
     // CleanupFailedTypeInit is called from AppDomain
@@ -393,7 +426,7 @@ public:
 
     void SetHandleValue(LOADERHANDLE handle, OBJECTREF value);
     OBJECTREF CompareExchangeValueInHandle(LOADERHANDLE handle, OBJECTREF value, OBJECTREF compare);
-    void ClearHandle(LOADERHANDLE handle);
+    void FreeHandle(LOADERHANDLE handle);
 
     // The default implementation is a no-op. Only collectible loader allocators implement this method.
     virtual void RegisterHandleForCleanup(OBJECTHANDLE /* objHandle */) { }
