@@ -7,7 +7,12 @@ Currently (as of .NET Core 2.1) the host tracing is only written to the `stderr`
 
 ## Proposed changes
 For .NET Core 3 the proposal is to keep the existing behavior as described above and add two additional ways to capture the tracing:
-* Redirect the trace to a file instead - this would be done by setting `COREHOST_TRACE=1` and also `COREHOST_TRACEFILE=<path>` in the environment for the process.
+* Redirect the trace to a file (always appends) - this would be done by setting `COREHOST_TRACE=1` and also `COREHOST_TRACEFILE=<path>` in the environment for the process.
+* Add a knob to control trace verbosity `COREHOST_TRACE_VERBOSITY`.  If unset tracing will be exhaustive.  When set in the range 1-4 the tracing verbosity will increase with an increase in the value of `COREHOST_TRACE_VERBOSITY`.
+  * `COREHOST_TRACE_VERBOSITY=1 will show errors
+  * `COREHOST_TRACE_VERBOSITY=2 will show errors and warnings
+  * `COREHOST_TRACE_VERBOSITY=3 will show errors, warnings, and info
+  * `COREHOST_TRACE_VERBOSITY=4 will show errors, warnings, info, and verbose.
 * For custom host support a way to capture the trace output in code. This will be done by adding `*_set_trace_listener` functions to `hostfxr` and `hostpolicy` which would let the custom host intercept all tracing.
 
 This is directly related to #4455.
@@ -26,7 +31,7 @@ Currently (as of .NET Core 2.1) all these components include the same code for t
 ## New trace routing
 The host components implement two routes for tracing:
 * Tracing to `stderr` (this is the .NET Core 2.1 behavior). This default route is activated by setting the `COREHOST_TRACE=1` environment variable.
-* Tracing to a file (new in .NET Core 3). This route is activated by setting the `COREHOST_TRACE=1` and also providing the full path to the trace file in `COREHOST_TRACEFILE=<path>` environment variable. This overrides the `stderr` route, so if the file tracing is enabled, traces will not be written to `stderr`.
+* Tracing to a file (new in .NET Core 3). This route is activated by setting the `COREHOST_TRACE=1` and also providing the full path to the trace file in `COREHOST_TRACEFILE=<path>` environment variable. This overrides the `stderr` route, so if the file tracing is enabled, traces will not be written to `stderr`.  Instead traces will be appended to the specified file.
 
 Custom host can enable a third route which passes tracing into a registered trace listener. The custom host does this by implementating `host_trace_listener` interface and registering it through:
 ``` C++
@@ -71,7 +76,7 @@ Methods on the trace listener interface can be called from any thread in the app
 ## Future investments
 ### Trace content
 Currently the host components tend to trace a lot. The trace contains lot of interesting information but it's done in a very verbose way which is sometimes hard to navigate. Future investment should look at the common scenarios which are using the host tracing and optimize the trace output for those scenarios. This doesn't necessarily mean decrease the amount of tracing, but possibly introduce "summary sections" which would describe the end result decisions for certain scenarios.  
-It would also be good to review the usage of verbose versus info tracing and make it consistent. Possibly also add an environment variable (or similar) to control info/verbose tracing for the `stderr` and file based tracing. Currently all traces are written always.
+It would also be good to review the usage of verbose versus info tracing and make it consistent.
 
 ### Interaction with other diagnostics in the .NET Core
 The host tracing covers several areas which are interesting for diagnosing common failure patterns:
