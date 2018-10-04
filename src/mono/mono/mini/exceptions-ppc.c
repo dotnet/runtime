@@ -452,7 +452,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_preserve_exception" : (rethrow ? "rethrow_exception" : "throw_exception"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" : (preserve_ips ? "rethrow_preserve_exception" : (rethrow ? "rethrow_exception" : "throw_exception")), start, code - start, ji, unwind_ops);
 
 	return start;
 }
