@@ -2383,10 +2383,6 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
         while (appDomainIterator.Next())
         {
             AppDomain * pAppDomain = appDomainIterator.GetDomain();
-            if (pAppDomain->IsUnloading())
-            {
-                continue;
-            }
             hr = EnumerateDomainClosedMethodDescs(
                 pAppDomain,
                 pModule,

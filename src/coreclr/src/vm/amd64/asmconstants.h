@@ -147,22 +147,22 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_State
                     == offsetof(Thread, m_State));
 
-#define               OFFSETOF__Thread__m_pDomain                   0x20
+#define               OFFSETOF__Thread__m_pDomain                   0x18
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pDomain
                     == offsetof(Thread, m_pDomain));
 
-#define               OFFSETOF__Thread__m_dwLockCount               0x28
+#define               OFFSETOF__Thread__m_dwLockCount               0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_dwLockCount
                     == offsetof(Thread, m_dwLockCount));
 
-#define               OFFSETOF__Thread__m_ThreadId                  0x2C
+#define               OFFSETOF__Thread__m_ThreadId                  0x24
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_ThreadId
                     == offsetof(Thread, m_ThreadId));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x60
+#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x58
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
 
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x68
+#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x60
 ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
 
 #define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0

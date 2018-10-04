@@ -177,33 +177,16 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
     // AD available in catch-up enumeration
     //     < AppDomainCreationFinished issued
     //     < AD NOT available from catch-up enumeration
-    //     < AppDomainShutdownStarted issued
     //     
     // The AppDomainIterator constructor parameter m_bActive is set to be TRUE below,
-    // meaning only AppDomains in the range [STAGE_ACTIVE;STAGE_CLOSED) will be included
+    // meaning only AppDomains in stage STAGE_ACTIVE or higher will be included
     // in the iteration.
     //     * AppDomainCreationFinished (with S_OK hrStatus) is issued once the AppDomain
     //         reaches STAGE_ACTIVE.
-    //     * AppDomainShutdownStarted is issued while the AppDomain is in STAGE_EXITED,
-    //         just before it hits STAGE_FINALIZING. (STAGE_EXITED < STAGE_CLOSED)
-    //     * To prevent AppDomains from appearing in the enumeration after we would have
-    //         sent the AppDomainShutdownStarted event for them, we must add an
-    //         additional check in the enumeration loop to exclude ADs such that
-    //         pAppDomain->IsUnloading() (i.e., > STAGE_UNLOAD_REQUESTED). Thus, for an
-    //         AD for which AppDomainShutdownStarted callback is issued, we have AD >=
-    //         STAGE_EXITED > STAGE_UNLOAD_REQUESTED, and thus, that AD will be excluded
-    //         by the pAppDomain->IsUnloading() check.
     AppDomainIterator appDomainIterator(TRUE);
     while (appDomainIterator.Next())
     {
         AppDomain * pAppDomain = appDomainIterator.GetDomain();
-        if (pAppDomain->IsUnloading())
-        {
-            // Must skip app domains that are in the process of unloading, to ensure
-            // the rules around which entities the profiler should find in the
-            // enumeration. See code:#ProfilerEnumAppDomains for details.
-            continue;
-        }
 
         // Of course, the AD could start unloading here, but if it does we're guaranteed
         // the profiler has had a chance to see the Unload callback for the AD, and thus
@@ -271,9 +254,6 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
     //     * AssemblyLoadFinished is issued once the Assembly reaches
     //         code:FILE_LOAD_LOADLIBRARY
     //     * AssemblyUnloadStarted is issued as a result of either:
-    //         * AppDomain unloading. In this case such assemblies / modules would be
-    //             excluded by the AD iterator above, because it excludes ADs if
-    //             pAppDomain->IsUnloading()
     //         * Collectible assemblies unloading. Such assemblies will no longer be
     //             enumerable.
     //

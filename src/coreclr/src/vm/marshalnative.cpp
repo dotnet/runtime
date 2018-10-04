@@ -2256,13 +2256,10 @@ FCIMPL2(void, MarshalNative::ChangeWrapperHandleStrength, Object* orefUNSAFE, CL
         
         if (pWrap == NULL)
             COMPlusThrowOM();
-        AppDomainFromIDHolder pDomain(pWrap->GetDomainID(), FALSE);
-        pDomain.ThrowIfUnloaded();
         if (fIsWeak != 0)
             pWrap->MarkHandleWeak();
         else
             pWrap->ResetHandleStrength();
-        pDomain.Release();
     }        
 
     HELPER_METHOD_FRAME_END();

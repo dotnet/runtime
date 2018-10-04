@@ -3604,10 +3604,6 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypesForIIDs(
     DD_ENTER_MAY_THROW;
 
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    if (pAppDomain->IsUnloading())
-    {
-        return;
-    }
 
     {
         pTypes->Alloc(iids.Count());
@@ -3654,10 +3650,6 @@ void DacDbiInterfaceImpl::GetCachedWinRTTypes(
     DD_ENTER_MAY_THROW;
 
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    if (pAppDomain->IsUnloading())
-    {
-        return;
-    }
 
     InlineSArray<PTR_MethodTable, 32> rgMT;
     InlineSArray<GUID, 32> rgGuid;
@@ -4308,10 +4300,6 @@ void DacDbiInterfaceImpl::EnumerateAppDomains(
         // It's critical that we don't yield appdomains after the unload event has been sent.
         // See code:IDacDbiInterface#Enumeration for details.
         AppDomain * pAppDomain = iterator.GetDomain(); 
-        if (pAppDomain->IsUnloading())
-        {
-            continue;
-        }
         
         VMPTR_AppDomain vmAppDomain = VMPTR_AppDomain::NullPtr();
         vmAppDomain.SetHostPtr(pAppDomain);
@@ -4338,10 +4326,6 @@ void  DacDbiInterfaceImpl::EnumerateAssembliesInAppDomain(
     // in the domain. This is to enforce rules at code:IDacDbiInterface#Enumeration.
     // See comment in code:DacDbiInterfaceImpl::EnumerateModulesInAssembly code for details.
     AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-    if (pAppDomain->IsUnloading())
-    {
-        return;
-    }
 
     // Pass the magical flags to the loader enumerator to get all Execution-only assemblies.
     iterator = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));
@@ -4373,18 +4357,6 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     _ASSERTE(fpCallback != NULL);
 
     DomainAssembly * pDomainAssembly = vmAssembly.GetDacPtr();
-
-    // If the appdomain or assembly containing this module is unloading, then don't enumerate any modules.
-    // in the domain. This is to enforce rules at code:IDacDbiInterface#Enumeration, specifically
-    // that new objects are not available after the unload event is sent. 
-    // This is a very large hammer, but since modules only unload with appdomains or assemblies, we're 
-    // erring on the side of safety. If the debugger happens to have VMPTR_DomainFiles (CordbModules) already
-    // cached, it can still use those until the unload event. 
-    if (pDomainAssembly->IsUnloading())
-    {
-        return;
-    }
-    
 
     // If the domain is not yet fully-loaded, don't advertise it yet.
     // It's not ready to be inspected. 

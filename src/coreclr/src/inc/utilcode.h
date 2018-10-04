@@ -4610,15 +4610,6 @@ inline BOOL IsFinalizerThread ()
     return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_Finalizer);
 }
 
-inline BOOL IsADUnloadHelperThread ()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    return !!(((size_t)ClrFlsGetValue (TlsIdx_ThreadType)) & ThreadType_ADUnloadHelper);
-}
-
 inline BOOL IsShutdownHelperThread ()
 {
     STATIC_CONTRACT_NOTHROW;

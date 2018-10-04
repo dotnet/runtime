@@ -341,14 +341,7 @@ LOCAL_LABEL(UMThunkStub_HaveThread):
 
 LOCAL_LABEL(UMThunkStub_InCooperativeMode):
         ldr                 r12, [r7, #UMThunkStub_HiddenArgOffset]
-
-        ldr                 r0, [r5, #Thread__m_pDomain]
-        ldr                 r1, [r12, #UMEntryThunk__m_dwDomainId]
-        ldr                 r0, [r0, #AppDomain__m_dwId]
         ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
-        cmp                 r0, r1
-        bne                 LOCAL_LABEL(UMThunkStub_WrongAppDomain)
-
         ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
         cbz                 r2, LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
@@ -401,94 +394,7 @@ LOCAL_LABEL(UMThunkStub_DoTrapReturningThreads):
         add                 sp, #SIZEOF__FloatArgumentRegisters
         b                   LOCAL_LABEL(UMThunkStub_InCooperativeMode)
 
-LOCAL_LABEL(UMThunkStub_WrongAppDomain):
-        sub                 sp, #SIZEOF__FloatArgumentRegisters
-        vstm                sp, {d0-d7}
-
-        ldr                 r0, [r7, #UMThunkStub_HiddenArgOffset]  // UMEntryThunk* pUMEntry
-        mov                 r2, r7              // void * pArgs
-        // remaining arguments are unused
-        bl                  C_FUNC(UM2MDoADCallBack)
-
-        // Restore non-FP return value.
-        ldr                 r0, [r7, #0]
-        ldr                 r1, [r7, #4]
-
-        // Restore FP return value or HFA.
-        vldm                sp, {d0-d3}
-        b                   LOCAL_LABEL(UMThunkStub_PostCall)
-
         NESTED_END UMThunkStub,_TEXT
-
-// UM2MThunk_WrapperHelper(void *pThunkArgs,             // r0
-//                         int cbStackArgs,              // r1 (unused)
-//                         void *pAddr,                  // r2 (unused)
-//                         UMEntryThunk *pEntryThunk,    // r3
-//                         Thread *pThread)              // [sp, #0]
-
-        NESTED_ENTRY UM2MThunk_WrapperHelper, _TEXT, NoHandler
-
-        PROLOG_PUSH         "{r4-r7,r11,lr}"
-        PROLOG_STACK_SAVE_OFFSET   r7, #12
-
-        CHECK_STACK_ALIGNMENT
-
-        mov                 r12, r3                     // r12 = UMEntryThunk *
-
-        //
-        // Note that layout of the arguments is given by UMThunkStub frame
-        //
-        mov                 r5, r0                      // r5 = pArgs
-
-        ldr                 r3, [r12, #UMEntryThunk__m_pUMThunkMarshInfo]
-        
-        ldr                 r2, [r3, #UMThunkMarshInfo__m_cbActualArgSize]
-        cbz                 r2, LOCAL_LABEL(UM2MThunk_WrapperHelper_ArgumentsSetup)
-
-        add                 r0, r5, #UMThunkStub_StackArgsSize // Source pointer
-        add                 r0, r0, r2
-        lsr                 r1, r2, #2      // Count of stack slots to copy
-
-        and                 r2, r2, #4      // Align the stack
-        sub                 sp, sp, r2
-
-LOCAL_LABEL(UM2MThunk_WrapperHelper_StackLoop):
-        ldr                 r2, [r0,#-4]!
-        str                 r2, [sp,#-4]!
-        subs                r1, r1, #1
-        bne                 LOCAL_LABEL(UM2MThunk_WrapperHelper_StackLoop)
-
-LOCAL_LABEL(UM2MThunk_WrapperHelper_ArgumentsSetup):
-        ldr                 r4, [r3, #UMThunkMarshInfo__m_pILStub]
-
-        // reload floating point registers
-        sub                 r6, r5, #SIZEOF__FloatArgumentRegisters
-        vldm                r6, {d0-d7}
-
-        // reload argument registers
-        ldm                 r5, {r0-r3}
-
-        CHECK_STACK_ALIGNMENT
-
-        blx                 r4
-
-        // Save non-floating point return
-        str                 r0, [r5, #0]
-        str                 r1, [r5, #4]
-
-        // Save FP return value or HFA.
-        vstm                r6, {d0-d3}
-
-#ifdef _DEBUG
-        // trash the floating point registers to ensure that the HFA return values 
-        // won't survive by accident
-        vldm                sp, {d0-d3}
-#endif
-
-        EPILOG_STACK_RESTORE_OFFSET r7, #12
-        EPILOG_POP          "{r4-r7,r11,pc}"
-
-        NESTED_END UM2MThunk_WrapperHelper, _TEXT
 
 // ------------------------------------------------------------------
 

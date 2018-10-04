@@ -18,7 +18,6 @@ extern TheUMEntryPrestubWorker:proc
 extern UMEntryPrestubUnwindFrameChainHandler:proc
 extern UMThunkStubUnwindFrameChainHandler:proc
 extern g_TrapReturningThreads:dword
-extern UM2MDoADCallBack:proc
 extern UMThunkStubRareDisableWorker:proc
 extern ReversePInvokeBadTransition:proc
 
@@ -188,14 +187,6 @@ HaveThread:
 
 InCooperativeMode:
 
-        mov             rax, [r12 + OFFSETOF__Thread__m_pDomain]
-        mov             eax, [rax + OFFSETOF__AppDomain__m_dwId]
-
-        mov             r11d, [METHODDESC_REGISTER + OFFSETOF__UMEntryThunk__m_dwDomainId]
-
-        cmp             rax, r11
-        jne             WrongAppDomain
-
         mov             r11, [METHODDESC_REGISTER + OFFSETOF__UMEntryThunk__m_pUMThunkMarshInfo]
         mov             eax, [r11 + OFFSETOF__UMThunkMarshInfo__m_cbActualArgSize]                      ; stack_args
         test            rax, rax                                                                        ; stack_args
@@ -322,137 +313,7 @@ CopyLoop:
         
         jmp             ArgumentsSetup
 
-
-WrongAppDomain:
-        ;
-        ; home register args to the stack
-        ;
-        mov             [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h], rcx
-        mov             [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  8h], rdx
-        mov             [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h], r8
-        mov             [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 18h], r9
-
-        ;
-        ; save off xmm registers
-        ;
-        movdqa          xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET +  0h], xmm0
-        movdqa          xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 10h], xmm1
-        movdqa          xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 20h], xmm2
-        movdqa          xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET + 30h], xmm3
-
-        ;
-        ; call our helper to perform the AD transtion 
-        ;
-        mov             rcx, METHODDESC_REGISTER
-        lea             r8,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET]
-        mov             rax, [METHODDESC_REGISTER + OFFSETOF__UMEntryThunk__m_pUMThunkMarshInfo]
-        mov             r9d, [rax + OFFSETOF__UMThunkMarshInfo__m_cbActualArgSize]
-        call            UM2MDoADCallBack
-
-        ; restore return value
-        mov             rax,  [rbp + UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h]
-        movdqa          xmm0, xmmword ptr [rbp + UMThunkStubAMD64_XMM_SAVE_OFFSET +  0h]
-
-        jmp             PostCall
-
 NESTED_END UMThunkStub, _TEXT
-
-;
-; EXTERN_C void __stdcall UM2MThunk_WrapperHelper(
-;       void *pThunkArgs,               ; rcx
-;       int argLen,                     ; rdx
-;       void *pAddr,                    ; r8            // not used
-;       UMEntryThunk *pEntryThunk,      ; r9
-;       Thread *pThread);               ; [entry_sp + 28h]
-;
-NESTED_ENTRY UM2MThunk_WrapperHelper, _TEXT
-
-
-UM2MThunk_WrapperHelper_STACK_FRAME_SIZE = 0
-
-; number of integer registers saved in prologue
-UM2MThunk_WrapperHelper_NUM_REG_PUSHES = 3
-UM2MThunk_WrapperHelper_STACK_FRAME_SIZE = UM2MThunk_WrapperHelper_STACK_FRAME_SIZE + (UM2MThunk_WrapperHelper_NUM_REG_PUSHES * 8)
-
-UM2MThunk_WrapperHelper_CALLEE_SCRATCH_SIZE = SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES
-UM2MThunk_WrapperHelper_STACK_FRAME_SIZE = UM2MThunk_WrapperHelper_STACK_FRAME_SIZE + UM2MThunk_WrapperHelper_CALLEE_SCRATCH_SIZE
-
-; Ensure that rsp remains 16-byte aligned
-if ((UM2MThunk_WrapperHelper_STACK_FRAME_SIZE + 8) MOD 16) ne 0        ; +8 for caller-pushed return address
-UM2MThunk_WrapperHelper_STACK_FRAME_SIZE = UM2MThunk_WrapperHelper_STACK_FRAME_SIZE + 8
-endif
-
-UM2MThunk_WrapperHelper_FRAME_OFFSET = UM2MThunk_WrapperHelper_CALLEE_SCRATCH_SIZE
-UM2MThunk_WrapperHelper_FIXED_STACK_ALLOC_SIZE = UM2MThunk_WrapperHelper_STACK_FRAME_SIZE - (UM2MThunk_WrapperHelper_NUM_REG_PUSHES * 8)
-
-        push_nonvol_reg rsi
-        push_nonvol_reg rdi
-        push_nonvol_reg rbp
-        alloc_stack     UM2MThunk_WrapperHelper_FIXED_STACK_ALLOC_SIZE
-        set_frame       rbp, UM2MThunk_WrapperHelper_FRAME_OFFSET
-        END_PROLOGUE
-
-        ;
-        ; We are in cooperative mode and in the correct domain. 
-        ; The host has also been notified that we've entered the 
-        ; runtime.  All we have left to do is to copy the stack, 
-        ; setup the register args and then call the managed target
-        ;
-
-        test            rdx, rdx
-        jg              CopyStackArgs
-
-ArgumentsSetup:
-        mov             METHODDESC_REGISTER, r9
-
-        mov             rsi, rcx                ; rsi <- pThunkArgs
-        mov             rcx, [rsi +  0h]
-        mov             rdx, [rsi +  8h]
-        mov             r8,  [rsi + 10h]
-        mov             r9,  [rsi + 18h]
-
-        movdqa          xmm0, xmmword ptr [rsi + UMThunkStubAMD64_XMM_SAVE_OFFSET - UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h]
-        movdqa          xmm1, xmmword ptr [rsi + UMThunkStubAMD64_XMM_SAVE_OFFSET - UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 10h]
-        movdqa          xmm2, xmmword ptr [rsi + UMThunkStubAMD64_XMM_SAVE_OFFSET - UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 20h]
-        movdqa          xmm3, xmmword ptr [rsi + UMThunkStubAMD64_XMM_SAVE_OFFSET - UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET + 30h]
-
-        mov             rax, [METHODDESC_REGISTER + OFFSETOF__UMEntryThunk__m_pUMThunkMarshInfo]      ; rax <- UMThunkMarshInfo*
-        mov             rax, [rax + OFFSETOF__UMThunkMarshInfo__m_pILStub]                              ; rax <- Stub*
-        call            rax
-
-        ; make sure we don't trash the return value
-        mov             [rsi + 0h], rax
-        movdqa          xmmword ptr [rsi + UMThunkStubAMD64_XMM_SAVE_OFFSET - UMThunkStubAMD64_ARGUMENTS_STACK_HOME_OFFSET +  0h], xmm0
-
-        lea             rsp, [rbp - UM2MThunk_WrapperHelper_FRAME_OFFSET + UM2MThunk_WrapperHelper_FIXED_STACK_ALLOC_SIZE]
-        pop             rbp
-        pop             rdi
-        pop             rsi
-        ret
-        
-
-CopyStackArgs:
-        ; rdx = cbStackArgs (with 20h for register args subtracted out already)
-        ; rcx = pSrcArgStack
-
-        sub             rsp, rdx
-        and             rsp, -16
-
-        mov             r8, rcx
-        
-        lea             rsi, [rcx + SIZEOF_MAX_OUTGOING_ARGUMENT_HOMES]
-        lea             rdi, [rsp + UM2MThunk_WrapperHelper_CALLEE_SCRATCH_SIZE]
-
-        mov             rcx, rdx
-        shr             rcx, 3
-        
-        rep movsq
-        
-        mov             rcx, r8
-        
-        jmp             ArgumentsSetup
-        
-NESTED_END UM2MThunk_WrapperHelper, _TEXT
 
         end
 

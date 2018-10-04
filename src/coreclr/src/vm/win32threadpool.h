@@ -476,10 +476,7 @@ private:
 
                 {
                     GCX_COOP();
-                    AppDomainFromIDHolder ad(pDelegate->m_appDomainId, TRUE);
-                    if (!ad.IsUnloaded())
-                        // if no domain then handle already gone or about to go.
-                        StoreObjectInHandle(pDelegate->m_registeredWaitHandle, NULL);
+                    StoreObjectInHandle(pDelegate->m_registeredWaitHandle, NULL);
                 }
             }
 
