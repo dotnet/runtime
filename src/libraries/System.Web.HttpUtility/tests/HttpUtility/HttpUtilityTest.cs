@@ -760,6 +760,9 @@ namespace System.Web.Tests
         [InlineData("type=foo&type=bar")]
         [InlineData("name=&desc=foo")]
         [InlineData("name=&name=foo")]
+        [InlineData("foo&bar")]
+        [InlineData("foo&name=bar")]
+        [InlineData("name=bar&foo&foo")]
         public void ParseAndToStringMaintainAllKeyValuePairs(string input)
         {
             var values = HttpUtility.ParseQueryString(input);
