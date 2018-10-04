@@ -335,6 +335,13 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 	return NULL;
 }
 
+gpointer
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
