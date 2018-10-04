@@ -52,10 +52,9 @@ struct SharedState
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        AppDomainFromIDHolder ad(internal->GetKickOffDomainId(), TRUE);
-        if (ad.IsUnloaded())
-            COMPlusThrow(kAppDomainUnloadedException);
 
+        AppDomain *ad = SystemDomain::GetAppDomainFromId(internal->GetKickOffDomainId(), ADV_CURRENTAD);
+    
         m_Threadable = ad->CreateHandle(threadable);
         m_ThreadStartArg = ad->CreateHandle(threadStartArg);
 
@@ -72,17 +71,8 @@ struct SharedState
         }
         CONTRACTL_END;
 
-        // It's important to have no GC rendez-vous point between the checking and the clean-up below.
-        // The three handles below could be in an appdomain which is just starting to be unloaded, or an appdomain
-        // which has been unloaded already.  Thus, we need to check whether the appdomain is still valid before
-        // we do the clean-up.  Since we suspend all runtime threads when we try to do the unload, there will be no
-        // race condition between the checking and the clean-up as long as this thread cannot be suspended in between.
-        AppDomainFromIDHolder ad(m_Internal->GetKickOffDomainId(), TRUE);
-        if (!ad.IsUnloaded())
-        {
-            DestroyHandle(m_Threadable);
-            DestroyHandle(m_ThreadStartArg);
-        }
+        DestroyHandle(m_Threadable);
+        DestroyHandle(m_ThreadStartArg);
     }
 };
 

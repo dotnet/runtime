@@ -244,12 +244,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     Module * pLoaderModule = pMTToCheck->GetLoaderModule();
 
     BaseDomain * pBaseDomain = pLoaderModule->GetDomain();
-    if ((pBaseDomain != NULL) && 
-        (pBaseDomain->IsAppDomain()) && 
-        (pBaseDomain->AsAppDomain()->IsUnloading()))
-    {
-        return NULL;
-    }
 
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
     // able to find a case where we actually encounter objects like this that can cause

@@ -10134,8 +10134,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
         // triggers too early in the loading process. FindDomainFile will not become
         // non-NULL until the module is fully loaded into the domain which is what we
         // want.
-        if ((classModule->FindDomainFile(pAppDomain) != NULL ) &&
-            !(fIsLoadEvent && pAppDomain->IsUnloading()) )
+        if (classModule->FindDomainFile(pAppDomain) != NULL )
         {
             // Find the Left Side module that this class belongs in.
             DebuggerModule* pModule = LookupOrCreateModule(classModule, pAppDomain);

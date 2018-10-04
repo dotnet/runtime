@@ -1180,48 +1180,7 @@ HRESULT CorRuntimeHostBase::UnloadAppDomain2(DWORD dwDomainId, BOOL fWaitUntilDo
     }
     CONTRACTL_END;
 
-    HRESULT hr = S_OK;
-
-    // No point going further if the runtime is not running...
-    {
-        // In IsRuntimeActive, we will call CanRunManagedCode that will
-        // check if the current thread has taken the loader lock or not,
-        // if MDA is supported. To do the check, MdaLoaderLock::ReportViolation
-        // will be invoked that will internally end up invoking
-        // MdaFactory<MdaXmlElement>::GetNext that will use the "new" operator
-        // that has the "FAULT" contract set, resulting in FAULT_VIOLATION since
-        // this method has the FORBID_FAULT contract set above.
-        //
-        // However, for a thread that holds the loader lock, unloading the appDomain is
-        // not a supported scenario. Thus, we should not be ending up in this code
-        // path for the FAULT violation.
-        //
-        // Hence, the CONTRACT_VIOLATION below for overriding the FORBID_FAULT
-        // for this scope only.
-        CONTRACT_VIOLATION(FaultViolation);
-        if (!IsRuntimeActive()
-            || !m_fStarted
-        )
-        {
-            return HOST_E_CLRNOTAVAILABLE;
-        }
-    }
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    // We do not use BEGIN_EXTERNAL_ENTRYPOINT here because
-    // we do not want to setup Thread.  Process may be OOM, and we want Unload
-    // to work.
-    hr =  AppDomain::UnloadById(ADID(dwDomainId), fWaitUntilDone);
-
-    END_ENTRYPOINT_NOTHROW;
-
-    if (pLatchedExitCode)
-    {
-        *pLatchedExitCode = GetLatchedExitCode();
-    }
-
-    return hr;
+    return COR_E_CANNOTUNLOADAPPDOMAIN;
 }
 
 //*****************************************************************************
@@ -1924,18 +1883,11 @@ public:
         BEGIN_ENTRYPOINT_NOTHROW;
 
         SystemDomain::LockHolder lh;
-        AppDomainFromIDHolder pAppDomain((ADID)dwAppDomainId, TRUE, AppDomainFromIDHolder::SyncType_ADLock);
 
-        if (!pAppDomain.IsUnloaded())
+        AppDomain* pAppDomain = SystemDomain::GetAppDomainFromId((ADID)dwAppDomainId, ADV_CURRENTAD);        
+        if (pBytesAllocated)
         {
-            if (pBytesAllocated)
-            {
-                *pBytesAllocated = pAppDomain->GetAllocBytes();
-            }
-        }
-        else
-        {
-            hr = COR_E_APPDOMAINUNLOADED;
+            *pBytesAllocated = pAppDomain->GetAllocBytes();
         }
 
         END_ENTRYPOINT_NOTHROW;
@@ -1959,22 +1911,15 @@ public:
         BEGIN_ENTRYPOINT_NOTHROW;
 
         SystemDomain::LockHolder lh;
-        AppDomainFromIDHolder pAppDomain((ADID)dwAppDomainId, TRUE, AppDomainFromIDHolder::SyncType_ADLock);
 
-        if (pAppDomain.IsUnloaded())
+        AppDomain* pAppDomain = SystemDomain::GetAppDomainFromId((ADID)dwAppDomainId, ADV_CURRENTAD);
+        if (pAppDomainBytesSurvived)
         {
-            hr = COR_E_APPDOMAINUNLOADED;
+            *pAppDomainBytesSurvived = pAppDomain->GetSurvivedBytes();
         }
-        else
+        if (pTotalBytesSurvived)
         {
-            if (pAppDomainBytesSurvived)
-            {
-                *pAppDomainBytesSurvived = pAppDomain->GetSurvivedBytes();
-            }
-            if (pTotalBytesSurvived)
-            {
-                *pTotalBytesSurvived = SystemDomain::GetTotalSurvivedBytes();
-            }
+            *pTotalBytesSurvived = SystemDomain::GetTotalSurvivedBytes();
         }
 
         END_ENTRYPOINT_NOTHROW;
@@ -2000,20 +1945,10 @@ public:
         {
             SystemDomain::LockHolder lh;
     
+            AppDomain* pAppDomain = SystemDomain::GetAppDomainFromId((ADID)dwAppDomainId, ADV_CURRENTAD);
+            if (pMilliseconds)
             {
-                AppDomainFromIDHolder pAppDomain((ADID)dwAppDomainId, TRUE, AppDomainFromIDHolder::SyncType_ADLock);
-
-                if (!pAppDomain.IsUnloaded())
-                {
-                    if (pMilliseconds)
-                    {
-                        *pMilliseconds = pAppDomain->QueryProcessorUsage() / 10000;
-                    }
-                }
-                else
-                {
-                    hr = COR_E_APPDOMAINUNLOADED;
-                }
+                *pMilliseconds = pAppDomain->QueryProcessorUsage() / 10000;
             }
         }
 

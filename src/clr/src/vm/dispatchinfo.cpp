@@ -3315,8 +3315,7 @@ DispatchMemberInfo* DispatchExInfo::CreateDispatchMemberInfoInstance(DISPID Disp
 
     DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName, MemberInfoObj);
 
-    AppDomainFromIDHolder pDomain(m_pSimpleWrapperOwner->GetDomainID(), FALSE);
-    pDomain.ThrowIfUnloaded();
+    AppDomain* pDomain = SystemDomain::GetAppDomainFromId(m_pSimpleWrapperOwner->GetDomainID(), ADV_CURRENTAD);
     
     pInfo->SetHandle(pDomain->CreateHandle(MemberInfoObj));
     

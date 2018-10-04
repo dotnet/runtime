@@ -822,7 +822,6 @@ public:
     GCPollType GetGCPollType() { LIMITED_METHOD_CONTRACT; return iGCPollType; }
 
 #ifdef _DEBUG
-    DWORD GetHostTestADUnload() const {LIMITED_METHOD_CONTRACT; return testADUnload;}
 
     DWORD GetHostTestThreadAbort() const {LIMITED_METHOD_CONTRACT; return testThreadAbort;}
 
@@ -1100,7 +1099,6 @@ private: //----------------------------------------------------------------
 
 #ifdef _DEBUG
     DWORD fShouldInjectFault;
-    DWORD testADUnload;
     DWORD testThreadAbort;
 #endif
 

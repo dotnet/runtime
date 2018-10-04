@@ -43,17 +43,12 @@ struct DelegateInfo
         CONTRACTL_END;
 
 
-        AppDomainFromIDHolder ad(m_appDomainId, FALSE);
-        if (!ad.IsUnloaded())
-        {
-            if (m_stateHandle)
-                DestroyHandle(m_stateHandle);
-            if (m_eventHandle)
-            	 DestroyHandle(m_eventHandle);
-            if (m_registeredWaitHandle)
-               DestroyHandle(m_registeredWaitHandle);
-        }
-
+        if (m_stateHandle)
+            DestroyHandle(m_stateHandle);
+        if (m_eventHandle)
+                DestroyHandle(m_eventHandle);
+        if (m_registeredWaitHandle)
+            DestroyHandle(m_registeredWaitHandle);
     }
 #endif
 

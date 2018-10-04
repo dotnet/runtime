@@ -448,8 +448,6 @@ inline void CommonTripThread() { }
 #define ADV_COMPILATION  0x10
 // finalizer thread - synchronized with ADU
 #define ADV_FINALIZER     0x40
-// adu thread - cannot race with itself
-#define ADV_ADUTHREAD   0x80
 // held by AppDomainRefTaker
 #define ADV_REFTAKER    0x100
 
@@ -1586,7 +1584,6 @@ public:
     Volatile<ULONG>      m_fPreemptiveGCDisabled;
 
     PTR_Frame            m_pFrame;  // The Current Frame
-    PTR_Frame            m_pUnloadBoundaryFrame;
 
     //-----------------------------------------------------------
     // If the thread has wandered in from the outside this is
@@ -2012,17 +2009,6 @@ public:
 
     bool DetectHandleILStubsForDebugger();
 
-#ifndef DACCESS_COMPILE
-    void  SetUnloadBoundaryFrame(Frame *pFrame);
-    void  ResetUnloadBoundaryFrame();
-#endif
-
-    PTR_Frame GetUnloadBoundaryFrame()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pUnloadBoundaryFrame;
-    }
-
     void SetWin32FaultAddress(DWORD eip)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2441,14 +2427,6 @@ public:
         return m_Context;
     }
 
-
-    // This callback is used when we are executing in the EE and discover that we need
-    // to switch appdomains.
-    //
-    // Set the last parameter to FALSE if you want to perform the AD transition *without*
-    // EH (this can affect marshalling of exceptions).
-    void DoADCallBack(ADID appDomain , Context::ADCallBackFcnType pTarget, LPVOID args, BOOL fSetupEHAtTransition = TRUE);
-    void DoADCallBack(AppDomain* pDomain , Context::ADCallBackFcnType pTarget, LPVOID args, DWORD dwADV, BOOL fSetupEHAtTransition = TRUE);
     void DoContextCallBack(ADID appDomain, Context* c , Context::ADCallBackFcnType pTarget, LPVOID args);
 
     // Except for security and the call in from the remoting code in mscorlib, you should never do an
@@ -2543,8 +2521,6 @@ public:
 
     Frame *IsRunningIn(AppDomain* pDomain, int *count);
     Frame *GetFirstTransitionInto(AppDomain *pDomain, int *count);
-
-    BOOL ShouldChangeAbortToUnload(Frame *pFrame, Frame *pUnloadBoundaryFrame=NULL);
 
     // Get outermost (oldest) AppDomain for this thread.
     AppDomain *GetInitialDomain();
@@ -2806,7 +2782,6 @@ public:
     enum ThreadAbortRequester
     {
         TAR_Thread =      0x00000001,   // Request by Thread
-        TAR_ADUnload =    0x00000002,   // Request by AD unload
         TAR_FuncEval =    0x00000004,   // Request by Func-Eval
         TAR_StackOverflow = 0x00000008,   // Request by StackOverflow.  TAR_THREAD should be set at the same time.
         TAR_ALL = 0xFFFFFFFF,
@@ -2828,7 +2803,6 @@ private:
         TAI_FuncEvalAbort     = 0x00000040,
         TAI_FuncEvalV1Abort   = 0x00000080,
         TAI_FuncEvalRudeAbort = 0x00000100,
-        TAI_ForADUnloadThread = 0x10000000,     // AD unload thread is working on the thread
     };
 
     static const DWORD TAI_AnySafeAbort = (TAI_ThreadAbort   |
@@ -2886,14 +2860,6 @@ private:
     }
 
     typedef Holder<Thread*, Thread::AcquireAbortControl, Thread::ReleaseAbortControl> AbortControlHolder;
-
-    BOOL IsBeingAbortedForADUnload()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_AbortInfo & TAI_ForADUnloadThread) != 0;
-    }
-
-    void ResetBeginAbortedForADUnload();
 
 public:
 #ifdef _DEBUG
@@ -2965,8 +2931,6 @@ public:
     }
 
     BOOL           IsRudeAbort();
-    BOOL           IsRudeAbortOnlyForADUnload();
-    BOOL           IsRudeUnload();
     BOOL           IsFuncEvalAbort();
 
 #if defined(_TARGET_AMD64_) && defined(FEATURE_HIJACK)
@@ -6974,19 +6938,16 @@ private:
 #define ENTER_DOMAIN_SWITCH_CTX_BY_ADID(_pCurrDomainPtr,_pDestDomainId,_bUnsafePoint)           \
     AppDomain* _ctx_trans_pCurrDomain=_pCurrDomainPtr;                                          \
     _ctx_trans_pDestDomainId=(ADID)_pDestDomainId;                                               \
-    BOOL _ctx_trans_bUnsafePoint=_bUnsafePoint;                                                 \
     if (_ctx_trans_fPredicate &&                                                                \
         (_ctx_trans_pCurrDomain==NULL ||                                                        \
             (_ctx_trans_pCurrDomain->GetId() != _ctx_trans_pDestDomainId)))                     \
     {                                                                                           \
-        AppDomainFromIDHolder _ctx_trans_ad(_ctx_trans_pDestDomainId,_ctx_trans_bUnsafePoint);  \
-        _ctx_trans_ad.ThrowIfUnloaded();                                                        \
+        AppDomain* _ctx_trans_ad = SystemDomain::GetAppDomainFromId(_ctx_trans_pDestDomainId, ADV_CURRENTAD); \
                                                                                                 \
         _ctx_trans_ad->EnterContext(_ctx_trans_pThread,                                         \
             _ctx_trans_ad->GetDefaultContext(),                                                 \
             _ctx_trans_pFrame);                                                                 \
                                                                                                 \
-        _ctx_trans_ad.Release();                                                                \
         _ctx_trans_fTransitioned = true;                                                        \
     }
 
@@ -6999,8 +6960,6 @@ private:
     {                                                                                           \
         TESTHOOKCALL(AppDomainCanBeUnloaded(_ctx_trans_pDestDomain->GetId().m_dwId,FALSE));        \
         GCX_FORBID();                                                                           \
-        if (!_ctx_trans_pDestDomain->CanThreadEnter(_ctx_trans_pThread))                        \
-            COMPlusThrow(kAppDomainUnloadedException);                                          \
                                                                                                 \
         _ctx_trans_pThread->EnterContextRestricted(                                             \
             _ctx_trans_pDestDomain->GetDefaultContext(),                                                                 \
@@ -7089,8 +7048,6 @@ private:
 #define ADV_COMPILATION  0x10
 // finalizer thread - synchronized with ADU
 #define ADV_FINALIZER     0x40
-// adu thread - cannot race with itself
-#define ADV_ADUTHREAD   0x80
 // held by AppDomainRefTaker
 #define ADV_REFTAKER    0x100
 

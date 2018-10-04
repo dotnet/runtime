@@ -19,20 +19,6 @@
 
 #include "appdomain.hpp"
 
-inline void AppDomain::SetUnloadInProgress(AppDomain *pThis)
-{
-    WRAPPER_NO_CONTRACT;
-
-    SystemDomain::System()->SetUnloadInProgress(pThis);
-}
-
-inline void AppDomain::SetUnloadComplete(AppDomain *pThis)
-{
-    GCX_COOP();
-
-    SystemDomain::System()->SetUnloadComplete();
-}
-
 inline  void AppDomain::EnterContext(Thread* pThread, Context* pCtx,ContextTransitionFrame *pFrame)
 {
     CONTRACTL
@@ -47,118 +33,6 @@ inline  void AppDomain::EnterContext(Thread* pThread, Context* pCtx,ContextTrans
     CONTRACTL_END;
     pThread->EnterContextRestricted(pCtx,pFrame);
 };
-
-
-inline AppDomainFromIDHolder::~AppDomainFromIDHolder()
-{
-    WRAPPER_NO_CONTRACT;
-#ifdef _DEBUG
-    if(m_bAcquired)
-        Release();
-#endif    
-}
-
-inline void AppDomainFromIDHolder::Release()
-{
-    //do not use real contract here!
-    WRAPPER_NO_CONTRACT;
-#ifdef _DEBUG
-    if(m_bAcquired)
-    {
-        if (m_type==SyncType_GC)
-#ifdef ENABLE_CONTRACTS_IMPL
-        {
-            if (GetThread())
-            {
-                STRESS_LOG1(LF_APPDOMAIN, LL_INFO10000, "AppDomainFromIDHolder::Assign is allowing GC - %08x",this);
-                GetThread()->EndForbidGC();
-            }
-            else
-            {
-                if (!IsGCThread())
-                {
-                    _ASSERTE(!"Should not be called from a non GC thread");
-                }
-            }
-        }
-#else
-            m_pDomain=NULL;
-#endif
-        else
-        if (m_type==SyncType_ADLock)
-            SystemDomain::m_SystemDomainCrst.SetCantLeave(FALSE);
-        else
-        {
-            _ASSERTE(!"Unknown type");        
-        }
-        m_pDomain=NULL;
-        m_bAcquired=FALSE;
-    }
-#endif
-}
-
-inline void AppDomainFromIDHolder::Assign(ADID id, BOOL bUnsafePoint)
-{
-    //do not use real contract here!
-    WRAPPER_NO_CONTRACT;
-    TESTHOOKCALL(AppDomainCanBeUnloaded(id.m_dwId, bUnsafePoint));
-#ifdef _DEBUG
-    m_bChecked=FALSE;
-    if (m_type==SyncType_GC)
-    {
-#ifdef ENABLE_CONTRACTS_IMPL
-        if (GetThread())
-        {
-            _ASSERTE(GetThread()->PreemptiveGCDisabled());
-            STRESS_LOG1(LF_APPDOMAIN, LL_INFO10000, "AppDomainFromIDHolder::Assign is forbidding GC - %08x",this);
-            GetThread()->BeginForbidGC(__FILE__, __LINE__);
-        }
-        else
-        {
-            if (!IsGCThread())
-            {
-                _ASSERTE(!"Should not be called from a non GC thread");
-            }
-        }
-#endif
-    }
-    else
-    if (m_type==SyncType_ADLock)    
-    {
-        _ASSERTE(SystemDomain::m_SystemDomainCrst.OwnedByCurrentThread());
-        SystemDomain::m_SystemDomainCrst.SetCantLeave(TRUE);
-    }
-    else
-    {
-        _ASSERT(!"NI");
-    }
-
-    m_bAcquired=TRUE;
- #endif
-    m_pDomain=SystemDomain::GetAppDomainAtId(id);
-
-}
-
-
-
-inline void AppDomainFromIDHolder::ThrowIfUnloaded()
-{
-    STATIC_CONTRACT_THROWS;
-    if (IsUnloaded())
-    {
-        COMPlusThrow(kAppDomainUnloadedException);
-    }
-#ifdef _DEBUG
-    m_bChecked=TRUE;
-#endif
-}
-
-inline AppDomain* AppDomainFromIDHolder::operator ->()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(m_bChecked && m_bAcquired);    
-    return m_pDomain;
-}
 
 inline DomainAssembly* AppDomain::FindDomainAssembly(Assembly* assembly)
 {

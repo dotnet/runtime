@@ -18,7 +18,6 @@ void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex)
 
     // Access to a handle in an unloaded domain is not allowed
     assert(domain != nullptr);
-    assert(!domain->NoAccessToHandleTable());
 
 #endif // _DEBUG_IMPL
 }
@@ -35,12 +34,6 @@ void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef)
 
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     ADIndex appDomainIndex = ADIndex(reinterpret_cast<DWORD>(mgr->GetHandleContext(handle)));
-
-    AppDomain *unloadingDomain = SystemDomain::AppDomainBeingUnloaded();
-    if (unloadingDomain && unloadingDomain->GetIndex() == appDomainIndex && unloadingDomain->NoAccessToHandleTable())
-    {
-        _ASSERTE (!"Access to a handle in unloaded domain is not allowed");
-    }
 
     ValidateObjectAndAppDomain(objRef, appDomainIndex);
 #endif // _DEBUG_IMPL

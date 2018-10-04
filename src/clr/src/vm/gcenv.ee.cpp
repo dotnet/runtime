@@ -193,9 +193,6 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     }
     CONTRACTL_END;
 
-    // Update AppDomain stage here.
-    SystemDomain::System()->ProcessClearingDomains();
-
 #ifdef VERIFY_HEAP
     // Validate byrefs pinned by IL stubs since the last GC.
     StubHelpers::ProcessByrefValidationList();
@@ -1450,14 +1447,14 @@ bool GCToEEInterface::AppDomainCanAccessHandleTable(uint32_t appDomainID)
 
     ADIndex index(appDomainID);
     AppDomain *pDomain = SystemDomain::GetAppDomainAtIndex(index);
-    return (pDomain != NULL) && !pDomain->NoAccessToHandleTable();
+    return (pDomain != NULL);
 }
 
 uint32_t GCToEEInterface::GetIndexOfAppDomainBeingUnloaded()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return SystemDomain::IndexOfAppDomainBeingUnloaded().m_dwIndex;
+    return 0xFFFFFFFF;
 }
 
 uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
@@ -1472,8 +1469,7 @@ bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain)
 {
     LIMITED_METHOD_CONTRACT;
 
-    AppDomain *realPtr = static_cast<AppDomain *>(appDomain);
-    return realPtr->IsRudeUnload() != FALSE;
+    return false;
 }
 
 bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
