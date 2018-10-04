@@ -59,6 +59,7 @@ typedef struct {
 			gint32 lo;
 			gint32 hi;
 		} pair;
+		float f_r4;
 		double f;
 		/* native size integer and pointer types */
 		MonoObject *o;

@@ -133,14 +133,14 @@ static const MagicTypeInfo type_info[] = {
 };
 
 
-static inline gboolean
-type_size (MonoCompile *cfg, MonoType *type)
+gsize
+mini_magic_type_size (MonoCompile *cfg, MonoType *type)
 {
 	if (type->type == MONO_TYPE_I4 || type->type == MONO_TYPE_U4)
 		return 4;
 	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
 		return 8;
-	else if (type->type == MONO_TYPE_R4 && !type->byref && cfg->r4fp)
+	else if (type->type == MONO_TYPE_R4 && !type->byref && (!cfg || cfg->r4fp))
 		return 4;
 	else if (type->type == MONO_TYPE_R8 && !type->byref)
 		return 8;
@@ -148,9 +148,6 @@ type_size (MonoCompile *cfg, MonoType *type)
 }
 
 #ifndef DISABLE_JIT
-
-static gboolean is_int_type (MonoType *t);
-static gboolean is_float_type (MonoType *t);
 
 static MonoInst*
 emit_narrow (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)
@@ -202,16 +199,16 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 
 	if (!strcmp ("op_Implicit", name) || !strcmp ("op_Explicit", name)) {
-		int source_size = type_size (cfg, fsig->params [0]);
-		int dest_size = type_size (cfg, fsig->ret);
+		int source_size = mini_magic_type_size (cfg, fsig->params [0]);
+		int dest_size = mini_magic_type_size (cfg, fsig->ret);
 
 		switch (info->big_stack_type) {
 		case STACK_I8:
-			if (!is_int_type (fsig->params [0]) || !is_int_type (fsig->ret))
+			if (!mini_magic_is_int_type (fsig->params [0]) || !mini_magic_is_int_type (fsig->ret))
 				return NULL;
 			break;
 		case STACK_R8:
-			if (!is_float_type (fsig->params [0]) || !is_float_type (fsig->ret))
+			if (!mini_magic_is_float_type (fsig->params [0]) || !mini_magic_is_float_type (fsig->ret))
 				return NULL;
 			break;
 		default:
@@ -233,7 +230,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!strcmp (".ctor", name)) {
 		gboolean is_ldaddr = args [0]->opcode == OP_LDADDR;
 		int arg0 = args [1]->dreg;
-		int arg_size = type_size (cfg, fsig->params [0]);
+		int arg_size = mini_magic_type_size (cfg, fsig->params [0]);
 
 		if (arg_size > TARGET_SIZEOF_VOID_P) //8 -> 4
 			arg0 = emit_narrow (cfg, info, arg0)->dreg;
@@ -456,16 +453,16 @@ mono_class_is_magic_float (MonoClass *klass)
 	return FALSE;
 }
 
-static gboolean
-is_int_type (MonoType *t)
+gboolean
+mini_magic_is_int_type (MonoType *t)
 {
-	if (t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
+	if (t->type != MONO_TYPE_I && t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
 		return FALSE;
 	return TRUE;
 }
 
-static gboolean
-is_float_type (MonoType *t)
+gboolean
+mini_magic_is_float_type (MonoType *t)
 {
 	if (t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8 && !mono_class_is_magic_float (mono_class_from_mono_type (t)))
 		return FALSE;
