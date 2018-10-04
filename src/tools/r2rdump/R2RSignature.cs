@@ -35,10 +35,10 @@ namespace R2RDump
         /// <param name="metadataReader">Metadata reader corresponding to the handle</param>
         /// <param name="handle">Metadata handle to parse</param>
         /// <param name="namespaceQualified">Include namespace in type names</param>
-        public static string FormatHandle(MetadataReader metadataReader, Handle handle, bool namespaceQualified = true)
+        public static string FormatHandle(MetadataReader metadataReader, Handle handle, bool namespaceQualified = true, string owningTypeOverride = null)
         {
             MetadataNameFormatter formatter = new MetadataNameFormatter(metadataReader);
-            return formatter.EmitHandleName(handle, namespaceQualified);
+            return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride);
         }
 
         public static string FormatSignature(R2RReader r2rReader, int imageOffset)
@@ -52,18 +52,18 @@ namespace R2RDump
         /// Emit a given token to a specified string builder.
         /// </summary>
         /// <param name="methodToken">ECMA token to provide string representation for</param>
-        private string EmitHandleName(Handle handle, bool namespaceQualified)
+        private string EmitHandleName(Handle handle, bool namespaceQualified, string owningTypeOverride)
         {
             switch (handle.Kind)
             {
                 case HandleKind.MemberReference:
-                    return EmitMemberReferenceName((MemberReferenceHandle)handle);
+                    return EmitMemberReferenceName((MemberReferenceHandle)handle, owningTypeOverride);
 
                 case HandleKind.MethodSpecification:
-                    return EmitMethodSpecificationName((MethodSpecificationHandle)handle);
+                    return EmitMethodSpecificationName((MethodSpecificationHandle)handle, owningTypeOverride);
 
                 case HandleKind.MethodDefinition:
-                    return EmitMethodDefinitionName((MethodDefinitionHandle)handle);
+                    return EmitMethodDefinitionName((MethodDefinitionHandle)handle, owningTypeOverride);
 
                 case HandleKind.TypeReference:
                     return EmitTypeReferenceName((TypeReferenceHandle)handle, namespaceQualified);
@@ -83,18 +83,19 @@ namespace R2RDump
         /// Emit a method specification.
         /// </summary>
         /// <param name="methodSpecHandle">Method specification handle</param>
-        private string EmitMethodSpecificationName(MethodSpecificationHandle methodSpecHandle)
+        private string EmitMethodSpecificationName(MethodSpecificationHandle methodSpecHandle, string owningTypeOverride)
         {
             MethodSpecification methodSpec = _metadataReader.GetMethodSpecification(methodSpecHandle);
             DisassemblingGenericContext genericContext = new DisassemblingGenericContext(Array.Empty<string>(), Array.Empty<string>());
-            return EmitHandleName(methodSpec.Method, namespaceQualified: true) + methodSpec.DecodeSignature<string, DisassemblingGenericContext>(this, genericContext);
+            return EmitHandleName(methodSpec.Method, namespaceQualified: true, owningTypeOverride: owningTypeOverride)
+                + methodSpec.DecodeSignature<string, DisassemblingGenericContext>(this, genericContext);
         }
 
         /// <summary>
         /// Emit a method reference.
         /// </summary>
         /// <param name="memberRefHandle">Member reference handle</param>
-        private string EmitMemberReferenceName(MemberReferenceHandle memberRefHandle)
+        private string EmitMemberReferenceName(MemberReferenceHandle memberRefHandle, string owningTypeOverride)
         {
             MemberReference methodRef = _metadataReader.GetMemberReference(memberRefHandle);
             StringBuilder builder = new StringBuilder();
@@ -102,7 +103,7 @@ namespace R2RDump
             MethodSignature<String> methodSig = methodRef.DecodeMethodSignature<string, DisassemblingGenericContext>(this, genericContext);
             builder.Append(methodSig.ReturnType);
             builder.Append(" ");
-            builder.Append(EmitContainingTypeAndMethodName(methodRef));
+            builder.Append(EmitContainingTypeAndMethodName(methodRef, owningTypeOverride));
             builder.Append(EmitMethodSignature(methodSig));
             return builder.ToString();
         }
@@ -111,7 +112,7 @@ namespace R2RDump
         /// Emit a method definition.
         /// </summary>
         /// <param name="methodSpecHandle">Method definition handle</param>
-        private string EmitMethodDefinitionName(MethodDefinitionHandle methodDefinitionHandle)
+        private string EmitMethodDefinitionName(MethodDefinitionHandle methodDefinitionHandle, string owningTypeOverride)
         {
             MethodDefinition methodDef = _metadataReader.GetMethodDefinition(methodDefinitionHandle);
             DisassemblingGenericContext genericContext = new DisassemblingGenericContext(Array.Empty<string>(), Array.Empty<string>());
@@ -119,7 +120,11 @@ namespace R2RDump
             StringBuilder builder = new StringBuilder();
             builder.Append(methodSig.ReturnType);
             builder.Append(" ");
-            builder.Append(EmitHandleName(methodDef.GetDeclaringType(), namespaceQualified: true));
+            if (owningTypeOverride == null)
+            {
+                owningTypeOverride = EmitHandleName(methodDef.GetDeclaringType(), namespaceQualified: false, owningTypeOverride: null);
+            }
+            builder.Append(owningTypeOverride);
             builder.Append(".");
             builder.Append(EmitString(methodDef.Name));
             builder.Append(EmitMethodSignature(methodSig));
@@ -175,9 +180,13 @@ namespace R2RDump
         /// </summary>
         /// <param name="methodRef">Method reference to format</param>
         /// <param name="methodSignature">Output method signature</param>
-        private string EmitContainingTypeAndMethodName(MemberReference methodRef)
+        private string EmitContainingTypeAndMethodName(MemberReference methodRef, string owningTypeOverride)
         {
-            return EmitHandleName(methodRef.Parent, namespaceQualified: true) + "." + EmitString(methodRef.Name);
+            if (owningTypeOverride == null)
+            {
+                owningTypeOverride = EmitHandleName(methodRef.Parent, namespaceQualified: true, owningTypeOverride: null);
+            }
+            return owningTypeOverride + "." + EmitString(methodRef.Name);
         }
 
         /// <summary>
@@ -193,7 +202,7 @@ namespace R2RDump
             if (typeRef.ResolutionScope.Kind != HandleKind.AssemblyReference)
             {
                 // Nested type - format enclosing type followed by the nested type
-                return EmitHandleName(typeRef.ResolutionScope, namespaceQualified) + "+" + typeName;
+                return EmitHandleName(typeRef.ResolutionScope, namespaceQualified, owningTypeOverride: null) + "+" + typeName;
             }
             if (namespaceQualified)
             {
@@ -219,7 +228,7 @@ namespace R2RDump
             if (typeDef.IsNested)
             {
                 // Nested type
-                return EmitHandleName(typeDef.GetDeclaringType(), namespaceQualified) + "+" + typeName;
+                return EmitHandleName(typeDef.GetDeclaringType(), namespaceQualified, owningTypeOverride: null) + "+" + typeName;
             }
 
             string output;
@@ -290,6 +299,19 @@ namespace R2RDump
         {
             _image = reader.Image;
             _metadataReader = reader.MetadataReader;
+            _offset = offset;
+        }
+
+        /// <summary>
+        /// Construct the signature decoder by storing the image byte array and offset within the array. 
+        /// </summary>
+        /// <param name="metadataReader">Metadata reader for the R2R image</param>
+        /// <param name="signature">Signature to parse</param>
+        /// <param name="offset">Optional signature offset within the signature byte array, 0 by default</param>
+        public SignatureDecoder(MetadataReader metadataReader, byte[] signature, int offset = 0)
+        {
+            _image = signature;
+            _metadataReader = metadataReader;
             _offset = offset;
         }
 
@@ -398,6 +420,20 @@ namespace R2RDump
             return builder.ToString();
         }
 
+        public string ReadMethodSignature()
+        {
+            StringBuilder builder = new StringBuilder();
+            ParseMethod(builder);
+            return builder.ToString();
+        }
+
+        public string ReadTypeSignature()
+        {
+            StringBuilder builder = new StringBuilder();
+            ParseType(builder);
+            return builder.ToString();
+        }
+
         /// <summary>
         /// Parse the signature into a given output string builder.
         /// </summary>
@@ -445,12 +481,12 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken:
-                    ParseMethodDefToken(builder);
+                    ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY_DEF_TOKEN)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken:
-                    ParseMethodRefToken(builder);
+                    ParseMethodRefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY_REF_TOKEN)");
                     break;
 
@@ -461,12 +497,12 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_DefToken:
-                    ParseMethodDefToken(builder);
+                    ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (VIRTUAL_ENTRY_DEF_TOKEN)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_RefToken:
-                    ParseMethodRefToken(builder);
+                    ParseMethodRefToken(builder, owningTypeOverride: null);
                     builder.Append(" (VIRTUAL_ENTRY_REF_TOKEN)");
                     break;
 
@@ -744,7 +780,7 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CANON_ZAPSIG:
-                    builder.Append("canon_zapsig");
+                    builder.Append("__Canon");
                     break;
 
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
@@ -784,9 +820,12 @@ namespace R2RDump
         private void ParseMethod(StringBuilder builder)
         {
             uint methodFlags = ReadUInt();
+            string owningTypeOverride = null;
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                ParseType(builder);
+                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_metadataReader, _image, _offset);
+                owningTypeOverride = owningTypeDecoder.ReadTypeSignature();
+                _offset = owningTypeDecoder._offset;
             }
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
             {
@@ -794,11 +833,11 @@ namespace R2RDump
             }
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MemberRefToken) != 0)
             {
-                ParseMethodRefToken(builder);
+                ParseMethodRefToken(builder, owningTypeOverride: owningTypeOverride);
             }
             else
             {
-                ParseMethodDefToken(builder);
+                ParseMethodDefToken(builder, owningTypeOverride: owningTypeOverride);
             }
 
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_MethodInstantiation) != 0)
@@ -827,20 +866,21 @@ namespace R2RDump
         /// Read a methodDef token from the signature and output the corresponding object to the builder.
         /// </summary>
         /// <param name="builder">Output string builder</param>
-        private void ParseMethodDefToken(StringBuilder builder)
+        private void ParseMethodDefToken(StringBuilder builder, string owningTypeOverride)
         {
             uint methodDefToken = ReadUInt() | (uint)CorTokenType.mdtMethodDef;
-            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodDefToken)));
+            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodDefToken), namespaceQualified: true, owningTypeOverride: owningTypeOverride));
         }
 
         /// <summary>
         /// Read a memberRef token from the signature and output the corresponding object to the builder.
         /// </summary>
         /// <param name="builder">Output string builder</param>
-        private void ParseMethodRefToken(StringBuilder builder)
+        /// <param name="owningTypeOverride">Explicit owning type override</param>
+        private void ParseMethodRefToken(StringBuilder builder, string owningTypeOverride)
         {
             uint methodRefToken = ReadUInt() | (uint)CorTokenType.mdtMemberRef;
-            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodRefToken)));
+            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodRefToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
         }
 
         /// <summary>
