@@ -835,7 +835,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         EnsureWritablePages(this);
         if (FastInterlockCompareExchangePointer(&m_hExposedClassObject, hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
-            pLoaderAllocator->ClearHandle(hExposedClassObject);
+            pLoaderAllocator->FreeHandle(hExposedClassObject);
         }
 
         if (OwnsTemplateMethodTable())
@@ -2271,7 +2271,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 
         if (FastInterlockCompareExchangePointer(EnsureWritablePages(&m_hExposedClassObject), hExposedClassObject, static_cast<LOADERHANDLE>(NULL)))
         {
-            pLoaderAllocator->ClearHandle(hExposedClassObject);
+            pLoaderAllocator->FreeHandle(hExposedClassObject);
         }
 
         GCPROTECT_END();

@@ -3822,7 +3822,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 IfFailThrow(COR_E_TYPELOAD);
             }
 
-            if ((fIsThreadStatic || fIsContextStatic || bmtFP->fHasFixedAddressValueTypes) && GetAssembly()->IsCollectible())
+            if ((fIsContextStatic || bmtFP->fHasFixedAddressValueTypes) && GetAssembly()->IsCollectible())
             {
                 if (bmtFP->fHasFixedAddressValueTypes)
                 {
@@ -6529,7 +6529,7 @@ VOID MethodTableBuilder::PlaceInterfaceDeclarationOnClass(
         }
     }
 #endif
-    
+
 #ifdef _DEBUG
     if (bmtInterface->dbg_fShouldInjectInterfaceDuplicates)
     {   // We injected interface duplicates
