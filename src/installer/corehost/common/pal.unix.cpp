@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <fnmatch.h>
+#include <ctime>
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
@@ -34,6 +35,16 @@ pal::string_t pal::to_lower(const pal::string_t& in)
     pal::string_t ret = in;
     std::transform(ret.begin(), ret.end(), ret.begin(), ::tolower);
     return ret;
+}
+
+pal::string_t pal::get_timestamp()
+{
+    std::time_t t = std::time(0);
+    const std::size_t elems = 100;
+    char_t buf[elems];
+    std::strftime(buf, elems, _X("%c %Z"), std::gmtime(&t));
+
+    return pal::string_t(buf);
 }
 
 bool pal::touch_file(const pal::string_t& path)

@@ -10,6 +10,8 @@
 #include <locale>
 #include <codecvt>
 #include <ShlObj.h>
+#include <ctime>
+
 
 bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
 {
@@ -42,6 +44,16 @@ pal::string_t pal::to_lower(const pal::string_t& in)
 pal::string_t pal::to_string(int value)
 {
     return std::to_wstring(value);
+}
+
+pal::string_t pal::get_timestamp()
+{
+    std::time_t t = std::time(0);
+    const std::size_t elems = 100;
+    char_t buf[elems];
+    std::wcsftime(buf, elems, _X("%c %Z"), std::gmtime(&t));
+
+    return pal::string_t(buf);
 }
 
 bool pal::touch_file(const pal::string_t& path)

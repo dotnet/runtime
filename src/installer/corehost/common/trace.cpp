@@ -2,11 +2,21 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #include "trace.h"
+#include <mutex>
 
-static bool g_enabled = false;
+// g_trace_verbosity is used to encode COREHOST_TRACE and COREHOST_TRACE_VERBOSITY to selectively control output of
+//    trace::warn(), trace::info(), and trace::verbose()
+//  COREHOST_TRACE=0 COREHOST_TRACE_VERBOSITY=N/A        implies g_trace_verbosity = 0.  // Trace "disabled". error() messages will be produced.
+//  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=4 or unset implies g_trace_verbosity = 4.  // Trace "enabled".  verbose(), info(), warn() and error() messages will be produced
+//  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=3          implies g_trace_verbosity = 3.  // Trace "enabled".  info(), warn() and error() messages will be produced
+//  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=2          implies g_trace_verbosity = 2.  // Trace "enabled".  warn() and error() messages will be produced
+//  COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=1          implies g_trace_verbosity = 1.  // Trace "enabled".  error() messages will be produced
+static int g_trace_verbosity = 0;
+static FILE * g_trace_file = stderr;
+static std::mutex g_trace_mutex;
 
 //
-// Turn on tracing for the corehost based on "COREHOST_TRACE" env.
+// Turn on tracing for the corehost based on "COREHOST_TRACE" & "COREHOST_TRACEFILE" env.
 //
 void trace::setup()
 {
@@ -20,54 +30,110 @@ void trace::setup()
     auto trace_val = pal::xtoi(trace_str.c_str());
     if (trace_val > 0)
     {
-        trace::enable();
-        trace::info(_X("Tracing enabled"));
+        if (trace::enable())
+        {
+            auto ts = pal::get_timestamp();
+            trace::info(_X("Tracing enabled @ %s"), ts.c_str());
+        }
     }
 }
 
-void trace::enable()
+bool trace::enable()
 {
-    g_enabled = true;
+    bool file_open_error = false;
+    pal::string_t tracefile_str;
+
+    if (g_trace_verbosity)
+    {
+        return false;
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock(g_trace_mutex);
+
+        g_trace_file = stderr;
+        if (pal::getenv(_X("COREHOST_TRACEFILE"), &tracefile_str))
+        {
+            FILE *tracefile = pal::file_open(tracefile_str, _X("a"));
+
+            if (tracefile)
+            {
+                g_trace_file = tracefile;
+            }
+            else
+            {
+                file_open_error = true;
+            }
+        }
+
+        pal::string_t trace_str;
+        if (!pal::getenv(_X("COREHOST_TRACE_VERBOSITY"), &trace_str))
+        {
+            g_trace_verbosity = 4;  // Verbose trace by default
+        }
+        else
+        {
+            g_trace_verbosity = pal::xtoi(trace_str.c_str());
+        }
+    }
+
+    if (file_open_error)
+    {
+        trace::error(_X("Unable to open COREHOST_TRACEFILE=%s for writing"), tracefile_str.c_str());
+    }
+    return true;
 }
 
 bool trace::is_enabled()
 {
-    return g_enabled;
+    return g_trace_verbosity;
 }
 
 void trace::verbose(const pal::char_t* format, ...)
 {
-    if (g_enabled)
+    if (g_trace_verbosity > 3)
     {
+        std::lock_guard<std::mutex> lock(g_trace_mutex);
+
         va_list args;
         va_start(args, format);
-        pal::err_vprintf(format, args);
+        pal::file_vprintf(g_trace_file, format, args);
         va_end(args);
     }
 }
 
 void trace::info(const pal::char_t* format, ...)
 {
-    if (g_enabled)
+    if (g_trace_verbosity > 2)
     {
+        std::lock_guard<std::mutex> lock(g_trace_mutex);
+
         va_list args;
         va_start(args, format);
-        pal::err_vprintf(format, args);
+        pal::file_vprintf(g_trace_file, format, args);
         va_end(args);
     }
 }
 
 void trace::error(const pal::char_t* format, ...)
 {
+    std::lock_guard<std::mutex> lock(g_trace_mutex);
+
     // Always print errors
     va_list args;
     va_start(args, format);
     pal::err_vprintf(format, args);
+    if (g_trace_verbosity && (g_trace_file != stderr))
+    {
+        pal::file_vprintf(g_trace_file, format, args);
+    }
     va_end(args);
 }
 
 void trace::println(const pal::char_t* format, ...)
 {
+    std::lock_guard<std::mutex> lock(g_trace_mutex);
+
     va_list args;
     va_start(args, format);
     pal::out_vprintf(format, args);
@@ -81,17 +147,22 @@ void trace::println()
 
 void trace::warning(const pal::char_t* format, ...)
 {
-    if (g_enabled)
+    if (g_trace_verbosity > 1)
     {
+        std::lock_guard<std::mutex> lock(g_trace_mutex);
+
         va_list args;
         va_start(args, format);
-        pal::err_vprintf(format, args);
+        pal::file_vprintf(g_trace_file, format, args);
         va_end(args);
     }
 }
 
 void trace::flush()
 {
+    std::lock_guard<std::mutex> lock(g_trace_mutex);
+
+    pal::file_flush(g_trace_file);
     pal::err_flush();
     pal::out_flush();
 }
