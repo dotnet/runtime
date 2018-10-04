@@ -227,7 +227,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     BOOL fHasRemotingVtsInfo = FALSE;
     BOOL fHasContextStatics = FALSE;
     BOOL fHasGenericsStaticsInfo = pOldMT->HasGenericsStaticsInfo();
-    BOOL fHasThreadStatics = (pOldMT->GetNumThreadStaticFields() > 0);
 
 #ifdef FEATURE_COMINTEROP
     BOOL fHasDynamicInterfaceMap = pOldMT->HasDynamicInterfaceMap();
@@ -240,11 +239,11 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // Collectible types have some special restrictions
     if (pAllocator->IsCollectible())
     {
-        if (fHasThreadStatics || fHasContextStatics)
+        if (fHasContextStatics)
         {
             ClassLoader::ThrowTypeLoadException(pTypeKey, IDS_CLASSLOAD_COLLECTIBLESPECIALSTATICS);
         }
-        else if (pOldMT->HasFixedAddressVTStatics())
+        if (pOldMT->HasFixedAddressVTStatics())
         {
             ClassLoader::ThrowTypeLoadException(pTypeKey, IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR);
         }

@@ -1935,11 +1935,14 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, SIZE_T moduleDoma
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = 
+    // Obtain the DomainLocalModule
+    DomainLocalModule *pDomainLocalModule =
         (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            Module::IDToIndex(moduleDomainID) :
-            ((DomainLocalModule *)moduleDomainID)->GetModuleIndex();
+        GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
+        (DomainLocalModule *)moduleDomainID;
+
+    // Get the ModuleIndex
+    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
 
     // Get the relevant ThreadLocalModule
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
@@ -1950,18 +1953,18 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, SIZE_T moduleDoma
     { 
         ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
         if (pLocalInfo != NULL)
-            return (void*)pLocalInfo->m_pDynamicEntry->GetNonGCStaticsBasePointer();
+        {
+            PTR_BYTE retval;
+            GET_DYNAMICENTRY_NONGCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
+                                                            pLocalInfo,
+                                                            &retval);
+            return retval;
+        }
     }
 
     // If the TLM was not allocated or if the class was not marked as initialized
     // then we have to go through the slow path
 
-    // Obtain the DomainLocalModule
-    DomainLocalModule *pDomainLocalModule =
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
-            (DomainLocalModule *) moduleDomainID;
-   
     // Obtain the Module
     Module * pModule = pDomainLocalModule->GetDomainFile()->GetModule();
 
@@ -1986,11 +1989,14 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, SIZE_T moduleDomainI
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = 
+    // Obtain the DomainLocalModule
+    DomainLocalModule *pDomainLocalModule =
         (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            Module::IDToIndex(moduleDomainID) :
-            ((DomainLocalModule *)moduleDomainID)->GetModuleIndex();
+        GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
+        (DomainLocalModule *)moduleDomainID;
+
+    // Get the ModuleIndex
+    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
 
     // Get the relevant ThreadLocalModule
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
@@ -2001,18 +2007,19 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, SIZE_T moduleDomainI
     { 
         ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
         if (pLocalInfo != NULL)
-            return (void*)pLocalInfo->m_pDynamicEntry->GetGCStaticsBasePointer();
+        {
+            PTR_BYTE retval;
+            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pDomainLocalModule->GetDomainFile()->GetModule()->GetLoaderAllocator(),
+                                                         pLocalInfo,
+                                                         &retval);
+
+            return retval;
+        }
     }
 
     // If the TLM was not allocated or if the class was not marked as initialized
     // then we have to go through the slow path
 
-    // Obtain the DomainLocalModule
-    DomainLocalModule *pDomainLocalModule =
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
-            (DomainLocalModule *) moduleDomainID;
-   
     // Obtain the Module
     Module * pModule = pDomainLocalModule->GetDomainFile()->GetModule();
 
@@ -2060,7 +2067,14 @@ HCIMPL1(void*, JIT_GetGenericsNonGCThreadStaticBase, MethodTable *pMT)
     { 
         ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
         if (pLocalInfo != NULL)
-            return (void*)pLocalInfo->m_pDynamicEntry->GetNonGCStaticsBasePointer();
+        {
+            PTR_BYTE retval;
+            GET_DYNAMICENTRY_NONGCSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(), 
+                                                      pLocalInfo, 
+                                                      &retval);
+
+            return retval;        
+        }
     }
     
     // If the TLM was not allocated or if the class was not marked as initialized
@@ -2105,7 +2119,14 @@ HCIMPL1(void*, JIT_GetGenericsGCThreadStaticBase, MethodTable *pMT)
     { 
         ThreadLocalModule::PTR_DynamicClassInfo pLocalInfo = pThreadLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
         if (pLocalInfo != NULL)
-            return (void*)pLocalInfo->m_pDynamicEntry->GetGCStaticsBasePointer();
+        {
+            PTR_BYTE retval;
+            GET_DYNAMICENTRY_GCTHREADSTATICS_BASEPOINTER(pMT->GetLoaderAllocator(), 
+                                                         pLocalInfo, 
+                                                         &retval);
+
+            return retval;        
+        }
     }
     
     // If the TLM was not allocated or if the class was not marked as initialized
