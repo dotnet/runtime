@@ -64,7 +64,14 @@ namespace System.Web
                     {
                         foreach (string value in values)
                         {
-                            sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(value));
+                            if (string.IsNullOrEmpty(keys[i]))
+                            {
+                                sb.AppendFormat("{0}&", UrlEncode(value));
+                            }
+                            else
+                            {
+                                sb.AppendFormat("{0}={1}&", keys[i], UrlEncode(value));
+                            }
                         }
                     }
                 }
