@@ -639,13 +639,7 @@ void Thread::ClearAbortReason(BOOL pNoLock)
 
     // If there is an OBJECTHANDLE, try to clear it.
     if (oh != 0 && adid.m_dwId != 0)
-    {   // See if the domain is still valid; if so, destroy the ObjectHandle
-        AppDomainFromIDHolder ad(adid, TRUE);
-        if (!ad.IsUnloaded())
-        {   // Still a valid domain, so destroy the handle.
-            DestroyHandle(oh);
-        }
-    }
+        DestroyHandle(oh);
 }
 
 
@@ -1272,31 +1266,6 @@ BOOL Thread::IsRudeAbort()
     return (IsAbortRequested() && (m_AbortType == EEPolicy::TA_Rude));
 }
 
-BOOL Thread::IsRudeAbortOnlyForADUnload()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return (IsAbortRequested() &&
-            (m_AbortInfo & TAI_ADUnloadRudeAbort) &&
-            !(m_AbortInfo & (TAI_ThreadRudeAbort | TAI_FuncEvalRudeAbort))
-           );
-}
-
-BOOL Thread::IsRudeUnload()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    return (IsAbortRequested() && (m_AbortInfo & TAI_ADUnloadRudeAbort));
-}
-
 BOOL Thread::IsFuncEvalAbort()
 {
     CONTRACTL {
@@ -1451,33 +1420,7 @@ Thread::UserAbort(ThreadAbortRequester requester,
             GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
             break;
         case eUnloadAppDomain:
-            {
-                AppDomain *pDomain = GetDomain();
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-                }
-            }
-            // AD unload does not abort finalizer thread.
-            if (this != FinalizerThread::GetFinalizerThread())
-            {
-                if (this == GetThread())
-                {
-                    Join(INFINITE,TRUE);
-                }
-                return S_OK;
-            }
-            break;
         case eRudeUnloadAppDomain:
-            {
-                AppDomain *pDomain = GetDomain();
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                }
-            }
             // AD unload does not abort finalizer thread.
             if (this != FinalizerThread::GetFinalizerThread())
             {
@@ -1545,13 +1488,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
         m_dwAbortPoint = 1;
 #endif
 
-        if (CLRHosted() && GetAbortEndTime() != MAXULONGLONG)
-        {
-            // ToDo: Skip debugger funcval
-            // Use our helper thread to watch abort.
-            AppDomain::EnableADUnloadWorkerForThreadAbort();
-        }
-
         GCX_COOP();
 
         OBJECTREF exceptObj;
@@ -1583,7 +1519,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
     {
         // A host may call ICLRTask::Abort on a critical thread.  We don't want to
         // block this thread.
-        AppDomain::EnableADUnloadWorkerForThreadAbort();
         return S_OK;
     }
 
@@ -2120,14 +2055,6 @@ LPrepareRetry:
                 SetRudeAbortEndTimeFromEEPolicy();
                 goto LRetry;
             case eUnloadAppDomain:
-                {
-                    AppDomain *pDomain = GetDomain();
-                    if (!pDomain->IsDefaultDomain())
-                    {
-                        GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
-                        pDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-                    }
-                }
                 // AD unload does not abort finalizer thread.
                 if (this == FinalizerThread::GetFinalizerThread())
                 {
@@ -2146,14 +2073,6 @@ LPrepareRetry:
                 }
                 break;
             case eRudeUnloadAppDomain:
-                {
-                    AppDomain *pDomain = GetDomain();
-                    if (!pDomain->IsDefaultDomain())
-                    {
-                        GetEEPolicy()->NotifyHostOnTimeout(operation1, action1);
-                        pDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                    }
-                }
                 // AD unload does not abort finalizer thread.
                 if (this == FinalizerThread::GetFinalizerThread())
                 {
@@ -2284,26 +2203,6 @@ void Thread::ThreadAbortWatchDogEscalate(Thread *pThread)
         case eRudeAbortThread:
             GetEEPolicy()->NotifyHostOnTimeout(operation,action);
             pThread->UserAbort(Thread::TAR_Thread, EEPolicy::TA_Rude, INFINITE, Thread::UAC_WatchDog);
-            break;
-        case eUnloadAppDomain:
-            {
-                AppDomain *pDomain = pThread->GetDomain();
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(operation,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-                }
-            }
-            break;
-        case eRudeUnloadAppDomain:
-            {
-                AppDomain *pDomain = pThread->GetDomain();
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(operation,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                }
-            }
             break;
         case eExitProcess:
         case eFastExitProcess:
@@ -2463,26 +2362,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
         }
     }
 
-    if (requester & TAR_ADUnload)
-    {
-        if (abortType == EEPolicy::TA_Safe)
-        {
-            abortInfo |= TAI_ADUnloadAbort;
-        }
-        else if (abortType == EEPolicy::TA_Rude)
-        {
-            abortInfo |= TAI_ADUnloadRudeAbort;
-        }
-        else if (abortType == EEPolicy::TA_V1Compatible)
-        {
-            abortInfo |= TAI_ADUnloadV1Abort;
-        }
-        if (IsADUnloadHelperThread())
-        {
-            abortInfo |= TAI_ForADUnloadThread;
-        }
-    }
-
     if (requester & TAR_FuncEval)
     {
         if (abortType == EEPolicy::TA_Safe)
@@ -2534,13 +2413,7 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
             {
                 m_RudeAbortEndTime = endTime;
             }
-            // We can not call into host if we are in the middle of stack overflow.
-            // And we don't need to wake up our watchdog if there is no timeout.
-            if (GetThread() == this && (requester & TAR_StackOverflow) == 0)
-        {
-            AppDomain::EnableADUnloadWorkerForThreadAbort();
         }
-    }
     }
 
     if (abortInfo == (m_AbortInfo & abortInfo))
@@ -2658,13 +2531,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
         }
     }
 
-    if (requester & TAR_ADUnload)
-    {
-        m_AbortInfo &= ~(TAI_ADUnloadAbort   |
-                         TAI_ADUnloadV1Abort |
-                         TAI_ADUnloadRudeAbort);
-    }
-
     if (requester & TAR_FuncEval)
     {
         m_AbortInfo &= ~(TAI_FuncEvalAbort   |
@@ -2718,21 +2584,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
     STRESS_LOG3(LF_APPDOMAIN, LL_ALWAYS, "Unmark Thread %p Thread Id = %x for abort from requester %d\n", this, GetThreadId(), requester);
 }
 
-// Make sure that when AbortRequest bit is cleared, we also dec TrapReturningThreads count.
-void Thread::ResetBeginAbortedForADUnload()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    AbortRequestLockHolder lh(this);
-
-    m_AbortInfo &= ~TAI_ForADUnloadThread;
-}
-
 void Thread::InternalResetAbort(ThreadAbortRequester requester, BOOL fResetRudeAbort)
 {
     CONTRACTL {
@@ -2762,7 +2613,7 @@ void Thread::SetAbortRequest(EEPolicy::ThreadAbortTypes abortType)
     }
     CONTRACTL_END;
 
-    MarkThreadForAbort(TAR_ADUnload, abortType);
+    MarkThreadForAbort(TAR_Thread, abortType);
 
     if (m_State & TS_Interruptible)
     {
@@ -3212,26 +3063,6 @@ void Thread::HandleThreadAbortTimeout()
             GetEEPolicy()->NotifyHostOnTimeout(operation,action);
             MarkThreadForAbort(TAR_Thread, EEPolicy::TA_Rude);
             break;
-        case eUnloadAppDomain:
-            {
-                AppDomain *pDomain = GetDomain();
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(operation,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-                }
-            }
-            break;
-        case eRudeUnloadAppDomain:
-            {
-                AppDomain *pDomain = GetDomain();
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(operation,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                }
-            }
-            break;
         case eExitProcess:
         case eFastExitProcess:
         case eRudeExitProcess:
@@ -3345,13 +3176,6 @@ void Thread::PreWorkForThreadAbort()
             EPolicyAction action = GetEEPolicy()->GetDefaultAction(OPR_ThreadRudeAbortInCriticalRegion, this);
             switch (action)
             {
-            case eRudeUnloadAppDomain:
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnDefaultAction(OPR_ThreadRudeAbortInCriticalRegion,action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                }
-                break;
             case eExitProcess:
             case eFastExitProcess:
             case eRudeExitProcess:

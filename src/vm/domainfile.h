@@ -709,7 +709,6 @@ public:
     BOOL IsVisibleToDebugger();
     BOOL NotifyDebuggerLoad(int flags, BOOL attaching);
     void NotifyDebuggerUnload();
-    BOOL IsUnloading();
 
     inline BOOL IsCollectible();
     // 

@@ -926,31 +926,6 @@ getFPReturn4:
    retn    8
 _getFPReturn@8 endp
 
-; void __stdcall UM2MThunk_WrapperHelper(void *pThunkArgs,
-;                                        int argLen,
-;                                        void *pAddr,
-;                                        UMEntryThunk *pEntryThunk,
-;                                        Thread *pThread)
-UM2MThunk_WrapperHelper proc stdcall public,
-                        pThunkArgs : DWORD,
-                        argLen : DWORD,
-                        pAddr : DWORD,
-                        pEntryThunk : DWORD,
-                        pThread : DWORD
-    UNREFERENCED argLen
-
-    push    ebx
-
-    mov     eax, pEntryThunk
-    mov     ecx, pThread
-    mov     ebx, pThunkArgs
-    call    pAddr
-
-    pop     ebx
-
-    ret
-UM2MThunk_WrapperHelper endp
-
 ; VOID __cdecl UMThunkStubRareDisable()
 ;<TODO>
 ; @todo: this is very similar to StubRareDisable

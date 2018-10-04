@@ -682,47 +682,6 @@ EPolicyAction EEPolicy::DetermineResourceConstraintAction(Thread *pThread)
     return action;
 }
 
-
-void EEPolicy::PerformADUnloadAction(EPolicyAction action, BOOL haveStack, BOOL forStackOverflow)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    
-    STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::PerformADUnloadAction\n");       
-
-    Thread *pThread = GetThread();
-
-    AppDomain *pDomain = GetAppDomain();
-
-    if (!IsFinalizerThread())
-    {
-        int count = 0;
-        Frame *pFrame = pThread->GetFirstTransitionInto(GetAppDomain(), &count);
-        {
-            pThread->SetUnloadBoundaryFrame(pFrame);
-        }
-    }
-
-    pDomain->EnableADUnloadWorker(action==eUnloadAppDomain? ADU_Safe : ADU_Rude);
-    // Can't perform a join when we are handling a true SO.  We need to enable the unload woker but let the thread continue running
-    // through EH processing so that we can recover the stack and reset the guard page. 
-    if (haveStack)
-    {
-        pThread->SetAbortRequest(action==eUnloadAppDomain? EEPolicy::TA_V1Compatible : EEPolicy::TA_Rude);
-        if (forStackOverflow)
-        {
-            OBJECTREF exceptObj = CLRException::GetPreallocatedRudeThreadAbortException();
-            pThread->SetAbortInitiated();
-            RaiseTheExceptionInternalOnly(exceptObj, FALSE, TRUE);
-        }
-
-        OBJECTREF exceptObj = CLRException::GetPreallocatedThreadAbortException();
-        pThread->SetAbortInitiated();
-        RaiseTheExceptionInternalOnly(exceptObj, FALSE, FALSE);
-    }
-}
-
 void EEPolicy::PerformResourceConstraintAction(Thread *pThread, EPolicyAction action, UINT exitCode, BOOL haveStack)
     {
     WRAPPER_NO_CONTRACT;
@@ -739,13 +698,6 @@ void EEPolicy::PerformResourceConstraintAction(Thread *pThread, EPolicyAction ac
         break;
     case eRudeAbortThread:
         pThread->UserAbort(Thread::TAR_Thread, TA_Rude, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eUnloadAppDomain:
-    case eRudeUnloadAppDomain:
-            {
-                GCX_ASSERT_COOP();
-        PerformADUnloadAction(action,haveStack);
-            }
         break;
     case eExitProcess:
     case eFastExitProcess:
@@ -985,12 +937,6 @@ void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimit
         // But here we know that if we have only one page, we will only update states of the Domain.
         CONTRACT_VIOLATION(SOToleranceViolation);
 
-        // Mark the current domain requested for rude unload
-        if (!fInDefaultDomain)
-        {
-        pCurrentDomain->EnableADUnloadWorker(ADU_Rude, FALSE);
-        }
-
         pThread->PrepareThreadForSOWork();
 
         pThread->MarkThreadForAbort(
@@ -1051,13 +997,6 @@ void EEPolicy::HandleSoftStackOverflow(BOOL fSkipDebugger)
     {
         Thread* pThread = GetThread();
         
-        if (pThread && pThread->PreemptiveGCDisabled())
-        {
-            // Mark the current domain requested for rude unload
-            GCX_ASSERT_COOP();
-            EEPolicy::PerformADUnloadAction(eRudeUnloadAppDomain, TRUE, TRUE);
-        }
-
         // We are leaving VM boundary, either entering managed code, or entering
         // non-VM unmanaged code.
         // We should not throw internal C++ exception.  Instead we throw an exception
@@ -1608,20 +1547,6 @@ void EEPolicy::HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, L
     case eRudeAbortThread:
         pThread->UserAbort(Thread::TAR_Thread, TA_Rude, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
         break;
-    case eUnloadAppDomain:
-        // Register an appdomain unload, which starts on a separate thread.
-        IfFailThrow(AppDomain::UnloadById(pCurrentDomain->GetId(), FALSE));
-        // Don't continue execution on this thread.
-        pThread->UserAbort(Thread::TAR_Thread, TA_Safe, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-    case eRudeUnloadAppDomain:
-        pCurrentDomain->SetRudeUnload();
-        // Register an appdomain unload, which starts on a separate thread.
-        IfFailThrow(AppDomain::UnloadById(pCurrentDomain->GetId(), FALSE));
-        // Don't continue execution on this thread.
-        pThread->UserAbort(Thread::TAR_Thread, TA_Rude, GetEEPolicy()->GetTimeout(OPR_ThreadAbort), Thread::UAC_Normal);
-        break;
-
     case eExitProcess:  // Merged w/ default case
     default:
         _ASSERTE(action == eExitProcess);

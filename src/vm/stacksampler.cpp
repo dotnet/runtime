@@ -195,11 +195,7 @@ ADID StackSampler::GetDomainId(MethodDesc* pMD, const ADID& defaultId)
     }
     if (bPresent != FALSE)
     {
-        AppDomainFromIDHolder pDomain(adId, FALSE);
-        if (!pDomain.IsUnloaded())
-        {
-            return adId;
-        }
+        return adId;
     }
     return defaultId;
 }

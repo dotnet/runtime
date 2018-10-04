@@ -4804,20 +4804,17 @@ VOID ETW::LoaderLog::DomainUnload(AppDomain *pDomain)
                                         TRACE_LEVEL_INFORMATION, 
                                         KEYWORDZERO))
         {
-            if(!pDomain->NoAccessToHandleTable())
+            DWORD enumerationOptions = ETW::EnumerationLog::GetEnumerationOptionsFromRuntimeKeywords();
+
+            // Domain unload also causes type unload events
+            if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
+                                            TRACE_LEVEL_INFORMATION, 
+                                            CLR_TYPE_KEYWORD))
             {
-                DWORD enumerationOptions = ETW::EnumerationLog::GetEnumerationOptionsFromRuntimeKeywords();
-
-                // Domain unload also causes type unload events
-                if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
-                                                TRACE_LEVEL_INFORMATION, 
-                                                CLR_TYPE_KEYWORD))
-                {
-                    enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::TypeUnload;
-                }
-
-                ETW::EnumerationLog::EnumerationHelper(NULL, pDomain, enumerationOptions);
+                enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::TypeUnload;
             }
+
+            ETW::EnumerationLog::EnumerationHelper(NULL, pDomain, enumerationOptions);
         }
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
@@ -7006,21 +7003,8 @@ VOID ETW::EnumerationLog::IterateAppDomain(AppDomain * pAppDomain, DWORD enumera
     // ensure the App Domain does not get finalized until we're all done
     SystemDomain::LockHolder lh;
 
-    if (pAppDomain->IsFinalized())
-    {
-        return; 
-    }
-
-    // Since we're not FINALIZED yet, the handle table should remain intact,
-    // as should all type information in this AppDomain
-    _ASSERTE(!pAppDomain->NoAccessToHandleTable());
-
     // Now it's safe to do the iteration
     IterateDomain(pAppDomain, enumerationOptions);
-
-    // Since we're holding the system domain lock, the AD type info should be
-    // there throughout the entire iteration we just did
-    _ASSERTE(!pAppDomain->NoAccessToHandleTable());
 }
 
 /********************************************************************************/

@@ -341,21 +341,10 @@ OBJECTREF COMInterfaceMarshaler::GetCCWObject()
     if (m_dwServerSyncBlockIndex != 0)
     {
         AppDomain* pCurrDomain = m_pThread->GetDomain();
-        if (m_dwServerDomainId == pCurrDomain->GetId())
-        {
-            // if we are in the right AD, we know for sure that the object is still alive
-            // since we keep the CCW addref'ed and the AD could not have been unloaded
-            oref = ObjectToOBJECTREF(g_pSyncTable[m_dwServerSyncBlockIndex].m_Object);
-        }
-        else
-        {
-            // otherwise we have to make sure that the AD hasn't been unloaded
-            AppDomainFromIDHolder ad(m_dwServerDomainId, TRUE);
-            if (!ad.IsUnloaded())
-            {
-                oref = ObjectToOBJECTREF(g_pSyncTable[m_dwServerSyncBlockIndex].m_Object);
-            }
-        }
+
+        // if we are in the right AD, we know for sure that the object is still alive
+        // since we keep the CCW addref'ed
+        oref = ObjectToOBJECTREF(g_pSyncTable[m_dwServerSyncBlockIndex].m_Object);
     }
 
     return oref;

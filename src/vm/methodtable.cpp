@@ -10075,7 +10075,7 @@ BOOL MethodTable::Validate()
 NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
 {
     WRAPPER_NO_CONTRACT;
-    if (!Collectible() || ((PTR_AppDomain)GetLoaderModule()->GetDomain())->NoAccessToHandleTable())
+    if (!Collectible())
     {
         return NULL;
     }

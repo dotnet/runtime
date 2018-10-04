@@ -345,7 +345,6 @@ HRESULT EEConfig::Init()
 #ifdef _DEBUG
     fShouldInjectFault = 0;
     testThreadAbort = 0;
-    testADUnload = 0;
 #endif
 
 #ifdef FEATURE_COMINTEROP
@@ -1175,7 +1174,6 @@ HRESULT EEConfig::sync()
     fShouldInjectFault = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault);
 
     testThreadAbort = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestThreadAbort);
-    testADUnload = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestADUnload);
 
 #endif //_DEBUG
 

@@ -112,8 +112,6 @@ public:
 
     static void PerformResourceConstraintAction(Thread *pThread, EPolicyAction action, UINT exitCode, BOOL haveStack);
 
-    static void PerformADUnloadAction(EPolicyAction action, BOOL haveStack, BOOL forStackOverflow = FALSE);
-
     static void HandleOutOfMemory();
 
     static void HandleStackOverflow(StackOverflowDetector detector, void * pLimitFrame);

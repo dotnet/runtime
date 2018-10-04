@@ -10,7 +10,6 @@ class FinalizerThread
 {
     static BOOL fRunFinalizersOnUnload;
     static BOOL fQuitFinalizer;
-    static AppDomain *UnloadingAppDomain;
     
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
     static ULONGLONG LastHeapDumpTime;
@@ -58,20 +57,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pFinalizerThread != 0);
         return g_pFinalizerThread;
-    }
-
-    // Start unloading app domain
-    static void UnloadAppDomain(AppDomain *pDomain, BOOL fRunFinalizers)
-    {
-        LIMITED_METHOD_CONTRACT;
-        UnloadingAppDomain = pDomain; 
-        fRunFinalizersOnUnload = fRunFinalizers;
-    }
-
-    static AppDomain*  GetUnloadingAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return UnloadingAppDomain;
     }
 
     static BOOL IsCurrentThreadFinalizer();

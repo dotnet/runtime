@@ -142,11 +142,6 @@ CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
 ULONG               SystemDomain::s_dNumAppDomains = 0;
 
-AppDomain *         SystemDomain::m_pAppDomainBeingUnloaded = NULL;
-ADIndex             SystemDomain::m_dwIndexOfAppDomainBeingUnloaded;
-Thread            *SystemDomain::m_pAppDomainUnloadRequestingThread = 0;
-Thread            *SystemDomain::m_pAppDomainUnloadingThread = 0;
-
 ArrayListStatic     SystemDomain::m_appDomainIdList;
 
 DWORD               SystemDomain::m_dwLowestFreeIndex        = 0;
@@ -2215,8 +2210,7 @@ void SystemDomain::Stop()
     AppDomainIterator i(TRUE);
 
     while (i.Next())
-        if (i.GetDomain()->m_Stage < AppDomain::STAGE_CLEARED)
-            i.GetDomain()->Stop();
+        i.GetDomain()->Stop();
 }
 
 
@@ -2476,21 +2470,6 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     }
 }
 
-void AppDomain::CreateADUnloadStartEvent()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    g_pUnloadStartEvent = new CLREvent();
-    g_pUnloadStartEvent->CreateAutoEvent(FALSE);
-}
-
 /*static*/ void SystemDomain::EnumAllStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
     CONTRACT_VOID
@@ -2526,7 +2505,7 @@ void AppDomain::CreateADUnloadStartEvent()
         for (i = 0 ; i < count ; i++)
         {
             AppDomain* pAppDomain = (AppDomain *)m_appDomainIdList.Get(i);
-            if (pAppDomain && pAppDomain->IsActive() && !pAppDomain->IsUnloading())
+            if (pAppDomain && pAppDomain->IsActive())
             {
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
                 if (g_fEnableARM)
@@ -2654,7 +2633,7 @@ DWORD SystemDomain::GetTotalNumSizedRefHandles()
         for (i = 0 ; i < count ; i++)
         {
             AppDomain* pAppDomain = (AppDomain *)m_appDomainIdList.Get(i);
-            if (pAppDomain && pAppDomain->IsActive() && !pAppDomain->IsUnloading())
+            if (pAppDomain && pAppDomain->IsActive())
             {
                 dwTotalNumSizedRefHandles += pAppDomain->GetNumSizedRefHandles();
             }
@@ -2850,7 +2829,6 @@ void SystemDomain::LoadDomain(AppDomain *pDomain)
     }
     CONTRACTL_END;
 
-    pDomain->SetCanUnload();    // by default can unload any domain
     SystemDomain::System()->AddDomain(pDomain);
 }
 
@@ -2995,12 +2973,8 @@ AppDomain *SystemDomain::GetAppDomainAtId(ADID index)
     AppDomain * result = (AppDomain *)m_appDomainIdList.Get(requestedID);
 
 #ifndef CROSSGEN_COMPILE
-    if(result==NULL && GetThread() == FinalizerThread::GetFinalizerThread() &&
-        SystemDomain::System()->AppDomainBeingUnloaded()!=NULL &&
-        SystemDomain::System()->AppDomainBeingUnloaded()->GetId()==index)
-        result=SystemDomain::System()->AppDomainBeingUnloaded();
     // If the current thread can't enter the AppDomain, then don't return it.
-    if (!result || !result->CanThreadEnter(GetThread()))
+    if (!result)
         return NULL;
 #endif // CROSSGEN_COMPILE
 
@@ -3913,11 +3887,6 @@ AppDomain::AppDomain()
     CONTRACTL_END;
 
     m_cRef=1;
-    m_pNextInDelayedUnloadList = NULL;
-    m_fRudeUnload = FALSE;
-    m_pUnloadRequestThread = NULL;
-    m_ADUnloadSink=NULL;
-
 
     // Initialize Shared state. Assemblies are loaded
     // into each domain by default.
@@ -3969,8 +3938,6 @@ AppDomain::AppDomain()
     m_ForceTrivialWaitOperations = false;
     m_Stage=STAGE_CREATING;
 
-    m_bForceGCOnUnload=FALSE;
-    m_bUnloadingFromUnloadEvent=FALSE;
 #ifdef _DEBUG
     m_dwIterHolders=0;
     m_dwRefTakers=0;
@@ -4025,9 +3992,6 @@ AppDomain::~AppDomain()
         SystemDomain::ReleaseAppDomainId(m_dwId);
 
     m_AssemblyCache.Clear();
-
-    if (m_ADUnloadSink)
-        m_ADUnloadSink->Release();
 
     if(!g_fEEInit)
         Terminate();
@@ -4116,8 +4080,6 @@ void AppDomain::Init()
 
 #ifndef CROSSGEN_COMPILE
     PerAppDomainTPCountList::SetAppDomainId(m_tpIndex, m_dwId);
-
-    m_ADUnloadSink=new ADUnloadSink();
 #endif
 
     BaseDomain::Init();
@@ -4225,85 +4187,6 @@ BOOL AppDomain::IsCompilationDomain()
 }
 
 #ifndef CROSSGEN_COMPILE
-
-extern int g_fADUnloadWorkerOK;
-
-// Notes:
-//   This helper will send the AppDomain creation notifications for profiler / debugger.
-//   If it throws, its backout code will also send a notification.
-//   If it succeeds, then we still need to send a AppDomainCreateFinished notification.
-void AppDomain::CreateUnmanagedObject(AppDomainCreationHolder<AppDomain>& pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-
-    pDomain.Assign(new AppDomain());
-    if (g_fADUnloadWorkerOK<0)
-    {
-        AppDomain::CreateADUnloadWorker();
-    }
-
-    //@todo: B#25921
-    // We addref Appdomain object here and notify a profiler that appdomain 
-    // creation has started, then return to managed code which will  call 
-    // the function that releases the appdomain and notifies a profiler that we finished
-    // creating the appdomain. If an exception is raised while we're in that managed code
-    // we will leak memory and the profiler will not be notified about the failure
-
-#ifdef PROFILING_SUPPORTED
-    // Signal profile if present.
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-        g_profControlBlock.pProfInterface->AppDomainCreationStarted((AppDomainID) (AppDomain*) pDomain);
-        END_PIN_PROFILER();
-    }
-    EX_TRY
-#endif // PROFILING_SUPPORTED
-    {
-        {
-            SystemDomain::LockHolder lh;
-            pDomain->Init(); 
-            // allocate a Virtual Call Stub Manager for this domain
-            pDomain->InitVSD();
-        }
-
-        pDomain->SetCanUnload();    // by default can unload any domain
-        
-        #ifdef DEBUGGING_SUPPORTED    
-        // Notify the debugger here, before the thread transitions into the 
-        // AD to finish the setup, and before any assemblies are loaded into it.
-        SystemDomain::PublishAppDomainAndInformDebugger(pDomain);
-        #endif // DEBUGGING_SUPPORTED
-
-        STRESS_LOG2 (LF_APPDOMAIN, LL_INFO100, "Create domain [%d] %p\n", pDomain->GetId().m_dwId, (AppDomain*)pDomain);
-        pDomain->LoadSystemAssemblies();
-        pDomain->SetupSharedStatics();
-
-        pDomain->SetStage(AppDomain::STAGE_ACTIVE);    
-    }        
-#ifdef PROFILING_SUPPORTED
-    EX_HOOK
-    {
-        // Need the first assembly loaded in to get any data on an app domain.
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-            g_profControlBlock.pProfInterface->AppDomainCreationFinished((AppDomainID)(AppDomain*) pDomain, GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
-        }
-    }
-    EX_END_HOOK;
-
-    // On success, caller must still send the AppDomainCreationFinished notification.
-#endif // PROFILING_SUPPORTED
-}
 
 void AppDomain::Stop()
 {
@@ -4517,20 +4400,6 @@ struct GetExposedObject_Args
     OBJECTREF *ref;
 };
 
-static void GetExposedObject_Wrapper(LPVOID ptr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    GetExposedObject_Args *args = (GetExposedObject_Args *) ptr;
-    *(args->ref) = args->pDomain->GetExposedObject();
-}
-
-
 OBJECTREF AppDomain::GetExposedObject()
 {
     CONTRACTL
@@ -4547,16 +4416,6 @@ OBJECTREF AppDomain::GetExposedObject()
     {
         APPDOMAINREF obj = NULL;
 
-        Thread *pThread = GetThread();
-        if (pThread->GetDomain() != this)
-        {
-            GCPROTECT_BEGIN(ref);
-            GetExposedObject_Args args = {this, &ref};
-            // call through DoCallBack with a domain transition
-            pThread->DoADCallBack(this,GetExposedObject_Wrapper, &args,ADV_CREATING|ADV_RUNNINGIN);
-            GCPROTECT_END();
-            return ref;
-        }
         MethodTable *pMT = MscorlibBinder::GetClass(CLASS__APP_DOMAIN);
 
         // Create the module object
@@ -5349,7 +5208,7 @@ CHECK AppDomain::CheckCanExecuteManagedCode(MethodDesc* pMD)
     if (!pMD->IsInterface() || pMD->IsStatic()) //interfaces require no activation for instance methods
     {
         //cctor could have been interupted by ADU
-        CHECK_MSG(HasUnloadStarted() || pModule->CheckActivated(),
+        CHECK_MSG(pModule->CheckActivated(),
               "Managed code can only run when its module has been activated in the current app domain");
     }
 
@@ -5652,17 +5511,6 @@ struct LoadFileArgs
     DomainFile *result;
 };
 
-#ifndef CROSSGEN_COMPILE
-static void LoadDomainFile_Wrapper(void *ptr)
-{
-    WRAPPER_NO_CONTRACT;
-    STATIC_CONTRACT_SO_INTOLERANT;
-    GCX_PREEMP();
-    LoadFileArgs *args = (LoadFileArgs *) ptr;
-    args->result = GetAppDomain()->LoadDomainFile(args->pLock, args->targetLevel);
-}
-#endif // !CROSSGEN_COMPILE
-
 DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetLevel)
 {
     CONTRACT(DomainFile *)
@@ -5715,28 +5563,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
 
         RETURN pFile;
     }
-
-#ifndef CROSSGEN_COMPILE
-    // Make sure we are in the right domain.  Many of the load operations require the target domain
-    // to be the current app domain, most notably anything involving managed code or managed object
-    // creation.
-    if (this != GetAppDomain()
-        && (!pFile->GetFile()->IsSystem() || targetLevel > FILE_LOAD_ALLOCATE))
-    {
-        // Transition to the correct app domain and perform the load there.
-        GCX_COOP();
-
-        // we will release the lock in the other app domain
-        lockRef.SuppressRelease();
-
-        if(!CanLoadCode() || GetDefaultContext() ==NULL)
-            COMPlusThrow(kAppDomainUnloadedException);
-        LoadFileArgs args = {pLock, targetLevel, NULL};
-        GetThread()->DoADCallBack(this, LoadDomainFile_Wrapper, (void *) &args, ADV_CREATING);
-
-        RETURN args.result;
-    }
-#endif // CROSSGEN_COMPILE
 
     // Initialize a loading queue.  This will hold any loads which are triggered recursively but
     // which cannot be immediately satisfied due to anti-deadlock constraints.
@@ -7280,7 +7106,7 @@ ULONG AppDomain::Release()
     ULONG   cRef = InterlockedDecrement(&m_cRef);
     if (!cRef)
     {
-        _ASSERTE (m_Stage == STAGE_CREATING || m_Stage == STAGE_CLOSED);
+        _ASSERTE (m_Stage == STAGE_CREATING);
         ADID adid=GetId();
         delete this;
         TESTHOOKCALL(AppDomainDestroyed(adid.m_dwId));
@@ -7289,100 +7115,7 @@ ULONG AppDomain::Release()
 }
 
 
-AppDomain* AppDomain::s_pAppDomainToRaiseUnloadEvent;
-BOOL AppDomain::s_fProcessUnloadDomainEvent = FALSE;
-
 #ifndef CROSSGEN_COMPILE
-
-void AppDomain::RaiseUnloadDomainEvent_Wrapper(LPVOID ptr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        SO_INTOLERANT;
-    }
-    CONTRACTL_END;
-
-    AppDomain* pDomain = (AppDomain *) ptr;
-    pDomain->RaiseUnloadDomainEvent();
-}
-
-void AppDomain::ProcessUnloadDomainEventOnFinalizeThread()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    Thread *pThread = GetThread();
-    _ASSERTE (pThread && IsFinalizerThread());
-
-    // if we are not unloading domain now, do not process the event
-    if (SystemDomain::AppDomainBeingUnloaded() == NULL)
-    {
-        s_pAppDomainToRaiseUnloadEvent->SetStage(STAGE_UNLOAD_REQUESTED);
-        s_pAppDomainToRaiseUnloadEvent->EnableADUnloadWorker(
-            s_pAppDomainToRaiseUnloadEvent->IsRudeUnload()?EEPolicy::ADU_Rude:EEPolicy::ADU_Safe);
-        FastInterlockExchangePointer(&s_pAppDomainToRaiseUnloadEvent, NULL);
-        return;
-    }
-    FastInterlockExchange((LONG*)&s_fProcessUnloadDomainEvent, TRUE);
-    AppDomain::EnableADUnloadWorkerForFinalizer();
-    pThread->SetThreadStateNC(Thread::TSNC_RaiseUnloadEvent);
-    s_pAppDomainToRaiseUnloadEvent->RaiseUnloadDomainEvent();
-    pThread->ResetThreadStateNC(Thread::TSNC_RaiseUnloadEvent);
-    s_pAppDomainToRaiseUnloadEvent->EnableADUnloadWorker(
-        s_pAppDomainToRaiseUnloadEvent->IsRudeUnload()?EEPolicy::ADU_Rude:EEPolicy::ADU_Safe);
-    FastInterlockExchangePointer(&s_pAppDomainToRaiseUnloadEvent, NULL);
-    FastInterlockExchange((LONG*)&s_fProcessUnloadDomainEvent, FALSE);
-
-    if (pThread->IsAbortRequested())
-    {
-        pThread->UnmarkThreadForAbort(Thread::TAR_Thread);
-    }
-}
-
-void AppDomain::RaiseUnloadDomainEvent()
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        SO_INTOLERANT;
-    }
-    CONTRACTL_END;
-
-    Thread *pThread = GetThread();
-    if (this != pThread->GetDomain())
-    {
-        pThread->DoADCallBack(this, AppDomain::RaiseUnloadDomainEvent_Wrapper, this,ADV_FINALIZER|ADV_COMPILATION);
-    }
-    else
-    {
-        struct _gc
-        {
-            APPDOMAINREF Domain;
-            OBJECTREF    Delegate;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-        gc.Domain = (APPDOMAINREF) GetRawExposedObject();
-        if (gc.Domain != NULL)
-        {
-            gc.Delegate = gc.Domain->m_pDomainUnloadEventHandler;
-            if (gc.Delegate != NULL)
-                DistributeEvent(&gc.Delegate, (OBJECTREF *) &gc.Domain);
-        }
-        GCPROTECT_END();
-    }
-}
 
 void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
 {
@@ -7593,8 +7326,6 @@ AppDomain::HasUnhandledExceptionEventHandler()
         NOTHROW;
     }
     CONTRACTL_END;
-    if (!CanThreadEnter(GetThread()))
-        return FALSE;
     if (GetRawExposedObject()==NULL)
         return FALSE;
     return (((APPDOMAINREF)GetRawExposedObject())->m_pUnhandledExceptionEventHandler!=NULL);
@@ -7962,708 +7693,6 @@ void AppDomain::DetachRCWs()
 
 #endif // FEATURE_COMINTEROP
 
-BOOL AppDomain::CanThreadEnter(Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (m_Stage < STAGE_EXITED)
-        return TRUE;
-
-    if (pThread == SystemDomain::System()->GetUnloadingThread())
-        return m_Stage < STAGE_FINALIZING;
-    if (pThread == FinalizerThread::GetFinalizerThread())
-        return m_Stage < STAGE_FINALIZED;
-
-    return FALSE;
-}
-
-void AppDomain::AllowThreadEntrance(AppDomain * pApp)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        FORBID_FAULT;
-        PRECONDITION(CheckPointer(pApp));
-    }
-    CONTRACTL_END;
-
-    if (pApp->GetUnloadRequestThread() == NULL)
-    {
-        // This is asynchonous unload, either by a host, or by AppDomain.Unload from AD unload event.
-        if (!pApp->IsUnloadingFromUnloadEvent())
-        {
-            pApp->SetStage(STAGE_UNLOAD_REQUESTED);
-            pApp->EnableADUnloadWorker(
-                 pApp->IsRudeUnload()?EEPolicy::ADU_Rude:EEPolicy::ADU_Safe);
-            return;
-        }
-    }
-
-    SystemDomain::LockHolder lh; // we don't want to reopen appdomain if other thread can be preparing to unload it
-
-#ifdef FEATURE_COMINTEROP
-    if (pApp->m_pComCallWrapperCache)
-        pApp->m_pComCallWrapperCache->ResetDomainIsUnloading();
-#endif // FEATURE_COMINTEROP
-
-    pApp->SetStage(STAGE_OPEN);
-}
-
-void AppDomain::RestrictThreadEntrance(AppDomain * pApp)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        DISABLED(GC_TRIGGERS);
-        MODE_ANY;
-        DISABLED(FORBID_FAULT);
-        PRECONDITION(CheckPointer(pApp));
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_COMINTEROP
-    // Set the flag on our CCW cache so stubs won't enter
-    if (pApp->m_pComCallWrapperCache)
-        pApp->m_pComCallWrapperCache->SetDomainIsUnloading();
-#endif // FEATURE_COMINTEROP
-
-    SystemDomain::LockHolder lh; // we don't want to reopen appdomain if other thread can be preparing to unload it
-    // Release our ID so remoting and thread pool won't enter
-    pApp->SetStage(STAGE_EXITED);
-};
-
-void AppDomain::Exit(BOOL fRunFinalizers, BOOL fAsyncExit)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Exiting domain [%d] %#08x %ls\n",
-         GetId().m_dwId, this, GetFriendlyNameForLogging()));
-
-    RestrictEnterHolder RestrictEnter(this);
-
-    {
-        SystemDomain::LockHolder lh; // we don't want to close appdomain if other thread can be preparing to unload it
-        SetStage(STAGE_EXITING);  // Note that we're trying to exit
-    }
-
-    // Raise the event indicating the domain is being unloaded.
-    if (GetDefaultContext())
-    {
-        FastInterlockExchangePointer(&s_pAppDomainToRaiseUnloadEvent, this);
-
-        DWORD timeout = GetEEPolicy()->GetTimeout(m_fRudeUnload?OPR_AppDomainRudeUnload : OPR_AppDomainUnload);
-        //if (timeout == INFINITE)
-        //{
-        //    timeout = 20000; // 20 seconds
-        //}
-        DWORD timeoutForFinalizer = GetEEPolicy()->GetTimeout(OPR_FinalizerRun);
-        ULONGLONG curTime = CLRGetTickCount64();
-        ULONGLONG endTime = 0;
-        if (timeout != INFINITE)
-        {
-            endTime = curTime + timeout;
-            // We will try to kill AD unload event if it takes too long, and then we move on to the next registered caller.
-            timeout /= 5;
-        }
-
-        while (s_pAppDomainToRaiseUnloadEvent != NULL)
-        {
-            FinalizerThread::FinalizerThreadWait(s_fProcessUnloadDomainEvent?timeout:timeoutForFinalizer);
-            if (endTime != 0 && s_pAppDomainToRaiseUnloadEvent != NULL)
-            {
-                if (CLRGetTickCount64() >= endTime)
-                {
-                    SString sThreadId;
-                    sThreadId.Printf(W("%x"), FinalizerThread::GetFinalizerThread()->GetThreadId());
-                    COMPlusThrow(kCannotUnloadAppDomainException,
-                                 IDS_EE_ADUNLOAD_CANT_UNWIND_THREAD,
-                                 sThreadId);
-                }
-            }
-        }
-    }
-
-    // Tell the tiered compilation manager to stop initiating any new work for background
-    // jit optimization. Its possible the standard thread unwind mechanisms would pre-emptively
-    // evacuate the jit threadpool worker threads from the domain on their own, but I see no reason 
-    // to take the risk of relying on them when we can easily augment with a cooperative 
-    // shutdown check. This notification only initiates the process of evacuating the threads
-    // and then the UnwindThreads() call below is where blocking will occur to ensure the threads 
-    // have exited the domain.
-    //
-#ifdef FEATURE_TIERED_COMPILATION
-    m_tieredCompilationManager.Shutdown();
-#endif
-
-    //
-    // Set up blocks so no threads can enter except for the finalizer and the thread
-    // doing the unload.
-    //
-
-    RestrictThreadEntrance(this);
-
-    // Cause existing threads to abort out of this domain.  This should ensure all
-    // normal threads are outside the domain, and we've already ensured that no new threads
-    // can enter.
-
-    PerAppDomainTPCountList::AppDomainUnloadingHolder tpAdUnloadHolder(GetTPIndex());
-
-
-    if (!NingenEnabled())
-    {
-        UnwindThreads();
-    }
-    
-    TESTHOOKCALL(UnwoundThreads(GetId().m_dwId)) ;    
-    ProcessEventForHost(Event_DomainUnload, (PVOID)(UINT_PTR)GetId().m_dwId);
-
-    RestrictEnter.SuppressRelease(); //after this point we don't guarantee appdomain consistency
-#ifdef PROFILING_SUPPORTED
-    // Signal profile if present.
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-        GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AppDomainShutdownStarted((AppDomainID) this);
-        END_PIN_PROFILER();
-    }
-#endif // PROFILING_SUPPORTED
-    COUNTER_ONLY(GetPerfCounters().m_Loading.cAppDomains--);
-    COUNTER_ONLY(GetPerfCounters().m_Loading.cAppDomainsUnloaded++);
-
-    LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Domain [%d] %#08x %ls is exited.\n",
-         GetId().m_dwId, this, GetFriendlyNameForLogging()));
-
-    // Send ETW events for this domain's unload and potentially iterate through this
-    // domain's modules & assemblies to send events for their unloads as well.  This
-    // needs to occur before STAGE_FINALIZED (to ensure everything is there), so we do
-    // this before any finalization occurs at all.
-    ETW::LoaderLog::DomainUnload(this);
-
-    CodeVersionManager::OnAppDomainExit(this);
-
-    //
-    // Spin running finalizers until we flush them all.  We need to make multiple passes
-    // in case the finalizers create more finalizable objects.  This is important to clear
-    // the finalizable objects as roots, as well as to actually execute the finalizers. This
-    // will only finalize instances instances of types that aren't potentially agile becuase we can't
-    // risk finalizing agile objects. So we will be left with instances of potentially agile types
-    // in handles or statics.
-    //
-    // <TODO>@todo: Need to ensure this will terminate in a reasonable amount of time.  Eventually
-    // we should probably start passing FALSE for fRunFinalizers. Also I'm not sure we
-    // guarantee that FinalizerThreadWait will ever terminate in general.</TODO>
-    //
-
-    SetStage(STAGE_FINALIZING);
-
-    // Flush finalizers now.
-    FinalizerThread::UnloadAppDomain(this, fRunFinalizers);
-    
-    DWORD timeout = GetEEPolicy()->GetTimeout(m_fRudeUnload?OPR_AppDomainRudeUnload : OPR_AppDomainUnload);
-    ULONGLONG startTime = CLRGetTickCount64();
-    ULONGLONG elapsedTime = 0;
-    DWORD finalizerWait = 0;
-
-    while (FinalizerThread::GetUnloadingAppDomain() != NULL)
-    {
-
-        if (timeout != INFINITE)
-        {
-            elapsedTime = CLRGetTickCount64() - startTime;
-        }
-        if (timeout > elapsedTime)
-        {
-            finalizerWait = timeout - static_cast<DWORD>(elapsedTime);
-        }
-        FinalizerThread::FinalizerThreadWait(finalizerWait); //will set stage to finalized
-        if (timeout != INFINITE && FinalizerThread::GetUnloadingAppDomain() != NULL)
-        {
-            elapsedTime = CLRGetTickCount64() - startTime;
-            if (timeout <= elapsedTime)
-            {
-                SetRudeUnload();
-                // TODO: Consider escalation from RudeAppDomain
-                timeout = INFINITE;
-            }
-        }
-    }
-
-    tpAdUnloadHolder.SuppressRelease();
-    PerAppDomainTPCountList::ResetAppDomainTPCounts(GetTPIndex());
-
-    LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Domain [%d] %#08x %ls is finalized.\n",
-         GetId().m_dwId, this, GetFriendlyNameForLogging()));
-
-
-    AppDomainRefHolder This(this);
-    AddRef();           // Hold a reference so CloseDomain won't delete us yet
-    CloseDomain();      // Remove ourself from the list of app domains
-
-    // This needs to be done prior to destroying the handle tables below.
-    ReleaseDomainBoundInfo();
-
-    //
-    // It should be impossible to run non-mscorlib code in this domain now.
-    // Cleanup all of our roots except the handles. We do this to allow as many
-    // finalizers as possible to run correctly. If we delete the handles, they
-    // can't run.
-    //
-    if (!NingenEnabled())
-    {
-    }
-
-    ClearGCRoots();
-    ClearGCHandles();
-
-    LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Domain [%d] %#08x %ls is cleared.\n",
-         GetId().m_dwId, this, GetFriendlyNameForLogging()));
-
-    if (fAsyncExit && fRunFinalizers)
-    {
-        GCX_PREEMP();
-        m_AssemblyCache.Clear();
-        ClearFusionContext();
-        ReleaseFiles();
-        if (!NingenEnabled())
-        {
-            AddMemoryPressure();
-        }
-    }
-    SystemDomain::System()->AddToDelayedUnloadList(this, fAsyncExit);
-    SystemDomain::SetUnloadDomainCleared();
-    if (m_dwId.m_dwId!=0)
-        SystemDomain::ReleaseAppDomainId(m_dwId);
-#ifdef PROFILING_SUPPORTED
-    // Always signal profile if present, even when failed.
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAppDomainLoads());
-        GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AppDomainShutdownFinished((AppDomainID) this, S_OK);
-        END_PIN_PROFILER();
-    }
-#endif // PROFILING_SUPPORTED
-
-}
-
-void AppDomain::Close()
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Domain [%d] %#08x %ls is collected.\n",
-         GetId().m_dwId, this, GetFriendlyNameForLogging()));
-
-    {
-        GCX_PREEMP();
-        RemoveMemoryPressure();
-    }
-    _ASSERTE(m_cRef>0); //should be alive at this point otherwise iterator can revive us and crash
-    {
-        SystemDomain::LockHolder lh;    // Avoid races with AppDomainIterator
-        SetStage(STAGE_CLOSED);
-    }
-
-    // CONSIDER: move releasing remoting cache from managed code to here.
-}
-
-
-void AppDomain::ResetUnloadRequestThread(ADID Id)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        PRECONDITION(!IsADUnloadHelperThread());
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    AppDomainFromIDHolder ad(Id, TRUE);
-    if(!ad.IsUnloaded() && ad->m_Stage < STAGE_UNLOAD_REQUESTED)
-    {
-        Thread *pThread = ad->GetUnloadRequestThread();
-        if(pThread==GetThread())
-        {
-            ad->m_dwThreadsStillInAppDomain=(ULONG)-1;
-
-            if(pThread)
-            {
-                if (pThread->GetUnloadBoundaryFrame() && pThread->IsBeingAbortedForADUnload())
-                {
-                    pThread->UnmarkThreadForAbort(Thread::TAR_ADUnload);
-                }
-                ad->GetUnloadRequestThread()->ResetUnloadBoundaryFrame();
-                pThread->ResetBeginAbortedForADUnload();
-            }
-            
-            ad->SetUnloadRequestThread(NULL);
-        }
-    }
-}
-
-
-int g_fADUnloadWorkerOK = -1;
-
-HRESULT AppDomain::UnloadById(ADID dwId, BOOL fSync,BOOL fExceptionsPassThrough)
-{
-    CONTRACTL
-    {
-        if(fExceptionsPassThrough) {THROWS;} else {NOTHROW;}
-        MODE_ANY;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_TRIGGERS);}
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    if (dwId==(ADID)DefaultADID)
-        return COR_E_CANNOTUNLOADAPPDOMAIN;
-
-    Thread *pThread = GetThread();
-
-    // Finalizer thread can not wait until AD unload is done,
-    // because AD unload is going to wait for Finalizer Thread.
-    if (fSync && pThread == FinalizerThread::GetFinalizerThread() && 
-        !pThread->HasThreadStateNC(Thread::TSNC_RaiseUnloadEvent))
-        return COR_E_CANNOTUNLOADAPPDOMAIN;
-
-
-    // AD unload helper thread should have been created.
-    _ASSERTE (g_fADUnloadWorkerOK == 1);
-
-    _ASSERTE (!IsADUnloadHelperThread());
-
-    BOOL fIsRaisingUnloadEvent = (pThread != NULL && pThread->HasThreadStateNC(Thread::TSNC_RaiseUnloadEvent));
-
-    if (fIsRaisingUnloadEvent)
-    {
-        AppDomainFromIDHolder pApp(dwId, TRUE, AppDomainFromIDHolder::SyncType_GC);
-
-        if (pApp.IsUnloaded() || ! pApp->CanLoadCode() || pApp->GetId().m_dwId == 0)
-            return COR_E_APPDOMAINUNLOADED;
-
-        pApp->EnableADUnloadWorker();
-
-        return S_FALSE;
-    }
-
-
-    ADUnloadSinkHolder pSink;
-
-    {
-        SystemDomain::LockHolder ulh;
-
-        AppDomainFromIDHolder pApp(dwId, TRUE, AppDomainFromIDHolder::SyncType_ADLock);
-
-        if (pApp.IsUnloaded() || ! pApp->CanLoadCode() || pApp->GetId().m_dwId == 0)
-            return COR_E_APPDOMAINUNLOADED;
-
-        if (g_fADUnloadWorkerOK != 1)
-        {
-            _ASSERTE(FALSE);
-            return E_UNEXPECTED;
-        }
-
-        if (!fSync)
-        {
-            pApp->EnableADUnloadWorker();
-            return S_OK;
-        }
-
-        pSink = pApp->PrepareForWaitUnloadCompletion();
-
-        pApp->EnableADUnloadWorker();
-
-        // release the holders - we don't care anymore if the appdomain is gone
-    }
-
-#ifdef FEATURE_TESTHOOKS        
-    if (fExceptionsPassThrough)
-    {
-        CONTRACT_VIOLATION(FaultViolation);
-        return UnloadWaitNoCatch(dwId,pSink);
-    }
-#endif            
-
-    return UnloadWait(dwId,pSink);
-}
-
-HRESULT AppDomain::UnloadWait(ADID Id, ADUnloadSink * pSink)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_TRIGGERS);}
-    }
-    CONTRACTL_END;
-    
-    HRESULT hr=S_OK;
-    EX_TRY
-    {
-        // IF you ever try to change this to something not using events, please address the fact that
-        // AppDomain::StopEEAndUnwindThreads relies on that events are used.
-
-        pSink->WaitUnloadCompletion();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (SUCCEEDED(hr))
-        hr=pSink->GetUnloadResult();
-
-    if (FAILED(hr))
-    {
-        ResetUnloadRequestThread(Id);
-    }
-    return hr;
-}
-
-#ifdef FEATURE_TESTHOOKS        
-HRESULT AppDomain::UnloadWaitNoCatch(ADID Id, ADUnloadSink * pSink)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_ANY;    
-
-    Holder<ADID, DoNothing<ADID>, AppDomain::ResetUnloadRequestThread> resetUnloadHolder(Id);
-
-    // IF you ever try to change this to something not using events, please address the fact that
-    // AppDomain::StopEEAndUnwindThreads relies on that events are used.
-    pSink->WaitUnloadCompletion();
-
-    HRESULT hr = pSink->GetUnloadResult();
-
-    if (SUCCEEDED(hr))
-        resetUnloadHolder.SuppressRelease();
-
-    return hr;
-}
-#endif
-
-void AppDomain::Unload(BOOL fForceUnload)
-{
-    CONTRACTL
-    {
-        THROWS;
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_MULTICOREJIT
-
-    // Avoid profiling file is partially written in ASP.net scenarios, call it earlier
-    GetMulticoreJitManager().StopProfile(true);
-
-#endif
-
-    Thread *pThread = GetThread();
-
-
-    if (! fForceUnload && !g_pConfig->AppDomainUnload())
-        return;
-
-    EPolicyAction action;
-    EClrOperation operation;
-    if (!IsRudeUnload())
-    {
-        operation = OPR_AppDomainUnload;
-    }
-    else
-    {
-        operation = OPR_AppDomainRudeUnload;
-    }
-    action = GetEEPolicy()->GetDefaultAction(operation,NULL);
-    GetEEPolicy()->NotifyHostOnDefaultAction(operation,action);
-
-    switch (action)
-    {
-    case eUnloadAppDomain:
-        break;
-    case eRudeUnloadAppDomain:
-        SetRudeUnload();
-        break;
-    case eExitProcess:
-    case eFastExitProcess:
-    case eRudeExitProcess:
-    case eDisableRuntime:
-        EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_ADUNLOAD);
-        _ASSERTE (!"Should not get here");
-        break;
-    default:
-        break;
-    }
-
-#if (defined(_DEBUG) || defined(BREAK_ON_UNLOAD) || defined(AD_LOG_MEMORY) || defined(AD_SNAPSHOT))
-    static int unloadCount = 0;
-#endif
-
-#ifdef AD_LOG_MEMORY
-    {
-        GCX_PREEMP();
-        static int logMemory = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ADLogMemory);
-        typedef void (__cdecl *LogItFcn) ( int );
-        static LogItFcn pLogIt = NULL;
-
-        if (logMemory && ! pLogIt)
-        {
-            HMODULE hMod = CLRLoadLibrary(W("mpdh.dll"));
-            if (hMod)
-            {
-                pLogIt = (LogItFcn)GetProcAddress(hMod, "logIt");
-                if (pLogIt)
-                {
-                    pLogIt(9999);
-                    pLogIt(9999);
-                }
-            }
-        }
-    }
-#endif // AD_LOG_MEMORY
-
-    if (IsDefaultDomain() && !IsSingleAppDomain())
-        COMPlusThrow(kCannotUnloadAppDomainException, IDS_EE_ADUNLOAD_DEFAULT);
-
-    _ASSERTE(CanUnload());
-
-    if (pThread == FinalizerThread::GetFinalizerThread() || GetUnloadRequestThread() == FinalizerThread::GetFinalizerThread())
-        COMPlusThrow(kCannotUnloadAppDomainException, IDS_EE_ADUNLOAD_IN_FINALIZER);
-
-    _ASSERTE(! SystemDomain::AppDomainBeingUnloaded());
-
-    // should not be running in this AD because unload spawned thread in default domain
-    if (!NingenEnabled())
-    {
-        _ASSERTE(!pThread->IsRunningIn(this, NULL));
-    }
-
-
-#ifdef APPDOMAIN_STATE
-    _ASSERTE_ALL_BUILDS("clr/src/VM/AppDomain.cpp", pThread->GetDomain()->IsDefaultDomain());
-#endif
-
-    LOG((LF_APPDOMAIN | LF_CORDB, LL_INFO10, "AppDomain::Unloading domain [%d] %#08x %ls\n", GetId().m_dwId, this, GetFriendlyName()));
-
-    STRESS_LOG3 (LF_APPDOMAIN, LL_INFO100, "Unload domain [%d, %d] %p\n", GetId().m_dwId, GetIndex().m_dwIndex, this);
-
-    UnloadHolder hold(this);
-
-    SystemDomain::System()->SetUnloadRequestingThread(GetUnloadRequestThread());
-    SystemDomain::System()->SetUnloadingThread(pThread);
-
-
-#ifdef _DEBUG
-    static int dumpSB = -1;
-
-    if (dumpSB == -1)
-        dumpSB = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ADDumpSB);
-
-    if (dumpSB > 1)
-    {
-        LogSpewAlways("Starting unload %3.3d\n", unloadCount);
-        DumpSyncBlockCache();
-    }
-#endif // _DEBUG
-
-    BOOL bForceGC=m_bForceGCOnUnload;
-
-#ifdef AD_LOG_MEMORY
-    if (pLogIt)
-        bForceGC=TRUE;
-#endif // AD_LOG_MEMORY
-
-#ifdef AD_SNAPSHOT
-    static int takeSnapShot = -1;
-
-    if (takeSnapShot == -1)
-        takeSnapShot = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ADTakeSnapShot);
-
-    if (takeSnapShot)
-        bForceGC=TRUE;
-#endif // AD_SNAPSHOT
-
-#ifdef _DEBUG
-    if (dumpSB > 0)
-        bForceGC=TRUE;
-#endif // _DEBUG
-    static int cfgForceGC = -1;
-
-    if (cfgForceGC == -1)
-        cfgForceGC =!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ADULazyMemoryRelease);
-
-    bForceGC=bForceGC||cfgForceGC;
-    AppDomainRefHolder This(this);
-    AddRef();
-
-    // Do the actual unloading
-    {
-        // We do not want other threads to abort the current one.
-        ThreadPreventAsyncHolder preventAsync;
-        Exit(TRUE, !bForceGC);
-    }
-    if(bForceGC)
-    {
-        GCHeapUtilities::GetGCHeap()->GarbageCollect();
-        FinalizerThread::FinalizerThreadWait();
-        SetStage(STAGE_COLLECTED);
-        Close(); //NOTHROW!
-    }
-
-#ifdef AD_LOG_MEMORY
-    if (pLogIt)
-    {
-        GCX_PREEMP();
-        pLogIt(unloadCount);
-    }
-#endif // AD_LOG_MEMORY
-
-#ifdef AD_SNAPSHOT
-    if (takeSnapShot)
-    {
-        char buffer[1024];
-        sprintf_s(buffer, _countof(buffer), "vadump -p %d -o > vadump.%d", GetCurrentProcessId(), unloadCount);
-        system(buffer);
-        sprintf_s(buffer, _countof(buffer), "umdh -p:%d -d -i:1 -f:umdh.%d", GetCurrentProcessId(), unloadCount);
-        system(buffer);
-        int takeDHSnapShot = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ADTakeDHSnapShot);
-        if (takeDHSnapShot)
-        {
-            sprintf_s(buffer, _countof(buffer), "dh -p %d -s -g -h -b -f dh.%d", GetCurrentProcessId(), unloadCount);
-            system(buffer);
-        }
-    }
-#endif // AD_SNAPSHOT
-
-#ifdef _DEBUG
-    if (dumpSB > 0)
-    {
-        // do extra finalizer wait to remove any leftover sb entries
-        FinalizerThread::FinalizerThreadWait();
-        GCHeapUtilities::GetGCHeap()->GarbageCollect();
-        FinalizerThread::FinalizerThreadWait();
-        LogSpewAlways("Done unload %3.3d\n", unloadCount);
-        DumpSyncBlockCache();
-        ShutdownLogging();
-        WCHAR buffer[128];
-        swprintf_s(buffer, NumItems(buffer), W("DumpSB.%d"), unloadCount);
-        _ASSERTE(WszMoveFileEx(W("COMPLUS.LOG"), buffer, MOVEFILE_REPLACE_EXISTING));
-        // this will open a new file
-        InitLogging();
-    }
-#endif // _DEBUG
-}
-
 void AppDomain::ExceptionUnwind(Frame *pFrame)
 {
     CONTRACTL
@@ -8681,24 +7710,7 @@ void AppDomain::ExceptionUnwind(Frame *pFrame)
     Thread *pThread = GetThread();
     _ASSERTE(pThread);
 
-    if (! pThread->ShouldChangeAbortToUnload(pFrame))
-    {
-        LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
-        return;
-    }
-
-    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: changing to unload\n"));
-
-    GCX_COOP();
-    OBJECTREF throwable = NULL;
-    EEResourceException e(kAppDomainUnloadedException, W("Remoting_AppDomainUnloaded_ThreadUnwound"));
-    throwable = e.GetThrowable();
-
-    // reset the exception to an AppDomainUnloadedException
-    if (throwable != NULL)
-    {
-        GetThread()->SafeSetThrowables(throwable);
-    }
+    LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::ExceptionUnwind: not first transition or abort\n"));
 }
 
 BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnloadRequestThread)
@@ -8719,78 +7731,6 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
         Thread *pCurThread = GetThread();
         if (pCurThread->CatchAtSafePoint())
             pCurThread->PulseGCMode();
-
-        {
-            // We know which thread is not in the domain now.  We just need to
-            // work on those threads.  We do not need to suspend the runtime.
-            ThreadStoreLockHolder tsl;
-
-            while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
-            {
-                if (pThread == pCurThread)
-                {
-                    continue;
-                }
-
-                if (pThread == FinalizerThread::GetFinalizerThread())
-                {
-                    continue;
-                }
-
-                if (pThread->GetUnloadBoundaryFrame() == NULL)
-                {
-                    continue;
-                }
-
-                // A thread may have UnloadBoundaryFrame set if
-                // 1. Being unloaded by AD unload helper thread
-                // 2. Escalation from OOM or SO triggers AD unload
-                // Here we only need to work on threads that are in the domain.  If we work on other threads,
-                // those threads may be stucked in a finally, and we will not be able to escalate for them,
-                // therefore AD unload is blocked.
-                if (pThread->IsBeingAbortedForADUnload() ||
-                    pThread == SystemDomain::System()->GetUnloadRequestingThread())
-                {
-                    nThreadsNeedMoreWork++;
-                }
-
-                if (!(IsRudeUnload() ||
-                      (pThread != SystemDomain::System()->GetUnloadRequestingThread() || OnlyOneThreadLeft())))
-                {
-                    continue;
-                }
-
-                if ((pThread == SystemDomain::System()->GetUnloadRequestingThread()) && *pFMarkUnloadRequestThread)
-                {
-                    // Mark thread for abortion only once; later on interrupt only
-                    *pFMarkUnloadRequestThread = FALSE;
-                    pThread->SetAbortRequest(m_fRudeUnload? EEPolicy::TA_Rude : EEPolicy::TA_V1Compatible);
-                }
-                else
-                {
-                    if (pThread->m_State & Thread::TS_Interruptible)
-                    {
-                        pThread->UserInterrupt(Thread::TI_Abort);
-                    }
-                }
-
-                if (pThread->PreemptiveGCDisabledOther())
-                {
-        #if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
-                    Thread::SuspendThreadResult str = pThread->SuspendThread();
-                    if (str == Thread::STR_Success)
-                    {
-                        if (pThread->PreemptiveGCDisabledOther() &&
-                            (!pThread->IsAbortInitiated() || pThread->IsRudeAbort()))
-                        {
-                            pThread->HandleJITCaseForAbort();
-                        }
-                        pThread->ResumeThread();
-                    }
-        #endif
-                }
-            }
-        } // ThreadStoreLockHolder
 
         m_dwThreadsStillInAppDomain=nThreadsNeedMoreWork;
         return !nThreadsNeedMoreWork;
@@ -8830,10 +7770,6 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
         Frame *pFrame = pThread->GetFirstTransitionInto(this, &count);
         if (! pFrame) {
             _ASSERTE(count == 0);
-            if (pThread->IsBeingAbortedForADUnload())
-            {
-                pThread->ResetBeginAbortedForADUnload();
-            }
             continue;
         }
 
@@ -8841,7 +7777,6 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
         {
             totalADCount += count;
             nThreadsNeedMoreWork++;
-            pThread->SetUnloadBoundaryFrame(pFrame);
         }
         else
         {
@@ -8849,8 +7784,7 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
         }
 
         // don't setup the exception info for the unloading thread unless it's the last one in
-        if (retryCount != ((unsigned int) -1) && retryCount > g_pConfig->AppDomainUnloadRetryCount() && reKind == kLastException &&
-            (pThread != SystemDomain::System()->GetUnloadRequestingThread() || OnlyOneThreadLeft()))
+        if (retryCount != ((unsigned int) -1) && retryCount > g_pConfig->AppDomainUnloadRetryCount() && reKind == kLastException)
         {
 #ifdef AD_BREAK_ON_CANNOT_UNLOAD
             static int breakOnCannotUnload = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ADBreakOnCannotUnload);
@@ -8869,13 +7803,7 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
         // the finalizer thread - let it finish it's work as it's allowed to be in there. If it won't finish,
         // then we will eventually get a CannotUnloadException on it.
 
-        if (pThread != FinalizerThread::GetFinalizerThread() &&
-            // If the domain is rudely unloaded, we will unwind the requesting thread out
-            // Rude unload is going to succeed, or escalated to disable runtime or higher.
-            (IsRudeUnload() ||
-             (pThread != SystemDomain::System()->GetUnloadRequestingThread() || OnlyOneThreadLeft())
-            )
-           )
+        if (pThread != FinalizerThread::GetFinalizerThread())
         {
 
             STRESS_LOG2(LF_APPDOMAIN, LL_INFO100, "AppDomain::UnwindThreads stopping %x with %d transitions\n", pThread->GetThreadId(), count);
@@ -8883,12 +7811,7 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
 #if _DEBUG_ADUNLOAD
             printf("AppDomain::UnwindThreads %x stopping %x with first frame %8.8p\n", GetThread()->GetThreadId(), pThread->GetThreadId(), pFrame);
 #endif
-            if (pThread == SystemDomain::System()->GetUnloadRequestingThread())
-            {
-                // Mark thread for abortion only once; later on interrupt only
-                *pFMarkUnloadRequestThread = FALSE;
-            }
-            pThread->SetAbortRequest(m_fRudeUnload? EEPolicy::TA_Rude : EEPolicy::TA_V1Compatible);
+            pThread->SetAbortRequest(EEPolicy::TA_V1Compatible);
         }
         TESTHOOKCALL(UnwindingThreads(GetId().m_dwId)) ;
     }
@@ -8902,18 +7825,6 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
     // or other problems related to incorrect count. This is very much a bug if this happens - a thread should always
     // exit the domain gracefully.
     // m_dwThreadEnterCount = totalADCount;
-
-    if (reKind != kLastException)
-    {
-        pThread = NULL;
-        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
-        {
-            if (pThread->IsBeingAbortedForADUnload())
-            {
-                pThread->ResetBeginAbortedForADUnload();
-            }
-        }
-    }
 
     // CommonTripThread will handle the abort for any threads that we've marked
     ThreadSuspend::RestartEE(FALSE, TRUE);
@@ -8946,25 +7857,17 @@ void AppDomain::UnwindThreads()
     m_dwThreadsStillInAppDomain=(ULONG)-1;
     ULONGLONG startTime = CLRGetTickCount64();
 
-    if (GetEEPolicy()->GetDefaultAction(OPR_AppDomainUnload, NULL) == eRudeUnloadAppDomain &&
-        !IsRudeUnload())
-    {
-        GetEEPolicy()->NotifyHostOnDefaultAction(OPR_AppDomainUnload, eRudeUnloadAppDomain);
-        SetRudeUnload();
-    }
-
     // Force threads to go through slow path during AD unload.
     TSSuspendHolder shTrap;
 
-    BOOL fCurrentUnloadMode = IsRudeUnload();
     BOOL fMarkUnloadRequestThread = TRUE;
 
     // now wait for all the threads running in our AD to get out
     do
     {
-        DWORD timeout = GetEEPolicy()->GetTimeout(m_fRudeUnload?OPR_AppDomainRudeUnload : OPR_AppDomainUnload);
-        EPolicyAction action = GetEEPolicy()->GetActionOnTimeout(m_fRudeUnload?OPR_AppDomainRudeUnload : OPR_AppDomainUnload, NULL);
-        if (timeout != INFINITE && action > eUnloadAppDomain) {
+        DWORD timeout = GetEEPolicy()->GetTimeout(OPR_AppDomainUnload);
+        EPolicyAction action = GetEEPolicy()->GetActionOnTimeout(OPR_AppDomainUnload, NULL);
+        if (timeout != INFINITE && action >= eExitProcess) {
             // Escalation policy specified.
             ULONGLONG curTime = CLRGetTickCount64();
             ULONGLONG elapseTime = curTime - startTime;
@@ -8973,16 +7876,11 @@ void AppDomain::UnwindThreads()
                 // Escalate
                 switch (action)
                 {
-                case eRudeUnloadAppDomain:
-                    GetEEPolicy()->NotifyHostOnTimeout(m_fRudeUnload?OPR_AppDomainRudeUnload : OPR_AppDomainUnload, action);
-                    SetRudeUnload();
-                    STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Escalating to RADU, adid=%d",GetId().m_dwId);
-                    break;
                 case eExitProcess:
                 case eFastExitProcess:
                 case eRudeExitProcess:
                 case eDisableRuntime:
-                    GetEEPolicy()->NotifyHostOnTimeout(m_fRudeUnload?OPR_AppDomainRudeUnload : OPR_AppDomainUnload, action);
+                    GetEEPolicy()->NotifyHostOnTimeout(OPR_AppDomainUnload, action);
                     EEPolicy::HandleExitProcessFromEscalation(action, HOST_E_EXITPROCESS_TIMEOUT);
                     _ASSERTE (!"Should not reach here");
                     break;
@@ -8995,14 +7893,6 @@ void AppDomain::UnwindThreads()
         if (LoggingOn(LF_APPDOMAIN, LL_INFO100))
             DumpADThreadTrack();
 #endif // _DEBUG
-        BOOL fNextUnloadMode = IsRudeUnload();
-        if (fCurrentUnloadMode != fNextUnloadMode)
-        {
-            // We have changed from normal unload to rude unload.  We need to mark the thread
-            // with RudeAbort, but we can only do this safely if the runtime is suspended.
-            fCurrentUnloadMode = fNextUnloadMode;
-            retryCount = -1;
-        }
         if (StopEEAndUnwindThreads(retryCount, &fMarkUnloadRequestThread))
             break;
         if (timeout != INFINITE)
@@ -9032,24 +7922,6 @@ void AppDomain::UnwindThreads()
         }
     }
     while (TRUE) ;
-}
-
-void AppDomain::ClearGCHandles()
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    SetStage(STAGE_HANDLETABLE_NOACCESS);
-
-    GCHeapUtilities::GetGCHeap()->WaitUntilConcurrentGCComplete();
-
-    // Remove our handle store as a source of GC roots
-    m_handleStore->Uproot();
 }
 
 void AppDomain::ClearGCRoots()
@@ -10060,151 +8932,6 @@ void AppDomain::InitializeDefaultDomainManager()
     GCPROTECT_END();
 }
 
-CLREvent * AppDomain::g_pUnloadStartEvent;
-
-void AppDomain::CreateADUnloadWorker()
-{
-    STANDARD_VM_CONTRACT;
-
-    // Do not create adUnload thread if there is only default domain
-    if(IsSingleAppDomain())
-        return;
-
-Retry:
-    BOOL fCreator = FALSE;
-    if (FastInterlockCompareExchange((LONG *)&g_fADUnloadWorkerOK,-2,-1)==-1)  //we're first
-    {
-#ifdef _TARGET_X86_  // use the smallest possible stack on X86 
-        DWORD stackSize = 128 * 1024;
-#else
-        DWORD stackSize = 512 * 1024; // leave X64 unchanged since we have plenty of VM
-#endif
-        Thread *pThread = SetupUnstartedThread();
-        if (pThread->CreateNewThread(stackSize, ADUnloadThreadStart, pThread))
-        {
-            fCreator = TRUE;
-            DWORD dwRet;
-            dwRet = pThread->StartThread();
-
-            // When running under a user mode native debugger there is a race
-            // between the moment we've created the thread (in CreateNewThread) and 
-            // the moment we resume it (in StartThread); the debugger may receive 
-            // the "ct" (create thread) notification, and it will attempt to 
-            // suspend/resume all threads in the process.  Now imagine the debugger
-            // resumes this thread first, and only later does it try to resume the
-            // newly created thread (the ADU worker thread).  In these conditions our
-            // call to ResumeThread may come before the debugger's call to ResumeThread
-            // actually causing dwRet to equal 2.
-            // We cannot use IsDebuggerPresent() in the condition below because the 
-            // debugger may have been detached between the time it got the notification
-            // and the moment we execute the test below.
-            _ASSERTE(dwRet == 1 || dwRet == 2);
-        }
-        else
-        {
-            pThread->DecExternalCount(FALSE);
-            FastInterlockExchange((LONG *)&g_fADUnloadWorkerOK, -1);
-            ThrowOutOfMemory();
-        }
-    }
-
-    YIELD_WHILE (g_fADUnloadWorkerOK == -2);
-
-    if (g_fADUnloadWorkerOK == -1) {
-        if (fCreator)
-        {
-            ThrowOutOfMemory();
-        }
-        else
-        {
-            goto Retry;
-        }
-    }
-}
-
-/*static*/ void AppDomain::ADUnloadWorkerHelper(AppDomain *pDomain)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    ADUnloadSink* pADUnloadSink=pDomain->GetADUnloadSinkForUnload();
-    HRESULT hr=S_OK;
-
-    EX_TRY
-    {
-        pDomain->Unload(FALSE);
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if(pADUnloadSink)
-    {
-        SystemDomain::LockHolder lh;
-        pADUnloadSink->ReportUnloadResult(hr,NULL);
-        pADUnloadSink->Release();
-    }
-}
-
-void AppDomain::DoADUnloadWork()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    DWORD i = 1;
-    while (TRUE) {
-
-        AppDomain *pDomainToUnload = NULL;
-
-        {
-            // Take the lock so that no domain can be added or removed from the system domain
-            SystemDomain::LockHolder lh;
-
-            DWORD numDomain = SystemDomain::GetCurrentAppDomainMaxIndex();
-            for (; i <= numDomain; i ++) {
-                AppDomain * pDomain = SystemDomain::TestGetAppDomainAtIndex(ADIndex(i));
-                //
-                // @todo: We used to also select a domain if pDomain->IsUnload() returned true. But that causes
-                // problems when we've failed to completely unload the AD in the past. If we've reached the CLEARED
-                // stage, for instance, then there will be no default context and AppDomain::Exit() will simply crash.
-                //
-                if (pDomain && pDomain->IsUnloadRequested())
-                {
-                    pDomainToUnload = pDomain;
-                    i ++;
-                    break;
-                }
-            }
-        }
-
-        if (!pDomainToUnload) {
-            break;
-        }
-
-        // We are the only thread that can unload domains so no one else can delete the appdomain
-        ADUnloadWorkerHelper(pDomainToUnload);            
-    }
-}
-
-static void DoADUnloadWorkHelper()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    EX_TRY {
-        AppDomain::DoADUnloadWork();
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-}
-
 ULONGLONG g_ObjFinalizeStartTime = 0;
 Volatile<BOOL> g_FinalizerIsRunning = FALSE;
 Volatile<ULONG> g_FinalizerLoopCount = 0;
@@ -10255,11 +8982,6 @@ void FinalizerThreadAbortOnTimeout()
                                             EEPolicy::TA_Safe,
                                             INFINITE,
                                             Thread::UAC_FinalizerTimeout);
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(OPR_FinalizerRun, action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-                }
             }
             break;
         case eRudeUnloadAppDomain:
@@ -10269,11 +8991,6 @@ void FinalizerThreadAbortOnTimeout()
                                             EEPolicy::TA_Rude,
                                             INFINITE,
                                             Thread::UAC_FinalizerTimeout);
-                if (!pDomain->IsDefaultDomain())
-                {
-                    GetEEPolicy()->NotifyHostOnTimeout(OPR_FinalizerRun, action);
-                    pDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                }
             }
             break;
         case eExitProcess:
@@ -10298,321 +9015,12 @@ enum WorkType
 {
     WT_UnloadDomain = 0x1,
     WT_ThreadAbort = 0x2,
-    WT_FinalizerThread = 0x4,
-    WT_ClearCollectedDomains=0x8
+    WT_FinalizerThread = 0x4
 };
 
 static Volatile<DWORD> s_WorkType = 0;
 
-
-DWORD WINAPI AppDomain::ADUnloadThreadStart(void *args)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        DISABLED(GC_TRIGGERS);
-
-        // This function will always be at the very bottom of the stack. The only
-        // user code it calls is the AppDomainUnload notifications which we will
-        // not be hardenning for Whidbey.
-        //
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    ClrFlsSetThreadType (ThreadType_ADUnloadHelper);
-
-    Thread *pThread = (Thread*)args;
-    bool fOK = (pThread->HasStarted() != 0);
-
-    {
-        GCX_MAYBE_PREEMP(fOK);
-
-        _ASSERTE (g_fADUnloadWorkerOK == -2);
-
-        FastInterlockExchange((LONG *)&g_fADUnloadWorkerOK,fOK?1:-1);
-
-        if (!fOK)
-        {
-            DestroyThread(pThread);
-            goto Exit;
-        }
-
-        pThread->SetBackground(TRUE);
-
-        pThread->SetThreadStateNC(Thread::TSNC_ADUnloadHelper);
-
-        while (TRUE) {
-            DWORD TAtimeout = INFINITE;
-            ULONGLONG endTime = Thread::GetNextSelfAbortEndTime();
-            ULONGLONG curTime = CLRGetTickCount64();
-            if (endTime <= curTime) {
-                TAtimeout = 5;
-            }
-            else
-            {
-                ULONGLONG diff = endTime - curTime;
-                if (diff < MAXULONG)
-                {
-                    TAtimeout = (DWORD)diff;
-                }
-            }
-            ULONGLONG finalizeStartTime = GetObjFinalizeStartTime();
-            DWORD finalizeTimeout = INFINITE;
-            DWORD finalizeTimeoutSetting = GetEEPolicy()->GetTimeout(OPR_FinalizerRun);
-            if (finalizeTimeoutSetting != INFINITE && g_FinalizerIsRunning)
-            {
-                if (finalizeStartTime == 0)
-                {
-                    finalizeTimeout = finalizeTimeoutSetting;
-                }
-                else
-                {
-                    endTime = finalizeStartTime + finalizeTimeoutSetting;
-                    if (endTime <= curTime) {
-                        finalizeTimeout = 0;
-                    }
-                    else
-                    {
-                        ULONGLONG diff = endTime - curTime;
-                        if (diff < MAXULONG)
-                        {
-                            finalizeTimeout = (DWORD)diff;
-                        }
-                    }
-                }
-            }
-
-            if (AppDomain::HasWorkForFinalizerThread())
-            {
-                if (finalizeTimeout > finalizeTimeoutSetting)
-                {
-                    finalizeTimeout = finalizeTimeoutSetting;
-                }
-            }
-
-            DWORD timeout = INFINITE;
-            if (finalizeTimeout <= TAtimeout)
-            {
-                timeout = finalizeTimeout;
-            }
-            else
-            {
-                timeout = TAtimeout;
-            }
-
-            if (timeout != 0)
-            {
-                LOG((LF_APPDOMAIN, LL_INFO10, "Waiting to start unload\n"));
-                g_pUnloadStartEvent->Wait(timeout,FALSE);
-            }
-
-            if (finalizeTimeout != INFINITE || (s_WorkType & WT_FinalizerThread) != 0)
-            {
-                STRESS_LOG0(LF_ALWAYS, LL_ALWAYS, "ADUnloadThreadStart work for Finalizer thread\n");
-                FastInterlockAnd(&s_WorkType, ~WT_FinalizerThread);
-                // only watch finalizer thread is finalizer method or unloadevent is being processed
-                if (GetObjFinalizeStartTime() == finalizeStartTime && finalizeStartTime != 0 && g_FinalizerIsRunning)
-                {
-                    if (CLRGetTickCount64() >= finalizeStartTime+finalizeTimeoutSetting)
-                    {
-                        GCX_COOP();
-                        FinalizerThreadAbortOnTimeout();
-                    }
-                }
-                if (s_fProcessUnloadDomainEvent && g_FinalizerIsRunning)
-                {
-                    GCX_COOP();
-                    FinalizerThreadAbortOnTimeout();
-                }
-            }
-
-            if (TAtimeout != INFINITE || (s_WorkType & WT_ThreadAbort) != 0)
-            {
-                STRESS_LOG0(LF_ALWAYS, LL_ALWAYS, "ADUnloadThreadStart work for thread abort\n");
-                FastInterlockAnd(&s_WorkType, ~WT_ThreadAbort);
-                GCX_COOP();
-                Thread::ThreadAbortWatchDog();
-            }
-
-            if ((s_WorkType & WT_UnloadDomain) != 0 && !AppDomain::HasWorkForFinalizerThread())
-            {
-                STRESS_LOG0(LF_ALWAYS, LL_ALWAYS, "ADUnloadThreadStart work for AD unload\n");
-                FastInterlockAnd(&s_WorkType, ~WT_UnloadDomain);
-                GCX_COOP();
-                DoADUnloadWorkHelper();
-            }
-
-            if ((s_WorkType & WT_ClearCollectedDomains) != 0)
-            {
-                STRESS_LOG0(LF_ALWAYS, LL_ALWAYS, "ADUnloadThreadStart work for AD cleanup\n");
-                FastInterlockAnd(&s_WorkType, ~WT_ClearCollectedDomains);
-                GCX_COOP();
-                SystemDomain::System()->ClearCollectedDomains();
-            }
-
-        }
-Exit:;
-    }
-
-    END_ENTRYPOINT_NOTHROW;
-
-    return 0;
-}
-
-void AppDomain::EnableADUnloadWorker()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT; // Called during a SO
-    }
-    CONTRACTL_END;
-
-    EEPolicy::AppDomainUnloadTypes type = EEPolicy::ADU_Safe;
-
-#ifdef _DEBUG
-    DWORD hostTestADUnload = g_pConfig->GetHostTestADUnload();
-    if (hostTestADUnload == 2) {
-        type = EEPolicy::ADU_Rude;
-    }
-#endif // _DEBUG
-
-    EnableADUnloadWorker(type);
-}
-
-void AppDomain::EnableADUnloadWorker(EEPolicy::AppDomainUnloadTypes type, BOOL fHasStack)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT; // Called during a SO
-    }
-    CONTRACTL_END;
-
-    FastInterlockOr (&s_WorkType, WT_UnloadDomain);
-
-    LONG stage = m_Stage;
-    static_assert_no_msg(sizeof(m_Stage) == sizeof(int));
-
-    _ASSERTE(!IsDefaultDomain());
-
-    // Mark unload requested.
-    if (type == EEPolicy::ADU_Rude) {
-        SetRudeUnload();
-    }
-    while (stage < STAGE_UNLOAD_REQUESTED) {
-        stage = FastInterlockCompareExchange((LONG*)&m_Stage,STAGE_UNLOAD_REQUESTED,stage);
-    }
-
-    if (!fHasStack)
-    {
-        // Can not call Set due to limited stack.
-        return;
-    }
-    LOG((LF_APPDOMAIN, LL_INFO10, "Enabling unload worker\n"));
-    g_pUnloadStartEvent->Set();
-}
-
-void AppDomain::EnableADUnloadWorkerForThreadAbort()
-{
-    LIMITED_METHOD_CONTRACT;
-    STRESS_LOG0(LF_ALWAYS, LL_ALWAYS, "Enabling unload worker for thread abort\n");
-    LOG((LF_APPDOMAIN, LL_INFO10, "Enabling unload worker for thread abort\n"));
-    FastInterlockOr (&s_WorkType, WT_ThreadAbort);
-    g_pUnloadStartEvent->Set();
-}
-
-
-void AppDomain::EnableADUnloadWorkerForFinalizer()
-{
-    LIMITED_METHOD_CONTRACT;
-    if (GetEEPolicy()->GetTimeout(OPR_FinalizerRun) != INFINITE)
-    {
-        LOG((LF_APPDOMAIN, LL_INFO10, "Enabling unload worker for Finalizer Thread\n"));
-        FastInterlockOr (&s_WorkType, WT_FinalizerThread);
-        g_pUnloadStartEvent->Set();
-    }
-}
-
-void AppDomain::EnableADUnloadWorkerForCollectedADCleanup()
-{
-    LIMITED_METHOD_CONTRACT;
-    LOG((LF_APPDOMAIN, LL_INFO10, "Enabling unload worker for collected domains\n"));
-    FastInterlockOr (&s_WorkType, WT_ClearCollectedDomains);
-    g_pUnloadStartEvent->Set();
-}
-
-
-void SystemDomain::ClearCollectedDomains()
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        NOTHROW;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-        
-    AppDomain* pDomainsToClear=NULL;
-    {
-        CrstHolder lh(&m_DelayedUnloadCrst); 
-        for (AppDomain** ppDomain=&m_pDelayedUnloadList;(*ppDomain)!=NULL; )
-        {
-            if ((*ppDomain)->m_Stage==AppDomain::STAGE_COLLECTED)
-            {
-                AppDomain* pAppDomain=*ppDomain;
-                *ppDomain=(*ppDomain)->m_pNextInDelayedUnloadList;
-                pAppDomain->m_pNextInDelayedUnloadList=pDomainsToClear;
-                pDomainsToClear=pAppDomain;
-            }
-            else
-                ppDomain=&((*ppDomain)->m_pNextInDelayedUnloadList);
-        }
-    }
-        
-    for (AppDomain* pDomain=pDomainsToClear;pDomain!=NULL;)
-    {
-        AppDomain* pNext=pDomain->m_pNextInDelayedUnloadList;
-        pDomain->Close(); //NOTHROW!
-        pDomain->Release();
-        pDomain=pNext;
-    }
-}
- 
-void SystemDomain::ProcessClearingDomains()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;           
-    }
-    CONTRACTL_END;
-    CrstHolder lh(&m_DelayedUnloadCrst); 
-
-    for (AppDomain** ppDomain=&m_pDelayedUnloadList;(*ppDomain)!=NULL; )
-    {
-        if ((*ppDomain)->m_Stage==AppDomain::STAGE_HANDLETABLE_NOACCESS)
-        {
-            AppDomain* pAppDomain=*ppDomain;
-            pAppDomain->SetStage(AppDomain::STAGE_CLEARED);
-        }
-        ppDomain=&((*ppDomain)->m_pNextInDelayedUnloadList);
-    }
-        
-    if (!m_UnloadIsAsync)
-    {
-        // For synchronous mode, we are now done with the list.
-        m_pDelayedUnloadList = NULL;    
-    }
-}
-
-void SystemDomain::ProcessDelayedUnloadDomains()
+void SystemDomain::ProcessDelayedUnloadLoaderAllocators()
 {
     CONTRACTL
     {
@@ -10626,24 +9034,10 @@ void SystemDomain::ProcessDelayedUnloadDomains()
     if (GCHeapUtilities::GetGCHeap()->IsConcurrentGCInProgress())
         iGCRefPoint--;
 
-    BOOL bAppDomainToCleanup = FALSE;
     LoaderAllocator * pAllocatorsToDelete = NULL;
 
     {
         CrstHolder lh(&m_DelayedUnloadCrst); 
-
-        for (AppDomain* pDomain=m_pDelayedUnloadList; pDomain!=NULL; pDomain=pDomain->m_pNextInDelayedUnloadList)
-        {
-            if (pDomain->m_Stage==AppDomain::STAGE_CLEARED)
-            {
-                // Compare with 0 to handle overflows gracefully
-                if (0 < iGCRefPoint - pDomain->GetGCRefPoint())
-                {
-                    bAppDomainToCleanup=TRUE;
-                    pDomain->SetStage(AppDomain::STAGE_COLLECTED);
-                }
-            }
-        }
 
         LoaderAllocator ** ppAllocator=&m_pDelayedUnloadListOfLoaderAllocators;
         while (*ppAllocator!= NULL)
@@ -10663,9 +9057,6 @@ void SystemDomain::ProcessDelayedUnloadDomains()
         }
     }
 
-    if (bAppDomainToCleanup)
-        AppDomain::EnableADUnloadWorkerForCollectedADCleanup();
-
     // Delete collected loader allocators on the finalizer thread. We cannot offload it to appdomain unload thread because of 
     // there is not guaranteed to be one, and it is not that expensive operation anyway.
     while (pAllocatorsToDelete != NULL)
@@ -10676,159 +9067,6 @@ void SystemDomain::ProcessDelayedUnloadDomains()
     }
 }
 
-#endif // CROSSGEN_COMPILE
-
-AppDomainFromIDHolder::AppDomainFromIDHolder(ADID adId, BOOL bUnsafePoint, SyncType synctype)
-{
-    WRAPPER_NO_CONTRACT;
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-#ifdef _DEBUG
-    m_bAcquired=false;   
-    m_bChecked=false;
-    m_type=synctype;
-    
-#endif
-    Assign(adId, bUnsafePoint);
-}
-
-AppDomainFromIDHolder::AppDomainFromIDHolder(SyncType synctype)
-{
-    LIMITED_METHOD_CONTRACT;
-    ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-    m_pDomain=NULL;
-#ifdef _DEBUG
-    m_bAcquired=false;
-    m_bChecked=false;
-    m_type=synctype;
-#endif
-}
-
-#ifndef CROSSGEN_COMPILE
-void ADUnloadSink::ReportUnloadResult (HRESULT hr, OBJECTREF* pException)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(this));
-        PRECONDITION(m_UnloadCompleteEvent.IsValid());
-    }
-    CONTRACTL_END;
-
-    //pException is unused;
-    m_UnloadResult=hr;
-    m_UnloadCompleteEvent.Set();
-};
-
-void ADUnloadSink::WaitUnloadCompletion()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        PRECONDITION(CheckPointer(this));
-        PRECONDITION(m_UnloadCompleteEvent.IsValid());
-    }
-    CONTRACTL_END;
-
-    CONTRACT_VIOLATION(FaultViolation);
-    m_UnloadCompleteEvent.WaitEx(INFINITE, (WaitMode)(WaitMode_Alertable | WaitMode_ADUnload));
-};
-
-ADUnloadSink* AppDomain::PrepareForWaitUnloadCompletion()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(SystemDomain::IsUnderDomainLock());
-        FORBID_FAULT;
-    }
-    CONTRACTL_END;
-
-    ADUnloadSink* pADSink=GetADUnloadSink();
-    PREFIX_ASSUME(pADSink!=NULL);
-    if (m_Stage < AppDomain::STAGE_UNLOAD_REQUESTED) //we're first
-    {
-        pADSink->Reset();
-        SetUnloadRequestThread(GetThread());
-    }
-    return pADSink;
-};
-
-ADUnloadSink::ADUnloadSink()
-{
-    CONTRACTL
-    {
-        CONSTRUCTOR_CHECK;
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    m_cRef=1;
-    m_UnloadCompleteEvent.CreateManualEvent(FALSE);
-    m_UnloadResult=S_OK;
-};
-
-ADUnloadSink::~ADUnloadSink()
-{
-    CONTRACTL
-    {
-        DESTRUCTOR_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    m_UnloadCompleteEvent.CloseEvent();
-
-};
-
-
-ULONG ADUnloadSink::AddRef()
-{
-    LIMITED_METHOD_CONTRACT;
-    return InterlockedIncrement(&m_cRef);
-};
-
-ULONG ADUnloadSink::Release()
-{
-    LIMITED_METHOD_CONTRACT;
-    ULONG ulRef = InterlockedDecrement(&m_cRef);
-    if (ulRef == 0)
-    {
-        delete this;
-    }
-    return ulRef;
-};
-
-void ADUnloadSink::Reset()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_UnloadResult=S_OK;
-    m_UnloadCompleteEvent.Reset();
-}
-
-ADUnloadSink* AppDomain::GetADUnloadSink()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(SystemDomain::IsUnderDomainLock());
-    if(m_ADUnloadSink)
-        m_ADUnloadSink->AddRef();
-    return m_ADUnloadSink;
-};
-
-ADUnloadSink* AppDomain::GetADUnloadSinkForUnload()
-{
-    // unload thread only. Doesn't need to have AD lock
-    LIMITED_METHOD_CONTRACT;
-    if(m_ADUnloadSink)
-        m_ADUnloadSink->AddRef();
-    return m_ADUnloadSink;
-}
 #endif // CROSSGEN_COMPILE
 
 void AppDomain::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)

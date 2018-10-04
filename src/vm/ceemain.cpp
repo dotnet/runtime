@@ -950,8 +950,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         StackwalkCache::Init();
 
-        AppDomain::CreateADUnloadStartEvent();
-
         // In coreclr, clrjit is compiled into it, but SO work in clrjit has not been done.
 #ifdef FEATURE_STACK_PROBE
         if (CLRHosted() && GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain)
@@ -995,19 +993,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         SystemDomain::NotifyProfilerStartup();
 #endif // PROFILING_SUPPORTED
-
-#ifndef CROSSGEN_COMPILE
-        if (CLRHosted()
-#ifdef _DEBUG
-            || ((fFlags & COINITEE_DLL) == 0 &&
-                g_pConfig->GetHostTestADUnload())
-#endif
-           ) {
-                // If we are hosted, a host may specify unloading AD when a managed allocation in
-                // critical region fails.  We need to precreate a thread to unload AD.
-                AppDomain::CreateADUnloadWorker();
-        }
-#endif // CROSSGEN_COMPILE
 
         g_fEEInit = false;
 

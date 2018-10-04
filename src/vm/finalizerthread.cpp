@@ -29,8 +29,6 @@ ULONGLONG FinalizerThread::LastHeapDumpTime = 0;
 Volatile<BOOL> g_TriggerHeapDump = FALSE;
 #endif // __linux__
 
-AppDomain * FinalizerThread::UnloadingAppDomain;
-
 CLREvent * FinalizerThread::hEventFinalizer = NULL;
 CLREvent * FinalizerThread::hEventFinalizerDone = NULL;
 CLREvent * FinalizerThread::hEventShutDownToFinalizer = NULL;
@@ -143,7 +141,7 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
 
     AppDomain* targetAppDomain = fobj->GetAppDomain();
     AppDomain* currentDomain = pThread->GetDomain();
-    if (! targetAppDomain || ! targetAppDomain->CanThreadEnter(pThread))
+    if (! targetAppDomain)
     {
         // if can't get into domain to finalize it, then it must be agile so finalize in current domain
         targetAppDomain = currentDomain;
@@ -151,48 +149,39 @@ Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bi
 
     if (targetAppDomain == currentDomain)
     {
-        if (!targetAppDomain->IsRudeUnload() ||
-            fobj->GetMethodTable()->HasCriticalFinalizer())
+        class ResetFinalizerStartTime
         {
-            class ResetFinalizerStartTime
+        public:
+            ResetFinalizerStartTime()
             {
-            public:
-                ResetFinalizerStartTime()
+                if (CLRHosted())
                 {
-                    if (CLRHosted())
-                    {
-                        g_ObjFinalizeStartTime = CLRGetTickCount64();
-                    }                    
-                }
-                ~ResetFinalizerStartTime()
-                {
-                    if (g_ObjFinalizeStartTime)
-                    {
-                        g_ObjFinalizeStartTime = 0;
-                    }
-                }
-            };
+                    g_ObjFinalizeStartTime = CLRGetTickCount64();
+                }                    
+            }
+            ~ResetFinalizerStartTime()
             {
-                ThreadLocaleHolder localeHolder;
-
+                if (g_ObjFinalizeStartTime)
                 {
-                    ResetFinalizerStartTime resetTime;
-                    CallFinalizer(fobj);
+                    g_ObjFinalizeStartTime = 0;
                 }
             }
-            pThread->InternalReset(FALSE);
+        };
+        {
+            ThreadLocaleHolder localeHolder;
+
+            {
+                ResetFinalizerStartTime resetTime;
+                CallFinalizer(fobj);
+            }
         }
+        pThread->InternalReset(FALSE);
     } 
     else 
     {
-        if (! targetAppDomain->GetDefaultContext())
-        {
-            // Can no longer enter domain becuase the handle containing the context has been
-            // destroyed so just bail. Should only get this if are at the stage of nuking the
-            // handles in the domain if it's still open.
-            _ASSERTE(targetAppDomain->IsUnloading() && targetAppDomain->ShouldHaveFinalization());
-        }
-        else if (!currentDomain->IsDefaultDomain())
+        _ASSERTE(targetAppDomain->GetDefaultContext());
+
+        if (!currentDomain->IsDefaultDomain())
         {
             // this means we are in some other domain, so need to return back out through the DoADCallback
             // and handle the object from there in another domain.
@@ -239,10 +228,6 @@ Object * FinalizerThread::FinalizeAllObjects(Object* fobj, int bitToCheck)
 
     if (fobj == NULL)
     {
-        if (AppDomain::HasWorkForFinalizerThread())
-        {
-            return NULL;
-        }
         fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
     }
 
@@ -264,10 +249,6 @@ Object * FinalizerThread::FinalizeAllObjects(Object* fobj, int bitToCheck)
 
         if (fobj->GetHeader()->GetBits() & bitToCheck)
         {
-            if (AppDomain::HasWorkForFinalizerThread())
-            {
-                return NULL;
-            }
             fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
         }
         else
@@ -281,10 +262,6 @@ Object * FinalizerThread::FinalizeAllObjects(Object* fobj, int bitToCheck)
 
             if (fobj == NULL)
             {
-                if (AppDomain::HasWorkForFinalizerThread())
-                {
-                    return NULL;
-                }
                 fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
             }
         }
@@ -621,44 +598,9 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
             GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
         }
         FastInterlockExchange ((LONG*)&g_FinalizerIsRunning, TRUE);
-        AppDomain::EnableADUnloadWorkerForFinalizer();
 
-        do
-        {
-            FinalizeAllObjects(NULL, 0);
-            _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
-
-            if (AppDomain::HasWorkForFinalizerThread())
-            {
-                AppDomain::ProcessUnloadDomainEventOnFinalizeThread();                
-            }
-            else if (UnloadingAppDomain == NULL)
-                break;
-            else if (!GCHeapUtilities::GetGCHeap()->FinalizeAppDomain(UnloadingAppDomain, !!fRunFinalizersOnUnload))
-            {
-                break;
-            }
-            // Now schedule any objects from an unloading app domain for finalization 
-            // on the next pass (even if they are reachable.)
-            // Note that it may take several passes to complete the unload, if new objects are created during
-            // finalization.
-        }
-        while(TRUE);
-
-        if (UnloadingAppDomain != NULL)
-        {
-            SyncBlockCache::GetSyncBlockCache()->CleanupSyncBlocksInAppDomain(UnloadingAppDomain);
-            {
-                // Before we continue with AD unloading, mark the stage as
-                // FINALIZED under the SystemDomain lock so that this portion
-                // of unloading may be serialized with other parts of the CLR
-                // that require the AD stage to be < FINALIZED, in particular
-                // ETW's AD enumeration code used during its rundown events.
-                SystemDomain::LockHolder lh;
-                UnloadingAppDomain->SetFinalized(); // All finalizers have run except for FinalizableAndAgile objects
-            }
-            UnloadingAppDomain = NULL;
-        }
+        FinalizeAllObjects(NULL, 0);
+        _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
 
         FastInterlockExchange ((LONG*)&g_FinalizerIsRunning, FALSE);
         // We may still have the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
@@ -1006,7 +948,7 @@ void FinalizerThread::FinalizerThreadWait(DWORD timeout)
                 if (status == WAIT_TIMEOUT)
                 {
                     ULONGLONG finalizeStartTime = GetObjFinalizeStartTime();
-                    if (finalizeStartTime || AppDomain::HasWorkForFinalizerThread())
+                    if (finalizeStartTime)
                     {
                         if (CLRGetTickCount64() >= finalizeStartTime+timeout)
                         {

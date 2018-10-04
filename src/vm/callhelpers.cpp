@@ -404,8 +404,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         //
         ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
 
-        _ASSERTE(GetAppDomain()->ShouldHaveCode());
-
 #ifdef FEATURE_INTERPRETER
         _ASSERTE(isCallConv(m_methodSig.GetCallingConvention(), IMAGE_CEE_CS_CALLCONV_DEFAULT)
                  || isCallConv(m_methodSig.GetCallingConvention(), CorCallingConvention(IMAGE_CEE_CS_CALLCONV_C))

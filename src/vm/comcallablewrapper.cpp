@@ -751,10 +751,7 @@ HRESULT WeakReferenceImpl::Cleanup()
         //
         GCX_COOP_THREAD_EXISTS(GET_THREAD());    
         
-        AppDomainFromIDHolder ad(m_adid, TRUE);
-        
-        if (!ad.IsUnloaded())
-            DestroyShortWeakHandle(m_ppObject);
+        DestroyShortWeakHandle(m_ppObject);
         
         m_ppObject = NULL;
     }
@@ -1103,18 +1100,7 @@ VOID SimpleComCallWrapper::Cleanup()
     // so we must release it if the AD wasn't unloaded
     if (IsAgile() && m_hOrigDomainHandle)
     {  
-        // the domain which the original handle belongs to might be already unloaded
-        if (GetRawDomainID()==::GetAppDomain()->GetId())
-            DestroyRefcountedHandle(m_hOrigDomainHandle);
-        else
-        {
-            GCX_COOP();
-            {
-                AppDomainFromIDHolder ad(GetRawDomainID(), TRUE);
-                if (!ad.IsUnloaded())
-                    DestroyRefcountedHandle(m_hOrigDomainHandle);
-            }
-        }
+        DestroyRefcountedHandle(m_hOrigDomainHandle);
         m_hOrigDomainHandle = NULL;
     }
 
@@ -2127,10 +2113,7 @@ void ComCallWrapper::MarkHandleWeak()
         MODE_ANY;
     }
     CONTRACTL_END;
-#ifdef _DEBUG
-    AppDomainFromIDHolder ad(GetSimpleWrapper()->GetDomainID(), TRUE);
-    _ASSERTE(!ad.IsUnloaded());
-#endif
+
     SyncBlock* pSyncBlock = GetSyncBlock();
     _ASSERTE(pSyncBlock);
 
@@ -2152,10 +2135,6 @@ void ComCallWrapper::ResetHandleStrength()
     }
     CONTRACTL_END;
     
-#ifdef _DEBUG
-    AppDomainFromIDHolder ad(GetSimpleWrapper()->GetDomainID(), TRUE);
-    _ASSERTE(!ad.IsUnloaded());
-#endif   
     SyncBlock* pSyncBlock = GetSyncBlock();
     _ASSERTE(pSyncBlock);
 
@@ -2511,27 +2490,10 @@ void ComCallWrapper::Cleanup()
         ClearSimpleWrapper(this);
     }
 
+    if (fOwnsHandle && m_ppThis)
     {
-        // Switch to cooperative mode for AppDomainFromIDHolder
-        // AppDomainFromIDHolder.Assign might forbid GC and AppDomainFromIDHolder.Release might re-enable GC. 
-        // The state is stored in ClrDebugState, which GCX_COOP() macros will push into stack & pop from stack 
-        // So use GCX_COOP() around all these statements for AppDomainFromIDHolder
-        GCX_COOP();
-        
-        // deregister the handle, in the first block. If no domain, then it's already done
-        AppDomainFromIDHolder pTgtDomain;
-        if (domainId != CURRENT_APPDOMAIN_ID)
-        {       
-            pTgtDomain.Assign(domainId, FALSE);        
-        }
-        
-        if (fOwnsHandle && m_ppThis && !pTgtDomain.IsUnloaded())
-        {            
-            LOG((LF_INTEROP, LL_INFO100, "ComCallWrapper::Cleanup on Object %8.8x\n", m_ppThis));
-            ClearHandle();
-        }
-        
-        pTgtDomain.Release();
+        LOG((LF_INTEROP, LL_INFO100, "ComCallWrapper::Cleanup on Object %8.8x\n", m_ppThis));
+        ClearHandle();
     }
     
     m_ppThis = NULL;
