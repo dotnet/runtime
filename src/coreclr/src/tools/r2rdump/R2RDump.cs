@@ -6,24 +6,60 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 
 namespace R2RDump
 {
+    public class DumpOptions
+    {
+        public bool Raw;
+        public bool Normalize;
+        public bool Header;
+        public bool Disasm;
+        public bool Unwind;
+        public bool GC;
+        public bool SectionContents;
+    }
+
     public abstract class Dumper
     {
-        internal R2RReader _r2r;
-        internal TextWriter _writer;
+        protected readonly R2RReader _r2r;
+        protected readonly TextWriter _writer;
+        protected readonly Disassembler _disassembler;
+        protected readonly DumpOptions _options;
 
-        internal bool _raw;
-        internal bool _header;
-        internal bool _disasm;
-        internal Disassembler _disassembler;
-        internal bool _unwind;
-        internal bool _gc;
-        internal bool _sectionContents;
+        public Dumper(R2RReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
+        {
+            _r2r = r2r;
+            _writer = writer;
+            _disassembler = disassembler;
+            _options = options;
+        }
+
+        public IEnumerable<R2RSection> NormalizedSections()
+        {
+            IEnumerable<R2RSection> sections = _r2r.R2RHeader.Sections.Values;
+            if (_options.Normalize)
+            {
+                sections = sections.OrderBy((s) => s.Type);
+            }
+            return sections;
+        }
+
+        public IEnumerable<R2RMethod> NormalizedMethods()
+        {
+            IEnumerable<R2RMethod> methods = _r2r.R2RMethods;
+            if (_options.Normalize)
+            {
+                methods = methods.OrderBy((m) => m.SignatureString);
+            }
+            return methods;
+        }
 
         /// <summary>
         /// Run right before printing output
@@ -54,18 +90,13 @@ namespace R2RDump
         private bool _help;
         private IReadOnlyList<string> _inputFilenames = Array.Empty<string>();
         private string _outputFilename = null;
-        private bool _xml;
-        private bool _raw;
-        private bool _header;
-        private bool _disasm;
+        private DumpOptions _options = new DumpOptions();
         private IReadOnlyList<string> _queries = Array.Empty<string>();
         private IReadOnlyList<string> _keywords = Array.Empty<string>();
         private IReadOnlyList<int> _runtimeFunctions = Array.Empty<int>();
         private IReadOnlyList<string> _sections = Array.Empty<string>();
         private bool _diff;
-        private bool _unwind;
-        private bool _gc;
-        private bool _sectionContents;
+        private bool _xml;
         private TextWriter _writer;
         private Dictionary<R2RSection.SectionType, bool> _selectedSections = new Dictionary<R2RSection.SectionType, bool>();
         private Dumper _dumper;
@@ -91,16 +122,17 @@ namespace R2RDump
                 syntax.DefineOptionList("i|in", ref _inputFilenames, "Input file(s) to dump. Expects them to by ReadyToRun images");
                 syntax.DefineOption("o|out", ref _outputFilename, "Output file path. Dumps everything to the specified file except help message and exception messages");
                 syntax.DefineOption("x|xml", ref _xml, "Output in XML format");
-                syntax.DefineOption("raw", ref _raw, "Dump the raw bytes of each section or runtime function");
-                syntax.DefineOption("header", ref _header, "Dump R2R header");
-                syntax.DefineOption("d|disasm", ref _disasm, "Show disassembly of methods or runtime functions");
+                syntax.DefineOption("raw", ref _options.Raw, "Dump the raw bytes of each section or runtime function");
+                syntax.DefineOption("header", ref _options.Header, "Dump R2R header");
+                syntax.DefineOption("d|disasm", ref _options.Disasm, "Show disassembly of methods or runtime functions");
                 syntax.DefineOptionList("q|query", ref _queries, "Query method by exact name, signature, row id or token");
                 syntax.DefineOptionList("k|keyword", ref _keywords, "Search method by keyword");
                 syntax.DefineOptionList("r|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
-                syntax.DefineOption("unwind", ref _unwind, "Dump unwindInfo");
-                syntax.DefineOption("gc", ref _gc, "Dump gcInfo and slot table");
-                syntax.DefineOption("sc", ref _sectionContents, "Dump section contents");
+                syntax.DefineOption("unwind", ref _options.Unwind, "Dump unwindInfo");
+                syntax.DefineOption("gc", ref _options.GC, "Dump gcInfo and slot table");
+                syntax.DefineOption("sc", ref _options.SectionContents, "Dump section contents");
+                syntax.DefineOption("n|normalize", ref _options.Normalize, "Normalize dump by sorting the various tables and methods (default = unsorted i.e. file order)");
                 syntax.DefineOption("v|verbose", ref verbose, "Dump disassembly, unwindInfo, gcInfo and section contents");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images");
                 syntax.DefineOption("ignoreSensitive", ref _ignoreSensitive, "Ignores sensitive properties in xml dump to avoid failing tests");
@@ -108,10 +140,10 @@ namespace R2RDump
 
             if (verbose)
             {
-                _disasm = true;
-                _unwind = true;
-                _gc = true;
-                _sectionContents = true;
+                _options.Disasm = true;
+                _options.Unwind = true;
+                _options.GC = true;
+                _options.SectionContents = true;
             }
 
             return argSyntax;
@@ -237,14 +269,14 @@ namespace R2RDump
                 _dumper.WriteDivider("R2R Header");
                 _dumper.DumpHeader(true);
                 
-                if (!_header)
+                if (!_options.Header)
                 {
                     _dumper.DumpAllMethods();
                 }
             }
             else //dump queried sections, methods and runtimeFunctions
             {
-                if (_header)
+                if (_options.Header)
                 {
                     _dumper.DumpHeader(false);
                 }
@@ -267,7 +299,7 @@ namespace R2RDump
         {
             int id;
             bool isNum = ArgStringToInt(query, out id);
-            bool idMatch = isNum && (method.Rid == id || method.Token == id);
+            bool idMatch = isNum && (method.Rid == id || MetadataTokens.GetRowNumber(method.MetadataReader, method.MethodHandle) == id);
 
             bool sigMatch = false;
             if (exact)
@@ -401,7 +433,7 @@ namespace R2RDump
                     // parse the ReadyToRun image
                     R2RReader r2r = new R2RReader(filename);
 
-                    if (_disasm)
+                    if (_options.Disasm)
                     {
                         if (r2r.InputArchitectureSupported() && r2r.DisassemblerArchitectureSupported())
                         {
@@ -415,11 +447,11 @@ namespace R2RDump
 
                     if (_xml)
                     {
-                        _dumper = new XmlDumper(_ignoreSensitive, r2r, _writer, _raw, _header, _disasm, disassembler, _unwind, _gc, _sectionContents);
+                        _dumper = new XmlDumper(_ignoreSensitive, r2r, _writer, disassembler, _options);
                     }
                     else
                     {
-                        _dumper = new TextDumper(r2r, _writer, _raw, _header, _disasm, disassembler, _unwind, _gc, _sectionContents);
+                        _dumper = new TextDumper(r2r, _writer, disassembler, _options);
                     }
 
                     if (!_diff)

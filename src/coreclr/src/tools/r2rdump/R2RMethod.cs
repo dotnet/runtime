@@ -211,8 +211,10 @@ namespace R2RDump
     {
         private const int _mdtMethodDef = 0x06000000;
 
-        MetadataReader _mdReader;
-        MethodDefinition _methodDef;
+        /// <summary>
+        /// ECMA metadata reader for the method module.
+        /// </summary>
+        public MetadataReader MetadataReader { get; }
 
         /// <summary>
         /// An unique index for the method
@@ -230,8 +232,6 @@ namespace R2RDump
         /// </summary>
         public string SignatureString { get; set; }
 
-        public bool IsGeneric { get; set; }
-
         public MethodSignature<string> Signature { get; }
 
         /// <summary>
@@ -240,9 +240,9 @@ namespace R2RDump
         public string DeclaringType { get; set; }
 
         /// <summary>
-        /// The token of the method consisting of the table code (0x06) and row id
+        /// The method metadata handle
         /// </summary>
-        public uint Token { get; set; }
+        public EntityHandle MethodHandle { get; set; }
 
         /// <summary>
         /// The row id of the method
@@ -264,105 +264,96 @@ namespace R2RDump
 
         public FixupCell[] Fixups { get; set; }
 
-        /// <summary>
-        /// Maps all the generic parameters to the type in the instance
-        /// </summary>
-        private Dictionary<string, string> _genericParamInstanceMap;
-
         public R2RMethod() { }
 
         /// <summary>
         /// Extracts the method signature from the metadata by rid
         /// </summary>
-        public R2RMethod(int index, MetadataReader mdReader, uint rid, int entryPointId, CorElementType[] instanceArgs, uint[] tok, FixupCell[] fixups)
+        public R2RMethod(
+            int index, 
+            MetadataReader mdReader, 
+            EntityHandle methodHandle, 
+            int entryPointId, 
+            string owningType, 
+            string constrainedType, 
+            string[] instanceArgs,
+            FixupCell[] fixups)
         {
             Index = index;
-            Token = _mdtMethodDef | rid;
-            Rid = rid;
+            MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
 
-            _mdReader = mdReader;
+            MetadataReader = mdReader;
             RuntimeFunctions = new List<RuntimeFunction>();
 
-            // get the method signature from the MethodDefhandle
-            MethodDefinitionHandle methodDefHandle = MetadataTokens.MethodDefinitionHandle((int)rid);
-            _methodDef = mdReader.GetMethodDefinition(methodDefHandle);
-            Name = mdReader.GetString(_methodDef.Name);
-            BlobReader signatureReader = mdReader.GetBlobReader(_methodDef.Signature);
+            EntityHandle owningTypeHandle;
+            GenericParameterHandleCollection genericParams = default(GenericParameterHandleCollection);
 
-            TypeDefinitionHandle declaringTypeHandle = _methodDef.GetDeclaringType();
-            DeclaringType = MetadataNameFormatter.FormatHandle(mdReader, declaringTypeHandle);
+            DisassemblingGenericContext genericContext = new DisassemblingGenericContext(typeParameters: Array.Empty<string>(), methodParameters: instanceArgs);
+            DisassemblingTypeProvider typeProvider = new DisassemblingTypeProvider();
 
-            SignatureHeader signatureHeader = signatureReader.ReadSignatureHeader();
-            IsGeneric = signatureHeader.IsGeneric;
-            GenericParameterHandleCollection genericParams = _methodDef.GetGenericParameters();
-            _genericParamInstanceMap = new Dictionary<string, string>();
-            
-            int argCount = signatureReader.ReadCompressedInteger();
-            if (IsGeneric)
+            // get the method signature from the method handle
+            switch (MethodHandle.Kind)
             {
-                argCount = signatureReader.ReadCompressedInteger();
+                case HandleKind.MethodDefinition:
+                    {
+                        MethodDefinition methodDef = MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
+                        Name = MetadataReader.GetString(methodDef.Name);
+                        Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
+                        owningTypeHandle = methodDef.GetDeclaringType();
+                        genericParams = methodDef.GetGenericParameters();
+                    }
+                    break;
+
+                case HandleKind.MemberReference:
+                    {
+                        MemberReference memberRef = MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
+                        Name = MetadataReader.GetString(memberRef.Name);
+                        Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
+                        owningTypeHandle = memberRef.Parent;
+                    }
+                    break;
+
+                default:
+                    throw new NotImplementedException();
+            }
+
+            if (owningType != null)
+            {
+                DeclaringType = owningType;
+            }
+            else
+            {
+                DeclaringType = MetadataNameFormatter.FormatHandle(MetadataReader, owningTypeHandle);
             }
 
             Fixups = fixups;
 
-            DisassemblingTypeProvider provider = new DisassemblingTypeProvider();
-            if (IsGeneric && instanceArgs != null && tok != null)
-            {
-                InitGenericInstances(genericParams, instanceArgs, tok);
-            }
-
-            DisassemblingGenericContext genericContext = new DisassemblingGenericContext(new string[0], _genericParamInstanceMap.Values.ToArray());
-            Signature = _methodDef.DecodeSignature(provider, genericContext);
-
-            SignatureString = GetSignature();
-        }
-
-        /// <summary>
-        /// Initialize map of generic parameters names to the type in the instance
-        /// </summary>
-        private void InitGenericInstances(GenericParameterHandleCollection genericParams, CorElementType[] instanceArgs, uint[] tok)
-        {
-            if (instanceArgs.Length != genericParams.Count || tok.Length != genericParams.Count)
-            {
-                throw new BadImageFormatException("Generic param indices out of bounds");
-            }
-
-            for (int i = 0; i < instanceArgs.Length; i++)
-            {
-                string key = _mdReader.GetString(_mdReader.GetGenericParameter(genericParams.ElementAt(i)).Name); // name of the generic param, eg. "T"
-                string type = instanceArgs[i].ToString(); // type of the generic param instance
-                if (instanceArgs[i] == CorElementType.ELEMENT_TYPE_VALUETYPE)
-                {
-                    var t = _mdReader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle((int)tok[i]));
-                    type = _mdReader.GetString(t.Name); // name of the struct
-
-                }
-                _genericParamInstanceMap[key] = type;
-            }
-        }
-
-        /// <summary>
-        /// Returns a string with format DeclaringType.Name<GenericTypes,...>(ArgTypes,...)
-        /// </summary>
-        private string GetSignature()
-        {
             StringBuilder sb = new StringBuilder();
+            sb.Append(Signature.ReturnType);
+            sb.Append(" ");
+            sb.Append(DeclaringType);
+            sb.Append(".");
+            sb.Append(Name);
 
-            sb.AppendFormat($"{DeclaringType}.{Name}");
-
-            if (IsGeneric)
+            if (Signature.GenericParameterCount != 0)
             {
                 sb.Append("<");
-                int i = 0;
-                foreach (var instance in _genericParamInstanceMap.Values)
+                for (int i = 0; i < Signature.GenericParameterCount; i++)
                 {
                     if (i > 0)
                     {
                         sb.Append(", ");
                     }
-                    sb.AppendFormat($"{instance}");
-                    i++;
+                    if (instanceArgs != null && instanceArgs.Length > i)
+                    {
+                        sb.Append(instanceArgs[i]);
+                    }
+                    else
+                    {
+                        sb.Append("!");
+                        sb.Append(i);
+                    }
                 }
                 sb.Append(">");
             }
@@ -378,17 +369,17 @@ namespace R2RDump
             }
             sb.Append(")");
 
-            return sb.ToString();
+            SignatureString = sb.ToString();
         }
 
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();
 
-            sb.AppendLine($"{Signature.ReturnType} {SignatureString}");
+            sb.AppendLine(SignatureString);
 
-            sb.AppendLine($"Token: 0x{Token:X8}");
-            sb.AppendLine($"Rid: {Rid}");
+            sb.AppendLine($"Handle: 0x{MetadataTokens.GetToken(MetadataReader, MethodHandle):X8}");
+            sb.AppendLine($"Rid: {MetadataTokens.GetRowNumber(MetadataReader, MethodHandle)}");
             sb.AppendLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
             sb.AppendLine($"Number of RuntimeFunctions: {RuntimeFunctions.Count}");
             if (Fixups != null)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml;
@@ -15,20 +16,11 @@ namespace R2RDump
         private bool _ignoreSensitive;
         private XmlAttributeOverrides _ignoredProperties;
 
-        public XmlDumper(bool ignoreSensitive, R2RReader r2r, TextWriter writer, bool raw, bool header, bool disasm, Disassembler disassembler, bool unwind, bool gc, bool sectionContents)
+        public XmlDumper(bool ignoreSensitive, R2RReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
+            : base(r2r, writer, disassembler, options)
         {
             _ignoreSensitive = ignoreSensitive;
-            _r2r = r2r;
-            _writer = writer;
             XmlDocument = new XmlDocument();
-
-            _raw = raw;
-            _header = header;
-            _disasm = disasm;
-            _disassembler = disassembler;
-            _unwind = unwind;
-            _gc = gc;
-            _sectionContents = sectionContents;
 
             _ignoredProperties = new XmlAttributeOverrides();
             XmlAttributes attrs = new XmlAttributes();
@@ -46,14 +38,6 @@ namespace R2RDump
             _ignoredProperties.Add(typeof(RuntimeFunction), "UnwindRVA", attrs);
             _ignoredProperties.Add(typeof(R2RSection), "RelativeVirtualAddress", attrs);
             _ignoredProperties.Add(typeof(R2RSection), "Size", attrs);
-        }
-
-        public XmlDocument GetXmlDocument()
-        {
-            Begin();
-            DumpHeader(true);
-            DumpAllMethods();
-            return XmlDocument;
         }
 
         internal override void Begin()
@@ -91,7 +75,7 @@ namespace R2RDump
             _rootNode.AppendChild(headerNode);
             Serialize(_r2r.R2RHeader, headerNode);
 
-            if (_raw)
+            if (_options.Raw)
             {
                 DumpBytes(_r2r.R2RHeader.RelativeVirtualAddress, (uint)_r2r.R2RHeader.Size, headerNode);
             }
@@ -102,7 +86,7 @@ namespace R2RDump
                 _rootNode.AppendChild(sectionsNode);
                 AddXMLNode("Count", _r2r.R2RHeader.Sections.Count.ToString(), sectionsNode);
 
-                foreach (R2RSection section in _r2r.R2RHeader.Sections.Values)
+                foreach (R2RSection section in NormalizedSections())
                 {
                     DumpSection(section, sectionsNode);
                 }
@@ -120,11 +104,11 @@ namespace R2RDump
             parentNode.AppendChild(sectionNode);
             Serialize(section, sectionNode);
 
-            if (_raw)
+            if (_options.Raw)
             {
                 DumpBytes(section.RelativeVirtualAddress, (uint)section.Size, sectionNode);
             }
-            if (_sectionContents)
+            if (_options.SectionContents)
             {
                 DumpSectionContents(section, sectionNode);
             }
@@ -135,7 +119,7 @@ namespace R2RDump
             XmlNode methodsNode = XmlDocument.CreateNode("element", "Methods", "");
             _rootNode.AppendChild(methodsNode);
             AddXMLAttribute(methodsNode, "Count", _r2r.R2RMethods.Count.ToString());
-            foreach (R2RMethod method in _r2r.R2RMethods)
+            foreach (R2RMethod method in NormalizedMethods())
             {
                 DumpMethod(method, methodsNode);
             }
@@ -151,7 +135,7 @@ namespace R2RDump
             parentNode.AppendChild(methodNode);
             Serialize(method, methodNode);
 
-            if (_gc && method.GcInfo != null)
+            if (_options.GC && method.GcInfo != null)
             {
                 XmlNode gcNode = XmlDocument.CreateNode("element", "GcInfo", "");
                 methodNode.AppendChild(gcNode);
@@ -165,7 +149,7 @@ namespace R2RDump
                     }
                 }
 
-                if (_raw)
+                if (_options.Raw)
                 {
                     DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, gcNode, "Raw", false);
                 }
@@ -192,23 +176,23 @@ namespace R2RDump
             AddXMLNode("MethodRid", rtf.Method.Rid.ToString(), rtfNode);
             Serialize(rtf, rtfNode);
 
-            if (_disasm)
+            if (_options.Disasm)
             {
                 DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress), rtfNode);
             }
 
-            if (_raw)
+            if (_options.Raw)
             {
                 DumpBytes(rtf.StartAddress, (uint)rtf.Size, rtfNode);
             }
-            if (_unwind && rtf.UnwindInfo != null)
+            if (_options.Unwind && rtf.UnwindInfo != null)
             {
                 XmlNode unwindNode = null;
                 unwindNode = XmlDocument.CreateNode("element", "UnwindInfo", "");
                 rtfNode.AppendChild(unwindNode);
                 Serialize(rtf.UnwindInfo, unwindNode);
 
-                if (_raw)
+                if (_options.Raw)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)((Amd64.UnwindInfo)rtf.UnwindInfo).Size, unwindNode);
                 }
@@ -308,7 +292,7 @@ namespace R2RDump
                         contentsNode.AppendChild(importSectionsNode);
 
                         Serialize(importSection, importSectionsNode);
-                        if (_raw && importSection.Entries.Count != 0)
+                        if (_options.Raw && importSection.Entries.Count != 0)
                         {
                             if (importSection.SectionRVA != 0)
                             {
