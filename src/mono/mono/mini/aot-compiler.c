@@ -231,6 +231,7 @@ typedef struct MonoAotOptions {
 	gboolean dump_json;
 	gboolean profile_only;
 	gboolean no_opt;
+	char *clangxx;
 } MonoAotOptions;
 
 typedef enum {
@@ -7605,6 +7606,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->deterministic = TRUE;
 		} else if (!strcmp (arg, "no-opt")) {
 			opts->no_opt = TRUE;
+		} else if (str_begins_with (arg, "clangxx=")) {
+			opts->clangxx = g_strdup (arg + strlen ("clangxx="));;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly\n");
@@ -7649,6 +7652,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    no-opt\n");
 			printf ("    llvmopts=\n");
 			printf ("    llvmllc=\n");
+			printf ("    clangxx=\n");
 			printf ("    help/?\n");
 			exit (0);
 		} else {
@@ -9127,7 +9131,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.llvm_only) {
 		/* Use the stock clang from xcode */
 		// FIXME: arch
-		command = g_strdup_printf ("clang++ -fexceptions -march=x86-64 -fpic -msse -msse2 -msse3 -msse4 -O2 -fno-optimize-sibling-calls -Wno-override-module -c -o \"%s\" \"%s.opt.bc\"", acfg->llvm_ofile, acfg->tmpbasename);
+		command = g_strdup_printf ("%s -fexceptions -march=x86-64 -fpic -msse -msse2 -msse3 -msse4 -O2 -fno-optimize-sibling-calls -Wno-override-module -c -o \"%s\" \"%s.opt.bc\"", acfg->aot_opts.clangxx, acfg->llvm_ofile, acfg->tmpbasename);
 
 		aot_printf (acfg, "Executing clang: %s\n", command);
 		if (execute_system (command) != 0)
@@ -11423,7 +11427,7 @@ compile_asm (MonoAotCompile *acfg)
 									  wrap_path (g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname)), ld_flags);
 
 		if (acfg->aot_opts.llvm_only) {
-			command = g_strdup_printf ("clang++ %s", args);
+			command = g_strdup_printf ("%s %s", acfg->aot_opts.clangxx, args);
 		} else {
 			command = g_strdup_printf ("\"%sld\" %s", tool_prefix, args);
 		}
@@ -12621,6 +12625,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #ifdef MONOTOUCH
 	acfg->aot_opts.use_trampolines_page = TRUE;
 #endif
+	acfg->aot_opts.clangxx = g_strdup ("clang++");
 
 	mono_aot_parse_options (aot_options, &acfg->aot_opts);
 

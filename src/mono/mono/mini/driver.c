@@ -2164,7 +2164,13 @@ mono_main (int argc, char* argv[])
 		} else if (strncmp (argv [i], "--aot=", 6) == 0) {
 			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
-			aot_options = &argv [i][6];
+			if (aot_options) {
+				char *tmp = g_strdup_printf ("%s,%s", aot_options, &argv [i][6]);
+				g_free (aot_options);
+				aot_options = tmp;
+			} else {
+				aot_options = g_strdup (&argv [i][6]);
+			}
 #endif
 		} else if (strncmp (argv [i], "--apply-bindings=", 17) == 0) {
 			extra_bindings_config_file = &argv[i][17];
