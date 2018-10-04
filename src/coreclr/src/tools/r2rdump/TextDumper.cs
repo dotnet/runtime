@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml;
@@ -9,18 +10,9 @@ namespace R2RDump
 {
     class TextDumper : Dumper
     {
-        public TextDumper(R2RReader r2r, TextWriter writer, bool raw, bool header, bool disasm, Disassembler disassembler, bool unwind, bool gc, bool sectionContents)
+        public TextDumper(R2RReader r2r, TextWriter writer, Disassembler disassembler, DumpOptions options)
+            : base(r2r, writer, disassembler, options)
         {
-            _r2r = r2r;
-            _writer = writer;
-
-            _raw = raw;
-            _header = header;
-            _disasm = disasm;
-            _disassembler = disassembler;
-            _unwind = unwind;
-            _gc = gc;
-            _sectionContents = sectionContents;
         }
 
         internal override void Begin()
@@ -63,7 +55,7 @@ namespace R2RDump
         {
             _writer.WriteLine(_r2r.R2RHeader.ToString());
 
-            if (_raw)
+            if (_options.Raw)
             {
                 DumpBytes(_r2r.R2RHeader.RelativeVirtualAddress, (uint)_r2r.R2RHeader.Size);
             }
@@ -73,8 +65,8 @@ namespace R2RDump
                 WriteDivider("R2R Sections");
                 _writer.WriteLine($"{_r2r.R2RHeader.Sections.Count} sections");
                 SkipLine();
-                
-                foreach (R2RSection section in _r2r.R2RHeader.Sections.Values)
+
+                foreach (R2RSection section in NormalizedSections())
                 {
                     DumpSection(section);
                 }
@@ -90,12 +82,12 @@ namespace R2RDump
             WriteSubDivider();
             _writer.WriteLine(section.ToString());
 
-            if (_raw)
+            if (_options.Raw)
             {
                 DumpBytes(section.RelativeVirtualAddress, (uint)section.Size);
                 SkipLine();
             }
-            if (_sectionContents)
+            if (_options.SectionContents)
             {
                 DumpSectionContents(section);
                 SkipLine();
@@ -107,7 +99,7 @@ namespace R2RDump
             WriteDivider("R2R Methods");
             _writer.WriteLine($"{_r2r.R2RMethods.Count} methods");
             SkipLine();
-            foreach (R2RMethod method in _r2r.R2RMethods)
+            foreach (R2RMethod method in NormalizedMethods())
             {
                 DumpMethod(method);
             }
@@ -121,12 +113,12 @@ namespace R2RDump
             WriteSubDivider();
             _writer.WriteLine(method.ToString());
 
-            if (_gc && method.GcInfo != null)
+            if (_options.GC && method.GcInfo != null)
             {
                 _writer.WriteLine("GcInfo:");
                 _writer.Write(method.GcInfo);
 
-                if (_raw)
+                if (_options.Raw)
                 {
                     DumpBytes(method.GcInfo.Offset, (uint)method.GcInfo.Size, null, "", false);
                 }
@@ -147,21 +139,21 @@ namespace R2RDump
             _writer.WriteLine(rtf.Method.SignatureString);
             _writer.Write($"{rtf}");
 
-            if (_disasm)
+            if (_options.Disasm)
             {
                 DumpDisasm(rtf, _r2r.GetOffset(rtf.StartAddress));
             }
 
-            if (_raw)
+            if (_options.Raw)
             {
                 _writer.WriteLine("Raw Bytes:");
                 DumpBytes(rtf.StartAddress, (uint)rtf.Size);
             }
-            if (_unwind)
+            if (_options.Unwind)
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
-                if (_raw)
+                if (_options.Raw)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }
@@ -303,7 +295,7 @@ namespace R2RDump
                     foreach (R2RImportSection importSection in _r2r.ImportSections)
                     {
                         _writer.Write(importSection.ToString());
-                        if (_raw && importSection.Entries.Count != 0)
+                        if (_options.Raw && importSection.Entries.Count != 0)
                         {
                             if (importSection.SectionRVA != 0)
                             {
