@@ -322,7 +322,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 void
-mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow)
+mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -343,6 +343,8 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->catch_in_unmanaged = TRUE
 		}
 	}
 	mono_error_assert_ok (error);
@@ -362,7 +364,7 @@ mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp,
  *
  */
 static gpointer
-mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corlib, gboolean rethrow, gboolean aot)
+mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corlib, gboolean rethrow, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *start, *code;
 	int alloc_size, pos;
@@ -424,6 +426,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 	pos -= sizeof (gpointer) * MONO_MAX_IREGS;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	ppc_li (code, ppc_r8, rethrow);
+	ppc_li (code, ppc_r9, preserve_ips);
 
 	if (aot) {
 		// This can be called from runtime code, which can't guarantee that
@@ -449,9 +452,26 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
 
 	if (info)
-		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_exception" : "throw_exception"), start, code - start, ji, unwind_ops);
+		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" : (rethrow ? "rethrow_preserve_exception" : (rethrow ? "rethrow_exception" : "throw_exception"), start, code - start, ji, unwind_ops);
 
 	return start;
+}
+
+/**
+ * mono_arch_get_rethrow_preserve_exception:
+ * \returns a function pointer which can be used to rethrow
+ * exceptions and completely preserve trace_ips.
+ * The returned function has the following 
+ * signature: void (*func) (MonoException *exc); 
+ */
+gpointer
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	int size = MONO_PPC_32_64_CASE (132, 224) + PPC_FTNPTR_SIZE;
+
+	if (aot)
+		size += 64;
+	return mono_arch_get_throw_exception_generic (size, info, FALSE, TRUE, aot, TRUE);
 }
 
 /**
@@ -467,7 +487,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 
 	if (aot)
 		size += 64;
-	return mono_arch_get_throw_exception_generic (size, info, FALSE, TRUE, aot);
+	return mono_arch_get_throw_exception_generic (size, info, FALSE, TRUE, aot, FALSE);
 }
 
 /**
@@ -489,7 +509,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 
 	if (aot)
 		size += 64;
-	return mono_arch_get_throw_exception_generic (size, info, FALSE, FALSE, aot);
+	return mono_arch_get_throw_exception_generic (size, info, FALSE, FALSE, aot, FALSE);
 }
 
 /**
@@ -506,7 +526,7 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 
 	if (aot)
 		size += 64;
-	return mono_arch_get_throw_exception_generic (size, info, TRUE, FALSE, aot);
+	return mono_arch_get_throw_exception_generic (size, info, TRUE, FALSE, aot, FALSE);
 }
 
 /*

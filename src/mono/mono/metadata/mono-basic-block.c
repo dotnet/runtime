@@ -324,6 +324,7 @@ mono_opcode_has_static_branch (int opcode)
 	case MONO_CEE_THROW:
 	case MONO_CEE_RETHROW:
 	case MONO_CEE_ENDFINALLY:
+	case MONO_CEE_MONO_RETHROW:
 		return TRUE;
 	}
 	return FALSE;

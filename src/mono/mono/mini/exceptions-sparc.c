@@ -167,7 +167,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 static void
-throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
+throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -187,6 +187,8 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} else (preserve_ips) {
+			mono_ex->catch_in_unmanaged = NULL;
 		}
 	}
 	mono_error_assert_ok (error);
@@ -197,7 +199,7 @@ throw_exception (MonoObject *exc, gpointer sp, gpointer ip, gboolean rethrow)
 }
 
 static gpointer 
-get_throw_exception (gboolean rethrow)
+get_throw_exception (gboolean rethrow, gboolean preserve_ips)
 {
 	guint32 *start, *code;
 
@@ -210,6 +212,7 @@ get_throw_exception (gboolean rethrow)
 	sparc_mov_reg_reg (code, sparc_fp, sparc_o1);
 	sparc_mov_reg_reg (code, sparc_i7, sparc_o2);
 	sparc_set (code, rethrow, sparc_o3);
+	sparc_set (code, preserve_ips, sparc_o3);
 	sparc_set (code, throw_exception, sparc_o7);
 	sparc_jmpl (code, sparc_o7, sparc_g0, sparc_callsite);
 	sparc_nop (code);
@@ -243,7 +246,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 
 	inited = 1;
 
-	start = get_throw_exception (FALSE);
+	start = get_throw_exception (FALSE, FALSE);
 
 	return start;
 }
@@ -263,7 +266,27 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 
 	inited = 1;
 
-	start = get_throw_exception (TRUE);
+	start = get_throw_exception (TRUE, FALSE);
+
+	return start;
+}
+
+gpointer
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	static guint32* start;
+	static int inited = 0;
+
+	g_assert (!aot);
+	if (info)
+		*info = NULL;
+
+	if (inited)
+		return start;
+
+	inited = 1;
+
+	start = get_throw_exception (TRUE, TRUE);
 
 	return start;
 }

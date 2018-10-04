@@ -453,7 +453,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
  */
 void
 mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
-						  mgreg_t eip, gboolean rethrow)
+						  mgreg_t eip, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -478,6 +478,8 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->caught_in_unmanaged = TRUE;
 		}
 	}
 	mono_error_assert_ok (error);
@@ -506,7 +508,7 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
 	/* Negate the ip adjustment done in mono_x86_throw_exception () */
 	eip += 1;
 
-	mono_x86_throw_exception (regs, (MonoObject*)ex, eip, FALSE);
+	mono_x86_throw_exception (regs, (MonoObject*)ex, eip, FALSE, FALSE);
 }
 
 static void
@@ -537,7 +539,7 @@ mono_x86_resume_unwind (mgreg_t *regs, MonoObject *exc,
  * which doesn't push the arguments.
  */
 static guint8*
-get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib, gboolean llvm_abs, gboolean resume_unwind, MonoTrampInfo **info, gboolean aot)
+get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolean corlib, gboolean llvm_abs, gboolean resume_unwind, MonoTrampInfo **info, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *start, *code, *labels [16];
 	int i, stack_size, stack_offset, arg_offsets [5], regs_offset;
@@ -575,7 +577,8 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 	arg_offsets [1] = 4;
 	arg_offsets [2] = 8;
 	arg_offsets [3] = 12;
-	regs_offset = 16;
+	arg_offsets [4] = 16;
+	regs_offset = 20;
 
 	/* Save registers */
 	for (i = 0; i < X86_NREG; ++i)
@@ -651,6 +654,9 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 		x86_mov_membase_reg (code, X86_ESP, arg_offsets [3], X86_EAX, 4);
 	} else {
 		x86_mov_membase_imm (code, X86_ESP, arg_offsets [3], rethrow, 4);
+
+		/* Set arg4 == preserve_ips */
+		x86_mov_membase_imm (code, X86_ESP, arg_offsets [4], preserve_ips, 4);
 	}
 	/* Make the call */
 	if (aot) {
@@ -697,13 +703,19 @@ get_throw_trampoline (const char *name, gboolean rethrow, gboolean llvm, gboolea
 gpointer 
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline ("throw_exception", FALSE, FALSE, FALSE, FALSE, FALSE, info, aot);
+	return get_throw_trampoline ("throw_exception", FALSE, FALSE, FALSE, FALSE, FALSE, info, aot, FALSE);
 }
 
 gpointer 
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline ("rethrow_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot);
+	return get_throw_trampoline ("rethrow_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot, FALSE);
+}
+
+gpointer 
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	return get_throw_trampoline ("rethrow_preserve_exception", TRUE, FALSE, FALSE, FALSE, FALSE, info, aot, TRUE);
 }
 
 /**
@@ -718,7 +730,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline ("throw_corlib_exception", FALSE, FALSE, TRUE, FALSE, FALSE, info, aot);
+	return get_throw_trampoline ("throw_corlib_exception", FALSE, FALSE, TRUE, FALSE, FALSE, info, aot, FALSE);
 }
 
 void
@@ -755,23 +767,23 @@ mono_arch_exceptions_init (void)
 	}
 
 	/* LLVM needs different throw trampolines */
-	tramp = get_throw_trampoline ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, FALSE, FALSE, &tinfo, FALSE);
+	tramp = get_throw_trampoline ("llvm_throw_exception_trampoline", FALSE, TRUE, FALSE, FALSE, FALSE, &tinfo, FALSE,  FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_exception_trampoline", NULL, TRUE);
 	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_rethrow_exception_trampoline", TRUE, TRUE, FALSE, FALSE, FALSE, &tinfo, FALSE);
+	tramp = get_throw_trampoline ("llvm_rethrow_exception_trampoline", TRUE, TRUE, FALSE, FALSE, FALSE, &tinfo, FALSE, FALSE);
 	mono_register_jit_icall (tramp, "llvm_rethrow_exception_trampoline", NULL, TRUE);
 	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, FALSE, FALSE, &tinfo, FALSE);
+	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_trampoline", FALSE, TRUE, TRUE, FALSE, FALSE, &tinfo, FALSE, FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
 	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_abs_trampoline", FALSE, TRUE, TRUE, TRUE, FALSE, &tinfo, FALSE);
+	tramp = get_throw_trampoline ("llvm_throw_corlib_exception_abs_trampoline", FALSE, TRUE, TRUE, TRUE, FALSE, &tinfo, FALSE, FALSE);
 	mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
 	mono_tramp_info_register (tinfo, NULL);
 
-	tramp = get_throw_trampoline ("llvm_resume_unwind_trampoline", FALSE, FALSE, FALSE, FALSE, TRUE, &tinfo, FALSE);
+	tramp = get_throw_trampoline ("llvm_resume_unwind_trampoline", FALSE, FALSE, FALSE, FALSE, TRUE, &tinfo, FALSE, FALSE);
 	mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
 	mono_tramp_info_register (tinfo, NULL);
 

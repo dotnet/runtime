@@ -323,4 +323,5 @@
 <opcode name="mono_get_rgctx_arg" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x1C" flow="next" />
 <opcode name="mono_ldptr_profiler_allocation_count" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x1D" flow="next" />
 <opcode name="mono_ld_delegate_method_ptr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x1E" flow="next" />
+<opcode name="mono_rethrow" input="PopRef" output="Push0" args="InlineNone" o1="0xF0" o2="0x1F" flow="throw" type="Objmodel" />
 </opdesc>

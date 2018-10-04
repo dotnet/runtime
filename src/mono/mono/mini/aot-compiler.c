@@ -7056,6 +7056,10 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_trampoline (acfg, acfg->got_offset, info);
 		mono_tramp_info_free (info);
 
+		mono_arch_get_rethrow_preserve_exception (&info, TRUE);
+		emit_trampoline (acfg, acfg->got_offset, info);
+		mono_tramp_info_free (info);
+
 		mono_arch_get_throw_corlib_exception (&info, TRUE);
 		emit_trampoline (acfg, acfg->got_offset, info);
 		mono_tramp_info_free (info);

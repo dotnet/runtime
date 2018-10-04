@@ -3135,8 +3135,10 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		result = runtime_invoke ((MonoObject *)obj, params, exc, info->compiled_method);
 	}
-	if (catchExcInMonoError && *exc != NULL)
+	if (catchExcInMonoError && *exc != NULL) {
+		((MonoException *)(*exc))->caught_in_unmanaged = TRUE;
 		mono_error_set_exception_instance (error, (MonoException*) *exc);
+	}
 	return result;
 }
 

@@ -144,7 +144,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 void
-mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs)
+mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -167,6 +167,8 @@ mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->caught_in_unmanaged = TRUE;
 		}
 	}
 	mono_error_assert_ok (error);
@@ -182,7 +184,7 @@ mono_arm_throw_exception_by_token (guint32 ex_token_index, mgreg_t pc, mgreg_t s
 	/* Clear thumb bit */
 	pc &= ~1;
 
-	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, ex_token), pc, sp, int_regs, fp_regs);
+	mono_arm_throw_exception ((MonoObject*)mono_exception_from_token (mono_defaults.corlib, ex_token), pc, sp, int_regs, fp_regs, FALSE);
 }
 
 void
@@ -212,7 +214,7 @@ mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_reg
  *
  */
 static gpointer 
-get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot)
+get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *start;
 	guint8 *code;
@@ -241,8 +243,11 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	}
 
 	/* Param area */
-	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, 8);
-	cfa_offset += 8;
+	int param_size = 8;
+	if (!resume_unwind && !corlib)
+		param_size += 4; // Extra arg
+	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, param_size);
+	cfa_offset += param_size;
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
@@ -271,9 +276,19 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	}
 	/* int regs */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R3, ARMREG_SP, (cfa_offset - (MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t))));
-	/* fp regs */
-	ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_SP, 8);
-	ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, 0);
+	if (resume_unwind || corlib) {
+		/* fp regs */
+		ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_SP, 8);
+		ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, 0);
+	} else {
+		/* preserve_ips */
+		ARM_MOV_REG_IMM8 (code, ARMREG_R5, preserve_ips);
+		ARM_STR_IMM (code, ARMREG_R5, ARMREG_SP, 4);
+
+		/* fp regs */
+		ARM_ADD_REG_IMM8 (code, ARMREG_LR, ARMREG_SP, 8);
+		ARM_STR_IMM (code, ARMREG_LR, ARMREG_SP, 0);
+	}
 
 	if (aot) {
 		const char *icall_name;
@@ -323,7 +338,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 gpointer 
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (132, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot);
+	return get_throw_trampoline (132, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot, FALSE);
 }
 
 /**
@@ -337,7 +352,13 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (132, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot);
+	return get_throw_trampoline (132, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot, FALSE);
+}
+
+gpointer 
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	return get_throw_trampoline (132, FALSE, TRUE, FALSE, FALSE, "rethrow_preserve_exception", info, aot, TRUE);
 }
 
 /**
@@ -353,7 +374,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot);
+	return get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot, FALSE);
 }	
 
 GSList*
@@ -363,13 +384,13 @@ mono_arm_get_exception_trampolines (gboolean aot)
 	GSList *tramps = NULL;
 
 	/* LLVM uses the normal trampolines, but with a different name */
-	get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", &info, aot);
+	get_throw_trampoline (168, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", &info, aot, FALSE);
 	tramps = g_slist_prepend (tramps, info);
 	
-	get_throw_trampoline (168, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", &info, aot);
+	get_throw_trampoline (168, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", &info, aot, FALSE);
 	tramps = g_slist_prepend (tramps, info);
 
-	get_throw_trampoline (168, FALSE, FALSE, FALSE, TRUE, "llvm_resume_unwind_trampoline", &info, aot);
+	get_throw_trampoline (168, FALSE, FALSE, FALSE, TRUE, "llvm_resume_unwind_trampoline", &info, aot, FALSE);
 	tramps = g_slist_prepend (tramps, info);
 
 	return tramps;
