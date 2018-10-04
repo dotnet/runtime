@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.PrivateUri.Tests
@@ -289,6 +290,183 @@ namespace System.PrivateUri.Tests
         public void UriIsWellFormed_IPv6HostIriOn_True()
         {
             Assert.True(Uri.IsWellFormedUriString("http://[::1]/", UriKind.Absolute));
+        }
+
+        public static IEnumerable<object[]> TestIsWellFormedUriStringData =>
+        new List<object[]>
+        {
+            // Test ImplicitFile/UNC
+            new object[] { "c:\\directory\filename", false },
+            new object[] { "file://c:/directory/filename", false },
+            new object[] { "\\\\?\\UNC\\Server01\\user\\docs\\Letter.txt", false },
+
+            // Test Host
+            new object[] { "http://www.contoso.com", true },
+            new object[] { "http://\u00E4.contos.com", true },
+            new object[] { "http://www.contos\u00E4.com", true },
+
+            new object[] { "http://www.contoso.com ", true },
+            new object[] { "http://\u00E4.contos.com ", true },
+
+            new object[] { "http:// www.contoso.com", false },
+            new object[] { "http:// \u00E4.contos.com", false },
+            new object[] { "http:// www.contos\u00E4.com", false },
+
+            new object[] { "http://www.contos o.com", false },
+            new object[] { "http://www.contos \u00E4.com", false },
+            
+
+            // Test Path
+            new object[] { "http://www.contoso.com/path???/file name", false },
+            new object[] { "http://www.contoso.com/\u00E4???/file name", false },
+            new object[] { "http:\\host/path/file", false },
+
+            new object[] { "http://www.contoso.com/a/sek http://test.com", false },
+            new object[] { "http://www.contoso.com/\u00E4/sek http://test.com", false },
+
+            new object[] { "http://www.contoso.com/ seka http://test.com", false },
+            new object[] { "http://www.contoso.com/ sek\u00E4 http://test.com", false },
+
+            new object[] { "http://www.contoso.com/ a sek http://test.com", false },
+            new object[] { "http://www.contoso.com/ \u00E4 sek http://test.com", false },
+
+            new object[] { "http://www.contoso.com/ \u00E4/", false },
+            new object[] { "http://www.contoso.com/ path/", false },
+
+            new object[] { "http://www.contoso.com/path", true },
+            new object[] { "http://www.contoso.com/\u00E4/", true },
+
+            new object[] { "http://www.contoso.com/path/#", true },
+            new object[] { "http://www.contoso.com/\u00E4/#", true },
+
+            new object[] { "http://www.contoso.com/path/# ", true },
+            new object[] { "http://www.contoso.com/\u00E4/# ", true },
+
+            new object[] { "http://www.contoso.com/path/ # ", false },
+            new object[] { "http://www.contoso.com/\u00E4/ # ", false },
+
+            new object[] { "http://www.contoso.com/path/ #", false },
+            new object[] { "http://www.contoso.com/\u00E4/ #", false },
+
+            new object[] { "http://www.contoso.com/path ", true },
+            new object[] { "http://www.contoso.com/\u00E4/ ", true },
+
+            new object[] { "http://www.contoso.com/path/\u00E4/path /", false },
+            new object[] { "http://www.contoso.com/path/\u00E4/path / ", false },
+            new object[] { "http://www.contoso.com/path/\u00E4/path/", true },
+            new object[] { "http://www.contoso.com/path/\u00E4 /path/", false },
+            new object[] { "http://www.contoso.com/path/\u00E4 /path/ ", false },
+            new object[] { "http://www.contoso.com/path/\u00E4/path/ \u00E4/", false },
+
+            // Test Query
+            new object[] { "http://www.contoso.com/path?name", true },
+            new object[] { "http://www.contoso.com/path?\u00E4", true },
+
+            new object[] { "http://www.contoso.com/path?name ", true },
+            new object[] { "http://www.contoso.com/path?\u00E4 ", true },
+
+            new object[] { "http://www.contoso.com/path ?name ", false },
+            new object[] { "http://www.contoso.com/path ?\u00E4 ", false },
+
+            new object[] { "http://www.contoso.com/path?par=val?", true },
+            new object[] { "http://www.contoso.com/path?\u00E4=\u00E4?", true },
+
+            new object[] { "http://www.contoso.com/path? name ", false },
+            new object[] { "http://www.contoso.com/path? \u00E4 ", false },
+            
+            new object[] { "http://www.contoso.com/path?p=", true },
+            new object[] { "http://www.contoso.com/path?\u00E4=", true },
+
+            new object[] { "http://www.contoso.com/path?p= ", true },
+            new object[] { "http://www.contoso.com/path?\u00E4= ", true },
+
+            new object[] { "http://www.contoso.com/path?p= val", false },
+            new object[] { "http://www.contoso.com/path?\u00E4= \u00E4", false },
+            
+            new object[] { "http://www.contoso.com/path?par=value& par=value", false },
+            new object[] { "http://www.contoso.com/path?\u00E4=\u00E4& \u00E4=\u00E4", false },
+
+            // Test Fragment
+            new object[] { "http://www.contoso.com/path?name#", true },
+            new object[] { "http://www.contoso.com/path?\u00E4#", true },
+
+            new object[] { "http://www.contoso.com/path?name# ", true },
+            new object[] { "http://www.contoso.com/path?\u00E4# ", true },
+
+            new object[] { "http://www.contoso.com/path?name#a", true },
+            new object[] { "http://www.contoso.com/path?\u00E4#\u00E4", true },
+
+            new object[] { "http://www.contoso.com/path?name#a ", true },
+            new object[] { "http://www.contoso.com/path?\u00E4#\u00E4 ", true },
+
+            new object[] { "http://www.contoso.com/path?name# a", false },
+            new object[] { "http://www.contoso.com/path?\u00E4# \u00E4", false },
+
+
+            // Test Path+Query
+            new object[] { "http://www.contoso.com/path? a ", false },
+            new object[] { "http://www.contoso.com/\u00E4? \u00E4 ", false },
+
+            new object[] { "http://www.contoso.com/a?val", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4", true },
+            
+            new object[] { "http://www.contoso.com/path /path?par=val", false },
+            new object[] { "http://www.contoso.com/\u00E4 /\u00E4?\u00E4=\u00E4", false },
+
+            // Test Path+Query+Fragment
+            new object[] { "http://www.contoso.com/path?a#a", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4#\u00E4", true },
+
+            new object[] { "http://www.contoso.com/path?par=val#a ", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4=\u00E4#\u00E4 ", true },
+
+            new object[] { "http://www.contoso.com/path?val#", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4#", true },
+
+            new object[] { "http://www.contoso.com/path?val#?val", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4#?\u00E4", true },
+
+            new object[] { "http://www.contoso.com/path?val #", false },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4 #", false },
+
+            new object[] { "http://www.contoso.com/path?val# val", false },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4# \u00E4", false },
+
+            new object[] { "http://www.contoso.com/path?val# val ", false },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4# \u00E4 ", false },
+
+            new object[] { "http://www.contoso.com/path?val#val ", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4#\u00E4 ", true },
+
+            new object[] { "http://www.contoso.com/ path?a#a", false },
+            new object[] { "http://www.contoso.com/ \u00E4?\u00E4#\u00E4", false },
+
+            new object[] { "http://www.contoso.com/ path?a #a", false },
+            new object[] { "http://www.contoso.com/ \u00E4?\u00E4 #\u00E4", false },
+
+            new object[] { "http://www.contoso.com/ path?a #a ", false },
+            new object[] { "http://www.contoso.com/ \u00E4?\u00E4 #\u00E4 ", false },
+
+            new object[] { "http://www.contoso.com/path?a# a ", false },
+            new object[] { "http://www.contoso.com/path?\u00E4# \u00E4 ", false },
+
+            
+            new object[] { "http://www.contoso.com/path?a#a?a", true },
+            new object[] { "http://www.contoso.com/\u00E4?\u00E4#u00E4?\u00E4", true },
+
+            // Sample in "private unsafe Check CheckCanonical(char* str, ref ushort idx, ushort end, char delim)" code comments
+            new object[] { "http://www.contoso.com/\u00E4/ path2/ param=val", false },
+            new object[] { "http://www.contoso.com/\u00E4? param=val", false },
+            new object[] { "http://www.contoso.com/\u00E4?param=val# fragment", false },
+        };
+
+        [Theory]
+        [MemberData(nameof(TestIsWellFormedUriStringData))]
+        // Bug hasn't been fixed yet on NetFramework
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void TestIsWellFormedUriString(string uriString, bool expected)
+        {
+            Assert.Equal(expected, Uri.IsWellFormedUriString(uriString, UriKind.RelativeOrAbsolute));
         }
     }
 }
