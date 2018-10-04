@@ -615,62 +615,13 @@ void COMToCLRWorkerBodyWithADTransition(
     BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, { *pRetValOut = COR_E_STACKOVERFLOW; return; } );
     EX_TRY
     {
-        bool fNeedToTranslateTAEtoADUE = false;
         ADID pTgtDomain = pWrap->GetDomainID();
         ENTER_DOMAIN_ID(pTgtDomain)
         {
             fEnteredDomain = TRUE;
             COMToCLRWorkerBody_SOIntolerant(pThread, pFrame, pWrap, pRetValOut);
-
-            //
-            // Below is some logic adapted from Thread::RaiseCrossContextExceptionHelper, which we now
-            // bypass because the IL stub is catching the ThreadAbortException instead of a proper domain 
-            // transition, where the logic typically resides.  This code applies some policy to transform 
-            // the ThreadAbortException into an AppDomainUnloadedException and sets up the HRESULT and 
-            // IErrorInfo accordingly.
-            //
-
-            // If the IL stub caught a TAE...
-            if (COR_E_THREADABORTED == ((HRESULT)*pRetValOut))
-            {
-                // ...first, make sure it was actually an HRESULT return value...
-                ComCallMethodDesc* pCMD = pFrame->GetComCallMethodDesc();
-                if (pCMD->IsNativeHResultRetVal()) 
-                {
-                    // There may be multiple AD transitions on the stack so the current unload boundary may
-                    // not be the transition frame that was set up to make our AD switch. Detect that by
-                    // comparing the unload boundary's Next with our ComMethodFrame and proceed to translate
-                    // the exception to ADUE only if they match. Otherwise the exception should stay as TAE.
-
-                    Frame* pUnloadBoundary = pThread->GetUnloadBoundaryFrame();
-                    // ...and we are at an unload boundary with a pending unload...
-                    if (    (    pUnloadBoundary != NULL
-                             && (pUnloadBoundary->Next() == pFrame
-                             &&  pThread->ShouldChangeAbortToUnload(pUnloadBoundary, pUnloadBoundary))
-                            )
-                        // ... or we don't have an unload boundary, but we're otherwise unloading 
-                        //     this domain from another thread (and we aren't the finalizer)...
-                        ||  (   (NULL == pUnloadBoundary)
-                             && (pThread->GetDomain() == SystemDomain::AppDomainBeingUnloaded())
-                             && (pThread != SystemDomain::System()->GetUnloadingThread())
-                             && (pThread != FinalizerThread::GetFinalizerThread())
-                            )
-                       )
-                    {
-                        // ... we take note and then create an ADUE in the domain we're returning to.
-                        fNeedToTranslateTAEtoADUE = true;
-                    }
-                }
-            }
         }
         END_DOMAIN_TRANSITION;
-
-        if (fNeedToTranslateTAEtoADUE)
-        {
-            EEResourceException ex(kAppDomainUnloadedException, W("Remoting_AppDomainUnloaded_ThreadUnwound"));
-            OBJECTREF oEx = CLRException::GetThrowableFromException(&ex);
-            *pRetValOut = SetupErrorInfo(oEx, pFrame->GetComCallMethodDesc());
-        }
     }
     EX_CATCH
     {

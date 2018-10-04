@@ -175,7 +175,7 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException
 #ifndef CROSSGEN_COMPILE
 
 // from clr/src/vm/threads.h
-#define Thread_m_Context    0x38
+#define Thread_m_Context    0x34
 ASMCONSTANTS_C_ASSERT(Thread_m_Context == offsetof(Thread, m_Context))
 
 #define Thread_m_State      0x04
@@ -193,10 +193,10 @@ ASMCONSTANTS_C_ASSERT(Thread_m_pFrame == offsetof(Thread, m_pFrame))
 #endif // CROSSGEN_COMPILE
 
 #ifndef CROSSGEN_COMPILE
-#define Thread_m_dwLockCount 0x18
+#define Thread_m_dwLockCount 0x14
 ASMCONSTANTS_C_ASSERT(Thread_m_dwLockCount == offsetof(Thread, m_dwLockCount))
 
-#define Thread_m_ThreadId 0x1C
+#define Thread_m_ThreadId 0x18
 ASMCONSTANTS_C_ASSERT(Thread_m_ThreadId == offsetof(Thread, m_ThreadId))
 
 #ifdef FEATURE_HIJACK
@@ -338,7 +338,7 @@ ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbRetPop == offsetof(UMThunkMarshInfo,
 #endif //FEATURE_STUBS_AS_IL
 
 #ifndef CROSSGEN_COMPILE
-#define               Thread__m_pDomain                     0x14
+#define               Thread__m_pDomain                     0x10
 ASMCONSTANTS_C_ASSERT(Thread__m_pDomain == offsetof(Thread, m_pDomain));
 
 #endif

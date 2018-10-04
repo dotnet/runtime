@@ -1550,7 +1550,7 @@ BOOL AppDomainLoaderAllocator::CanUnload()
         SO_TOLERANT;
     } CONTRACTL_END;
 
-    return m_Id.GetAppDomain()->CanUnload();
+    return FALSE;
 }
 
 BOOL AssemblyLoaderAllocator::CanUnload()
@@ -1750,7 +1750,6 @@ void AssemblyLoaderAllocator::CleanupHandles()
     CONTRACTL_END;
 
     _ASSERTE(GetDomain()->IsAppDomain());
-    _ASSERTE(!GetDomain()->AsAppDomain()->NoAccessToHandleTable());
 
     // This method doesn't take a lock around RemoveHead because it's supposed to
     // be called only from Terminate

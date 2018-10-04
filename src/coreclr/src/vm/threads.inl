@@ -46,14 +46,14 @@ inline void Thread::IncLockCount()
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetThread() == this);
     m_dwLockCount++;
-    _ASSERTE(m_dwLockCount != 0 || HasThreadStateNC(TSNC_UnbalancedLocks) || GetDomain()->OkToIgnoreOrphanedLocks());
+    _ASSERTE(m_dwLockCount != 0 || HasThreadStateNC(TSNC_UnbalancedLocks));
 }
 
 inline void Thread::DecLockCount()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(GetThread() == this);
-    _ASSERTE(m_dwLockCount > 0 || HasThreadStateNC(TSNC_UnbalancedLocks) || GetDomain()->OkToIgnoreOrphanedLocks());
+    _ASSERTE(m_dwLockCount > 0 || HasThreadStateNC(TSNC_UnbalancedLocks));
     m_dwLockCount--;
 }
 
@@ -167,8 +167,6 @@ inline void Thread::FinishSOWork()
     if (HasThreadStateNC(TSNC_SOWorkNeeded))
     {
         ResetThreadStateNC(TSNC_SOWorkNeeded);
-        // Wake up AD unload thread to finish SO work that is delayed due to limit stack
-        AppDomain::EnableADUnloadWorkerForThreadAbort();
     }
 #else
     _ASSERTE(!HasThreadStateNC(TSNC_SOWorkNeeded));

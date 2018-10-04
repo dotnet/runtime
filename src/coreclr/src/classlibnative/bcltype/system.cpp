@@ -354,7 +354,7 @@ FCIMPL0(FC_BOOL_RET, SystemNative::HasShutdownStarted)
     // aggressively finalize objects referred to by static variables OR
     // if someone is unloading the current AppDomain AND we have started
     // finalizing objects referred to by static variables.
-    FC_RETURN_BOOL((g_fEEShutDown & ShutDown_Finalize2) || GetAppDomain()->IsFinalizing());
+    FC_RETURN_BOOL(g_fEEShutDown & ShutDown_Finalize2);
 }
 FCIMPLEND
 

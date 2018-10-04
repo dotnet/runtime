@@ -1350,9 +1350,6 @@ void CheckADValidity(AppDomain* pDomain, DWORD ADValidityKind)
     if ((ADValidityKind &  ADV_FINALIZER) &&
         IsFinalizerThread())
        return;
-    if ((ADValidityKind &  ADV_ADUTHREAD) &&
-        IsADUnloadHelperThread())
-       return;
     if ((ADValidityKind &  ADV_RUNNINGIN) &&
         pDomain->IsRunningIn(GetThread()))
        return;
@@ -1377,7 +1374,6 @@ Thread::Thread()
     CONTRACTL_END;
 
     m_pFrame                = FRAME_TOP;
-    m_pUnloadBoundaryFrame  = NULL;
 
     m_fPreemptiveGCDisabled = 0;
 
@@ -7438,7 +7434,6 @@ VOID Thread::RestoreGuardPage()
     }
 
     FinishSOWork();
-    //GetAppDomain()->EnableADUnloadWorker(EEPolicy::ADU_Rude);
 
     INDEBUG(DebugLogStackMBIs());
 
@@ -7680,8 +7675,7 @@ void MakeCallWithAppDomainTransition(
 
     Thread*     _ctx_trans_pThread          = GetThread();
     TESTHOOKCALL(EnteringAppDomain((TargetDomain.m_dwId)));     
-    AppDomainFromIDHolder pTargetDomain(TargetDomain, TRUE);
-    pTargetDomain.ThrowIfUnloaded();
+    AppDomain* pTargetDomain = SystemDomain::GetAppDomainFromId(TargetDomain, ADV_CURRENTAD);
     _ASSERTE(_ctx_trans_pThread != NULL);
     _ASSERTE(_ctx_trans_pThread->GetDomain()->GetId()!= TargetDomain);
 
@@ -7695,7 +7689,6 @@ void MakeCallWithAppDomainTransition(
         pTargetDomain->GetDefaultContext(),
         _ctx_trans_pFrame);
 
-    pTargetDomain.Release();
     args->pCtxFrame = _ctx_trans_pFrame;
     TESTHOOKCALL(EnteredAppDomain((TargetDomain.m_dwId))); 
     /* work around unreachable code warning */
@@ -7809,167 +7802,14 @@ void Thread::DoContextCallBack(ADID appDomain, Context *pContext, Context::ADCal
     Context*    pCurrDefCtx     = pCurrDomain->GetDefaultContext();
     BOOL  bDefaultTargetCtx=FALSE;
 
-    {
-        AppDomainFromIDHolder ad(appDomain, TRUE);
-        ad.ThrowIfUnloaded();
-        bDefaultTargetCtx=(ad->GetDefaultContext()==pContext);
-    }
+    AppDomain* ad = SystemDomain::GetAppDomainFromId(appDomain, ADV_CURRENTAD);
+    bDefaultTargetCtx=(ad->GetDefaultContext()==pContext);
 
     if (pCurrDefCtx == pThread->GetContext() && bDefaultTargetCtx)
     {
         ENTER_DOMAIN_ID(appDomain);
         (pTarget)(args);
         END_DOMAIN_TRANSITION;
-    }
-    else
-    {
-        UNREACHABLE();
-    }
-    LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Done at esp %p\n", espVal));
-}
-
-
-void Thread::DoADCallBack(AppDomain* pDomain , Context::ADCallBackFcnType pTarget, LPVOID args, DWORD dwADV,
-                          BOOL fSetupEHAtTransition /* = TRUE */)
-{
-
-
-#ifdef _DEBUG
-    TADDR espVal = (TADDR)GetCurrentSP();
-
-    LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Calling %p at esp %p in [%d]\n",
-            pTarget, espVal, pDomain->GetId().m_dwId));
-#endif
-    Thread* pThread  = GetThread();
-
-    // Get the default context for the current domain as well as for the
-    // destination domain.
-    AppDomain*  pCurrDomain     = pThread->GetContext()->GetDomain();
-
-    if (pCurrDomain!=pDomain)
-    {
-        // use the target domain's default context as the target context
-        // so that the actual call to a transparent proxy would enter the object into the correct context.
-
-        BOOL fThrow = FALSE;
-
-#ifdef FEATURE_PAL
-        // FEATURE_PAL must setup EH at AD transition - the option to omit the setup
-        // is only for regular Windows builds. 
-        _ASSERTE(fSetupEHAtTransition);
-#endif // FEATURE_PAL
-        
-        LOG((LF_APPDOMAIN, LL_INFO10, "Thread::DoADCallBack - performing AD transition with%s EH at transition boundary.\n",
-            (fSetupEHAtTransition == FALSE)?"out":""));
-
-        if (fSetupEHAtTransition)
-        {
-            ENTER_DOMAIN_PTR(pDomain,dwADV)
-            {
-                (pTarget)(args);
-
-                // unloadBoundary is cleared by ReturnToContext, so get it now.
-                Frame* unloadBoundaryFrame = pThread->GetUnloadBoundaryFrame();
-                fThrow = pThread->ShouldChangeAbortToUnload(GET_CTX_TRANSITION_FRAME(), unloadBoundaryFrame);
-            }
-            END_DOMAIN_TRANSITION;
-        }
-#ifndef FEATURE_PAL
-        else
-        {
-            ENTER_DOMAIN_PTR_NO_EH_AT_TRANSITION(pDomain,dwADV)
-            {
-                (pTarget)(args);
-
-                // unloadBoundary is cleared by ReturnToContext, so get it now.
-                Frame* unloadBoundaryFrame = pThread->GetUnloadBoundaryFrame();
-                fThrow = pThread->ShouldChangeAbortToUnload(GET_CTX_TRANSITION_FRAME(), unloadBoundaryFrame);
-            }
-            END_DOMAIN_TRANSITION_NO_EH_AT_TRANSITION;
-        }
-#endif // !FEATURE_PAL
-
-        // if someone caught the abort before it got back out to the AD transition (like DispatchEx_xxx does)
-        // then need to turn the abort into an unload, as they're gonna keep seeing it anyway
-        if (fThrow)
-        {
-            LOG((LF_APPDOMAIN, LL_INFO10, "Thread::DoADCallBack turning abort into unload\n"));
-            COMPlusThrow(kAppDomainUnloadedException, W("Remoting_AppDomainUnloaded_ThreadUnwound"));
-        }
-    }
-    else
-    {
-        UNREACHABLE();
-    }
-    LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Done at esp %p\n", espVal));
-}
-
-void Thread::DoADCallBack(ADID appDomainID , Context::ADCallBackFcnType pTarget, LPVOID args, BOOL fSetupEHAtTransition /* = TRUE */)
-{
-
-
-#ifdef _DEBUG
-    TADDR espVal = (TADDR)GetCurrentSP();
-
-    LOG((LF_APPDOMAIN, LL_INFO100, "Thread::DoADCallBack Calling %p at esp %p in [%d]\n",
-            pTarget, espVal, appDomainID.m_dwId));
-#endif
-    Thread* pThread  = GetThread();
-
-    // Get the default context for the current domain as well as for the
-    // destination domain.
-    AppDomain*  pCurrDomain     = pThread->GetContext()->GetDomain();
-
-    if (pCurrDomain->GetId()!=appDomainID)
-    {
-        // use the target domain's default context as the target context
-        // so that the actual call to a transparent proxy would enter the object into the correct context.
-
-        BOOL fThrow = FALSE;
-
-#ifdef FEATURE_PAL
-        // FEATURE_PAL must setup EH at AD transition - the option to omit the setup
-        // is only for regular Windows builds. 
-        _ASSERTE(fSetupEHAtTransition);
-#endif // FEATURE_PAL
-
-        LOG((LF_APPDOMAIN, LL_INFO10, "Thread::DoADCallBack - performing AD transition with%s EH at transition boundary.\n",
-            (fSetupEHAtTransition == FALSE)?"out":""));
-
-        if (fSetupEHAtTransition)
-        {
-            ENTER_DOMAIN_ID(appDomainID)
-            {
-                (pTarget)(args);
-
-                // unloadBoundary is cleared by ReturnToContext, so get it now.
-                Frame* unloadBoundaryFrame = pThread->GetUnloadBoundaryFrame();
-                fThrow = pThread->ShouldChangeAbortToUnload(GET_CTX_TRANSITION_FRAME(), unloadBoundaryFrame);
-            }
-            END_DOMAIN_TRANSITION;
-        }
-#ifndef FEATURE_PAL
-        else
-        {
-            ENTER_DOMAIN_ID_NO_EH_AT_TRANSITION(appDomainID)
-            {
-                (pTarget)(args);
-
-                // unloadBoundary is cleared by ReturnToContext, so get it now.
-                Frame* unloadBoundaryFrame = pThread->GetUnloadBoundaryFrame();
-                fThrow = pThread->ShouldChangeAbortToUnload(GET_CTX_TRANSITION_FRAME(), unloadBoundaryFrame);
-            }
-            END_DOMAIN_TRANSITION_NO_EH_AT_TRANSITION;
-        }
-#endif // !FEATURE_PAL
-
-        // if someone caught the abort before it got back out to the AD transition (like DispatchEx_xxx does)
-        // then need to turn the abort into an unload, as they're gonna keep seeing it anyway
-        if (fThrow)
-        {
-            LOG((LF_APPDOMAIN, LL_INFO10, "Thread::DoADCallBack turning abort into unload\n"));
-            COMPlusThrow(kAppDomainUnloadedException, W("Remoting_AppDomainUnloaded_ThreadUnwound"));
-        }
     }
     else
     {
@@ -7995,12 +7835,6 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
     AppDomain *pDomain = pContext->GetDomain();
     // and it should always have an AD set
     _ASSERTE(pDomain);
-
-    if (m_pDomain != pDomain && !pDomain->CanThreadEnter(this))
-    {
-        pFrame->SetReturnContext(NULL);
-        COMPlusThrow(kAppDomainUnloadedException);
-    }
 
     pFrame->SetReturnContext(m_Context);
     pFrame->SetReturnExecutionContext(NULL);
@@ -8147,18 +7981,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
             EPolicyAction action = GetEEPolicy()->GetActionOnFailure(FAIL_OrphanedLock);
             switch (action)
             {
-            case eUnloadAppDomain:
-                if (!pFromDomain->IsDefaultDomain())
-                {
-                    pFromDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-                }
-                break;
-            case eRudeUnloadAppDomain:
-                if (!pFromDomain->IsDefaultDomain())
-                {
-                    pFromDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-                }
-                break;
             case eExitProcess:
             case eFastExitProcess:
             case eRudeExitProcess:
@@ -8222,16 +8044,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
         m_pDomain = pReturnDomain;
         SetAppDomain(pReturnDomain);
 
-        if (pFrame == m_pUnloadBoundaryFrame)
-        {
-                m_pUnloadBoundaryFrame = NULL;      
-            if (IsAbortRequested())
-            {
-                EEResetAbort(TAR_ADUnload);
-            }
-            ResetBeginAbortedForADUnload();
-        }
-
         // Restore the last thrown object to what it was before the AD transition. Note that if
         // an exception was thrown out of the AD we transitionned into, it will be raised in
         // RaiseCrossContextException and the EH system will store it as the last thrown 
@@ -8265,18 +8077,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
         // _ASSERTE (action == eThrowException || !pReturnDomain->IsDefaultDomain());
         switch (action)
         {
-        case eUnloadAppDomain:
-            if (!pReturnDomain->IsDefaultDomain())
-            {
-                pReturnDomain->EnableADUnloadWorker(EEPolicy::ADU_Safe);
-            }
-            break;
-        case eRudeUnloadAppDomain:
-            if (!pReturnDomain->IsDefaultDomain())
-            {
-                pReturnDomain->EnableADUnloadWorker(EEPolicy::ADU_Rude);
-            }
-            break;
         case eExitProcess:
         case eFastExitProcess:
         case eRudeExitProcess:
@@ -8483,64 +8283,6 @@ AppDomain *Thread::GetInitialDomain()
     return pDomain;
 }
 
-#ifndef DACCESS_COMPILE
-void  Thread::SetUnloadBoundaryFrame(Frame *pFrame)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE((this == GetThread() && PreemptiveGCDisabled()) ||
-             ThreadStore::HoldingThreadStore());
-    if ((ULONG_PTR)m_pUnloadBoundaryFrame < (ULONG_PTR)pFrame)
-    {
-        m_pUnloadBoundaryFrame = pFrame;
-    }
-    if (pFrame == NULL)
-    {
-        ResetBeginAbortedForADUnload();
-    }
-}
-
-void  Thread::ResetUnloadBoundaryFrame()
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(this == GetThread() && PreemptiveGCDisabled());
-    m_pUnloadBoundaryFrame=NULL;
-    ResetBeginAbortedForADUnload();
-}
-
-#endif
-
-BOOL Thread::ShouldChangeAbortToUnload(Frame *pFrame, Frame *pUnloadBoundaryFrame)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    if (! pUnloadBoundaryFrame)
-        pUnloadBoundaryFrame = GetUnloadBoundaryFrame();
-
-    // turn the abort request into an AD unloaded exception when go past the boundary.
-    if (pFrame != pUnloadBoundaryFrame)
-        return FALSE;
-
-    // Only time have an unloadboundaryframe is when have specifically marked that thread for aborting
-    // during unload processing, so this won't trigger UnloadedException if have simply thrown a ThreadAbort
-    // past an AD transition frame
-    _ASSERTE (IsAbortRequested());
-
-    EEResetAbort(TAR_ADUnload);
-
-    if (m_AbortType == EEPolicy::TA_None)
-    {
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
 BOOL Thread::HaveExtraWorkForFinalizer()
 {
     LIMITED_METHOD_CONTRACT;
@@ -8550,7 +8292,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
         || ExecutionManager::IsCacheCleanupRequired()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
-        || AppDomain::HasWorkForFinalizerThread()
         || SystemDomain::System()->RequireAppDomainCleanup()
         || ThreadStore::s_pThreadStore->ShouldTriggerGCForDeadThreads();
 }
@@ -8573,11 +8314,6 @@ void Thread::DoExtraWorkForFinalizer()
     }
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-    if (AppDomain::HasWorkForFinalizerThread())
-    {
-        AppDomain::ProcessUnloadDomainEventOnFinalizeThread();
-    }
-
     if (RequireSyncBlockCleanup())
     {
 #ifndef FEATURE_PAL
@@ -8592,7 +8328,7 @@ void Thread::DoExtraWorkForFinalizer()
     }
     if (SystemDomain::System()->RequireAppDomainCleanup())
     {
-        SystemDomain::System()->ProcessDelayedUnloadDomains();
+        SystemDomain::System()->ProcessDelayedUnloadLoaderAllocators();
     }
 
     if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
@@ -8766,46 +8502,6 @@ protected:
 
 static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState);
 
-
-// Here's the tricky part.  *IF and only IF* we took an AppDomain transition at the base, then we
-// now want to push another complete set of handlers above us.  The reason is that we want the
-// Watson report and the unhandled exception event to occur in the target AppDomain.  If we don't
-// do this apparently redundant push of handlers, then we will marshal back the exception to the
-// handlers on the Default AppDomain side.  This will erase all the important exception state by
-// unwinding (catch and rethrow) in DoADCallBack.  And it will cause all unhandled exceptions to
-// be reported from the Default AppDomain, which is annoying to any AppDomain.UnhandledException
-// event listeners.
-//
-// So why not skip the handlers that are in the Default AppDomain and just push the ones after the
-// transition?  Well, transitioning out of the Default AppDomain into the target AppDomain could
-// fail.  We need handlers pushed for that case.  And in that case it's perfectly reasonable to
-// report the problem as occurring in the Default AppDomain, which is what the base handlers will
-// do.
-
-static void ManagedThreadBase_DispatchInCorrectAD(LPVOID args)
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    ManagedThreadCallState *pCallState = (ManagedThreadCallState *) args;
-
-    // Ensure we aren't going to infinitely recurse.
-    _ASSERTE(pCallState->IsAppDomainEqual(GetThread()->GetDomain()));
-
-    // And then go round one more time.  But this time we want to ensure that the filter contains
-    // any exceptions that aren't swallowed.  These must be treated as unhandled, rather than
-    // propagated through the AppDomain boundary in search of an outer handler.  Otherwise we
-    // will not get correct Watson behavior.
-    pCallState->flags = MTCSF_ContainToAppDomain;
-    ManagedThreadBase_DispatchOuter(pCallState);
-    pCallState->flags = MTCSF_NormalBase;
-}
-
 static void ManagedThreadBase_DispatchInner(ManagedThreadCallState *pCallState)
 {
     CONTRACTL
@@ -8816,41 +8512,8 @@ static void ManagedThreadBase_DispatchInner(ManagedThreadCallState *pCallState)
     }
     CONTRACTL_END;
 
-
-    Thread *pThread = GetThread();
-
-    if (!pCallState->IsAppDomainEqual(pThread->GetDomain()))
-    {
-        // On Win7 and later, AppDomain transitions at the threadbase will *not* have EH setup at transition boundary.
-        // This implies that an unhandled exception from the base domain (i.e. AD in which the thread starts) will
-        // not return to DefDomain but will continue to go up the stack with the thread still being in base domain.
-        // We have a holder in ENTER_DOMAIN_*_NO_EH_AT_TRANSITION macro (ReturnToPreviousAppDomainHolder) that will
-        // revert AD context at threadbase if an unwind is triggered after the exception has gone unhandled.
-        //
-        // This also implies that there will be no exception object marshalling (and it may not be required after all) 
-        // as well and once the holder reverts the AD context, the LastThrownObject in Thread will be set to NULL.
-#ifndef FEATURE_PAL
-        BOOL fSetupEHAtTransition = FALSE;
-#else // !FEATURE_PAL
-        BOOL fSetupEHAtTransition = TRUE;
-#endif // !FEATURE_PAL
-
-        if (pCallState->bDomainIsAsID)
-            pThread->DoADCallBack(pCallState->pAppDomainId,
-                              ManagedThreadBase_DispatchInCorrectAD,
-                              pCallState, fSetupEHAtTransition);
-        else
-            pThread->DoADCallBack(pCallState->pUnsafeAppDomain,
-                              ManagedThreadBase_DispatchInCorrectAD,
-                               pCallState, ADV_FINALIZER, fSetupEHAtTransition);
-    }
-    else
-    {
-        // Since no AppDomain transition is necessary, we need no additional handlers pushed
-        // *AFTER* the transition.  We now have adequate handlers below us.  Go ahead and
-        // dispatch the call.
-        (*pCallState->pTarget) (pCallState->args);
-    }
+    // Go ahead and dispatch the call.
+    (*pCallState->pTarget) (pCallState->args);
 }
 
 static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
@@ -10757,10 +10420,6 @@ ETaskType GetCurrentTaskType()
     else if (type & ThreadType_Wait)
     {
         TaskType = TT_THREADPOOL_WAIT;
-    }
-    else if (type & ThreadType_ADUnloadHelper)
-    {
-        TaskType = TT_ADUNLOAD;
     }
     else if (type & ThreadType_Threadpool_IOCompletion)
     {

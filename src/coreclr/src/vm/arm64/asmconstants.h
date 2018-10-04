@@ -46,7 +46,7 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_fPreemptiveGCDisabled Thread__m_fPreemptiveGCDisabled
 
 #ifndef CROSSGEN_COMPILE
-#define               Thread__m_pDomain                 0x20
+#define               Thread__m_pDomain                 0x18
 ASMCONSTANTS_C_ASSERT(Thread__m_pDomain == offsetof(Thread, m_pDomain));
 
 #define               AppDomain__m_dwId                 0x08

@@ -555,28 +555,6 @@ LEAF_ENTRY PrecodeFixupThunk, _TEXT
     jmp     C_FUNC(ThePreStub)
 LEAF_END PrecodeFixupThunk, _TEXT
 
-// void __stdcall UM2MThunk_WrapperHelper(void *pThunkArgs,
-//                                        int argLen,
-//                                        void *pAddr,
-//                                        UMEntryThunk *pEntryThunk,
-//                                        Thread *pThread)
-NESTED_ENTRY UM2MThunk_WrapperHelper, _TEXT, NoHandler
-    push    ebx
-
-    mov     eax, [esp + 20] // pEntryThunk
-    mov     ecx, [esp + 24] // pThread
-    mov     ebx, [esp + 8]  // pThunkArgs
-
-    sub     esp, 8
-    CHECK_STACK_ALIGNMENT
-    call    [esp + 16 + 8]      // pAddr
-    add     esp, 8
-
-    pop     ebx
-
-    ret     20
-NESTED_END UM2MThunk_WrapperHelper, _TEXT
-
 NESTED_ENTRY UMThunkStubRareDisable, _TEXT, NoHandler
     push    eax
     push    ecx

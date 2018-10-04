@@ -475,11 +475,6 @@ HRESULT __stdcall Unknown_QueryInterface_ICCW(IUnknown *pUnk, REFIID riid, void 
         
         SimpleComCallWrapper *pSimpleWrap = pWrap->GetSimpleWrapper();
 
-        AppDomainFromIDHolder ad((ADID)pSimpleWrap->GetRawDomainID(), TRUE);
-
-        if (ad.IsUnloaded() || ad->IsUnloading())
-            return COR_E_APPDOMAINUNLOADED;
-        
         //
         // For CCWs that have outstanding Jupiter-reference, they could be either:
         // 1. Neutered - in this case it is unsafe to touch m_ppThis
