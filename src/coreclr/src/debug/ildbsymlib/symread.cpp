@@ -2324,7 +2324,7 @@ HRESULT
 SymScope::GetNamespaces(
     ULONG32 cNameSpaces,    // [optional] number of entries pNameSpaces
     ULONG32 *pcNameSpaces,  // [optional, out] Maximum number of Namespace
-    ISymUnmanagedNamespace *pNameSpaces[] // [optinal] array to store namespaces into
+    ISymUnmanagedNamespace *pNameSpaces[] // [optional] array to store namespaces into
     )
 {
     HRESULT hr = NOERROR;

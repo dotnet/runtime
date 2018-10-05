@@ -23054,7 +23054,7 @@ GenTree* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 /* argBashTmpNode is non-NULL iff the argument's value was
                    referenced exactly once by the original IL. This offers an
-                   oppportunity to avoid an intermediate temp and just insert
+                   opportunity to avoid an intermediate temp and just insert
                    the original argument tree.
 
                    However, if the temp node has been cloned somewhere while

@@ -1522,7 +1522,7 @@ HRESULT MethodDescVersioningState::UndoJumpStampNativeCode(BOOL fEESuspended)
 //         (fContentionPossible == TRUE)
 //      This method will attempt to alter the jump-stamp even if the caller has not prevented
 //      contention, but there is no guarantee it will be succesful. When the caller has prevented
-//      contention, then success is assured. Callers may oportunistically try without
+//      contention, then success is assured. Callers may opportunistically try without
 //      EE suspension, and then upgrade to EE suspension if the first attempt fails. 
 //
 // Assumptions:
