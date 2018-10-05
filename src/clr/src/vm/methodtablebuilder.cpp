@@ -774,8 +774,7 @@ void MethodTableBuilder::SetBMTData(
     bmtGCSeriesInfo *bmtGCSeries,
     bmtMethodImplInfo *bmtMethodImpl,
     const bmtGenericsInfo *bmtGenerics,
-    bmtEnumFieldInfo *bmtEnumFields,
-    bmtContextStaticInfo *bmtCSInfo)
+    bmtEnumFieldInfo *bmtEnumFields)
 {
     LIMITED_METHOD_CONTRACT;
     this->bmtAllocator = bmtAllocator;
@@ -793,7 +792,6 @@ void MethodTableBuilder::SetBMTData(
     this->bmtMethodImpl = bmtMethodImpl;
     this->bmtGenerics = bmtGenerics;
     this->bmtEnumFields = bmtEnumFields;
-    this->bmtCSInfo = bmtCSInfo;
 }
 
 //*******************************************************************************
@@ -1297,8 +1295,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
         new (GetStackingAllocator()) bmtGCSeriesInfo(),
         new (GetStackingAllocator()) bmtMethodImplInfo(),
         bmtGenericsInfo,
-        new (GetStackingAllocator()) bmtEnumFieldInfo(pModule->GetMDImport()),
-        new (GetStackingAllocator()) bmtContextStaticInfo());
+        new (GetStackingAllocator()) bmtEnumFieldInfo(pModule->GetMDImport()));
 
     //Initialize structs
 
@@ -1751,7 +1748,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // Go thru all fields and initialize their FieldDescs.
     InitializeFieldDescs(GetApproxFieldDescListRaw(), pLayoutRawFieldInfos, bmtInternal, bmtGenerics,
         bmtMetaData, bmtEnumFields, bmtError,
-        &pByValueClassCache, bmtMFDescs, bmtFP, bmtCSInfo,
+        &pByValueClassCache, bmtMFDescs, bmtFP,
         &totalDeclaredFieldSize);
 
     // Place regular static fields
@@ -3687,7 +3684,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                                                  MethodTable *** pByValueClassCache,
                                                  bmtMethAndFieldDescs* bmtMFDescs,
                                                  bmtFieldPlacement* bmtFP,
-                                                 bmtContextStaticInfo* pbmtCSInfo,
                                                  unsigned* totalDeclaredSize)
 {
     CONTRACTL
@@ -3764,7 +3760,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         MethodTable * pByValueClass = NULL;
         BOOL        fIsByValue = FALSE;
         BOOL        fIsThreadStatic = FALSE;
-        static const BOOL fIsContextStatic = FALSE;
         BOOL        fHasRVA = FALSE;
 
         MetaSig fsig(pMemberSignature,
@@ -3817,18 +3812,14 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             // Do some sanity checks that we are not mixing context and thread
             // relative statics.
-            if (fHasRVA && (fIsThreadStatic || fIsContextStatic))
+            if (fHasRVA && fIsThreadStatic)
             {
                 IfFailThrow(COR_E_TYPELOAD);
             }
 
-            if ((fIsContextStatic || bmtFP->fHasFixedAddressValueTypes) && GetAssembly()->IsCollectible())
+            if (bmtFP->fHasFixedAddressValueTypes && GetAssembly()->IsCollectible())
             {
-                if (bmtFP->fHasFixedAddressValueTypes)
-                {
-                    BuildMethodTableThrowException(IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR);
-                }
-                BuildMethodTableThrowException(IDS_CLASSLOAD_COLLECTIBLESPECIALSTATICS);
+                BuildMethodTableThrowException(IDS_CLASSLOAD_COLLECTIBLEFIXEDVTATTR);
             }
         }
 
@@ -4212,7 +4203,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                   fIsStatic,
                   fHasRVA,
                   fIsThreadStatic,
-                  fIsContextStatic,
                   pszFieldName
                   );
 
@@ -9801,8 +9791,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
                                          BOOL fHasGenericsStaticsInfo,
                                          BOOL fNeedsRCWPerTypeData,
                                          BOOL fNeedsRemotableMethodInfo,
-                                         BOOL fNeedsRemotingVtsInfo,
-                                         BOOL fHasContextStatics
+                                         BOOL fNeedsRemotingVtsInfo
 #ifdef FEATURE_COMINTEROP
         , BOOL fHasDynamicInterfaceMap
 #endif
@@ -9853,7 +9842,6 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
                                                       FALSE, // no CCW template needed for canonical instantiations
                                                       fNeedsRCWPerTypeData,
                                                       fNeedsRemotingVtsInfo,
-                                                      fHasContextStatics,
                                                       RidFromToken(GetCl()) >= METHODTABLE_TOKEN_OVERFLOW);
 
     // Interface map starts here
@@ -10102,7 +10090,6 @@ MethodTableBuilder::SetupMethodTable2(
                    : 0;
 
 
-    BOOL fHasContextStatics = FALSE;
     BOOL fNeedsRemotableMethodInfo=FALSE;
     BOOL fNeedsRemotingVtsInfo = FALSE;
 
@@ -10147,7 +10134,6 @@ MethodTableBuilder::SetupMethodTable2(
                                    fNeedsRCWPerTypeData,
                                    fNeedsRemotableMethodInfo,
                                    fNeedsRemotingVtsInfo,
-                                   fHasContextStatics,
 #ifdef FEATURE_COMINTEROP 
                                    fHasDynamicInterfaceMap,
 #endif

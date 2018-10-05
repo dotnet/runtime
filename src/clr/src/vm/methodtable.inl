@@ -1400,7 +1400,6 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
                                                            BOOL needsCCWTemplate,
                                                            BOOL needsRCWPerTypeData,
                                                            BOOL needsRemotingVtsInfo,
-                                                           BOOL needsContextStatic,
                                                            BOOL needsTokenOverflow)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1418,8 +1417,6 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
     if (needsRCWPerTypeData)
         size += sizeof(UINT_PTR);
     if (needsRemotingVtsInfo)
-        size += sizeof(UINT_PTR);
-    if (needsContextStatic)
         size += sizeof(UINT_PTR);
     if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
         size += sizeof(UINT_PTR);
