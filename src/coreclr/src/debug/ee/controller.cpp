@@ -2904,7 +2904,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
                                                      thread,
                                                      TY_SHORT_CIRCUIT);
 
-        // We will only come back here on a RemapOppporunity that wasn't taken, or on a RemapComplete.
+        // We will only come back here on a RemapOpportunity that wasn't taken, or on a RemapComplete.
         // If we processed a RemapComplete (which returns TPR_IGNORE_AND_STOP), then don't want to handle
         // additional breakpoints on the current line because we've already effectively executed to that point
         // and would have hit them already. If they are new, we also don't want to hit them because eg. if are
