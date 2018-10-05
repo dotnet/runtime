@@ -1506,7 +1506,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     const static insFormat formatEncode2I[2] = {IF_DV_2K, IF_DV_1C};
     const static insFormat formatEncode2J[2] = {IF_DV_2A, IF_DV_2G};
     const static insFormat formatEncode2K[2] = {IF_DV_2M, IF_DV_2L};
-    const static insFormat formatEncode2L[2] = {IF_DV_2G, IF_DV_2M};
+    const static insFormat formatEncode2L[2] = {IF_DR_2G, IF_DV_2M};
     const static insFormat formatEncode2M[2] = {IF_DV_3A, IF_DV_3AI};
     const static insFormat formatEncode2N[2] = {IF_DV_2N, IF_DV_2O};
     const static insFormat formatEncode2O[2] = {IF_DV_3E, IF_DV_3A};
