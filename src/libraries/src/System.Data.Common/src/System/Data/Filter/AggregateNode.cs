@@ -28,7 +28,7 @@ namespace System.Data
         private readonly string _relationName;
         private readonly string _columnName;
 
-        // CONSIDER PERF: keep the objetcs, not names.
+        // CONSIDER PERF: keep the objects, not names.
         // ? try to drop a column
         private DataTable _childTable;
         private DataColumn _column;

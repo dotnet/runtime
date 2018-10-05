@@ -179,16 +179,16 @@ namespace System.Diagnostics.Tests
                 DiagnosticSource source = listener;
                 var subscriber1Result = new List<KeyValuePair<string, object>>();
                 Predicate<string> subscriber1Predicate = name => (name == "DataForSubscriber1");
-                var subscriber1Oberserver = new ObserverToList<TelemData>(subscriber1Result);
+                var subscriber1Observer = new ObserverToList<TelemData>(subscriber1Result);
 
                 var subscriber2Result = new List<KeyValuePair<string, object>>();
                 Predicate<string> subscriber2Predicate = name => (name == "DataForSubscriber2");
-                var subscriber2Oberserver = new ObserverToList<TelemData>(subscriber2Result);
+                var subscriber2Observer = new ObserverToList<TelemData>(subscriber2Result);
 
                 // Get two subscribers going. 
-                using (var subscription1 = listener.Subscribe(subscriber1Oberserver, subscriber1Predicate))
+                using (var subscription1 = listener.Subscribe(subscriber1Observer, subscriber1Predicate))
                 {
-                    using (var subscription2 = listener.Subscribe(subscriber2Oberserver, subscriber2Predicate))
+                    using (var subscription2 = listener.Subscribe(subscriber2Observer, subscriber2Predicate))
                     {
                         // Things that neither subscribe to get filtered out. 
                         if (listener.IsEnabled("DataToFilterOut"))
