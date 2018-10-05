@@ -20,7 +20,7 @@
 #include "peimagelayout.inl"
 
 // called from code:MethodTableBuilder::InitializeFieldDescs#InitCall
-VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttrs, BOOL fIsStatic, BOOL fIsRVA, BOOL fIsThreadLocal, BOOL fIsContextLocal, LPCSTR pszFieldName)
+VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttrs, BOOL fIsStatic, BOOL fIsRVA, BOOL fIsThreadLocal, LPCSTR pszFieldName)
 { 
     LIMITED_METHOD_CONTRACT;
     
@@ -46,8 +46,8 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
         FieldType == ELEMENT_TYPE_PTR ||
         FieldType == ELEMENT_TYPE_FNPTR
         );
-    _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal && !fIsContextLocal));
-    _ASSERTE(fIsRVA + fIsThreadLocal + fIsContextLocal <= 1);
+    _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal));
+    _ASSERTE(fIsRVA + fIsThreadLocal <= 1);
 
     m_requiresFullMbValue = 0;
     SetMemberDef(mb);

@@ -348,7 +348,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                                                           FALSE,                           // CCWTemplate
                                                           FALSE,                           // RCWPerTypeData
                                                           FALSE,                           // RemotingVtsInfo
-                                                          FALSE,                           // ContextStatic
                                                           FALSE);                          // TokenOverflow
 
     // This is the offset of the beginning of the interface map

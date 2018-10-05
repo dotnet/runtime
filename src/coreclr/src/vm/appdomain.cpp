@@ -726,7 +726,6 @@ BaseDomain::BaseDomain()
 
     m_pMarshalingData = NULL;
 
-    m_dwContextStatics = 0;
 #ifdef FEATURE_COMINTEROP
     m_pMngStdInterfacesInfo = NULL;
     m_pWinRtBinder = NULL;
@@ -972,29 +971,6 @@ void BaseDomain::InitVSD()
 }
 
 #ifndef CROSSGEN_COMPILE
-
-DWORD BaseDomain::AllocateContextStaticsOffset(DWORD* pOffsetSlot)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_SpecialStaticsCrst);
-
-    DWORD dwOffset = *pOffsetSlot;
-
-    if (dwOffset == (DWORD)-1)
-    {
-        // Allocate the slot
-        dwOffset = m_dwContextStatics++;
-        *pOffsetSlot = dwOffset;
-    }
-
-    return dwOffset;
-}
 
 void BaseDomain::ClearFusionContext()
 {

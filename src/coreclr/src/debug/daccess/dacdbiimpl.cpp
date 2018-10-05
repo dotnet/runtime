@@ -1625,7 +1625,6 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
         pCurrentFieldData->m_vmFieldDesc.SetHostPtr(pFD);
         pCurrentFieldData->m_fFldStorageAvailable = FALSE;
         pCurrentFieldData->m_fFldIsTLS = FALSE;
-        pCurrentFieldData->m_fFldIsContextStatic = FALSE;
         pCurrentFieldData->m_fFldIsRVA = FALSE;
         pCurrentFieldData->m_fFldIsCollectibleStatic = FALSE;
     }
@@ -1638,7 +1637,6 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
         // completely DACized
         pCurrentFieldData->m_vmFieldDesc.SetHostPtr(pFD);
         pCurrentFieldData->m_fFldIsTLS = (pFD->IsThreadStatic() == TRUE);
-        pCurrentFieldData->m_fFldIsContextStatic = (pFD->IsContextStatic() == TRUE);
         pCurrentFieldData->m_fFldIsRVA = (pFD->IsRVA() == TRUE);
         pCurrentFieldData->m_fFldIsCollectibleStatic = (pFD->IsStatic() == TRUE &&
             pFD->GetEnclosingMethodTable()->Collectible());
@@ -1657,7 +1655,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
                     pCurrentFieldData->SetStaticAddress(PTR_TO_TADDR(addr));
                 }
             }
-            else if (pFD->IsThreadStatic() || pFD->IsContextStatic() || 
+            else if (pFD->IsThreadStatic() || 
                 pCurrentFieldData->m_fFldIsCollectibleStatic)
             {
                 // this is a special type of static that must be queried using DB_IPCE_GET_SPECIAL_STATIC
@@ -3831,14 +3829,12 @@ void DacDbiInterfaceImpl::InitFieldData(const FieldDesc *           pFD,
     pFieldData->m_fFldIsTLS = (pFD->IsThreadStatic() == TRUE);
     pFieldData->m_fldMetadataToken = pFD->GetMemberDef();
     pFieldData->m_fFldIsRVA = (pFD->IsRVA() == TRUE);
-    pFieldData->m_fFldIsContextStatic = (pFD->IsContextStatic() == TRUE);
     pFieldData->m_fFldIsCollectibleStatic = FALSE;
     pFieldData->m_fFldStorageAvailable = true;
 
     if (pFieldData->m_fFldIsStatic)
     {
         //EnC is only supported on regular static fields
-        _ASSERTE(!pFieldData->m_fFldIsContextStatic);
         _ASSERTE(!pFieldData->m_fFldIsTLS);
         _ASSERTE(!pFieldData->m_fFldIsRVA);
 

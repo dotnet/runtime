@@ -384,8 +384,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
                        NULL,
                        NULL,
                        &genericsInfo,
-                       &bmtEnumFields,
-                       NULL);
+                       &bmtEnumFields);
 
     EX_TRY
     {
@@ -400,7 +399,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
                                  &pByValueClassCache,
                                  &bmtMFDescs,
                                  &bmtFP,
-                                 NULL, // not needed as thread or context static are not allowed in EnC
                                  &totalDeclaredFieldSize);
     }
     EX_CATCH_THROWABLE(&pThrowable);

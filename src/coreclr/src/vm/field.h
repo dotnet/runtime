@@ -133,7 +133,6 @@ public:
               BOOL fIsStatic, 
               BOOL fIsRVA, 
               BOOL fIsThreadLocal, 
-              BOOL fIsContextLocal, 
               LPCSTR pszFieldName);
 
     enum {
@@ -320,13 +319,6 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         return m_isThreadLocal;
-    }
-
-    BOOL   IsContextStatic() const     // Static relative to a context
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return FALSE;
     }
 
     // Indicate that this field was added by EnC
