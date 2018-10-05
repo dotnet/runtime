@@ -1,26 +1,24 @@
+using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class ClassImplementingInterfaceMethodsNested {
+	[SetupLinkerArgument ("--exclude-feature", "com")]
+	public class UnusedComInterfaceIsRemovedWhenComFeatureExcluded {
 		public static void Main ()
 		{
-			IFoo i = new A ();
+			var i = new A ();
 			i.Foo ();
 		}
 
-		[Kept]
-		interface IFoo {
-			[Kept]
-			void Foo ();
-		}
-
-		interface IBar : IFoo {
+		[ComImport]
+		[Guid ("D7BB1889-3AB7-4681-A115-60CA9158FECA")]
+		interface IBar {
 			void Bar ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		[KeptInterface (typeof (IFoo))]
 		class A : IBar {
 			[Kept]
 			public void Foo ()

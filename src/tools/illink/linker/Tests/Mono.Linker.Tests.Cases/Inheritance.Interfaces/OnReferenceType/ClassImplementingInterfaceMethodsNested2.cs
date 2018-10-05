@@ -1,11 +1,12 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
-namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
-	public class StructImplementingInterfaceMethodsNested {
+namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
+	public class ClassImplementingInterfaceMethodsNested2 {
 		public static void Main ()
 		{
-			IFoo i = new A ();
-			i.Foo ();
+			IBar b = new A ();
+			IFoo f = b;
+			f.Foo ();
 		}
 
 		[Kept]
@@ -13,14 +14,18 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnValueType {
 			[Kept]
 			void Foo ();
 		}
-
+		
+		[Kept]
+		[KeptInterface (typeof (IFoo))]
 		interface IBar : IFoo {
 			void Bar ();
 		}
-
+		
 		[Kept]
+		[KeptMember (".ctor()")]
+		[KeptInterface (typeof (IBar))]
 		[KeptInterface (typeof (IFoo))]
-		struct A : IBar {
+		class A : IBar {
 			[Kept]
 			public void Foo ()
 			{

@@ -1,33 +1,28 @@
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
-	public class ClassImplementingInterfaceMethodsNested {
+	public class InterfaceUsedOnlyAsConstraintIsKept {
 		public static void Main ()
 		{
-			IFoo i = new A ();
-			i.Foo ();
+			var a = new A ();
+			Helper (a);
+		}
+
+		[Kept]
+		static void Helper<T> (T arg) where T : IFoo
+		{
 		}
 
 		[Kept]
 		interface IFoo {
-			[Kept]
 			void Foo ();
-		}
-
-		interface IBar : IFoo {
-			void Bar ();
 		}
 
 		[Kept]
 		[KeptMember (".ctor()")]
 		[KeptInterface (typeof (IFoo))]
-		class A : IBar {
-			[Kept]
+		class A : IFoo {
 			public void Foo ()
-			{
-			}
-
-			public void Bar ()
 			{
 			}
 		}

@@ -7,7 +7,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 			new A ();
 		}
 
-		[Kept]
 		interface IFoo {
 			void Foo ();
 		}
@@ -21,7 +20,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (B))]
-		[KeptInterface (typeof (IFoo))]
 		class A : B, IFoo {
 			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
 		}

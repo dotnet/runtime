@@ -1,4 +1,4 @@
-﻿//
+//
 // MarkStep.cs
 //
 // Author:
@@ -45,6 +45,7 @@ namespace Mono.Linker.Steps {
 		protected List<MethodDefinition> _virtual_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		protected Queue<AttributeProviderPair> _lateMarkedAttributes;
+		protected List<TypeDefinition> _typesWithInterfaces;
 
 		public AnnotationStore Annotations {
 			get { return _context.Annotations; }
@@ -62,6 +63,7 @@ namespace Mono.Linker.Steps {
 			_virtual_methods = new List<MethodDefinition> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<AttributeProviderPair> ();
+			_typesWithInterfaces = new List<TypeDefinition> ();
 		}
 
 		public virtual void Process (LinkContext context)
@@ -168,6 +170,7 @@ namespace Mono.Linker.Steps {
 			while (!QueueIsEmpty ()) {
 				ProcessQueue ();
 				ProcessVirtualMethods ();
+				ProcessMarkedTypesWithInterfaces ();
 				DoAdditionalProcessing ();
 			}
 
@@ -208,6 +211,20 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
+		void ProcessMarkedTypesWithInterfaces ()
+		{
+			// We may mark an interface type later on.  Which means we need to reprocess any time with one or more interface implementations that have not been marked
+			// and if an interface type is found to be marked and implementation is not marked, then we need to mark that implementation
+			foreach (var type in _typesWithInterfaces) {
+				// Exception, types that have not been flagged as instantiated yet.  These types may not need their interfaces even if the
+				// interface type is marked
+				if (!Annotations.IsInstantiated (type))
+					continue;
+
+				MarkInterfaceImplementations (type);
+			}
+		}
+
 		void ProcessVirtualMethod (MethodDefinition method)
 		{
 			var overrides = Annotations.GetOverrides (method);
@@ -215,10 +232,10 @@ namespace Mono.Linker.Steps {
 				return;
 
 			foreach (MethodDefinition @override in overrides)
-				ProcessOverride (@override);
+				ProcessOverride (@override, method);
 		}
 
-		void ProcessOverride (MethodDefinition method)
+		void ProcessOverride (MethodDefinition method, MethodDefinition @base)
 		{
 			if (!Annotations.IsMarked (method.DeclaringType))
 				return;
@@ -227,6 +244,11 @@ namespace Mono.Linker.Steps {
 				return;
 
 			if (Annotations.IsMarked (method))
+				return;
+
+			// We don't need to mark overrides until it is possible that the type could be instantiated
+			// Note : The base type is interface check should be removed once we have base type sweeping
+			if (!Annotations.IsInstantiated (method.DeclaringType) && @base.DeclaringType.IsInterface)
 				return;
 
 			MarkMethod (method);
@@ -923,14 +945,22 @@ namespace Mono.Linker.Steps {
 			if (type.IsValueType || !type.IsAutoLayout)
 				MarkFields (type, type.IsEnum);
 
-			if (type.HasInterfaces) {
-				foreach (var iface in type.Interfaces) {
-					MarkInterfaceImplementation (type, iface);
-				}
+			// There are a number of markings we can defer until later when we know it's possible a reference type could be instantiated
+			// For example, if no instance of a type exist, then we don't need to mark the interfaces on that type
+			// However, for some other types there is no benefit to deferring
+			if (type.IsInterface) {
+				// There's no benefit to deferring processing of an interface type until we know a type implementing that interface is marked
+				MarkRequirementsForInstantiatedTypes (type);
+			} else if (type.IsValueType) {
+				// Note : Technically interfaces could be removed from value types in some of the same cases as reference types, however, it's harder to know when
+				// a value type instance could exist.  You'd have to track initobj and maybe locals types.  Going to punt for now.
+				MarkRequirementsForInstantiatedTypes (type);
 			}
+			
+			if (type.HasInterfaces)
+				_typesWithInterfaces.Add (type);
 
 			if (type.HasMethods) {
-				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
 				if (ShouldMarkTypeStaticConstructor (type))
 					MarkStaticConstructor (type);
 
@@ -970,6 +1000,11 @@ namespace Mono.Linker.Steps {
 
 		// Allow subclassers to mark additional things
 		protected virtual void DoAdditionalEventProcessing (EventDefinition evt)
+		{
+		}
+
+		// Allow subclassers to mark additional things
+		protected virtual void DoAdditionalInstantiatedTypeProcessing (TypeDefinition type)
 		{
 		}
 
@@ -1204,6 +1239,25 @@ namespace Mono.Linker.Steps {
 				MarkMethod (property.GetMethod);
 				MarkMethod (property.SetMethod);
 				Tracer.Pop ();
+			}
+		}
+
+		void MarkInterfaceImplementations (TypeDefinition type)
+		{
+			if (!type.HasInterfaces)
+				return;
+
+			foreach (var iface in type.Interfaces) {
+				// Only mark interface implementations of interface types that have been marked.
+				// This enables stripping of interfaces that are never used
+				var resolvedInterfaceType = iface.InterfaceType.Resolve ();
+				if (resolvedInterfaceType == null) {
+					HandleUnresolvedType (iface.InterfaceType);
+					continue;
+				}
+				
+				if (ShouldMarkInterfaceImplementation (type, iface, resolvedInterfaceType))
+					MarkInterfaceImplementation (iface);
 			}
 		}
 
@@ -1652,6 +1706,9 @@ namespace Mono.Linker.Steps {
 
 			MarkGenericParameterProvider (method);
 
+			if (ShouldMarkAsInstancePossible (method))
+				MarkRequirementsForInstantiatedTypes (method.DeclaringType);
+
 			if (IsPropertyMethod (method))
 				MarkProperty (GetProperty (method));
 			else if (IsEventMethod (method))
@@ -1699,6 +1756,31 @@ namespace Mono.Linker.Steps {
 		// Allow subclassers to mark additional things when marking a method
 		protected virtual void DoAdditionalMethodProcessing (MethodDefinition method)
 		{
+		}
+
+		protected virtual bool ShouldMarkAsInstancePossible (MethodDefinition method)
+		{
+			// We don't need to mark it multiple times
+			if (Annotations.IsInstantiated (method.DeclaringType))
+				return false;
+
+			if (method.IsConstructor && !method.IsStatic)
+				return true;
+
+			if (method.DeclaringType.IsInterface)
+				return true;
+
+			return false;
+		}
+
+		protected virtual void MarkRequirementsForInstantiatedTypes (TypeDefinition type)
+		{
+			if (Annotations.IsInstantiated (type))
+				return;
+			Annotations.MarkInstantiated (type);
+			MarkInterfaceImplementations (type);
+			MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
+			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
 		void MarkBaseMethods (MethodDefinition method)
@@ -1895,10 +1977,30 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		protected virtual void MarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface)
+		protected virtual bool ShouldMarkInterfaceImplementation (TypeDefinition type, InterfaceImplementation iface, TypeDefinition resolvedInterfaceType)
+		{
+			if (Annotations.IsMarked (iface))
+				return false;
+
+			if (Annotations.IsMarked (resolvedInterfaceType) && !Annotations.IsMarked (iface))
+				return true;
+
+			// It's hard to know if a com or windows runtime interface will be needed from managed code alone,
+			// so as a precaution we will mark these interfaces once the type is instantiated
+			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
+				return true;
+
+			if (!Annotations.IsPreserved (type))
+				return false;
+
+			return Annotations.GetPreserve (type) == TypePreserve.All;
+		}
+
+		protected virtual void MarkInterfaceImplementation (InterfaceImplementation iface)
 		{
 			MarkCustomAttributes (iface);
 			MarkType (iface.InterfaceType);
+			Annotations.Mark (iface);
 		}
 
 		bool CheckReflectionMethod (Instruction instruction, string reflectionMethod)
