@@ -114,7 +114,7 @@ namespace System.Buffers.Text
 
             // The line below forces the JIT to hoist the bounds check for the following segment.
             // The JIT will optimize away the read, but it cannot optimize away the bounds check
-            // because it may have an observeable side effect (throwing).
+            // because it may have an observable side effect (throwing).
             // We use 8 instead of 7 so that we also capture the dash if we're asked to insert one.
 
             { var unused = destination[8]; }

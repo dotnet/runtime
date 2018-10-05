@@ -258,7 +258,7 @@ namespace System.Configuration
             }
             else
             {
-                // Use the 3DES. FIPS obsolated 3DES
+                // Use the 3DES. FIPS obsoleted 3DES
                 symAlg = new TripleDESCryptoServiceProvider();
 
                 byte[] rgbKey1 = GetRandomKey();

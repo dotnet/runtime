@@ -1148,7 +1148,7 @@ namespace System.Management
                 cmp.CustomAttributes = new CodeAttributeDeclarationCollection();
                 cmp.CustomAttributes.Add(cad);
 
-                //Now we will have to find the occurance of the first character and trim all the characters before that
+                //Now we will have to find the occurrence of the first character and trim all the characters before that
                 strPropTemp = prop.Name.ToCharArray();
                 for(i=0;i < strPropTemp.Length;i++)
                 {
