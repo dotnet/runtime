@@ -1195,7 +1195,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.StandardInput);
         }
 
-        // [Fact][SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // uncomment for diagnostic purposes to list processes to console
+        // [Fact] // uncomment for diagnostic purposes to list processes to console
         public void TestDiagnosticsWithConsoleWriteLine()
         {
             foreach (var p in Process.GetProcesses().OrderBy(p => p.Id))
@@ -1543,7 +1543,7 @@ namespace System.Diagnostics.Tests
 #pragma warning restore 0618
         }
 
-        [Fact][SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [Fact]
         public void PeakWorkingSet_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
