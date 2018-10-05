@@ -714,6 +714,12 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "Digest realm=withoutquotes, nonce=withoutquotes", false };
             yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
             yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
+
+            // These tests check that the algorithm parameter is treated in case insensitive way.
+            // WinHTTP only supports plain MD5, so other algorithms are included here.
+            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=md5-Sess, nonce=\"testnonce\"", true };
+            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256, nonce=\"testnonce\"", true };
+            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256-SESS, nonce=\"testnonce\"", true };
         }
     }
 
