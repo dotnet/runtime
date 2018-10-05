@@ -1163,7 +1163,7 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
                 dwFlags |= pmSupportsLastError;
         }
             
-        // If an entrypoint name was specified, use it, otherrwise grab the name from the member.
+        // If an entrypoint name was specified, use it, otherwise grab the name from the member.
         LPCWSTR wzEntry;
         if (qNamedArgs[DI_EntryPoint].val.type.tag)
         {
