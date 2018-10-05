@@ -145,6 +145,8 @@
     <Compile Include="Multiply.Double.cs" />
     <Compile Include="MultiplyScalar.Double.cs" />
     <Compile Include="MultiplyAddAdjacent.Int32.cs" />
+    <Compile Include="MultiplyLow.Int16.cs" />
+    <Compile Include="MultiplyLow.UInt16.cs" />
     <Compile Include="Or.Double.cs" />
     <Compile Include="Or.Byte.cs" />
     <Compile Include="Or.Int16.cs" />
