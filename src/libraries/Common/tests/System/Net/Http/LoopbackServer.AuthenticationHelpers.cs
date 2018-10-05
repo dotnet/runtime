@@ -248,11 +248,11 @@ namespace System.Net.Test.Common
             }
 
             if (string.IsNullOrEmpty(algorithm))
-                algorithm = "sha-256";
+                algorithm = "MD5";
 
             // Calculate response and compare with the client response hash.
             string a1 = options.Username + ":" + realm + ":" + options.Password;
-            if (algorithm.Contains("sess"))
+            if (algorithm.EndsWith("sess", StringComparison.OrdinalIgnoreCase))
             {
                 a1 = ComputeHash(a1, algorithm) + ":" + nonce;
 
@@ -288,7 +288,7 @@ namespace System.Net.Test.Common
         {
             // Disable MD5 insecure warning.
 #pragma warning disable CA5351
-            using (HashAlgorithm hash = algorithm.Contains("SHA-256") ? SHA256.Create() : (HashAlgorithm)MD5.Create())
+            using (HashAlgorithm hash = algorithm.StartsWith("SHA-256", StringComparison.OrdinalIgnoreCase) ? SHA256.Create() : (HashAlgorithm)MD5.Create())
 #pragma warning restore CA5351
             {
                 Encoding enc = Encoding.UTF8;
