@@ -26,7 +26,7 @@
 #undef MINI_OP3
 #endif
 
-#ifdef HAVE_ARRAY_ELEM_INIT
+// This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
@@ -49,20 +49,6 @@ static const gint16 opidx [] = {
 #undef MINI_OP
 #undef MINI_OP3
 };
-
-#else
-
-#define MINI_OP(a,b,dest,src1,src2) b,
-#define MINI_OP3(a,b,dest,src1,src2,src3) b,
-/* keep in sync with the enum in mini.h */
-static const char* const
-opnames[] = {
-#include "mini-ops.h"
-};
-#undef MINI_OP
-#undef MINI_OP3
-
-#endif
 
 #endif /* DISABLE_LOGGING */
 
@@ -90,11 +76,7 @@ const char*
 mono_inst_name (int op) {
 #ifndef DISABLE_LOGGING
 	if (op >= OP_LOAD && op <= OP_LAST)
-#ifdef HAVE_ARRAY_ELEM_INIT
 		return (const char*)&opstr + opidx [op - OP_LOAD];
-#else
-		return opnames [op - OP_LOAD];
-#endif
 	if (op < OP_LOAD)
 		return mono_opcode_name (op);
 	g_error ("unknown opcode name for %d", op);

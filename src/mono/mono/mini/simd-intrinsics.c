@@ -95,7 +95,7 @@ enum {
 	SIMD_EMIT_PREFETCH
 };
 
-#ifdef HAVE_ARRAY_ELEM_INIT
+// This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
@@ -113,23 +113,6 @@ enum {
 #include "simd-methods.h"
 };
 #define method_name(idx) ((const char*)&method_names + (idx))
-
-#else
-#define SIMD_METHOD(str,name) str,
-static const char * const method_names [] = {
-#include "simd-methods.h"
-	NULL
-};
-#undef SIMD_METHOD
-#define SIMD_METHOD(str,name) name,
-enum {
-#include "simd-methods.h"
-	SN_LAST
-};
-
-#define method_name(idx) (method_names [(idx)])
-
-#endif
 
 typedef struct {
 	guint16 name;

@@ -27,7 +27,7 @@ mono_opcodes [MONO_CEE_LAST + 1] = {
 
 #undef OPDEF
 
-#ifdef HAVE_ARRAY_ELEM_INIT
+// This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
@@ -53,22 +53,6 @@ mono_opcode_name (int opcode)
 {
 	return (const char*)&opstr + opidx [opcode];
 }
-
-#else
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) b,
-static const char* const
-mono_opcode_names [MONO_CEE_LAST + 1] = {
-#include "mono/cil/opcode.def"
-	NULL
-};
-
-const char*
-mono_opcode_name (int opcode)
-{
-	return mono_opcode_names [opcode];
-}
-
-#endif
 
 MonoOpcodeEnum
 mono_opcode_value (const mono_byte **ip, const mono_byte *end)

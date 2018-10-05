@@ -392,7 +392,7 @@ typedef struct {
 /* This points to the current acfg in LLVM mode */
 static MonoAotCompile *llvm_acfg;
 
-#ifdef HAVE_ARRAY_ELEM_INIT
+// This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
@@ -415,22 +415,6 @@ get_patch_name (int info)
 {
 	return (const char*)&opstr + opidx [info];
 }
-
-#else
-#define PATCH_INFO(a,b) b,
-static const char* const
-patch_types [MONO_PATCH_INFO_NUM + 1] = {
-#include "patch-info.h"
-	NULL
-};
-
-static G_GNUC_UNUSED const char*
-get_patch_name (int info)
-{
-	return patch_types [info];
-}
-
-#endif
 
 static void 
 mono_flush_method_cache (MonoAotCompile *acfg);

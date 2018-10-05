@@ -98,7 +98,7 @@ static const IcallTypeDesc icall_type_descs [] = {
 
 #define icall_desc_num_icalls(desc) ((desc) [1].first_icall - (desc) [0].first_icall)
 
-#ifdef HAVE_ARRAY_ELEM_INIT
+// This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
@@ -175,40 +175,6 @@ static const guint16 icall_names_idx [] = {
 
 #define icall_name_get(id) ((const char*)&icall_names_str + icall_names_idx [(id)])
 
-#else // HAVE_ARRAY_ELEM_INIT
-
-static const char* const icall_type_names [] = {
-#define ICALL_TYPE(id,name,first) name,
-#define ICALL(id,name,func)
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-#undef ICALL
-#undef HANDLES
-#undef NOHANDLES
-	NULL
-};
-
-#define icall_type_name_get(id) (icall_type_names [(id)])
-
-static const char* const icall_names [] = {
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) name,
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-#undef ICALL
-#undef HANDLES
-#undef NOHANDLES
-	NULL
-};
-
-#define icall_name_get(id) icall_names [(id)]
-
-#endif // HAVE_ARRAY_ELEM_INIT
-
 static const gconstpointer icall_functions [] = {
 #define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) ((gpointer)(func)),
@@ -251,7 +217,6 @@ static const guchar icall_uses_handles [] = {
 #undef NOHANDLES
 };
 
-#ifdef HAVE_ARRAY_ELEM_INIT
 static int
 compare_method_imap (const void *key, const void *elem)
 {
@@ -301,60 +266,6 @@ find_class_icalls (const char *name)
 		return NULL;
 	return &icall_type_descs [nameslot - &icall_type_names_idx [0]];
 }
-
-#else /* HAVE_ARRAY_ELEM_INIT */
-
-static int
-compare_method_imap (const void *key, const void *elem)
-{
-	const char** method_name = (const char**)elem;
-	return strcmp ((const char*)key, *method_name);
-}
-
-static gsize
-find_slot_icall (const IcallTypeDesc *imap, const char *name)
-{
-	const char **nameslot = (const char**)mono_binary_search (name, icall_names + imap->first_icall, icall_desc_num_icalls (imap), sizeof (icall_names [0]), compare_method_imap);
-	if (!nameslot)
-		return -1;
-	return nameslot - icall_names;
-}
-
-static gpointer
-find_method_icall (const IcallTypeDesc *imap, const char *name)
-{
-	gsize slotnum = find_slot_icall (imap, name);
-	if (slotnum == -1)
-		return NULL;
-	return (gpointer)icall_functions [slotnum];
-}
-
-static gboolean
-find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
-{
-	gsize slotnum = find_slot_icall (imap, name);
-	if (slotnum == -1)
-		return FALSE;
-	return (gboolean)icall_uses_handles [slotnum];
-}
-
-static int
-compare_class_imap (const void *key, const void *elem)
-{
-	const char** class_name = (const char**)elem;
-	return strcmp ((const char*)key, *class_name);
-}
-
-static const IcallTypeDesc*
-find_class_icalls (const char *name)
-{
-	const char **nameslot = (const char**)mono_binary_search (name, icall_type_names, Icall_type_num, sizeof (icall_type_names [0]), compare_class_imap);
-	if (!nameslot)
-		return NULL;
-	return &icall_type_descs [nameslot - icall_type_names];
-}
-
-#endif /* HAVE_ARRAY_ELEM_INIT */
 
 static gpointer
 icall_table_lookup (char *classname, char *methodname, char *sigstart, gboolean *uses_handles)

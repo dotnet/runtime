@@ -107,9 +107,6 @@
 /* Enable DTrace probes */
 /* #undef ENABLE_DTRACE */
 
-/* Supports C99 array initialization */
-/* #undef HAVE_ARRAY_ELEM_INIT */
-
 /* Define to 1 if you have the <attr/xattr.h> header file. */
 /* #undef HAVE_ATTR_XATTR_H */
 
