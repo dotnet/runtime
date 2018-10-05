@@ -15,6 +15,7 @@ set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
 set __PortableBuild=0
+set __IncrementalNativeBuild=0
 
 :Arg_Loop
 if [%1] == [] goto :ToolsVersion
@@ -36,6 +37,8 @@ if /i [%1] == [apphostver]  (set __AppHostVersion=%2&&shift&&shift&goto Arg_Loop
 if /i [%1] == [fxrver]      (set __HostResolverVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [policyver]   (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
+
+if /i [%1] == [incremental-native-build] ( set __IncrementalNativeBuild=1&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -103,7 +106,10 @@ set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
+if /i "%__IncrementalNativeBuild%" == "1" goto CreateIntermediates
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
+
+:CreateIntermediates
 if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
@@ -146,8 +152,11 @@ if "%__BuildArch%" == "arm64" (
 
 cd %__rootDir%
 
-echo %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
-call %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+SET __NativeBuildArgs=/t:rebuild
+if /i "%__IncrementalNativeBuild%" == "1" SET __NativeBuildArgs=
+
+echo %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" %__NativeBuildArgs% /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
+call %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" %__NativeBuildArgs% /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
 IF ERRORLEVEL 1 (
     goto :Failure
 )

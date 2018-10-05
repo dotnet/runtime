@@ -26,8 +26,8 @@
       <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) --stripsymbols</BuildArgs>   
     </PropertyGroup>
 
-    <RemoveDir Directories="$(CMakeBuildDir)" Condition="Exists('$(CMakeBuildDir)')" />
-    <MakeDir Directories="$(CMakeBuildDir)" />
+    <RemoveDir Directories="$(CMakeBuildDir)" Condition="Exists('$(CMakeBuildDir)') And '$(IncrementalNativeBuild)' != 'true'" />
+    <MakeDir Directories="$(CMakeBuildDir)" Condition="!(Exists('$(CMakeBuildDir)'))" />
 
     <Message Text="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" Importance="High"/>
     <Exec Command="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)"
@@ -66,10 +66,12 @@
     
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Properties="GenerateNativeVersionInfo=true;FileDescription=%(HostFiles.FileDescription);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
-             Targets="GenerateVersionHeader" />
+             Targets="GenerateVersionHeader" 
+             Condition="'$(IncrementalNativeBuild)' != 'true'"/>
     <PropertyGroup>
       <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>  
+      <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
       <CustomNativeToolsetDir Condition="'$(TargetArchitecture)' == 'arm64'"> toolsetdir $(NativeToolsetDir)</CustomNativeToolsetDir>      
     </PropertyGroup>
 
