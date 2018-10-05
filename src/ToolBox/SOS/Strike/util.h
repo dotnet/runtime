@@ -2831,6 +2831,7 @@ private:
 
     void PrintObjectHead(size_t objAddr,size_t typeID,size_t Size);
     void PrintObjectMember(size_t memberValue, bool dependentHandle);
+    void PrintLoaderAllocator(size_t memberValue);
     void PrintObjectTail();
 
     void PrintRootHead();
