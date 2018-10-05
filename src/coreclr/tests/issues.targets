@@ -245,6 +245,12 @@
         </ExcludeList>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsWindows)' == 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/tracecontrol/tracecontrol/*">
+            <Issue>Unable to write config file to app location</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- Windows x64 specific excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'x64' and '$(TargetsWindows)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/TypeGeneratorTests/TypeGeneratorTest612/Generated612/*">
