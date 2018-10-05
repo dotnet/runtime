@@ -1431,15 +1431,8 @@ protected:
     PTR_CLRPrivBinderWinRT m_pWinRtBinder;
 #endif // FEATURE_COMINTEROP
 
-    // Number of allocated slots for context local statics of this domain
-    DWORD m_dwContextStatics;
-
     // Protects allocation of slot IDs for thread and context statics
     static CrstStatic   m_SpecialStaticsCrst;
-
-public:
-    // Lazily allocate offset for context static
-    DWORD AllocateContextStaticsOffset(DWORD* pOffsetSlot);
 
 public:
     // Only call this routine when you can guarantee there are no

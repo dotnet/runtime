@@ -646,7 +646,7 @@ typedef ULONG_PTR SIZE_T;
 inline
 BOOL FieldData::OkToGetOrSetInstanceOffset()
 {
-    return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS && !m_fFldIsContextStatic && 
+    return (!m_fFldIsStatic && !m_fFldIsRVA && !m_fFldIsTLS && 
             m_fFldStorageAvailable  && (m_pFldStaticAddress == NULL));
 }
 
@@ -657,7 +657,6 @@ void FieldData::SetInstanceOffset(SIZE_T offset)
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(!m_fFldIsContextStatic);
     _ASSERTE(m_fFldStorageAvailable);
     _ASSERTE(m_pFldStaticAddress == NULL);
     m_fldInstanceOffset = offset;
@@ -666,7 +665,7 @@ void FieldData::SetInstanceOffset(SIZE_T offset)
 inline
 BOOL FieldData::OkToGetOrSetStaticAddress()
 {
-    return (m_fFldIsStatic && !m_fFldIsTLS && !m_fFldIsContextStatic && 
+    return (m_fFldIsStatic && !m_fFldIsTLS && 
             m_fFldStorageAvailable && (m_fldInstanceOffset == 0));
 }
 
@@ -676,7 +675,6 @@ void FieldData::SetStaticAddress(TADDR addr)
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(!m_fFldIsContextStatic);
     _ASSERTE(m_fFldStorageAvailable);
     _ASSERTE(m_fldInstanceOffset == 0);
     m_pFldStaticAddress = TADDR(addr);
@@ -689,7 +687,6 @@ SIZE_T FieldData::GetInstanceOffset()
     _ASSERTE(!m_fFldIsStatic);
     _ASSERTE(!m_fFldIsRVA);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(!m_fFldIsContextStatic);
     _ASSERTE(m_fFldStorageAvailable);
     _ASSERTE(m_pFldStaticAddress == NULL);
     return m_fldInstanceOffset;
@@ -701,7 +698,6 @@ TADDR FieldData::GetStaticAddress()
 {
     _ASSERTE(m_fFldIsStatic);
     _ASSERTE(!m_fFldIsTLS);
-    _ASSERTE(!m_fFldIsContextStatic);
     _ASSERTE(m_fFldStorageAvailable || (m_pFldStaticAddress == NULL));
     _ASSERTE(m_fldInstanceOffset == 0);
     return m_pFldStaticAddress;

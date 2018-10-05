@@ -1405,61 +1405,6 @@ void DisplayThreadStatic (DacpModuleData* pModule, DacpMethodTableData* pMT, Dac
     ExtOut(" <<\n");
 }
 
-void DisplayContextStatic (DacpFieldDescData *pFD, size_t offset, BOOL fIsShared)
-{
-    ExtOut("\nDisplay of context static variables is not implemented yet\n");
-    /*
-    int numDomain;
-    DWORD_PTR *domainList = NULL;
-    GetDomainList (domainList, numDomain);
-    ToDestroy des0 ((void**)&domainList);
-    AppDomain vAppDomain;
-    Context vContext;
-    
-    ExtOut("    >> Domain:Value");
-    for (int i = 0; i < numDomain; i ++)
-    {
-        DWORD_PTR dwAddr = domainList[i];
-        if (dwAddr == 0) {
-            continue;
-        }
-        vAppDomain.Fill (dwAddr);
-        if (vAppDomain.m_pDefaultContext == 0)
-            continue;
-        dwAddr = (DWORD_PTR)vAppDomain.m_pDefaultContext;
-        vContext.Fill (dwAddr);
-        
-        if (fIsShared)
-            dwAddr = (DWORD_PTR)vContext.m_pSharedStaticData;
-        else
-            dwAddr = (DWORD_PTR)vContext.m_pUnsharedStaticData;
-        if (dwAddr == 0)
-            continue;
-        dwAddr += offsetof(STATIC_DATA, dataPtr);
-        dwAddr += offset;
-        if (safemove (dwAddr, dwAddr) == 0)
-            continue;
-        if (dwAddr == 0)
-            // We have not initialized this yet.
-            continue;
-        
-        dwAddr += pFD->dwOffset;
-        if (pFD->Type == ELEMENT_TYPE_CLASS
-            || pFD->Type == ELEMENT_TYPE_VALUETYPE)
-        {
-            if (safemove (dwAddr, dwAddr) == 0)
-                continue;
-        }
-        if (dwAddr == 0)
-            // We have not initialized this yet.
-            continue;
-        ExtOut(" %p:", (ULONG64)domainList[i]);
-        DisplayDataMember (pFD, dwAddr, FALSE);
-    }
-    ExtOut(" <<\n");
-    */
-}
-
 const char * ElementTypeName(unsigned type)
 {
     switch (type) {
@@ -1610,7 +1555,7 @@ void DisplayFields(CLRDATA_ADDRESS cdaMT, DacpMethodTableData *pMTD, DacpMethodT
         dwAddr = vFieldDesc.NextField;
 
         DWORD offset = vFieldDesc.dwOffset;
-        if(!((vFieldDesc.bIsThreadLocal || vFieldDesc.bIsContextLocal || fIsShared) && vFieldDesc.bIsStatic))
+        if(!((vFieldDesc.bIsThreadLocal || fIsShared) && vFieldDesc.bIsStatic))
         {
             if (!bValueClass)
             {
@@ -1649,7 +1594,7 @@ void DisplayFields(CLRDATA_ADDRESS cdaMT, DacpMethodTableData *pMTD, DacpMethodT
         
         ExtOut("%2s ", (IsElementValueType(vFieldDesc.Type)) ? "1" : "0");
 
-        if (vFieldDesc.bIsStatic && (vFieldDesc.bIsThreadLocal || vFieldDesc.bIsContextLocal))
+        if (vFieldDesc.bIsStatic && vFieldDesc.bIsThreadLocal)
         {
             numStaticFields ++;
             if (fIsShared)
@@ -1673,12 +1618,6 @@ void DisplayFields(CLRDATA_ADDRESS cdaMT, DacpMethodTableData *pMTD, DacpMethodT
                     {
                         DisplayThreadStatic(&vModule, pMTD, &vFieldDesc, fIsShared);
                     }
-                }
-                else if (vFieldDesc.bIsContextLocal)
-                {
-                    DisplayContextStatic(&vFieldDesc,
-                                         pMTFD->wContextStaticOffset,
-                                         fIsShared);
                 }
             }
     

@@ -96,7 +96,6 @@
 #define g_MarshalByRefObjectClassName "System.MarshalByRefObject"
 
 #define g_ThreadStaticAttributeClassName "System.ThreadStaticAttribute"
-#define g_ContextStaticAttributeClassName "System.ContextStaticAttribute"
 #define g_StringFreezingAttributeClassName "System.Runtime.CompilerServices.StringFreezingAttribute"
 #define g_TypeIdentifierAttributeClassName "System.Runtime.InteropServices.TypeIdentifierAttribute"
 

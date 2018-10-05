@@ -1258,14 +1258,6 @@ DECLARE_API(DumpClass)
             ExtOut("NumThreadStaticFields: %x\n", vMethodTableFields.wNumThreadStaticFields);
         }
 
-
-        if (vMethodTableFields.wContextStaticsSize)
-        {
-            ExtOut("ContextStaticOffset: %x\n", vMethodTableFields.wContextStaticOffset);
-            ExtOut("ContextStaticsSize:  %x\n", vMethodTableFields.wContextStaticsSize);
-        }
-
-    
         if (vMethodTableFields.wNumInstanceFields + vMethodTableFields.wNumStaticFields > 0)
         {
             DisplayFields(methodTable, &mtdata, &vMethodTableFields, NULL, TRUE, FALSE);
