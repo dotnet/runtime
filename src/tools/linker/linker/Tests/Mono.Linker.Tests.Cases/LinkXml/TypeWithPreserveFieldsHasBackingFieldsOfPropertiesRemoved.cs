@@ -9,13 +9,6 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 		}
 
 		[Kept]
-		[KeptInterface(typeof (IFoo<System.Int32>))]
-		[KeptInterface(typeof (IFoo<System.String>))]
-		[KeptInterface(typeof (IFoo<Cat>))]
-		[KeptInterface(typeof (IFoo2<System.Int32>))]
-		[KeptInterface(typeof (IFoo3<System.Int32,System.String,System.Char>))]
-		[KeptInterface(typeof (IDog))]
-		[KeptInterface(typeof (IFoo<IFoo<System.Int32>>))]
 		class Unused : IFoo<int>, IFoo<string>, IFoo<Cat>, IFoo2<int>, IFoo3<int, string, char>, IDog, IFoo<IFoo<int>> {
 			[Kept]
 			public int Field1;
@@ -44,7 +37,6 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			int IFoo<IFoo<int>>.Bar { get; set; }
 		}
 
-		[Kept]
 		interface IDog {
 			string Name { get; set; }
 		}
@@ -55,17 +47,14 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 			int Bar { get; set; }
 		}
 
-		[Kept]
 		interface IFoo2<T> {
 			int Bar2 { get; set; }
 		}
 
-		[Kept]
 		interface IFoo3<T, K, J> {
 			int Bar3 { get; set; }
 		}
 
-		[Kept]
 		class Cat {
 		}
 	}

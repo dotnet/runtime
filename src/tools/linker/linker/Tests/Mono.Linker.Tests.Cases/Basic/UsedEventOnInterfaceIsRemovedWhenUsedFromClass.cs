@@ -17,12 +17,11 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		{
 		}
 
-		[Kept]
 		interface IFoo {
+			event EventHandler Ping;
 		}
 
 		[KeptMember (".ctor()")]
-		[KeptInterface (typeof (IFoo))]
 		class Bar : IFoo {
 			[Kept]
 			[KeptBackingField]
@@ -32,8 +31,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		}
 
 		[KeptMember (".ctor()")]
-		[KeptInterface (typeof (IFoo))]
 		class Jar : IFoo {
+			public event EventHandler Ping;
 		}
 	}
 }

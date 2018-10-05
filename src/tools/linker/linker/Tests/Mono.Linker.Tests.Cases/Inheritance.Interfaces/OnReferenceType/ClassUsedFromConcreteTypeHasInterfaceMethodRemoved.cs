@@ -11,7 +11,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 
 		[Kept]
 		[KeptMember (".ctor()")]
-		[KeptInterface (typeof (IFoo))]
 		class A : IFoo {
 			[Kept]
 			public void Foo ()
@@ -19,7 +18,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType
 			}
 		}
 
-		[Kept]
 		public interface IFoo {
 			void Foo ();
 		}

@@ -7,7 +7,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 			new A ().Foo ();
 		}
 
-		[Kept]
 		interface IFoo {
 			void Foo ();
 		}
@@ -22,7 +21,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType {
 
 		[KeptMember (".ctor()")]
 		[KeptBaseType (typeof (B))]
-		[KeptInterface (typeof (IFoo))] // FIXME: Why is it not removed
 		class A : B, IFoo {
 			//my IFoo.Foo() is actually implemented by B which doesn't know about it.
 		}

@@ -4,7 +4,8 @@ namespace Mono.Linker.Tests.Cases.Basic {
 	class UninvokedInterfaceMemberGetsRemoved {
 		public static void Main ()
 		{
-			new B ();
+			I i = new B ();
+			var tmp = i.ToString ();
 		}
 
 		[Kept]

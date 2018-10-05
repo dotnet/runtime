@@ -1,4 +1,4 @@
-﻿//
+//
 // Annotations.cs
 //
 // Author:
@@ -53,6 +53,7 @@ namespace Mono.Linker {
 		protected readonly Dictionary<AssemblyDefinition, HashSet<string>> resources_to_remove = new Dictionary<AssemblyDefinition, HashSet<string>> ();
 		protected readonly HashSet<CustomAttribute> marked_attributes = new HashSet<CustomAttribute> ();
 		readonly HashSet<TypeDefinition> marked_types_with_cctor = new HashSet<TypeDefinition> ();
+		protected readonly HashSet<TypeDefinition> marked_instantiated = new HashSet<TypeDefinition> ();
 
 		public AnnotationStore (LinkContext context) => this.context = context;
 
@@ -138,6 +139,16 @@ namespace Mono.Linker {
 		public bool IsMarked (CustomAttribute attribute)
 		{
 			return marked_attributes.Contains (attribute);
+		}
+
+		public void MarkInstantiated (TypeDefinition type)
+		{
+			marked_instantiated.Add (type);
+		}
+
+		public bool IsInstantiated (TypeDefinition type)
+		{
+			return marked_instantiated.Contains (type);
 		}
 
 		public void Processed (IMetadataTokenProvider provider)
