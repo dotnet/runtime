@@ -10,6 +10,13 @@
 // Exchange types used to normalize Network protocol statistics information
 // from the OS, for use in the NetworkInformation library.
 
+enum {
+    InterfaceUp = 0x1,
+    InterfaceSupportsMulticast = 0x2,
+    InterfaceHasLink = 0x4,
+    InterfaceError = 0x8
+};
+
 typedef struct
 {
     uint64_t ConnectionsAccepted;
@@ -139,6 +146,7 @@ typedef struct
     uint64_t OutMulticastPackets;
     uint64_t InDrops;
     uint64_t InNoProto;
+    uint64_t Flags;
 } NativeIPInterfaceStatistics;
 
 DLLEXPORT int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats);

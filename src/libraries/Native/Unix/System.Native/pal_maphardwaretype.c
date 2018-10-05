@@ -97,6 +97,14 @@ uint16_t MapHardwareType(uint16_t nativeType)
         case IFT_IEEE1394:
             return NetworkInterfaceType_HighPerformanceSerialBus;
 #endif
+#ifdef IFT_GIF
+        case IFT_GIF:
+            return NetworkInterfaceType_Tunnel;
+#endif
+#ifdef IFT_STF
+        case IFT_STF:
+            return NetworkInterfaceType_Tunnel;
+#endif
         default:
             return NetworkInterfaceType_Unknown;
     }

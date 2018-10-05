@@ -613,6 +613,10 @@ check_include_files(
     HAVE_SYS_SYSCTL_H)
 
 check_include_files(
+    "net/if_media.h"
+    HAVE_NET_IFMEDIA_H)
+
+check_include_files(
     linux/rtnetlink.h
     HAVE_LINUX_RTNETLINK_H)
 
