@@ -593,7 +593,7 @@ int DBG_printf_c99(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
     LPSTR buffer_ptr;
     INT output_size;
     va_list args;
-    static INT call_count=0;
+    static INT call_count=0; // only use inside the crit section
     void *thread_id;
     int old_errno = 0;
     CPalThread *pthrCurrent = InternalGetCurrentThread();
@@ -640,15 +640,20 @@ int DBG_printf_c99(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
        avoid holding a libc lock while another thread is calling
        SuspendThread on this one. */
 
+    BOOL do_flush = FALSE;
     InternalEnterCriticalSection(pthrCurrent, &fprintf_crit_section);
     fprintf( output_file, "%s", buffer );
+    call_count++; // can use call_count because we are in the crit section
+    if (call_count>5)
+    {
+        call_count = 0;
+        do_flush = TRUE;
+    }
     InternalLeaveCriticalSection(pthrCurrent, &fprintf_crit_section);
 
     /* flush the output to file every once in a while */
-    call_count++;
-    if(call_count>5)
+    if (do_flush)
     {
-        call_count=0;
         if ( fflush(output_file) != 0 )
         {
             fprintf(stderr, "ERROR : fflush() failed errno:%d (%s)\n", 
