@@ -96,10 +96,6 @@ public:
         return m_sessionStartTimeStamp;
     }
 
-    // Enable all events.
-    // This is used for testing and is controlled via COMPLUS_EnableEventPipe.
-    void EnableAllEvents();
-
     // Add a new provider to the session.
     void AddSessionProvider(EventPipeSessionProvider *pProvider);
 
@@ -115,8 +111,7 @@ private:
     // The list of providers.
     SList<SListElem<EventPipeSessionProvider*>> *m_pProviders;
 
-    // A catch-all provider used when tracing is enabled at start-up
-    // under (COMPlus_PerformanceTracing & 1) == 1.
+    // A catch-all provider used when tracing is enabled for all events.
     EventPipeSessionProvider *m_pCatchAllProvider;
 
 public:
@@ -124,10 +119,6 @@ public:
     // Create a new list based on the input.
     EventPipeSessionProviderList(EventPipeProviderConfiguration *pConfigs, unsigned int numConfigs);
     ~EventPipeSessionProviderList();
-
-    // Enable all events.
-    // This is used for testing and is controlled via COMPLUS_EnableEventPipe.
-    void EnableAllEvents();
 
     // Add a new session provider to the list.
     void AddSessionProvider(EventPipeSessionProvider *pProvider);
