@@ -15,7 +15,7 @@ The rule of thumb is that we (**corefx**) review every API that is being added t
 1. **Requester files an issue**. The issue description should contain a speclet that represents a sketch of the new APIs, including samples on how the APIs are being used. The goal isn't to get a complete API list, but a good handle on how the new APIs would roughly look like and in what scenarios they are being used. Here is [a good example](https://github.com/dotnet/corefx/issues/271).
 
 2. **We assign an owner**. We'll assign a dedicated owner from our side that
-sponsors the issue. This is usually the area owner for which the API proposal or design change request was filed for.
+sponsors the issue. This is usually [the area owner](issue-guide.md#areas) for which the API proposal or design change request was filed for.
 
 3. **Discussion**. The goal of the discussion is to help the assignee to make a
 decision whether we want to pursue the proposal or not. In this phase, the goal

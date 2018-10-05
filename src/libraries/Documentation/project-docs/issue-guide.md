@@ -35,8 +35,6 @@ We use [milestones](https://github.com/dotnet/corefx/milestones) to prioritize w
 ### Assignee
 We assign each issue to assignee, when the assignee is ready to pick up the work and start working on it.  If the issue is not assigned to anyone and you want to pick it up, please say so - we will assign the issue to you.  If the issue is already assigned to someone, please coordinate with the assignee before you start working on it.
 
-Note: This is a new scheme introduced in 2016/9.  The old scheme used assignees as area owners.  We will migrate issues to the new scheme throughout 2016.
-
 ### Areas
 Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area typically corresponds to one or more contract assemblies.
 
