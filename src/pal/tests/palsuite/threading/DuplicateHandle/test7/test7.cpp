@@ -121,7 +121,7 @@ int __cdecl main(int argc, char* argv[])
         Fail("");
     }
 
-    /* Get the priority of the origianl thread, and
+    /* Get the priority of the original thread, and
      * compare it to what the duplicate was set to.*/
     finalPriority = GetThreadPriority(hThread);
     if (finalPriority != THREAD_PRIORITY_HIGHEST)

@@ -1845,7 +1845,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
             // compute the address for the new decommit line
             size_t dwDecommitAddr = dwLo - OS_PAGE_SIZE;
 
-            // assume a decommit line of zero until we know otheriwse
+            // assume a decommit line of zero until we know otherwise
             uDecommitLine = 0;
 
             // if the address is within the handle area then compute the line from the address
