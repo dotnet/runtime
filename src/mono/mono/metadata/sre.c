@@ -4515,7 +4515,7 @@ mono_sre_generic_param_table_entry_free (GenericParamTableEntry *entry)
 }
 
 gint32
-ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, gboolean create_open_instance, MonoError *error)
+ves_icall_ModuleBuilder_getToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, MonoBoolean create_open_instance, MonoError *error)
 {
 	error_init (error);
 	if (MONO_HANDLE_IS_NULL (obj)) {

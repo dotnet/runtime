@@ -470,7 +470,7 @@ mono_mmap_close (void *mmap_handle, MonoError *error)
 }
 
 void
-mono_mmap_configure_inheritability (void *mmap_handle, gboolean inheritability, MonoError *error)
+mono_mmap_configure_inheritability (void *mmap_handle, gint32 inheritability, MonoError *error)
 {
 	MmapHandle *h = (MmapHandle *)mmap_handle;
 	int fd, flags;
@@ -532,7 +532,7 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 	return COULD_NOT_MAP_MEMORY;
 }
 
-gboolean
+MonoBoolean
 mono_mmap_unmap (void *mmap_handle, MonoError *error)
 {
 	int res = 0;

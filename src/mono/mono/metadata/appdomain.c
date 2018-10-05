@@ -2560,7 +2560,7 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id, MonoError *error)
 		mono_error_set_exception_instance (error, exc);
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get_by_id (domain_id);

@@ -810,7 +810,7 @@ ves_icall_System_Net_Sockets_Socket_Available_internal (gsize sock, gint32 *werr
 }
 
 void
-ves_icall_System_Net_Sockets_Socket_Blocking_internal (gsize sock, gboolean block, gint32 *werror, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Blocking_internal (gsize sock, MonoBoolean block, gint32 *werror, MonoError *error)
 {
 	int ret;
 	
@@ -823,7 +823,7 @@ ves_icall_System_Net_Sockets_Socket_Blocking_internal (gsize sock, gboolean bloc
 }
 
 gpointer
-ves_icall_System_Net_Sockets_Socket_Accept_internal (gsize sock, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Accept_internal (gsize sock, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	SOCKET newsock;
 
@@ -1308,7 +1308,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode,
 }
 
 void
-ves_icall_System_Net_Sockets_Socket_Connect_internal (gsize sock, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Connect_internal (gsize sock, MonoObjectHandle sockaddr, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	struct sockaddr *sa;
 	socklen_t sa_size;
@@ -1359,7 +1359,7 @@ ves_icall_System_Net_Sockets_Socket_Duplicate_internal (gpointer handle, gint32 
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	int ret;
 	int recvflags = 0;
@@ -1383,7 +1383,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, gchar *buffer,
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	int ret;
 	guint32 recv;
@@ -1408,7 +1408,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, WSABUF *
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	int ret;
 	int recvflags = 0;
@@ -1457,7 +1457,7 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, gchar *buf
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	int ret;
 	int sendflags = 0;
@@ -1483,7 +1483,7 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, gchar *buffer, gi
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	int ret;
 	guint32 sent;
@@ -1508,7 +1508,7 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, WSABUF *buf
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	int ret;
 	int sendflags = 0;
@@ -2556,8 +2556,8 @@ ves_icall_System_Net_Dns_GetHostName_internal (MonoStringHandleOut h_name, MonoE
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
-gboolean
-ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHandle filename, MonoArrayHandle pre_buffer, MonoArrayHandle post_buffer, gint flags, gint32 *werror, gboolean blocking, MonoError *error)
+MonoBoolean
+ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHandle filename, MonoArrayHandle pre_buffer, MonoArrayHandle post_buffer, gint flags, gint32 *werror, MonoBoolean blocking, MonoError *error)
 {
 	HANDLE file;
 	gboolean ret;

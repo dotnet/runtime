@@ -296,7 +296,7 @@ mono_mmap_close (void *mmap_handle, MonoError *error)
 }
 
 void
-mono_mmap_configure_inheritability (void *mmap_handle, gboolean inheritability, MonoError *error)
+mono_mmap_configure_inheritability (void *mmap_handle, gint32 inheritability, MonoError *error)
 {
 	g_assert (mmap_handle);
 	if (!SetHandleInformation (mmap_handle, HANDLE_FLAG_INHERIT, inheritability ? HANDLE_FLAG_INHERIT : 0)) {
@@ -406,7 +406,7 @@ mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mma
 	return 0;
 }
 
-gboolean
+MonoBoolean
 mono_mmap_unmap (void *mmap_handle, MonoError *error)
 {
 	g_assert (mmap_handle);

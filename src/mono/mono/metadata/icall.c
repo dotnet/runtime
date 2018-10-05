@@ -5096,7 +5096,7 @@ leave:
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, MonoManifestResourceInfoHandle info_h, MonoError *error)
 {
 	error_init (error);
@@ -8036,7 +8036,7 @@ ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectio
 }
 
 ICALL_EXPORT MonoArrayHandle
-ves_icall_MonoCustomAttrs_GetCustomAttributesInternal (MonoObjectHandle obj, MonoReflectionTypeHandle attr_type, mono_bool pseudoattrs, MonoError *error)
+ves_icall_MonoCustomAttrs_GetCustomAttributesInternal (MonoObjectHandle obj, MonoReflectionTypeHandle attr_type, MonoBoolean pseudoattrs, MonoError *error)
 {
 	MonoClass *attr_class;
 	if (MONO_HANDLE_IS_NULL (attr_type))

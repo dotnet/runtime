@@ -1543,7 +1543,7 @@ mono_w32socket_convert_error (gint error)
 	}
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto, MonoError *error)
 {
 	error_init (error);

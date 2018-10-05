@@ -23,9 +23,10 @@ ICALL_EXPORT
 void
 mono_mmap_close (void *mmap_handle, MonoError *error);
 
+// inheritability is an enum with the values 0 and 1.
 ICALL_EXPORT
 void
-mono_mmap_configure_inheritability (void *mmap_handle, gboolean inheritability, MonoError *error);
+mono_mmap_configure_inheritability (void *mmap_handle, gint32 inheritability, MonoError *error);
 
 ICALL_EXPORT
 void
@@ -44,7 +45,7 @@ int
 mono_mmap_map (void *handle, gint64 offset, gint64 *size, int access, void **mmap_handle, void **base_address, MonoError *error);
 
 ICALL_EXPORT
-gboolean
+MonoBoolean
 mono_mmap_unmap (void *base_address, MonoError *error);
 
 #endif /* _MONO_METADATA_FILE_MMAP_H_ */
