@@ -31,6 +31,12 @@
     <Compile Include="BlendVariable.Double.cs" />
     <Compile Include="BlendVariable.SByte.cs" />
     <Compile Include="BlendVariable.Single.cs" />
+    <Compile Include="BlendVariable.Int16.cs" />
+    <Compile Include="BlendVariable.UInt16.cs" />
+    <Compile Include="BlendVariable.Int32.cs" />
+    <Compile Include="BlendVariable.UInt32.cs" />
+    <Compile Include="BlendVariable.Int64.cs" />
+    <Compile Include="BlendVariable.UInt64.cs" />
     <Compile Include="Ceiling.Double.cs" />
     <Compile Include="Ceiling.Single.cs" />
     <Compile Include="CeilingScalar.Double.cs" />
@@ -50,6 +56,7 @@
     <Compile Include="Min.UInt16.cs" />
     <Compile Include="Min.UInt32.cs" />
     <Compile Include="MultiplyLow.Int32.cs" />
+    <Compile Include="MultiplyLow.UInt32.cs" />
     <Compile Include="PackUnsignedSaturate.UInt16.cs" />
     <Compile Include="RoundCurrentDirection.Double.cs" />
     <Compile Include="RoundCurrentDirection.Single.cs" />
