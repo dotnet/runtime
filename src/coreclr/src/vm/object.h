@@ -54,8 +54,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  +-- code:AppDomainBaseObject - The base object for the class AppDomain
  *  |              
  *  +-- code:AssemblyBaseObject - The base object for the class Assembly
- *  |
- *  +-- code:ContextBaseObject   - base object for class Context
  *
  *
  * PLEASE NOTE THE FOLLOWING WHEN ADDING A NEW OBJECT TYPE:
@@ -1576,80 +1574,6 @@ class MarshalByRefObjectBaseObject : public Object
 {
 };
 
-
-// ContextBaseObject 
-// This class is the base class for Contexts
-//  
-class ContextBaseObject : public Object
-{
-    friend class Context;
-    friend class MscorlibBinder;
-
-  private:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-
-    OBJECTREF m_ctxProps;   // array of name-value pairs of properties
-    OBJECTREF m_dphCtx;     // dynamic property holder
-    OBJECTREF m_localDataStore; // context local store
-    OBJECTREF m_serverContextChain; // server context sink chain
-    OBJECTREF m_clientContextChain; // client context sink chain
-    OBJECTREF m_exposedAppDomain;       //appDomain ??
-    PTRARRAYREF m_ctxStatics; // holder for context relative statics
-    
-    Context*  m_internalContext;            // Pointer to the VM context
-
-    INT32 _ctxID;
-    INT32 _ctxFlags;
-    INT32 _numCtxProps;     // current count of properties
-
-    INT32 _ctxStaticsCurrentBucket;
-    INT32 _ctxStaticsFreeIndex;
-
-  protected:
-    ContextBaseObject() { LIMITED_METHOD_CONTRACT; }
-   ~ContextBaseObject() { LIMITED_METHOD_CONTRACT; }
-   
-  public:
-
-    void SetInternalContext(Context* pCtx) 
-    {
-        LIMITED_METHOD_CONTRACT;
-        // either transitioning from NULL to non-NULL or vice versa.  
-        // But not setting NULL to NULL or non-NULL to non-NULL.
-        _ASSERTE((m_internalContext == NULL) != (pCtx == NULL));
-        m_internalContext = pCtx;
-    }
-    
-    Context* GetInternalContext() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_internalContext;
-    }
-
-    OBJECTREF GetExposedDomain() { return m_exposedAppDomain; }
-    OBJECTREF SetExposedDomain(OBJECTREF newDomain) 
-    {
-        LIMITED_METHOD_CONTRACT;
-        OBJECTREF oldDomain = m_exposedAppDomain;
-        SetObjectReference( (OBJECTREF *)&m_exposedAppDomain, newDomain, GetAppDomain() );
-        return oldDomain;
-    }
-
-    PTRARRAYREF GetContextStaticsHolder() 
-    { 
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        // The code that needs this should have faulted it in by now!
-        _ASSERTE(m_ctxStatics != NULL); 
-
-        return m_ctxStatics; 
-    }
-};
-
-typedef DPTR(ContextBaseObject) PTR_ContextBaseObject;
-
 // AppDomainBaseObject 
 // This class is the base class for application domains
 //  
@@ -2029,8 +1953,6 @@ typedef REF<AppDomainBaseObject> APPDOMAINREF;
 
 typedef REF<MarshalByRefObjectBaseObject> MARSHALBYREFOBJECTBASEREF;
 
-typedef REF<ContextBaseObject> CONTEXTBASEREF;
-
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
@@ -2084,7 +2006,6 @@ typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AppDomainBaseObject APPDOMAINREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
-typedef PTR_ContextBaseObject CONTEXTBASEREF;
 
 #ifndef DACCESS_COMPILE
 typedef MarshalByRefObjectBaseObject* MARSHALBYREFOBJECTBASEREF;

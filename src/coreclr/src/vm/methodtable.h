@@ -364,15 +364,6 @@ struct RemotingVtsInfo
 typedef DPTR(RemotingVtsInfo) PTR_RemotingVtsInfo;
 
 
-struct ContextStaticsBucket
-{
-    // Offset which points to the CLS storage. Allocated lazily - -1 means no offset allocated yet.
-    DWORD m_dwContextStaticsOffset;
-    // Size of CLS fields
-    WORD m_wContextStaticsSize;
-};
-typedef DPTR(ContextStaticsBucket) PTR_ContextStaticsBucket;
-
 #ifdef FEATURE_COMINTEROP
 struct RCWPerTypeData;
 #endif // FEATURE_COMINTEROP
@@ -4356,7 +4347,6 @@ private:
                                                   BOOL needsCCWTemplate,
                                                   BOOL needsRCWPerTypeData,
                                                   BOOL needsRemotingVtsInfo,
-                                                  BOOL needsContextStatic,
                                                   BOOL needsTokenOverflow);
     inline DWORD GetOptionalMembersSize();
 

@@ -79,15 +79,6 @@ public:
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
 
-
-    // information for Thread and Context Static. Filled by InitializedFieldDesc and used when
-    // setting up a MethodTable
-    struct bmtContextStaticInfo
-    {
-    
-        inline bmtContextStaticInfo() { LIMITED_METHOD_CONTRACT; memset((void *)this, NULL, sizeof(*this)); }
-    };
-
     MethodTableBuilder(
         MethodTable *       pHalfBakedMT,
         EEClass *           pHalfBakedClass,
@@ -100,7 +91,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SetBMTData(
-            NULL,
             NULL,
             NULL,
             NULL,
@@ -2212,7 +2202,6 @@ private:
     bmtMethodImplInfo *bmtMethodImpl;
     const bmtGenericsInfo *bmtGenerics;
     bmtEnumFieldInfo *bmtEnumFields;
-    bmtContextStaticInfo *bmtCSInfo;
 
     void SetBMTData(
         LoaderAllocator *bmtAllocator,
@@ -2229,8 +2218,7 @@ private:
         bmtGCSeriesInfo *bmtGCSeries,
         bmtMethodImplInfo *bmtMethodImpl,
         const bmtGenericsInfo *bmtGenerics,
-        bmtEnumFieldInfo *bmtEnumFields,
-        bmtContextStaticInfo *bmtCSInfo);
+        bmtEnumFieldInfo *bmtEnumFields);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2585,7 +2573,6 @@ private:
         MethodTable***,
         bmtMethAndFieldDescs*,
         bmtFieldPlacement*,
-        bmtContextStaticInfo*,
         unsigned * totalDeclaredSize);
 
     // --------------------------------------------------------------------------------------------
@@ -2955,8 +2942,7 @@ private:
                                 BOOL fHasGenericsStaticsInfo,
                                 BOOL fNeedsRCWPerTypeData,
                                 BOOL fNeedsRemotableMethodInfo,
-                                BOOL fNeedsRemotingVtsInfo,
-                                BOOL fHasContextStatics
+                                BOOL fNeedsRemotingVtsInfo
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap
 #endif

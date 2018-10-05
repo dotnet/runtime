@@ -3132,8 +3132,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
     //
     if(!pFieldDesc->IsStatic() ||
        !pFieldDesc->IsRVA() ||
-       pFieldDesc->IsThreadStatic() || 
-       pFieldDesc->IsContextStatic())
+       pFieldDesc->IsThreadStatic())
     {
         return E_INVALIDARG;
     }
@@ -3271,8 +3270,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     //
     if(!pFieldDesc->IsStatic() ||
        pFieldDesc->IsRVA() ||
-       pFieldDesc->IsThreadStatic() ||
-       pFieldDesc->IsContextStatic())
+       pFieldDesc->IsThreadStatic())
     {
         return E_INVALIDARG;
     }
@@ -3494,8 +3492,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     //
     if(!pFieldDesc->IsStatic() ||
        !pFieldDesc->IsThreadStatic() ||
-       pFieldDesc->IsRVA() ||
-       pFieldDesc->IsContextStatic())
+       pFieldDesc->IsRVA())
     {
         return E_INVALIDARG;
     }
@@ -3739,11 +3736,6 @@ HRESULT ProfToEEInterfaceImpl::GetStaticFieldInfo(ClassID classId,
     }
 
     *pFieldInfo = COR_PRF_FIELD_NOT_A_STATIC;
-
-    if (pFieldDesc->IsContextStatic())
-    {
-        *pFieldInfo = (COR_PRF_STATIC_TYPE)(*pFieldInfo | COR_PRF_FIELD_CONTEXT_STATIC);
-    }
 
     if (pFieldDesc->IsRVA())
     {
