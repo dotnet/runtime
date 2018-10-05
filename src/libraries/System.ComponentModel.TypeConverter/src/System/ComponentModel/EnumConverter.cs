@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.Reflection;
 
@@ -15,7 +16,7 @@ namespace System.ComponentModel
     /// </summary>
     public class EnumConverter : TypeConverter
     {
-        private static readonly char[] s_separators = {','};
+        private static readonly char[] s_separators = { ',' };
 
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.EnumConverter'/> class for the given
@@ -49,7 +50,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType == typeof(Enum[]))
+            if (destinationType == typeof(Enum[]) || destinationType == typeof(InstanceDescriptor))
             {
                 return true;
             }
@@ -132,6 +133,39 @@ namespace System.ComponentModel
                 }
 
                 return Enum.Format(EnumType, value, "G");
+            }
+
+            if (destinationType == typeof(InstanceDescriptor) && value != null)
+            {
+                string enumName = ConvertToInvariantString(context, value);
+
+                if (EnumType.IsDefined(typeof(FlagsAttribute), false) && enumName.Contains(','))
+                {
+                    // This is a flags enum, and there is no one flag
+                    // that covers the value.  Instead, convert the
+                    // value to the underlying type and invoke
+                    // a ToObject call on enum.
+                    //
+                    Type underlyingType = Enum.GetUnderlyingType(EnumType);
+                    if (value is IConvertible)
+                    {
+                        object convertedValue = ((IConvertible)value).ToType(underlyingType, culture);
+
+                        MethodInfo method = typeof(Enum).GetMethod("ToObject", new Type[] { typeof(Type), underlyingType });
+                        if (method != null)
+                        {
+                            return new InstanceDescriptor(method, new object[] { EnumType, convertedValue });
+                        }
+                    }
+                }
+                else
+                {
+                    FieldInfo info = EnumType.GetField(enumName);
+                    if (info != null)
+                    {
+                        return new InstanceDescriptor(info, null);
+                    }
+                }
             }
 
             if (destinationType == typeof(Enum[]) && value != null)

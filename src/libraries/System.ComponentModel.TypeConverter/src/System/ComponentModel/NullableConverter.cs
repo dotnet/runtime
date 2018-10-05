@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 
 namespace System.ComponentModel
 {
@@ -76,6 +79,10 @@ namespace System.ComponentModel
             {
                 return true;
             }
+            else if (destinationType == typeof(InstanceDescriptor))
+            {
+                return true;
+            }
             else if (UnderlyingTypeConverter != null)
             {
                 return UnderlyingTypeConverter.CanConvertTo(context, destinationType);
@@ -97,6 +104,12 @@ namespace System.ComponentModel
             if (destinationType == UnderlyingType && value != null && NullableType.IsInstanceOfType(value))
             {
                 return value;
+            }
+            else if (destinationType == typeof(InstanceDescriptor)) 
+            {
+                ConstructorInfo ci = NullableType.GetConstructor(new Type[] {UnderlyingType});
+                Debug.Assert(ci != null, "Couldn't find constructor");
+                return new InstanceDescriptor(ci, new object[] {value}, true);
             }
             else if (value == null)
             {
