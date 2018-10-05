@@ -43,6 +43,7 @@
     <Compile Include="MaskStore.UInt32.cs" />
     <Compile Include="MaskStore.Int64.cs" />
     <Compile Include="MaskStore.UInt64.cs" />
+    <Compile Include="ShiftRightArithmeticVariable.Int32.cs" />
     <Compile Include="Program.Avx2_Vector128.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
