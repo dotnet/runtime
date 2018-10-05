@@ -5730,7 +5730,9 @@ void CEEInfo::getCallInfo(
     pResult->classFlags = getClassAttribsInternal(pResolvedToken->hClass);
 
     pResult->methodFlags = getMethodAttribsInternal(pResult->hMethod);
-    getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, /* isCallSite = */ TRUE);
+
+    SignatureKind signatureKind = flags & CORINFO_CALLINFO_CALLVIRT ? SK_VIRTUAL_CALLSITE : SK_CALLSITE;
+    getMethodSigInternal(pResult->hMethod, &pResult->sig, (pResult->hMethod == pResolvedToken->hMethod) ? pResolvedToken->hClass : NULL, signatureKind);
 
     if (flags & CORINFO_CALLINFO_VERIFICATION)
     {
@@ -8510,7 +8512,7 @@ CEEInfo::getMethodSigInternal(
     CORINFO_METHOD_HANDLE ftnHnd, 
     CORINFO_SIG_INFO *    sigRet, 
     CORINFO_CLASS_HANDLE  owner,
-    BOOL isCallSite)
+    SignatureKind signatureKind)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8537,13 +8539,16 @@ CEEInfo::getMethodSigInternal(
     if (ftn->RequiresInstArg())
     {
         //
-        // If we are making an interface call that is a default interface method, we need to lie to the JIT.  
+        // If we are making a virtual call to an instance method on an interface, we need to lie to the JIT.  
         // The reason being that we already made sure target is always directly callable (through instantiation stubs), 
         // JIT should not generate shared generics aware call code and insert the secret argument again at the callsite.
         // Otherwise we would end up with two secret generic dictionary arguments (since the stub also provides one).
         //
-        BOOL isDefaultInterfaceMethodCallSite = isCallSite && ftn->IsDefaultInterfaceMethod();
-        if (!isDefaultInterfaceMethodCallSite)
+        BOOL isCallSiteThatGoesThroughInstantiatingStub =
+            signatureKind == SK_VIRTUAL_CALLSITE &&
+            !ftn->IsStatic() &&
+            ftn->GetMethodTable()->IsInterface();
+        if (!isCallSiteThatGoesThroughInstantiatingStub)
             sigRet->callConv = (CorInfoCallConv) (sigRet->callConv | CORINFO_CALLCONV_PARAMTYPE);
     }
 
