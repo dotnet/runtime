@@ -1972,6 +1972,22 @@ void HeapTraverser::PrintObjectHead(size_t objAddr,size_t typeID,size_t Size)
     }
 }
 
+void HeapTraverser::PrintLoaderAllocator(size_t memberValue)
+{
+    if (m_format == FORMAT_XML)
+    {
+        fprintf(m_file,
+            "    <loaderallocator address=\"0x%p\"/>\n",
+            (PBYTE)memberValue);
+    }
+    else if (m_format == FORMAT_CLRPROFILER)
+    {
+        fprintf(m_file,
+            " 0x%p",
+            (PBYTE)memberValue);
+    }
+}
+
 void HeapTraverser::PrintObjectMember(size_t memberValue, bool dependentHandle)
 {
     if (m_format==FORMAT_XML)
@@ -2172,43 +2188,55 @@ void HeapTraverser::PrintRefs(size_t obj, size_t methodTable, size_t size)
     MethodTableInfo* info = g_special_mtCache.Lookup((DWORD_PTR)methodTable);
     _ASSERTE(info->IsInitialized());    // This is the second pass, so we should be initialized
 
-    if (!info->bContainsPointers)
+    if (!info->bContainsPointers && !info->bCollectible)
         return;
     
-    // Fetch the GCInfo from the other process 
-    CGCDesc *map = info->GCInfo;
-    if (map == NULL)
+    if (info->bContainsPointers)
     {
-        INT_PTR nEntries;
-        move_xp (nEntries, dwAddr-sizeof(PVOID));
-        bool arrayOfVC = false;
-        if (nEntries<0)
+        // Fetch the GCInfo from the other process 
+        CGCDesc *map = info->GCInfo;
+        if (map == NULL)
         {
-            arrayOfVC = true;
-            nEntries = -nEntries;
-        }
-        
-        size_t nSlots = 1+nEntries*sizeof(CGCDescSeries)/sizeof(DWORD_PTR);
-        info->GCInfoBuffer = new DWORD_PTR[nSlots];
-        if (info->GCInfoBuffer == NULL)
-        {
-            ReportOOM();
-            return;
-        }
+            INT_PTR nEntries;
+            move_xp (nEntries, dwAddr-sizeof(PVOID));
+            bool arrayOfVC = false;
+            if (nEntries<0)
+            {
+                arrayOfVC = true;
+                nEntries = -nEntries;
+            }
 
-        if (FAILED(rvCache->Read(TO_CDADDR(dwAddr - nSlots*sizeof(DWORD_PTR)),
-                                        info->GCInfoBuffer, (ULONG) (nSlots*sizeof(DWORD_PTR)), NULL))) 
-            return;
-        
-        map = info->GCInfo = (CGCDesc*)(info->GCInfoBuffer+nSlots);
-        info->ArrayOfVC = arrayOfVC;
+            size_t nSlots = 1+nEntries*sizeof(CGCDescSeries)/sizeof(DWORD_PTR);
+            info->GCInfoBuffer = new DWORD_PTR[nSlots];
+            if (info->GCInfoBuffer == NULL)
+            {
+                ReportOOM();
+                return;
+            }
+
+            if (FAILED(rvCache->Read(TO_CDADDR(dwAddr - nSlots*sizeof(DWORD_PTR)),
+                                            info->GCInfoBuffer, (ULONG) (nSlots*sizeof(DWORD_PTR)), NULL)))
+                return;
+
+            map = info->GCInfo = (CGCDesc*)(info->GCInfoBuffer+nSlots);
+            info->ArrayOfVC = arrayOfVC;
+        }
     }
 
     mCache.EnsureRangeInCache((TADDR)obj, (unsigned int)size);
     for (sos::RefIterator itr(obj, info->GCInfo, info->ArrayOfVC, &mCache); itr; ++itr)
     {
         if (*itr && (!m_verify || sos::IsObject(*itr)))
-            PrintObjectMember(*itr, false);
+        {
+            if (itr.IsLoaderAllocator())
+            {
+                PrintLoaderAllocator(*itr);
+            }
+            else
+            {
+                PrintObjectMember(*itr, false);
+            }
+        }
     }
     
     std::unordered_map<TADDR, std::list<TADDR>>::iterator itr = mDependentHandleMap.find((TADDR)obj);

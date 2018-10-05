@@ -562,6 +562,7 @@ namespace sos
                 // There are no object references, but there is still a reference for 
                 // collectible types - the LoaderAllocator for GC
                 mCurr = mLoaderAllocatorObjectHandle;
+                mDone = false;
             }
         }
     }

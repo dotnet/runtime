@@ -475,6 +475,11 @@ namespace sos
         {
             return (void*)!mDone;
         }
+
+        bool IsLoaderAllocator() const
+        {
+            return mLoaderAllocatorObjectHandle == mCurr;
+        }
         
     private:
         void Init();
