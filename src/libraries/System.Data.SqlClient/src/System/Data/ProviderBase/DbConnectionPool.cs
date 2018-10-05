@@ -1386,7 +1386,7 @@ namespace System.Data.ProviderBase
                                         }
                                         catch
                                         {
-                                            // Catch all the exceptions occuring during CreateObject so that they 
+                                            // Catch all the exceptions occurring during CreateObject so that they 
                                             // don't emerge as unhandled on the thread pool and don't crash applications
                                             // The error is handled in CreateObject and surfaced to the caller of the Connection Pool
                                             // using the ErrorEvent. Hence it is OK to swallow all exceptions here.

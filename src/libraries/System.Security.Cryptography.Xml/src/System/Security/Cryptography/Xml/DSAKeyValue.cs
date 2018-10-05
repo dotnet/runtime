@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Xml
             XmlNode qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}", xmlNamespaceManager);
 
             if ((pNode == null && qNode != null) || (pNode != null && qNode == null))
-                throw new CryptographicException($"{PElementName} and {QElementName} can only occour in combination");
+                throw new CryptographicException($"{PElementName} and {QElementName} can only occur in combination");
 
 
             XmlNode gNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{GElementName}", xmlNamespaceManager);

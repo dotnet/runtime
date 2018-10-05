@@ -1955,7 +1955,7 @@ namespace System.Management
                 if(aptType != WmiNetUtilsHelper.APTTYPE.APTTYPE_MTA)
                     return false;
 
-                // If we CAN get to the IObejctContext interface, we have a 'context'
+                // If we CAN get to the IObjectContext interface, we have a 'context'
                 if(0 == Marshal.QueryInterface(pComThreadingInfo, ref IID_IObjectContext, out pObjectContext))
                     return false;
             }
