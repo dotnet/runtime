@@ -377,12 +377,23 @@ void Compiler::optValnumCSE_Init()
     optCseCheckedBoundMap = nullptr;
 }
 
-/*****************************************************************************
- *
- *  Assign an index to the given expression (adding it to the lookup table,
- *  if necessary). Returns the index or 0 if the expression can not be a CSE.
- */
-
+//---------------------------------------------------------------------------
+// optValnumCSE_Index:
+//               - Returns the CSE index to use for this tree,
+//                 or zero if this expression is not currently a CSE.
+//
+// Arguments:
+//    tree       - The current candidate CSE expression
+//    stmt       - The current statement that contains tree
+//
+//
+// Notes:   We build a hash table that contains all of the expressions that
+//          are presented to this method.  Whenever we see a duplicate expression
+//          we have a CSE candidate.  If it is the first time seeing the duplicate
+//          we allocate a new CSE index. If we have already allocated a CSE index
+//          we return that index.  There currently is a limit on the number of CSEs
+//          that we can have of MAX_CSE_CNT (64)
+//
 unsigned Compiler::optValnumCSE_Index(GenTree* tree, GenTree* stmt)
 {
     unsigned key;
@@ -391,40 +402,43 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, GenTree* stmt)
     CSEdsc*  hashDsc;
 
     // We use the liberal Value numbers when building the set of CSE
-    ValueNum vnLib = tree->GetVN(VNK_Liberal);
-
-    // We usually want to remove the exception sets by using the normal value
-    // since a GT_IND will often have a NullPtrExc entry in its exc set, but
-    // sometimes we have cleared the GTF_EXCEPT flag, or we may have assigned
-    // the value into a LCL_VAR.  In the general case we want to have the CSE
-    // candidates that contain both, so we will nearly always use the normal
-    // value number as the CSE Key
-    //
-    // Later on when we are promoting the CSE candidates we insure that all of the
-    // CSE defs have the same exception set.  Any CSE uses that we promote
-    // must have an exc set that is the same as the CSE defs or have an empty set.
-    // (alternatively we could use a subset operation on the exc sets)
-    //
-    // One exception to using the normal value is for the GT_COMMA nodes.
-    // So we check to see if we have a GT_COMMA with a different value number
-    // than the one from its op2.  For this case we create two CSE candidates.
-    // This allows us to CSE the GT_COMMA separately from its value.
-    //
+    ValueNum vnLib     = tree->GetVN(VNK_Liberal);
     ValueNum vnLibNorm = vnStore->VNNormalValue(vnLib);
 
+    // We use the normal value number because we want the CSE candidate to
+    // represent all expressions that produce the same normal value number
+    // We will handle the case where we have different exception sets when
+    // promoting the candidates.
+    //
+    // We do this because a GT_IND will usually have a NullPtrExc entry in its
+    // exc set, but we may have cleared the GTF_EXCEPT flag and if so, it won't
+    // have an NullPtrExc, or we may have assigned the value of an  GT_IND
+    // into a LCL_VAR and then read it back later.
+    //
+    // When we are promoting the CSE candidates we insure that any CSE
+    // uses that we promote have an exc set that is the same as the CSE defs
+    // or have an empty set.  And that all of the CSE defs produced the required
+    // set of exceptions for the CSE uses.
+    //
+
     // We assign either vnLib or vnLibNorm as the hash key
+    //
+    // The only exception to using the normal value is for the GT_COMMA nodes.
+    // Here we check to see if we have a GT_COMMA with a different value number
+    // than the one from its op2.  For this case we want to create two different
+    // CSE candidates. This allows us to CSE the GT_COMMA separately from its value.
+    //
     if (tree->OperGet() == GT_COMMA)
     {
         // op2 is the value produced by a GT_COMMA
         GenTree* op2      = tree->gtOp.gtOp2;
         ValueNum vnOp2Lib = op2->GetVN(VNK_Liberal);
 
-        // If the value number for op2 and tree are different
-        // then some new exceptions were produced by op1.
-        // For that case we will NOT use the normal value
-        // This allows us to CSE commas with an op1 that is
+        // If the value number for op2 and tree are different, then some new
+        // exceptions were produced by op1. For that case we will NOT use the
+        // normal value. This allows us to CSE commas with an op1 that is
         // an ARR_BOUNDS_CHECK.
-
+        //
         if (vnOp2Lib != vnLib)
         {
             key = (unsigned)vnLib; // include the exc set in the hash key
@@ -939,20 +953,41 @@ void Compiler::optValnumCSE_DataFlow()
 #endif // DEBUG
 }
 
-/*****************************************************************************
- *
- *   Using the information computed by CSE_DataFlow determine for each
- *   CSE whether the CSE is a definition (if the CSE was not available)
- *   or if the CSE is a use (if the CSE was previously made available)
- *   The implementation iterates of all blocks setting 'available_cses'
- *   to the CSEs that are available at input to the block.
- *   When a CSE expression is encountered it is classified as either
- *   as a definition (if the CSE is not in the 'available_cses' set) or
- *   as a use (if the CSE is  in the 'available_cses' set).  If the CSE
- *   is a definition then it is added to the 'available_cses' set.
- *   In the Value Number based CSEs we do not need to have kill sets
- */
-
+//---------------------------------------------------------------------------
+// optValnumCSE_Availablity:
+//
+//     Using the information computed by CSE_DataFlow determine for each
+//     CSE whether the CSE is a definition (if the CSE was not available)
+//     or if the CSE is a use (if the CSE was previously made available)
+//     The implementation iterates of all blocks setting 'available_cses'
+//     to the CSEs that are available at input to the block.
+//     When a CSE expression is encountered it is classified as either
+//     as a definition (if the CSE is not in the 'available_cses' set) or
+//     as a use (if the CSE is  in the 'available_cses' set).  If the CSE
+//     is a definition then it is added to the 'available_cses' set.
+//
+//     This algorithm uncovers the defs and uses gradually and as it does
+//     so it also builds the exception set that all defs make: 'defExcSetCurrent'
+//     and the exception set that the uses we have seen depend upon: 'defExcSetPromise'
+//
+//     Typically expressions with the same normal ValueNum generate exactly the
+//     same exception sets. There are two way that we can get different exception
+//     sets with the same Normal value number.
+//
+//     1. We used an arithmetic identiity:
+//        e.g. (p.a + q.b) * 0   :: The normal value for the expression is zero
+//                                  and we have NullPtrExc(p) and NullPtrExc(q)
+//        e.g. (p.a - p.a)       :: The normal value for the expression is zero
+//                                  and we have NullPtrExc(p)
+//     2. We stored an expression into a LclVar or into Memory and read it later
+//        e.g. t = p.a;
+//             e1 = (t + q.b)    :: e1 has one NullPtrExc and e2 has two.
+//             e2 = (p.a + q.b)     but both compute the same normal value//
+//        e.g. m.a = p.a;
+//             e1 = (m.a + q.b)  :: e1 and e2 have different exception sets.
+//             e2 = (p.a + q.b)     but both compute the same normal value
+//
+//
 void Compiler::optValnumCSE_Availablity()
 {
 #ifdef DEBUG
