@@ -204,7 +204,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         public static string GetMessage(MessageID id)
         {
-            return id.ToString();
+            string idStr = id.ToString();
+            return SR.GetResourceString(idStr, idStr);
         }
     }
 }
