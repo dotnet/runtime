@@ -21,6 +21,9 @@ namespace System
         // containing a startup hook, and call each hook in turn.
         private static void ProcessStartupHooks()
         {
+            // Initialize tracing before any user code can be called.
+            System.Diagnostics.Tracing.EventPipeController.Initialize();
+
             string startupHooksVariable = (string)AppContext.GetData("STARTUP_HOOKS");
             if (startupHooksVariable == null)
             {
