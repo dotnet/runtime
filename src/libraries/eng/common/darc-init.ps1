@@ -1,3 +1,4 @@
-﻿. $PSScriptRoot\init-tools.ps1
+$verbosity = "m"
+. $PSScriptRoot\init-tools.ps1
 
 InstallDarcCli
