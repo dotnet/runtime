@@ -2,12 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
+
+        [Flags]
+        internal enum InterfaceFlags
+        {
+            InterfaceUp = 0x01,
+            InterfaceSupportsMulticast = 0x02,
+            InterfaceHasLink = 0x04,
+            InterfaceError = 0x08,
+        }
+
         [StructLayoutAttribute(LayoutKind.Sequential)]
         public unsafe readonly struct TcpGlobalStatistics
         {
@@ -142,6 +153,7 @@ internal static partial class Interop
             public readonly ulong OutMulticastPackets;
             public readonly ulong InDrops;
             public readonly ulong InNoProto;
+            public readonly ulong Flags;
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetNativeIPInterfaceStatistics")]

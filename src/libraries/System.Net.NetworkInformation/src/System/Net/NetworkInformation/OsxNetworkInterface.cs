@@ -10,6 +10,8 @@ namespace System.Net.NetworkInformation
     internal class OsxNetworkInterface : UnixNetworkInterface
     {
         private readonly OsxIpInterfaceProperties _ipProperties;
+        private readonly OperationalStatus _operationalStatus;
+        private readonly bool _supportsMulticast;
         private readonly long _speed;
 
         protected unsafe OsxNetworkInterface(string name) : base(name)
@@ -20,6 +22,16 @@ namespace System.Net.NetworkInformation
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }
 
+            if ((nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceError) != 0)
+            {
+                _operationalStatus = OperationalStatus.Unknown;
+            }
+            else
+            {
+                _operationalStatus = (nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceHasLink) != 0 ?  OperationalStatus.Up : OperationalStatus.Down;
+            }
+
+            _supportsMulticast = (nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceSupportsMulticast) != 0;
             _speed = (long)nativeStats.Speed;
             _ipProperties = new OsxIpInterfaceProperties(this, (int)nativeStats.Mtu);
         }
@@ -134,21 +146,11 @@ namespace System.Net.NetworkInformation
             return new OsxIPv4InterfaceStatistics(Name);
         }
 
-        public override OperationalStatus OperationalStatus
-        {
-            get
-            {
-                // This is a crude approximation, but does allow us to determine
-                // whether an interface is operational or not. The OS exposes more information
-                // (see ifconfig and the "Status" label), but it's unclear how closely
-                // that information maps to the OperationalStatus enum we expose here.
-                return Addresses.Count > 0 ? OperationalStatus.Up : OperationalStatus.Unknown;
-            }
-        }
+        public override OperationalStatus OperationalStatus { get { return _operationalStatus; } }
 
         public override long Speed { get { return _speed; } }
 
-        public override bool SupportsMulticast { get { return _ipProperties.MulticastAddresses.Count > 0; } }
+        public override bool SupportsMulticast { get { return _supportsMulticast; } }
 
         public override bool IsReceiveOnly { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
     }
