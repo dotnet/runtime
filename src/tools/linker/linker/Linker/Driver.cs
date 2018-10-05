@@ -266,6 +266,10 @@ namespace Mono.Linker {
 					p.AddStepAfter (typeof (SweepStep), new AddBypassNGenStep ());
 				}
 
+				if (assemblies != I18nAssemblies.None) {
+					p.AddStepAfter (typeof (PreserveDependencyLookupStep), new PreserveCalendarsStep (assemblies));
+				}
+
 				if (excluded_features.Count > 0) {
 					var excluded = new string [excluded_features.Count];
 					excluded_features.CopyTo (excluded);
