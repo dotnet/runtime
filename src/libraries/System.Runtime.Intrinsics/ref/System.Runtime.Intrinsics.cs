@@ -506,6 +506,14 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<long> BroadcastScalarToVector128(long* source) { throw null; }
         public static unsafe Vector128<ulong> BroadcastScalarToVector128(ulong* source) { throw null; }
         public static Vector256<T> BroadcastScalarToVector256<T>(Vector128<T> value) where T : struct { throw null; }
+        public static unsafe Vector256<byte> BroadcastScalarToVector256(byte* source) { throw null; }
+        public static unsafe Vector256<sbyte> BroadcastScalarToVector256(sbyte* source) { throw null; }
+        public static unsafe Vector256<short> BroadcastScalarToVector256(short* source) { throw null; }
+        public static unsafe Vector256<ushort> BroadcastScalarToVector256(ushort* source) { throw null; }
+        public static unsafe Vector256<int> BroadcastScalarToVector256(int* source) { throw null; }
+        public static unsafe Vector256<uint> BroadcastScalarToVector256(uint* source) { throw null; }
+        public static unsafe Vector256<long> BroadcastScalarToVector256(long* source) { throw null; }
+        public static unsafe Vector256<ulong> BroadcastScalarToVector256(ulong* source) { throw null; }
         public static unsafe Vector256<sbyte> BroadcastVector128ToVector256(sbyte* address) { throw null; }
         public static unsafe Vector256<byte> BroadcastVector128ToVector256(byte* address) { throw null; }
         public static unsafe Vector256<short> BroadcastVector128ToVector256(short* address) { throw null; }

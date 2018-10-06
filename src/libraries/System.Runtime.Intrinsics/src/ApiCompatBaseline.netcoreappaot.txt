@@ -1,9 +1,10 @@
 Compat issues with assembly System.Runtime.Intrinsics:
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Pclmulqdq.CarrylessMultiply(System.Runtime.Intrinsics.Vector128<System.Int64>, System.Runtime.Intrinsics.Vector128<System.Int64>, System.Byte)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Pclmulqdq.CarrylessMultiply(System.Runtime.Intrinsics.Vector128<System.UInt64>, System.Runtime.Intrinsics.Vector128<System.UInt64>, System.Byte)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.SumAbsoluteDifferences(System.Runtime.Intrinsics.Vector256<System.Byte>, System.Runtime.Intrinsics.Vector256<System.Byte>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Popcnt.PopCount(System.UInt32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Popcnt.PopCount(System.UInt64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Sse2.MultiplyAddAdjacent(System.Runtime.Intrinsics.Vector128<System.Int16>, System.Runtime.Intrinsics.Vector128<System.Int16>)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Sse2.SumAbsoluteDifferences(System.Runtime.Intrinsics.Vector128<System.Byte>, System.Runtime.Intrinsics.Vector128<System.Byte>)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 7
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.Byte*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.Int16*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.Int32*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.Int64*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.SByte*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.UInt16*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.UInt32*)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Intrinsics.X86.Avx2.BroadcastScalarToVector256(System.UInt64*)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 8
