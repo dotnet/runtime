@@ -187,14 +187,15 @@ function MSBuild {
 
 function InstallDarcCli {
   local darc_cli_package_name="microsoft.dotnet.darc"
-  local uninstall_command=`dotnet tool uninstall $darc_cli_package_name -g`
-  local tool_list=$(dotnet tool list -g)
+  local uninstall_command=`$DOTNET_INSTALL_DIR/dotnet tool uninstall $darc_cli_package_name -g`
+  local tool_list=$($DOTNET_INSTALL_DIR/dotnet tool list -g)
   if [[ $tool_list = *$darc_cli_package_name* ]]; then
-    echo $(dotnet tool uninstall $darc_cli_package_name -g)
+    echo $($DOTNET_INSTALL_DIR/dotnet tool uninstall $darc_cli_package_name -g)
   fi
 
   echo "Installing Darc CLI version $toolset_version..."
-  echo $(dotnet tool install $darc_cli_package_name --version $toolset_version -v $verbosity -g)
+  echo "You may need to restart your command shell if this is the first dotnet tool you have installed."
+  echo $($DOTNET_INSTALL_DIR/dotnet tool install $darc_cli_package_name --version $toolset_version -v $verbosity -g)
 }
 
 # HOME may not be defined in some scenarios, but it is required by NuGet

@@ -217,6 +217,7 @@ function InstallDarcCli {
   }
 
   Write-Host "Installing Darc CLI version $toolsetVersion..."
+  Write-Host "You may need to restart your command window if this is the first dotnet tool you have installed."
   Invoke-Expression "$buildDriver tool install $DarcCliPackageName --version $toolsetVersion -v $verbosity -g"
 }
 
