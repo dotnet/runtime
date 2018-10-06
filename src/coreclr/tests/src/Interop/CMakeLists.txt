@@ -2,6 +2,7 @@ if(WIN32)
     list(APPEND LINK_LIBRARIES_ADDITIONAL
         ole32.lib
         advapi32.lib
+        OleAut32.lib
     )
 endif(WIN32)
 
@@ -26,6 +27,7 @@ add_subdirectory(RefCharArray)
 add_subdirectory(StringMarshalling/LPSTR)
 add_subdirectory(StringMarshalling/LPTSTR)
 add_subdirectory(StringMarshalling/UTF8)
+add_subdirectory(StringMarshalling/BSTR)
 add_subdirectory(MarshalAPI/FunctionPointer)
 add_subdirectory(MarshalAPI/IUnknown)
 add_subdirectory(SizeConst)
