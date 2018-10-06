@@ -44,17 +44,6 @@ namespace System.Buffers.Text
             }
         }
 
-        // TODO: Use this instead of TryFormatUInt64Default to format numbers less than uint.MaxValue
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatUInt32Default(uint value, Span<byte> destination, out int bytesWritten)
-        {
-            if (value < 10)
-            {
-                return TryFormatUInt32SingleDigit(value, destination, out bytesWritten);
-            }
-            return TryFormatUInt32MultipleDigits(value, destination, out bytesWritten);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFormatUInt32SingleDigit(uint value, Span<byte> destination, out int bytesWritten)
         {
@@ -80,19 +69,6 @@ namespace System.Buffers.Text
             }
             bytesWritten = digitCount;
             FormattingHelpers.WriteDigits(value, destination.Slice(0, digitCount));
-            return true;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatUInt64SingleDigit(ulong value, Span<byte> destination, out int bytesWritten)
-        {
-            if (destination.Length == 0)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-            destination[0] = (byte)('0' + value);
-            bytesWritten = 1;
             return true;
         }
 

@@ -129,9 +129,6 @@
   <data name="Argument_DestinationTooShort" xml:space="preserve">
     <value>Destination is too short.</value>
   </data>
-  <data name="MemoryDisposed" xml:space="preserve">
-    <value>Memory&lt;T&gt; has been disposed.</value>
-  </data>
   <data name="OutstandingReferences" xml:space="preserve">
     <value>Release all references before disposing this instance.</value>
   </data>
