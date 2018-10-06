@@ -2958,7 +2958,7 @@ public:
 
 #define MAX_NumOfFieldsInPromotableStruct 4 // Maximum number of fields in promotable struct
 
-    // Info about struct fields
+    // Info about struct type fields.
     struct lvaStructFieldInfo
     {
         CORINFO_FIELD_HANDLE fldHnd;
@@ -2967,35 +2967,86 @@ public:
         var_types            fldType;
         unsigned             fldSize;
         CORINFO_CLASS_HANDLE fldTypeHnd;
+
+        lvaStructFieldInfo()
+            : fldHnd(nullptr), fldOffset(0), fldOrdinal(0), fldType(TYP_UNDEF), fldSize(0), fldTypeHnd(nullptr)
+        {
+        }
     };
 
-    // Info about struct to be promoted.
+    // Info about a struct type, instances of which may be candidates for promotion.
     struct lvaStructPromotionInfo
     {
         CORINFO_CLASS_HANDLE typeHnd;
         bool                 canPromote;
-        bool                 requiresScratchVar;
         bool                 containsHoles;
         bool                 customLayout;
+        bool                 fieldsSorted;
         unsigned char        fieldCnt;
         lvaStructFieldInfo   fields[MAX_NumOfFieldsInPromotableStruct];
 
-        lvaStructPromotionInfo()
-            : typeHnd(nullptr), canPromote(false), requiresScratchVar(false), containsHoles(false), customLayout(false)
+        lvaStructPromotionInfo(CORINFO_CLASS_HANDLE typeHnd = nullptr)
+            : typeHnd(typeHnd)
+            , canPromote(false)
+            , containsHoles(false)
+            , customLayout(false)
+            , fieldsSorted(false)
+            , fieldCnt(0)
         {
         }
     };
 
     static int __cdecl lvaFieldOffsetCmp(const void* field1, const void* field2);
-    void lvaCanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd, lvaStructPromotionInfo* structPromotionInfo);
-    void lvaCanPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* structPromotionInfo);
 
-    bool lvaShouldPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* structPromotionInfo);
-    void lvaPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo* structPromotionInfo);
+    // This class is responsible for checking validity and profitability of struct promotion.
+    // If it is both legal and profitable, then TryPromoteStructVar promotes the struct and initializes
+    // nessesary information for fgMorphStructField to use.
+    class StructPromotionHelper
+    {
+    public:
+        StructPromotionHelper(Compiler* compiler);
+
+        bool CanPromoteStructType(CORINFO_CLASS_HANDLE typeHnd);
+        bool TryPromoteStructVar(unsigned lclNum);
+
+#ifdef DEBUG
+        void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
+#endif // DEBUG
+
+#ifdef _TARGET_ARM_
+        bool GetRequiresScratchVar();
+#endif // _TARGET_ARM_
+
+    private:
+        bool CanPromoteStructVar(unsigned lclNum);
+        bool ShouldPromoteStructVar(unsigned lclNum);
+        void PromoteStructVar(unsigned lclNum);
+        void SortStructFields();
+
+        lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
+        bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
+
+    private:
+        Compiler*              compiler;
+        lvaStructPromotionInfo structPromotionInfo;
+
+#ifdef _TARGET_ARM_
+        bool requiresScratchVar;
+#endif // _TARGET_ARM_
+
+#ifdef DEBUG
+        typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
+                                 RetypedAsScalarFieldsMap;
+        RetypedAsScalarFieldsMap retypedFieldsMap;
+#endif // DEBUG
+    };
+
+    StructPromotionHelper* structPromotionHelper;
+
 #if !defined(_TARGET_64BIT_)
     void lvaPromoteLongVars();
 #endif // !defined(_TARGET_64BIT_)
-    unsigned lvaGetFieldLocal(LclVarDsc* varDsc, unsigned int fldOffset);
+    unsigned lvaGetFieldLocal(const LclVarDsc* varDsc, unsigned int fldOffset);
     lvaPromotionType lvaGetPromotionType(const LclVarDsc* varDsc);
     lvaPromotionType lvaGetPromotionType(unsigned varNum);
     lvaPromotionType lvaGetParentPromotionType(const LclVarDsc* varDsc);
