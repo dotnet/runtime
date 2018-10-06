@@ -82,7 +82,7 @@
     <ContainerName Condition="'$(ContainerName)' == '' And '$(IsOfficial)' == 'true'">corefx-tests</ContainerName>
     <HelixBlobPrefix Condition="'$(HelixBlobPrefix)' == '' And '$(IsOfficial)' == 'true' And '$(Branch)' != ''">$(Branch)/$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)/$(TargetGroup)/$(OSGroup)-$(ArchGroup)/</HelixBlobPrefix>
     <!-- If this is an official build, set the test drop to be public -->
-    <IsDropPublic Condition="'$(IsOffical)' == 'true'">true</IsDropPublic>
+    <IsDropPublic Condition="'$(IsOfficial)' == 'true'">true</IsDropPublic>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
