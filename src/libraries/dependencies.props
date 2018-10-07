@@ -11,13 +11,13 @@
   <PropertyGroup>
     <CoreFxCurrentRef>37557a2c5c2d12257d6d6123f8c865549983aef4</CoreFxCurrentRef>
     <CoreClrCurrentRef>37557a2c5c2d12257d6d6123f8c865549983aef4</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>85882808dd451cb7acea2d202ccbed4aa631f5a3</CoreSetupCurrentRef>
+    <CoreSetupCurrentRef>2c097cd54d4130327754027f301dba5489396f53</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>26b0cc8fcf155775b147f5cb818345aeef8faa61</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>26b0cc8fcf155775b147f5cb818345aeef8faa61</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>85882808dd451cb7acea2d202ccbed4aa631f5a3</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>2c097cd54d4130327754027f301dba5489396f53</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -38,9 +38,9 @@
     <ProjectNTfsExpectedPrerelease>beta-27005-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-27005-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27005-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-27005-04</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-27005-04</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-27005-04</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-27007-01</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-27007-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-27007-01</MicrosoftNETCoreAppPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -64,7 +64,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03305-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03307-03</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
