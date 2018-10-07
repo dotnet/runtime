@@ -1,14 +1,11 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
-using FluentAssertions;
-using Microsoft.DotNet.CoreSetup.Test;
-using System.Collections.Generic;
-using Microsoft.DotNet.Cli.Build;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
 {
@@ -16,7 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
     {
         private SharedTestState sharedTestState;
 
-        public GivenThatICareAboutNativeHostApis(GivenThatICareAboutNativeHostApis.SharedTestState fixture)
+        public GivenThatICareAboutNativeHostApis(SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
