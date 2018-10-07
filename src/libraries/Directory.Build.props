@@ -80,10 +80,14 @@
   </PropertyGroup>
 
   <!-- Default properties for CI builds -->
-  <PropertyGroup Condition="'$(IsCIBuild)' == 'true'">
+  <!-- TODO: Remove obsolete condition when moved to arcade. -->
+  <PropertyGroup Condition="'$(IsCIBuild)' == 'true' OR '$(ContinuousIntegrationBuild)' == 'true'">
     <WithoutCategories>IgnoreForCI</WithoutCategories>
     <EnableDumpling>true</EnableDumpling>
     <CrashDumpFolder Condition="'$(RunningOnUnix)' != 'true'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
+    <!-- Disable F5 and test explorer support for CI builds. -->
+    <GenerateLaunchSettings>false</GenerateLaunchSettings>
+    <IncludeVSTestReferences>false</IncludeVSTestReferences>
   </PropertyGroup>
 
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
@@ -385,7 +389,10 @@
     <UseCoverageDedicatedRuntime Condition="'$(UseCoverageDedicatedRuntime)' == '' AND '$(CodeCoverageEnabled)' == 'true'">true</UseCoverageDedicatedRuntime>
 
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
-    <GenerateLaunchSettings>true</GenerateLaunchSettings>
+    <GenerateLaunchSettings Condition="'$(GenerateLaunchSettings)' == ''">true</GenerateLaunchSettings>
+
+    <!-- Disable VS Test SDK references if the .NET Native toolchain is used. -->
+    <IncludeVSTestReferences Condition="'$(UseDotNetNativeToolchain)' == 'true'">false</IncludeVSTestReferences>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
