@@ -32,11 +32,6 @@ namespace System.Diagnostics
             GC.SuppressFinalize(this);
         }
 
-        private EventLogEntry(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         /// <summary>
         /// The machine on which this event log resides.
         /// </summary>
