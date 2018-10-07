@@ -123,16 +123,16 @@
   </data>
   <data name="Stream_FalseCanWrite" xml:space="preserve">
     <value>Stream does not support writing.</value>
-  </data>  
+  </data>
   <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
     <value>Enum value was out of legal range.</value>
-  </data>  
+  </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed stream.</value>
-  </data>  
+  </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
-  </data>  
+  </data>
   <data name="InvalidArgumentOffsetCount" xml:space="preserve">
     <value>Offset plus count is larger than the length of target array.</value>
   </data>
@@ -145,7 +145,7 @@
   </data>
   <data name="BrotliEncoder_Disposed" xml:space="preserve">
     <value>Can not access a closed Encoder.</value>
-  </data>  
+  </data>
   <data name="BrotliEncoder_Quality" xml:space="preserve">
     <value>Provided BrotliEncoder Quality of {0} is not between the minimum value of {1} and the maximum value of {2}</value>
   </data>
@@ -159,12 +159,9 @@
   <data name="BrotliDecoder_Create" xml:space="preserve">
     <value>Failed to create BrotliDecoder instance</value>
   </data>
-  <data name="BrotliDecoder_Error" xml:space="preserve">
-    <value>Decoder threw unexpected error: {0}</value>
-  </data>
   <data name="BrotliDecoder_Disposed" xml:space="preserve">
     <value>Can not access a closed Decoder.</value>
-  </data>  
+  </data>
   <!-- BrotliStream.Compress -->
   <data name="BrotliStream_Compress_UnsupportedOperation" xml:space="preserve">
     <value>Can not perform Read operations on a BrotliStream constructed with CompressionMode.Compress.</value>
