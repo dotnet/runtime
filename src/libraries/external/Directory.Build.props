@@ -3,6 +3,7 @@
   <PropertyGroup>
     <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <ContainsPackageReferences>true</ContainsPackageReferences>
+    <IncludeVSTestReferences Condition="'$(IncludeVSTestReferences)' == ''">true</IncludeVSTestReferences>
     <!-- We need configuration-specific assets files. -->
     <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
   </PropertyGroup>
