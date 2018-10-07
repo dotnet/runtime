@@ -25,7 +25,7 @@
   <PropertyGroup>
     <CoreFxCurrentRef>7551558bd7f7806cc9e61b7811b46daff4f735ba</CoreFxCurrentRef>
     <CoreClrCurrentRef>7551558bd7f7806cc9e61b7811b46daff4f735ba</CoreClrCurrentRef>
-    <BuildToolsCurrentRef>e0c1d36d8a19fed21cadfff4890e027bd4c2c214</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>2c097cd54d4130327754027f301dba5489396f53</BuildToolsCurrentRef>
     <PgoDataCurrentRef>7551558bd7f7806cc9e61b7811b46daff4f735ba</PgoDataCurrentRef>
     <CoreSetupCurrentRef>7551558bd7f7806cc9e61b7811b46daff4f735ba</CoreSetupCurrentRef>
     <IbcDataCurrentRef>7551558bd7f7806cc9e61b7811b46daff4f735ba</IbcDataCurrentRef>
@@ -127,7 +127,7 @@
       <ElementName>MicrosoftNETCoreAppPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.App</PackageId>
     </XmlUpdateStep>
-    <!-- <UpdateStep Include="BuildTools">
+    <UpdateStep Include="BuildTools">
       <UpdaterType>File</UpdaterType>
       <Path>$(MSBuildThisFileDirectory)BuildToolsVersion.txt</Path>
       <PackageId>Microsoft.DotNet.BuildTools</PackageId>
@@ -136,7 +136,7 @@
        <Path>$(MSBuildThisFileFullPath)</Path>
        <ElementName>FeedTasksPackageVersion</ElementName>
        <PackageId>$(FeedTasksPackage)</PackageId>
-    </XmlUpdateStep> -->
+    </XmlUpdateStep>
     <XmlUpdateStep Include="PgoData">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>PgoDataPackageVersion</ElementName>
