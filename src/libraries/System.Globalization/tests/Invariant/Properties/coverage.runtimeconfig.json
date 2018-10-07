@@ -6,6 +6,6 @@
     "framework": {
       "name": "Microsoft.NETCore.App",
         "version": "10.10.10"
-	    }
+    }
   }
 }
