@@ -20,11 +20,6 @@ namespace System.IO
             _name = NormalizeDriveName(driveName);
         }
 
-        private DriveInfo(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

@@ -340,16 +340,6 @@ namespace System.IO.Pipes
             Debug.Assert(!handle.IsClosed, "handle is closed");
         }
 
-        [Conditional("DEBUG")]
-        private static void DebugAssertReadWriteArgs(byte[] buffer, int offset, int count, SafePipeHandle handle)
-        {
-            Debug.Assert(buffer != null, "buffer is null");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-            Debug.Assert(offset <= buffer.Length - count, "offset + count is too big");
-            DebugAssertHandleValid(handle);
-        }
-
         // Reads a byte from the pipe stream.  Returns the byte cast to an int
         // or -1 if the connection has been broken.
         public override unsafe int ReadByte()
