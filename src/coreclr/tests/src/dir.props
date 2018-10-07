@@ -46,6 +46,7 @@
     <OutputPath>$(BaseOutputPathWithConfig)$(BuildProjectRelativeDir)\</OutputPath>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BaseOutputPath)\testStagingDir\</TestWorkingDir>
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)/</TestPath>
+    <SkipXunitDependencyCopying>true</SkipXunitDependencyCopying>
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
