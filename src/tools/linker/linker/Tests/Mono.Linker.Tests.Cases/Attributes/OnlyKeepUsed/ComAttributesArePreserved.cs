@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 	/// <summary>
-	/// COM related attributes are reauired at runtime
+	/// COM related attributes are required at runtime
 	/// </summary>
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	public class ComAttributesArePreserved {

@@ -274,6 +274,11 @@ namespace Mono.Linker {
 					p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
 
 				if (excluded_features.Count > 0) {
+
+					p.AddStepBefore (typeof (MarkStep), new RemoveFeaturesStep () {
+						FeatureCOM = excluded_features.Contains ("com")
+					});
+
 					var excluded = new string [excluded_features.Count];
 					excluded_features.CopyTo (excluded);
 					context.ExcludedFeatures = excluded;
