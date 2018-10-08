@@ -66,7 +66,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHand
 
 /* System.Security.Principal.WindowsImpersonationContext */
 ICALL_EXPORT
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken (gpointer token, MonoError *error);
 
 ICALL_EXPORT
@@ -74,20 +74,20 @@ gpointer
 ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (gpointer token, MonoError *error);
 
 ICALL_EXPORT
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token, MonoError *error);
 
 ICALL_EXPORT
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (MonoError *error);
 
 /* System.Security.Principal.WindowsPrincipal */
 ICALL_EXPORT
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId (gpointer user, gpointer group, MonoError *error);
 
 ICALL_EXPORT
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpointer user, const gchar *group, MonoError *error);
 
 /* Mono.Security.Cryptography.KeyPairPersistance */

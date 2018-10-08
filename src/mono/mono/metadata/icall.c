@@ -739,7 +739,7 @@ ves_icall_System_Array_ClearInternal (MonoArrayHandle arr, int idx, int length, 
 }
 
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* dest, int dest_idx, int length)
 {
 	int element_size;
@@ -2959,7 +2959,7 @@ leave:
 	return res;
 }
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
 	error_init (error);
@@ -3050,7 +3050,7 @@ ves_icall_RuntimeType_MakeGenericType (MonoReflectionTypeHandle reftype, MonoArr
 	return mono_type_get_object_handle (domain, geninst, error);
 }
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_RuntimeTypeHandle_HasInstantiation (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
 	error_init (error);
@@ -3260,14 +3260,14 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethodHandle ref_
 	return mono_method_get_object_handle (MONO_HANDLE_DOMAIN (ref_method), result, NULL, error);
 }
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_MonoMethod_get_IsGenericMethod (MonoReflectionMethodHandle ref_method, MonoError *erro)
 {
 	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
 	return mono_method_signature (method)->generic_param_count != 0;
 }
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_MonoMethod_get_IsGenericMethodDefinition (MonoReflectionMethodHandle ref_method, MonoError *Error)
 {
 	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
@@ -5401,8 +5401,8 @@ ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error)
 }
 
 ICALL_EXPORT MonoStringHandle
-ves_icall_System_RuntimeType_getFullName (MonoReflectionTypeHandle object, gboolean full_name,
-										  gboolean assembly_qualified, MonoError *error)
+ves_icall_System_RuntimeType_getFullName (MonoReflectionTypeHandle object, MonoBoolean full_name,
+										  MonoBoolean assembly_qualified, MonoError *error)
 {
 	MonoDomain *domain = mono_object_domain (MONO_HANDLE_RAW (object));
 	MonoType *type = MONO_HANDLE_RAW (object)->type;
@@ -7494,7 +7494,7 @@ ves_icall_System_Web_Util_ICalls_get_machine_install_dir (MonoError *error)
 	return ipath;
 }
 
-ICALL_EXPORT gboolean
+ICALL_EXPORT MonoBoolean
 ves_icall_get_resources_ptr (MonoReflectionAssemblyHandle assembly, gpointer *result, gint32 *size, MonoError *error)
 {
 	error_init (error);
@@ -7579,7 +7579,7 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionTypeHandle ref_
 }
 
 ICALL_EXPORT MonoReflectionMethodHandle
-ves_icall_MonoMethod_get_base_method (MonoReflectionMethodHandle m, gboolean definition, MonoError *error)
+ves_icall_MonoMethod_get_base_method (MonoReflectionMethodHandle m, MonoBoolean definition, MonoError *error)
 {
 	error_init (error);
 	MonoMethod *method = MONO_HANDLE_GETVAL (m, method);

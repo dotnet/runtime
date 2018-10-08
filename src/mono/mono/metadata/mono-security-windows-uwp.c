@@ -54,14 +54,14 @@ ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken (
 	return NULL;
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken (gpointer token, MonoError *error)
 {
 	mono_security_win_not_supported ("ImpersonateLoggedOnUser", error);
 	return FALSE;
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf (MonoError *error))
 {
 	mono_security_win_not_supported ("RevertToSelf", error);

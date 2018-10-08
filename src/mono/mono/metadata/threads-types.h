@@ -125,7 +125,7 @@ void
 ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error);
 
 ICALL_EXPORT
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_handle, int ms, MonoError *error);
 
 ICALL_EXPORT

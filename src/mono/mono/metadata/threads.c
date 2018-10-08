@@ -2046,7 +2046,7 @@ mono_join_uninterrupted (MonoThreadHandle* thread_to_join, gint32 ms, MonoError 
 	return ret;
 }
 
-gboolean
+MonoBoolean
 ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_handle, int ms, MonoError *error)
 {
 	if (mono_thread_current_check_pending_interrupt ())
