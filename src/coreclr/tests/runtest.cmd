@@ -7,14 +7,18 @@ set "__MsgPrefix=RUNTEST: "
 
 set __ThisScriptDir="%~dp0"
 
-call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
-if NOT '%ERRORLEVEL%' == '0' exit /b 1
+if /I not "%PROCESSOR_ARCHITECTURE%"=="arm64" (
+    if /I not "%PROCESSOR_ARCHITECTURE%"=="arm" (
+        call "%__ThisScriptDir%"\..\setup_vs_tools.cmd
+        if NOT '%ERRORLEVEL%' == '0' exit /b 1
 
-if defined VS150COMNTOOLS (
-    set __VSVersion=vs2017
-) else (
-    set __VSVersion=vs2015
-)
+        if defined VS150COMNTOOLS (
+            set __VSVersion=vs2017
+        ) else (
+            set __VSVersion=vs2015
+        )
+    )
+)   
 
 :: Set the default arguments
 set __BuildArch=x64
@@ -43,6 +47,7 @@ set __CoreFXTests=
 set __CoreFXTestsRunAllAvailable=
 set __SkipGenerateLayout=
 set __BuildXUnitWrappers=
+set __PrintLastResultsOnly=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -82,6 +87,7 @@ if /i "%1" == "ilasmroundtrip"        (set __IlasmRoundTrip=1&shift&goto Arg_Loo
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "skipgeneratelayout"    (set __SkipGenerateLayout=1&shift&goto Arg_Loop)
 if /i "%1" == "buildxunitwrappers"    (set __BuildXunitWrappers=1&shift&goto Arg_Loop)
+if /i "%1" == "printlastresultsonly"  (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTests"           (set __CoreFXTests=true&shift&goto Arg_Loop)
 if /i "%1" == "CoreFXTestsAll"        (set __CoreFXTests=true&set __CoreFXTestsRunAllAvailable=true&shift&goto Arg_Loop)
@@ -196,6 +202,10 @@ if defined RunCrossGen (
 
 if defined __DoCrossgen (
     set __RuntestPyArgs=%__RuntestPyArgs% --precompile_core_root
+)
+
+if defined __PrintLastResultsOnly (
+    set __RuntestPyArgs=%__RuntestPyArgs% --analyze_results_only
 )
 
 REM __ProjectDir is poorly named, it is actually <projectDir>/tests
@@ -691,6 +701,7 @@ echo VSVersion ^<vs_version^>    - VS2015 or VS2017 ^(default: VS2017^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo AgainstPackages           - This indicates that we are running tests that were built against packages.
 echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
+echo skipgeneratelayout        - Do not generate the core root. Used for cross target testing.
 echo sequential                - Run tests sequentially (no parallelism).
 echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
 echo crossgenaltjit ^<altjit^>   - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests, using the given altjit.
@@ -716,6 +727,7 @@ echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(d
 echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
+echo printlastresultsonly        - Print the last test results without running tests.
 echo.
 echo Note that arguments are not case-sensitive.
 echo.
