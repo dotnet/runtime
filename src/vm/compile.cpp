@@ -1314,27 +1314,6 @@ BOOL CEEPreloader::CanEmbedFunctionEntryPoint(
     STANDARD_VM_CONTRACT;
 
     MethodDesc * pMethod = GetMethod(methodHandle);
-    MethodDesc * pContext = GetMethod(contextHandle);
-
-    // IsRemotingInterceptedViaVirtualDispatch is a rather special case.
-    //
-    // Other remoting intercepts are implemented by one of:
-    //  (1) in DoPrestub (for non-virtual calls)
-    //  (2) by transparent proxy vtables, where all the entries in the vtable
-    //      go to the same code.
-    //
-    // However when calling virtual functions non-virtually the JIT interface
-    // pointer to the code for the function in a stub 
-    // (see GetNonVirtualEntryPointForVirtualMethod).  
-    // Thus we cannot embed non-virtual calls to these functions because we 
-    // don't save these stubs.  Unlike most other remoting stubs these ones 
-    // are NOT inserted by DoPrestub.
-    //
-    if (((accessFlags & CORINFO_ACCESS_THIS) == 0) &&
-        (pMethod->IsRemotingInterceptedViaVirtualDispatch()))
-    {
-        return FALSE;
-    }
 
     // Methods with native callable attribute are special , since 
     // they are used as LDFTN targets.Native Callable methods

@@ -5373,23 +5373,14 @@ void CEEInfo::getCallInfo(
 
         if (devirt)
         {
-            // We can't allow generic remotable methods to be considered resolved, it leads to a non-instantiating method desc being
-            // passed to the remoting stub. The easiest way to deal with these is to force them through the virtual code path.
-            // It is actually good to do this deoptimization for all remotable methods since remoting interception via vtable dispatch 
-            // is faster then remoting interception via thunk
-            if (!pTargetMD->IsRemotingInterceptedViaVirtualDispatch() /* || !pTargetMD->HasMethodInstantiation() */)
-            {
-                resolvedCallVirt = true;
-                directCall = true;
-            }
+            resolvedCallVirt = true;
+            directCall = true;
         }
     }
 
     if (directCall)
     {
-        bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM)
-            // See code:IsRemotingInterceptedViaPrestub on why we need need to disallow inst param for remoting.
-            && !( pTargetMD->MayBeRemotingIntercepted() && !pTargetMD->IsVtableMethod() );
+        bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
 
         // Create instantiating stub if necesary
         if (!allowInstParam && pTargetMD->RequiresInstArg())
@@ -7875,12 +7866,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
         {
             dwRestrictions |= INLINE_NO_CALLEE_LDSTR;
         }
-
-        // The remoting interception can be skipped only if the call is on same this pointer
-        if (pCallee->MayBeRemotingIntercepted())
-        {
-            dwRestrictions |= INLINE_SAME_THIS;
-        }
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -9168,8 +9153,6 @@ void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
     {
         // should never get here for EnC methods or if interception via remoting stub is required
         _ASSERTE(!ftn->IsEnCMethod());
-
-        _ASSERTE((accessFlags & CORINFO_ACCESS_THIS) || !ftn->IsRemotingInterceptedViaVirtualDispatch());
 
         ret = (void *)ftn->GetAddrOfSlot();
 

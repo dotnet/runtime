@@ -1388,26 +1388,17 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 }
 
 //==========================================================================================
-// this is not the pretties function however I got bitten pretty hard by the computation 
-// of the allocation size of a MethodTable done "by hand" in few places.
-// Essentially the idea is that this is going to centralize computation of size for optional
-// members so the next morons that need to add an optional member will look at this function
-// and hopefully be less exposed to code doing size computation behind their back
 inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeSlotsMask,
-                                                           BOOL needsRemotableMethodInfo,
                                                            BOOL needsGenericsStaticsInfo,
                                                            BOOL needsGuidInfo,
                                                            BOOL needsCCWTemplate,
                                                            BOOL needsRCWPerTypeData,
-                                                           BOOL needsRemotingVtsInfo,
                                                            BOOL needsTokenOverflow)
 {
     LIMITED_METHOD_CONTRACT;
 
     DWORD size = c_OptionalMembersStartOffsets[dwMultipurposeSlotsMask] - sizeof(MethodTable);
 
-    if (needsRemotableMethodInfo)
-        size += sizeof(UINT_PTR);
     if (needsGenericsStaticsInfo)
         size += sizeof(GenericsStaticsInfo);
     if (needsGuidInfo)
@@ -1415,8 +1406,6 @@ inline DWORD MethodTable::GetOptionalMembersAllocationSize(DWORD dwMultipurposeS
     if (needsCCWTemplate)
         size += sizeof(UINT_PTR);
     if (needsRCWPerTypeData)
-        size += sizeof(UINT_PTR);
-    if (needsRemotingVtsInfo)
         size += sizeof(UINT_PTR);
     if (dwMultipurposeSlotsMask & enum_flag_HasInterfaceMap)
         size += sizeof(UINT_PTR);

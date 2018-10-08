@@ -3217,21 +3217,16 @@ TypeHandle DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle(DebuggerIPCE_Expand
 } // DacDbiInterfaceImpl::ExpandedTypeInfoToTypeHandle
 
 // ----------------------------------------------------------------------------
-// DacDbi API: GetThreadOrContextStaticAddress
-// Get the target field address of a context or thread local static. 
+// DacDbi API: GetThreadStaticAddress
+// Get the target field address of a thread local static.
 // 
 // Notes: 
-// The address is  constant and could be cached.
-// 
-// If this is a context-static, the function uses the thread's current context.  
-// [This is important because it means that you can't lookup a context static 
-// unless you have a thread in that context. If anybody actually cared about contexts, 
-// we might have to revise this in the future] 
+// The address is constant and could be cached.
 // 
 // This can commonly fail, in which case, it will return NULL.
 // ----------------------------------------------------------------------------
-CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadOrContextStaticAddress(VMPTR_FieldDesc vmField,
-                                                                    VMPTR_Thread    vmRuntimeThread)
+CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_FieldDesc vmField,
+                                                          VMPTR_Thread    vmRuntimeThread)
 {
     DD_ENTER_MAY_THROW;
 
@@ -3241,8 +3236,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadOrContextStaticAddress(VMPTR_FieldDe
 
     _ASSERTE(pRuntimeThread != NULL);
 
-    // Find out whether the field is thread local or context local and get its
-    // address. 
+    // Find out whether the field is thread local and get its address.
     if (pFieldDesc->IsThreadStatic())
     {
         fieldAddress = pRuntimeThread->GetStaticFieldAddrNoCreate(pFieldDesc, NULL);
@@ -3255,7 +3249,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadOrContextStaticAddress(VMPTR_FieldDe
     }
     return fieldAddress;
 
-} // DacDbiInterfaceImpl::GetThreadOrContextStaticAddress
+} // DacDbiInterfaceImpl::GetThreadStaticAddress
 
     // Get the target field address of a collectible types static. 
 CORDB_ADDRESS DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDesc vmField,

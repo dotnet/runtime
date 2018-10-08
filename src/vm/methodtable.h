@@ -290,80 +290,6 @@ struct CrossModuleGenericsStaticsInfo
 };  // struct CrossModuleGenericsStaticsInfo
 typedef DPTR(CrossModuleGenericsStaticsInfo) PTR_CrossModuleGenericsStaticsInfo;
 
-// This structure records methods and fields which are interesting for VTS
-// (Version Tolerant Serialization). A pointer to it is optionally appended to
-// MethodTables with VTS event methods or NotSerialized or OptionallySerialized
-// fields. The structure is variable length to incorporate a packed array of
-// data describing the disposition of fields in the type.
-struct RemotingVtsInfo
-{
-    enum VtsCallbackType
-    {
-        VTS_CALLBACK_ON_SERIALIZING = 0,
-        VTS_CALLBACK_ON_SERIALIZED,
-        VTS_CALLBACK_ON_DESERIALIZING,
-        VTS_CALLBACK_ON_DESERIALIZED,
-        VTS_NUM_CALLBACK_TYPES
-    };
-
-    FixupPointer<PTR_MethodDesc> m_pCallbacks[VTS_NUM_CALLBACK_TYPES];
-#ifdef _DEBUG
-    DWORD               m_dwNumFields;
-#endif
-    DWORD               m_rFieldTypes[1];
-
-    static DWORD GetSize(DWORD dwNumFields)
-    {
-        LIMITED_METHOD_CONTRACT;
-        // Encode each field in two bits. Round up allocation to the nearest DWORD.
-        DWORD dwBitsRequired = dwNumFields * 2;
-        DWORD dwBytesRequired = (dwBitsRequired + 7) / 8;
-        return (DWORD)(offsetof(RemotingVtsInfo, m_rFieldTypes[0]) + ALIGN_UP(dwBytesRequired, sizeof(DWORD)));
-    }
-
-    void SetIsNotSerialized(DWORD dwFieldIndex)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(dwFieldIndex < m_dwNumFields);
-        DWORD dwRecordIndex = dwFieldIndex * 2;
-        DWORD dwOffset = dwRecordIndex / (sizeof(DWORD) * 8);
-        DWORD dwMask = 1 << (dwRecordIndex % (sizeof(DWORD) * 8));
-        m_rFieldTypes[dwOffset] |= dwMask;
-    }
-
-    BOOL IsNotSerialized(DWORD dwFieldIndex)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(dwFieldIndex < m_dwNumFields);
-        DWORD dwRecordIndex = dwFieldIndex * 2;
-        DWORD dwOffset = dwRecordIndex / (sizeof(DWORD) * 8);
-        DWORD dwMask = 1 << (dwRecordIndex % (sizeof(DWORD) * 8));
-        return m_rFieldTypes[dwOffset] & dwMask;
-    }
-
-    void SetIsOptionallySerialized(DWORD dwFieldIndex)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(dwFieldIndex < m_dwNumFields);
-        DWORD dwRecordIndex = dwFieldIndex * 2;
-        DWORD dwOffset = dwRecordIndex / (sizeof(DWORD) * 8);
-        DWORD dwMask = 2 << (dwRecordIndex % (sizeof(DWORD) * 8));
-        m_rFieldTypes[dwOffset] |= dwMask;
-    }
-
-    BOOL IsOptionallySerialized(DWORD dwFieldIndex)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(dwFieldIndex < m_dwNumFields);
-        DWORD dwRecordIndex = dwFieldIndex * 2;
-        DWORD dwOffset = dwRecordIndex / (sizeof(DWORD) * 8);
-        DWORD dwMask = 2 << (dwRecordIndex % (sizeof(DWORD) * 8));
-        return m_rFieldTypes[dwOffset] & dwMask;
-    }
-};  // struct RemotingVtsInfo
-typedef DPTR(RemotingVtsInfo) PTR_RemotingVtsInfo;
-
-
 #ifdef FEATURE_COMINTEROP
 struct RCWPerTypeData;
 #endif // FEATURE_COMINTEROP
@@ -3909,8 +3835,6 @@ private:
         enum_flag_GenericsMask_SharedInst   = 0x00000020,   // shared instantiation, e.g. List<__Canon> or List<MyValueType<__Canon>>
         enum_flag_GenericsMask_TypicalInst  = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
 
-        enum_flag_HasRemotingVtsInfo        = 0x00000080,   // Optional data present indicating VTS methods and optional fields
-
         enum_flag_HasVariance               = 0x00000100,   // This is an instantiated type some of whose type parameters are co or contra-variant
 
         enum_flag_HasDefaultCtor            = 0x00000200,
@@ -4341,12 +4265,10 @@ private:
 
     inline static DWORD GetOptionalMembersAllocationSize(
                                                   DWORD dwMultipurposeSlotsMask,
-                                                  BOOL needsRemotableMethodInfo,
                                                   BOOL needsGenericsStaticsInfo,
                                                   BOOL needsGuidInfo,
                                                   BOOL needsCCWTemplate,
                                                   BOOL needsRCWPerTypeData,
-                                                  BOOL needsRemotingVtsInfo,
                                                   BOOL needsTokenOverflow);
     inline DWORD GetOptionalMembersSize();
 
@@ -4397,12 +4319,6 @@ private:
     }
 
     void SetModule(Module * pModule);
-
-    /************************************
-    //
-    // CONTEXT STATIC
-    //
-    ************************************/
 
 public:
 

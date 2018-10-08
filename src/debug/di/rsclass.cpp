@@ -261,13 +261,13 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
     }
     else
     {
-        // We've got a thread or context local static
+        // We've got a thread local static
 
         if( fEnCHangingField )
         {
             // fEnCHangingField is set for fields added with EnC which hang off the FieldDesc.
-            // Thread-local and context-local statics cannot be added with EnC, so we shouldn't be here
-            // if this is an EnC field is thread- or context-local.
+            // Thread-local statics cannot be added with EnC, so we shouldn't be here
+            // if this is an EnC field is thread-local.
             _ASSERTE(!pFieldData->m_fFldIsTLS );
         }
         else
@@ -285,8 +285,8 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
 
             EX_TRY
             {
-                pRmtStaticValue = pProcess->GetDAC()->GetThreadOrContextStaticAddress(pFieldData->m_vmFieldDesc, 
-                                                                                      pThread->m_vmThreadToken);
+                pRmtStaticValue = pProcess->GetDAC()->GetThreadStaticAddress(pFieldData->m_vmFieldDesc,
+                                                                             pThread->m_vmThreadToken);
             }
             EX_CATCH_HRESULT(hr);
             if(FAILED(hr)) 

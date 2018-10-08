@@ -1923,7 +1923,7 @@ public:
                              OUT UINT32 *            pcGenericClassTypeParams,
                              OUT TypeParamsList *    pGenericTypeParams) = 0;
 
-    // Get the target field address of a context or thread local static. 
+    // Get the target field address of a thread local static.
     // Arguments: 
     //     input: vmField         - pointer to the field descriptor for the static field
     //            vmRuntimeThread - thread to which the static field belongs. This must 
@@ -1937,8 +1937,8 @@ public:
     //  Field storage is constant once allocated, so this value can be cached. 
 
     virtual
-    CORDB_ADDRESS GetThreadOrContextStaticAddress(VMPTR_FieldDesc vmField,
-                                                   VMPTR_Thread    vmRuntimeThread) = 0;
+    CORDB_ADDRESS GetThreadStaticAddress(VMPTR_FieldDesc vmField,
+                                         VMPTR_Thread    vmRuntimeThread) = 0;
 
     // Get the target field address of a collectible types static. 
     // Arguments: 
