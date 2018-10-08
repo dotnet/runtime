@@ -406,6 +406,7 @@
     <Compile Include="Statics\StaticFieldInitializer.cs" />
     <Compile Include="Statics\MixedStaticFieldInitializerAndCtor.cs" />
     <Compile Include="LinkXml\UnusedTypeDeclarationPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\CanPreserveExcludedFeatureCom.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
@@ -470,6 +471,9 @@
     <Folder Include="Attributes.StructLayout\" />
     <Folder Include="Inheritance.Complex" />
     <Folder Include="Reflection\Dependencies\" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

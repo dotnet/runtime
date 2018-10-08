@@ -458,7 +458,7 @@ namespace Mono.Linker.Steps {
 					return true;
 				case "System.Runtime.InteropServices.InterfaceTypeAttribute":
 				case "System.Runtime.InteropServices.GuidAttribute":
-					return !_context.IsFeatureExcluded ("com");
+					return true;
 				}
 				
 				if (!Annotations.IsMarked (attr_type.Resolve ()))
