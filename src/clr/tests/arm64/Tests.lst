@@ -87668,14 +87668,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[MultiplyLow_r.cmd_11731]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_r\MultiplyLow_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [simplearg.cmd_11732]
 RelativePath=JIT\Directed\RVAInit\simplearg\simplearg.cmd
 WorkingDir=JIT\Directed\RVAInit\simplearg
@@ -88444,14 +88436,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[MultiplyLow_ro.cmd_11856]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_ro\MultiplyLow_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [eventactivityidcontrol.cmd_11857]
 RelativePath=tracing\eventactivityidcontrol\eventactivityidcontrol\eventactivityidcontrol.cmd
 WorkingDir=tracing\eventactivityidcontrol\eventactivityidcontrol
@@ -89092,14 +89076,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[AlignRight_ro.cmd_11954]
-RelativePath=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_ro\AlignRight_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [tracelogging.cmd_11957]
 RelativePath=tracing\tracevalidation\tracelogging\tracelogging\tracelogging.cmd
 WorkingDir=tracing\tracevalidation\tracelogging\tracelogging
@@ -89218,14 +89194,6 @@ WorkingDir=CoreMangLib\system\span\RefStructWithSpan
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1;NEW
-HostStyle=0
-
-[AlignRight_r.cmd_11974]
-RelativePath=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_r\AlignRight_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
 [ConvertToSingle_r.cmd_11975]

@@ -2254,17 +2254,17 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
-        ///   VPERMD ymm, ymm/m256, imm8
+        ///   VPERMD ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<int> PermuteVar8x32(Vector256<int> left, Vector256<int> control) => PermuteVar8x32(left, control);
         /// <summary>
         /// __m256i _mm256_permutevar8x32_epi32 (__m256i a, __m256i idx)
-        ///   VPERMD ymm, ymm/m256, imm8
+        ///   VPERMD ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<uint> PermuteVar8x32(Vector256<uint> left, Vector256<uint> control) => PermuteVar8x32(left, control);
         /// <summary>
         /// __m256 _mm256_permutevar8x32_ps (__m256 a, __m256i idx)
-        ///   VPERMPS ymm, ymm/m256, imm8
+        ///   VPERMPS ymm, ymm/m256, ymm
         /// </summary>
         public static Vector256<float> PermuteVar8x32(Vector256<float> left, Vector256<int> control) => PermuteVar8x32(left, control);
 
@@ -2604,12 +2604,12 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<byte> Shuffle(Vector256<byte> value, Vector256<byte> mask) => Shuffle(value, mask);
         /// <summary>
         /// __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8)
-        ///   VPSHUFD ymm, ymm, ymm/m256
+        ///   VPSHUFD ymm, ymm/m256, imm8
         /// </summary>
         public static Vector256<int> Shuffle(Vector256<int> value, byte control) => Shuffle(value, control);
         /// <summary>
         /// __m256i _mm256_shuffle_epi32 (__m256i a, const int imm8)
-        ///   VPSHUFD ymm, ymm, ymm/m256
+        ///   VPSHUFD ymm, ymm/m256, imm8
         /// </summary>
         public static Vector256<uint> Shuffle(Vector256<uint> value, byte control) => Shuffle(value, control);
 
