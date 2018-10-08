@@ -87660,14 +87660,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[MultiplyLow_r.cmd_11412]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_r\MultiplyLow_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [simplearg.cmd_11413]
 RelativePath=JIT\Directed\RVAInit\simplearg\simplearg.cmd
 WorkingDir=JIT\Directed\RVAInit\simplearg
@@ -88452,14 +88444,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[MultiplyLow_ro.cmd_11539]
-RelativePath=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_ro\MultiplyLow_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Sse2\MultiplyLow_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [eventactivityidcontrol.cmd_11540]
 RelativePath=tracing\eventactivityidcontrol\eventactivityidcontrol\eventactivityidcontrol.cmd
 WorkingDir=tracing\eventactivityidcontrol\eventactivityidcontrol
@@ -89084,14 +89068,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
 HostStyle=0
 
-[AlignRight_ro.cmd_11635]
-RelativePath=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_ro\AlignRight_ro.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
 [tracelogging.cmd_11638]
 RelativePath=tracing\tracevalidation\tracelogging\tracelogging\tracelogging.cmd
 WorkingDir=tracing\tracevalidation\tracelogging\tracelogging
@@ -89207,14 +89183,6 @@ HostStyle=0
 [Shuffle_r.cmd_11652]
 RelativePath=JIT\HardwareIntrinsics\X86\Sse\Shuffle_r\Shuffle_r.cmd
 WorkingDir=JIT\HardwareIntrinsics\X86\Sse\Shuffle_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;EXCLUDED
-HostStyle=0
-
-[AlignRight_r.cmd_11655]
-RelativePath=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_r\AlignRight_r.cmd
-WorkingDir=JIT\HardwareIntrinsics\X86\Ssse3\AlignRight_r
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;NEW;EXCLUDED
