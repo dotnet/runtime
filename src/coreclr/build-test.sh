@@ -111,6 +111,40 @@ isMSBuildOnNETCoreSupported()
     fi
 }
 
+build_test_wrappers()
+{
+    if [ $__BuildTestWrappers -ne -0 ]; then
+        echo "${__MsgPrefix}Creating test wrappers..."
+
+        export __Exclude="${__ProjectDir}/tests/issues.targets"
+        export __BuildLogRootName="Tests_XunitWrapper"
+
+        # Set up directories and file names
+        __BuildLogRootName=$subDirectoryName
+        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
+        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
+        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+
+        buildVerbosity="Summary"
+
+        if [ $__VerboseBuild == 1 ]; then
+            buildVerbosity="Diag"
+        fi
+
+        echo "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
+        "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
+
+        if [ $? -ne 0 ]; then
+            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
+            exit 1
+        else
+            echo "XUnit Wrappers have been built."
+            echo { "\"build_os\"": "\"${__BuildOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
+
+        fi
+    fi
+}
+
 generate_layout()
 {
     __TestDir=$__ProjectDir/tests
@@ -288,36 +322,7 @@ build_Tests()
         fi
     fi
 
-    if [ $__BuildTestWrappers -ne -0 ]; then
-        echo "${__MsgPrefix}Creating test wrappers..."
-
-        export __Exclude="${__ProjectDir}/tests/issues.targets"
-        export __BuildLogRootName="Tests_XunitWrapper"
-
-        # Set up directories and file names
-        __BuildLogRootName=$subDirectoryName
-        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
-        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
-        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
-
-        buildVerbosity="Summary"
-
-        if [ $__VerboseBuild == 1 ]; then
-            buildVerbosity="Diag"
-        fi
-
-        echo "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
-        "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
-
-        if [ $? -ne 0 ]; then
-            echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
-            exit 1
-        else
-            echo "XUnit Wrappers have been built."
-            echo { "\"build_os\"": "\"${__BuildOS}\"", "\"build_arch\"": "\"${__BuildArch}\"", "\"build_type\"": "\"${__BuildType}\"" } > "${__TestWorkingDir}/build_info.json"
-
-        fi
-    fi
+    build_test_wrappers
 
     if [ -n "$__UpdateInvalidPackagesArg" ]; then
         __up=-updateinvalidpackageversion
@@ -525,6 +530,7 @@ usage()
     echo "rebuild - if tests have already been built - rebuild them"
     echo "skipnative: skip the native tests build"
     echo "skipmanaged: skip the managed section of the test build"
+    echo "buildtestwrappersonly - only build the test wrappers"
     echo "generatelayoutonly - only pull down dependencies and build coreroot"
     echo "generatetesthostonly - only pull down dependencies and build coreroot and the CoreFX testhost"
     echo "skiprestorepackages - skip package restore"
@@ -658,6 +664,7 @@ __BuildTestWrappers=1
 __GenerateLayoutOnly=
 __GenerateTestHostOnly=
 __priority1=
+__BuildTestWrappersOnly=
 CORE_ROOT=
 
 while :; do
@@ -794,6 +801,10 @@ while :; do
             __ZipTests=1
             ;;
 
+        buildtestwrappersonly)
+            __BuildTestWrappersOnly=1
+            ;;
+
         generatelayoutonly)
             __GenerateLayoutOnly=1
             ;;
@@ -922,9 +933,11 @@ initTargetDistroRid
 __CoreClrVersion=1.1.0
 __sharedFxDir=$__BuildToolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 
-if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") ]]; then
+if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     echo "Building Tests..."
     build_Tests
+elif [ ! -z "$__BuildTestWrappersOnly" ]; then
+    build_test_wrappers
 else
     echo "Generating test layout..."
     generate_layout

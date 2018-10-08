@@ -223,6 +223,7 @@ buildXUnitWrappers=
 printLastResultsOnly=
 generateLayoutOnly=
 generateLayout=
+runSequential=
 
 for i in "$@"
 do
@@ -340,7 +341,7 @@ do
             export testHostDir=${i#*=}
             ;;
         --sequential)
-            ((maxProcesses = 1))
+            runSequential=1
             ;;
         --useServerGC)
             ((serverGC = 1))
@@ -535,7 +536,7 @@ if [ ! -z "$generateLayout" ]; then
     runtestPyArguments+=("--generate_layout")
 fi
 
-if [ ! -z "$sequential" ]; then
+if [ ! "$runSequential" -eq 0 ]; then
     echo "Run tests sequentially."
     runtestPyArguments+=("--sequential")
 fi
@@ -552,7 +553,14 @@ if (($doCrossgen!=0)); then
     runtestPyArguments+=("--precompile_core_root")
 fi
 
+
+# Default to python3 if it is installed
+__Python=python
+ if command -v python3 &>/dev/null; then
+    __Python=python3
+fi
+
 # Run the tests using cross platform runtest.py
 echo "python ${scriptPath}/runtest.py ${runtestPyArguments[@]}"
-python "${scriptPath}/runtest.py" "${runtestPyArguments[@]}"
+$__Python "${scriptPath}/runtest.py" "${runtestPyArguments[@]}"
 exit "$?"

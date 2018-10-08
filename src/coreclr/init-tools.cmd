@@ -96,6 +96,11 @@ if NOT exist "%BUILD_TOOLS_PATH%\init-tools.cmd" (
 
 :afterbuildtoolsrestore
 
+REM We do not need the build tools for arm64
+if /i "%PROCESSOR_ARCHITECTURE%" == "arm64" (
+  goto :EOF
+)
+
 :: Ask init-tools to also restore ILAsm
 set /p ILASMCOMPILER_VERSION=< "%~dp0ILAsmVersion.txt"
 
