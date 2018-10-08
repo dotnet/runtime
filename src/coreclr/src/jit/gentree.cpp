@@ -16578,12 +16578,14 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* isExact, bo
 
         case GT_IND:
         {
-            // indir(addr(lcl)) --> lcl
-            //
-            // This comes up during constrained callvirt on ref types.
             GenTreeIndir* indir = obj->AsIndir();
+
             if (indir->HasBase() && !indir->HasIndex())
             {
+                // indir(addr(lcl)) --> lcl
+                //
+                // This comes up during constrained callvirt on ref types.
+
                 GenTree*             base = indir->Base();
                 GenTreeLclVarCommon* lcl  = base->IsLocalAddrExpr();
 
@@ -16592,6 +16594,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* isExact, bo
                     const unsigned objLcl = lcl->GetLclNum();
                     objClass              = lvaTable[objLcl].lvClassHnd;
                     *isExact              = lvaTable[objLcl].lvClassIsExact;
+                }
+                else if (base->OperGet() == GT_ARR_ELEM)
+                {
+                    // indir(arr_elem(...)) -> array element type
+
+                    GenTree* array = base->AsArrElem()->gtArrObj;
+
+                    objClass   = gtGetArrayElementClassHandle(array);
+                    *isExact   = false;
+                    *isNonNull = false;
                 }
             }
             break;
@@ -16612,6 +16624,16 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* isExact, bo
             break;
         }
 
+        case GT_INDEX:
+        {
+            GenTree* array = obj->AsIndex()->Arr();
+
+            objClass   = gtGetArrayElementClassHandle(array);
+            *isExact   = false;
+            *isNonNull = false;
+            break;
+        }
+
         default:
         {
             break;
@@ -16619,6 +16641,44 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* isExact, bo
     }
 
     return objClass;
+}
+
+//------------------------------------------------------------------------
+// gtGetArrayElementClassHandle: find class handle for elements of an array
+// of ref types
+//
+// Arguments:
+//    array -- array to find handle for
+//
+// Return Value:
+//    nullptr if element class handle is unknown, otherwise the class handle.
+
+CORINFO_CLASS_HANDLE Compiler::gtGetArrayElementClassHandle(GenTree* array)
+{
+    bool                 isArrayExact   = false;
+    bool                 isArrayNonNull = false;
+    CORINFO_CLASS_HANDLE arrayClassHnd  = gtGetClassHandle(array, &isArrayExact, &isArrayNonNull);
+
+    if (arrayClassHnd != nullptr)
+    {
+        // We know the class of the reference
+        DWORD attribs = info.compCompHnd->getClassAttribs(arrayClassHnd);
+
+        if ((attribs & CORINFO_FLG_ARRAY) != 0)
+        {
+            // We know for sure it is an array
+            CORINFO_CLASS_HANDLE elemClassHnd  = nullptr;
+            CorInfoType          arrayElemType = info.compCompHnd->getChildType(arrayClassHnd, &elemClassHnd);
+
+            if (arrayElemType == CORINFO_TYPE_CLASS)
+            {
+                // We know it is an array of ref types
+                return elemClassHnd;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
 void GenTree::ParseArrayAddress(
