@@ -2491,6 +2491,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetStructHandle(GenTree* tree);
     // Get the handle for a ref type.
     CORINFO_CLASS_HANDLE gtGetClassHandle(GenTree* tree, bool* isExact, bool* isNonNull);
+    // Get the element handle for an array of ref type.
+    CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
