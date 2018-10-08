@@ -28,6 +28,7 @@ namespace JIT.HardwareIntrinsics.X86
                 ["MaskStore.UInt32"] = MaskStoreUInt32,
                 ["MaskStore.Int64"] = MaskStoreInt64,
                 ["MaskStore.UInt64"] = MaskStoreUInt64,
+                ["ShiftRightArithmeticVariable.Int32"] = ShiftRightArithmeticVariableInt32,
             };
         }
     }
