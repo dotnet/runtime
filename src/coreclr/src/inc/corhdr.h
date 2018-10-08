@@ -198,8 +198,8 @@ typedef enum ReplacesCorHdrNumericDefines
 // The most important of these is the MetaData tables.   The easiest way of looking at meta-data is using
 // the IlDasm.exe tool.   
 // 
-// MetaData holds most of the information in the IL image.  THe exceptions are resource blobs and the IL
-// instructions streams for individual methods.  Intstead the Meta-data for a method holds an RVA to a 
+// MetaData holds most of the information in the IL image.  The exceptions are resource blobs and the IL
+// instructions streams for individual methods.  Instead the Meta-data for a method holds an RVA to a
 // code:IMAGE_COR_ILMETHOD which holds all the IL stream (and exception handling information).  
 // 
 // Precompiled (NGEN) images use the same IMAGE_COR20_HEADER but also use the ManagedNativeHeader field to

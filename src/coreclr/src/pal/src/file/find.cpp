@@ -857,7 +857,7 @@ finding no matches but without any error occurring) or FALSE if any error
 occurs.  It calls SetLastError() if it returns FALSE.
 
 Sorting doesn't seem to be consistent on all Windows platform, and it's
-not required for Rotor to have the same sorting algorithm than Windows 2000.
+not required for CoreCLR to have the same sorting algorithm as Windows 2000.
 This implementation will give slightly different result for the sort list 
 than Windows 2000.
 

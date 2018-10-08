@@ -6,8 +6,8 @@
 **
 **
 **
-** Purpose: The CLR wrapper for all Win32 as well as 
-**          ROTOR-style Unix PAL, etc. native operations
+** Purpose: CoreCLR wrapper for Win32, either the native
+**          operations or the Unix PAL implemtation of them.
 **
 **
 ===========================================================*/
@@ -105,11 +105,8 @@ namespace Microsoft.Win32
     using ULONG = System.UInt32;
 
     /**
-     * Win32 encapsulation for MSCORLIB.
+     * Win32 encapsulation for System.Private.CoreLib.
      */
-    // Remove the default demands for all P/Invoke methods with this
-    // global declaration on the class.
-
     internal static class Win32Native
     {
         internal const int LMEM_FIXED = 0x0000;

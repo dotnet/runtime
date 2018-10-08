@@ -148,7 +148,6 @@ namespace BINDER_SPACE
 
     BOOL IsURL(SString &urlOrPath)
     {
-        // This is also in defined rotor pal
         return PathIsURLW(urlOrPath);
     }
 

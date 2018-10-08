@@ -1433,7 +1433,7 @@ Function:
   GetFileAttributesA
 
 Note:
-  Checking for directory and read-only file, according to Rotor spec.
+  Checking for directory and read-only file.
 
 Caveats:
   There are some important things to note about this implementation, which

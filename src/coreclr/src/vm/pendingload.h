@@ -217,7 +217,7 @@ public:
 };
 
 // Hash table used to hold pending type loads
-// @todo : use shash.h when Rotor build problems are fixed and it supports LoaderHeap/Alloc\MemTracker
+// @todo : use shash.h when it supports LoaderHeap/Alloc\MemTracker
 class PendingTypeLoadTable
 {
 protected:
