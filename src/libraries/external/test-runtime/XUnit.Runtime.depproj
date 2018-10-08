@@ -33,8 +33,8 @@
     <PackageReference Include="xunit">
       <Version>$(XUnitPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.XUnitExtensions">
-      <Version>$(MicrosoftDotNetXUnitExtensionsVersion)</Version>
+    <PackageReference Include="$(MicrosoftDotNetXUnitExtensionsPackage)">
+      <Version>$(MicrosoftDotNetXUnitExtensionsPackageVersion)</Version>
     </PackageReference>
     <!-- We don't use the default runner on uap -->
     <PackageReference Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerPackageId)">
@@ -154,7 +154,7 @@
     <PackageToInclude Include="xunit.extensibility.core" />
     <PackageToInclude Include="xunit.extensibility.execution" />
     <PackageToInclude Include="xunit.runner.utility" />
-    <PackageToInclude Include="Microsoft.DotNet.XUnitExtensions" />
+    <PackageToInclude Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
     <PackageToInclude Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerPackageId)" />
 
     <PackageToInclude Include="Microsoft.DiaSymReader.Native" />
