@@ -2067,7 +2067,7 @@ void Module::BuildStaticsOffsets(AllocMemTracker *pamTracker)
                     continue;
 
                 // We account for "regular statics" and "thread statics" separately. 
-                // Currently we are lumping RVA and context statics into "regular statics",
+                // Currently we are lumping RVA into "regular statics",
                 // but we probably shouldn't.
                 switch (ElementType)
                 {

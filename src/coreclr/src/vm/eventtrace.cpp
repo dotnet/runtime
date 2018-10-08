@@ -1552,7 +1552,7 @@ void BulkStaticsLogger::LogAllStatics()
                     ApproxFieldDescIterator fieldIter(mt, ApproxFieldDescIterator::STATIC_FIELDS);
                     for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
                     {
-                        // Don't want thread local or context local
+                        // Don't want thread local
                         _ASSERTE(field->IsStatic());
                         if (field->IsSpecialStatic() || field->IsEnCNew())
                             continue;

@@ -5523,7 +5523,6 @@ NativeImageDumper::EnumMnemonics s_MTFlagsLow[] =
     MTFLAG_ENTRY(GenericsMask_GenericInst),
     MTFLAG_ENTRY(GenericsMask_SharedInst),
     MTFLAG_ENTRY(GenericsMask_TypicalInst),
-    MTFLAG_ENTRY(HasRemotingVtsInfo),
     MTFLAG_ENTRY(HasVariance),
     MTFLAG_ENTRY(HasDefaultCtor),
     MTFLAG_ENTRY(HasPreciseInitCctors),

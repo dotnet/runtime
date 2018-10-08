@@ -85,7 +85,6 @@ class Thread;
 class BaseDomain;
 class Assembly;
 class Context;
-class CtxStaticData;
 class DomainAssembly;
 class AssemblyNative;
 class WaitHandleNative;

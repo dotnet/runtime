@@ -1868,8 +1868,8 @@ private:
         // Counts instance fields
         DWORD dwNumInstanceFields;
 
-        // Counts both regular statics and thread statics. Currently RVA and
-        // context statics get lumped in with "regular statics".
+        // Counts both regular statics and thread statics. Currently RVA
+        // get lumped in with "regular statics".
         DWORD dwNumStaticFields;
         DWORD dwNumStaticObjRefFields;
         DWORD dwNumStaticBoxedFields;
@@ -2801,11 +2801,6 @@ private:
     NeedsNativeCodeSlot(bmtMDMethod * pMDMethod);
 
     // --------------------------------------------------------------------------------------------
-    // MethodTableBuilder version of code:MethodDesc::MayBeRemotingIntercepted. Used for MethodDesc layout.
-    BOOL
-    MayBeRemotingIntercepted(bmtMDMethod * pMDMethod);
-
-    // --------------------------------------------------------------------------------------------
     // Used to allocate and initialize the dictionary used with generic types.
     VOID
     AllocAndInitDictionary();
@@ -2940,9 +2935,7 @@ private:
                                 BOOL isIFace, 
                                 BOOL fDynamicStatics,
                                 BOOL fHasGenericsStaticsInfo,
-                                BOOL fNeedsRCWPerTypeData,
-                                BOOL fNeedsRemotableMethodInfo,
-                                BOOL fNeedsRemotingVtsInfo
+                                BOOL fNeedsRCWPerTypeData
 #ifdef FEATURE_COMINTEROP
                                 , BOOL bHasDynamicInterfaceMap
 #endif
