@@ -766,10 +766,34 @@ namespace System.Tests
             Assert.Equal(expected, decimal.Remainder(d1, d2));
         }
 
+        public static IEnumerable<object[]> Remainder_Valid_TestDataV2()
+        {
+            yield return new object[] { decimal.MaxValue, 0.1m, 0.0m };
+            yield return new object[] { decimal.MaxValue, 7.081881059m, 3.702941036m };
+            yield return new object[] { decimal.MaxValue, 2004094637636.6280382536104438m, 1980741879937.1051521151154118m };
+            yield return new object[] { decimal.MaxValue, new decimal(0, 0, 1, false, 28), 0.0000000013968756053316206592m };
+            yield return new object[] { decimal.MaxValue, new decimal(0, 1, 0, false, 28), 0.0000000000000000004026531840m };
+            yield return new object[] { decimal.MaxValue, new decimal(1, 0, 0, false, 28), 0.0000000000000000000000000000m };
+            yield return new object[] { 5m, 0.0000000000000000000000000003m, 0.0000000000000000000000000002m };
+            yield return new object[] { 5.94499443m, 0.0000000000000000000000000007m, 0.0000000000000000000000000005m };
+            yield return new object[] { 1667m, 325.66574961026426932314500573m, 38.67125194867865338427497135m };
+            yield return new object[] { 1667m, 0.00000000013630700224712809m, 0.00000000002527942770321278m };
+            yield return new object[] { 60596869520933069.9m, 8063773.1275438997671m, 5700076.9722872002614m };
+        }
+
+        [Theory]
+        [MemberData(nameof(Remainder_Valid_TestDataV2))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have fixes for https://github.com/dotnet/coreclr/issues/12605")]
+        public static void RemainderV2(decimal d1, decimal d2, decimal expected)
+        {
+            Assert.Equal(expected, d1 % d2);
+            Assert.Equal(expected, decimal.Remainder(d1, d2));
+        }
+
+
         public static IEnumerable<object[]> Remainder_Invalid_TestData()
         {
             yield return new object[] { 5m, 0m, typeof(DivideByZeroException) };
-            yield return new object[] { decimal.MaxValue, 0.1m, typeof(OverflowException) };
         }
 
         [Theory]
@@ -1461,7 +1485,6 @@ namespace System.Tests
             [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not have fixes for https://github.com/dotnet/coreclr/issues/12605")]
             public static void Test()
             {
-                int overflowBudget = 1000;
                 decimal[] decimalValues = GetRandomData(out BigDecimal[] bigDecimals);
                 for (int i = 0; i < decimalValues.Length; i++)
                 {
@@ -1472,32 +1495,20 @@ namespace System.Tests
                         decimal d2 = decimalValues[j];
                         if (Math.Sign(d2) == 0)
                             continue;
-                        BigDecimal expected = b1.Mod(bigDecimals[j], out bool expectedOverflow);
-                        if (expectedOverflow)
+                        BigDecimal expected = b1.Mod(bigDecimals[j]);
+                        try
                         {
-                            if (--overflowBudget < 0)
-                                continue;
-                            try
-                            {
-                                decimal actual = d1 % d2;
-                                throw new Xunit.Sdk.AssertActualExpectedException(typeof(OverflowException), actual, d1 + " % " + d2);
-                            }
-                            catch (OverflowException) { }
-                        }
-                        else
+                            decimal actual = d1 % d2;
                             unsafe
                             {
-                                try
-                                {
-                                    decimal actual = d1 % d2;
-                                    if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
-                                        throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
-                                }
-                                catch (OverflowException actual)
-                                {
+                                if (expected.Scale != (byte)(*(uint*)&actual >> BigDecimal.ScaleShift) || expected.CompareTo(new BigDecimal(actual)) != 0)
                                     throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
-                                }
                             }
+                        }
+                        catch (OverflowException actual)
+                        {
+                            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, d1 + " % " + d2);
+                        }
                     }
                 }
             }
@@ -1864,7 +1875,7 @@ namespace System.Tests
                 return new BigDecimal(quo, (byte)scale);
             }
 
-            public BigDecimal Mod(BigDecimal den, out bool overflow)
+            public BigDecimal Mod(BigDecimal den)
             {
                 if (den.Integer.IsZero)
                 {
@@ -1873,7 +1884,6 @@ namespace System.Tests
                 int sign = Integer.Sign;
                 if (sign == 0)
                 {
-                    overflow = false;
                     return this;
                 }
                 if (den.Integer.Sign != sign)
@@ -1884,57 +1894,17 @@ namespace System.Tests
                 int cmp = CompareTo(den) * sign;
                 if (cmp <= 0)
                 {
-                    overflow = false;
                     return cmp < 0 ? this : new BigDecimal(default, Math.Max(Scale, den.Scale));
                 }
 
-                // The obvious solution would be to calculate the integer remainder using the larger scaling factor,
-                // but the current Decimal.Remainder implementation does several intermediate calculations that may round or overflow (e.g., 5 % 0.0000000000000000000000000003m or decimal.MaxValue % 0.1m),
-                // so a similar approach must be used here and the rest of this function matches all Decimal.Remainder quirks.
-                // https://github.com/dotnet/coreclr/issues/12605
+                int sd = Scale - den.Scale;
+                BigInteger a = Integer, b = den.Integer;
+                if (sd > 0)
+                    b *= Pow10[sd];
+                else if (sd < 0)
+                    a *= Pow10[-sd];
 
-                // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes causes the result to be 28 digits, can cause to be incorrectly rounded up.
-                // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
-                BigDecimal num = Add(-den, out overflow);
-                if (overflow)
-                {
-                    return default;
-                }
-
-                // Formula:  num - (RoundTowardsZero(num / den) * den)
-                BigDecimal res = num.Div(den, out overflow);
-                if (overflow)
-                {
-                    return default;
-                }
-                res = res.Truncate().Mul(den, out overflow);
-                if (overflow)
-                {
-                    return default;
-                }
-                res = num.Add(-res, out overflow);
-                if (overflow)
-                {
-                    return default;
-                }
-
-                // See if the result has crossed 0
-                if (!res.Integer.IsZero && res.Integer.Sign != sign)
-                {
-                    if (res.Scale == 28 && BigInteger.Abs(res.Integer) == 1)
-                    {
-                        // Certain Remainder operations on decimals with 28 significant digits round to [+-]0.0000000000000000000000000001m instead of [+-]0m during the intermediate calculations.
-                        // This might give incorrectly rounded results (e.g., 5 % 0.0000000000000000000000000003m = 0.0000000000000000000000000002m but returns 0.0000000000000000000000000001m)
-                        res = -res;
-                    }
-                    else
-                    {
-                        // If the division rounds up because it runs out of digits, the multiplied result can end up with a larger absolute value and the result of the formula crosses 0.
-                        // To correct it can add the divisor back.
-                        res = res.Add(den, out overflow);
-                    }
-                }
-                return res;
+                return new BigDecimal(a % b, Math.Max(Scale, den.Scale));
             }
 
             public static BigDecimal operator -(BigDecimal value) => new BigDecimal(-value.Integer, value.Scale);
