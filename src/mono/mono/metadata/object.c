@@ -121,19 +121,14 @@ mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error)
 	mono_error_assert_msg_ok (error, "Could not lookup zero argument constructor");
 	g_assertf (method, "Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
 
-	guint gchandle = 0;
-	gpointer raw;
-
 	if (m_class_is_valuetype (method->klass)) {
-		raw = mono_object_handle_pin_unbox (this_obj, &gchandle);
+		guint gchandle = 0;
+		gpointer raw = mono_object_handle_pin_unbox (this_obj, &gchandle);
+		mono_runtime_invoke_checked (method, raw, NULL, error);
+		mono_gchandle_free (gchandle);
 	} else {
-		gchandle = mono_gchandle_from_handle (this_obj, TRUE);
-		raw = MONO_HANDLE_RAW (this_obj);
+		mono_runtime_invoke_handle (method, this_obj, NULL, error);
 	}
-
-	mono_runtime_invoke_checked (method, raw, NULL, error);
-
-	mono_gchandle_free (gchandle);
 
 	return is_ok (error);
 }
@@ -147,23 +142,11 @@ mono_runtime_object_init_handle (MonoObjectHandle this_obj, MonoError *error)
  * on error and sets \p error.
  */
 gboolean
-mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error)
+mono_runtime_object_init_checked (MonoObject *this_obj_raw, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoMethod *method = NULL;
-	MonoClass *klass = this_obj->vtable->klass;
-
-	error_init (error);
-	method = mono_class_get_method_from_name_checked (klass, ".ctor", 0, 0, error);
-	mono_error_assert_msg_ok (error, "Could not lookup zero argument constructor");
-	g_assertf (method, "Could not lookup zero argument constructor for class %s", mono_type_get_full_name (klass));
-
-	if (m_class_is_valuetype (method->klass))
-		this_obj = (MonoObject *)mono_object_unbox (this_obj);
-
-	mono_runtime_invoke_checked (method, this_obj, NULL, error);
-	return is_ok (error);
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoObject, this_obj);
+	HANDLE_FUNCTION_RETURN_VAL (mono_runtime_object_init_handle (this_obj, error));
 }
 
 /* The pseudo algorithm for type initialization from the spec
@@ -1943,6 +1926,8 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoVTable *vt;
 	MonoClassRuntimeInfo *runtime_info;
 	MonoClassField *field;
@@ -1954,22 +1939,22 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	gpointer iter;
 	gpointer *interface_offsets;
 
-	error_init (error);
-
 	mono_loader_lock (); /*FIXME mono_class_init acquires it*/
 	mono_domain_lock (domain);
+
 	runtime_info = m_class_get_runtime_info (klass);
 	if (runtime_info && runtime_info->max_domain >= domain->domain_id && runtime_info->domain_vtables [domain->domain_id]) {
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
-		return runtime_info->domain_vtables [domain->domain_id];
+		vt = runtime_info->domain_vtables [domain->domain_id];
+		goto exit;
 	}
 	if (!m_class_is_inited (klass) || mono_class_has_failure (klass)) {
 		if (!mono_class_init (klass) || mono_class_has_failure (klass)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			mono_error_set_for_class_failure (error, klass);
-			return NULL;
+			goto return_null;
 		}
 	}
 
@@ -1990,7 +1975,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			mono_error_set_for_class_failure (error, klass);
-			return NULL;
+			goto return_null;
 		}
 	}
 
@@ -2011,7 +1996,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		mono_domain_unlock (domain);
 		mono_loader_unlock ();
 		mono_error_set_for_class_failure (error, klass);
-		return NULL;
+		goto return_null;
 	}
 
 	vtable_slots = m_class_get_vtable_size (klass);
@@ -2178,7 +2163,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 					mono_domain_unlock (domain);
 					mono_loader_unlock ();
 					MONO_PROFILER_RAISE (vtable_failed, (vt));
-					return NULL;
+					goto return_null;
 				}
 			}
 		}
@@ -2196,15 +2181,15 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	 */
 	/* Special case System.MonoType to avoid infinite recursion */
 	if (klass != mono_defaults.runtimetype_class) {
-		vt->type = mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
+		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			MONO_PROFILER_RAISE (vtable_failed, (vt));
-			return NULL;
+			goto return_null;
 		}
-
-		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.runtimetype_class)
+		if (mono_handle_class (vt_type) != mono_defaults.runtimetype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
 			   domain.c. */
@@ -2229,15 +2214,16 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	mono_class_setup_runtime_info  (klass, domain, vt);
 
 	if (klass == mono_defaults.runtimetype_class) {
-		vt->type = mono_type_get_object_checked (domain, m_class_get_byval_arg (klass), error);
+		MonoReflectionTypeHandle vt_type = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
+		vt->type = MONO_HANDLE_RAW (vt_type);
 		if (!is_ok (error)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			MONO_PROFILER_RAISE (vtable_failed, (vt));
-			return NULL;
+			goto return_null;
 		}
 
-		if (mono_object_get_class ((MonoObject *)vt->type) != mono_defaults.runtimetype_class)
+		if (mono_handle_class (vt_type) != mono_defaults.runtimetype_class)
 			/* This is unregistered in
 			   unregister_vtable_reflection_type() in
 			   domain.c. */
@@ -2254,7 +2240,11 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	MONO_PROFILER_RAISE (vtable_loaded, (vt));
 
-	return vt;
+	goto exit;
+return_null:
+	vt = NULL;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (vt);
 }
 
 #ifndef DISABLE_REMOTING
@@ -5890,20 +5880,20 @@ mono_object_new_from_token  (MonoDomain *domain, MonoImage *image, guint32 token
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
-	MonoObject *result;
 	MonoClass *klass;
 
 	klass = mono_class_get_checked (image, token, error);
 	mono_error_assert_ok (error);
 	
-	result = mono_object_new_checked (domain, klass, error);
+	MonoObjectHandle result = mono_object_new_handle (domain, klass, error);
 
 	mono_error_cleanup (error);
-	return result;
-	
-}
 
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
 
 /**
  * mono_object_clone:
@@ -5921,24 +5911,12 @@ mono_object_clone (MonoObject *obj)
 }
 
 MonoObject *
-mono_object_clone_checked (MonoObject *obj, MonoError *error)
+mono_object_clone_checked (MonoObject *obj_raw, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoClass *klass = mono_object_class (obj);
-
-	int size = m_class_get_instance_size (klass);
-
-	if (m_class_get_rank (klass))
-		return (MonoObject*)mono_array_clone_checked ((MonoArray*)obj, error);
-
-	MonoObject *o = mono_gc_alloc_obj (obj->vtable, size);
-
-	/* If the object doesn't contain references this will do a simple memmove. */
-	if (G_LIKELY (o))
-		mono_gc_wbarrier_object_copy (o, obj);
-
-	return object_new_common_tail (o, klass, error);
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoObject, obj);
+	HANDLE_FUNCTION_RETURN_OBJ (mono_object_clone_handle (obj, error));
 }
 
 MonoObjectHandle
