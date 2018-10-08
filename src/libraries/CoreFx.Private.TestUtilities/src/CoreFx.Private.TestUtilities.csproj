@@ -93,7 +93,7 @@
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime.InteropServices" />
     <ReferenceFromRuntime Include="xunit.core" />
-    <ReferenceFromRuntime Include="Microsoft.DotNet.XUnitExtensions" />
+    <ReferenceFromRuntime Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
     <ReferenceFromRuntime Include="xunit.assert" />
     <ReferenceFromRuntime Condition="'$(TargetGroup)' != 'uapaot'" Include="Microsoft.DotNet.PlatformAbstractions" />
   </ItemGroup>
