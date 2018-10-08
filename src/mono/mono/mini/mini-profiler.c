@@ -179,7 +179,7 @@ memdup_with_type (gpointer data, MonoType *t)
 static guint8 *
 get_int_reg (MonoContext *ctx, guint32 reg)
 {
-	return (guint8 *) mono_arch_context_get_int_reg (ctx, reg);
+	return (guint8 *)(gsize)mono_arch_context_get_int_reg (ctx, reg);
 }
 
 static gpointer
@@ -193,9 +193,9 @@ get_variable_buffer (MonoDebugMethodJitInfo *jit, MonoDebugVarInfo *var, MonoCon
 		/*
 		 * This is kind of a special case: All other address modes ultimately
 		 * produce an address to where the actual value is located, but this
-		 * address mode gets us the value itself as an mgreg_t value.
+		 * address mode gets us the value itself as an host_mgreg_t value.
 		 */
-		mgreg_t value = (mgreg_t) get_int_reg (ctx, reg);
+		host_mgreg_t value = (host_mgreg_t) get_int_reg (ctx, reg);
 
 		return memdup_with_type (&value, var->type);
 	}

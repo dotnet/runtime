@@ -407,7 +407,7 @@ static gboolean
 arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 				   MonoJitInfo *ji, MonoContext *ctx,
 				   MonoContext *new_ctx, MonoLMF **lmf,
-				   mgreg_t **save_locations,
+				   host_mgreg_t **save_locations,
 				   StackFrameInfo *frame)
 {
 	if (!ji && *lmf) {
@@ -606,7 +606,7 @@ gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *prev_ji, MonoContext *ctx,
 						MonoContext *new_ctx, char **trace, MonoLMF **lmf,
-						mgreg_t **save_locations,
+						host_mgreg_t **save_locations,
 						StackFrameInfo *frame)
 {
 	gboolean err;
@@ -629,7 +629,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		target_domain = domain;
 
 	if (save_locations)
-		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (mgreg_t*));
+		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (host_mgreg_t*));
 
 	err = arch_unwind_frame (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
 	if (!err)
@@ -723,7 +723,7 @@ unwinder_unwind_frame (Unwinder *unwinder,
 					   MonoDomain *domain, MonoJitTlsData *jit_tls,
 					   MonoJitInfo *prev_ji, MonoContext *ctx,
 					   MonoContext *new_ctx, char **trace, MonoLMF **lmf,
-					   mgreg_t **save_locations,
+					   host_mgreg_t **save_locations,
 					   StackFrameInfo *frame)
 {
 	gpointer parent;
@@ -788,7 +788,7 @@ get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 	 * its prolog.
 	 */
 	if (gi->nlocs) {
-		int offset = (mgreg_t)MONO_CONTEXT_GET_IP (ctx) - (mgreg_t)ji->code_start;
+		int offset = (gsize)MONO_CONTEXT_GET_IP (ctx) - (gsize)ji->code_start;
 		int i;
 
 		for (i = 0; i < gi->nlocs; ++i) {
@@ -1178,8 +1178,8 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	MonoContext ctx, new_ctx;
 	StackFrameInfo frame;
 	gboolean res;
-	mgreg_t *reg_locations [MONO_MAX_IREGS];
-	mgreg_t *new_reg_locations [MONO_MAX_IREGS];
+	host_mgreg_t *reg_locations [MONO_MAX_IREGS];
+	host_mgreg_t *new_reg_locations [MONO_MAX_IREGS];
 	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
 	gboolean async = mono_thread_info_is_async_context ();
 	Unwinder unwinder;

@@ -123,7 +123,7 @@ mini_emit_isninst_cast_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, 
 		MONO_EMIT_NEW_CLASSCONST (cfg, const_reg, klass);
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, stype, const_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, stype, klass);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, stype, (gsize)klass);
 	}
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, true_target);
 }
@@ -240,7 +240,7 @@ mini_emit_class_check_branch (MonoCompile *cfg, int klass_reg, MonoClass *klass,
 		MONO_EMIT_NEW_CLASSCONST (cfg, const_reg, klass);
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, klass_reg, const_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 	}
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, branch_op, target);
 }
@@ -511,10 +511,10 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 					return NULL;
 				}
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, (gsize)vt);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 			}
 			MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 		} else {
@@ -715,10 +715,10 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						return NULL;
 					}
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, (gsize)vt);
 				} else {
 					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 				}
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);

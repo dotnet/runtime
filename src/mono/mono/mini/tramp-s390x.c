@@ -159,7 +159,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	g_assert_not_reached ();
 }
@@ -289,7 +289,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 				
 	/* Set arguments */
 
-	/* Arg 1: mgreg_t *regs */
+	/* Arg 1: host_mgreg_t *regs */
 	s390_la  (buf, s390_r2, 0, LMFReg, G_STRUCT_OFFSET(MonoLMF, gregs[0]));
 		
 	/* Arg 2: code (next address to the instruction that called us) */

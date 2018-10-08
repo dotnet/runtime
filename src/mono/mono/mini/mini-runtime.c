@@ -1639,7 +1639,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 		mono_gc_get_nursery (&shift_bits, &size);
 
-		target = (gpointer)(mgreg_t)shift_bits;
+		target = (gpointer)(gssize)shift_bits;
 		break;
 	}
 	case MONO_PATCH_INFO_CASTCLASS_CACHE: {

@@ -342,7 +342,7 @@ struct CallInfo {
 
 typedef struct {
 	/* General registers */
-	mgreg_t gregs [AMD64_NREG];
+	host_mgreg_t gregs [AMD64_NREG];
 	/* Floating registers */
 	double fregs [AMD64_XMM_NREG];
 	/* Stack usage, used for passing params on stack */

@@ -124,7 +124,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	guint32 offset;
 
@@ -576,7 +576,7 @@ mono_arch_get_call_target (guint8 *code)
 }
 
 guint32
-mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
 	return *(guint32*)(plt_entry + 6);
 }
@@ -648,7 +648,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_NREG, -cfa_offset);
 
 	x86_push_reg (code, X86_EBP);
-	cfa_offset += sizeof(mgreg_t);
+	cfa_offset += sizeof(host_mgreg_t);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, - cfa_offset);
 

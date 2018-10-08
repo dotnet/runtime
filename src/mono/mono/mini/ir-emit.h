@@ -714,7 +714,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define	MONO_EMIT_NEW_ICOMPARE_IMM(cfg,sr1,imm) do { \
         MonoInst *inst; \
-        MONO_INST_NEW ((cfg), (inst), sizeof (mgreg_t) == 8 ? OP_ICOMPARE_IMM : OP_COMPARE_IMM); \
+        MONO_INST_NEW ((cfg), (inst), sizeof (target_mgreg_t) == 8 ? OP_ICOMPARE_IMM : OP_COMPARE_IMM); \
         inst->sreg1 = sr1; \
         inst->inst_imm = (imm);			 \
 	    MONO_ADD_INS ((cfg)->cbb, inst); \
@@ -758,7 +758,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         MONO_INST_NEW ((cfg), (inst), (op)); \
         inst->inst_destbasereg = base; \
         inst->inst_offset = offset; \
-        inst->inst_imm = (mgreg_t)(imm); \
+        inst->inst_imm = (target_mgreg_t)(imm); \
         MONO_ADD_INS ((cfg)->cbb, inst); \
 	} while (0)
 

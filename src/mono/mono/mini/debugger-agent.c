@@ -137,7 +137,7 @@ typedef struct
 	MonoInterpFrameHandle interp_frame;
 	gpointer frame_addr;
 	int flags;
-	mgreg_t *reg_locations [MONO_MAX_IREGS];
+	host_mgreg_t *reg_locations [MONO_MAX_IREGS];
 	/*
 	 * Whenever ctx is set. This is FALSE for the last frame of running threads, since
 	 * the frame can become invalid.
@@ -3172,7 +3172,7 @@ process_frame (StackFrameInfo *info, MonoContext *ctx, gpointer user_data)
 	frame->interp_frame = info->interp_frame;
 	frame->frame_addr = info->frame_addr;
 	if (info->reg_locations)
-		memcpy (frame->reg_locations, info->reg_locations, MONO_MAX_IREGS * sizeof (mgreg_t*));
+		memcpy (frame->reg_locations, info->reg_locations, MONO_MAX_IREGS * sizeof (host_mgreg_t*));
 	if (ctx) {
 		frame->ctx = *ctx;
 		frame->has_ctx = TRUE;
@@ -5579,7 +5579,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 	guint32 flags;
 	int reg;
 	guint8 *addr, *gaddr;
-	mgreg_t reg_val;
+	host_mgreg_t reg_val;
 
 	flags = var->index & MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
 	reg = var->index & ~MONO_DEBUG_VAR_ADDRESS_MODE_FLAGS;
@@ -5661,7 +5661,7 @@ add_var (Buffer *buf, MonoDebugMethodJitInfo *jit, MonoType *t, MonoDebugVarInfo
 }
 
 static void
-set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, guint8 *val, mgreg_t **reg_locations, MonoContext *restore_ctx)
+set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domain, guint8 *val, host_mgreg_t **reg_locations, MonoContext *restore_ctx)
 {
 	guint32 flags;
 	int reg, size;
@@ -5678,7 +5678,7 @@ set_var (MonoType *t, MonoDebugVarInfo *var, MonoContext *ctx, MonoDomain *domai
 	switch (flags) {
 	case MONO_DEBUG_VAR_ADDRESS_MODE_REGISTER: {
 #ifdef MONO_ARCH_HAVE_CONTEXT_SET_INT_REG
-		mgreg_t v;
+		host_mgreg_t v;
 		gboolean is_signed = FALSE;
 
 		if (t->byref) {
@@ -6066,7 +6066,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 				NOT_IMPLEMENTED;
 
 			if (sig->params [i]->byref) {
-				arg_buf [i] = (guint8 *)g_alloca (sizeof (mgreg_t));
+				arg_buf [i] = g_newa (guint8, sizeof (gpointer));
 				*(gpointer*)arg_buf [i] = args [i];
 				args [i] = arg_buf [i];
 			}

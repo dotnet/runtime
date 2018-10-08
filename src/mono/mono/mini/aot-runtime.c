@@ -2905,7 +2905,7 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitIn
 
 	if (is_thumb_code (amodule, code_start))
 		/* Clear thumb flag */
-		code_start = (guint8*)(((mgreg_t)code_start) & ~1);
+		code_start = (guint8*)(((gsize)code_start) & ~1);
 
 	fde = amodule->mono_eh_frame + table [(pos * 2) + 1];	
 	/* This won't overflow because there is +1 entry in the table */
@@ -2976,10 +2976,10 @@ decode_llvm_mono_eh_frame (MonoAotModule *amodule, MonoDomain *domain, MonoJitIn
 		jei->clause_index = clause_index;
 
 		if (is_thumb_code (amodule, (guint8 *)jei->try_start)) {
-			jei->try_start = (void*)((mgreg_t)jei->try_start & ~1);
-			jei->try_end = (void*)((mgreg_t)jei->try_end & ~1);
+			jei->try_start = (void*)((gsize)jei->try_start & ~1);
+			jei->try_end = (void*)((gsize)jei->try_end & ~1);
 			/* Make sure we transition to thumb when a handler starts */
-			jei->handler_start = (void*)((mgreg_t)jei->handler_start + 1);
+			jei->handler_start = (void*)((gsize)jei->handler_start + 1);
 		}
 	}
 
@@ -4975,7 +4975,7 @@ find_aot_module (guint8 *code)
 }
 
 void
-mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	MonoAotModule *amodule;
 
@@ -5175,7 +5175,7 @@ mono_aot_get_plt_entry (guint8 *code)
  *   Return the PLT info offset belonging to the plt entry called by CODE.
  */
 guint32
-mono_aot_get_plt_info_offset (mgreg_t *regs, guint8 *code)
+mono_aot_get_plt_info_offset (host_mgreg_t *regs, guint8 *code)
 {
 	guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
@@ -6182,7 +6182,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 }
 
 void
-mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_aot_patch_plt_entry (guint8 *code, guint8 *plt_entry, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 }
 
@@ -6195,7 +6195,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 }
 
 guint32
-mono_aot_get_plt_info_offset (mgreg_t *regs, guint8 *code)
+mono_aot_get_plt_info_offset (host_mgreg_t *regs, guint8 *code)
 {
 	g_assert_not_reached ();
 

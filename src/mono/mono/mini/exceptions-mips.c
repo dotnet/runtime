@@ -422,7 +422,7 @@ gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf, 
-							 mgreg_t **save_locations,
+							 host_mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	memset (frame, 0, sizeof (StackFrameInfo));
@@ -433,7 +433,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (ji != NULL) {
 		int i;
 		gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-		mgreg_t regs [MONO_MAX_IREGS + 1];
+		host_mgreg_t regs [MONO_MAX_IREGS + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -456,7 +456,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		for (i = 0; i < MONO_MAX_IREGS; ++i)
 			new_ctx->sc_regs [i] = regs [i];
 		new_ctx->sc_pc = regs [mips_ra];
-		new_ctx->sc_regs [mips_sp] = (mgreg_t)cfa;
+		new_ctx->sc_regs [mips_sp] = (host_mgreg_t)(gsize)cfa;
 
 		/* we substract 8, so that the IP points into the call instruction */
 		MONO_CONTEXT_SET_IP (new_ctx, new_ctx->sc_pc - 8);

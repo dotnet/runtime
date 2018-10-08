@@ -61,7 +61,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	guint8 *jump_entry;
 
@@ -534,7 +534,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 4);
 	ARM_ADD_REG_IMM8 (code, ARMREG_R0, ARMREG_R0, MONO_ABI_SIZEOF (MonoObject));
 	code = emit_bx (code, ARMREG_IP);
-	*(guint32*)code = (guint32)addr;
+	*(guint32*)code = (guint32)(gsize)addr;
 	code += 4;
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
@@ -561,9 +561,9 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 	ARM_LDR_IMM (code, MONO_ARCH_RGCTX_REG, ARMREG_PC, 0);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_PC, 0);
-	*(guint32*)code = (guint32)arg;
+	*(guint32*)code = (guint32)(gsize)arg;
 	code += 4;
-	*(guint32*)code = (guint32)addr;
+	*(guint32*)code = (guint32)(gsize)addr;
 	code += 4;
 
 	g_assert ((code - start) <= buf_len);
@@ -591,9 +591,9 @@ mono_arch_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
 
 	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_PC, 0);
-	*(guint32*)code = (guint32)arg;
+	*(guint32*)code = (guint32)(gsize)arg;
 	code += 4;
-	*(guint32*)code = (guint32)addr;
+	*(guint32*)code = (guint32)(gsize)addr;
 	code += 4;
 
 	g_assert ((code - start) <= buf_len);
@@ -1103,7 +1103,7 @@ mono_arch_get_call_target (guint8 *code)
 }
 
 guint32
-mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
 	/* The offset is stored as the 4th word of the plt entry */
 	return ((guint32*)plt_entry) [3];
@@ -1121,8 +1121,8 @@ mono_arm_get_thumb_plt_entry (guint8 *code)
 	guint8 *target;
 
 	/* code should be right after a BL */
-	code = (guint8*)((mgreg_t)code & ~1);
-	base = (guint8*)((mgreg_t)code & ~3);
+	code = (guint8*)((gsize)code & ~1);
+	base = (guint8*)((gsize)code & ~3);
 	bl = code - 4;
 	t1 = ((guint16*)bl) [0];
 	t2 = ((guint16*)bl) [1];

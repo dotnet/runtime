@@ -228,7 +228,7 @@ struct CallInfo {
 
 typedef struct {
 	/* General registers */
-	mgreg_t gregs [PARAM_REGS];
+	host_mgreg_t gregs [PARAM_REGS];
 	/* Floating registers */
 	float fregs [FP_PARAM_REGS * 2];
 	/* Stack usage, used for passing params on stack */
@@ -246,12 +246,12 @@ struct SeqPointInfo {
 
 typedef struct {
 	double fpregs [FP_PARAM_REGS];
-	mgreg_t res, res2;
+	host_mgreg_t res, res2;
 	guint8 *ret;
 	guint32 has_fpregs;
 	guint32 n_stackargs;
 	/* This should come last as the structure is dynamically extended */
-	mgreg_t regs [PARAM_REGS];
+	host_mgreg_t regs [PARAM_REGS];
 } DynCallArgs;
 
 void arm_patch (guchar *code, const guchar *target);
@@ -259,7 +259,7 @@ guint8* mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val);
 int mono_arm_is_rotated_imm8 (guint32 val, gint *rot_amount);
 
 void
-mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
+mono_arm_throw_exception_by_token (guint32 type_token, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs);
 
 gpointer
 mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg, double *caller_fregs, double *callee_fregs);
@@ -280,9 +280,9 @@ struct MonoLMF {
 	gpointer    lmf_addr;
 	/* This is only set in trampoline LMF frames */
 	MonoMethod *method;
-	mgreg_t    sp;
-	mgreg_t    ip;
-	mgreg_t    fp;
+	host_mgreg_t sp;
+	host_mgreg_t ip;
+	host_mgreg_t fp;
 	/* Currently only used in trampolines on armhf to hold d0-d15. We don't really
 	 * need to put d0-d7 in the LMF, but it simplifies the trampoline code.
 	 */
@@ -291,7 +291,7 @@ struct MonoLMF {
 	 * 0-4 should be considered undefined (execpt in the magic tramp)
 	 * sp is saved at IP.
 	 */
-	mgreg_t    iregs [14];
+	host_mgreg_t iregs [14];
 };
 
 typedef struct MonoCompileArch {
@@ -397,13 +397,13 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
 
 void
-mono_arm_throw_exception (MonoObject *exc, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips);
+mono_arm_throw_exception (MonoObject *exc, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips);
 
 void
-mono_arm_throw_exception_by_token (guint32 type_token, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
+mono_arm_throw_exception_by_token (guint32 type_token, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs);
 
 void
-mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_regs, gdouble *fp_regs);
+mono_arm_resume_unwind (guint32 dummy1, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs);
 
 gboolean
 mono_arm_thumb_supported (void);

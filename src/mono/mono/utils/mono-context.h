@@ -62,20 +62,20 @@ typedef __uint128_t MonoContextSimdReg;
 #if defined (TARGET_WASM)
 
 typedef struct {
-	mgreg_t wasm_sp;
-	mgreg_t wasm_bp;
-	mgreg_t llvm_exc_reg;
-	mgreg_t wasm_ip;
-	mgreg_t wasm_pc;
+	host_mgreg_t wasm_sp;
+	host_mgreg_t wasm_bp;
+	host_mgreg_t llvm_exc_reg;
+	host_mgreg_t wasm_ip;
+	host_mgreg_t wasm_pc;
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->wasm_ip = (mgreg_t)(ip); } while (0);
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->wasm_bp = (mgreg_t)(bp); } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->wasm_sp = (mgreg_t)(sp); } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->wasm_ip = (host_mgreg_t)(gsize)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->wasm_bp = (host_mgreg_t)(gsize)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->wasm_sp = (host_mgreg_t)(gsize)(sp); } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->wasm_ip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->wasm_bp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->wasm_sp))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->wasm_ip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->wasm_bp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->wasm_sp))
 
 #elif (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
@@ -144,27 +144,27 @@ struct sigcontext {
 #include <mono/arch/x86/x86-codegen.h>
 
 typedef struct {
-	mgreg_t eax;
-	mgreg_t ebx;
-	mgreg_t ecx;
-	mgreg_t edx;
-	mgreg_t ebp;
-	mgreg_t esp;
-	mgreg_t esi;
-	mgreg_t edi;
-	mgreg_t eip;
+	host_mgreg_t eax;
+	host_mgreg_t ebx;
+	host_mgreg_t ecx;
+	host_mgreg_t edx;
+	host_mgreg_t ebp;
+	host_mgreg_t esp;
+	host_mgreg_t esi;
+	host_mgreg_t edi;
+	host_mgreg_t eip;
 #ifdef __APPLE__
     MonoContextSimdReg fregs [X86_XMM_NREG];
 #endif
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (mgreg_t)(ip); } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->ebp = (mgreg_t)(bp); } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->esp = (mgreg_t)(sp); } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->eip = (host_mgreg_t)(gsize)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->ebp = (host_mgreg_t)(gsize)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->esp = (host_mgreg_t)(gsize)(sp); } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->eip))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->ebp))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->esp))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->eip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->ebp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->esp))
 
 /*We set EAX to zero since we are clobering it anyway*/
 #ifdef _MSC_VER
@@ -201,14 +201,14 @@ typedef struct {
 	"1: pop 0x20(%0)\n"     \
 	:	\
 	: "a" (&(ctx)),	\
-		[eax] MONO_CONTEXT_OFFSET (eax, 0, mgreg_t), \
-		[ebx] MONO_CONTEXT_OFFSET (ebx, 0, mgreg_t), \
-		[ecx] MONO_CONTEXT_OFFSET (ecx, 0, mgreg_t), \
-		[edx] MONO_CONTEXT_OFFSET (edx, 0, mgreg_t), \
-		[ebp] MONO_CONTEXT_OFFSET (ebp, 0, mgreg_t), \
-		[esp] MONO_CONTEXT_OFFSET (esp, 0, mgreg_t), \
-		[esi] MONO_CONTEXT_OFFSET (esi, 0, mgreg_t), \
-		[edi] MONO_CONTEXT_OFFSET (edi, 0, mgreg_t) \
+		[eax] MONO_CONTEXT_OFFSET (eax, 0, host_mgreg_t), \
+		[ebx] MONO_CONTEXT_OFFSET (ebx, 0, host_mgreg_t), \
+		[ecx] MONO_CONTEXT_OFFSET (ecx, 0, host_mgreg_t), \
+		[edx] MONO_CONTEXT_OFFSET (edx, 0, host_mgreg_t), \
+		[ebp] MONO_CONTEXT_OFFSET (ebp, 0, host_mgreg_t), \
+		[esp] MONO_CONTEXT_OFFSET (esp, 0, host_mgreg_t), \
+		[esi] MONO_CONTEXT_OFFSET (esi, 0, host_mgreg_t), \
+		[edi] MONO_CONTEXT_OFFSET (edi, 0, host_mgreg_t) \
 	: "memory")
 
 #ifdef UCONTEXT_REG_XMM
@@ -272,7 +272,7 @@ struct sigcontext {
 #endif
 
 typedef struct {
-	mgreg_t gregs [AMD64_NREG];
+	host_mgreg_t gregs [AMD64_NREG];
 #if defined(MONO_HAVE_SIMD_REG)
 	MonoContextSimdReg fregs [AMD64_XMM_NREG];
 #else
@@ -280,13 +280,13 @@ typedef struct {
 #endif
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (mgreg_t)(ip); } while (0);
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->gregs [AMD64_RBP] = (mgreg_t)(bp); } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->gregs [AMD64_RSP] = (mgreg_t)(esp); } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->gregs [AMD64_RIP] = (host_mgreg_t)(gsize)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->gregs [AMD64_RBP] = (host_mgreg_t)(gsize)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,esp) do { (ctx)->gregs [AMD64_RSP] = (host_mgreg_t)(gsize)(esp); } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->gregs [AMD64_RIP]))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->gregs [AMD64_RBP]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->gregs [AMD64_RSP]))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->gregs [AMD64_RIP]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->gregs [AMD64_RBP]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->gregs [AMD64_RSP]))
 
 #if defined (HOST_WIN32) && !defined(__GNUC__)
 /* msvc doesn't support inline assembly, so have to use a separate .asm file */
@@ -320,23 +320,23 @@ G_EXTERN_C void mono_context_get_current (void *);
 			"movq %%rdx, %c[rip](%0)\n"	\
 			: 	\
 			: "a" (&(ctx)),	\
-				[rax] MONO_CONTEXT_OFFSET (gregs, AMD64_RAX, mgreg_t),	\
-				[rcx] MONO_CONTEXT_OFFSET (gregs, AMD64_RCX, mgreg_t),	\
-				[rdx] MONO_CONTEXT_OFFSET (gregs, AMD64_RDX, mgreg_t),	\
-				[rbx] MONO_CONTEXT_OFFSET (gregs, AMD64_RBX, mgreg_t),	\
-				[rsp] MONO_CONTEXT_OFFSET (gregs, AMD64_RSP, mgreg_t),	\
-				[rbp] MONO_CONTEXT_OFFSET (gregs, AMD64_RBP, mgreg_t),	\
-				[rsi] MONO_CONTEXT_OFFSET (gregs, AMD64_RSI, mgreg_t),	\
-				[rdi] MONO_CONTEXT_OFFSET (gregs, AMD64_RDI, mgreg_t),	\
-				[r8] MONO_CONTEXT_OFFSET (gregs, AMD64_R8, mgreg_t), \
-				[r9] MONO_CONTEXT_OFFSET (gregs, AMD64_R9, mgreg_t), \
-				[r10] MONO_CONTEXT_OFFSET (gregs, AMD64_R10, mgreg_t),	\
-				[r11] MONO_CONTEXT_OFFSET (gregs, AMD64_R11, mgreg_t),	\
-				[r12] MONO_CONTEXT_OFFSET (gregs, AMD64_R12, mgreg_t),	\
-				[r13] MONO_CONTEXT_OFFSET (gregs, AMD64_R13, mgreg_t),	\
-				[r14] MONO_CONTEXT_OFFSET (gregs, AMD64_R14, mgreg_t),	\
-				[r15] MONO_CONTEXT_OFFSET (gregs, AMD64_R15, mgreg_t),	\
-				[rip] MONO_CONTEXT_OFFSET (gregs, AMD64_RIP, mgreg_t)	\
+				[rax] MONO_CONTEXT_OFFSET (gregs, AMD64_RAX, host_mgreg_t),	\
+				[rcx] MONO_CONTEXT_OFFSET (gregs, AMD64_RCX, host_mgreg_t),	\
+				[rdx] MONO_CONTEXT_OFFSET (gregs, AMD64_RDX, host_mgreg_t),	\
+				[rbx] MONO_CONTEXT_OFFSET (gregs, AMD64_RBX, host_mgreg_t),	\
+				[rsp] MONO_CONTEXT_OFFSET (gregs, AMD64_RSP, host_mgreg_t),	\
+				[rbp] MONO_CONTEXT_OFFSET (gregs, AMD64_RBP, host_mgreg_t),	\
+				[rsi] MONO_CONTEXT_OFFSET (gregs, AMD64_RSI, host_mgreg_t),	\
+				[rdi] MONO_CONTEXT_OFFSET (gregs, AMD64_RDI, host_mgreg_t),	\
+				[r8] MONO_CONTEXT_OFFSET (gregs, AMD64_R8, host_mgreg_t), \
+				[r9] MONO_CONTEXT_OFFSET (gregs, AMD64_R9, host_mgreg_t), \
+				[r10] MONO_CONTEXT_OFFSET (gregs, AMD64_R10, host_mgreg_t),	\
+				[r11] MONO_CONTEXT_OFFSET (gregs, AMD64_R11, host_mgreg_t),	\
+				[r12] MONO_CONTEXT_OFFSET (gregs, AMD64_R12, host_mgreg_t),	\
+				[r13] MONO_CONTEXT_OFFSET (gregs, AMD64_R13, host_mgreg_t),	\
+				[r14] MONO_CONTEXT_OFFSET (gregs, AMD64_R14, host_mgreg_t),	\
+				[r15] MONO_CONTEXT_OFFSET (gregs, AMD64_R15, host_mgreg_t),	\
+				[rip] MONO_CONTEXT_OFFSET (gregs, AMD64_RIP, host_mgreg_t)	\
 			: "rdx", "memory");	\
 	} while (0)
 
@@ -397,26 +397,26 @@ G_EXTERN_C void mono_context_get_current (void *);
 #include <mono/arch/arm/arm-codegen.h>
 
 typedef struct {
-	mgreg_t pc;
-	mgreg_t regs [16];
+	host_mgreg_t pc;
+	host_mgreg_t regs [16];
 	double fregs [16];
-	mgreg_t cpsr;
+	host_mgreg_t cpsr;
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (mgreg_t)ip; } while (0); 
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (mgreg_t)bp; } while (0); 
-#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (mgreg_t)bp; } while (0); 
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (host_mgreg_t)(gsize)ip; } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (host_mgreg_t)(gsize)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (host_mgreg_t)(gsize)bp; } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->pc))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ARMREG_FP]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->regs [ARMREG_SP]))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->pc))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->regs [ARMREG_FP]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->regs [ARMREG_SP]))
 
 #if defined(HOST_WATCHOS)
 
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { \
 	gpointer _dummy; \
-    ctx.regs [ARMREG_SP] = (mgreg_t)&_dummy; \
+    ctx.regs [ARMREG_SP] = (host_mgreg_t)(gsize)&_dummy; \
 } while (0);
 
 #else
@@ -453,24 +453,24 @@ typedef struct {
 #include <mono/arch/arm64/arm64-codegen.h>
 
 typedef struct {
-	mgreg_t regs [32];
+	host_mgreg_t regs [32];
 	/* FIXME not fully saved in trampolines */
 	MonoContextSimdReg fregs [32];
-	mgreg_t pc;
+	host_mgreg_t pc;
 	/*
 	 * fregs might not be initialized if this context was created from a
 	 * ucontext.
 	 */
-	mgreg_t has_fregs;
+	host_mgreg_t has_fregs;
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (mgreg_t)ip; } while (0)
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (mgreg_t)bp; } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (mgreg_t)bp; } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->pc = (host_mgreg_t)(gsize)ip; } while (0)
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->regs [ARMREG_FP] = (host_mgreg_t)(gsize)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,bp) do { (ctx)->regs [ARMREG_SP] = (host_mgreg_t)(gsize)bp; } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) (gpointer)((ctx)->pc)
-#define MONO_CONTEXT_GET_BP(ctx) (gpointer)((ctx)->regs [ARMREG_FP])
-#define MONO_CONTEXT_GET_SP(ctx) (gpointer)((ctx)->regs [ARMREG_SP])
+#define MONO_CONTEXT_GET_IP(ctx) (gpointer)(gsize)((ctx)->pc)
+#define MONO_CONTEXT_GET_BP(ctx) (gpointer)(gsize)((ctx)->regs [ARMREG_FP])
+#define MONO_CONTEXT_GET_SP(ctx) (gpointer)(gsize)((ctx)->regs [ARMREG_SP])
 
 #if defined (HOST_APPLETVOS)
 
@@ -559,18 +559,18 @@ typedef struct {
 typedef struct {
 	gulong sc_ir;          // pc 
 	gulong sc_sp;          // r1
-	mgreg_t regs [32];
+	host_mgreg_t regs [32];
 	double fregs [32];
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)ip; } while (0);
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)bp; } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)sp; } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (gulong)(gsize)ip; } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (gulong)(gsize)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (gulong)(gsize)sp; } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->sc_ir))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->regs [ppc_r31]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->sc_sp))
 
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
@@ -647,21 +647,21 @@ typedef struct {
 #else /* !defined(__mono_ppc64__) */
 
 typedef struct {
-	mgreg_t sc_ir;          // pc
-	mgreg_t sc_sp;          // r1
-	mgreg_t regs [32];
+	host_mgreg_t sc_ir;          // pc
+	host_mgreg_t sc_sp;          // r1
+	host_mgreg_t regs [32];
 	double fregs [32];
 } MonoContext;
 
 /* we have the stack pointer, not the base pointer in sigcontext */
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (mgreg_t)ip; } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_ir = (host_mgreg_t)(gsize)ip; } while (0);
 /* FIXME: should be called SET_SP */
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (mgreg_t)bp; } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (mgreg_t)sp; } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_sp = (host_mgreg_t)(gsize)bp; } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_sp = (host_mgreg_t)(gsize)sp; } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_ir))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->regs [ppc_r31]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_sp))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->sc_ir))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->regs [ppc_r31]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->sc_sp))
 
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\
@@ -742,7 +742,7 @@ typedef struct {
 #elif defined(__sparc__) || defined(sparc) /* defined(__mono_ppc__) */
 
 typedef struct MonoContext {
-	mgreg_t regs [15];
+	host_mgreg_t regs [15];
 	guint8 *ip;
 	gpointer *sp;
 	gpointer *fp;
@@ -811,18 +811,18 @@ typedef struct MonoContext {
 #include <mono/arch/mips/mips-codegen.h>
 
 typedef struct {
-	mgreg_t	    sc_pc;
-	mgreg_t		sc_regs [32];
+	host_mgreg_t	    sc_pc;
+	host_mgreg_t		sc_regs [32];
 	gfloat		sc_fpregs [32];
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (mgreg_t)(ip); } while (0);
-#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (mgreg_t)(bp); } while (0);
-#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (mgreg_t)(sp); } while (0);
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->sc_pc = (host_mgreg_t)(gsize)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->sc_regs[mips_fp] = (host_mgreg_t)(gsize)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->sc_regs[mips_sp] = (host_mgreg_t)(gsize)(sp); } while (0);
 
-#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->sc_pc))
-#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->sc_regs[mips_fp]))
-#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->sc_regs[mips_sp]))
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)(gsize)((ctx)->sc_pc))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)(gsize)((ctx)->sc_regs[mips_fp]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)(gsize)((ctx)->sc_regs[mips_sp]))
 
 #define MONO_CONTEXT_GET_CURRENT(ctx)	\
 	__asm__ __volatile__(	\

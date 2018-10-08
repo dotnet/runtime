@@ -35,7 +35,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	guint32 ins;
 	guint64 slot_addr;
@@ -90,7 +90,7 @@ mono_arch_get_call_target (guint8 *code)
 }
 
 guint32
-mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
 	/* The offset is stored as the 5th word of the plt entry */
 	return ((guint32*)plt_entry) [4];
@@ -644,13 +644,13 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
 
 	/* allocate frame */
-	framesize += 2 * sizeof (mgreg_t);
+	framesize += 2 * sizeof (host_mgreg_t);
 
 	off_methodargs = framesize;
-	framesize += sizeof (mgreg_t);
+	framesize += sizeof (host_mgreg_t);
 
 	off_targetaddr = framesize;
-	framesize += sizeof (mgreg_t);
+	framesize += sizeof (host_mgreg_t);
 
 	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
 
@@ -681,9 +681,9 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	arm_bcc (code, ARMCOND_EQ, 0);
 	arm_ldrx (code, ARMREG_R2, ARMREG_IP1, 0);
 	arm_strx (code, ARMREG_R2, ARMREG_IP0, 0);
-	arm_addx_imm (code, ARMREG_IP0, ARMREG_IP0, sizeof (mgreg_t));
-	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, sizeof (mgreg_t));
-	arm_subx_imm (code, ARMREG_R0, ARMREG_R0, sizeof (mgreg_t));
+	arm_addx_imm (code, ARMREG_IP0, ARMREG_IP0, sizeof (host_mgreg_t));
+	arm_addx_imm (code, ARMREG_IP1, ARMREG_IP1, sizeof (host_mgreg_t));
+	arm_subx_imm (code, ARMREG_R0, ARMREG_R0, sizeof (host_mgreg_t));
 	arm_b (code, label_start_copy);
 	mono_arm_patch (label_exit_copy, code, MONO_R_ARM64_BCC);
 
@@ -692,7 +692,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	/* set all general purpose registers from CallContext */
 	for (i = 0; i < PARAM_REGS + 1; i++)
-		arm_ldrx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (mgreg_t));
+		arm_ldrx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (host_mgreg_t));
 
 	/* set all floating registers from CallContext  */
 	for (i = 0; i < FP_PARAM_REGS; i++)
@@ -709,7 +709,7 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 
 	/* set all general purpose registers to CallContext */
 	for (i = 0; i < PARAM_REGS; i++)
-		arm_strx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (mgreg_t));
+		arm_strx (code, i, ARMREG_IP0, MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (host_mgreg_t));
 
 	/* set all floating registers to CallContext  */
 	for (i = 0; i < FP_PARAM_REGS; i++)
@@ -749,7 +749,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
 
 	/* Allocate frame (FP + LR + CallContext) */
-	offset = 2 * sizeof (mgreg_t);
+	offset = 2 * sizeof (host_mgreg_t);
 	ccontext_offset = offset;
 	offset += sizeof (CallContext);
 	framesize = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
@@ -768,7 +768,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 
 	/* save all general purpose registers into the CallContext */
 	for (i = 0; i < PARAM_REGS + 1; i++)
-		arm_strx (code, i, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (mgreg_t));
+		arm_strx (code, i, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (host_mgreg_t));
 
 	/* save all floating registers into the CallContext  */
 	for (i = 0; i < FP_PARAM_REGS; i++)
@@ -786,7 +786,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 
 	/* load the return values from the context */
 	for (i = 0; i < PARAM_REGS; i++)
-		arm_ldrx (code, i, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (mgreg_t));
+		arm_ldrx (code, i, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + i * sizeof (host_mgreg_t));
 
 	for (i = 0; i < FP_PARAM_REGS; i++)
 		arm_ldrfpx (code, i, ARMREG_FP, ccontext_offset + MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));

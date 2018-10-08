@@ -395,7 +395,7 @@ G_END_DECLS
 #endif // HOST_WASM
 
 gpointer
-mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
 	g_error ("mono_arch_get_this_arg_from_call");
 }
@@ -447,14 +447,14 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 
 
 MonoMethod*
-mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
+mono_arch_find_imt_method (host_mgreg_t *regs, guint8 *code)
 {
 	g_error ("mono_arch_find_static_call_vtable");
 	return (MonoMethod*) regs [MONO_ARCH_IMT_REG];
 }
 
 MonoVTable*
-mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
+mono_arch_find_static_call_vtable (host_mgreg_t *regs, guint8 *code)
 {
 	g_error ("mono_arch_find_static_call_vtable");
 	return (MonoVTable*) regs [MONO_ARCH_RGCTX_REG];
@@ -480,7 +480,7 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 	return 0;
 }
 
-mgreg_t
+host_mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	g_error ("mono_arch_context_get_int_reg");

@@ -452,8 +452,8 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
  *   C function called from the throw trampolines.
  */
 void
-mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
-						  mgreg_t eip, gboolean rethrow, gboolean preserve_ips)
+mono_x86_throw_exception (host_mgreg_t *regs, MonoObject *exc,
+						  host_mgreg_t eip, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -495,8 +495,8 @@ mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc,
 }
 
 void
-mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index, 
-								 mgreg_t eip, gint32 pc_offset)
+mono_x86_throw_corlib_exception (host_mgreg_t *regs, guint32 ex_token_index, 
+								 host_mgreg_t eip, gint32 pc_offset)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
 	MonoException *ex;
@@ -512,8 +512,8 @@ mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index,
 }
 
 static void
-mono_x86_resume_unwind (mgreg_t *regs, MonoObject *exc, 
-						mgreg_t eip, gboolean rethrow)
+mono_x86_resume_unwind (host_mgreg_t *regs, MonoObject *exc, 
+						host_mgreg_t eip, gboolean rethrow)
 {
 	MonoContext ctx;
 
@@ -800,7 +800,7 @@ gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf,
-							 mgreg_t **save_locations,
+							 host_mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -811,7 +811,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		mgreg_t regs [MONO_MAX_IREGS + 1];
+		host_mgreg_t regs [MONO_MAX_IREGS + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -994,13 +994,13 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	 * So put it into a register, and branch to a trampoline which
 	 * pushes it.
 	 */
-	ctx->eax = (mgreg_t)user_data;
+	ctx->eax = (host_mgreg_t)(gsize)user_data;
 	ctx->ecx = ctx->eip;
-	ctx->edx = (mgreg_t)async_cb;
+	ctx->edx = (host_mgreg_t)(gsize)async_cb;
 
 	/*align the stack*/
 	ctx->esp = (ctx->esp - 16) & ~15;
-	ctx->eip = (mgreg_t)signal_exception_trampoline;
+	ctx->eip = (host_mgreg_t)(gsize)signal_exception_trampoline;
 }
 
 gboolean
@@ -1050,7 +1050,7 @@ mono_arch_handle_exception (void *sigctx, gpointer obj)
 }
 
 static MonoObject*
-restore_soft_guard_pages ()
+restore_soft_guard_pages (void)
 {
 	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
 

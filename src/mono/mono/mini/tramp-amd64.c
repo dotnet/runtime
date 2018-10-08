@@ -203,7 +203,7 @@ mono_arch_create_llvm_native_thunk (MonoDomain *domain, guint8 *addr)
 #endif /* !DISABLE_JIT */
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	gint32 disp;
 	gpointer *plt_jump_table_entry;
@@ -810,7 +810,7 @@ mono_arch_get_call_target (guint8 *code)
  *   Return the PLT info offset belonging to the plt entry PLT_ENTRY.
  */
 guint32
-mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
+mono_arch_get_plt_info_offset (guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
 	return *(guint32*)(plt_entry + 6);
 }

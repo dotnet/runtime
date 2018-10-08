@@ -538,7 +538,7 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
  * from JITted and LLVM compiled code.
  */
 static gpointer
-common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *vt, gpointer *vtable_slot, MonoError *error)
+common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *vt, gpointer *vtable_slot, MonoError *error)
 {
 	gpointer addr, compiled_method;
 	gboolean generic_shared = FALSE;
@@ -877,7 +877,7 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
  * This trampoline handles normal calls from JITted code.
  */
 gpointer
-mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
+mono_magic_trampoline (host_mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
 	gpointer res;
 	ERROR_DECL (error);
@@ -904,7 +904,7 @@ mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
  * This trampoline handles virtual calls.
  */
 static gpointer
-mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
+mono_vcall_trampoline (host_mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 {
 	gpointer res;
 	MONO_ENTER_GC_UNSAFE;
@@ -983,7 +983,7 @@ leave:
 
 #ifndef DISABLE_REMOTING
 gpointer
-mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
+mono_generic_virtual_remoting_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, guint8 *tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -1036,7 +1036,7 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
  */
 #ifdef MONO_ARCH_AOT_SUPPORTED
 gpointer
-mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info, 
+mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info, 
 					 guint8* tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -1083,7 +1083,7 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
  *   This trampoline handles calls made from AOT code through the PLT table.
  */
 gpointer
-mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module, 
+mono_aot_plt_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *aot_module, 
 						 guint8* tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
@@ -1109,13 +1109,12 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 #endif
 
 static gpointer
-mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, guint8 *tramp)
+mono_rgctx_lazy_fetch_trampoline (host_mgreg_t *regs, guint8 *code, gpointer data, guint8 *tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	guint32 slot = GPOINTER_TO_UINT (data);
-	mgreg_t *r = (mgreg_t*)regs;
-	gpointer arg = (gpointer)(gssize)r [MONO_ARCH_VTABLE_REG];
+	gpointer arg = (gpointer)(gssize)regs [MONO_ARCH_VTABLE_REG];
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	gboolean mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	ERROR_DECL (error);
@@ -1142,7 +1141,7 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
  * This is called once the first time a delegate is invoked, so it must be fast.
  */
 gpointer
-mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tramp)
+mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tramp)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 

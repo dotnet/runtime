@@ -240,7 +240,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 static void
 throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp, 
-		 gulong *int_regs, gdouble *fp_regs, gint32 *acc_regs, 
+		 host_mgreg_t *int_regs, gdouble *fp_regs, gint32 *acc_regs,
 		 guint fpc, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
@@ -397,7 +397,6 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-
 	g_assert (!aot);
 	if (info)
 		*info = NULL;
@@ -489,7 +488,7 @@ gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 			 MonoJitInfo *ji, MonoContext *ctx, 
 			 MonoContext *new_ctx, MonoLMF **lmf,
-			 mgreg_t **save_locations,
+			 host_mgreg_t **save_locations,
 			 StackFrameInfo *frame)
 {
 	gpointer ip = (gpointer) MONO_CONTEXT_GET_IP (ctx);
@@ -504,7 +503,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
-		mgreg_t regs[16];
+		host_mgreg_t regs[16];
 
 		if (ji->is_trampoline)
 			frame->type = FRAME_TYPE_TRAMPOLINE;
@@ -627,12 +626,12 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 {
 	uintptr_t sp = (uintptr_t) MONO_CONTEXT_GET_SP(ctx);
 
-	ctx->uc_mcontext.gregs[2] = (unsigned long) user_data;
+	ctx->uc_mcontext.gregs[2] = (gsize)user_data;
 
 	sp -= S390_MINIMAL_STACK_SIZE;
 	*(unsigned long *)sp = MONO_CONTEXT_GET_SP(ctx);
 	MONO_CONTEXT_SET_BP(ctx, sp);
-	MONO_CONTEXT_SET_IP(ctx, (unsigned long) async_cb);
+	MONO_CONTEXT_SET_IP(ctx, (gsize)async_cb);
 }
 
 /*========================= End of Function ========================*/

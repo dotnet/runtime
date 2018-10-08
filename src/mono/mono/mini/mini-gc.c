@@ -698,7 +698,7 @@ slot_type_to_string (GCSlotType type)
 	}
 }
 
-static inline mgreg_t
+static inline host_mgreg_t
 get_frame_pointer (MonoContext *ctx, int frame_reg)
 {
 #if defined(TARGET_AMD64)
@@ -713,14 +713,14 @@ get_frame_pointer (MonoContext *ctx, int frame_reg)
 			return ctx->ebp;
 #elif defined(TARGET_ARM)
 		if (frame_reg == ARMREG_SP)
-			return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
+			return (host_mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 		else if (frame_reg == ARMREG_FP)
-			return (mgreg_t)MONO_CONTEXT_GET_BP (ctx);
+			return (host_mgreg_t)MONO_CONTEXT_GET_BP (ctx);
 #elif defined(TARGET_S390X)
 		if (frame_reg == S390_SP)
-			return (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
+			return (host_mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 		else if (frame_reg == S390_FP)
-			return (mgreg_t)MONO_CONTEXT_GET_BP (ctx);
+			return (host_mgreg_t)MONO_CONTEXT_GET_BP (ctx);
 #endif
 		g_assert_not_reached ();
 		return 0;
@@ -748,8 +748,8 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	int scanned = 0, scanned_precisely, scanned_conservatively, scanned_registers;
 	gboolean res;
 	StackFrameInfo frame;
-	mgreg_t *reg_locations [MONO_MAX_IREGS];
-	mgreg_t *new_reg_locations [MONO_MAX_IREGS];
+	host_mgreg_t *reg_locations [MONO_MAX_IREGS];
+	host_mgreg_t *new_reg_locations [MONO_MAX_IREGS];
 	guint8 *bitmaps;
 	FrameInfo *fi;
 	guint32 precise_regmask;
@@ -814,7 +814,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			}
 		}
 
-		g_assert ((mgreg_t)stack_limit % SIZEOF_SLOT == 0);
+		g_assert ((gsize)stack_limit % SIZEOF_SLOT == 0);
 
 		res = mono_find_jit_info_ext (frame.domain ? frame.domain : tls->unwind_state.unwind_data [MONO_UNWIND_DATA_DOMAIN], tls->unwind_state.unwind_data [MONO_UNWIND_DATA_JIT_TLS], NULL, &ctx, &new_ctx, NULL, &lmf, new_reg_locations, &frame);
 		if (!res)
@@ -919,7 +919,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		}
 
 		/* The embedded callsite table requires this */
-		g_assert (((mgreg_t)emap % 4) == 0);
+		g_assert (((gsize)emap % 4) == 0);
 
 		/*
 		 * Debugging aid to control the number of frames scanned precisely
@@ -1231,10 +1231,10 @@ precise_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end, void *gc_dat
 	 * Debugging aid to check for missed refs.
 	 */
 	if (tls->ref_to_track) {
-		mgreg_t *p;
+		gpointer *p;
 
-		for (p = (mgreg_t*)stack_start; p < (mgreg_t*)stack_end; ++p)
-			if (*p == (mgreg_t)tls->ref_to_track)
+		for (p = (gpointer*)stack_start; p < (gpointer*)stack_end; ++p)
+			if (*p == tls->ref_to_track)
 				printf ("REF AT %p.\n", p);
 	}
 }
@@ -2418,7 +2418,7 @@ create_map (MonoCompile *cfg)
 		p += encoded_size;
 
 		/* Callsite table */
-		p = (guint8*)ALIGN_TO ((mgreg_t)p, map->callsite_entry_size);
+		p = (guint8*)ALIGN_TO ((gsize)p, map->callsite_entry_size);
 		if (map->callsite_entry_size == 1) {
 			guint8 *offsets = p;
 			for (i = 0; i < ncallsites; ++i)

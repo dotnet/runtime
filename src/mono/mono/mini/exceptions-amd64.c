@@ -451,13 +451,13 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	guint8 *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int i, stack_size, arg_offsets [16], ctx_offset, regs_offset, dummy_stack_space;
+	int i, stack_size, arg_offsets [16], ctx_offset, regs_offset;
 	const guint kMaxCodeSize = 256;
 
 #ifdef TARGET_WIN32
-	dummy_stack_space = 6 * sizeof(mgreg_t);	/* Windows expects stack space allocated for all 6 dummy args. */
+	const int dummy_stack_space = 6 * sizeof(mgreg_t);	/* Windows expects stack space allocated for all 6 dummy args. */
 #else
-	dummy_stack_space = 0;
+	const int dummy_stack_space = 0;
 #endif
 
 	if (info)
@@ -612,7 +612,7 @@ gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf,
-							 mgreg_t **save_locations,
+							 host_mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -624,7 +624,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		mgreg_t regs [MONO_MAX_IREGS + 1];
+		host_mgreg_t regs [MONO_MAX_IREGS + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -660,7 +660,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			new_ctx->gregs [i] = regs [i];
  
 		/* The CFA becomes the new SP value */
-		new_ctx->gregs [AMD64_RSP] = (mgreg_t)cfa;
+		new_ctx->gregs [AMD64_RSP] = (host_mgreg_t)(gsize)cfa;
 
 		/* Adjust IP */
 		new_ctx->gregs [AMD64_RIP] --;
@@ -683,7 +683,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			 * The rsp field is set just before the call which transitioned to native 
 			 * code. Obtain the rip from the stack.
 			 */
-			rip = *(guint64*)((*lmf)->rsp - sizeof(mgreg_t));
+			rip = *(guint64*)((*lmf)->rsp - sizeof(host_mgreg_t));
 		}
 
 		ji = mini_jit_info_table_find (domain, (char *)rip, NULL);
@@ -754,7 +754,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 {
 	guint64 sp = ctx->gregs [AMD64_RSP];
 
-	ctx->gregs [AMD64_RDI] = (guint64)user_data;
+	ctx->gregs [AMD64_RDI] = (gsize)user_data;
 
 	/* Allocate a stack frame below the red zone */
 	sp -= 128;
@@ -766,7 +766,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	*(guint64*)sp = ctx->gregs [AMD64_RIP];
 #endif
 	ctx->gregs [AMD64_RSP] = sp;
-	ctx->gregs [AMD64_RIP] = (guint64)async_cb;
+	ctx->gregs [AMD64_RIP] = (gsize)async_cb;
 }
 
 /**
@@ -1347,7 +1347,6 @@ validate_table_no_lock (void)
 static inline void
 validate_table_no_lock (void)
 {
-	;
 }
 #endif /* ENABLE_CHECKED_BUILD_UNWINDINFO */
 
@@ -1593,7 +1592,6 @@ validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 static inline void
 validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 {
-	;
 }
 #endif /* ENABLE_CHECKED_BUILD_UNWINDINFO */
 
@@ -1627,10 +1625,10 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		new_rt_func_data.BeginAddress = code_offset;
 		new_rt_func_data.EndAddress = code_offset + code_size;
 
-		gsize aligned_unwind_data = ALIGN_TO(end_range, sizeof (mgreg_t));
+		gsize aligned_unwind_data = ALIGN_TO(end_range, sizeof(host_mgreg_t));
 		new_rt_func_data.UnwindData = aligned_unwind_data - found_entry->begin_range;
 
-		g_assert_checked (new_rt_func_data.UnwindData == ALIGN_TO(new_rt_func_data.EndAddress, sizeof (mgreg_t)));
+		g_assert_checked (new_rt_func_data.UnwindData == ALIGN_TO(new_rt_func_data.EndAddress, sizeof (host_mgreg_t)));
 
 		PRUNTIME_FUNCTION new_rt_funcs = NULL;
 
@@ -1807,7 +1805,7 @@ mono_arch_unwindinfo_install_method_unwind_info (PUNWIND_INFO *monoui, gpointer 
 
 	unwindinfo = *monoui;
 	targetlocation = (guint64)&(((guchar*)code)[code_size]);
-	targetinfo = (PUNWIND_INFO) ALIGN_TO(targetlocation, sizeof (mgreg_t));
+	targetinfo = (PUNWIND_INFO) ALIGN_TO(targetlocation, sizeof (host_mgreg_t));
 
 	memcpy (targetinfo, unwindinfo, sizeof (UNWIND_INFO) - (sizeof (UNWIND_CODE) * MONO_MAX_UNWIND_CODES));
 
