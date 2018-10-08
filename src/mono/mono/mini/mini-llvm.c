@@ -3236,7 +3236,7 @@ needs_extra_arg (EmitContext *ctx, MonoMethod *method)
 		return FALSE;
 
 	/* These are called from gsharedvt code with an indirect call which doesn't pass an extra arg */
-	if (method->klass == mono_defaults.string_class && (strstr (method->name, "memcpy") || strstr (method->name, "bzero")))
+	if (method->klass == mono_get_string_class () && (strstr (method->name, "memcpy") || strstr (method->name, "bzero")))
 		return FALSE;
 	return TRUE;
 }

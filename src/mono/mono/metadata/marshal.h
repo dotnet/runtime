@@ -401,7 +401,7 @@ void
 mono_marshal_set_wrapper_info (MonoMethod *method, WrapperInfo *info);
 
 WrapperInfo*
-mono_marshal_get_wrapper_info (MonoMethod *wrapper);
+mono_marshal_get_wrapper_info (MonoMethod *wrapper) MONO_LLVM_INTERNAL;
 
 MonoMethod *
 mono_marshal_get_delegate_begin_invoke (MonoMethod *method);
