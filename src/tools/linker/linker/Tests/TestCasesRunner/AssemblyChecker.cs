@@ -114,6 +114,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyCustomAttributes (original, linked);
 			VerifySecurityAttributes (original, linked);
 
+			VerifyFixedBufferFields (original, linked);
+
 			foreach (var td in original.NestedTypes) {
 				VerifyTypeDefinition (td, linked?.NestedTypes.FirstOrDefault (l => td.FullName == l.FullName));
 				linkedMembers.Remove (td.FullName);
@@ -403,10 +405,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void VerifyCustomAttributes (ICustomAttributeProvider src, ICustomAttributeProvider linked)
 		{
-			var expectedAttrs = GetCustomAttributeCtorValues<object> (src, nameof (KeptAttributeAttribute))
-				.Select (attr => attr.ToString ())
-				.ToList ();
-
+			var expectedAttrs = GetExpectedAttributes (src).ToList ();
 			var linkedAttrs = FilterLinkedAttributes (linked).ToList ();
 
 			Assert.That (linkedAttrs, Is.EquivalentTo (expectedAttrs), $"Custom attributes on `{src}' are not matching");
@@ -494,6 +493,26 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return false;
 		}
 
+		protected static IEnumerable<string> GetExpectedAttributes (ICustomAttributeProvider original)
+		{
+			foreach (var expectedAttrs in GetCustomAttributeCtorValues<object> (original, nameof (KeptAttributeAttribute)))
+				yield return expectedAttrs.ToString ();
+
+			// The name of the generated fixed buffer type is a little tricky.
+			// Some versions of csc name it `<fieldname>e__FixedBuffer0`
+			// while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
+			if (original is TypeDefinition srcDefinition && srcDefinition.Name.Contains ("__FixedBuffer")) {
+				var name = srcDefinition.Name.Substring (1, srcDefinition.Name.IndexOf('>') - 1);
+				var fixedField = srcDefinition.DeclaringType.Fields.FirstOrDefault (f => f.Name == name);
+				if (fixedField == null)
+					Assert.Fail ($"Could not locate original fixed field for {srcDefinition}");
+
+				foreach (var additionalExpectedAttributesFromFixedField in GetCustomAttributeCtorValues<object> (fixedField, nameof (KeptAttributeOnFixedBufferTypeAttribute)))
+					yield return additionalExpectedAttributesFromFixedField.ToString ();
+				
+			}
+		}
+
 		/// <summary>
 		/// Filters out some attributes that should not be taken into consideration when checking the linked result against the expected result
 		/// </summary>
@@ -526,6 +545,37 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return linked.SecurityDeclarations
 				.SelectMany (d => d.SecurityAttributes)
 				.Select (attr => attr.AttributeType.ToString ());
+		}
+
+		void VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
+		{
+			var fields = src.Fields.Where (f => f.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptFixedBufferAttribute)));
+
+			foreach (var field in fields) {
+				// The name of the generated fixed buffer type is a little tricky.
+				// Some versions of csc name it `<fieldname>e__FixedBuffer0`
+				// while mcs and other versions of csc name it `<fieldname>__FixedBuffer0`
+				var originalCompilerGeneratedBufferType = src.NestedTypes.FirstOrDefault (t => t.FullName.Contains ($"<{field.Name}>") && t.FullName.Contains ("__FixedBuffer"));
+				if (originalCompilerGeneratedBufferType == null)
+					Assert.Fail ($"Could not locate original compiler generated fixed buffer type for field {field}");
+
+				var linkedCompilerGeneratedBufferType = linked.NestedTypes.FirstOrDefault (t => t.Name == originalCompilerGeneratedBufferType.Name);
+				if (linkedCompilerGeneratedBufferType == null)
+					Assert.Fail ($"Missing expected type {originalCompilerGeneratedBufferType}");
+				
+				// Have to verify the field before the type
+				var originalElementField = originalCompilerGeneratedBufferType.Fields.FirstOrDefault (f => f.Name == "FixedElementField");
+				if (originalElementField == null)
+					Assert.Fail ($"Could not locate original compiler generated FixedElementField on {originalCompilerGeneratedBufferType}");
+				
+				var linkedField = linkedCompilerGeneratedBufferType?.Fields.FirstOrDefault (l => l.Name == originalElementField.Name);
+				VerifyFieldKept (originalElementField, linkedField);
+				verifiedGeneratedFields.Add (originalElementField.FullName);
+				linkedMembers.Remove (originalElementField.FullName);
+				
+				VerifyTypeDefinitionKept(originalCompilerGeneratedBufferType, linkedCompilerGeneratedBufferType);
+				verifiedGeneratedTypes.Add(originalCompilerGeneratedBufferType.FullName);
+			}
 		}
 
 		void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
