@@ -153,25 +153,6 @@ inline void MethodDesc::SetupGenericComPlusCall()
 #endif // FEATURE_COMINTEROP
 
 
-inline BOOL MethodDesc::MayBeRemotingIntercepted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL MethodDesc::IsRemotingInterceptedViaPrestub()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL MethodDesc::IsRemotingInterceptedViaVirtualDispatch()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-
 #ifdef FEATURE_COMINTEROP
 
 // static

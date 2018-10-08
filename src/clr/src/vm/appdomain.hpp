@@ -1431,15 +1431,13 @@ protected:
     PTR_CLRPrivBinderWinRT m_pWinRtBinder;
 #endif // FEATURE_COMINTEROP
 
-    // Protects allocation of slot IDs for thread and context statics
+    // Protects allocation of slot IDs for thread statics
     static CrstStatic   m_SpecialStaticsCrst;
 
 public:
     // Only call this routine when you can guarantee there are no
     // loads in progress.
     void ClearFusionContext();
-
-public:
 
     //****************************************************************************************
     // Synchronization holders.

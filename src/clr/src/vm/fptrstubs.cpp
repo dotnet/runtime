@@ -52,13 +52,6 @@ PrecodeType FuncPtrStubs::GetDefaultType(MethodDesc* pMD)
     type = PRECODE_FIXUP;
 #endif // HAS_FIXUP_PRECODE
 
-#ifdef HAS_REMOTING_PRECODE
-    if (pMD->IsRemotingInterceptedViaVirtualDispatch())
-    {
-        type = PRECODE_REMOTING;
-    }
-#endif // HAS_REMOTING_PRECODE
-
     return type;
 }
 

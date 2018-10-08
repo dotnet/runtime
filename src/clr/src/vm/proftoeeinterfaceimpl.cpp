@@ -3537,9 +3537,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
  *    pAddress - location for storing the resulting address location.
  *
  * Returns:
- *    S_OK on success,
- *    E_INVALIDARG if not a context static,
- *    CORPROF_E_DATAINCOMPLETE if not yet initialized.
+ *    E_NOTIMPL
  *
  */
 HRESULT ProfToEEInterfaceImpl::GetContextStaticAddress(ClassID classId,
