@@ -29,7 +29,6 @@ typedef DPTR(ArrayClass) PTR_ArrayClass;
 typedef DPTR(DelegateEEClass) PTR_DelegateEEClass;
 typedef DPTR(UMThunkMarshInfo) PTR_UMThunkMarshInfo;
 typedef DPTR(CORCOMPILE_DEPENDENCY) PTR_CORCOMPILE_DEPENDENCY;
-typedef DPTR(struct RemotableMethodInfo) PTR_RemotableMethodInfo;
 typedef DPTR(struct ModuleCtorInfo) PTR_ModuleCtorInfo;
 typedef DPTR(class EEImplMethodDesc) PTR_EEImplMethodDesc;
 typedef DPTR(class EEClassLayoutInfo) PTR_EEClassLayoutInfo;

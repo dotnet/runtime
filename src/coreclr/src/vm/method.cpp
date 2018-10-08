@@ -2157,8 +2157,7 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsFCall())
     {
         // Call FCalls directly when possible
-        if (((accessFlags & CORINFO_ACCESS_THIS) || !IsRemotingInterceptedViaPrestub()) 
-            && !IsInterface() && !GetMethodTable()->ContainsGenericVariables())
+        if (!IsInterface() && !GetMethodTable()->ContainsGenericVariables())
         {
             BOOL fSharedOrDynamicFCallImpl;
             PCODE pFCallImpl = ECall::GetFCallImpl(this, &fSharedOrDynamicFCallImpl);
@@ -2803,13 +2802,6 @@ bool MethodDesc::CanSkipDoPrestub (
 
     // @todo generics: Until we fix the RVA map in zapper.cpp to be instantiation-aware, this must remain
     CheckRestore();
-
-    // The remoting interception is not necessary if we are calling on the same thisptr
-    if (!(accessFlags & CORINFO_ACCESS_THIS) && IsRemotingInterceptedViaPrestub())
-    {
-        *pReason = CORINFO_INDIRECT_CALL_REMOTING;
-        return false;
-    }
 
     // The wrapper stubs cannot be called directly (like any other stubs)
     if (IsWrapperStub())
@@ -5488,7 +5480,7 @@ PrecodeType MethodDesc::GetPrecodeType()
     PrecodeType precodeType = PRECODE_INVALID;
 
 #ifdef HAS_REMOTING_PRECODE
-    if (IsRemotingInterceptedViaPrestub() || (IsComPlusCall() && !IsStatic()))
+    if (IsComPlusCall() && !IsStatic())
     {
         precodeType = PRECODE_REMOTING;
     }
