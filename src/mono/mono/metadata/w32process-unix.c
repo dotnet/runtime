@@ -47,6 +47,17 @@
 #include <utime.h>
 #endif
 
+// For close_my_fds
+#if defined (_AIX)
+#include <procinfo.h>
+#elif defined (__FreeBSD__)
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#include <libutil.h>
+#elif defined(__linux__)
+#include <dirent.h>
+#endif
+
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/w32process-internals.h>
@@ -1594,6 +1605,125 @@ leave:
 	return managed;
 }
 
+/**
+ * Gets the biggest numbered file descriptor for the current process; failing
+ * that, the system's file descriptor limit. This is called by the fork child
+ * in close_my_fds.
+ */
+static inline guint32
+max_fd_count (void)
+{
+#if defined (_AIX)
+	struct procentry64 pe;
+	pid_t p;
+	p = getpid ();
+	if (getprocs64 (&pe, sizeof (pe), NULL, 0, &p, 1) != -1) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: maximum returned fd in child is %u",
+			   __func__, pe.pi_maxofile);
+		return pe.pi_maxofile; // biggest + 1
+	}
+#endif
+	// fallback to user/system limit if unsupported/error
+	return eg_getdtablesize ();
+}
+
+/**
+ * Closes all of the process' opened file descriptors, applying a strategy
+ * appropriate for the target system. This is called by the fork child in
+ * process_create.
+ */
+static void
+close_my_fds (void)
+{
+// TODO: Other platforms.
+//       * On macOS, use proc_pidinfo + PROC_PIDLISTFDS? See:
+//         http://blog.palominolabs.com/2012/06/19/getting-the-files-being-used-by-a-process-on-mac-os-x/
+//         (I have no idea how this plays out on i/watch/tvOS.)
+//       * On the other BSDs, there's likely a sysctl for this.
+//       * On Solaris, there exists posix_spawn_file_actions_addclosefrom_np,
+//         but that assumes we're using posix_spawn; we aren't, as we do some
+//         complex stuff between fork and exec. There's likely a way to get
+//         the FD list/count though (maybe look at addclosefrom source in
+//         illumos?) or just walk /proc/pid/fd like Linux?
+#if defined (__linux__)
+	/* Walk the file descriptors in /proc/self/fd/. Linux has no other API,
+	 * as far as I'm aware. Opening a directory won't create an FD. */
+	struct dirent *dp;
+	DIR *d;
+	int fd;
+	d = opendir ("/proc/self/fd/");
+	if (d) {
+		while ((dp = readdir (d)) != NULL) {
+			if (dp->d_name [0] == '.')
+				continue;
+			fd = atoi (dp->d_name);
+			if (fd > 2)
+				close (fd);
+		}
+		closedir (d);
+		return;
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: opening fd dir failed, using fallback",
+			   __func__);
+	}
+#elif defined (__FreeBSD__)
+	/* FreeBSD lets us get a list of FDs. There's a MIB to access them
+	 * directly, but it uses a lot of nasty variable length structures. The
+	 * system library libutil provides a nicer way to get a fixed length
+	 * version instead. */
+	struct kinfo_file *kif;
+	int count, i;
+	/* this is malloced but we won't need to free once we exec/exit */
+	kif = kinfo_getfile (getpid (), &count);
+	if (kif) {
+		for (i = 0; i < count; i++) {
+			/* negative FDs look to be used by the OS */
+			if (kif [i].kf_fd > 2) /* no neg + no stdio */
+				close (kif [i].kf_fd);
+		}
+		return;
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: kinfo_getfile failed, using fallback",
+			   __func__);
+	}
+#elif defined (_AIX)
+	struct procentry64 pe;
+	/* this array struct is 1 MB, we're NOT putting it on the stack.
+	 * likewise no need to free; getprocs will fail if we use the smalller
+	 * versions if we have a lot of FDs (is it worth it?)
+	 */
+	struct fdsinfo_100K *fds;
+	pid_t p;
+	p = getpid ();
+	fds = (struct fdsinfo_100K *) g_malloc0 (sizeof (struct fdsinfo_100K));
+	if (!fds) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: fdsinfo alloc failed, using fallback",
+			   __func__);
+		goto fallback;
+	}
+
+	if (getprocs64 (&pe, sizeof (pe), fds, sizeof (struct fdsinfo_100K), &p, 1) != -1) {
+		for (int i = 3; i < pe.pi_maxofile; i++) {
+			if (fds->pi_ufd [i].fp != 0)
+				close (fds->pi_ufd [i].fp);
+		}
+		return;
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: getprocs64 failed, using fallback",
+			   __func__);
+	}
+#endif
+fallback:
+	/* Fallback: Close FDs blindly, according to an FD limit */
+	for (guint32 i = max_fd_count () - 1; i > 2; i--)
+		close (i);
+}
+
 static gboolean
 process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	const gunichar2 *cwd, StartupHandles *startup_handles, MonoW32ProcessInfo *process_info)
@@ -1975,9 +2105,8 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		dup2 (out_fd, 1);
 		dup2 (err_fd, 2);
 
-		/* Close all file descriptors */
-		for (i = eg_getdtablesize() - 1; i > 2; i--)
-			close (i);
+		/* Close this child's file handles. */
+		close_my_fds ();
 
 #ifdef DEBUG_ENABLED
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: exec()ing [%s] in dir [%s]", __func__, cmd,

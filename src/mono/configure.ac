@@ -183,6 +183,8 @@ case "$host" in
 		with_sgen_default_concurrent=yes
 		;;
 	*-*-*freebsd*)
+		dnl For close_my_fds
+		LDFLAGS="$LDFLAGS -lutil"
 		if test "x$PTHREAD_CFLAGS" = "x"; then
 			CPPFLAGS="$CPPFLAGS -DGC_FREEBSD_THREADS"
 			libmono_cflags=
@@ -197,7 +199,7 @@ case "$host" in
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS -L/usr/local/lib"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
-		CPPFLAGS="$CPPFLAGS -DHOST_BSD"
+		CPPFLAGS="$CPPFLAGS -DHOST_BSD -D_WITH_GETLINE"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
 		libdl=
