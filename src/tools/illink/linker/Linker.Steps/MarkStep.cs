@@ -453,6 +453,9 @@ namespace Mono.Linker.Steps {
 				case "System.ThreadStaticAttribute":
 				case "System.ContextStaticAttribute":
 					return true;
+				// Attributes related to `fixed` keyword used to declare fixed length arrays
+				case "System.Runtime.CompilerServices.FixedBufferAttribute":
+					return true;
 				case "System.Runtime.InteropServices.InterfaceTypeAttribute":
 				case "System.Runtime.InteropServices.GuidAttribute":
 					return !_context.IsFeatureExcluded ("com");

@@ -20,6 +20,7 @@
     <DefineConstants>DEBUG;TRACE;INCLUDE_EXPECTATIONS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>0</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -28,6 +29,7 @@
     <DefineConstants>TRACE;INCLUDE_EXPECTATIONS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>0</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -92,6 +94,7 @@
     <Compile Include="Attributes\Dependencies\TypeDefinedInReference.cs" />
     <Compile Include="Attributes\Dependencies\TypeDefinedInReference2.cs" />
     <Compile Include="Attributes\Dependencies\TypeDefinedInReferenceWithReference.cs" />
+    <Compile Include="Attributes\FixedLengthArrayAttributesArePreserved.cs" />
     <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeArrayOnAttributeCtorOnType.cs" />
     <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssembly.cs" />
     <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssemblyOtherTypesInAttributeAssemblyUsed.cs" />
@@ -120,6 +123,7 @@
     <Compile Include="Attributes\OnlyKeepUsed\AttributeDefinedAndUsedInOtherAssemblyIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\AttributeUsedByAttributeIsKept.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\CoreLibraryUsedAssemblyAttributesAreKept.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\FixedLengthArrayAttributesArePreserved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\ThreadStaticIsPreservedOnField.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\CoreLibraryUnusedAssemblyAttributesAreRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeOnReturnTypeIsRemoved.cs" />
