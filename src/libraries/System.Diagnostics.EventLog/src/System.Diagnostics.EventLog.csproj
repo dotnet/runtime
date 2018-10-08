@@ -23,6 +23,7 @@
     <Compile Include="System\Diagnostics\EventLogEntryType.cs" />
     <Compile Include="System\Diagnostics\EventLogInternal.cs" />
     <Compile Include="System\Diagnostics\EventSourceCreationData.cs" />
+    <Compile Include="System\Diagnostics\EventLogTraceListener.cs" />
     <Compile Include="System\Diagnostics\NativeMethods.cs" />
     <Compile Include="System\Diagnostics\OverflowAction.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogReadHandle.cs" />

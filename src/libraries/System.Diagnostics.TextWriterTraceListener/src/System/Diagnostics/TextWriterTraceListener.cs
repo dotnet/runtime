@@ -122,6 +122,10 @@ namespace System.Diagnostics
                 catch (ObjectDisposedException) { }
                 _writer = null;
             }
+
+            // We need to set the _fileName to null so that we stop tracing output, if we don't set it
+            // EnsureWriter will create the stream writer again if someone writes or traces output after closing.
+            _fileName = null;
         }
 
         /// <internalonly/>
@@ -265,6 +269,11 @@ namespace System.Diagnostics
                     _fileName = null;
                 }
             }            
+        }
+
+        internal bool IsEnabled(TraceOptions opts)
+        {
+            return (opts & TraceOutputOptions) != 0;
         }
 
     }
