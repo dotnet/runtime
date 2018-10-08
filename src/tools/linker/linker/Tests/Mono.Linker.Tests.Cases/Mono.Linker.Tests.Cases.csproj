@@ -405,6 +405,7 @@
     <Compile Include="Statics\UnusedStaticFieldInitializer.cs" />
     <Compile Include="Statics\StaticFieldInitializer.cs" />
     <Compile Include="Statics\MixedStaticFieldInitializerAndCtor.cs" />
+    <Compile Include="LinkXml\UnusedTypeDeclarationPreservedByLinkXmlIsKept.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
@@ -454,6 +455,7 @@
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
     <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
     <Content Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.xml" />
+    <Content Include="LinkXml\UnusedTypeDeclarationPreservedByLinkXmlIsKept.xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
