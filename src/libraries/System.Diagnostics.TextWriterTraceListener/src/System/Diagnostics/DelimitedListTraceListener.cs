@@ -236,10 +236,5 @@ namespace System.Diagnostics
 
             sb.Append(message, lastindex, message.Length - lastindex);
         }
-
-        private bool IsEnabled(TraceOptions opts)
-        {
-            return (opts & TraceOutputOptions) != 0;
-        }
     }
 }

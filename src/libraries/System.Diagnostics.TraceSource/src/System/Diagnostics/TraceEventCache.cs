@@ -30,7 +30,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return GetProcessId();
+                return TraceListenerHelpers.GetProcessId();
             }
         }
 
@@ -38,7 +38,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return GetThreadId().ToString(CultureInfo.InvariantCulture);
+                return TraceListenerHelpers.GetThreadId().ToString(CultureInfo.InvariantCulture);
             }
         }
 
@@ -71,11 +71,6 @@ namespace System.Diagnostics
             {
                 return Trace.CorrelationManager.LogicalOperationStack;
             }
-        }
-
-        internal static int GetThreadId()
-        {
-            return Environment.CurrentManagedThreadId;
         }
     }
 }

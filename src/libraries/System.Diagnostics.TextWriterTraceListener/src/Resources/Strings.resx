@@ -61,4 +61,7 @@
   <data name="Generic_ArgCantBeEmptyString" xml:space="preserve">
     <value>'{0}' can not be empty string.</value>
   </data>
+  <data name="TraceAsTraceSource" xml:space="preserve">
+    <value>Trace</value>
+  </data>
 </root>
