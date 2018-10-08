@@ -560,12 +560,10 @@ def call_msbuild(coreclr_repo_location,
     """
     global g_verbose
 
-    common_msbuild_arguments = ["/nologo", "/nodeReuse:false", "/p:Platform=%s" % arch]
+    common_msbuild_arguments = []
 
     if sequential:
-        common_msbuild_arguments += ["/p:ParallelRun=false"]
-    else:
-        common_msbuild_arguments += ["/maxcpucount"]
+        common_msbuild_arguments += ["/p:ParallelRun=none"]
 
     logs_dir = os.path.join(coreclr_repo_location, "bin", "Logs")
     if not os.path.isdir(logs_dir):
@@ -576,6 +574,8 @@ def call_msbuild(coreclr_repo_location,
                  os.path.join(coreclr_repo_location, "tests", "runtest.proj"),
                  "/p:Runtests=true",
                  "/clp:showcommandline"]
+
+    command += common_msbuild_arguments
 
     if is_illink:
         command += ["/p:RunTestsViaIllink=true"]
@@ -671,16 +671,28 @@ def correct_line_endings(host_os, test_location, root=True):
         for item in os.listdir(test_location):
             correct_line_endings(host_os, os.path.join(test_location, item), False)
     elif test_location.endswith(extension):
-        content = None
-        with open(test_location) as file_handle:
-            content = file_handle.read()
-        
-        assert content != None
-        subbed_content = content.replace(incorrect_line_ending, correct_line_ending)
+        if sys.version_info < (3,0):
 
-        if content != subbed_content:
+            content = None
+            with open(test_location) as file_handle:
+                content = file_handle.read()
+     
+            assert content != None
+            subbed_content = content.replace(incorrect_line_ending, correct_line_ending)
+
+            if content != subbed_content:
+                with open(test_location, 'w') as file_handle:
+                    file_handle.write(subbed_content)
+
+        else:
+            # Python3 will correct line endings automatically.
+ 
+            content = None
+            with open(test_location) as file_handle:
+                content = file_handle.read()
+     
             with open(test_location, 'w') as file_handle:
-                file_handle.write(subbed_content)
+                file_handle.write(content)
 
 def run_tests(host_os,
               arch,
@@ -866,7 +878,7 @@ def setup_args(args):
         if test_location[-1] == os.path.sep:
             test_location = test_location[:-1]
 
-        if test_location != default_test_location and os.path.isdir(default_test_location):
+        if test_location.lower() != default_test_location.lower() and os.path.isdir(default_test_location):
             # Remove the existing directory if there is one.
             shutil.rmtree(default_test_location)
 
@@ -916,7 +928,20 @@ def setup_args(args):
     else:
         print("Core_Root: %s" % core_root)
 
-    if host_os != "Windows_NT":
+    is_same_os = False
+    is_same_arch = False
+    is_same_build_type = False
+
+    # We will write out build information into the test directory. This is used
+    # by runtest.py to determine whether we need to rebuild the test wrappers.
+    if os.path.isfile(os.path.join(test_location, "build_info.json")):
+        with open(os.path.join(test_location, "build_info.json")) as file_handle:
+            build_info = json.load(file_handle)
+        is_same_os = build_info["build_os"] == host_os
+        is_same_arch = build_info["build_arch"] == arch
+        is_same_build_type = build_info["build_type"] == build_type
+
+    if host_os != "Windows_NT" and not (is_same_os and is_same_arch and is_same_build_type):
         if test_native_bin_location is None:
             print("Using default location for test_native_bin_location.")
             test_native_bin_location = os.path.join(os.path.join(coreclr_repo_location, "bin", "obj", "%s.%s.%s" % (host_os, arch, build_type), "tests"))
@@ -1804,6 +1829,16 @@ def print_summary(tests):
             test_output = test_output.replace("\\n", "\n")
 
             print(test_output)
+            test_output = test_output.replace("/r", "\r")
+            test_output = test_output.replace("/n", "\n")
+            unicode_output = None
+            if sys.version_info < (3,0):
+                # Handle unicode characters in output in python2.*
+                unicode_output = unicode(test_output, "utf-8")
+            else:
+                unicode_output = test_output
+
+            print(unicode_output)
             print("")
 
         print("")
@@ -1898,31 +1933,33 @@ def do_setup(host_os,
     if gc_stress_c:
         setup_coredis_tools(coreclr_repo_location, host_os, arch, core_root)
     
+    build_info = None
+    is_same_os = None
+    is_same_arch = None
+    is_same_build_type = None
+
+    # We will write out build information into the test directory. This is used
+    # by runtest.py to determine whether we need to rebuild the test wrappers.
+    if os.path.isfile(os.path.join(test_location, "build_info.json")):
+        with open(os.path.join(test_location, "build_info.json")) as file_handle:
+            build_info = json.load(file_handle)
+        is_same_os = build_info["build_os"] == host_os
+        is_same_arch = build_info["build_arch"] == arch
+        is_same_build_type = build_info["build_type"] == build_type
+
     # Copy all the native libs to core_root
-    if host_os != "Windows_NT":
+    if host_os != "Windows_NT"  and not (is_same_os and is_same_arch and is_same_build_type):
         copy_native_test_bin_to_core_root(host_os, os.path.join(test_native_bin_location, "src"), core_root)
 
-    correct_line_endings(host_os, test_location)
+        # Line ending only need to be corrected if this is a cross build.
+        correct_line_endings(host_os, test_location)
 
     if unprocessed_args.build_test_wrappers:
         build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
-    else:
-        # We will write out build information into the test directory. This is used
-        # by runtest.py to determine whether we need to rebuild the test wrappers.
-        if os.path.isfile(os.path.join(test_location, "build_info.json")):
-            build_info = None
-            with open(os.path.join(test_location, "build_info.json")) as file_handle:
-                build_info = json.load(file_handle)
-
-            is_same_os = build_info["build_os"] == host_os
-            is_same_arch = build_info["build_arch"] == arch
-            is_same_build_type = build_info["build_type"] == build_type
-
-            # We will force a build of the test wrappers if they were cross built
-            if not (is_same_os and is_same_arch and is_same_build_type):
-                build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
-        else:
-            build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
+    elif build_info is None:
+        build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
+    elif not (is_same_os and is_same_arch and is_same_build_type):
+        build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
 
     return run_tests(host_os, 
               arch,
@@ -1949,6 +1986,8 @@ def main(args):
     g_verbose = args.verbose
 
     host_os, arch, build_type, coreclr_repo_location, product_location, core_root, test_location, test_native_bin_location = setup_args(args)
+
+    ret_code = 0
 
     env = get_environment(test_env=args.test_env)
     if not args.analyze_results_only:
