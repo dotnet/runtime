@@ -130,6 +130,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["Multiply.Double"] = MultiplyDouble,
                 ["MultiplyScalar.Double"] = MultiplyScalarDouble,
                 ["MultiplyAddAdjacent.Int32"] = MultiplyAddAdjacentInt32,
+                ["MultiplyLow.Int16"] = MultiplyLowInt16,
+                ["MultiplyLow.UInt16"] = MultiplyLowUInt16,
                 ["Or.Double"] = OrDouble,
                 ["Or.Byte"] = OrByte,
                 ["Or.Int16"] = OrInt16,
