@@ -218,7 +218,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     EX_END_CATCH(RethrowCancelExceptions)
 
-    // StressLog is not defined on Rotor build for DAC
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + g_dacGlobals.dac__g_pStressLog, sizeof(StressLog *)); )
 
     EX_TRY

@@ -154,8 +154,6 @@ Function :
     
     On failure it returns FALSE and sets the 
     proper LastError code.
-    
-See rotor_pal.doc for more details.
 
 --*/
 PALIMPORT

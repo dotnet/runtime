@@ -673,8 +673,8 @@ HRESULT ProfilingAPIAttachClient::SignalAttachEvent(LPCWSTR wszEventName)
     }
 
     // Dealing directly with Windows event objects, not CLR event cookies, so
-    // using Win32 API directly.  Note that none of this code executes on rotor
-    // or if we're memory / sync-hosted, so the CLR wrapper is of no use to us anyway.
+    // using Win32 API directly.  Note that none of this code executes on Unix,
+    // so the CLR wrapper is of no use to us anyway.
 #pragma push_macro("SetEvent")
 #undef SetEvent
     if (!SetEvent(hAttachEvent))

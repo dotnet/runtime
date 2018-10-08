@@ -40,7 +40,7 @@
 #define DynamicHelperFrameFlags_ObjectArg2  2
 
 
-// CONTEXT from rotor_pal.h
+// CONTEXT from pal.h
 #define CONTEXT_Edi 0x9c
 ASMCONSTANTS_C_ASSERT(CONTEXT_Edi == offsetof(CONTEXT,Edi))
 

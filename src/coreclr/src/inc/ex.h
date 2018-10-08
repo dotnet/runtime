@@ -720,10 +720,6 @@ private:
 // backout code following the END_CATCH that has to be executed. The solution is
 // to replace that backout code with holder objects.
 
-
-// This is a rotten way to define an enum but as long as we're treating
-// "if (optimizabletoconstant)" warnings as fatal errors, we have little choice.
-
 //-----------------------------------------------------------------------
 
 #define RethrowTransientExceptions                                      \
@@ -926,7 +922,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
                 INDEBUG(static bool __alwayszero;)                                      \
                 INDEBUG(VolatileLoad(&__alwayszero);)                                   \
                 {                                                                       \
-                    /* this is necessary for Rotor exception handling to work */        \
+                    /* Disallow returns to make exception handling work. */             \
+                    /* Some work is done after the catch, see EX_ENDTRY. */             \
                     DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
                     EX_TRY_HOLDER                                                       \
 
@@ -977,7 +974,8 @@ Exception *ExThrowWithInnerHelper(Exception *inner);
             INDEBUG(static bool __alwayszero;)                                      \
             INDEBUG(VolatileLoad(&__alwayszero);)                                   \
             {                                                                       \
-                /* this is necessary for Rotor exception handling to work */        \
+                /* Disallow returns to make exception handling work. */             \
+                /* Some work is done after the catch, see EX_ENDTRY. */             \
                 DEBUG_ASSURE_NO_RETURN_BEGIN(EX_TRY)                                \
 
 #define EX_CATCH_IMPL_CPP_ONLY                                                      \

@@ -127,7 +127,7 @@ COM_METHOD SymWriter::Initialize
 {    
     HRESULT hr = S_OK;
     
-    // Incremental compile not implemented in Rotor
+    // Incremental compile not implemented
     _ASSERTE(fFullBuild);
     
     if (emitter == NULL)
@@ -1072,8 +1072,6 @@ COM_METHOD SymWriter::SetSymAttribute(
     BYTE data[])
 {
     // Setting attributes on the symbol isn't supported
-
-    // ROTORTODO: #156785 in PS
     return S_OK;
 }
 

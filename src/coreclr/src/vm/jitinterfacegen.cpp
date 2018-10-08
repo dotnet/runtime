@@ -1,17 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
 // ===========================================================================
 // File: JITinterfaceGen.CPP
 //
-
+// This contains the AMD64 version of InitJITHelpers1().
+//
 // ===========================================================================
-
-// This contains generic C versions of some of the routines
-// required by JITinterface.cpp. They are modeled after
-// X86 specific routines found in JIThelp.asm or JITinterfaceX86.cpp
-// More and more we're making AMD64 and IA64 specific versions of
-// the helpers as well, JitInterfaceGen.cpp sticks around for rotor...
 
 
 #include "common.h"

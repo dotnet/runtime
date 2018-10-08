@@ -1889,10 +1889,6 @@ public: name(TADDR addr, TADDR vtAddr);
 
 #define GFN_TADDR(name) (DacGlobalBase() + g_dacGlobals.fn__ ## name)
 
-// ROTORTODO - g++ 3 doesn't like the use of the operator& in __GlobalVal
-// here. Putting GVAL_ADDR in to get things to compile while I discuss
-// this matter with the g++ authors.
-
 #define GVAL_ADDR(g) \
     ((g).operator&())
 
