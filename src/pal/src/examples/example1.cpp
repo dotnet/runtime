@@ -9,13 +9,10 @@
  *
  * Run it using:
  *   export PAL_DBG_CHANNELS="+all.all"
- *   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:..
  *   ./example1
  *
  * With the PAL_DEBUG_CHANNELS environment variable set as above you
- * should see a trace output when the program runs. Setting
- * LD_LIBRARY_PATH is necessary unless you have installed librotor_pal.so in
- * a standard location.
+ * should see a trace output when the program runs.
  *
  * Build notes :
  * Since the PAL uses pthreads, some options must be passed to gcc to tell it

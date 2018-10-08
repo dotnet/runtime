@@ -7603,8 +7603,7 @@ LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo
             return EXCEPTION_CONTINUE_SEARCH;
         }
 
-        // The breakpoint was from managed or the runtime.  Handle it.  Or,
-        //  this may be a Rotor build.
+        // The breakpoint was from managed or the runtime.  Handle it.
         return UserBreakpointFilter(pExceptionInfo);
     }
 

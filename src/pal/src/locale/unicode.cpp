@@ -314,7 +314,7 @@ Notes :
 "pseudo code pages", like CP_ACP, aren't considered 'valid' in this context.
 CP_UTF7 and CP_UTF8, however, *are* considered valid code pages, even though
 MSDN fails to mention them in the IsValidCodePage entry.
-Note : CP_UTF7 support isn't required for Rotor
+Note : CP_UTF7 support isn't required for CoreCLR
 --*/
 BOOL
 PALAPI
@@ -336,7 +336,7 @@ IsValidCodePage(
         retval = FALSE;
         break;
     case CP_UTF7:
-        /* valid in Win32, but not supported in Rotor */
+        /* valid in Win32, but not supported in the PAL */
         retval = FALSE;
         break;
     case CP_UTF8:

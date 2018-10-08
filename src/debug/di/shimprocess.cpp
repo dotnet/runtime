@@ -814,7 +814,7 @@ HRESULT ShimProcess::HandleWin32DebugEvent(const DEBUG_EVENT * pEvent)
                 // Call back into that. This will handle Continuing the debug event.
                 m_pProcess->HandleDebugEventForInteropDebugging(pEvent); 
 #else
-                _ASSERTE(!"Interop debugging not supported on Rotor");
+                _ASSERTE(!"Interop debugging not supported");
 #endif
             }
             else

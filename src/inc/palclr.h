@@ -185,7 +185,7 @@
 // integer constants. 64-bit integer constants should be wrapped in the
 // declarations listed here.
 //
-// Each of the #defines here is wrapped to avoid conflicts with rotor_pal.h.
+// Each of the #defines here is wrapped to avoid conflicts with pal.h.
 
 #if defined(_MSC_VER)
 

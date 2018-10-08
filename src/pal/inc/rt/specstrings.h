@@ -515,9 +515,6 @@ void __pfx_assume(int, const char *);
 #define __PRIMOP(type, fun)
 #endif /* !defined(_Outptr_) || _MSC_VER <= 1600 */
 
-// ROTOR doesn't need driverspecs.h
-// #include <driverspecs.h>
-
 /*
  If no SAL 2 appears to have been defined (_Outptr_ is a representative choice)
  then we must be operating in a downlevel build environment (such as VS10).
