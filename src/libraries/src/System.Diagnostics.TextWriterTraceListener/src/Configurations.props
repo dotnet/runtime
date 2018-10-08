@@ -3,7 +3,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       uap-Windows_NT;
-      netcoreapp;
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

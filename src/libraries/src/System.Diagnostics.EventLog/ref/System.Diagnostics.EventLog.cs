@@ -147,6 +147,28 @@ namespace System.Diagnostics
         public string ParameterResourceFile { get { throw null; } set { } }
         public string Source { get { throw null; } set { } }
     }
+    public sealed partial class EventLogTraceListener : System.Diagnostics.TraceListener
+    {
+        public EventLogTraceListener() { }
+        [System.CLSCompliantAttribute(false)]
+        public EventLogTraceListener(System.Diagnostics.EventLog eventLog) { }
+        public EventLogTraceListener(string source) { }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.EventLog EventLog { get { throw null; } set { } }
+        public override string Name { get { throw null; } set { } }
+        public override void Close() { }
+        protected override void Dispose(bool disposing) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, object data) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public override void TraceData(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, params object[] data) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string message) { }
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
+        public override void TraceEvent(System.Diagnostics.TraceEventCache eventCache, string source, System.Diagnostics.TraceEventType severity, int id, string format, params object[] args) { }
+        public override void Write(string message) { }
+        public override void WriteLine(string message) { }
+    }
     public enum OverflowAction
     {
         DoNotOverwrite = -1,

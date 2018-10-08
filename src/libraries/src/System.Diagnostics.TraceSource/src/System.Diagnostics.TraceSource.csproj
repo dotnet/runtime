@@ -32,9 +32,14 @@
     <Compile Include="System\Diagnostics\TraceSwitch.cs" />
     <Compile Include="System\Diagnostics\SwitchAttribute.cs" />
     <Compile Include="System\Diagnostics\SwitchLevelAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\TraceListenerHelpers.cs">
+      <Link>Common\System\Diagnostics\TraceListenerHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="System\Diagnostics\TraceEventCache.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\TraceListenerHelpers.Windows.cs">
+      <Link>Common\System\Diagnostics\TraceListenerHelpers.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -49,13 +54,17 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetPid.cs">
       <Link>Common\Interop\Unix\Interop.GetPid.cs</Link>
     </Compile>
-    <Compile Include="System\Diagnostics\TraceEventCache.Unix.cs" />
+    <Compile Include="$(CommonPath)\System\Diagnostics\TraceListenerHelpers.Unix.cs">
+      <Link>Common\System\Diagnostics\TraceListenerHelpers.Unix.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Resources.ResourceManager" />
