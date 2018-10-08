@@ -10,9 +10,9 @@ Module Name:
 
 Abstract:
 
-    Rotor Platform Adaptation Layer (PAL) header file.  This file
-    defines all types and API calls required by the Rotor port of
-    the Microsoft Common Language Runtime.
+    CoreCLR Platform Adaptation Layer (PAL) header file.  This file
+    defines all types and API calls required by the CoreCLR when
+    compiled for Unix-like systems.
 
     Defines which control the behavior of this include file:
       UNICODE - define it to set the Ansi/Unicode neutral names to
@@ -5043,9 +5043,7 @@ public:
 };
 
 //
-// NOTE: Catching hardware exceptions are only enabled in the DAC and SOS 
-// builds. A hardware exception in coreclr code will fail fast/terminate
-// the process.
+// NOTE: This is only defined in one PAL test.
 //
 #ifdef FEATURE_ENABLE_HARDWARE_EXCEPTIONS
 #define HardwareExceptionHolder CatchHardwareExceptionHolder __catchHardwareException;

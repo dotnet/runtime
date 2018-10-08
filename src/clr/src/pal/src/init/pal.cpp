@@ -1026,7 +1026,7 @@ PALCommonCleanup()
 
 BOOL PALIsShuttingDown()
 {
-    /* ROTORTODO: This function may be used to provide a reader/writer-like
+    /* TODO: This function may be used to provide a reader/writer-like
        mechanism (or a ref counting one) to prevent PAL APIs that need to access 
        PAL runtime data, from working when PAL is shutting down. Each of those API 
        should acquire a read access while executing. The shutting down code would
@@ -1038,7 +1038,7 @@ BOOL PALIsShuttingDown()
 
 void PALSetShutdownIntent()
 {
-    /* ROTORTODO: See comment in PALIsShuttingDown */
+    /* TODO: See comment in PALIsShuttingDown */
     shutdown_intent = TRUE;
 }
 

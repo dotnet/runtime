@@ -14,9 +14,9 @@
 
 Abstract:
 
-    Rotor runtime functions.  These are functions which are ordinarily
-    implemented as part of the Win32 API set, but for Rotor, are
-    implemented as a runtime library on top of the PAL.
+    PAL runtime functions.  These are functions which are ordinarily
+    implemented as part of the Win32 API set, but when compiling CoreCLR for
+    Unix-like systems, are implemented as a runtime library on top of the PAL.
 
 Author:
 

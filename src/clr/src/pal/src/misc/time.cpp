@@ -170,7 +170,7 @@ Return Values
 The return value is the number of milliseconds that have elapsed since
 the system was started.
 
-In the ROTOR implementation the return value is the elapsed time since
+In the PAL implementation the return value is the elapsed time since
 the start of the epoch.
 
 --*/

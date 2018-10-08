@@ -12,9 +12,9 @@ Module Name:
 
 Abstract:
 
-    Rotor Platform Adaptation Layer (PAL) header file used by source
+    CoreCLR Platform Adaptation Layer (PAL) header file used by source
     file part of the PAL implementation. This is a wrapper over 
-    unix/inc/pal.h. It allows avoiding name collisions when including 
+    pal/inc/pal.h. It allows avoiding name collisions when including
     system header files, and it allows redirecting calls to 'standard' functions
     to their PAL counterpart
 

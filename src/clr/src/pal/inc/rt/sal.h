@@ -2951,7 +2951,3 @@ __PRIMOP(int, _In_function_class_(__In_impl_ char*);)
 #ifdef  __cplusplus // [
 }
 #endif // ]
-
-// Rotor doesn't need concurrency sal.
-// #include <ConcurrencySal.h>
-

@@ -40,11 +40,11 @@ SET_DEFAULT_DEBUG_CHANNEL(LOADER);
     Internal wrapper for dladder used only to get module name
 
 Parameters:
-    None
+    LPVOID ProcAddress: a pointer to a function in a shared library
 
 Return value:
-    Pointer to string with the fullpath to the librotor_pal.so being
-    used.
+    Pointer to string with the fullpath to the shared library containing
+    ProcAddress.
 
     NULL if error occurred.
 

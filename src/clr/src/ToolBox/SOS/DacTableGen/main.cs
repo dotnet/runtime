@@ -296,7 +296,7 @@ Required:
         if (pdbFile != null)
         {
 #if FEATURE_PAL     
-            throw new InvalidOperationException("Not supported in Rotor.");
+            throw new InvalidOperationException("PDBs are only supported on Windows.");
 #else
             PdbSymbolProvider pdbSymProvider = new PdbSymbolProvider(pdbFile, dllFile);
 
@@ -337,7 +337,7 @@ Required:
                 List<UInt32> mapRvaArray = new List<UInt32>();
                 UInt32 mapNumGlobals;
 
-                // check that both map file and pdb file produce same output to avoid breakages on Rotor
+                // check that both map file and pdb file produce same output to avoid breakages
                 ScanDacFile(dacFile, 
                     new MapSymbolProvider(mapFile),
                     mapRvaArray, 
