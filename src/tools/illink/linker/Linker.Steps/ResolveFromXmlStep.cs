@@ -320,7 +320,7 @@ namespace Mono.Linker.Steps {
 		static TypePreserve GetTypePreserve (XPathNavigator nav)
 		{
 			string attribute = GetAttribute (nav, _preserve);
-			if (attribute == null || attribute.Length == 0)
+			if (string.IsNullOrEmpty (attribute))
 				return nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
 
 			TypePreserve result;

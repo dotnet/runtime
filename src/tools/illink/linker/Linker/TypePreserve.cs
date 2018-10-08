@@ -28,10 +28,11 @@
 
 namespace Mono.Linker {
 
-	public enum TypePreserve {
-		Nothing,
+	public enum TypePreserve
+	{
+		Nothing, // This is actually Declaration
 		All,
 		Fields,
-		Methods,
+		Methods
 	}
 }
