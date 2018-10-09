@@ -73,10 +73,11 @@ And then once the run completes:
 
 ## Code coverage with System.Private.CoreLib code
 
-Some of the libraries for which contracts and tests live in the corefx repo are actually fully or partially implemented in the core runtime library in another repo, e.g. the implementation that backs the System.Runtime contract is in System.Private.CoreLib.dll in either the coreclr or corert repo. To run coverage reports for these projects, you need to build System.Private.CoreLib locally from the coreclr repo. To get coverage of System.Private.CoreLib while running the tests for a particular library:
+Some of the libraries for which contracts and tests live in the corefx repo are actually fully or partially implemented in the core runtime library in another repo, e.g. the implementation that backs the System.Runtime contract is in System.Private.CoreLib.dll in either the coreclr or corert repo. Test projects for code that lives, fully or partially, in System.Private.CoreLib, should have the property `TestRuntime` set to `true` in order to obtain proper code coverage reports.
 
-1. Follow the steps outlined at [Testing with Private CoreClr Bits](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).  Make sure to include the optional steps listed as being required for code coverage.
-2. Add /p:CodeCoverageAssemblies="System.Private.CoreLib" to the previously discussed dotnet msbuild command, e.g. dotnet msbuild /t:BuildAndTest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"
+If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll add `/p:CodeCoverageAssemblies="System.Private.CoreLib"` to the coverage build command listed above.
+
+If you want to get coverage report against a private build of System.Private.CoreLib follow the steps outlined at [Testing with Private CoreClr Bits](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md#testing-with-private-coreclr-bits).
 
 The build and test projects take care of copying assemblies and PDBs as needed for coverage runs. The resulting code coverage report should now also include details for System.Private.CoreLib.
 
