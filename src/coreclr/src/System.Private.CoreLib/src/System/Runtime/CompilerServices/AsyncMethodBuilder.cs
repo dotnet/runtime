@@ -485,13 +485,19 @@ namespace System.Runtime.CompilerServices
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
             var box = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
-                new DebugFinalizableAsyncStateMachineBox<TStateMachine>() :
+                CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>() :
                 new AsyncStateMachineBox<TStateMachine>();
             m_task = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
             return box;
         }
+
+        // Avoid forcing the JIT to build DebugFinalizableAsyncStateMachineBox<TStateMachine> unless it's actually needed.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static AsyncStateMachineBox<TStateMachine> CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>()
+            where TStateMachine : IAsyncStateMachine =>
+            new DebugFinalizableAsyncStateMachineBox<TStateMachine>();
 
         /// <summary>
         /// Provides an async state machine box with a finalizer that will fire an EventSource
@@ -617,7 +623,7 @@ namespace System.Runtime.CompilerServices
         {
             Debug.Assert(m_task == null);
             return (m_task = AsyncMethodBuilderCore.TrackAsyncMethodCompletion ?
-                new DebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
+                CreateDebugFinalizableAsyncStateMachineBox<IAsyncStateMachine>() :
                 new AsyncStateMachineBox<IAsyncStateMachine>());
         }
 
