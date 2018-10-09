@@ -2178,9 +2178,15 @@ namespace System.Threading.Tasks
             // continuations hold onto the task, and therefore are keeping it alive.
             m_action = null;
 
-            // Notify parent if this was an attached task
-            if (m_contingentProperties != null)
+            ContingentProperties cp = m_contingentProperties;
+            if (cp != null)
             {
+                // Similarly, null out any ExecutionContext we may have captured,
+                // to avoid keeping state like async locals alive unnecessarily
+                // when the Task is kept alive.
+                cp.m_capturedContext = null;
+
+                // Notify parent if this was an attached task
                 NotifyParentIfPotentiallyAttachedTask();
             }
 
