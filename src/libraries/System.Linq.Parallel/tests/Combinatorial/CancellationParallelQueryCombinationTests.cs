@@ -605,6 +605,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
+        [ActiveIssue(21876, TestPlatforms.Linux)]
         [MemberData(nameof(UnaryCancelingOperators))]
         [MemberData(nameof(BinaryCancelingOperators))]
         [MemberData(nameof(OrderCancelingOperators))]
