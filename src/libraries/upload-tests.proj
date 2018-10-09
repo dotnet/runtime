@@ -77,6 +77,13 @@
     <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
     <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
     <MaxRetryCount>1</MaxRetryCount>
+    <!-- Unique container name and blob prefix per build and configuration, e.g., corefx-tests/master/beta-12345-01/netcoreapp/win10-x64 -->
+    <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(TargetOS)</RuntimeOS>
+    <ContainerName Condition="'$(ContainerName)' == '' And '$(IsOfficial)' == 'true'">corefx-tests</ContainerName>
+    <HelixBlobPrefix Condition="'$(HelixBlobPrefix)' == '' And '$(IsOfficial)' == 'true' And '$(Branch)' != ''">$(Branch)/$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)/$(TargetGroup)/$(RuntimeOS)-$(ArchGroup)/</HelixBlobPrefix>
+    <!-- If this is an official build, set the test drop to be public -->
+    <!-- Warn: internal builds should use a non-default container name, and set IsDropPublic to false -->
+    <IsDropPublic Condition="'$(IsOfficial)' == 'true'">true</IsDropPublic>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
