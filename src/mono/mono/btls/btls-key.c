@@ -8,37 +8,37 @@
 
 #include "btls-key.h"
 
-MONO_API EVP_PKEY *
+EVP_PKEY *
 mono_btls_key_new ()
 {
 	return EVP_PKEY_new ();
 }
 
-MONO_API void
+void
 mono_btls_key_free (EVP_PKEY *pkey)
 {
 	EVP_PKEY_free (pkey);
 }
 
-MONO_API EVP_PKEY *
+EVP_PKEY *
 mono_btls_key_up_ref (EVP_PKEY *pkey)
 {
 	return EVP_PKEY_up_ref (pkey);
 }
 
-MONO_API int
+int
 mono_btls_key_get_bits (EVP_PKEY *pkey)
 {
 	return EVP_PKEY_bits (pkey);
 }
 
-MONO_API int
+int
 mono_btls_key_is_rsa (EVP_PKEY *pkey)
 {
 	return pkey->type == EVP_PKEY_RSA;
 }
 
-MONO_API int
+int
 mono_btls_key_assign_rsa_private_key (EVP_PKEY *pkey, uint8_t *der_data, int der_length)
 {
 	RSA *rsa;
@@ -50,7 +50,7 @@ mono_btls_key_assign_rsa_private_key (EVP_PKEY *pkey, uint8_t *der_data, int der
 	return EVP_PKEY_assign_RSA (pkey, rsa);
 }
 
-MONO_API int
+int
 mono_btls_key_get_bytes (EVP_PKEY *pkey, uint8_t **buffer, int *size, int include_private_bits)
 {
 	size_t len;

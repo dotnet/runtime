@@ -29,7 +29,7 @@ struct MonoBtlsX509LookupMono {
 	MonoLookup *lookup;
 };
 
-MONO_API MonoBtlsX509LookupMono *
+MonoBtlsX509LookupMono *
 mono_btls_x509_lookup_mono_new (void)
 {
 	MonoBtlsX509LookupMono *mono;
@@ -42,7 +42,7 @@ mono_btls_x509_lookup_mono_new (void)
 	return mono;
 }
 
-MONO_API void
+void
 mono_btls_x509_lookup_mono_init (MonoBtlsX509LookupMono *mono, const void *instance,
 				 MonoBtlsX509LookupMono_BySubject by_subject_func)
 {
@@ -85,7 +85,7 @@ mono_lookup_uninstall (MonoBtlsX509LookupMono *mono)
 	return 0;
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_mono_free (MonoBtlsX509LookupMono *mono)
 {
 	mono->instance = NULL;
@@ -211,13 +211,13 @@ static X509_LOOKUP_METHOD mono_lookup_method = {
 	NULL,				/* get_by_alias */
 };
 
-MONO_API X509_LOOKUP_METHOD *
+X509_LOOKUP_METHOD *
 mono_btls_x509_lookup_mono_method (void)
 {
 	return &mono_lookup_method;
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_add_mono (MonoBtlsX509Lookup *lookup, MonoBtlsX509LookupMono *mono)
 {
 	if (mono_btls_x509_lookup_get_type (lookup) != MONO_BTLS_X509_LOOKUP_TYPE_MONO)
