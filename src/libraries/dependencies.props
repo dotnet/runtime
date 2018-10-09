@@ -9,15 +9,15 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>a43c8ac43ff0893bff925e2347a0b83bf6f8ec44</CoreFxCurrentRef>
-    <CoreClrCurrentRef>a43c8ac43ff0893bff925e2347a0b83bf6f8ec44</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>2c097cd54d4130327754027f301dba5489396f53</CoreSetupCurrentRef>
+    <CoreFxCurrentRef>3ea9c6ffe2d45e251f07501da11099dec0f3aadc</CoreFxCurrentRef>
+    <CoreClrCurrentRef>3ea9c6ffe2d45e251f07501da11099dec0f3aadc</CoreClrCurrentRef>
+    <CoreSetupCurrentRef>3ea9c6ffe2d45e251f07501da11099dec0f3aadc</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>26b0cc8fcf155775b147f5cb818345aeef8faa61</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>26b0cc8fcf155775b147f5cb818345aeef8faa61</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>3ea9c6ffe2d45e251f07501da11099dec0f3aadc</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>3ea9c6ffe2d45e251f07501da11099dec0f3aadc</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>2c097cd54d4130327754027f301dba5489396f53</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>3ea9c6ffe2d45e251f07501da11099dec0f3aadc</BuildToolsCurrentRef>
     <CoreFxOptimizationDataCurrentRef>6aee9d4f0b918a9458cdf07d22094d4523204a6c</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
@@ -32,16 +32,16 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview1-27008-01</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-27008-01</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-27008-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-27008-01</MicrosoftNetCoreIlasmPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-27005-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27005-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27005-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-27007-01</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-27007-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-27007-01</MicrosoftNETCoreAppPackageVersion>
+    <CoreFxExpectedPrerelease>preview1-27009-02</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-27009-02</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-27008-04</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-27008-04</MicrosoftNetCoreIlasmPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27008-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27008-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27008-00</ProjectNTfsTestILCPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-27008-04</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-27008-04</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-27008-04</MicrosoftNETCoreAppPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -65,7 +65,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03307-03</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03308-01</FeedTasksPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
