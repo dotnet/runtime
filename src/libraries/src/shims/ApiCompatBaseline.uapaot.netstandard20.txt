@@ -35,4 +35,5 @@ MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certifica
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
 
+Compat issues with assembly System.Memory:
 TypesMustExist : Type 'System.Buffers.Binary.BinaryPrimitives' does not exist in the implementation but it does exist in the contract.
