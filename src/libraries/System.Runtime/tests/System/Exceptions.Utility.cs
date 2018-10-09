@@ -5,14 +5,14 @@
 using System;
 using Xunit;
 
-namespace System.IO.Tests
+namespace System.Tests
 {
     public static class ExceptionUtility
     {
         public static void ValidateExceptionProperties(Exception e,
+            int hResult,
             int dataCount = 0,
             string helpLink = null,
-            int hResult = HResults.COR_E_EXCEPTION,
             Exception innerException = null,
             string message = null,
             string source = null,
