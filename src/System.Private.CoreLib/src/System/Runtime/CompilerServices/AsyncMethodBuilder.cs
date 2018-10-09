@@ -541,6 +541,8 @@ namespace System.Runtime.CompilerServices
             /// <summary>Calls MoveNext on <see cref="StateMachine"/></summary>
             public void MoveNext()
             {
+                Debug.Assert(!IsCompleted);
+
                 bool loggingOn = AsyncCausalityTracer.LoggingOn;
                 if (loggingOn)
                 {
@@ -557,12 +559,21 @@ namespace System.Runtime.CompilerServices
                     ExecutionContext.RunInternal(context, s_callback, this);
                 }
 
-                // In case this is a state machine box with a finalizer, suppress its finalization
-                // if it's now complete.  We only need the finalizer to run if the box is collected
-                // without having been completed.
-                if (IsCompleted && AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                if (IsCompleted)
                 {
-                    GC.SuppressFinalize(this);
+                    // Clear out state now that the async method has completed.
+                    // This avoids keeping arbitrary state referenced by lifted locals
+                    // if this Task / state machine box is held onto.
+                    StateMachine = default;
+                    Context = default;
+
+                    // In case this is a state machine box with a finalizer, suppress its finalization
+                    // as it's now complete.  We only need the finalizer to run if the box is collected
+                    // without having been completed.
+                    if (AsyncMethodBuilderCore.TrackAsyncMethodCompletion)
+                    {
+                        GC.SuppressFinalize(this);
+                    }
                 }
 
                 if (loggingOn)
