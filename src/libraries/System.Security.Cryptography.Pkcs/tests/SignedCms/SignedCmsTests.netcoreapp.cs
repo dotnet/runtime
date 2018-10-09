@@ -360,6 +360,20 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [Fact]
+        public static void AddAttributeToIndefiniteLengthContent()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.IndefiniteLengthContentDocument);
+            cms.SignerInfos[0].AddUnsignedAttribute(new Pkcs9DocumentDescription("Indefinite length test"));
+            byte[] encoded = cms.Encode();
+
+            cms = new SignedCms();
+            cms.Decode(encoded);
+            // It should sort first, because it's smaller.
+            Assert.Equal(Oids.DocumentDescription, cms.SignerInfos[0].UnsignedAttributes[0].Oid.Value);
+        }
+
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))

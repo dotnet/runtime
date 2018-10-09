@@ -1463,6 +1463,22 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 SubjectIdentifierType.SubjectKeyIdentifier);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ReadAndWriteDocumentWithIndefiniteLengthContent(bool checkSignature)
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.IndefiniteLengthContentDocument);
+
+            if (checkSignature)
+            {
+                cms.CheckSignature(true);
+            }
+
+            cms.Encode();
+        }
+
         private static void CheckSignedEncrypted(byte[] docBytes, SubjectIdentifierType expectedType)
         {
             SignedCms signedCms = new SignedCms();
