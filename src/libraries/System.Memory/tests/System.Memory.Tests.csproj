@@ -4,6 +4,7 @@
     <ProjectGuid>{15DB0DCC-68B4-4CFB-8BD2-F26BCCAF5A3F}</ProjectGuid>
     <IncludePartialFacadeTests Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IncludePartialFacadeTests>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup Condition="'$(IncludePartialFacadeTests)' == 'true'">
     <!-- Tests specific to the fast span -->
