@@ -12,8 +12,9 @@
 
 #include "stdafx.h"
 
-
+#ifndef FEATURE_PAL
 #include "securitywrapper.h"
+#endif
 #include <aclapi.h>
 #include <hosting.h>
 

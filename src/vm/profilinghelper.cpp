@@ -365,20 +365,6 @@ void ProfilingAPIUtility::LogProfEventVA(
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_PROFAPI_EVENT_LOGGING
-
-
-    // Rotor messages go to message boxes
-
-    EEMessageBoxCatastrophic(
-        iStringResourceID,              // Text message to display
-        IDS_EE_PROFILING_FAILURE,       // Titlebar of message box
-        insertionArgs);                 // Insertion strings for text message
-
-#else // FEATURE_PROFAPI_EVENT_LOGGING
-    
-    // Non-rotor messages go to the event log
-
     StackSString messageFromResource;
     StackSString messageToLog;
 
@@ -395,10 +381,8 @@ void ProfilingAPIUtility::LogProfEventVA(
 
     AppendSupplementaryInformation(iStringResourceID, &messageToLog);
 
-    // CoreCLR on Windows ouputs debug strings for diagnostic messages.
+    // Ouput debug strings for diagnostic messages.
     WszOutputDebugString(messageToLog);
-
-#endif // FEATURE_PROFAPI_EVENT_LOGGING
 }
 
 // See code:ProfilingAPIUtility.LogProfEventVA for description of arguments.
@@ -440,10 +424,6 @@ void ProfilingAPIUtility::LogProfInfo(int iStringResourceID, ...)
     }
     CONTRACTL_END;
 
-// Rotor uses message boxes instead of event log, and it would be disruptive to
-// pop a messagebox in the user's face every time an app runs with a profiler
-// configured to load.  So only log this only when we don't do a pop-up.
-#ifdef FEATURE_PROFAPI_EVENT_LOGGING
     va_list insertionArgs;
     va_start(insertionArgs, iStringResourceID);
     LogProfEventVA(
@@ -451,7 +431,6 @@ void ProfilingAPIUtility::LogProfInfo(int iStringResourceID, ...)
         EVENTLOG_INFORMATION_TYPE, 
         insertionArgs);
     va_end(insertionArgs);
-#endif //FEATURE_PROFAPI_EVENT_LOGGING
 }
 
 #ifdef PROF_TEST_ONLY_FORCE_ELT

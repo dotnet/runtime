@@ -25,7 +25,7 @@ int __cdecl main(int argc, char *argv[])
     }
     
     /* 
-       From rotor.doc:  The only value that must be supported is 
+       The only value that must be supported is
        ERANGE, in the event that wcstoul() fails due to overflow. 
     */ 
     

@@ -145,16 +145,6 @@
 
 #endif // _DEBUG
 
-
-
-#if defined(PROFILING_SUPPORTED)
-// On desktop CLR builds, the profiling API uses the event log for end-user-friendly
-// diagnostic messages.  CoreCLR on Windows ouputs debug strings for diagnostic messages.
-// Rotor builds have no access to event log message resources, though, so they simply 
-// display popup dialogs for now.
-#define FEATURE_PROFAPI_EVENT_LOGGING
-#endif // defined(PROFILING_SUPPORTED)
-
 // MUST NEVER CHECK IN WITH THIS ENABLED.
 // This is just for convenience in doing performance investigations in a checked-out enlistment.
 // #define FEATURE_ENABLE_NO_RANGE_CHECKS
