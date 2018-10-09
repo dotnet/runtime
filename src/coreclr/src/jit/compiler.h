@@ -4318,8 +4318,24 @@ public:
     // the call may modify the heap (we assume arbitrary memory side effects if so).
     bool fgValueNumberHelperCall(GenTreeCall* helpCall);
 
-    // Requires "helpFunc" to be pure.  Returns the corresponding VNFunc.
-    VNFunc fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc);
+    // Requires that "helpFunc" is one of the pure Jit Helper methods.
+    // Returns the corresponding VNFunc to use for value numbering
+    VNFunc fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc);
+
+    // Adds the exception set for the current tree node which is performing a memory indirection operation
+    void fgValueNumberAddExceptionSetForIndirection(GenTree* tree);
+
+    // Adds the exception sets for the current tree node which is performing a division or modulus operation
+    void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a overflow checking operation
+    void fgValueNumberAddExceptionSetForOverflow(GenTree* tree);
+
+    // Adds the exception set for the current tree node which is performing a ckfinite operation
+    void fgValueNumberAddExceptionSetForCkFinite(GenTree* tree);
+
+    // Adds the exception sets for the current tree node
+    void fgValueNumberAddExceptionSet(GenTree* tree);
 
     // These are the current value number for the memory implicit variables while
     // doing value numbering.  These are the value numbers under the "liberal" interpretation
@@ -5813,7 +5829,7 @@ protected:
     {
         CSEdsc* csdNextInBucket; // used by the hash table
 
-        unsigned csdHashValue; // the orginal hashkey
+        unsigned csdHashKey; // the orginal hashkey
 
         unsigned csdIndex;          // 1..optCSECandidateCount
         char     csdLiveAcrossCall; // 0 or 1
@@ -5831,8 +5847,13 @@ protected:
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
-        ValueNum defConservativeVN; // if all def occurrences share the same conservative value
-                                    // number, this will reflect it; otherwise, NoVN.
+        ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
+                                   // This will be set to NoVN if we decide to abandon this CSE
+
+        ValueNum defExcSetCurrent; // The set of exceptions we currently can use for CSE uses.
+
+        ValueNum defConservNormVN; // if all def occurrences share the same conservative normal value
+                                   // number, this will reflect it; otherwise, NoVN.
     };
 
     static const size_t s_optCSEhashSize;

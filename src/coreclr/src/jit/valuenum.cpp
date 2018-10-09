@@ -1801,69 +1801,97 @@ ValueNum ValueNumStore::VNOneForType(var_types typ)
 
 class Object* ValueNumStore::s_specialRefConsts[] = {nullptr, nullptr, nullptr};
 
-// Nullary operators (i.e., symbolic constants).
+//----------------------------------------------------------------------------------------
+//  VNForFunc  - Returns the ValueNum associated with 'func'
+//               There is a one-to-one relationship between the ValueNum and 'func'
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any nullary VNFunc
+//
+// Return Value:     - Returns the ValueNum associated with 'func'
+//
+// Note: - This method only handles Nullary operators (i.e., symbolic constants).
+//
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func)
 {
     assert(VNFuncArity(func) == 0);
     assert(func != VNF_NotAField);
 
-    ValueNum res;
+    ValueNum resultVN;
 
-    if (GetVNFunc0Map()->Lookup(func, &res))
+    // Have we already assigned a ValueNum for 'func' ?
+    //
+    if (!GetVNFunc0Map()->Lookup(func, &resultVN))
     {
-        return res;
-    }
-    else
-    {
+        // Allocate a new ValueNum for 'func'
         Chunk*   c                                              = GetAllocChunk(typ, CEA_Func0);
         unsigned offsetWithinChunk                              = c->AllocVN();
-        res                                                     = c->m_baseVN + offsetWithinChunk;
+        resultVN                                                = c->m_baseVN + offsetWithinChunk;
         reinterpret_cast<VNFunc*>(c->m_defs)[offsetWithinChunk] = func;
-        GetVNFunc0Map()->Set(func, res);
-        return res;
+        GetVNFunc0Map()->Set(func, resultVN);
     }
+    return resultVN;
 }
 
+//----------------------------------------------------------------------------------------
+//  VNForFunc  - Returns the ValueNum associated with 'func'('arg0VN')
+//               There is a one-to-one relationship between the ValueNum
+//               and 'func'('arg0VN')
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any unary VNFunc
+//    arg0VN         - The ValueNum of the argument to 'func'
+//
+// Return Value:     - Returns the ValueNum associated with 'func'('arg0VN')
+//
+// Note: - This method only handles Unary operators
+//
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
 {
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
-    ValueNum      res;
-    VNDefFunc1Arg fstruct(func, arg0VN);
-
-    // Do constant-folding.
+    // Try to perform constant-folding.
     if (CanEvalForConstantArgs(func) && IsVNConstant(arg0VN))
     {
         return EvalFuncForConstantArgs(typ, func, arg0VN);
     }
 
-    if (GetVNFunc1Map()->Lookup(fstruct, &res))
+    ValueNum resultVN;
+
+    // Have we already assigned a ValueNum for 'func'('arg0VN') ?
+    //
+    VNDefFunc1Arg fstruct(func, arg0VN);
+    if (!GetVNFunc1Map()->Lookup(fstruct, &resultVN))
     {
-        return res;
-    }
-    else
-    {
-        // Otherwise, create a new VN for this application.
+        // Otherwise, Allocate a new ValueNum for 'func'('arg0VN')
+        //
         Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func1);
         unsigned offsetWithinChunk                                     = c->AllocVN();
-        res                                                            = c->m_baseVN + offsetWithinChunk;
+        resultVN                                                       = c->m_baseVN + offsetWithinChunk;
         reinterpret_cast<VNDefFunc1Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
-        GetVNFunc1Map()->Set(fstruct, res);
-        return res;
+        // Record 'resultVN' in the Func1Map
+        GetVNFunc1Map()->Set(fstruct, resultVN);
     }
+    return resultVN;
 }
 
-// Windows x86 and Windows ARM/ARM64 may not define _isnanf() but they do define _isnan().
-// We will redirect the macros to these other functions if the macro is not defined for the
-// platform. This has the side effect of a possible implicit upcasting for arguments passed.
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
-
-#if !defined(_isnanf)
-#define _isnanf _isnan
-#endif
-
-#endif
-
+//----------------------------------------------------------------------------------------
+//  VNForFunc  - Returns the ValueNum associated with 'func'('arg0VN','arg1VN')
+//               There is a one-to-one relationship between the ValueNum
+//               and 'func'('arg0VN','arg1VN')
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any binary VNFunc
+//    arg0VN         - The ValueNum of the first argument to 'func'
+//    arg1VN         - The ValueNum of the second argument to 'func'
+//
+// Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN')
+//
+// Note: - This method only handles Binary operators
+//
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
     assert(arg0VN != NoVN && arg1VN != NoVN);
@@ -1872,16 +1900,16 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert(VNFuncArity(func) == 2);
     assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
 
-    ValueNum res;
+    ValueNum resultVN;
 
-    // When both operands are constants we can usually perform the constant-folding.
+    // When both operands are constants we can usually perform constant-folding.
     //
     if (CanEvalForConstantArgs(func) && IsVNConstant(arg0VN) && IsVNConstant(arg1VN))
     {
         bool canFold = true; // Normally we will be able to fold this 'func'
 
         // Special case for VNF_Cast of constant handles
-        // Don't allow eval/fold of a GT_CAST(non-I_IMPL, Handle)
+        // Don't allow an eval/fold of a GT_CAST(non-I_IMPL, Handle)
         //
         if ((func == VNF_Cast) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
         {
@@ -1889,78 +1917,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         }
 
         // Currently CanEvalForConstantArgs() returns false for VNF_CastOvf
-        // IN the future we may want to handle this case.
+        // In the future we could handle this case in folding.
         assert(func != VNF_CastOvf);
-
-        // We have some arithmetic operations that will always throw
-        // an exception given particular constant argument(s).
-        // (i.e. integer division by zero)
-        //
-        // We will avoid performing any constant folding on them
-        // since they won't actually produce any result (because
-        // they instead they always will throw an exception)
-        //
-        if (func < VNF_Boundary)
-        {
-            genTreeOps oper = genTreeOps(func);
-
-            // Floating point operations do not throw exceptions
-            //
-            if (!varTypeIsFloating(typ))
-            {
-                // Is this an integer divide/modulo that will throw an exception?
-                //
-                if ((oper == GT_DIV) || (oper == GT_UDIV) || (oper == GT_MOD) || (oper == GT_UMOD))
-                {
-                    if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
-                    {
-                        // Just in case we have mismatched types
-                        canFold = false;
-                    }
-                    else
-                    {
-                        bool isUnsigned = (oper == GT_UDIV) || (oper == GT_UMOD);
-                        if (typ == TYP_LONG)
-                        {
-                            INT64 kArg0 = ConstantValue<INT64>(arg0VN);
-                            INT64 kArg1 = ConstantValue<INT64>(arg1VN);
-
-                            if (IsIntZero(kArg1))
-                            {
-                                // Don't fold we have a divide by zero
-                                canFold = false;
-                            }
-                            else if (!isUnsigned || IsOverflowIntDiv(kArg0, kArg1))
-                            {
-                                // Don't fold we have a divide of INT64_MIN/-1
-                                canFold = false;
-                            }
-                        }
-                        else if (typ == TYP_INT)
-                        {
-                            int kArg0 = ConstantValue<int>(arg0VN);
-                            int kArg1 = ConstantValue<int>(arg1VN);
-
-                            if (IsIntZero(kArg1))
-                            {
-                                // Don't fold We have a divide by zero
-                                canFold = false;
-                            }
-                            else if (!isUnsigned && IsOverflowIntDiv(kArg0, kArg1))
-                            {
-                                // Don't fold we have a divide of INT32_MIN/-1
-                                canFold = false;
-                            }
-                        }
-                        else // strange value for 'typ'
-                        {
-                            assert(!"unexpected 'typ' in VNForFunc constant folding");
-                            canFold = false;
-                        }
-                    }
-                }
-            }
-        }
 
         // It is possible for us to have mismatched types (see Bug 750863)
         // We don't try to fold a binary operation when one of the constant operands
@@ -1988,13 +1946,23 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         {
             canFold = false;
         }
+
         if (typ == TYP_BYREF)
         {
             // We don't want to fold expressions that produce TYP_BYREF
             canFold = false;
         }
 
+        bool shouldFold = canFold;
+
         if (canFold)
+        {
+            // We can fold the expression, but we don't want to fold
+            // when the expression will always throw an exception
+            shouldFold = VNEvalShouldFold(typ, func, arg0VN, arg1VN);
+        }
+
+        if (shouldFold)
         {
             return EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
         }
@@ -2009,216 +1977,145 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             jitstd::swap(arg0VN, arg1VN);
         }
     }
+
+    // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
+    //
     VNDefFunc2Arg fstruct(func, arg0VN, arg1VN);
-    if (GetVNFunc2Map()->Lookup(fstruct, &res))
+    if (!GetVNFunc2Map()->Lookup(fstruct, &resultVN))
     {
-        return res;
+        if (func == VNF_CastClass)
+        {
+            // In terms of values, a castclass always returns its second argument, the object being cast.
+            // The operation may also throw an exception
+            ValueNum vnExcSet = VNExcSetSingleton(VNForFunc(TYP_REF, VNF_InvalidCastExc, arg1VN, arg0VN));
+            resultVN          = VNWithExc(arg1VN, vnExcSet);
+        }
+        else
+        {
+            resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
+
+            // Do we have a valid resultVN?
+            if ((resultVN == NoVN) || (TypeOfVN(resultVN) != typ))
+            {
+                // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
+                //
+                Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func2);
+                unsigned offsetWithinChunk                                     = c->AllocVN();
+                resultVN                                                       = c->m_baseVN + offsetWithinChunk;
+                reinterpret_cast<VNDefFunc2Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
+                // Record 'resultVN' in the Func2Map
+                GetVNFunc2Map()->Set(fstruct, resultVN);
+            }
+        }
     }
-    else
+    return resultVN;
+}
+
+//----------------------------------------------------------------------------------------
+//  VNForFunc  - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN')
+//               There is a one-to-one relationship between the ValueNum
+//               and 'func'('arg0VN','arg1VN','arg2VN')
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any binary VNFunc
+//    arg0VN         - The ValueNum of the first argument to 'func'
+//    arg1VN         - The ValueNum of the second argument to 'func'
+//    arg2VN         - The ValueNum of the third argument to 'func'
+//
+// Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg1VN)
+//
+// Note: - This method only handles Trinary operations
+//         We have to special case VNF_PhiDef, as it's first two arguments are not ValueNums
+//
+ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN)
+{
+    assert(arg0VN != NoVN);
+    assert(arg1VN != NoVN);
+    assert(arg2VN != NoVN);
+    assert(VNFuncArity(func) == 3);
+
+#ifdef DEBUG
+    // Function arguments carry no exceptions.
+    //
+    if (func != VNF_PhiDef)
     {
-        // We have ways of evaluating some binary functions.
-        if (func < VNF_Boundary)
-        {
-            if (typ != TYP_BYREF) // We don't want/need to optimize a zero byref
-            {
-                ValueNum resultVN = NoVN;
-                ValueNum ZeroVN, OneVN; // We may need to create one of these in the switch below.
-                switch (genTreeOps(func))
-                {
-                    case GT_ADD:
-                        // This identity does not apply for floating point (when x == -0.0)
-                        // (x + 0) == (0 + x) => x
-                        ZeroVN = VNZeroForType(typ);
-                        if (VNIsEqual(arg0VN, ZeroVN))
-                        {
-                            resultVN = arg1VN;
-                        }
-                        else if (VNIsEqual(arg1VN, ZeroVN))
-                        {
-                            resultVN = arg0VN;
-                        }
-                        break;
+        // For a phi definition first and second argument are "plain" local/ssa numbers.
+        // (I don't know if having such non-VN arguments to a VN function is a good idea -- if we wanted to declare
+        // ValueNum to be "short" it would be a problem, for example.  But we'll leave it for now, with these explicit
+        // exceptions.)
+        assert(arg0VN == VNNormalValue(arg0VN));
+        assert(arg1VN == VNNormalValue(arg1VN));
+    }
+    assert(arg2VN == VNNormalValue(arg2VN));
+#endif
+    assert(VNFuncArity(func) == 3);
 
-                    case GT_SUB:
-                        // This identity does not apply for floating point (when x == -0.0)
-                        // (x - 0) => x
-                        // (x - x) => 0
-                        ZeroVN = VNZeroForType(typ);
-                        if (VNIsEqual(arg1VN, ZeroVN))
-                        {
-                            resultVN = arg0VN;
-                        }
-                        else if (VNIsEqual(arg0VN, arg1VN))
-                        {
-                            resultVN = ZeroVN;
-                        }
-                        break;
+    ValueNum resultVN;
 
-                    case GT_MUL:
-                        // (x * 1) == (1 * x) => x
-                        OneVN = VNOneForType(typ);
-                        if (OneVN != NoVN)
-                        {
-                            if (arg0VN == OneVN)
-                            {
-                                resultVN = arg1VN;
-                            }
-                            else if (arg1VN == OneVN)
-                            {
-                                resultVN = arg0VN;
-                            }
-                        }
-
-                        if (!varTypeIsFloating(typ))
-                        {
-                            // (x * 0) == (0 * x) => 0 (unless x is NaN, which we must assume a fp value may be)
-                            ZeroVN = VNZeroForType(typ);
-                            if (arg0VN == ZeroVN)
-                            {
-                                resultVN = ZeroVN;
-                            }
-                            else if (arg1VN == ZeroVN)
-                            {
-                                resultVN = ZeroVN;
-                            }
-                        }
-                        break;
-
-                    case GT_DIV:
-                    case GT_UDIV:
-                        // (x / 1) => x
-                        OneVN = VNOneForType(typ);
-                        if (OneVN != NoVN)
-                        {
-                            if (arg1VN == OneVN)
-                            {
-                                resultVN = arg0VN;
-                            }
-                        }
-                        break;
-
-                    case GT_OR:
-                    case GT_XOR:
-                        // (x | 0) == (0 | x) => x
-                        // (x ^ 0) == (0 ^ x) => x
-                        ZeroVN = VNZeroForType(typ);
-                        if (arg0VN == ZeroVN)
-                        {
-                            resultVN = arg1VN;
-                        }
-                        else if (arg1VN == ZeroVN)
-                        {
-                            resultVN = arg0VN;
-                        }
-                        break;
-
-                    case GT_AND:
-                        // (x & 0) == (0 & x) => 0
-                        ZeroVN = VNZeroForType(typ);
-                        if (arg0VN == ZeroVN)
-                        {
-                            resultVN = ZeroVN;
-                        }
-                        else if (arg1VN == ZeroVN)
-                        {
-                            resultVN = ZeroVN;
-                        }
-                        break;
-
-                    case GT_LSH:
-                    case GT_RSH:
-                    case GT_RSZ:
-                    case GT_ROL:
-                    case GT_ROR:
-                        // (x << 0) => x
-                        // (x >> 0) => x
-                        // (x rol 0) => x
-                        // (x ror 0) => x
-                        ZeroVN = VNZeroForType(typ);
-                        if (arg1VN == ZeroVN)
-                        {
-                            resultVN = arg0VN;
-                        }
-                        break;
-
-                    case GT_EQ:
-                    case GT_GE:
-                    case GT_LE:
-                        // (x == x) => true (unless x is NaN)
-                        // (x <= x) => true (unless x is NaN)
-                        // (x >= x) => true (unless x is NaN)
-                        if (VNIsEqual(arg0VN, arg1VN))
-                        {
-                            resultVN = VNOneForType(typ);
-                        }
-                        if ((arg0VN == VNForNull() && IsKnownNonNull(arg1VN)) ||
-                            (arg1VN == VNForNull() && IsKnownNonNull(arg0VN)))
-                        {
-                            resultVN = VNZeroForType(typ);
-                        }
-                        break;
-
-                    case GT_NE:
-                    case GT_GT:
-                    case GT_LT:
-                        // (x != x) => false (unless x is NaN)
-                        // (x > x) => false (unless x is NaN)
-                        // (x < x) => false (unless x is NaN)
-                        if (VNIsEqual(arg0VN, arg1VN))
-                        {
-                            resultVN = VNZeroForType(typ);
-                        }
-                        if ((arg0VN == VNForNull() && IsKnownNonNull(arg1VN)) ||
-                            (arg1VN == VNForNull() && IsKnownNonNull(arg0VN)))
-                        {
-                            resultVN = VNOneForType(typ);
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-
-                if ((resultVN != NoVN) && (TypeOfVN(resultVN) == typ))
-                {
-                    return resultVN;
-                }
-            }
-        }
-        else // must be a VNF_ function
-        {
-            if (VNIsEqual(arg0VN, arg1VN))
-            {
-                // x <= x ==> true
-                // x >= x ==> true
-                if ((func == VNF_LE_UN) || (func == VNF_GE_UN))
-                {
-                    return VNOneForType(typ);
-                }
-                // x < x ==> false
-                // x > x ==> false
-                else if ((func == VNF_LT_UN) || (func == VNF_GT_UN))
-                {
-                    return VNZeroForType(typ);
-                }
-            }
-
-            if (func == VNF_CastClass)
-            {
-                // In terms of values, a castclass always returns its second argument, the object being cast.
-                // The IL operation may also throw an exception
-                return VNWithExc(arg1VN, VNExcSetSingleton(VNForFunc(TYP_REF, VNF_InvalidCastExc, arg1VN, arg0VN)));
-            }
-        }
-
-        // Otherwise, assign a new VN for the function application.
-        Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func2);
+    // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN','arg2VN') ?
+    //
+    VNDefFunc3Arg fstruct(func, arg0VN, arg1VN, arg2VN);
+    if (!GetVNFunc3Map()->Lookup(fstruct, &resultVN))
+    {
+        // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN','arg2VN')
+        //
+        Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func3);
         unsigned offsetWithinChunk                                     = c->AllocVN();
-        res                                                            = c->m_baseVN + offsetWithinChunk;
-        reinterpret_cast<VNDefFunc2Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
-        GetVNFunc2Map()->Set(fstruct, res);
-        return res;
+        resultVN                                                       = c->m_baseVN + offsetWithinChunk;
+        reinterpret_cast<VNDefFunc3Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
+        // Record 'resultVN' in the Func3Map
+        GetVNFunc3Map()->Set(fstruct, resultVN);
     }
+    return resultVN;
+}
+
+// ----------------------------------------------------------------------------------------
+//  VNForFunc  - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
+//               There is a one-to-one relationship between the ValueNum
+//               and 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any binary VNFunc
+//    arg0VN         - The ValueNum of the first argument to 'func'
+//    arg1VN         - The ValueNum of the second argument to 'func'
+//    arg2VN         - The ValueNum of the third argument to 'func'
+//    arg3VN         - The ValueNum of the fourth argument to 'func'
+//
+// Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
+//
+// Note:   Currently the only four operand func is the VNF_PtrToArrElem operation
+//
+ValueNum ValueNumStore::VNForFunc(
+    var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
+{
+    assert(arg0VN != NoVN && arg1VN != NoVN && arg2VN != NoVN && arg3VN != NoVN);
+
+    // Function arguments carry no exceptions.
+    assert(arg0VN == VNNormalValue(arg0VN));
+    assert(arg1VN == VNNormalValue(arg1VN));
+    assert(arg2VN == VNNormalValue(arg2VN));
+    assert(arg3VN == VNNormalValue(arg3VN));
+    assert(VNFuncArity(func) == 4);
+
+    ValueNum resultVN;
+
+    // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN','arg2VN','arg3VN') ?
+    //
+    VNDefFunc4Arg fstruct(func, arg0VN, arg1VN, arg2VN, arg3VN);
+    if (!GetVNFunc4Map()->Lookup(fstruct, &resultVN))
+    {
+        // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
+        //
+        Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func4);
+        unsigned offsetWithinChunk                                     = c->AllocVN();
+        resultVN                                                       = c->m_baseVN + offsetWithinChunk;
+        reinterpret_cast<VNDefFunc4Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
+        // Record 'resultVN' in the Func4Map
+        GetVNFunc4Map()->Set(fstruct, resultVN);
+    }
+    return resultVN;
 }
 
 //------------------------------------------------------------------------------
@@ -3190,6 +3087,7 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
         {
             case VNF_Cast: // We can evaluate these.
                 return true;
+
             case VNF_ObjGetType:
                 return false;
             default:
@@ -3198,74 +3096,346 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
     }
 }
 
-ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN)
+//----------------------------------------------------------------------------------------
+//  VNEvalShouldFold - Returns true if we should perform the folding operation.
+//                     It returns false if we don't want to fold the expression,
+//                     because it will always throw an exception.
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any binary VNFunc
+//    arg0VN         - The ValueNum of the first argument to 'func'
+//    arg1VN         - The ValueNum of the second argument to 'func'
+//
+// Return Value:     - Returns true if we should perform a folding operation.
+//
+bool ValueNumStore::VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(arg0VN != NoVN);
-    assert(arg1VN != NoVN);
-    assert(arg2VN != NoVN);
-    assert(VNFuncArity(func) == 3);
+    bool shouldFold = true;
 
-    // Function arguments carry no exceptions.
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-    if (func != VNF_PhiDef)
+    // We have some arithmetic operations that will always throw
+    // an exception given particular constant argument(s).
+    // (i.e. integer division by zero)
+    //
+    // We will avoid performing any constant folding on them
+    // since they won't actually produce any result.
+    // Instead they always will throw an exception.
+    //
+    if (func < VNF_Boundary)
     {
-        // For a phi definition first and second argument are "plain" local/ssa numbers.
-        // (I don't know if having such non-VN arguments to a VN function is a good idea -- if we wanted to declare
-        // ValueNum to be "short" it would be a problem, for example.  But we'll leave it for now, with these explicit
-        // exceptions.)
-        assert(arg0VN == VNNormalValue(arg0VN));
-        assert(arg1VN == VNNormalValue(arg1VN));
-    }
-    assert(arg2VN == VNNormalValue(arg2VN));
+        genTreeOps oper = genTreeOps(func);
 
-#endif
-    assert(VNFuncArity(func) == 3);
+        // Floating point operations do not throw exceptions
+        //
+        if (!varTypeIsFloating(typ))
+        {
+            // Is this an integer divide/modulo that will always throw an exception?
+            //
+            if ((oper == GT_DIV) || (oper == GT_UDIV) || (oper == GT_MOD) || (oper == GT_UMOD))
+            {
+                if ((TypeOfVN(arg0VN) != typ) || (TypeOfVN(arg1VN) != typ))
+                {
+                    // Just in case we have mismatched types
+                    shouldFold = false;
+                }
+                else
+                {
+                    bool isUnsigned = (oper == GT_UDIV) || (oper == GT_UMOD);
+                    if (typ == TYP_LONG)
+                    {
+                        INT64 kArg0 = ConstantValue<INT64>(arg0VN);
+                        INT64 kArg1 = ConstantValue<INT64>(arg1VN);
 
-    ValueNum      res;
-    VNDefFunc3Arg fstruct(func, arg0VN, arg1VN, arg2VN);
-    if (GetVNFunc3Map()->Lookup(fstruct, &res))
-    {
-        return res;
+                        if (IsIntZero(kArg1))
+                        {
+                            // Don't fold, we have a divide by zero
+                            shouldFold = false;
+                        }
+                        else if (!isUnsigned || IsOverflowIntDiv(kArg0, kArg1))
+                        {
+                            // Don't fold, we have a divide of INT64_MIN/-1
+                            shouldFold = false;
+                        }
+                    }
+                    else if (typ == TYP_INT)
+                    {
+                        int kArg0 = ConstantValue<int>(arg0VN);
+                        int kArg1 = ConstantValue<int>(arg1VN);
+
+                        if (IsIntZero(kArg1))
+                        {
+                            // Don't fold, we have a divide by zero
+                            shouldFold = false;
+                        }
+                        else if (!isUnsigned && IsOverflowIntDiv(kArg0, kArg1))
+                        {
+                            // Don't fold, we have a divide of INT32_MIN/-1
+                            shouldFold = false;
+                        }
+                    }
+                    else // strange value for 'typ'
+                    {
+                        assert(!"unexpected 'typ' in VNForFunc constant folding");
+                        shouldFold = false;
+                    }
+                }
+            }
+        }
     }
-    else
+    else // (func > VNF_Boundary)
     {
-        Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func3);
-        unsigned offsetWithinChunk                                     = c->AllocVN();
-        res                                                            = c->m_baseVN + offsetWithinChunk;
-        reinterpret_cast<VNDefFunc3Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
-        GetVNFunc3Map()->Set(fstruct, res);
-        return res;
+        // OK to fold,
+        // Add checks in the future if we support folding of VNF_ADD_OVF, etc...
     }
+
+    return shouldFold;
 }
 
-ValueNum ValueNumStore::VNForFunc(
-    var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN, ValueNum arg3VN)
+//----------------------------------------------------------------------------------------
+//  EvalUsingMathIdentity
+//                   - Attempts to evaluate 'func' by using mathimatical identities
+//                     that can be appied to 'func'.
+//
+// Arguments:
+//    typ            - The type of the resulting ValueNum produced by 'func'
+//    func           - Any binary VNFunc
+//    arg0VN         - The ValueNum of the first argument to 'func'
+//    arg1VN         - The ValueNum of the second argument to 'func'
+//
+// Return Value:     - When successful a  ValueNum for the expression is returned.
+//                     When unsuccessful NoVN is returned.
+//
+ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(arg0VN != NoVN && arg1VN != NoVN && arg2VN != NoVN && arg3VN != NoVN);
-    // Function arguments carry no exceptions.
-    assert(arg0VN == VNNormalValue(arg0VN));
-    assert(arg1VN == VNNormalValue(arg1VN));
-    assert(arg2VN == VNNormalValue(arg2VN));
-    assert(arg3VN == VNNormalValue(arg3VN));
-    assert(VNFuncArity(func) == 4);
+    ValueNum resultVN = NoVN; // set default result to unsuccessful
 
-    ValueNum      res;
-    VNDefFunc4Arg fstruct(func, arg0VN, arg1VN, arg2VN, arg3VN);
-    if (GetVNFunc4Map()->Lookup(fstruct, &res))
+    if (typ == TYP_BYREF) // We don't want/need to optimize a zero byref
     {
-        return res;
+        return resultVN; // return the unsuccessful value
     }
-    else
+
+    // We have ways of evaluating some binary functions.
+    if (func < VNF_Boundary)
     {
-        Chunk*   c                                                     = GetAllocChunk(typ, CEA_Func4);
-        unsigned offsetWithinChunk                                     = c->AllocVN();
-        res                                                            = c->m_baseVN + offsetWithinChunk;
-        reinterpret_cast<VNDefFunc4Arg*>(c->m_defs)[offsetWithinChunk] = fstruct;
-        GetVNFunc4Map()->Set(fstruct, res);
-        return res;
+        switch (genTreeOps(func))
+        {
+            ValueNum ZeroVN;
+            ValueNum OneVN;
+
+            case GT_ADD:
+                // (0 + x) == x
+                // (x + 0) == x
+                // This identity does not apply for floating point (when x == -0.0)
+                //
+                if (!varTypeIsFloating(typ))
+                {
+                    ZeroVN = VNZeroForType(typ);
+                    if (VNIsEqual(arg0VN, ZeroVN))
+                    {
+                        resultVN = arg1VN;
+                    }
+                    else if (VNIsEqual(arg1VN, ZeroVN))
+                    {
+                        resultVN = arg0VN;
+                    }
+                }
+                break;
+
+            case GT_SUB:
+                // (x - 0) == x
+                // (x - x) == 0
+                // This identity does not apply for floating point (when x == -0.0)
+                //
+                if (!varTypeIsFloating(typ))
+                {
+                    ZeroVN = VNZeroForType(typ);
+                    if (VNIsEqual(arg1VN, ZeroVN))
+                    {
+                        resultVN = arg0VN;
+                    }
+                    else if (VNIsEqual(arg0VN, arg1VN))
+                    {
+                        resultVN = ZeroVN;
+                    }
+                }
+                break;
+
+            case GT_MUL:
+                // These identities do not apply for floating point
+                //
+                if (!varTypeIsFloating(typ))
+                {
+                    // (0 * x) == 0
+                    // (x * 0) == 0
+                    ZeroVN = VNZeroForType(typ);
+                    if (arg0VN == ZeroVN)
+                    {
+                        resultVN = ZeroVN;
+                    }
+                    else if (arg1VN == ZeroVN)
+                    {
+                        resultVN = ZeroVN;
+                    }
+
+                    // (x * 1) == x
+                    // (1 * x) == x
+                    OneVN = VNOneForType(typ);
+                    if (arg0VN == OneVN)
+                    {
+                        resultVN = arg1VN;
+                    }
+                    else if (arg1VN == OneVN)
+                    {
+                        resultVN = arg0VN;
+                    }
+                }
+                break;
+
+            case GT_DIV:
+            case GT_UDIV:
+                // (x / 1) == x
+                // This identity does not apply for floating point
+                //
+                if (!varTypeIsFloating(typ))
+                {
+                    OneVN = VNOneForType(typ);
+                    if (arg1VN == OneVN)
+                    {
+                        resultVN = arg0VN;
+                    }
+                }
+                break;
+
+            case GT_OR:
+            case GT_XOR:
+                // (0 | x) == x,  (0 ^ x) == x
+                // (x | 0) == x,  (x ^ 0) == x
+                ZeroVN = VNZeroForType(typ);
+                if (arg0VN == ZeroVN)
+                {
+                    resultVN = arg1VN;
+                }
+                else if (arg1VN == ZeroVN)
+                {
+                    resultVN = arg0VN;
+                }
+                break;
+
+            case GT_AND:
+                // (x & 0) == 0
+                // (0 & x) == 0
+                ZeroVN = VNZeroForType(typ);
+                if (arg0VN == ZeroVN)
+                {
+                    resultVN = ZeroVN;
+                }
+                else if (arg1VN == ZeroVN)
+                {
+                    resultVN = ZeroVN;
+                }
+                break;
+
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            case GT_ROL:
+            case GT_ROR:
+                // (x << 0)  == x
+                // (x >> 0)  == x
+                // (x rol 0) == x
+                // (x ror 0) == x
+                ZeroVN = VNZeroForType(typ);
+                if (arg1VN == ZeroVN)
+                {
+                    resultVN = arg0VN;
+                }
+                // (0 << x)  == 0
+                // (0 >> x)  == 0
+                // (0 rol x) == 0
+                // (0 ror x) == 0
+                if (arg0VN == ZeroVN)
+                {
+                    resultVN = ZeroVN;
+                }
+                break;
+
+            case GT_EQ:
+            case GT_GE:
+            case GT_LE:
+                // (x == x) == true,  (null == non-null) == false,  (non-null == null) == false
+                // (x <= x) == true,  (null <= non-null) == false,  (non-null <= null) == false
+                // (x >= x) == true,  (null >= non-null) == false,  (non-null >= null) == false
+                //
+                // This identity does not apply for floating point (when x == NaN)
+                //
+                if (!varTypeIsFloating(typ))
+                {
+                    if (VNIsEqual(arg0VN, arg1VN))
+                    {
+                        resultVN = VNOneForType(typ);
+                    }
+                    if ((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN))
+                    {
+                        resultVN = VNZeroForType(typ);
+                    }
+                    if (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull()))
+                    {
+                        resultVN = VNZeroForType(typ);
+                    }
+                }
+                break;
+
+            case GT_NE:
+            case GT_GT:
+            case GT_LT:
+                // (x != x) == false,  (null != non-null) == true,  (non-null != null) == true
+                // (x > x)  == false,  (null == non-null) == true,  (non-null == null) == true
+                // (x < x)  == false,  (null == non-null) == true,  (non-null == null) == true
+                //
+                // This identity does not apply for floating point (when x == NaN)
+                //
+                if (!varTypeIsFloating(typ))
+                {
+                    if (VNIsEqual(arg0VN, arg1VN))
+                    {
+                        resultVN = VNZeroForType(typ);
+                    }
+                    if ((arg0VN == VNForNull()) && IsKnownNonNull(arg1VN))
+                    {
+                        resultVN = VNOneForType(typ);
+                    }
+                    if (IsKnownNonNull(arg0VN) && (arg1VN == VNForNull()))
+                    {
+                        resultVN = VNOneForType(typ);
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
     }
+    else // must be a VNF_ function
+    {
+        // These identities do not apply for floating point (when x == NaN)
+        //
+        if (VNIsEqual(arg0VN, arg1VN))
+        {
+            // x <= x == true
+            // x >= x == true
+            if ((func == VNF_LE_UN) || (func == VNF_GE_UN))
+            {
+                resultVN = VNOneForType(typ);
+            }
+            // x < x == false
+            // x > x == false
+            else if ((func == VNF_LT_UN) || (func == VNF_GT_UN))
+            {
+                resultVN = VNZeroForType(typ);
+            }
+        }
+    }
+    return resultVN;
 }
 
 //------------------------------------------------------------------------
@@ -6827,6 +6997,19 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // Now that we've labeled the assignment as a whole, we don't care about exceptions.
             rhsVNPair = vnStore->VNPNormalPair(rhsVNPair);
 
+            // Record the exeception set for this 'tree' in vnExcSet.
+            // First we'll record the exeception set for the rhs and
+            // later we will union in the exeception set for the lhs
+            //
+            ValueNum vnExcSet = ValueNumStore::VNForEmptyExcSet();
+
+            // Unpack, Norm,Exc for 'rhsVNPair'
+            ValueNum vnRhsLibNorm;
+            vnStore->VNUnpackExc(rhsVNPair.GetLiberal(), &vnRhsLibNorm, &vnExcSet);
+
+            // Now that we've saved the rhs exeception set, we we will use the normal values.
+            rhsVNPair = ValueNumPair(vnRhsLibNorm, vnStore->VNNormalValue(rhsVNPair.GetConservative()));
+
             // If the types of the rhs and lhs are different then we
             //  may want to change the ValueNumber assigned to the lhs.
             //
@@ -7215,8 +7398,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 // otherwise it is the type returned from VNApplySelectors above.
                                 var_types firstFieldType = vnStore->TypeOfVN(fldMapVN);
 
-                                ValueNum storeVal =
-                                    rhsVNPair.GetLiberal(); // The value number from the rhs of the assignment
+                                // The value number from the rhs of the assignment
+                                ValueNum storeVal    = rhsVNPair.GetLiberal();
                                 ValueNum newFldMapVN = ValueNumStore::NoVN;
 
                                 // when (obj != nullptr) we have an instance field, otherwise a static field
@@ -7229,8 +7412,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                                     if (obj != nullptr)
                                     {
+                                        // Unpack, Norm,Exc for 'obj'
+                                        ValueNum vnObjExcSet = ValueNumStore::VNForEmptyExcSet();
+                                        vnStore->VNUnpackExc(obj->gtVNPair.GetLiberal(), &normVal, &vnObjExcSet);
+                                        vnExcSet = vnStore->VNExcSetUnion(vnExcSet, vnObjExcSet);
+
                                         // construct the ValueNumber for 'fldMap at obj'
-                                        normVal = vnStore->VNLiberalNormalValue(obj->gtVNPair);
                                         valAtAddr =
                                             vnStore->VNForMapSelect(VNK_Liberal, firstFieldType, fldMapVN, normVal);
                                     }
@@ -7728,7 +7915,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         }
                     }
                 }
-                else
+                else // we have a binary oper
                 {
                     assert(oper != GT_ASG); // We handled assignments earlier.
                     assert(GenTree::OperIsBinary(oper));
@@ -7736,49 +7923,49 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     ValueNumPair op2VNPair;
                     if (tree->gtOp.gtOp2 == nullptr)
                     {
+                        // Handle any GT_LIST nodes as they can have a nullptr for op2.
                         op2VNPair.SetBoth(ValueNumStore::VNForNull());
                     }
                     else
                     {
                         op2VNPair = tree->gtOp.gtOp2->gtVNPair;
                     }
-                    // A few special case: if we add a field offset constant to a PtrToXXX, we get back a new PtrToXXX.
-                    ValueNum newVN = ValueNumStore::NoVN;
+
+                    // Handle a few special cases: if we add a field offset constant to a PtrToXXX, we will get back a
+                    // new
+                    // PtrToXXX.
 
                     ValueNumPair op1vnp;
                     ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
                     vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
+
                     ValueNumPair op2vnp;
                     ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
                     vnStore->VNPUnpackExc(op2VNPair, &op2vnp, &op2Xvnp);
                     ValueNumPair excSet = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
-                    if (oper == GT_ADD)
+                    ValueNum newVN = ValueNumStore::NoVN;
+
+                    // Check for the addition of a field offset constant
+                    //
+                    if ((oper == GT_ADD) && (!tree->gtOverflowEx()))
                     {
                         newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp1, tree->gtOp.gtOp2);
-                        if (newVN == ValueNumStore::NoVN)
-                        {
-                            newVN = vnStore->ExtendPtrVN(tree->gtOp.gtOp2, tree->gtOp.gtOp1);
-                        }
                     }
+
                     if (newVN != ValueNumStore::NoVN)
                     {
-                        newVN = vnStore->VNWithExc(newVN, excSet.GetLiberal());
                         // We don't care about differences between liberal and conservative for pointer values.
+                        newVN = vnStore->VNWithExc(newVN, excSet.GetLiberal());
                         tree->gtVNPair.SetBoth(newVN);
                     }
                     else
                     {
-
-                        ValueNumPair normalRes = vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1vnp, op2vnp);
-                        // Overflow-checking operations add an overflow exception
-                        if (tree->gtOverflowEx())
-                        {
-                            ValueNum overflowExcSet = vnStore->VNExcSetSingleton(
-                                vnStore->VNForFunc(TYP_REF, VNF_OverflowExc, vnStore->VNForVoid()));
-                            excSet = vnStore->VNPExcSetUnion(excSet, ValueNumPair(overflowExcSet, overflowExcSet));
-                        }
-                        tree->gtVNPair = vnStore->VNPWithExc(normalRes, excSet);
+                        VNFunc       vnf        = GetVNFuncForNode(tree);
+                        ValueNumPair normalPair = vnStore->VNPairForFunc(tree->TypeGet(), vnf, op1vnp, op2vnp);
+                        tree->gtVNPair          = vnStore->VNPWithExc(normalPair, excSet);
+                        // For overflow checking operations the VNF_OverflowExc will be added below
+                        // by fgValueNumberAddExceptionSet
                     }
                 }
             }
@@ -7816,14 +8003,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     case GT_NULLCHECK:
                     {
-                        // Explicit null check.
-                        // Handle case where operand tree also may cause exceptions.
-                        ValueNumPair excSet = vnStore->VNPExcSetSingleton(
-                            vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc,
-                                                   vnStore->VNPNormalPair(tree->gtOp.gtOp1->gtVNPair)));
-                        ValueNumPair excSetBoth =
-                            vnStore->VNPExcSetUnion(excSet, vnStore->VNPExceptionSet(tree->gtOp.gtOp1->gtVNPair));
-                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSetBoth);
+                        // An Explicit null check, produces no value
+                        // But we do persist any execeptions produced by op1
+                        //
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(),
+                                                             vnStore->VNPExceptionSet(tree->gtOp.gtOp1->gtVNPair));
+                        // The exception set with VNF_NullPtrExc will be added below
+                        // by fgValueNumberAddExceptionSet
                     }
                     break;
 
@@ -7856,6 +8042,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 }
             }
         }
+
+        // next we add any exception sets for the current tree node
+        fgValueNumberAddExceptionSet(tree);
     }
     else
     {
@@ -8369,7 +8558,7 @@ void Compiler::fgUpdateArgListVNs(GenTreeArgList* args)
     fgValueNumberTree(args);
 }
 
-VNFunc Compiler::fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc)
+VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 {
     assert(s_helperCallProperties.IsPure(helpFunc) || s_helperCallProperties.IsAllocator(helpFunc));
 
@@ -8694,7 +8883,7 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
         if (!needsFurtherWork && (pure || isAlloc))
         {
-            VNFunc vnf = fgValueNumberHelperMethVNFunc(helpFunc);
+            VNFunc vnf = fgValueNumberJitHelperMethodVNFunc(helpFunc);
 
             if (mayRunCctor)
             {
@@ -8715,6 +8904,465 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 
     call->gtVNPair = vnStore->VNPWithExc(vnpNorm, vnpExc);
     return modHeap;
+}
+
+//--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSetForIndirection
+//         - Adds the exception sets for the current tree node
+//           which is performing a memory indirection operation
+//
+// Arguments:
+//    tree       - The current GenTree node,
+//                 It must be some kind of an indirection node
+//
+// Return Value:
+//               - The tree's gtVNPair is updated to include the VNF_nullPtrExc
+//                 exception set.  We calculate a base address to use as the
+//                 argument to the VNF_nullPtrExc function.
+//
+// Notes:        - The calculation of the base address removes any constant
+//                 offsets, so that obj.x and obj.y will both have obj as
+//                 their base address.
+//                 For arrays the base address currently includes the
+//                 index calculations.
+//
+void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree)
+{
+    // We should have an Unary operator
+    assert(tree->OperIsUnary());
+    GenTree* baseAddr = tree->gtGetOp1();
+
+    // We evaluate the baseAddr ValueNumber further in order
+    // to obtain a better value to use for the null check exeception.
+    //
+    ValueNumPair baseVNP = baseAddr->gtVNPair;
+    ValueNum     baseLVN = baseVNP.GetLiberal();
+    ValueNum     baseCVN = baseVNP.GetConservative();
+    ssize_t      offsetL = 0;
+    ssize_t      offsetC = 0;
+    VNFuncApp    funcAttr;
+
+    while (vnStore->GetVNFunc(baseLVN, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
+           (vnStore->TypeOfVN(baseLVN) == TYP_BYREF))
+    {
+        if (fgIsBigOffset(offsetL))
+        {
+            // Failure: Exit this loop if we have a "big" offset
+
+            // reset baseLVN back to the full address expression
+            baseLVN = baseVNP.GetLiberal();
+            break;
+        }
+
+        // The arguments in value numbering functions are sorted in increasing order
+        // Thus either arg could be the constant.
+        if (vnStore->IsVNConstant(funcAttr.m_args[0]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
+        {
+            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
+            baseLVN = funcAttr.m_args[1];
+        }
+        else if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
+        {
+            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
+            baseLVN = funcAttr.m_args[0];
+        }
+        else // neither argument is a constant
+        {
+            break;
+        }
+    }
+
+    while (vnStore->GetVNFunc(baseCVN, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
+           (vnStore->TypeOfVN(baseCVN) == TYP_BYREF))
+    {
+        if (fgIsBigOffset(offsetC))
+        {
+            // Failure: Exit this loop if we have a "big" offset
+
+            // reset baseCVN back to the full address expression
+            baseCVN = baseVNP.GetConservative();
+            break;
+        }
+
+        // The arguments in value numbering functions are sorted in increasing order
+        // Thus either arg could be the constant.
+        if (vnStore->IsVNConstant(funcAttr.m_args[0]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
+        {
+            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
+            baseCVN = funcAttr.m_args[1];
+        }
+        else if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
+        {
+            offsetC += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
+            baseCVN = funcAttr.m_args[0];
+        }
+        else // neither argument is a constant
+        {
+            break;
+        }
+    }
+
+    // Create baseVNP, from the values we just computed,
+    baseVNP = ValueNumPair(baseLVN, baseCVN);
+
+    // Unpack, Norm,Exc for the tree's op1 VN
+    ValueNumPair vnpBaseNorm;
+    ValueNumPair vnpBaseExc = ValueNumStore::VNPForEmptyExcSet();
+    vnStore->VNPUnpackExc(baseVNP, &vnpBaseNorm, &vnpBaseExc);
+
+    // The Norm VN for op1 is used to create the NullPtrExc
+    ValueNumPair excChkSet = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnpBaseNorm));
+
+    // Combine the excChkSet with exception set of op1
+    ValueNumPair excSetBoth = vnStore->VNPExcSetUnion(excChkSet, vnpBaseExc);
+
+    // Retrieve the Normal VN for tree, note that it may be NoVN, so we handle that case
+    ValueNumPair vnpNorm = vnStore->VNPNormalPair(tree->gtVNPair);
+
+    // For as GT_IND on the lhs of an assignment we will get a NoVN value
+    if (vnpNorm.GetLiberal() == ValueNumStore::NoVN)
+    {
+        // Use the special Void VN value instead.
+        vnpNorm = vnStore->VNPForVoid();
+    }
+    tree->gtVNPair = vnStore->VNPWithExc(vnpNorm, excSetBoth);
+}
+
+//--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSetForDivison
+//         - Adds the exception sets for the current tree node
+//           which is performing an integer division operation
+//
+// Arguments:
+//    tree       - The current GenTree node,
+//                 It must be a node that performs an integer division
+//
+// Return Value:
+//               - The tree's gtVNPair is updated to include
+//                 VNF_DivideByZeroExc and VNF_ArithmeticExc,
+//                 We will omit one or both of them when the operation
+//                 has constants argumemts that preclude the exception.
+//
+void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
+{
+    genTreeOps oper = tree->OperGet();
+
+    // A Divide By Zero exception may be possible.
+    // The divisor is held in tree->gtOp.gtOp2
+    //
+    bool isUnsignedOper         = (oper == GT_UDIV) || (oper == GT_UMOD);
+    bool needDivideByZeroExcLib = true;
+    bool needDivideByZeroExcCon = true;
+    bool needArithmeticExcLib   = !isUnsignedOper; // Overflow isn't possible for unsigned divide
+    bool needArithmeticExcCon   = !isUnsignedOper;
+
+    // Determine if we have a 32-bit or 64-bit divide operation
+    var_types typ = genActualType(tree->TypeGet());
+    assert((typ == TYP_INT) || (typ == TYP_LONG));
+
+    // Retrieve the Norm VN for op2 to use it for the DivideByZeroExc
+    ValueNumPair vnpOp2Norm   = vnStore->VNPNormalPair(tree->gtOp.gtOp2->gtVNPair);
+    ValueNum     vnOp2NormLib = vnpOp2Norm.GetLiberal();
+    ValueNum     vnOp2NormCon = vnpOp2Norm.GetConservative();
+
+    if (typ == TYP_INT)
+    {
+        if (vnStore->IsVNConstant(vnOp2NormLib))
+        {
+            INT32 kVal = vnStore->ConstantValue<INT32>(vnOp2NormLib);
+            if (kVal != 0)
+            {
+                needDivideByZeroExcLib = false;
+            }
+            if (!isUnsignedOper && (kVal != -1))
+            {
+                needArithmeticExcLib = false;
+            }
+        }
+        if (vnStore->IsVNConstant(vnOp2NormCon))
+        {
+            INT32 kVal = vnStore->ConstantValue<INT32>(vnOp2NormCon);
+            if (kVal != 0)
+            {
+                needDivideByZeroExcCon = false;
+            }
+            if (!isUnsignedOper && (kVal != -1))
+            {
+                needArithmeticExcCon = false;
+            }
+        }
+    }
+    else // (typ == TYP_LONG)
+    {
+        if (vnStore->IsVNConstant(vnOp2NormLib))
+        {
+            INT64 kVal = vnStore->ConstantValue<INT64>(vnOp2NormLib);
+            if (kVal != 0)
+            {
+                needDivideByZeroExcLib = false;
+            }
+            if (!isUnsignedOper && (kVal != -1))
+            {
+                needArithmeticExcLib = false;
+            }
+        }
+        if (vnStore->IsVNConstant(vnOp2NormCon))
+        {
+            INT64 kVal = vnStore->ConstantValue<INT64>(vnOp2NormCon);
+            if (kVal != 0)
+            {
+                needDivideByZeroExcCon = false;
+            }
+            if (!isUnsignedOper && (kVal != -1))
+            {
+                needArithmeticExcCon = false;
+            }
+        }
+    }
+
+    // Retrieve the Norm VN for op1 to use it for the ArithmeticExc
+    ValueNumPair vnpOp1Norm   = vnStore->VNPNormalPair(tree->gtOp.gtOp1->gtVNPair);
+    ValueNum     vnOp1NormLib = vnpOp1Norm.GetLiberal();
+    ValueNum     vnOp1NormCon = vnpOp1Norm.GetConservative();
+
+    if (needArithmeticExcLib || needArithmeticExcCon)
+    {
+        if (typ == TYP_INT)
+        {
+            if (vnStore->IsVNConstant(vnOp1NormLib))
+            {
+                INT32 kVal = vnStore->ConstantValue<INT32>(vnOp1NormLib);
+
+                if (!isUnsignedOper && (kVal != INT32_MIN))
+                {
+                    needArithmeticExcLib = false;
+                }
+            }
+            if (vnStore->IsVNConstant(vnOp1NormCon))
+            {
+                INT32 kVal = vnStore->ConstantValue<INT32>(vnOp1NormCon);
+
+                if (!isUnsignedOper && (kVal != INT32_MIN))
+                {
+                    needArithmeticExcCon = false;
+                }
+            }
+        }
+        else // (typ == TYP_LONG)
+        {
+            if (vnStore->IsVNConstant(vnOp1NormLib))
+            {
+                INT64 kVal = vnStore->ConstantValue<INT64>(vnOp1NormLib);
+
+                if (!isUnsignedOper && (kVal != INT64_MIN))
+                {
+                    needArithmeticExcLib = false;
+                }
+            }
+            if (vnStore->IsVNConstant(vnOp1NormCon))
+            {
+                INT64 kVal = vnStore->ConstantValue<INT64>(vnOp1NormCon);
+
+                if (!isUnsignedOper && (kVal != INT64_MIN))
+                {
+                    needArithmeticExcCon = false;
+                }
+            }
+        }
+    }
+
+    // Unpack, Norm,Exc for the tree's VN
+    ValueNumPair vnpTreeNorm;
+    ValueNumPair vnpTreeExc    = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair vnpDivZeroExc = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair vnpArithmExc  = ValueNumStore::VNPForEmptyExcSet();
+
+    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
+
+    if (needDivideByZeroExcLib)
+    {
+        vnpDivZeroExc.SetLiberal(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_DivideByZeroExc, vnOp2NormLib)));
+    }
+    if (needDivideByZeroExcCon)
+    {
+        vnpDivZeroExc.SetConservative(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_DivideByZeroExc, vnOp2NormCon)));
+    }
+    if (needArithmeticExcLib)
+    {
+        vnpArithmExc.SetLiberal(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_ArithmeticExc, vnOp1NormLib, vnOp2NormLib)));
+    }
+    if (needArithmeticExcCon)
+    {
+        vnpArithmExc.SetConservative(
+            vnStore->VNExcSetSingleton(vnStore->VNForFunc(TYP_REF, VNF_ArithmeticExc, vnOp1NormLib, vnOp2NormCon)));
+    }
+
+    // Combine vnpDivZeroExc with the exception set of tree
+    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, vnpDivZeroExc);
+    // Combine vnpArithmExc with the newExcSet
+    newExcSet = vnStore->VNPExcSetUnion(newExcSet, vnpArithmExc);
+
+    // Updated VN for tree, it now includes DivideByZeroExc and/or ArithmeticExc
+    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
+}
+
+//--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSetForOverflow
+//         - Adds the exception set for the current tree node
+//           which is performing an overflow checking math operation
+//
+// Arguments:
+//    tree       - The current GenTree node,
+//                 It must be a node that performs an overflow
+//                 checking math operation
+//
+// Return Value:
+//               - The tree's gtVNPair is updated to include the VNF_OverflowExc
+//                 exception set.
+//
+void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
+{
+    assert(tree->gtOverflowEx());
+
+    // We should only be dealing with an Overflow checking ALU operation.
+    VNFunc vnf = GetVNFuncForNode(tree);
+    assert((vnf >= VNF_ADD_OVF) && (vnf <= VNF_MUL_UN_OVF));
+
+    // Unpack, Norm,Exc for the tree's VN
+    //
+    ValueNumPair vnpTreeNorm;
+    ValueNumPair vnpTreeExc = ValueNumStore::VNPForEmptyExcSet();
+
+    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
+
+#ifdef DEBUG
+    // The normal value number function should be the same overflow checking ALU operation as 'vnf'
+    VNFuncApp treeNormFuncApp;
+    assert(vnStore->GetVNFunc(vnpTreeNorm.GetLiberal(), &treeNormFuncApp) && (treeNormFuncApp.m_func == vnf));
+#endif // DEBUG
+
+    // Overflow-checking operations add an overflow exception
+    // The normal result is used as the input argument for the OverflowExc
+    ValueNumPair overflowExcSet =
+        vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_OverflowExc, vnpTreeNorm));
+
+    // Combine the new Overflow exception with the original exception set of tree
+    ValueNumPair newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, overflowExcSet);
+
+    // Updated VN for tree, it now includes Overflow exception
+    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
+}
+
+//--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSetForCkFinite
+//         - Adds the exception set for the current tree node
+//           which is a CkFinite operation
+//
+// Arguments:
+//    tree       - The current GenTree node,
+//                 It must be a CkFinite node
+//
+// Return Value:
+//               - The tree's gtVNPair is updated to include the VNF_ArithmeticExc
+//                 exception set.
+//
+void Compiler::fgValueNumberAddExceptionSetForCkFinite(GenTree* tree)
+{
+    // We should only be dealing with an check finite operation.
+    assert(tree->OperGet() == GT_CKFINITE);
+
+    // Unpack, Norm,Exc for the tree's VN
+    //
+    ValueNumPair vnpTreeNorm;
+    ValueNumPair vnpTreeExc = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair newExcSet;
+
+    vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
+
+    // ckfinite adds an Arithmetic exception
+    // The normal result is used as the input argument for the ArithmeticExc
+    ValueNumPair arithmeticExcSet =
+        vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_ArithmeticExc, vnpTreeNorm));
+
+    // Combine the new Arithmetic exception with the original exception set of tree
+    newExcSet = vnStore->VNPExcSetUnion(vnpTreeExc, arithmeticExcSet);
+
+    // Updated VN for tree, it now includes Arithmetic exception
+    tree->gtVNPair = vnStore->VNPWithExc(vnpTreeNorm, newExcSet);
+}
+
+//--------------------------------------------------------------------------------
+// fgValueNumberAddExceptionSet
+//         - Adds any exception sets needed for the current tree node
+//
+// Arguments:
+//    tree       - The current GenTree node,
+//
+// Return Value:
+//               - The tree's gtVNPair is updated to include the exception sets.
+//
+// Notes:        - This method relies upon OperMayTHrow to determine if we need
+//                 to add an exception set.  If OPerMayThrow returns false no
+//                 exception set will be added.
+//
+void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
+{
+    if (tree->OperMayThrow(this))
+    {
+        switch (tree->OperGet())
+        {
+            case GT_CAST: // A cast with an overflow check
+                break;    // Already handled by VNPairForCast()
+
+            case GT_ADD: // An Overflow checking ALU operation
+            case GT_SUB:
+            case GT_MUL:
+                fgValueNumberAddExceptionSetForOverflow(tree);
+                break;
+
+            case GT_LCLHEAP:
+                // It is not necessary to model the StackOverflow exception for GT_LCLHEAP
+                break;
+
+            case GT_INTRINSIC:
+                // ToDo: model the exceptions for Intrinsics
+                break;
+
+            case GT_IND: // Implicit null check.
+                if ((tree->gtFlags & GTF_IND_ASG_LHS) != 0)
+                {
+                    // Don't add exception set on LHS of assignment
+                    break;
+                }
+            // fall through
+
+            case GT_BLK: // All Block opcodes contain at least one indirection
+            case GT_OBJ:
+            case GT_DYN_BLK:
+            case GT_ARR_LENGTH: // Implicit null check.
+            case GT_NULLCHECK:  // Explicit null check.
+                fgValueNumberAddExceptionSetForIndirection(tree);
+                break;
+
+            case GT_DIV:
+            case GT_UDIV:
+            case GT_MOD:
+            case GT_UMOD:
+                fgValueNumberAddExceptionSetForDivision(tree);
+                break;
+
+            case GT_CKFINITE:
+                fgValueNumberAddExceptionSetForCkFinite(tree);
+                break;
+
+            default:
+                assert(!"Handle this oper in fgValueNumberAddExceptionSet");
+                break;
+        }
+    }
 }
 
 #ifdef DEBUG

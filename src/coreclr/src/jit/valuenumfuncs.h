@@ -56,16 +56,15 @@ ValueNumFuncDef(ExcSetCons, 2, false, false, false)         // Args: 0: exceptio
 // Curremtly  when the execution is always thrown, the value VNForVoid() is used as Arg0 by OverflowExc and DivideByZeroExc
 // 
 ValueNumFuncDef(NullPtrExc, 1, false, false, false)         // Null pointer exception check.  Args: 0: address value,  throws when it is null
-ValueNumFuncDef(ArithmeticExc, 2, false, false, false)      // E.g., for signed its, MinInt / -1.
-ValueNumFuncDef(OverflowExc, 1, false, false, false)        // Integer overflow check. Args: 0: expression value,  throws when it overflows
+ValueNumFuncDef(ArithmeticExc, 2, false, false, false)      // Arithmetic exception check, ckfinite and integer division overflow, Args: 0: expression value,
+ValueNumFuncDef(OverflowExc, 1, false, false, false)        // Integer overflow check. used for checked add,sub and mul Args: 0: expression value,  throws when it overflows
 ValueNumFuncDef(ConvOverflowExc, 2, false, false, false)    // Cast conversion overflow check.  Args: 0: input value; 1: var_types of the target type
-                                                            // (shifted left one bit; low bit encode whether source is unsigned.) 
+                                                            // - (shifted left one bit; low bit encode whether source is unsigned.) 
 ValueNumFuncDef(DivideByZeroExc, 1, false, false, false)    // Division by zero check.  Args: 0: divisor value, throws when it is zero
-ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false) // Args: 0: array length; 1: index value, throws when the bounds check fails.
-ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // Args: 0: ref value being cast; 1: handle of type being cast to.  Represents the exception thrown if the cast fails.
+ValueNumFuncDef(IndexOutOfRangeExc, 2, false, false, false) // Array bounds check, Args: 0: array length; 1: index value, throws when the bounds check fails.
+ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // CastClass check, Args: 0: ref value being cast; 1: handle of type being cast to, throws when the cast fails.
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false)  // Raises Integer overflow when Arg 0 is negative
-ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that may be thrown by a JitHelper
-
+ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
 ValueNumFuncDef(Lng2Dbl, 1, false, false, false)
 ValueNumFuncDef(ULng2Dbl, 1, false, false, false)
