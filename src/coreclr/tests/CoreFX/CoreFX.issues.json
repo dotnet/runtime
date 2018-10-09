@@ -241,6 +241,10 @@
                 {
                     "name": "System.Net.Http.Functional.Tests.SocketsHttpHandler_DiagnosticsTest.SendAsync_ExpectedDiagnosticSourceActivityLogging",
                     "reason": "System.Diagnostics.RemoteExecutorTestBase+RemoteInvokeHandle+RemoteExecutionException System.Diagnostics.RemoteExecutorTestBase+RemoteInvokeHandle+RemoteExecutionException : Remote process failed with an unhandled exception."
+                },
+                {
+                    "name": "System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate",
+                    "reason": "outdated"
                 }
             ]
         }
