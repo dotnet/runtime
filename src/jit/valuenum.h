@@ -190,6 +190,9 @@ private:
     // Returns "true" iff "vnf" can be evaluated for constant arguments.
     static bool CanEvalForConstantArgs(VNFunc vnf);
 
+    // Returns "true" iff "vnf" should be folded by evaluating the func with constant arguments.
+    bool VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
+
     // return vnf(v0)
     template <typename T>
     static T EvalOp(VNFunc vnf, T v0);
@@ -239,6 +242,8 @@ private:
     ValueNum EvalFuncForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalFuncForConstantFPArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalCastForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
+
+    ValueNum EvalUsingMathIdentity(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
 
 // This is the constant value used for the default value of m_mapSelectBudget
 #define DEFAULT_MAP_SELECT_BUDGET 100 // used by JitVNMapSelBudget
@@ -452,15 +457,14 @@ public:
     // True "iff" vn is a value returned by a call to a shared static helper.
     bool IsSharedStatic(ValueNum vn);
 
-    // VN's for functions of other values.
-    // Four overloads, for arities 0, 1, 2, and 3.  If we need other arities, we'll consider it.
+    // VNForFunc: We have five overloads, for arities 0, 1, 2, 3 and 4
     ValueNum VNForFunc(var_types typ, VNFunc func);
     ValueNum VNForFunc(var_types typ, VNFunc func, ValueNum opVNwx);
     // This must not be used for VNF_MapSelect applications; instead use VNForMapSelect, below.
     ValueNum VNForFunc(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
     ValueNum VNForFunc(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx);
 
-    // The following four op VNForFunc is only used for VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN
+    // The following four-op VNForFunc is used for VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
 
