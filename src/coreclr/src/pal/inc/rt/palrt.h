@@ -151,60 +151,6 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #include <pal_assert.h>
 
-#if defined(_DEBUG)
-#define ROTOR_PAL_CTOR_TEST_BODY(TESTNAME)                              \
-    class TESTNAME ## _CTOR_TEST {                                      \
-    public:                                                             \
-        class HelperClass {                                             \
-        public:                                                         \
-            HelperClass(const char *String) {                           \
-                _ASSERTE (m_s == NULL);                                 \
-                m_s = String;                                           \
-            }                                                           \
-                                                                        \
-            void Validate (const char *String) {                        \
-                _ASSERTE (m_s);                                         \
-                _ASSERTE (m_s == String);                               \
-                _ASSERTE (!strncmp (                                    \
-                              m_s,                                      \
-                              String,                                   \
-                              1000));                                   \
-            }                                                           \
-                                                                        \
-        private:                                                        \
-            const char *m_s;                                            \
-        };                                                              \
-                                                                        \
-        TESTNAME ## _CTOR_TEST() {                                      \
-            _ASSERTE (m_This == NULL);                                  \
-            m_This = this;                                              \
-        }                                                               \
-                                                                        \
-        void Validate () {                                              \
-            _ASSERTE (m_This == this);                                  \
-            m_String.Validate(#TESTNAME "_CTOR_TEST");                  \
-        }                                                               \
-                                                                        \
-    private:                                                            \
-        void              *m_This;                                      \
-        static HelperClass m_String;                                    \
-    };                                                                  \
-                                                                        \
-    static TESTNAME ## _CTOR_TEST                                       \
-      g_ ## TESTNAME ## _CTOR_TEST;                                     \
-    TESTNAME ## _CTOR_TEST::HelperClass                                 \
-      TESTNAME ## _CTOR_TEST::m_String(#TESTNAME "_CTOR_TEST");
-
-#define ROTOR_PAL_CTOR_TEST_RUN(TESTNAME)                               \
-    g_ ## TESTNAME ##_CTOR_TEST.Validate()
-
-#else // DEBUG
-
-#define ROTOR_PAL_CTOR_TEST_BODY(TESTNAME) 
-#define ROTOR_PAL_CTOR_TEST_RUN(TESTNAME)  do {} while (0)
-
-#endif // DEBUG
-
 #define NTAPI       __cdecl
 #define WINAPI      __cdecl
 #define CALLBACK    __cdecl

@@ -816,20 +816,6 @@ Thread* SetupThread(BOOL fInternal)
 }
 
 //-------------------------------------------------------------------------
-void STDMETHODCALLTYPE CorMarkThreadInThreadPool()
-{
-    LIMITED_METHOD_CONTRACT;
-    BEGIN_ENTRYPOINT_VOIDRET;
-    END_ENTRYPOINT_VOIDRET;
-
-    // this is no longer needed after our switch to
-    // the Win32 threadpool.
-    // keeping in mscorwks for compat reasons and to keep rotor sscoree and
-    // mscoree consistent.
-}
-
-
-//-------------------------------------------------------------------------
 // Public function: SetupUnstartedThread()
 // This sets up a Thread object for an exposed System.Thread that
 // has not been started yet.  This allows us to properly enumerate all threads

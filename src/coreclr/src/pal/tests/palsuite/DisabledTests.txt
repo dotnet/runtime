@@ -8,12 +8,12 @@ debug_api/debugbreak/test1
 debug_api/outputdebugstringa/test1
 debug_api/outputdebugstringw/test1
 debug_api/writeprocessmemory/test1
-debug_api/writeprocessmemory/test2
 debug_api/writeprocessmemory/test3
 debug_api/writeprocessmemory/test4
 =======================================
 The above testcases were disabled in the palsuite, because they depend heavily on
-WaitForDebugEvent,DebugActiveProcess and ContinueDebugEvent, where these api's have been removed from the PAL and listed in the rotor_pal.doc (6.0)
+WaitForDebugEvent,DebugActiveProcess and ContinueDebugEvent, where these api's
+have been removed from the PAL.
 
 
 file_io/gettempfilenamea/test2 :
@@ -85,38 +85,6 @@ will be useful when full calendar support is implemented.
 pal_specific/pal_get_stdin/test1 :
 =======================================
 This test case should be run manually.  Requires user input.
-
-
-threading/setconsolectrlhandler/test1
-threading/setconsolectrlhandler/test2
-threading/setconsolectrlhandler/test3
-threading/setconsolectrlhandler/test4
-=======================================
-These tests cases should be run manually.  Requires user input.
-
-threading/getprocesstimes/test1
-=======================================
-According to rotor_pal.doc, GetProcessTimes() should be supported for the current 
-process only. I've removed this test because it tests GetProcessTimes() with 
-invalid process handle value.
-
-threading/getthreadcontext/test1,1
-=======================================
-According to rotor_pal.doc, when GetThreadContext is call for a thread within 
-the same process, it could only be called for te current thread. I've removed
-this test, because it tests GetThreadContext() with a non current thread handle 
-belong the current procees.
-
-loader/loadlibrarya/test4
-loader/loadlibraryw/test4
-=======================================
-PAL BSD should not append the .so extension in LoadLibrary if the extension is 
-omitted.
-file_io/deletefilea/test3
-file_io/deletefilew/test3
-=======================================
-No code in Rotor depends on DeleteFile[A/W] failing on readonly files so we 
-don't need to exactly emulate this feature of the Win32 filesystems on FreeBSD.
 
 filemapping_memmgt\MapViewOfFile\test1
 =======================================

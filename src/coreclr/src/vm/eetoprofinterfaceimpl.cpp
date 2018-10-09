@@ -2132,16 +2132,15 @@ HRESULT EEToProfInterfaceImpl::DetermineAndSetEnterLeaveFunctionHooksForJit()
             // intermediary FCALL which then calls the profiler's hook) with extra information
             // about the current function.
 
-            // The casts below are to appease rotor.  cl.exe doesn't need them.
             hr = SetEnterLeaveFunctionHooksForJit(
                 (m_pEnter3WithInfo != NULL) ?
-                    reinterpret_cast<FunctionEnter3 *>(PROFILECALLBACK(ProfileEnter)) :
+                    PROFILECALLBACK(ProfileEnter) :
                     m_pEnter3,
                 (m_pLeave3WithInfo != NULL) ?
-                    reinterpret_cast<FunctionLeave3 *>(PROFILECALLBACK(ProfileLeave)) :
+                    PROFILECALLBACK(ProfileLeave) :
                     m_pLeave3,
                 (m_pTailcall3WithInfo != NULL) ?
-                    reinterpret_cast<FunctionTailcall3 *>(PROFILECALLBACK(ProfileTailcall)) :
+                    PROFILECALLBACK(ProfileTailcall) :
                     m_pTailcall3);
         }
         else
@@ -2175,16 +2174,15 @@ HRESULT EEToProfInterfaceImpl::DetermineAndSetEnterLeaveFunctionHooksForJit()
             BOOL fLeave = (m_pLeave != NULL) || (m_pLeave2 != NULL);
             BOOL fTailcall = (m_pTailcall != NULL) || (m_pTailcall2 != NULL);
 
-            // The casts below are to appease rotor.  cl.exe doesn't need them.
             hr = SetEnterLeaveFunctionHooksForJit(
                 fEnter ?
-                    reinterpret_cast<FunctionEnter3 *>(PROFILECALLBACK(ProfileEnter)) :
+                    PROFILECALLBACK(ProfileEnter) :
                     NULL,
                 fLeave ?
-                    reinterpret_cast<FunctionLeave3 *>(PROFILECALLBACK(ProfileLeave)) :
+                    PROFILECALLBACK(ProfileLeave) :
                     NULL,
                 fTailcall ?
-                    reinterpret_cast<FunctionTailcall3 *>(PROFILECALLBACK(ProfileTailcall)) :
+                    PROFILECALLBACK(ProfileTailcall) :
                     NULL);
         }
     }
