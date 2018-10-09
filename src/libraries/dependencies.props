@@ -18,6 +18,7 @@
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>2c097cd54d4130327754027f301dba5489396f53</BuildToolsCurrentRef>
+    <CoreFxOptimizationDataCurrentRef>6aee9d4f0b918a9458cdf07d22094d4523204a6c</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -58,6 +59,7 @@
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
     <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>99.99.99-master-20181008-0042</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
@@ -117,6 +119,10 @@
     <RemoteDependencyBuildInfo Include="BuildTools">
       <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="CoreFxOptimizationData">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)optimization/$(DependencyBranch)/IBC</BuildInfoPath>
+      <CurrentRef>$(CoreFxOptimizationDataCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
@@ -199,6 +205,11 @@
        <ElementName>FeedTasksPackageVersion</ElementName>
        <PackageId>$(FeedTasksPackage)</PackageId>
      </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreFxOptimizationData">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxOptimizationDataVersion</ElementName>
+      <PackageId>optimization.IBC.CoreFx</PackageId>
+    </XmlUpdateStep>
   </ItemGroup>
 
   <PropertyGroup>
