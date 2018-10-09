@@ -119,20 +119,25 @@ build_test_wrappers()
         export __Exclude="${__ProjectDir}/tests/issues.targets"
         export __BuildLogRootName="Tests_XunitWrapper"
 
-        # Set up directories and file names
-        __BuildLogRootName=$subDirectoryName
-        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
-        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
-        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
-
         buildVerbosity="Summary"
 
         if [ $__VerboseBuild == 1 ]; then
             buildVerbosity="Diag"
         fi
 
-        echo "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
-        "${__DotNetCli}" msbuild "${__ProjectDir}/tests/runtest.proj" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false /fileloggerparameters:"\"Verbosity=normal;LogFile=${__BuildLog}\"" /fileloggerparameters1:"\"WarningsOnly;LogFile=${__BuildWrn}\"" /fileloggerparameters2:"\"ErrorsOnly;LogFile=${__BuildErr}\"" /consoleloggerparameters:$buildVerbosity /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch
+        # Set up directories and file names
+        __BuildLogRootName=$subDirectoryName
+        __BuildLog="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.log"
+        __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.wrn"
+        __BuildErr="$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.err"
+        __MsbuildLog="/fileloggerparameters:\"Verbosity=normal;LogFile=${__BuildLog}\""
+        __MsbuildWrn="/fileloggerparameters1:\"WarningsOnly;LogFile=${__BuildWrn}\""
+        __MsbuildErr="/fileloggerparameters2:\"ErrorsOnly;LogFile=${__BuildErr}\""
+        __Logging="$__MsbuildLog $__MsbuildWrn $__MsbuildErr /consoleloggerparameters:$buildVerbosity"
+
+        nextCommand="\"${__DotNetCli}\" msbuild \"${__ProjectDir}/tests/runtest.proj\" /p:RestoreAdditionalProjectSources=https://dotnet.myget.org/F/dotnet-core/ /p:BuildWrappers=true /p:TargetsWindows=false $__Logging /p:__BuildOS=$__BuildOS /p:__BuildType=$__BuildType /p:__BuildArch=$__BuildArch"
+        echo "$nextCommand"
+        eval $nextCommand
 
         if [ $? -ne 0 ]; then
             echo "${__MsgPrefix}Error: build failed. Refer to the build log files for details (above)"
@@ -147,6 +152,8 @@ build_test_wrappers()
 
 generate_layout()
 {
+    echo "${__MsgPrefix}Creating test overlay..."
+
     __TestDir=$__ProjectDir/tests
     __ProjectFilesDir=$__TestDir
     __TestBinDir=$__TestWorkingDir
@@ -195,13 +202,13 @@ generate_layout()
     echo "${__MsgPrefix}Creating test overlay..."
 
     if [ -z "$xUnitTestBinBase" ]; then
-      xUnitTestBinBase=$__TestWorkingDir
+        xUnitTestBinBase=$__TestWorkingDir
     fi
 
     export CORE_ROOT=$xUnitTestBinBase/Tests/Core_Root
 
     if [ -d "${CORE_ROOT}" ]; then
-      rm -rf $CORE_ROOT
+        rm -rf $CORE_ROOT
     fi
 
     mkdir -p $CORE_ROOT
@@ -213,18 +220,18 @@ generate_layout()
 
     # Make sure to copy over the pulled down packages
     cp -r $__BinDir/* $CORE_ROOT/ > /dev/null
-
 }
 
 generate_testhost()
 {
+    echo "${__MsgPrefix}Generating test host..."
+
     export TEST_HOST=$xUnitTestBinBase/testhost
 
     if [ -d "${TEST_HOST}" ]; then
         rm -rf $TEST_HOST
     fi
 
-    echo "${__MsgPrefix}Creating test overlay..."    
     mkdir -p $TEST_HOST
 
     build_MSBuild_projects "Tests_Generate_TestHost" "${__ProjectDir}/tests/runtest.proj" "Creating test host" "-testHost"
@@ -233,6 +240,8 @@ generate_testhost()
 
 build_Tests()
 {
+    echo "${__MsgPrefix}Building Tests..."
+
     __TestDir=$__ProjectDir/tests
     __ProjectFilesDir=$__TestDir
     __TestBinDir=$__TestWorkingDir
@@ -317,9 +326,9 @@ build_Tests()
                 echo "${__MsgPrefix}Error: Check Test Build failed."
                 exit 1
             fi
-
-            echo "Managed tests build success!"
         fi
+
+        echo "Managed tests build success!"
     fi
 
     build_test_wrappers
@@ -327,8 +336,6 @@ build_Tests()
     if [ -n "$__UpdateInvalidPackagesArg" ]; then
         __up=-updateinvalidpackageversion
     fi
-
-    echo "${__MsgPrefix}Creating test overlay..."
 
     generate_layout
 
@@ -392,10 +399,9 @@ build_MSBuild_projects()
             buildArgs+=("${__RunArgs[@]}")
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-            echo "Building step '$stepName' slice=$slice via $buildCommand"
-
-            # Invoke MSBuild
-            "$__ProjectRoot/run.sh" build "${buildArgs[@]}"
+            nextCommand="\"$__ProjectRoot/run.sh\" build ${buildArgs[@]}"
+            echo "Building step '$stepName' slice=$slice via $nextCommand"
+            eval $nextCommand
 
             # Make sure everything is OK
             if [ $? -ne 0 ]; then
@@ -421,10 +427,9 @@ build_MSBuild_projects()
         buildArgs+=("${__RunArgs[@]}")
         buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-        echo "Building step '$stepName' via $buildCommand"
-
-        # Invoke MSBuild
-        "$__ProjectRoot/run.sh" build "${buildArgs[@]}"
+        nextCommand="\"$__ProjectRoot/run.sh\" build ${buildArgs[@]}"
+        echo "Building step '$stepName' via $nextCommand"
+        eval $nextCommand
 
         # Make sure everything is OK
         if [ $? -ne 0 ]; then
@@ -482,8 +487,9 @@ build_native_projects()
         pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
         # Force cross dir to point to project root cross dir, in case there is a cross build.
-        echo "Invoking CONFIG_DIR=\"$__ProjectRoot/cross\" \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
-        CONFIG_DIR="$__ProjectRoot/cross" "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__TestDir" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator "$extraCmakeArguments" "$__cmakeargs"
+        nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+        echo "Invoking $nextCommand"
+        eval $nextCommand
         popd
     fi
 
@@ -733,8 +739,8 @@ while :; do
             ;;
 
         verbose)
-        __VerboseBuild=1
-        ;;
+            __VerboseBuild=1
+            ;;
 
         clang3.5|-clang3.5)
             __ClangMajorVersion=3
@@ -808,9 +814,11 @@ while :; do
         generatelayoutonly)
             __GenerateLayoutOnly=1
             ;;
+
         generatetesthostonly)
             __GenerateTestHostOnly=1
             ;;
+
         skiprestorepackages)
             __SkipRestorePackages=1
             ;;
@@ -834,10 +842,12 @@ while :; do
         msbuildonunsupportedplatform)
             __msbuildonunsupportedplatform=1
             ;;
+
         priority1)
             __priority1=1
             __UnprocessedBuildArgs+=("-priority=1")
             ;;
+
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -934,15 +944,12 @@ __CoreClrVersion=1.1.0
 __sharedFxDir=$__BuildToolsDir/dotnetcli/shared/Microsoft.NETCore.App/$__CoreClrVersion/
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
-    echo "Building Tests..."
     build_Tests
 elif [ ! -z "$__BuildTestWrappersOnly" ]; then
     build_test_wrappers
 else
-    echo "Generating test layout..."
     generate_layout
     if [ ! -z "$__GenerateTestHostOnly" ]; then
-        echo "Generating test host..."
         generate_testhost
     fi
 fi
@@ -961,9 +968,9 @@ if [ $__RunTests -ne 0 ]; then
 
     echo "Run Tests..."
 
-    echo "${__TestDir}/runtest.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$__sharedFxDir --testNativeBinDir=$__testNativeBinDir"
-
-    $__TestDir/runtest.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir
+    nextCommand="$__TestDir/runtest.sh --testRootDir=$__TestBinDir --coreClrBinDir=$__BinDir --coreFxBinDir=$CORE_ROOT --testNativeBinDir=$__testNativeBinDir"
+    echo "$nextCommand"
+    eval $nextCommand
 
     echo "Tests run successful."
 else
