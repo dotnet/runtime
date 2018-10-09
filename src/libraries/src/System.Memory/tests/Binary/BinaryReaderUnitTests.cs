@@ -207,20 +207,6 @@ namespace System.Buffers.Binary.Tests
         }
 
         [Fact]
-        public void ReverseByteDoesNothing()
-        {
-            byte valueMax = byte.MaxValue;
-            byte valueMin = byte.MinValue;
-            sbyte signedValueMax = sbyte.MaxValue;
-            sbyte signedValueMin = sbyte.MinValue;
-
-            Assert.Equal(valueMax, ReverseEndianness(valueMax));
-            Assert.Equal(valueMin, ReverseEndianness(valueMin));
-            Assert.Equal(signedValueMax, ReverseEndianness(signedValueMax));
-            Assert.Equal(signedValueMin, ReverseEndianness(signedValueMin));
-        }
-
-        [Fact]
         public void SpanWriteAndReadBigEndianHeterogeneousStruct()
         {
             Assert.True(BitConverter.IsLittleEndian);

@@ -201,6 +201,7 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReaderUnitTests.cs" />
     <Compile Include="Binary\BinaryWriterUnitTests.cs" />
+    <Compile Include="Binary\ReverseEndiannessUnitTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ParsersAndFormatters\Formatter\FormatterTestData.cs" />
