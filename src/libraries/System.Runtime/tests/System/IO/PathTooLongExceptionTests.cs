@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Text;
 using Xunit;
+using System.Tests;
 
 namespace System.IO.Tests
 {
