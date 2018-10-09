@@ -358,7 +358,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema http://msdn.microsoft.com/en-us/library/aa384043(VS.85).aspx.
+        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
         /// This is the preferred way of generating a manifest to be embedded in the ETW stream as it is fast and
         /// the fact that it only includes localized entries for the current UI culture is an acceptable tradeoff.
         /// </summary>
@@ -372,7 +372,7 @@ namespace System.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema http://msdn.microsoft.com/en-us/library/aa384043(VS.85).aspx.
+        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
         /// Pass EventManifestOptions.AllCultures when generating a manifest to be registered on the machine. This
         /// ensures that the entries in the event log will be "optimally" localized.
         /// </summary>
@@ -4914,7 +4914,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Specifies an SDDL access descriptor that controls access to the log file that backs the channel.
-        /// See MSDN ((http://msdn.microsoft.com/en-us/library/windows/desktop/aa382741.aspx) for details.
+        /// See MSDN (https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-channeltype-complextype) for details.
         /// </summary>
         public string Access { get; set; } 
 
@@ -4948,7 +4948,7 @@ namespace System.Diagnostics.Tracing
 
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     /// <summary>
-    /// Allowed isolation levels. See MSDN (http://msdn.microsoft.com/en-us/library/windows/desktop/aa382741.aspx) 
+    /// Allowed isolation levels. See MSDN (https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-channeltype-complextype) 
     /// for the default permissions associated with each level. EventChannelIsolation and Access allows control over the 
     /// access permissions for the channel and backing file.
     /// </summary>
