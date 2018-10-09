@@ -322,7 +322,7 @@ namespace System.Dynamic
         // that uses DebuggerTypeProxy, instead of defining a generic debug view type and
         // using different instantiations. The reason for this is that support for generics
         // with using DebuggerTypeProxy is limited. For C#, DebuggerTypeProxy supports only
-        // open types (from MSDN http://msdn.microsoft.com/en-us/library/d8eyd8zc.aspx).
+        // open types (from MSDN https://docs.microsoft.com/en-us/visualstudio/debugger/using-debuggertypeproxy-attribute).
         private sealed class KeyCollectionDebugView
         {
             private readonly ICollection<string> _collection;
@@ -461,7 +461,7 @@ namespace System.Dynamic
         // that uses DebuggerTypeProxy, instead of defining a generic debug view type and
         // using different instantiations. The reason for this is that support for generics
         // with using DebuggerTypeProxy is limited. For C#, DebuggerTypeProxy supports only
-        // open types (from MSDN http://msdn.microsoft.com/en-us/library/d8eyd8zc.aspx).
+        // open types (from MSDN https://docs.microsoft.com/en-us/visualstudio/debugger/using-debuggertypeproxy-attribute).
         private sealed class ValueCollectionDebugView
         {
             private readonly ICollection<object> _collection;

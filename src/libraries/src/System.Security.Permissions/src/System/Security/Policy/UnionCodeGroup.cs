@@ -4,7 +4,7 @@
 
 namespace System.Security.Policy
 {
-    [Obsolete("This type is obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+    [Obsolete("This type is obsolete. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
     public sealed partial class UnionCodeGroup : CodeGroup
     {
         public UnionCodeGroup(IMembershipCondition membershipCondition, PolicyStatement policy) : base(default(IMembershipCondition), default(PolicyStatement)) { }

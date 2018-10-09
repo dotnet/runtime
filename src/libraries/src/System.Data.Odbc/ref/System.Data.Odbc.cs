@@ -289,7 +289,7 @@ namespace System.Data.Odbc
         public System.Data.Odbc.OdbcParameter Add(string parameterName, System.Data.Odbc.OdbcType odbcType, int size) { throw null; }
         public System.Data.Odbc.OdbcParameter Add(string parameterName, System.Data.Odbc.OdbcType odbcType, int size, string sourceColumn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
-        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  http://go.microsoft.com/fwlink/?linkid=14202", false)]
+        [System.ObsoleteAttribute("Add(String parameterName, Object value) has been deprecated.  Use AddWithValue(String parameterName, Object value).  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public System.Data.Odbc.OdbcParameter Add(string parameterName, object value) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.Odbc.OdbcParameter[] values) { }

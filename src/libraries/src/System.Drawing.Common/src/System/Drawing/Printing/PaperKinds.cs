@@ -15,7 +15,7 @@ namespace System.Drawing.Printing
         Custom = 0,
 
         // I got this information from two places: MSDN's writeup of DEVMODE 
-        // (http://msdn.microsoft.com/library/psdk/gdi/prntspol_8nle.htm), 
+        // (https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/ns-wingdi-_devicemodea), 
         // and the raw C++ header file (wingdi.h).  Beyond that, your guess
         // is as good as mine as to what these members mean.
 
