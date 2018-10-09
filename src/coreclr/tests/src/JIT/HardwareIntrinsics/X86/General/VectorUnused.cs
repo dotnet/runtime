@@ -36,7 +36,7 @@ internal partial class IntelHardwareIntrinsicTest
             if (Avx.IsSupported)
             {
                 Vector256<T> v1 = Avx.SetAllVector256<T>(t1);
-                v1 = Avx.Permute2x128(v1, Avx.SetAllVector256<T>(t2), 1);
+                v1 = Vector256Add<T>(v1, Avx.SetAllVector256<T>(t2));
             }
             return Pass;
         }
