@@ -4468,6 +4468,31 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++sp;
 			MINT_IN_BREAK;
 		}
+
+/* We init class here to preserve cctor order */
+#define LDSFLD(datamem, fieldtype) { \
+	MonoVTable *vtable = (MonoVTable*) rtm->data_items [*(guint16*)(ip + 1)]; \
+	if (G_UNLIKELY (!vtable->initialized)) { \
+		mono_runtime_class_init_full (vtable, error); \
+		if (!mono_error_ok (error)) \
+			THROW_EX (mono_error_convert_to_exception (error), ip); \
+	} \
+	sp[0].data.datamem = * (fieldtype *)(rtm->data_items [* (guint16 *)(ip + 2)]) ; \
+	ip += 3; \
+	sp++; \
+	}
+
+		MINT_IN_CASE(MINT_LDSFLD_I1) LDSFLD(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_U1) LDSFLD(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_I2) LDSFLD(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_U2) LDSFLD(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_I4) LDSFLD(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_I8) LDSFLD(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_R4) LDSFLD(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_R8) LDSFLD(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_O) LDSFLD(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDSFLD_P) LDSFLD(p, gpointer); MINT_IN_BREAK;
+
 		MINT_IN_CASE(MINT_LDSFLD) {
 			MonoClassField *field = (MonoClassField*)rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
@@ -4490,6 +4515,30 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			++sp;
 			MINT_IN_BREAK;
 		}
+
+#define STSFLD(datamem, fieldtype) { \
+	MonoVTable *vtable = (MonoVTable*) rtm->data_items [*(guint16*)(ip + 1)]; \
+	if (G_UNLIKELY (!vtable->initialized)) { \
+		mono_runtime_class_init_full (vtable, error); \
+		if (!mono_error_ok (error)) \
+			THROW_EX (mono_error_convert_to_exception (error), ip); \
+	} \
+	sp --; \
+	* (fieldtype *)(rtm->data_items [* (guint16 *)(ip + 2)]) = sp[0].data.datamem; \
+	ip += 3; \
+	}
+
+		MINT_IN_CASE(MINT_STSFLD_I1) STSFLD(i, gint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_U1) STSFLD(i, guint8); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_I2) STSFLD(i, gint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_U2) STSFLD(i, guint16); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_I4) STSFLD(i, gint32); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_I8) STSFLD(l, gint64); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_R4) STSFLD(f_r4, float); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_R8) STSFLD(f, double); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_P) STSFLD(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STSFLD_O) STSFLD(p, gpointer); MINT_IN_BREAK;
+
 		MINT_IN_CASE(MINT_STSFLD) {
 			MonoClassField *field = (MonoClassField*)rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
