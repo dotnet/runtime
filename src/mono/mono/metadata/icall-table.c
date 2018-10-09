@@ -36,21 +36,7 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/bsearch.h>
 #include <mono/metadata/icalls.h>
-
-/*
- * icall.c defines a lot of icalls as static, to avoid having to add prototypes for
- * them, just don't include any mono headers and emit dummy prototypes.
- */
-// Generate incorrect prototypes.
-#define ICALL_TYPE(id,name,first)
-#define ICALL(id,name,func) ICALL_EXPORT void func (void);
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
-#include "metadata/icall-def.h"
-#undef ICALL_TYPE
-#undef ICALL
-#undef HANDLES
-#undef NOHANDLES
+#include "icall-decl.h"
 
 // Generate Icall_ constants
 enum {

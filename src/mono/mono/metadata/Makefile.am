@@ -294,6 +294,7 @@ common_sources = \
 	gc-internals.h		\
 	icall.c			\
 	icalls.h		\
+	icall-decl.h		\
 	icall-internals.h \
 	icall-def.h		\
 	icall-table.h	\

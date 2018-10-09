@@ -109,10 +109,7 @@
 #include <sys/utsname.h>
 #endif
 
-/* icalls are defined ICALL_EXPORT so they are not static */
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
-#endif
+#include "icall-decl.h"
 
 //#define MONO_DEBUG_ICALLARRAY
 
@@ -2362,16 +2359,6 @@ ves_icall_MonoField_ResolveType (MonoReflectionFieldHandle ref_field, MonoError 
 	}
 	return mono_type_get_object_handle (domain, type, error);
 }
-
-/* From MonoProperty.cs */
-typedef enum {
-	PInfo_Attributes = 1,
-	PInfo_GetMethod  = 1 << 1,
-	PInfo_SetMethod  = 1 << 2,
-	PInfo_ReflectedType = 1 << 3,
-	PInfo_DeclaringType = 1 << 4,
-	PInfo_Name = 1 << 5
-} PInfo;
 
 ICALL_EXPORT void
 ves_icall_MonoPropertyInfo_get_property_info (MonoReflectionPropertyHandle property, MonoPropertyInfo *info, PInfo req_info, MonoError *error)
@@ -8709,4 +8696,10 @@ ves_icall_System_Threading_Thread_YieldInternal (void)
 {
 	mono_threads_platform_yield ();
 	return TRUE;
+}
+
+ICALL_EXPORT gint32
+ves_icall_System_Environment_get_ProcessorCount (void)
+{
+	return mono_cpu_count ();
 }
