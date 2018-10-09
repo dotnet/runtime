@@ -4567,7 +4567,7 @@ register_icalls (void)
 	register_icall (mono_llvm_throw_exception, "mono_llvm_throw_exception", "void object", TRUE);
 	register_icall (mono_llvm_rethrow_exception, "mono_llvm_rethrow_exception", "void object", TRUE);
 	register_icall (mono_llvm_resume_exception, "mono_llvm_resume_exception", "void", TRUE);
-	register_icall (mono_llvm_match_exception, "mono_llvm_match_exception", "int ptr int int", TRUE);
+	register_icall (mono_llvm_match_exception, "mono_llvm_match_exception", "int ptr int int ptr object", TRUE);
 	register_icall (mono_llvm_clear_exception, "mono_llvm_clear_exception", NULL, TRUE);
 	register_icall (mono_llvm_load_exception, "mono_llvm_load_exception", "object", TRUE);
 	register_icall (mono_llvm_throw_corlib_exception, "mono_llvm_throw_corlib_exception", "void int", TRUE);
@@ -4746,7 +4746,7 @@ register_icalls (void)
 	register_icall (mono_array_new_3, "mono_array_new_3", "object ptr int int int", FALSE);
 	register_icall (mono_array_new_4, "mono_array_new_4", "object ptr int int int int", FALSE);
 	register_icall (mono_get_native_calli_wrapper, "mono_get_native_calli_wrapper", "ptr ptr ptr ptr", FALSE);
-	register_icall (mono_resume_unwind, "mono_resume_unwind", "void", TRUE);
+	register_icall (mono_resume_unwind, "mono_resume_unwind", "void ptr", TRUE);
 	register_icall (mono_gsharedvt_constrained_call, "mono_gsharedvt_constrained_call", "object ptr ptr ptr ptr ptr", FALSE);
 	register_icall (mono_gsharedvt_value_copy, "mono_gsharedvt_value_copy", "void ptr ptr ptr", TRUE);
 
