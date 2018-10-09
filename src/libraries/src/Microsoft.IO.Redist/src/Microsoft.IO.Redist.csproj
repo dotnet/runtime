@@ -5,7 +5,6 @@
     <ProjectGuid>{FEF5811F-ED50-4407-A6B9-885EBD3206FB}</ProjectGuid>
     <Configurations>netfx-Debug;netfx-Release</Configurations>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
-    <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ClsCompliant>false</ClsCompliant>
   </PropertyGroup>
