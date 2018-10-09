@@ -223,7 +223,7 @@ buildXUnitWrappers=
 printLastResultsOnly=
 generateLayoutOnly=
 generateLayout=
-runSequential=
+runSequential=0
 
 for i in "$@"
 do
