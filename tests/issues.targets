@@ -54,6 +54,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/Primitives.cmd">
             <Issue>19164</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
+            <Issue>20322</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
