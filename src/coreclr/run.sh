@@ -12,7 +12,7 @@ echo "Running: $dotnet $toolRuntime/run.exe $working_tree_root/config.json $*"
 $dotnet $toolRuntime/run.exe $working_tree_root/config.json "$@"
 if [ $? -ne 0 ]
 then
-    echo "ERROR: An error occured in $dotnet $toolRuntime/run $#. Check $# logs under $working_tree_root."
+    echo "ERROR: An error occured in $dotnet $toolRuntime/run.exe $working_tree_root/config.json $*. Check logs under $working_tree_root."
     exit 1
 fi
 
