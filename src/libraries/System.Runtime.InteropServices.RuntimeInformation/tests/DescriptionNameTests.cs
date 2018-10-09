@@ -75,6 +75,14 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Same(RuntimeInformation.OSDescription, RuntimeInformation.OSDescription);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void VerifyWindowsDescriptionDoesNotContainTrailingWhitespace()
+        {
+            Assert.False(RuntimeInformation.OSDescription.EndsWith(" "));
+        }
+
         [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows debug name in RuntimeInformation
         public void VerifyWindowsDebugName()
         {
