@@ -6,6 +6,7 @@
   <ItemGroup>
     <Compile Include="EventInstanceTests.cs" />
     <Compile Include="EventLogEntryCollectionTests.cs" />
+    <Compile Include="EventLogTraceListenerTests.cs" />
     <Compile Include="EventLogTests\EventLogEntryWrittenTest.cs" />
     <Compile Include="EventLogTests\EventLogSourceCreationTests.cs" />
     <Compile Include="EventLogTests\EventLogTests.cs" />
