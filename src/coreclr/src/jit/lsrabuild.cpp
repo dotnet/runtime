@@ -315,7 +315,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
             if (!useRegConflict)
             {
                 // This is case #2.  Use the useRegAssignment
-                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE2));
+                INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE2, interval));
                 defRefPosition->registerAssignment = useRegAssignment;
                 return;
             }
@@ -328,21 +328,21 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     if (defRegRecord != nullptr && !useRegConflict)
     {
         // This is case #3.
-        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE3));
+        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE3, interval));
         defRefPosition->registerAssignment = useRegAssignment;
         return;
     }
     if (useRegRecord != nullptr && !defRegConflict && canChangeUseAssignment)
     {
         // This is case #4.
-        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE4));
+        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE4, interval));
         useRefPosition->registerAssignment = defRegAssignment;
         return;
     }
     if (defRegRecord != nullptr && useRegRecord != nullptr)
     {
         // This is case #5.
-        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE5));
+        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE5, interval));
         RegisterType regType = interval->registerType;
         assert((getRegisterType(interval, defRefPosition) == regType) &&
                (getRegisterType(interval, useRefPosition) == regType));
@@ -350,7 +350,7 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
         defRefPosition->registerAssignment = candidates;
         return;
     }
-    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE6));
+    INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_DEFUSE_CASE6, interval));
     return;
 }
 
