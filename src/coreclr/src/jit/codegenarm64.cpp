@@ -4601,8 +4601,28 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
                 assert(op1->isUsedFromReg());
                 regNumber srcReg = op1->gtRegNum;
 
-                // mov targetReg, srcReg[#index]
-                getEmitter()->emitIns_R_R_I(INS_mov, baseTypeSize, targetReg, srcReg, index);
+                instruction ins;
+                if (varTypeIsFloating(baseType))
+                {
+                    assert(genIsValidFloatReg(targetReg));
+                    // dup targetReg, srcReg[#index]
+                    ins = INS_dup;
+                }
+                else
+                {
+                    assert(genIsValidIntReg(targetReg));
+                    if (varTypeIsUnsigned(baseType) || (baseTypeSize == EA_8BYTE))
+                    {
+                        // umov targetReg, srcReg[#index]
+                        ins = INS_umov;
+                    }
+                    else
+                    {
+                        // smov targetReg, srcReg[#index]
+                        ins = INS_smov;
+                    }
+                }
+                getEmitter()->emitIns_R_R_I(ins, baseTypeSize, targetReg, srcReg, index);
             }
         }
     }
