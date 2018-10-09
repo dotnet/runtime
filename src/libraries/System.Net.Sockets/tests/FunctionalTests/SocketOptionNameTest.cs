@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SocketOptionNameTest
+    public partial class SocketOptionNameTest
     {
         private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
 
@@ -486,6 +486,42 @@ namespace System.Net.Sockets.Tests
                 {
                     SocketException ex = Assert.ThrowsAny<SocketException>(() => b.Bind(new IPEndPoint(IPAddress.Loopback, port)));
                     Assert.Equal(SocketError.AddressAlreadyInUse, ex.SocketErrorCode);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.OSX)]
+        public unsafe void ReuseAddressUdp()
+        {
+            // Verify that .NET Core Sockets can bind to the UDP address from applications
+            // that allow binding the same address.
+            int SOL_SOCKET = -1;
+            int option = -1;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                // Linux: use SO_REUSEADDR to allow binding the same address.
+                SOL_SOCKET = 1;
+                const int SO_REUSEADDR = 2;
+                option = SO_REUSEADDR;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                // BSD: use SO_REUSEPORT to allow binding the same address.
+                SOL_SOCKET = 0xffff;
+                const int SO_REUSEPORT = 0x200;
+                option = SO_REUSEPORT;
+            }
+            using (Socket s1 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+            {
+                int value = 1;
+                int rv = setsockopt(s1.Handle.ToInt32(), SOL_SOCKET, option, &value, sizeof(int));
+                Assert.Equal(0, rv);
+                s1.Bind(new IPEndPoint(IPAddress.Any, 0));
+                using (Socket s2 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                {
+                    s2.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    s2.Bind(s1.LocalEndPoint);
                 }
             }
         }
