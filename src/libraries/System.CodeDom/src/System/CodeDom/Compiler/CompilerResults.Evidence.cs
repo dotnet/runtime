@@ -13,7 +13,7 @@ namespace System.CodeDom.Compiler
     {
     	private Evidence _evidence;
 
-        [Obsolete("CAS policy is obsolete and will be removed in a future release of the .NET Framework. Please see http://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
+        [Obsolete("CAS policy is obsolete and will be removed in a future release of the .NET Framework. Please see https://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
         public Evidence Evidence
         {
             get { return _evidence?.Clone(); }

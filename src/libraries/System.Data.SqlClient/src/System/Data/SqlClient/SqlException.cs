@@ -207,7 +207,7 @@ namespace System.Data.SqlClient
             }
             exception.Data.Add("HelpLink.EvtSrc", "MSSQLServer");
             exception.Data.Add("HelpLink.EvtID", errorCollection[0].Number.ToString(CultureInfo.InvariantCulture));
-            exception.Data.Add("HelpLink.BaseHelpUrl", "http://go.microsoft.com/fwlink");
+            exception.Data.Add("HelpLink.BaseHelpUrl", "https://go.microsoft.com/fwlink");
             exception.Data.Add("HelpLink.LinkId", "20476");
 
             return exception;

@@ -246,7 +246,7 @@ namespace System.Net
         public bool TryFormat(Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryParse(string ipString, out System.Net.IPAddress address) { throw null; }
         public static bool TryParse(ReadOnlySpan<char> ipString, out System.Net.IPAddress address) { throw null; }
-        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. https://go.microsoft.com/fwlink/?linkid=14202")]
         public long Address { get { throw null; } set { } }
     }
     public partial class IPEndPoint : System.Net.EndPoint
@@ -497,14 +497,14 @@ namespace System.Security.Authentication
     public enum SslProtocols
     {
         None = 0,
-        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl2 = 12,
-        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl3 = 48,
         Tls = 192,
         Tls11 = 768,
         Tls12 = 3072,
-        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         Default = Ssl3 | Tls
     }
 }

@@ -333,7 +333,7 @@ namespace System.ComponentModel
         void CancelNew(int itemIndex);
         void EndNew(int itemIndex);
     }
-    [System.ObsoleteAttribute("This interface has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("This interface has been deprecated. Add a TypeDescriptionProvider to handle type TypeDescriptor.ComObjectType instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
     public partial interface IComNativeDescriptorHandler
     {
         System.ComponentModel.AttributeCollection GetAttributes(object component);
@@ -926,7 +926,7 @@ namespace System.ComponentModel.Design
     }
     public partial class DesignerTransactionCloseEventArgs : System.EventArgs
     {
-        [System.ObsoleteAttribute("This constructor is obsolete. Use DesignerTransactionCloseEventArgs(bool, bool) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This constructor is obsolete. Use DesignerTransactionCloseEventArgs(bool, bool) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public DesignerTransactionCloseEventArgs(bool commit) { }
         public DesignerTransactionCloseEventArgs(bool commit, bool lastTransaction) { }
         public bool LastTransaction { get { throw null; } }
@@ -1212,19 +1212,19 @@ namespace System.ComponentModel.Design
     {
         Add = 64,
         Auto = 1,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         Click = 16,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseDown = 4,
-        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseUp = 8,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         Normal = 1,
         Primary = 16,
         Remove = 128,
         Replace = 2,
         Toggle = 32,
-        [System.ObsoleteAttribute("This value has been deprecated. Use Enum class methods to determine valid values, or use a type converter. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use Enum class methods to determine valid values, or use a type converter. https://go.microsoft.com/fwlink/?linkid=14202")]
         Valid = 31,
     }
     public partial class ServiceContainer : System.ComponentModel.Design.IServiceContainer, System.IDisposable, System.IServiceProvider
@@ -1323,9 +1323,9 @@ namespace System.ComponentModel.Design
     public enum ViewTechnology
     {
         Default = 2,
-        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         Passthrough = 0,
-        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         WindowsForms = 1,
     }
 }
@@ -1468,7 +1468,7 @@ namespace System.ComponentModel.Design.Serialization
     }
     public delegate void ResolveNameEventHandler(object sender, System.ComponentModel.Design.Serialization.ResolveNameEventArgs e);
     [System.AttributeUsageAttribute((System.AttributeTargets)(1028), AllowMultiple = true, Inherited = true)]
-    [System.ObsoleteAttribute("This attribute has been deprecated. Use DesignerSerializerAttribute instead.  For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)).  http://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("This attribute has been deprecated. Use DesignerSerializerAttribute instead.  For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)).  https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed partial class RootDesignerSerializerAttribute : System.Attribute
     {
         public RootDesignerSerializerAttribute(string serializerTypeName, string baseSerializerTypeName, bool reloadable) { }

@@ -216,7 +216,7 @@ namespace Microsoft.Test.Data.SqlClient
         private const int MaxUserPortDefaultValueAfterVista = 16384;
 
         private const string TcpTimedWaitDelayName = @"TcpTimedWaitDelay";
-        // according to http://msdn.microsoft.com/en-us/library/ms819739.aspx and http://msdn.microsoft.com/en-us/library/ee377084(BTS.10).aspx, 
+        // according to https://www.microsoft.com/en-us/download/details.aspx?id=56498, 
         // the default value of tcp timed wait delay is 4 minutes
         // it seems like on the Windows Server 2008 this value has been changed to 2 minutes, but I could not find an official KB article for this.
         // to stay on the safe side, assuming that the max wait time is still 4 minutes

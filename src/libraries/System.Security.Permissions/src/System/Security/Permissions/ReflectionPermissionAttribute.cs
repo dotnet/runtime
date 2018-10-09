@@ -13,7 +13,7 @@ namespace System.Security.Permissions
         [Obsolete("This permission is no longer used by the CLR.")]
         public bool ReflectionEmit { get; set; }
         public bool RestrictedMemberAccess { get; set; }
-        [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         public bool TypeInformation { get; set; }
         public override IPermission CreatePermission() { return default(IPermission); }
     }

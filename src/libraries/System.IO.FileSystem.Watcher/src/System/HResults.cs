@@ -6,7 +6,7 @@
 /*
 These HRESULTs are used for mapping managed exceptions to COM error codes
 and vice versa through COM Interop.  For background on COM error codes see
-http://msdn.microsoft.com/library/default.asp?url=/library/en-us/com/error_9td2.asp.
+https://docs.microsoft.com/en-us/windows/desktop/com/com-error-codes.
 
 FACILITY_URT is defined as 0x13 (0x8013xxxx). The facility range is reserved
 for the .NET Framework SDK teams.

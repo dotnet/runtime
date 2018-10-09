@@ -59,7 +59,7 @@ namespace System.IO.MemoryMappedFiles
             // but more pages may need to be committed in the region.
             // This is because, VirtualQuery function(that internally invokes VirtualQueryEx function) returns the attributes 
             // and size of the region of pages with matching attributes starting from base address.
-            // VirtualQueryEx: http://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
+            // VirtualQueryEx: https://msdn.microsoft.com/en-us/library/windows/desktop/aa366907(v=vs.85).aspx
             if (((viewInfo.State & Interop.Kernel32.MemOptions.MEM_RESERVE) != 0) || ((ulong)viewSize < (ulong)nativeSize))
             {
                 IntPtr tempHandle = Interop.VirtualAlloc(
