@@ -21,7 +21,7 @@ namespace System.Xml.Schema
     ///       The Validate method then uses this internal representation for
     ///       efficient runtime validation of any given subtree.</para>
     /// </devdoc>
-    [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. http://go.microsoft.com/fwlink/?linkid=14202")]
+    [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed class XmlSchemaCollection : ICollection
     {
         private Hashtable _collection;

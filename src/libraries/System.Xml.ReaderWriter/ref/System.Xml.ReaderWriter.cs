@@ -1130,7 +1130,7 @@ namespace System.Xml
         public override System.Threading.Tasks.Task<object> GetEntityAsync(System.Uri absoluteUri, string role, System.Type ofObjectToReturn) { throw null; }
         public override System.Uri ResolveUri(System.Uri baseUri, string relativeUri) { throw null; }
     }
-    [System.ObsoleteAttribute("Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("Use XmlReader created by XmlReader.Create() method using appropriate XmlReaderSettings instead. https://go.microsoft.com/fwlink/?linkid=14202")]
     public partial class XmlValidatingReader : System.Xml.XmlReader, System.Xml.IXmlLineInfo, System.Xml.IXmlNamespaceResolver
     {
         public XmlValidatingReader(System.IO.Stream xmlFragment, System.Xml.XmlNodeType fragType, System.Xml.XmlParserContext context) { }
@@ -1454,9 +1454,9 @@ namespace System.Xml.Schema
         public System.Xml.XmlAttribute[] UnhandledAttributes { get { throw null; } set { } }
         [System.Xml.Serialization.XmlAttributeAttribute("version", DataType="token")]
         public string Version { get { throw null; } set { } }
-        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
         public void Compile(System.Xml.Schema.ValidationEventHandler validationEventHandler) { }
-        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
         public void Compile(System.Xml.Schema.ValidationEventHandler validationEventHandler, System.Xml.XmlResolver resolver) { }
         public static System.Xml.Schema.XmlSchema Read(System.IO.Stream stream, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
         public static System.Xml.Schema.XmlSchema Read(System.IO.TextReader reader, System.Xml.Schema.ValidationEventHandler validationEventHandler) { throw null; }
@@ -1527,7 +1527,7 @@ namespace System.Xml.Schema
         public XmlSchemaAttribute() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaSimpleType AttributeSchemaType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This property has been deprecated. Please use AttributeSchemaType property that returns a strongly typed attribute type. https://go.microsoft.com/fwlink/?linkid=14202")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object AttributeType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute(null)]
@@ -1584,7 +1584,7 @@ namespace System.Xml.Schema
         [System.Xml.Serialization.XmlElementAttribute("sequence", typeof(System.Xml.Schema.XmlSchemaSequence))]
         public override System.Xml.Schema.XmlSchemaObjectCollection Items { get { throw null; } }
     }
-    [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. http://go.microsoft.com/fwlink/?linkid=14202")]
+    [System.ObsoleteAttribute("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
     public sealed partial class XmlSchemaCollection : System.Collections.ICollection, System.Collections.IEnumerable
     {
         public XmlSchemaCollection() { }
@@ -1794,7 +1794,7 @@ namespace System.Xml.Schema
         public string DefaultValue { get { throw null; } set { } }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public System.Xml.Schema.XmlSchemaType ElementSchemaType { get { throw null; } }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object ElementType { get { throw null; } }
         [System.ComponentModel.DefaultValueAttribute((System.Xml.Schema.XmlSchemaDerivationMethod)(256))]
@@ -2243,7 +2243,7 @@ namespace System.Xml.Schema
     public partial class XmlSchemaType : System.Xml.Schema.XmlSchemaAnnotated
     {
         public XmlSchemaType() { }
-        [System.ObsoleteAttribute("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. https://go.microsoft.com/fwlink/?linkid=14202")]
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public object BaseSchemaType { get { throw null; } }
         [System.Xml.Serialization.XmlIgnoreAttribute]

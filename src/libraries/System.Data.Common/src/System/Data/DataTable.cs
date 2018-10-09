@@ -1329,7 +1329,7 @@ namespace System.Data
             get
             {
                 // used for Formating/Parsing
-                // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/cpref/html/frlrfsystemglobalizationcultureinfoclassisneutralculturetopic.asp
+                // https://docs.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo.isneutralculture
                 if (null == _formatProvider)
                 {
                     CultureInfo culture = Locale;

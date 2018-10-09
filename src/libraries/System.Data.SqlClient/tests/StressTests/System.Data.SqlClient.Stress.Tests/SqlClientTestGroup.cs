@@ -535,7 +535,7 @@ namespace Stress.Data.SqlClient
                 DataStressFactory.TableMetadata table = Factory.GetRandomTable(rnd);
 
                 // MARS session cache is by default 10. 
-                // This is documented here: http://msdn.microsoft.com/en-us/library/h32h3abf.aspx
+                // This is documented here: https://docs.microsoft.com/en-us/dotnet/framework/data/adonet/sql/enabling-multiple-active-result-sets
                 // We want to stress test this by allowing 11 concurrent commands. Hence the max in rnd.Next below is 12.
                 MARSCommand[] cmds = new MARSCommand[rnd.Next(5, MaxCmds + 1)];
 

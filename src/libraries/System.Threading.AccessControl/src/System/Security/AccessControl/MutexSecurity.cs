@@ -22,7 +22,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.Security.AccessControl
 {
     // Derive this list of values from winnt.h and MSDN docs:
-    // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/synchronization_object_security_and_access_rights.asp
+    // https://docs.microsoft.com/en-us/windows/desktop/sync/synchronization-object-security-and-access-rights
 
     // In order to call ReleaseMutex, you must have an ACL granting you
     // MUTEX_MODIFY_STATE rights (0x0001).  The other interesting value

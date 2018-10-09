@@ -22,7 +22,7 @@ using Microsoft.Win32.SafeHandles;
 namespace System.Security.AccessControl
 {
     // Derive this list of values from winnt.h and MSDN docs:
-    // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/dllproc/base/synchronization_object_security_and_access_rights.asp
+    // https://docs.microsoft.com/en-us/windows/desktop/sync/synchronization-object-security-and-access-rights
 
     // Win32's interesting values are EVENT_MODIFY_STATE (0x0002) and
     // EVENT_ALL_ACCESS (0x1F0003).  I don't know what 0x1 is, but Windows

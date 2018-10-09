@@ -2154,7 +2154,7 @@ namespace System.Drawing.Imaging
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, short[] value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numberValues, System.Drawing.Imaging.EncoderParameterValueType type, System.IntPtr value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator, int denominator) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int NumberOfValues, int Type, int Value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator1, int demoninator1, int numerator2, int demoninator2) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int[] numerator, int[] denominator) { }

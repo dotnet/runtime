@@ -11,24 +11,24 @@ namespace System.Net
     public static partial class Dns
     {
         public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback requestCallback, object state) { throw null; }
-        [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("BeginGetHostByName is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback requestCallback, object stateObject) { throw null; }
         public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback requestCallback, object stateObject) { throw null; }
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback requestCallback, object stateObject) { throw null; }
-        [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("BeginResolve is obsoleted for this type, please use BeginGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IAsyncResult BeginResolve(string hostName, AsyncCallback requestCallback, object stateObject) { throw null; }
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult) { throw null; }
-        [Obsolete("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EndGetHostByName is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult) { throw null; }
         public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult) { throw null; }
-        [Obsolete("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EndResolve is obsoleted for this type, please use EndGetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult) { throw null; }
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress) { throw null; }
-        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(IPAddress address) { throw null; }
-        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(string address) { throw null; }
-        [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByName(string hostName) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPAddress[]> GetHostAddressesAsync(string hostNameOrAddress) { throw null; }
         public static IPHostEntry GetHostEntry(string hostNameOrAddress) { throw null; }
@@ -36,7 +36,7 @@ namespace System.Net
         public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(System.Net.IPAddress address) { throw null; }
         public static System.Threading.Tasks.Task<System.Net.IPHostEntry> GetHostEntryAsync(string hostNameOrAddress) { throw null; }
         public static string GetHostName() { throw null; }
-        [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry Resolve(string hostName) { throw null; }
     }
     public partial class IPHostEntry

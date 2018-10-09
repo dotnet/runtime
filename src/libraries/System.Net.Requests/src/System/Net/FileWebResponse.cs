@@ -46,7 +46,7 @@ namespace System.Net
             }
         }
 
-        [Obsolete("Serialization is obsoleted for this type. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Serialization is obsoleted for this type. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected FileWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();

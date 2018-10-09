@@ -22,7 +22,7 @@ namespace System.Security.Policy
         public void AddFullTrustAssembly(StrongNameMembershipCondition snMC) { }
         public void AddNamedPermissionSet(NamedPermissionSet permSet) { }
         public NamedPermissionSet ChangeNamedPermissionSet(string name, PermissionSet pSet) { return default(NamedPermissionSet); }
-        [Obsolete("AppDomain policy levels are obsolete. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        [Obsolete("AppDomain policy levels are obsolete. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         public static PolicyLevel CreateAppDomainLevel() { return default(PolicyLevel); }
         public void FromXml(SecurityElement e) { }
         public NamedPermissionSet GetNamedPermissionSet(string name) { return default(NamedPermissionSet); }
