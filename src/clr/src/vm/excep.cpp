@@ -7436,7 +7436,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
     }
 #endif // defined(WIN64EXCEPTIONS) && defined(FEATURE_HIJACK)
 
-#ifndef FEATURE_PAL
     if (IsSOExceptionCode(pExceptionInfo->ExceptionRecord->ExceptionCode))
     {
         //
@@ -7475,9 +7474,6 @@ LONG WINAPI CLRVectoredExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
         //END_ENTRYPOINT_VOIDRET;
     //
     return retVal;
-#else // !FEATURE_PAL
-    return CLRVectoredExceptionHandlerPhase2(pExceptionInfo);
-#endif // !FEATURE_PAL
 }
 
 LONG WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExceptionInfo)

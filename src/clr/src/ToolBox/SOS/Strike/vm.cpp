@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// ==++==
-// 
- 
-// 
-// ==--==
 /*++
 
 Module Name:
@@ -22,7 +17,10 @@ Revision History:
 
 --*/
 
-#ifndef FEATURE_PAL
+#ifdef FEATURE_PAL
+#error This file is Win32 only.
+#endif // #ifdef FEATURE_PAL
+
 #include <tchar.h>
 
 
@@ -712,21 +710,3 @@ Return Value:
     }
 
 }   // DECLARE_API( vmmap )
-
-#else
-
-#include <rotor_pal.h>
-#include <assert.h>
-
-void vmstat()
-{
-   assert(false);
-}
-
-void vmmap()
-{
-
-   assert(false);
-}
-
-#endif  // #ifndef FEATURE_PAL

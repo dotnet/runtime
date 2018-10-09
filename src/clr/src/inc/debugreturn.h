@@ -105,10 +105,6 @@ typedef __SafeToReturn __ReturnOK;
 #define DEBUG_ASSURE_NO_RETURN_BEGIN(arg) { typedef __YouCannotUseAReturnStatementHere __ReturnOK; if (0 && __ReturnOK::used()) { } else {
 #define DEBUG_ASSURE_NO_RETURN_END(arg)   } }
 
-// rotor_pal.h defaulted these to empty macros; this file redefines them
-#undef DEBUG_OK_TO_RETURN_BEGIN
-#undef DEBUG_OK_TO_RETURN_END
-
 #define DEBUG_OK_TO_RETURN_BEGIN(arg) { typedef __SafeToReturn __ReturnOK; if (0 && __ReturnOK::used()) { } else {
 #define DEBUG_OK_TO_RETURN_END(arg) } }
 
