@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Xunit;
-using ExceptionUtility = System.IO.Tests.ExceptionUtility;
 
 namespace System.Tests
 {

@@ -5,6 +5,7 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using System.Tests;
 
 namespace System.IO.Tests
 {

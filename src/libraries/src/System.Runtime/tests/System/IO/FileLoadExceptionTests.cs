@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Tests;
 
 namespace System.IO.Tests
 {
@@ -32,7 +33,7 @@ namespace System.IO.Tests
             var innerException = new Exception("Inner exception");
             var exception = new FileLoadException(message, innerException);
             ExceptionUtility.ValidateExceptionProperties(exception, hResult: HResults.COR_E_FILELOAD, innerException: innerException, message: message);
-            Assert.Equal(null, exception.FileName);
+            Assert.Null(exception.FileName);
         }
 
         [Fact]
