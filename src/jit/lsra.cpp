@@ -9237,6 +9237,16 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
         case LSRA_EVENT_DEFUSE_CASE6:
             printf(indentFormat, "  Case #6 need a copy");
             dumpRegRecords();
+            if (interval == nullptr)
+            {
+                printf(indentFormat, "    NULL interval");
+                dumpRegRecords();
+            }
+            else if (interval->firstRefPosition->multiRegIdx != 0)
+            {
+                printf(indentFormat, "    (multiReg)");
+                dumpRegRecords();
+            }
             break;
 
         case LSRA_EVENT_SPILL:
