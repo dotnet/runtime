@@ -24,27 +24,48 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a
         sh "./build-managed.sh -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true"
     }
     stage ('Sync') {
-        sh "./sync.sh -p -BuildTests=false -- /p:ArchGroup=arm64"
+        sh "./sync.sh -p -- /p:ArchGroup=arm64"
     }
-    // For arm64 cross builds we split the 'Build Product' build.sh command into 3 separate parts
-    stage ('Build Native') {
+    stage ('Build Product') {
         sh """
             export ROOTFS_DIR=/crossrootfs/arm64
-            ./build-native.sh -buildArch=arm64 -${params.CGroup}
+            ./build.sh -buildArch=arm64 -${params.CGroup}
         """
     }
-    stage ('Build Managed') {
-        // Cross build builds Linux Managed components using x64 target
-        // We do not want x64 packages
-        sh "./build-managed.sh -BuildPackages=false -buildArch=x64 -${params.CGroup}"
+    stage ('Build Tests') {
+        def additionalArgs = ''
+        if (params.TestOuter) {
+            additionalArgs = '-Outerloop'
+        }
+        sh "./build-tests.sh -buildArch=arm64 -${params.CGroup} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=false"
     }
-    stage ('Build Packages') {
-        sh "./build-packages.sh -buildArch=arm64 -${params.CGroup}"
+  stage ('Submit To Helix For Testing') {
+        // Bind the credentials
+        withCredentials([string(credentialsId: 'CloudDropAccessToken', variable: 'CloudDropAccessToken'),
+                         string(credentialsId: 'OutputCloudResultsAccessToken', variable: 'OutputCloudResultsAccessToken')]) {
+            // Ask the CI SDK for a Helix source that makes sense.  This ensures that this pipeline works for both PR and non-PR cases
+            def helixSource = getHelixSource()
+            // Ask the CI SDK for a Build that makes sense.  We currently use the hash for the build
+            def helixBuild = getCommit()
+            // Get the user that should be associated with the submission
+            def helixCreator = getUser()
+            // Target queues
+            def targetHelixQueues = ['Ubuntu.1604.Arm64.Open']
+
+            sh "./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=arm64 /p:ConfigurationGroup=${params.CGroup} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
+
+            submittedHelixJson = readJSON file: "${logFolder}/SubmittedHelixRuns.txt"
+        }
     }
-
-    // TODO: Build Tests for arm64 when possible
-
-    // TODO: Add submission for Helix testing once we have queue for arm64 Linux working
 }
 
-// TODO: Add "Execute tests" stage once we have queue for arm64 Linux working
+stage ('Execute Tests') {
+    def contextBase
+    if (params.TestOuter) {
+        contextBase = "Linux arm64 Tests w/outer - ${params.CGroup}"
+    }
+    else {
+        contextBase = "Linux arm64 Tests - ${params.CGroup}"
+    }
+    waitForHelixRuns(submittedHelixJson, contextBase)
+}
