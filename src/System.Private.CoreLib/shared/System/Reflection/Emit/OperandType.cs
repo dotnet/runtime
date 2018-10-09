@@ -24,7 +24,7 @@ namespace System.Reflection.Emit
         InlineI8 = 3,
         InlineMethod = 4,
         InlineNone = 5,
-        [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         InlinePhi = 6,
         InlineR = 7,
         InlineSig = 9,
