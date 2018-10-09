@@ -141,31 +141,17 @@
 #define IMAGE_IMPORT_DESC_FIELD(img, f)     ((img).f)
 #endif
 
-//Remove these "unanonymous" unions from newer builds for now.  Confirm that they were never needed when we
-//bring back Rotor.
 #define IMAGE_RDE_ID(img) ((img)->Id)
-#ifndef IMAGE_RDE_ID
-#define IMAGE_RDE_ID(img)        ((img)->Id)
-#endif
 
 #define IMAGE_RDE_NAME(img) ((img)->Name)
-#ifndef IMAGE_RDE_NAME
-#define IMAGE_RDE_NAME(img)      ((img)->Name)
-#endif
 
 #define IMAGE_RDE_OFFSET(img) ((img)->OffsetToData)
-#ifndef IMAGE_RDE_OFFSET
-#define IMAGE_RDE_OFFSET(img)    ((img)->OffsetToData)
-#endif
 
 #ifndef IMAGE_RDE_NAME_FIELD
 #define IMAGE_RDE_NAME_FIELD(img, f)    ((img)->f)
 #endif
 
 #define IMAGE_RDE_OFFSET_FIELD(img, f) ((img)->f)
-#ifndef IMAGE_RDE_OFFSET_FIELD
-#define IMAGE_RDE_OFFSET_FIELD(img, f)  ((img)->f)
-#endif
 
 #ifndef IMAGE_FE64_FIELD
 #define IMAGE_FE64_FIELD(img, f)    ((img).f)
