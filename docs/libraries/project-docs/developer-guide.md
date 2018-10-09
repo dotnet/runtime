@@ -495,7 +495,7 @@ Once you have updated your CoreCLR you can run tests however you usually do (via
 
 If you prefer, you can use a Debug build of System.Private.CoreLib, but if you do you must also use a Debug build of the native portions of the runtime, e.g. coreclr.dll. Tests with a Debug runtime will execute much more slowly than with Release runtime bits.
 
-To collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
+If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
 
 `dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
 
