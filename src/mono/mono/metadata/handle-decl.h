@@ -54,6 +54,7 @@ Handle macros/functions
 #define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
 #define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
+#define TYPED_IN_OUT_HANDLE_NAME(TYPE) TYPE ## HandleInOut
 
 // internal helpers:
 #define MONO_HANDLE_CAST_FOR(type) mono_handle_cast_##type
@@ -71,7 +72,8 @@ Handle macros/functions
  *   MonoObject **__raw;
  * } MonoObjectHandlePayload,
  *   MonoObjectHandle,
- *   MonoObjectHandleOut;
+ *   MonoObjectHandleOut,
+ *   MonoObjectHandleInOut;
  *
  * Internal helper functions are also generated.
  *
@@ -79,10 +81,10 @@ Handle macros/functions
  *
  * typedef struct {
  *   MonoObject *__raw;
- * } MonoObjectHandlePayload;
- *
- * typedef MonoObjectHandlePayload* MonoObjectHandle;
- * typedef MonoObjectHandlePayload* MonoObjectHandleOut;
+ * } MonoObjectHandlePayload,
+ *   *MonoObjectHandle,
+ *   *MonoObjectHandleOut,
+ *   *MonoObjectHandleInOut;
  *
  * #endif
  */
@@ -103,7 +105,8 @@ Handle macros/functions
 		TYPE **__raw;							\
 	} TYPED_HANDLE_PAYLOAD_NAME (TYPE),					\
 	  TYPED_HANDLE_NAME (TYPE),						\
-	  TYPED_OUT_HANDLE_NAME (TYPE);						\
+	  TYPED_OUT_HANDLE_NAME (TYPE),						\
+	  TYPED_IN_OUT_HANDLE_NAME (TYPE);					\
 /* Do not call these functions directly. Use MONO_HANDLE_NEW and MONO_HANDLE_CAST. */ \
 /* Another way to do this involved casting mono_handle_new function to a different type. */ \
 static inline MONO_ALWAYS_INLINE TYPED_HANDLE_NAME (TYPE) 	\
@@ -120,9 +123,10 @@ MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
 
 #else
 #define TYPED_HANDLE_DECL(TYPE)						\
-	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE); \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_OUT_HANDLE_NAME (TYPE);
+	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE), \
+	* TYPED_HANDLE_NAME (TYPE),					\
+	* TYPED_OUT_HANDLE_NAME (TYPE),					\
+	* TYPED_IN_OUT_HANDLE_NAME (TYPE);
 #endif
 
 /*

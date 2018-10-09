@@ -229,7 +229,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, WSABUF *
 ICALL_EXPORT
 gint32
 ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, gchar *buffer, gint32 count,
-							  gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, MonoBoolean blocking, MonoError *error);
+							  gint32 flags, MonoObjectHandleInOut sockaddr, gint32 *werror, MonoBoolean blocking, MonoError *error);
 ICALL_EXPORT
 gint32
 ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, gchar *buffer, gint32 count,
@@ -245,7 +245,7 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, gchar *buffer, 
 						     MonoBoolean blocking, MonoError *error);
 ICALL_EXPORT
 void
-ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArrayHandle sockets, gint32 timeout, gint32 *werror, MonoError *error);
+ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArrayHandleOut sockets, gint32 timeout, gint32 *werror, MonoError *error);
 
 ICALL_EXPORT
 void
@@ -254,7 +254,7 @@ ves_icall_System_Net_Sockets_Socket_Shutdown_internal (gsize sock, gint32 how, g
 ICALL_EXPORT
 void
 ves_icall_System_Net_Sockets_Socket_GetSocketOption_obj_internal (gsize sock, gint32 level, gint32 name,
-								  MonoObjectHandle obj_val, gint32 *werror,
+								  MonoObjectHandleOut obj_val, gint32 *werror,
 								  MonoError *error);
 ICALL_EXPORT
 void
