@@ -1066,18 +1066,16 @@ add_general (CallInfo *cinfo, ArgInfo *ainfo, int size, gboolean sign)
 		ainfo->storage = ArgOnStack;
 		if (ios_abi) {
 			/* Assume size == align */
-			cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, size);
-			ainfo->offset = cinfo->stack_usage;
-			ainfo->slot_size = size;
-			ainfo->sign = sign;
-			cinfo->stack_usage += size;
 		} else {
-			ainfo->offset = cinfo->stack_usage;
-			ainfo->slot_size = 8;
-			ainfo->sign = FALSE;
 			/* Put arguments into 8 byte aligned stack slots */
-			cinfo->stack_usage += 8;
+			size = 8;
+			sign = FALSE;
 		}
+		cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, size);
+		ainfo->offset = cinfo->stack_usage;
+		ainfo->slot_size = size;
+		ainfo->sign = sign;
+		cinfo->stack_usage += size;
 	} else {
 		ainfo->storage = ArgInIReg;
 		ainfo->reg = cinfo->gr;
