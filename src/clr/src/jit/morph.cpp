@@ -17123,7 +17123,13 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                 // Promoted struct
                 unsigned fldOffset     = field->gtFldOffset;
                 unsigned fieldLclIndex = lvaGetFieldLocal(varDsc, fldOffset);
-                noway_assert(fieldLclIndex != BAD_VAR_NUM);
+
+                if (fieldLclIndex == BAD_VAR_NUM)
+                {
+                    // Access a promoted struct's field with an offset that doesn't correspond to any field.
+                    // It can happen if the struct was cast to another struct with different offsets.
+                    return;
+                }
 
                 const LclVarDsc* fieldDsc  = &lvaTable[fieldLclIndex];
                 var_types        fieldType = fieldDsc->TypeGet();
@@ -17135,11 +17141,24 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
                     {
                         // This is going to be an incorrect instruction promotion.
                         // For example when we try to read int as long.
-                        // Tolerate this case now to keep no asm difs in this PR.
-                        // TODO make a return.
+                        return;
+                    }
+
+                    if (field->gtFldHnd != fieldDsc->lvFieldHnd)
+                    {
+                        CORINFO_CLASS_HANDLE fieldTreeClass = nullptr, fieldDscClass = nullptr;
+
+                        CorInfoType fieldTreeType = info.compCompHnd->getFieldType(field->gtFldHnd, &fieldTreeClass);
+                        CorInfoType fieldDscType = info.compCompHnd->getFieldType(fieldDsc->lvFieldHnd, &fieldDscClass);
+                        if (fieldTreeType != fieldDscType || fieldTreeClass != fieldDscClass)
+                        {
+                            // Access the promoted field with a different class handle, can't check that types match.
+                            return;
+                        }
+                        // Access the promoted field as a field of a non-promoted struct with the same class handle.
                     }
 #ifdef DEBUG
-                    if (tree->TypeGet() == TYP_STRUCT)
+                    else if (tree->TypeGet() == TYP_STRUCT)
                     {
                         // The field tree accesses it as a struct, but the promoted lcl var for the field
                         // says that it has another type. It can happen only if struct promotion faked
