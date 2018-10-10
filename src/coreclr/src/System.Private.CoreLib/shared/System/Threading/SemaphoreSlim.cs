@@ -333,7 +333,7 @@ namespace System.Threading
             //Register for cancellation outside of the main lock.
             //NOTE: Register/unregister inside the lock can deadlock as different lock acquisition orders could
             //      occur for (1)this.m_lockObj and (2)cts.internalLock
-            CancellationTokenRegistration cancellationTokenRegistration = cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCanceledEventHandler, this);
+            CancellationTokenRegistration cancellationTokenRegistration = cancellationToken.UnsafeRegister(s_cancellationTokenCanceledEventHandler, this);
             try
             {
                 // Perf: first spin wait for the count to be positive.

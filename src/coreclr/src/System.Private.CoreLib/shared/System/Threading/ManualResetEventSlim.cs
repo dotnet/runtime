@@ -566,7 +566,7 @@ namespace System.Threading
                 EnsureLockObjectCreated();
 
                 // We must register and unregister the token outside of the lock, to avoid deadlocks.
-                using (cancellationToken.InternalRegisterWithoutEC(s_cancellationTokenCallback, this))
+                using (cancellationToken.UnsafeRegister(s_cancellationTokenCallback, this))
                 {
                     lock (m_lock)
                     {
