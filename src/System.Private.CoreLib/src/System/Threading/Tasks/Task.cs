@@ -632,14 +632,14 @@ namespace System.Threading.Tasks
                         if (antecedent == null)
                         {
                             // if no antecedent was specified, use this task's reference as the cancellation state object
-                            ctr = cancellationToken.InternalRegisterWithoutEC(s_taskCancelCallback, this);
+                            ctr = cancellationToken.UnsafeRegister(s_taskCancelCallback, this);
                         }
                         else
                         {
                             // If an antecedent was specified, pack this task, its antecedent and the TaskContinuation together as a tuple 
                             // and use it as the cancellation state object. This will be unpacked in the cancellation callback so that 
                             // antecedent.RemoveCancellation(continuation) can be invoked.
-                            ctr = cancellationToken.InternalRegisterWithoutEC(s_taskCancelCallback,
+                            ctr = cancellationToken.UnsafeRegister(s_taskCancelCallback,
                                                                               new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
                         }
 
@@ -5419,7 +5419,7 @@ namespace System.Threading.Tasks
             // Register our cancellation token, if necessary.
             if (cancellationToken.CanBeCanceled)
             {
-                promise.Registration = cancellationToken.InternalRegisterWithoutEC(state => ((DelayPromise)state).Complete(), promise);
+                promise.Registration = cancellationToken.UnsafeRegister(state => ((DelayPromise)state).Complete(), promise);
             }
 
             // ... and create our timer and make sure that it stays rooted.

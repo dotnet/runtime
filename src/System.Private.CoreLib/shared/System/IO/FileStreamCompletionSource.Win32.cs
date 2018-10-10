@@ -87,7 +87,7 @@ namespace System.IO
                     long packedResult = Interlocked.CompareExchange(ref _result, RegisteringCancellation, NoResult);
                     if (packedResult == NoResult)
                     {
-                        _cancellationRegistration = cancellationToken.Register(cancelCallback, this);
+                        _cancellationRegistration = cancellationToken.UnsafeRegister(cancelCallback, this);
 
                         // Switch the result, just in case IO completed while we were setting the registration
                         packedResult = Interlocked.Exchange(ref _result, NoResult);

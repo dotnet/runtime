@@ -1318,7 +1318,7 @@ namespace System.IO
                 // in the read/write copy loop.
                 if (cancellationToken.CanBeCanceled)
                 {
-                    cancellationReg = cancellationToken.Register(s =>
+                    cancellationReg = cancellationToken.UnsafeRegister(s =>
                     {
                         var innerAwaitable = (AsyncCopyToAwaitable)s;
                         unsafe

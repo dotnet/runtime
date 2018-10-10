@@ -774,7 +774,7 @@ namespace System.Threading
 
             internal Linked1CancellationTokenSource(CancellationToken token1)
             {
-                _reg1 = token1.InternalRegisterWithoutEC(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
+                _reg1 = token1.UnsafeRegister(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
             }
 
             protected override void Dispose(bool disposing)
@@ -796,8 +796,8 @@ namespace System.Threading
 
             internal Linked2CancellationTokenSource(CancellationToken token1, CancellationToken token2)
             {
-                _reg1 = token1.InternalRegisterWithoutEC(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
-                _reg2 = token2.InternalRegisterWithoutEC(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
+                _reg1 = token1.UnsafeRegister(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
+                _reg2 = token2.UnsafeRegister(LinkedNCancellationTokenSource.s_linkedTokenCancelDelegate, this);
             }
 
             protected override void Dispose(bool disposing)
@@ -827,7 +827,7 @@ namespace System.Threading
                 {
                     if (tokens[i].CanBeCanceled)
                     {
-                        _linkingRegistrations[i] = tokens[i].InternalRegisterWithoutEC(s_linkedTokenCancelDelegate, this);
+                        _linkingRegistrations[i] = tokens[i].UnsafeRegister(s_linkedTokenCancelDelegate, this);
                     }
                     // Empty slots in the array will be default(CancellationTokenRegistration), which are nops to Dispose.
                     // Based on usage patterns, such occurrences should also be rare, such that it's not worth resizing
