@@ -3636,15 +3636,26 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			goto_if_nok (error, exit);
 			MonoType *ftype = mono_field_get_type (field);
 			mt = mint_type (ftype);
-			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
-			ADD_CODE(td, get_data_item_index (td, field));
 			klass = NULL;
 			if (mt == MINT_TYPE_VT) {
+				ADD_CODE(td, MINT_LDSFLD_VT);
+				ADD_CODE(td, get_data_item_index (td, field));
 				klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
 				PUSH_VT(td, size);
 				WRITE32(td, &size);
 			} else {
+				if (mono_class_field_is_special_static (field)) {
+					ADD_CODE(td, MINT_LDSFLD);
+					ADD_CODE(td, get_data_item_index (td, field));
+				} else {
+					MonoVTable *vtable = mono_class_vtable_checked (domain, field->parent, error);
+					goto_if_nok (error, exit);
+
+					ADD_CODE(td, MINT_LDSFLD_I1 + mt - MINT_TYPE_I1);
+					ADD_CODE(td, get_data_item_index (td, vtable));
+					ADD_CODE(td, get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset));
+				}
 				if (mt == MINT_TYPE_O) 
 					klass = mono_class_from_mono_type (ftype);
 			}
@@ -3659,8 +3670,6 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			goto_if_nok (error, exit);
 			MonoType *ftype = mono_field_get_type (field);
 			mt = mint_type (ftype);
-			ADD_CODE(td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
-			ADD_CODE(td, get_data_item_index (td, field));
 
 			/* the vtable of the field might not be initialized at this point */
 			MonoClass *fld_klass = mono_class_from_mono_type (field->type);
@@ -3670,7 +3679,22 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 			if (mt == MINT_TYPE_VT) {
 				MonoClass *klass = mono_class_from_mono_type (ftype);
 				int size = mono_class_value_size (klass, NULL);
+				ADD_CODE(td, MINT_STSFLD_VT);
+				ADD_CODE(td, get_data_item_index (td, field));
 				POP_VT (td, size);
+			} else {
+				if (mono_class_field_is_special_static (field)) {
+					ADD_CODE(td, MINT_STSFLD);
+					ADD_CODE(td, get_data_item_index (td, field));
+				} else {
+					MonoVTable *vtable = mono_class_vtable_checked (domain, field->parent, error);
+					goto_if_nok (error, exit);
+
+					ADD_CODE(td, MINT_STSFLD_I1 + mt - MINT_TYPE_I1);
+					ADD_CODE(td, get_data_item_index (td, vtable));
+					ADD_CODE(td, get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset));
+				}
+
 			}
 			td->ip += 5;
 			--td->sp;
