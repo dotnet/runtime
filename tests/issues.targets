@@ -67,9 +67,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/arglist/vararg/*">
             <Issue>Native varargs not supported on unix</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/VS-ia64-JIT/M00/b80373/b80373/*">
-            <Issue>20024</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
