@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class StringGetHashCodeTests : RemoteExecutorTestBase
+    public partial class StringGetHashCodeTests : RemoteExecutorTestBase
     {
         /// <summary>
         /// Ensure that hash codes are randomized by getting the hash in two processes
