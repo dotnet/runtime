@@ -93,6 +93,7 @@ namespace Mono.Linker {
 				var disabled_optimizations = new HashSet<string> (StringComparer.Ordinal);
 				bool dumpDependencies = false;
 				bool ignoreDescriptors = false;
+				bool removeCAS = true;
 
 				bool resolver = false;
 				while (HaveMoreTokens ()) {
@@ -136,8 +137,7 @@ namespace Mono.Linker {
 							continue;
 
 						case "--strip-security":
-							if (bool.Parse (GetParam ()))
-								p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
+							removeCAS = bool.Parse (GetParam ());
 							continue;
 
 						case "--strip-resources":
@@ -269,6 +269,9 @@ namespace Mono.Linker {
 				if (assemblies != I18nAssemblies.None) {
 					p.AddStepAfter (typeof (PreserveDependencyLookupStep), new PreserveCalendarsStep (assemblies));
 				}
+
+				if (removeCAS)
+					p.AddStepBefore (typeof (MarkStep), new RemoveSecurityStep ());
 
 				if (excluded_features.Count > 0) {
 					var excluded = new string [excluded_features.Count];
