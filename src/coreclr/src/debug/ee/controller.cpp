@@ -944,6 +944,11 @@ HRESULT DebuggerController::Initialize()
 //
 //---------------------------------------------------------------------------------------
 
+bool DebuggerController::s_fUnwoundWriteBarrier = false;
+DWORD DebuggerController::s_eipBeforeUnwoundWriteBarrier = 0;
+DWORD DebuggerController::s_ecxBeforeUnwoundWriteBarrier = 0;
+DWORD DebuggerController::s_ebpBeforeUnwoundWriteBarrier = 0;
+
 DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
   : m_pAppDomain(pAppDomain), 
     m_thread(pThread), 
@@ -2730,6 +2735,20 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
+        if (1) /* FIXME : IP range check is required */
+        {
+            // TODO: Comment on the JIT helper as well
+            DWORD* esp = (DWORD*)context->Esp;
+            DebuggerController::s_eipBeforeUnwoundWriteBarrier = context->Eip;
+            DebuggerController::s_ebpBeforeUnwoundWriteBarrier = context->Ebp;
+            DebuggerController::s_ecxBeforeUnwoundWriteBarrier = context->Ecx;
+            context->Ebp = *esp; esp++;
+            context->Ecx = *esp; esp++;
+            context->Eip = *esp; esp++;
+            context->Esp = (DWORD)esp;
+
+            DebuggerController::s_fUnwoundWriteBarrier = true;
+        }
         DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
         pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
@@ -3015,7 +3034,18 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         // If we need to to a re-abort (see below), then save the current IP in the thread's context before we block and
         // possibly let another func eval get setup.
         reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
+
         SENDIPCEVENT_END;
+        
+        if (DebuggerController::s_fUnwoundWriteBarrier)
+        {
+            DWORD* esp = (DWORD*)context->Esp;
+            context->Eip = DebuggerController::s_eipBeforeUnwoundWriteBarrier; esp--;
+            context->Ecx = DebuggerController::s_ecxBeforeUnwoundWriteBarrier; esp--;
+            context->Ebp = DebuggerController::s_ebpBeforeUnwoundWriteBarrier; esp--;
+            context->Esp = (DWORD)esp;
+            DebuggerController::s_fUnwoundWriteBarrier = false;
+        }
 
         if (!atSafePlace)
             g_pDebugger->DecThreadsAtUnsafePlaces();
