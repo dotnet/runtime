@@ -520,9 +520,85 @@ HRESULT CorHost2::ExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
         return HOST_E_CLRNOTAVAILABLE;
     }   
    
-    
-    // Ensure that code is not loaded in the Default AppDomain
-    return HOST_E_INVALIDOPERATION;
+    if(! (pwzAssemblyPath && pwzTypeName && pwzMethodName) )
+        return E_POINTER;
+
+    HRESULT hr = S_OK;
+
+    BEGIN_ENTRYPOINT_NOTHROW;
+
+    Thread *pThread = GetThread();
+    if (pThread == NULL)
+    {
+        pThread = SetupThreadNoThrow(&hr);
+        if (pThread == NULL)
+        {
+            goto ErrExit;
+        }
+    }
+
+    _ASSERTE (!pThread->PreemptiveGCDisabled());
+
+    _ASSERTE (SystemDomain::GetCurrentDomain()->GetId().m_dwId == DefaultADID);
+
+    INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    EX_TRY
+    {
+        Assembly *pAssembly = AssemblySpec::LoadAssembly(pwzAssemblyPath);
+
+        SString szTypeName(pwzTypeName);
+        StackScratchBuffer buff1;
+        const char* szTypeNameUTF8 = szTypeName.GetUTF8(buff1);
+        MethodTable *pMT = ClassLoader::LoadTypeByNameThrowing(pAssembly,
+                                                            NULL,
+                                                            szTypeNameUTF8).AsMethodTable();
+
+        SString szMethodName(pwzMethodName);
+        StackScratchBuffer buff;
+        const char* szMethodNameUTF8 = szMethodName.GetUTF8(buff);
+        MethodDesc *pMethodMD = MemberLoader::FindMethod(pMT, szMethodNameUTF8, &gsig_SM_Str_RetInt);
+
+        if (!pMethodMD)
+        {
+            hr = COR_E_MISSINGMETHOD;
+        }
+        else
+        {
+            GCX_COOP();
+
+            MethodDescCallSite method(pMethodMD);
+
+            STRINGREF sref = NULL;
+            GCPROTECT_BEGIN(sref);
+
+            if (pwzArgument)
+                sref = StringObject::NewString(pwzArgument);
+
+            ARG_SLOT MethodArgs[] =
+            {
+                ObjToArgSlot(sref)
+            };
+            DWORD retval = method.Call_RetI4(MethodArgs);
+            if (pReturnValue)
+            {
+                *pReturnValue = retval;
+            }
+
+            GCPROTECT_END();
+        }
+    }
+    EX_CATCH_HRESULT(hr);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
+
+ErrExit:
+
+    END_ENTRYPOINT_NOTHROW;
+
+    return hr;
 }
 
 HRESULT ExecuteInAppDomainHelper(FExecuteInAppDomainCallback pCallback,
