@@ -71,7 +71,7 @@
 /*------------------------------------------------------------------*/
 
 static void throw_exception (MonoObject *, unsigned long, unsigned long, 
-		 gulong *, gdouble *, gint32 *, guint, gboolean);
+		 host_mgreg_t *, gdouble *, gint32 *, guint, gboolean, gboolean);
 static gpointer mono_arch_get_throw_exception_generic (int, MonoTrampInfo **, 
 				int, gboolean, gboolean, gboolean);
 static void handle_signal_exception (gpointer);
@@ -375,7 +375,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info,
 		*info = mono_tramp_info_create (corlib ? "throw_corlib_exception" 
                                                       : (rethrow ? "rethrow_exception" 
                                                       : (preserve_ips ? "rethrow_preserve_exception" 
-                                                      : "throw_exception"), 
+                                                      : "throw_exception")),
 						start, code - start, ji, unwind_ops);
 
 	return start;
