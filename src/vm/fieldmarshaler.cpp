@@ -34,7 +34,8 @@
 // forward declaration
 BOOL CheckForPrimitiveType(CorElementType elemType, CQuickArray<WCHAR> *pStrPrimitiveType);
 TypeHandle ArraySubTypeLoadWorker(const SString &strUserDefTypeName, Assembly* pAssembly);
-TypeHandle GetFieldTypeHandleWorker(MetaSig *pFieldSig);  
+TypeHandle GetFieldTypeHandleWorker(MetaSig *pFieldSig);
+BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport *pInternalImport);
 
 
 //=======================================================================
@@ -659,7 +660,14 @@ do                                                      \
                 {
                     if (IsStructMarshalable(thNestedType))
                     {
-                        INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable()));
+                        if (IsFixedBuffer(pfwalk->m_MD, pInternalImport) && !thNestedType.GetMethodTable()->IsBlittable())
+                        {
+                            INITFIELDMARSHALER(NFT_ILLEGAL, FieldMarshaler_Illegal, (IDS_EE_BADMARSHAL_NOTMARSHALABLE));
+                        }
+                        else
+                        {
+                            INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable()));
+                        }
                     }
                     else
                     {
@@ -1226,6 +1234,13 @@ BOOL IsStructMarshalable(TypeHandle th)
     }
 
     return TRUE;
+}
+
+BOOL IsFixedBuffer(mdFieldDef field, IMDInternalImport *pInternalImport)
+{
+    HRESULT hr = pInternalImport->GetCustomAttributeByName(field, g_FixedBufferAttribute, NULL, NULL);
+
+    return hr == S_OK ? TRUE : FALSE;
 }
 
 
