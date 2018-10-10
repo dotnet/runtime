@@ -1416,8 +1416,10 @@ private:
 
     static bool         s_fUnwoundWriteBarrier;
     static DWORD        s_eipBeforeUnwoundWriteBarrier;
+#ifdef WRITE_BARRIER_CHECK
     static DWORD        s_ecxBeforeUnwoundWriteBarrier;
     static DWORD        s_ebpBeforeUnwoundWriteBarrier;
+#endif
 
 #endif // !DACCESS_COMPILE
     
