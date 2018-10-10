@@ -104,7 +104,7 @@ So you could do the following
    > dotnet new console
    > dotnet publish --self-contained -r linux-x64
    >```
-Which creates a new helloWorld appliation and builds it as a self-contained app.    The only subtlty here is that if you have
+Which creates a new helloWorld application and builds it as a self-contained app.    The only subtlty here is that if you have
 multiple versions of the .NET Runtime installed the instructcions above will use the latest.  As long as your app also uses
 the latest (likely) then these instructions will work without modification.   
 
