@@ -1414,12 +1414,16 @@ private:
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
 
+#ifndef FEATURE_PAL
     static bool         s_fUnwoundWriteBarrier;
+#ifdef _TARGET_X86_
     static DWORD        s_eipBeforeUnwoundWriteBarrier;
 #ifdef WRITE_BARRIER_CHECK
     static DWORD        s_ecxBeforeUnwoundWriteBarrier;
     static DWORD        s_ebpBeforeUnwoundWriteBarrier;
-#endif
+#endif // WRITE_BARRIER_CHECK
+#endif // _TARGET_X86_
+#endif // FEATURE_PAL
 
 #endif // !DACCESS_COMPILE
     
