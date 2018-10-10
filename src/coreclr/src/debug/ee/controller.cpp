@@ -944,12 +944,16 @@ HRESULT DebuggerController::Initialize()
 //
 //---------------------------------------------------------------------------------------
 
-bool DebuggerController::s_fUnwoundWriteBarrier = false;
-DWORD DebuggerController::s_eipBeforeUnwoundWriteBarrier = 0;
+#ifndef FEATURE_PAL
+bool DebuggerController::s_fUnwoundWriteBarrier;
+#ifdef _TARGET_X86_
+DWORD DebuggerController::s_eipBeforeUnwoundWriteBarrier;
 #ifdef WRITE_BARRIER_CHECK
-DWORD DebuggerController::s_ecxBeforeUnwoundWriteBarrier = 0;
-DWORD DebuggerController::s_ebpBeforeUnwoundWriteBarrier = 0;
-#endif
+DWORD DebuggerController::s_ecxBeforeUnwoundWriteBarrier;
+DWORD DebuggerController::s_ebpBeforeUnwoundWriteBarrier;
+#endif // WRITE_BARRIER_CHECK
+#endif // _TARGET_X86_
+#endif // FEATURE_PAL
 
 DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
   : m_pAppDomain(pAppDomain), 
@@ -2733,17 +2737,19 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         }
     }
 
+#if !defined(FEATURE_PAL)
     if (stWhat & ST_SINGLE_STEP &&
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
         PCODE ip = GetIP(context);
+#if defined(_TARGET_X86_)
         if (((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End)) || ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End)))
         {
             // TODO: Comment on the JIT helper as well
             DWORD* esp = (DWORD*)context->Esp;
             DebuggerController::s_eipBeforeUnwoundWriteBarrier = context->Eip;
-#ifdef WRITE_BARRIER_CHECK
+#if defined(WRITE_BARRIER_CHECK)
             DebuggerController::s_ebpBeforeUnwoundWriteBarrier = context->Ebp;
             DebuggerController::s_ecxBeforeUnwoundWriteBarrier = context->Ecx;
             context->Ebp = *esp; esp++;
@@ -2751,12 +2757,20 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 #endif
             context->Eip = *esp; esp++;
             context->Esp = (DWORD)esp;
-
             DebuggerController::s_fUnwoundWriteBarrier = true;
         }
+#elif defined(_TARGET_AMD64_)
+        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        {
+            Thread::VirtualUnwindToFirstManagedCallFrame(context);
+        }
+#else
+        // TODO - ARM/ARM64
+#endif        
         DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
         pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
+#endif
 
     if (stWhat & ST_SINGLE_STEP &&
         tpr != TPR_TRIGGER_ONLY_THIS)
@@ -3044,6 +3058,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         
         if (DebuggerController::s_fUnwoundWriteBarrier)
         {
+#if defined(_TARGET_X86_)
             DWORD* esp = (DWORD*)context->Esp;
             context->Eip = DebuggerController::s_eipBeforeUnwoundWriteBarrier; esp--;
 #ifdef WRITE_BARRIER_CHECK
@@ -3051,6 +3066,11 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
             context->Ebp = DebuggerController::s_ebpBeforeUnwoundWriteBarrier; esp--;
 #endif
             context->Esp = (DWORD)esp;
+#elif defined(_TARGET_AMD64_)
+            // TODO: dead
+#else
+            // TODO: ARM/ARM64
+#endif
             DebuggerController::s_fUnwoundWriteBarrier = false;
         }
 
