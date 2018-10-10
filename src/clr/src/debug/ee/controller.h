@@ -1386,7 +1386,7 @@ public:
     // the bp. So we pass in an extra flag, fInteruptedBySetIp,  to let the controller decide how to handle this.
     // Since SetIP only works within a single function, this can only be an issue if a thread's current stopping
     // location and the patch it set are in the same function. (So this could happen for step-over, but never
-    // setp-out). 
+    // step-out). 
     // This flag will almost always be false.
     // 
     // Once we actually send the event, we're under the debugger lock, and so the world is stable underneath us.
@@ -1414,7 +1414,13 @@ private:
     bool                m_deleted;
     bool                m_fEnableMethodEnter;
 
+    static bool         s_fUnwoundWriteBarrier;
+    static DWORD        s_eipBeforeUnwoundWriteBarrier;
+    static DWORD        s_ecxBeforeUnwoundWriteBarrier;
+    static DWORD        s_ebpBeforeUnwoundWriteBarrier;
+
 #endif // !DACCESS_COMPILE
+    
 };
 
 
@@ -1798,16 +1804,8 @@ public:
 
         CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
-        // If we got interupted by SetIp, we just don't send the IPC event. Our triggers are still
-        // active so no harm done.
-        if (!fInteruptedBySetIp)
-        {
-            g_pDebugger->SendDataBreakpoint(thread, context, this);
-            return true;
-        }
-
-        // Controller is still alive, will fire if we hit the breakpoint again.
-        return false;
+        g_pDebugger->SendDataBreakpoint(thread, context, this);
+        return true;
     }
 
     static bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
