@@ -220,9 +220,26 @@ namespace System.Threading
         public CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext) =>
             Register(callback, state, useSynchronizationContext, useExecutionContext: true);
 
-        // helper for internal registration needs that don't require an EC capture (e.g. creating linked token sources, or registering unstarted TPL tasks)
-        // has a handy signature, and skips capturing execution context.
-        internal CancellationTokenRegistration InternalRegisterWithoutEC(Action<object> callback, object state) =>
+        /// <summary>
+        /// Registers a delegate that will be called when this 
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// If this token is already in the canceled state, the delegate will be run immediately and synchronously.
+        /// Any exception the delegate generates will be propagated out of this method call.
+        /// </para>
+        /// <para>
+        /// <see cref="System.Threading.ExecutionContext">ExecutionContext</see> is not captured nor flowed
+        /// to the callback's invocation.
+        /// </para>
+        /// </remarks>
+        /// <param name="callback">The delegate to be executed when the <see cref="T:System.Threading.CancellationToken">CancellationToken</see> is canceled.</param>
+        /// <param name="state">The state to pass to the <paramref name="callback"/> when the delegate is invoked.  This may be null.</param>
+        /// <returns>The <see cref="T:System.Threading.CancellationTokenRegistration"/> instance that can 
+        /// be used to unregister the callback.</returns>
+        /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
+        public CancellationTokenRegistration UnsafeRegister(Action<object> callback, object state) =>
             Register(callback, state, useSynchronizationContext: false, useExecutionContext: false);
 
         /// <summary>
