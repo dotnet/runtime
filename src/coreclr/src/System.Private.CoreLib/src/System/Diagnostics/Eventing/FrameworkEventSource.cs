@@ -92,14 +92,14 @@ namespace System.Diagnostics.Tracing
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
-        private unsafe void WriteEvent(int eventId, long arg1, int arg2, string arg3, bool arg4)
+        private unsafe void WriteEvent(int eventId, long arg1, int arg2, string arg3, bool arg4, int arg5, int arg6)
         {
             if (IsEnabled())
             {
                 if (arg3 == null) arg3 = "";
                 fixed (char* string3Bytes = arg3)
                 {
-                    EventSource.EventData* descrs = stackalloc EventSource.EventData[4];
+                    EventSource.EventData* descrs = stackalloc EventSource.EventData[6];
                     descrs[0].DataPointer = (IntPtr)(&arg1);
                     descrs[0].Size = 8;
                     descrs[0].Reserved = 0;
@@ -112,7 +112,13 @@ namespace System.Diagnostics.Tracing
                     descrs[3].DataPointer = (IntPtr)(&arg4);
                     descrs[3].Size = 4;
                     descrs[3].Reserved = 0;
-                    WriteEventCore(eventId, 4, descrs);
+                    descrs[4].DataPointer = (IntPtr)(&arg5);
+                    descrs[4].Size = 4;
+                    descrs[4].Reserved = 0;
+                    descrs[5].DataPointer = (IntPtr)(&arg6);
+                    descrs[5].Size = 4;
+                    descrs[5].Reserved = 0;
+                    WriteEventCore(eventId, 6, descrs);
                 }
             }
         }
@@ -664,11 +670,12 @@ namespace System.Diagnostics.Tracing
         //        2 - managed async IO operations (FileStream, PipeStream, a.o.)
         //        3 - WinRT dispatch operations
         // info - any additional information user code might consider interesting
+        // intInfo1/2 - any additional integer information user code might consider interesting
         [Event(150, Level = EventLevel.Informational, Keywords = Keywords.ThreadTransfer, Task = Tasks.ThreadTransfer, Opcode = EventOpcode.Send)]
-        public void ThreadTransferSend(long id, int kind, string info, bool multiDequeues)
+        public void ThreadTransferSend(long id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2)
         {
             if (IsEnabled())
-                WriteEvent(150, id, kind, info, multiDequeues);
+                WriteEvent(150, id, kind, info, multiDequeues, intInfo1, intInfo2);
         }
         // id - is a managed object. it gets translated to the object's address. ETW listeners must
         //      keep track of GC movements in order to correlate the value passed to XyzSend with the
@@ -677,9 +684,9 @@ namespace System.Diagnostics.Tracing
 #if !CORECLR
         [System.Security.SecuritySafeCritical]
 #endif // !CORECLR
-        public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues)
+        public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2)
         {
-            ThreadTransferSend((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info, multiDequeues);
+            ThreadTransferSend((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info, multiDequeues, intInfo1, intInfo2);
         }
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
