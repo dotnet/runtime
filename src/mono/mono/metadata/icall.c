@@ -146,11 +146,6 @@ MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error);
 
 /* Lazy class loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (system_version, "System", "Version")
-static GENERATE_GET_CLASS_WITH_CACHE (assembly_name, "System.Reflection", "AssemblyName")
-static GENERATE_GET_CLASS_WITH_CACHE (constructor_info, "System.Reflection", "ConstructorInfo")
-static GENERATE_GET_CLASS_WITH_CACHE (property_info, "System.Reflection", "PropertyInfo")
-static GENERATE_GET_CLASS_WITH_CACHE (event_info, "System.Reflection", "EventInfo")
 static GENERATE_GET_CLASS_WITH_CACHE (module, "System.Reflection", "Module")
 
 static void
