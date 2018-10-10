@@ -1,4 +1,3 @@
-﻿using System;
 using System.Linq;
 using Mono.Cecil;
 
@@ -10,6 +9,8 @@ namespace Mono.Linker.Steps {
 				ClearSecurityDeclarations (assembly);
 				RemoveCustomAttributesThatAreForSecurity (assembly);
 
+				RemoveCustomAttributesThatAreForSecurity (assembly.MainModule);
+
 				foreach (var type in assembly.MainModule.Types)
 					ProcessType (type);
 			}
@@ -17,8 +18,8 @@ namespace Mono.Linker.Steps {
 
 		static void ProcessType (TypeDefinition type)
 		{
-			RemoveCustomAttributesThatAreForSecurity (type);
 			ClearSecurityDeclarations (type);
+			RemoveCustomAttributesThatAreForSecurity (type);
 			type.HasSecurity = false;
 
 			foreach (var field in type.Fields)
@@ -36,7 +37,8 @@ namespace Mono.Linker.Steps {
 
 		static void ClearSecurityDeclarations (ISecurityDeclarationProvider provider)
 		{
-			provider.SecurityDeclarations.Clear ();
+			if (provider.HasSecurityDeclarations)
+				provider.SecurityDeclarations.Clear ();
 		}
 
 		/// <summary>
@@ -55,11 +57,19 @@ namespace Mono.Linker.Steps {
 
 		static bool IsCustomAttributeForSecurity (CustomAttribute attr)
 		{
-			switch (attr.AttributeType.FullName) {
-			case "System.Security.SecurityCriticalAttribute":
-			case "System.Security.SecuritySafeCriticalAttribute":
-			case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
-				return true;
+			var attr_type = attr.AttributeType;
+			if (attr_type.Namespace == "System.Security") {
+				switch (attr_type.Name) {
+				case "SecurityCriticalAttribute":
+				case "SecuritySafeCriticalAttribute":
+				case "SuppressUnmanagedCodeSecurityAttribute":
+				case "DynamicSecurityMethodAttribute":
+				case "UnverifiableCodeAttribute":
+				case "AllowPartiallyTrustedCallersAttribute":
+				case "SecurityTransparentAttribute":
+				case "SecurityRulesAttribute":
+					return true;
+				}
 			}
 
 			return false;
