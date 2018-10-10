@@ -48,17 +48,6 @@ namespace System.Buffers.Text
             }
         }
 
-        // TODO: Use this instead of TryFormatInt64Default to format numbers less than int.MaxValue
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatInt32Default(int value, Span<byte> destination, out int bytesWritten)
-        {
-            if ((uint)value < 10)
-            {
-                return TryFormatUInt32SingleDigit((uint)value, destination, out bytesWritten);
-            }
-            return TryFormatInt32MultipleDigits(value, destination, out bytesWritten);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryFormatInt32MultipleDigits(int value, Span<byte> destination, out int bytesWritten)
         {
