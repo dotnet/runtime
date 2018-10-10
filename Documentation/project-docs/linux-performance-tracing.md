@@ -125,6 +125,19 @@ VERSION is 2.1.0 the commands to update crossgen would be
 Once you have done this, perfcollect will use crossgen to include framework symbols.  The warning that perfcollect used to
 issue should go away.   This only has to be one once per machine (until you update your runtime). 
 
+## Alternative turn off use of precomppiled code
+
+If you don't have the abiltiy to update the .NET Rutnime (to add crossgen), or if the above procedure did not work
+for some reasion, there is another approach to getting framework symbols.   You can tell the runtime to simply 
+not use the precompiled framework code.   The all code will be Just in time compiled and the special crossgen tool
+is not needed.   This works, but will increase startup time for your code by something like a second or two.  If you 
+can tolerate that (you probably can), then this is an alternative.   You were already setting envinronment variables
+in order to get symbols, you simply need to add one more.
+	> ```bash 
+	> export COMPlus_ZapDisable=1
+	> ```
+With this change you should get the symbols for all .NET code. 
+    
 # Collecting in a Docker Container #
 Perfcollect can be used to collect data for an application running inside a Docker container.  The main thing to know is that collecting a trace requires elevated privileges because the [default seccomp profile](https://docs.docker.com/engine/security/seccomp/) blocks a required syscall - perf_events_open.
 
