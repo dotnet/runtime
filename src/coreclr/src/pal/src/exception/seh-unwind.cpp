@@ -329,14 +329,13 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     //
     UnwindContextToWinContext(&cursor, context);
 
-    // FreeBSD, NetBSD, OSX and Alpine appear to do two different things when unwinding
-    // 1: If it reaches where it cannot unwind anymore, say a 
-    // managed frame.  It will return 0, but also update the $pc
-    // 2: If it unwinds all the way to _start it will return
-    // 0 from the step, but $pc will stay the same.
+    // On some OSes / architectures if it unwound all the way to _start
+    // (__libc_start_main on arm64 Linux with glibc older than 2.27).
+    // >= 0 is returned from the step, but $pc will stay the same.
     // So we detect that here and set the $pc to NULL in that case.
-    // This is the default behavior of the libunwind on Linux.
-    if (st == 0 && CONTEXTGetPC(context) == curPc)
+    // This is the default behavior of the libunwind on x64 Linux.
+    // 
+    if (st >= 0 && CONTEXTGetPC(context) == curPc)
     {
         CONTEXTSetPC(context, 0);
     }
