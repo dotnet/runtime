@@ -317,17 +317,64 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
-        /// __m128 _mm256_extractf128_ps (__m256 a, const int imm8)
-        ///   VEXTRACTF128 xmm/m128, ymm, imm8
-        /// __m128d _mm256_extractf128_pd (__m256d a, const int imm8)
-        ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTF128 xmm/m128, ymm, imm8
         /// </summary>
-        public static Vector128<T> ExtractVector128<T>(Vector256<T> value, byte index) where T : struct
-        {
-            return ExtractVector128<T>(value, index);
-        }
+        public static Vector128<byte> ExtractVector128(Vector256<byte> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<short> ExtractVector128(Vector256<short> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<ushort> ExtractVector128(Vector256<ushort> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<int> ExtractVector128(Vector256<int> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<uint> ExtractVector128(Vector256<uint> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<long> ExtractVector128(Vector256<long> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<ulong> ExtractVector128(Vector256<ulong> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128 _mm256_extractf128_ps (__m256 a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<float> ExtractVector128(Vector256<float> value, byte index) => ExtractVector128(value, index);
+
+        /// <summary>
+        /// __m128d _mm256_extractf128_pd (__m256d a, const int imm8)
+        ///   VEXTRACTF128 xmm/m128, ymm, imm8
+        /// </summary>
+        public static Vector128<double> ExtractVector128(Vector256<double> value, byte index) => ExtractVector128(value, index);
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
@@ -578,17 +625,64 @@ namespace System.Runtime.Intrinsics.X86
         }
 
         /// <summary>
-        /// __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
-        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
-        /// __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
-        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
         ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
         /// </summary>
-        public static Vector256<T> InsertVector128<T>(Vector256<T> value, Vector128<T> data, byte index) where T : struct
-        {
-            return InsertVector128<T>(value, data, index);
-        }
+        public static Vector256<byte> InsertVector128(Vector256<byte> value, Vector128<byte> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<short> InsertVector128(Vector256<short> value, Vector128<short> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<ushort> InsertVector128(Vector256<ushort> value, Vector128<ushort> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<int> InsertVector128(Vector256<int> value, Vector128<int> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256 _mm256_insertf128_ps (__m256 a, __m128 b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<float> InsertVector128(Vector256<float> value, Vector128<float> data, byte index) => InsertVector128(value, data, index);
+
+        /// <summary>
+        /// __m256d _mm256_insertf128_pd (__m256d a, __m128d b, int imm8)
+        ///   VINSERTF128 ymm, ymm, xmm/m128, imm8
+        /// </summary>
+        public static Vector256<double> InsertVector128(Vector256<double> value, Vector128<double> data, byte index) => InsertVector128(value, data, index);
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
@@ -906,17 +1000,63 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> Permute(Vector256<double> value, byte control) => Permute(value, control);
 
         /// <summary>
-        /// __m256 _mm256_permute2f128_ps (__m256 a, __m256 b, int imm8)
-        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
-        /// __m256d _mm256_permute2f128_pd (__m256d a, __m256d b, int imm8)
-        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
         ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
         /// </summary>
-        public static Vector256<T> Permute2x128<T>(Vector256<T> left, Vector256<T> right, byte control) where T : struct
-        {
-            return Permute2x128<T>(left, right, control);
-        }
+        public static Vector256<byte> Permute2x128(Vector256<byte> left, Vector256<byte> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<sbyte> Permute2x128(Vector256<sbyte> left, Vector256<sbyte> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<short> Permute2x128(Vector256<short> left, Vector256<short> right, byte control) => Permute2x128(left, right, control);
+        
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<ushort> Permute2x128(Vector256<ushort> left, Vector256<ushort> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<int> Permute2x128(Vector256<int> left, Vector256<int> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<uint> Permute2x128(Vector256<uint> left, Vector256<uint> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<long> Permute2x128(Vector256<long> left, Vector256<long> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256i _mm256_permute2f128_si256 (__m256i a, __m256i b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<ulong> Permute2x128(Vector256<ulong> left, Vector256<ulong> right, byte control) => Permute2x128(left, right, control);
+        /// <summary>
+        /// __m256 _mm256_permute2f128_ps (__m256 a, __m256 b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<float> Permute2x128(Vector256<float> left, Vector256<float> right, byte control) => Permute2x128(left, right, control);
+
+        /// <summary>
+        /// __m256d _mm256_permute2f128_pd (__m256d a, __m256d b, int imm8)
+        ///   VPERM2F128 ymm, ymm, ymm/m256, imm8
+        /// </summary>
+        public static Vector256<double> Permute2x128(Vector256<double> left, Vector256<double> right, byte control) => Permute2x128(left, right, control);
 
         /// <summary>
         /// __m128 _mm_permutevar_ps (__m128 a, __m128i b)
@@ -1318,15 +1458,62 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm256_testc_si256 (__m256i a, __m256i b)
         ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<byte> left, Vector256<byte> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<sbyte> left, Vector256<sbyte> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<short> left, Vector256<short> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<ushort> left, Vector256<ushort> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<int> left, Vector256<int> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<uint> left, Vector256<uint> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<long> left, Vector256<long> right) => TestC(left, right);
+
+        /// <summary>
+        /// int _mm256_testc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<ulong> left, Vector256<ulong> right) => TestC(left, right);
+
+        /// <summary>
         /// int _mm256_testc_ps (__m256 a, __m256 b)
         ///   VTESTPS ymm, ymm/m256
+        /// </summary>
+        public static bool TestC(Vector256<float> left, Vector256<float> right) => TestC(left, right);
+
+        /// <summary>
         /// int _mm256_testc_pd (__m256d a, __m256d b)
         ///   VTESTPS ymm, ymm/m256
         /// </summary>
-        public static bool TestC<T>(Vector256<T> left, Vector256<T> right) where T : struct
-        {
-            return TestC<T>(left, right);
-        }
+        public static bool TestC(Vector256<double> left, Vector256<double> right) => TestC(left, right);
 
         /// <summary>
         /// int _mm_testnzc_ps (__m128 a, __m128 b)
@@ -1342,15 +1529,62 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
         ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<byte> left, Vector256<byte> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<sbyte> left, Vector256<sbyte> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<short> left, Vector256<short> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<ushort> left, Vector256<ushort> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<int> left, Vector256<int> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<uint> left, Vector256<uint> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<long> left, Vector256<long> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
+        /// int _mm256_testnzc_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<ulong> left, Vector256<ulong> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
         /// int _mm256_testnzc_ps (__m256 a, __m256 b)
         ///   VTESTPS ymm, ymm/m256
+        /// </summary>
+        public static bool TestNotZAndNotC(Vector256<float> left, Vector256<float> right) => TestNotZAndNotC(left, right);
+
+        /// <summary>
         /// int _mm256_testnzc_pd (__m256d a, __m256d b)
         ///   VTESTPD ymm, ymm/m256
         /// </summary>
-        public static bool TestNotZAndNotC<T>(Vector256<T> left, Vector256<T> right) where T : struct
-        {
-            return TestNotZAndNotC<T>(left, right);
-        }
+        public static bool TestNotZAndNotC(Vector256<double> left, Vector256<double> right) => TestNotZAndNotC(left, right);
 
         /// <summary>
         /// int _mm_testz_ps (__m128 a, __m128 b)
@@ -1366,15 +1600,62 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// int _mm256_testz_si256 (__m256i a, __m256i b)
         ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<byte> left, Vector256<byte> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<sbyte> left, Vector256<sbyte> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<short> left, Vector256<short> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<ushort> left, Vector256<ushort> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<int> left, Vector256<int> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<uint> left, Vector256<uint> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<long> left, Vector256<long> right) => TestZ(left, right);
+
+        /// <summary>
+        /// int _mm256_testz_si256 (__m256i a, __m256i b)
+        ///   VPTEST ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<ulong> left, Vector256<ulong> right) => TestZ(left, right);
+
+        /// <summary>
         /// int _mm256_testz_ps (__m256 a, __m256 b)
         ///   VTESTPS ymm, ymm/m256
+        /// </summary>
+        public static bool TestZ(Vector256<float> left, Vector256<float> right) => TestZ(left, right);
+
+        /// <summary>
         /// int _mm256_testz_pd (__m256d a, __m256d b)
         ///   VTESTPD ymm, ymm/m256
         /// </summary>
-        public static bool TestZ<T>(Vector256<T> left, Vector256<T> right) where T : struct
-        {
-            return TestZ<T>(left, right);
-        }
+        public static bool TestZ(Vector256<double> left, Vector256<double> right) => TestZ(left, right);
 
         /// <summary>
         /// __m256 _mm256_unpackhi_ps (__m256 a, __m256 b)
