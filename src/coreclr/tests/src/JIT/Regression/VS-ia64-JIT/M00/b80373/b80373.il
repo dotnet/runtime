@@ -46,7 +46,7 @@ End_Orphan_3:
 Start_Orphan_5:
    ldarga Arg_0x4
    ldc.i4.7
-  stind.i
+  stind.i4
 End_Orphan_5:
 Start_Orphan_7:
     newobj     instance void [mscorlib]System.Object::.ctor()
