@@ -442,10 +442,9 @@ static const void *DBG_get_module_id()
 #define MODULE_FORMAT
 #endif // FEATURE_PAL_SXS
 
-
 /*++
 Function :
-    DBG_printf_gcc
+    DBG_printf
 
     Internal function for debug channels; don't use.
     This function outputs a complete debug message, including the function name.
@@ -454,21 +453,22 @@ Parameters :
     DBG_CHANNEL_ID channel : debug channel to use
     DBG_LEVEL_ID level : debug message level
     BOOL bHeader : whether or not to output message header (thread id, etc)
-    LPSTR function : current function
-    LPSTR file : current file
+    LPCSTR function : current function
+    LPCSTR file : current file
     INT line : line number
-    LPSTR format, ... : standard printf parameter list.
+    LPCSTR format, ... : standard printf parameter list.
 
 Return Value :
     always 1.
 
 Notes :
-    This version is for gnu compilers that support variable-argument macros
-    and the __FUNCTION__ pseudo-macro.
+    This version is for compilers that support the C99 flavor of
+    variable-argument macros but not the gnu flavor, and do not support the
+    __FUNCTION__ pseudo-macro.
 
 --*/
-int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
-                   LPCSTR function, LPCSTR file, INT line, LPCSTR format, ...)
+int DBG_printf(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
+               LPCSTR function, LPCSTR file, INT line, LPCSTR format, ...)
 {
     CHAR *buffer = (CHAR*)alloca(DBG_BUFFER_SIZE);
     CHAR indent[MAX_NESTING+1];
@@ -494,7 +494,7 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
         /* also print file name for ASSERTs, to match Win32 behavior */
         if( DLI_ENTRY == level || DLI_ASSERT == level || DLI_EXIT == level)
         {
-            output_size=snprintf(buffer, DBG_BUFFER_SIZE, 
+            output_size=snprintf(buffer, DBG_BUFFER_SIZE,
                                  "{%p" MODULE_FORMAT "} %-5s [%-7s] at %s.%d: ",
                                  thread_id, MODULE_ID
                                  dbg_level_names[level], dbg_channel_names[channel], file, line);
@@ -506,10 +506,10 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
                                  thread_id, MODULE_ID
                                  dbg_level_names[level], dbg_channel_names[channel], function, line);
         }
-        
+
         if(output_size + 1 > DBG_BUFFER_SIZE)
         {
-            fprintf(stderr, "ERROR : buffer overflow in DBG_printf_gcc");
+            fprintf(stderr, "ERROR : buffer overflow in DBG_printf");
             return 1;
         }
         
@@ -529,7 +529,7 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
 
     if( output_size > DBG_BUFFER_SIZE )
     {
-        fprintf(stderr, "ERROR : buffer overflow in DBG_printf_gcc");
+        fprintf(stderr, "ERROR : buffer overflow in DBG_printf");
     }
 
     /* Use a Critical section before calling printf code to
@@ -543,7 +543,7 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
     /* flush the output to file */
     if ( fflush(output_file) != 0 )
     {
-        fprintf(stderr, "ERROR : fflush() failed errno:%d (%s)\n", 
+        fprintf(stderr, "ERROR : fflush() failed errno:%d (%s)\n",
                 errno, strerror(errno));
     }
 
@@ -553,115 +553,7 @@ int DBG_printf_gcc(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
 
     if ( old_errno != errno )
     {
-        fprintf( stderr,"ERROR: errno changed by DBG_printf_gcc\n" );
-        errno = old_errno;
-    }
-
-    return 1;
-}
-
-/*++
-Function :
-    DBG_printf_c99
-
-    Internal function for debug channels; don't use.
-    This function outputs a complete debug message, without function name.
-
-Parameters :
-    DBG_CHANNEL_ID channel : debug channel to use
-    DBG_LEVEL_ID level : debug message level
-    BOOL bHeader : whether or not to output message header (thread id, etc)
-    LPSTR file : current file
-    INT line : line number
-    LPSTR format, ... : standard printf parameter list.
-
-Return Value :
-    always 1.
-
-Notes :
-    This version is for compilers that support the C99 flavor of
-    variable-argument macros but not the gnu flavor, and do not support the
-    __FUNCTION__ pseudo-macro.
-
---*/
-int DBG_printf_c99(DBG_CHANNEL_ID channel, DBG_LEVEL_ID level, BOOL bHeader,
-                   LPSTR file, INT line, LPSTR format, ...)
-{
-    CHAR *buffer = (CHAR*)alloca(DBG_BUFFER_SIZE);
-    CHAR indent[MAX_NESTING+1];
-    LPSTR buffer_ptr;
-    INT output_size;
-    va_list args;
-    static INT call_count=0; // only use inside the crit section
-    void *thread_id;
-    int old_errno = 0;
-
-    old_errno = errno;
-
-    if(!DBG_get_indent(level, format, indent))
-    {
-        return 1;
-    }
-
-    thread_id=  (void *)THREADSilentGetCurrentThreadId();
-
-    if(bHeader)
-    {
-        output_size=snprintf(buffer, DBG_BUFFER_SIZE, 
-                             "{%p" MODULE_FORMAT "} %-5s [%-7s] at %s.%d: ", thread_id, MODULE_ID
-                             dbg_level_names[level], dbg_channel_names[channel], 
-                             file, line);
-
-        if(output_size + 1 > DBG_BUFFER_SIZE)
-        {
-            fprintf(stderr, "ERROR : buffer overflow in DBG_printf_gcc");
-            return 1;
-        }
-        
-        buffer_ptr=buffer+output_size;
-    }
-    else
-    {
-        output_size = 0;
-        buffer_ptr = buffer;
-    }
-
-    va_start(args, format);
-    output_size+=_vsnprintf_s(buffer_ptr, DBG_BUFFER_SIZE-output_size, _TRUNCATE,
-                              format, args);
-    va_end(args);
-
-    if(output_size>DBG_BUFFER_SIZE)
-        fprintf(stderr, "ERROR : buffer overflow in DBG_printf_c99");
-
-    /* Use a Critical section before calling printf code to
-       avoid holding a libc lock while another thread is calling
-       SuspendThread on this one. */
-
-    BOOL do_flush = FALSE;
-    InternalEnterCriticalSection(NULL, &fprintf_crit_section);
-    fprintf( output_file, "%s", buffer );
-    call_count++; // can use call_count because we are in the crit section
-    if (call_count>5)
-    {
-        call_count = 0;
-        do_flush = TRUE;
-    }
-    InternalLeaveCriticalSection(NULL, &fprintf_crit_section);
-
-    /* flush the output to file every once in a while */
-    if (do_flush)
-    {
-        if ( fflush(output_file) != 0 )
-        {
-            fprintf(stderr, "ERROR : fflush() failed errno:%d (%s)\n", 
-                   errno, strerror(errno));
-        }
-    }
-    
-    if ( old_errno != errno )
-    {
-        fprintf( stderr, "ERROR: DBG_printf_c99 changed the errno.\n" );
+        fprintf( stderr,"ERROR: errno changed by DBG_printf\n" );
         errno = old_errno;
     }
 
