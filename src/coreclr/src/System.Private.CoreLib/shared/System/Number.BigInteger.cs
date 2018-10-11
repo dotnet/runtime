@@ -130,7 +130,7 @@ namespace System
             };
 
             private int _length;
-            private BlocksBuffer _blocks;
+            private fixed uint _blocks[MaxBlockCount];
 
             public BigInteger(uint value)
             {
@@ -367,7 +367,7 @@ namespace System
                 Debug.Assert(unchecked((uint)(maxResultLength)) <= MaxBlockCount);
 
                 // Zero out result internal blocks.
-                Buffer.ZeroMemory((byte*)(result._blocks.GetPointer()), (maxResultLength * sizeof(uint)));
+                Buffer.ZeroMemory((byte*)(result.GetBlocksPointer()), (maxResultLength * sizeof(uint)));
 
                 int smallIndex = 0;
                 int resultStartIndex = 0;
@@ -559,7 +559,7 @@ namespace System
                     return;
                 }
 
-                Buffer.ZeroMemory((byte*)(_blocks.GetPointer() + _length), ((blockCount - 1) * sizeof(uint)));
+                Buffer.ZeroMemory((byte*)(GetBlocksPointer() + _length), ((blockCount - 1) * sizeof(uint)));
                 _length += (int)(blockCount);
                 _blocks[_length - 1] = blockValue;
             }
@@ -585,7 +585,7 @@ namespace System
                 var result = new BigInteger(0);
                 Multiply(ref this, ref value, ref result);
 
-                Buffer.Memcpy((byte*)(_blocks.GetPointer()), (byte*)(result._blocks.GetPointer()), (result._length) * sizeof(uint));
+                Buffer.Memcpy((byte*)(GetBlocksPointer()), (byte*)(result.GetBlocksPointer()), (result._length) * sizeof(uint));
                 _length = result._length;
             }
 
@@ -638,7 +638,7 @@ namespace System
             public void SetValue(ref BigInteger rhs)
             {
                 int rhsLength = rhs._length;
-                Buffer.Memcpy((byte*)(_blocks.GetPointer()), (byte*)(rhs._blocks.GetPointer()), (rhsLength * sizeof(uint)));
+                Buffer.Memcpy((byte*)(GetBlocksPointer()), (byte*)(rhs.GetBlocksPointer()), (rhsLength * sizeof(uint)));
                 _length = rhsLength;
             }
 
@@ -678,7 +678,7 @@ namespace System
                     _length += (int)(blocksToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)(_blocks.GetPointer()), (blocksToShift * sizeof(uint)));
+                    Buffer.ZeroMemory((byte*)(GetBlocksPointer()), (blocksToShift * sizeof(uint)));
                 }
                 else
                 {
@@ -711,7 +711,7 @@ namespace System
                     _blocks[writeIndex - 1] = block << (int)(remainingBitsToShift);
 
                     // Zero the remaining low blocks
-                    Buffer.ZeroMemory((byte*)(_blocks.GetPointer()), (blocksToShift * sizeof(uint)));
+                    Buffer.ZeroMemory((byte*)(GetBlocksPointer()), (blocksToShift * sizeof(uint)));
 
                     // Check if the terminating block has no set bits
                     if (_blocks[_length - 1] == 0)
@@ -721,30 +721,10 @@ namespace System
                 }
             }
 
-            [StructLayout(LayoutKind.Sequential, Pack = 1)]
-            private struct BlocksBuffer
+            private uint* GetBlocksPointer()
             {
-                private fixed uint _blocks[MaxBlockCount];
-                
-                public ref uint this[int index]
-                {
-                    get
-                    {
-                        Debug.Assert(unchecked((uint)(index)) <= MaxBlockCount);
-                        return ref Unsafe.Add(ref GetPinnableReference(), index);
-                    }
-                }
-
-                public ref uint GetPinnableReference()
-                {
-                    var pThis = Unsafe.AsPointer(ref this);
-                    return ref Unsafe.AsRef<uint>(pThis);
-                }
-
-                public uint* GetPointer()
-                {
-                    return (uint*)(Unsafe.AsPointer(ref this));
-                }
+                // This is safe to do since we are a ref struct
+                return (uint*)(Unsafe.AsPointer(ref _blocks[0]));
             }
         }
     }
