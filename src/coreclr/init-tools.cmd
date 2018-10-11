@@ -55,7 +55,7 @@ if /i "%PROCESSOR_ARCHITECTURE%" == "arm" (
 )
 
 if /i "%PROCESSOR_ARCHITECTURE%" == "amd64" (
-  set _Arch="x64"
+  set _Arch=x64
   goto ArchSet
 )
 
@@ -65,7 +65,7 @@ REM
 REM TODO: consume native arm64 toolset, blocked by official arm64 windows cli
 REM     : release. See https://github.com/dotnet/coreclr/issues/19614 for more
 REM     : information
-set _Arch="x86"
+set _Arch=x86
 
 echo "init-tools.cmd: Setting arch to %_Arch% for build tools"
 
@@ -85,6 +85,11 @@ if NOT exist "%DOTNET_LOCAL_PATH%" (
 
 :afterdotnetrestore
 
+REM We do not need the build tools for arm64/x86
+if /i "%_Arch%" == "x86" (
+  goto :EOF
+)
+
 if exist "%BUILD_TOOLS_PATH%" goto :afterbuildtoolsrestore
 echo Restoring BuildTools version %BUILDTOOLS_VERSION%...
 echo Running: "%DOTNET_CMD%" restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages "%PACKAGES_DIR%" --source "%BUILDTOOLS_SOURCE%" /p:BuildToolsPackageVersion=%BUILDTOOLS_VERSION% /p:ToolsDir=%TOOLRUNTIME_DIR% >> "%INIT_TOOLS_LOG%"
@@ -95,11 +100,6 @@ if NOT exist "%BUILD_TOOLS_PATH%\init-tools.cmd" (
 )
 
 :afterbuildtoolsrestore
-
-REM We do not need the build tools for arm64
-if /i "%PROCESSOR_ARCHITECTURE%" == "arm64" (
-  goto :EOF
-)
 
 :: Ask init-tools to also restore ILAsm
 set /p ILASMCOMPILER_VERSION=< "%~dp0ILAsmVersion.txt"
