@@ -2940,8 +2940,14 @@ mono_setup_altstack (MonoJitTlsData *tls)
 		if (mono_mprotect (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE)) {
 			/* mprotect can fail for the main thread stack */
 			gpointer gaddr = mono_valloc (tls->stack_ovf_guard_base, tls->stack_ovf_guard_size, MONO_MMAP_NONE|MONO_MMAP_PRIVATE|MONO_MMAP_ANON|MONO_MMAP_FIXED, MONO_MEM_ACCOUNT_EXCEPTIONS);
-			g_assert (gaddr == tls->stack_ovf_guard_base);
-			tls->stack_ovf_valloced = TRUE;
+			if (gaddr) {
+				g_assert (gaddr == tls->stack_ovf_guard_base);
+				tls->stack_ovf_valloced = TRUE;
+			} else {
+				g_warning ("couldn't allocate guard page, continue without it");
+				tls->stack_ovf_guard_base = NULL;
+				tls->stack_ovf_guard_size = 0;
+			}
 		}
 	}
 
@@ -2956,7 +2962,11 @@ mono_setup_altstack (MonoJitTlsData *tls)
 	sa.ss_flags = 0;
 	g_assert (sigaltstack (&sa, NULL) == 0);
 
-	mono_gc_register_altstack ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size, (char*)staddr + stsize - ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size), tls->signal_stack, tls->signal_stack_size);
+	if (tls->stack_ovf_guard_base)
+		mono_gc_register_altstack ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size, (char*)staddr + stsize - ((char*)tls->stack_ovf_guard_base + tls->stack_ovf_guard_size), tls->signal_stack, tls->signal_stack_size);
+	else
+		mono_gc_register_altstack (staddr, stsize, tls->signal_stack, tls->signal_stack_size);
+
 }
 
 void
