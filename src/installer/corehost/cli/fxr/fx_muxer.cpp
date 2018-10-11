@@ -1344,7 +1344,9 @@ int fx_muxer_t::handle_cli(
     {
         assert(argc > 1);
         if (pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("--help"), argv[1]) == 0)
+            pal::strcasecmp(_X("--help"), argv[1]) == 0 ||
+            pal::strcasecmp(_X("-?"), argv[1]) == 0 ||
+            pal::strcasecmp(_X("/?"), argv[1]) == 0)
         {
             muxer_usage(false);
             return StatusCode::InvalidArgFailure;
@@ -1355,8 +1357,6 @@ int fx_muxer_t::handle_cli(
             return StatusCode::Success;
         }
 
-        trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from:"));
-        trace::error(_X("  %s"), DOTNET_CORE_GETTING_STARTED_URL);
         return StatusCode::LibHostSdkFindFailure;
     }
 

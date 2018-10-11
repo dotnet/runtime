@@ -122,6 +122,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Set specified CLI version = 9999.3.4-global-dummy
             SetGlobalJsonVersion("SingleDigit-global.json");
 
+            // Specified CLI version: 9999.3.4-global-dummy
+            // CWD: empty
+            // User: empty
+            // Exe: empty
+            // Expected: no compatible version and a specific error messages
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute(fExpectedToFail: true)
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
+                .And
+                .HaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
+
             // Add some dummy versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.4.1", "9999.3.4-dummy");
 
@@ -141,7 +161,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("A compatible SDK version for global.json version");
+                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
+                .And
+                .NotHaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
 
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.3");
@@ -162,7 +184,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("A compatible SDK version for global.json version");
+                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
+                .And
+                .NotHaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
 
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4");
@@ -284,6 +308,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Set specified CLI version = 9999.3.304-global-dummy
             SetGlobalJsonVersion("TwoPart-global.json");
 
+            // Specified CLI version: 9999.3.304-global-dummy
+            // CWD: empty
+            // User: empty
+            // Exe: empty
+            // Expected: no compatible version and a specific error messages
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute(fExpectedToFail: true)
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
+                .And
+                .HaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
+
             // Add some dummy versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.57", "9999.3.4-dummy");
 
@@ -303,7 +347,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("A compatible SDK version for global.json version");
+                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
+                .And
+                .NotHaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
 
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.300", "9999.7.304-global-dummy");
@@ -324,7 +370,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("A compatible SDK version for global.json version");
+                .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
+                .And
+                .NotHaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
 
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.304");
@@ -458,7 +506,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // CWD: empty
             // User: empty
             // Exe: -1.-1.-1
-            // Expected: no compatible version and a specific error message
+            // Expected: no compatible version and a specific error messages
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
@@ -470,7 +518,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("It was not possible to find any SDK version");
+                .HaveStdErrContaining("It was not possible to find any installed dotnet SDKs")
+                .And
+                .HaveStdErrContaining("Did you mean to run dotnet SDK commands? Please install dotnet SDK from");
 
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
