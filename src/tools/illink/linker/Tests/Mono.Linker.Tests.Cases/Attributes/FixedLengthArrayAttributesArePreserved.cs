@@ -1,11 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Security;
-using System.Security.Permissions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-
-[assembly: KeptSecurity (typeof (SecurityPermissionAttribute))]
-[module: KeptAttributeAttribute (typeof (UnverifiableCodeAttribute))]
 
 namespace Mono.Linker.Tests.Cases.Attributes {
 	/// <summary>

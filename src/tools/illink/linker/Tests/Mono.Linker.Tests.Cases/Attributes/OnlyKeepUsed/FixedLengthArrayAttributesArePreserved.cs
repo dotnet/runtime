@@ -1,9 +1,6 @@
 using System.Runtime.CompilerServices;
-using System.Security.Permissions;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-
-[assembly: KeptSecurity (typeof (SecurityPermissionAttribute))]
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
