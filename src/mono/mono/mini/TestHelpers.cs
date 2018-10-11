@@ -32,7 +32,7 @@ namespace MonoTests.Helpers {
 
 		public static void PerformNoPinAction (Action act)
 		{
-			Thread thr = new Thread (() => NoPinActionHelper (1024, act));
+			Thread thr = new Thread (() => NoPinActionHelper (128, act));
 			thr.Start ();
 			thr.Join ();
 		}
