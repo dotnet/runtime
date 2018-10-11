@@ -744,14 +744,23 @@ namespace System
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2, Marvin.DefaultSeed);
+            ulong seed = Marvin.DefaultSeed;
+            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2, (uint)seed, (uint)(seed >> 32));
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparison C are such
         // that string.Equals(A, B, C), then they will return the same hash code with this comparison C.
         public int GetHashCode(StringComparison comparisonType) => StringComparer.FromComparison(comparisonType).GetHashCode(this);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal int GetHashCodeOrdinalIgnoreCase()
+        {
+            ulong seed = Marvin.DefaultSeed;
+            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength, (uint)seed, (uint)(seed >> 32));
+        }
 
         // Use this if and only if 'Denial of Service' attacks are not a concern (i.e. never used for free-form user input),
         // or are otherwise mitigated
