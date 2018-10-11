@@ -204,7 +204,7 @@ namespace System
             }
             else
             {
-                char* pCurrentDigit = (number.digits + digitsNum);
+                char* pCurrentDigit = (number.GetDigitsPointer() + digitsNum);
 
                 // Rounding up for 9 is special.
                 if (currentDigit == 9)
@@ -213,7 +213,7 @@ namespace System
                     while (true)
                     {
                         // If we are at the first digit
-                        if (pCurrentDigit == number.digits)
+                        if (pCurrentDigit == number.GetDigitsPointer())
                         {
                             // Output 1 at the next highest exponent
                             *pCurrentDigit = '1';

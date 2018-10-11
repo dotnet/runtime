@@ -59,7 +59,7 @@ namespace System
             {
                 return false;
             }
-            char* p = number.digits;
+            char* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             int n = 0;
             while (--i >= 0)
@@ -100,7 +100,7 @@ namespace System
             {
                 return false;
             }
-            char* p = number.digits;
+            char* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             long n = 0;
             while (--i >= 0)
@@ -141,7 +141,7 @@ namespace System
             {
                 return false;
             }
-            char* p = number.digits;
+            char* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             uint n = 0;
             while (--i >= 0)
@@ -173,7 +173,7 @@ namespace System
             {
                 return false;
             }
-            char* p = number.digits;
+            char* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             ulong n = 0;
             while (--i >= 0)
@@ -1468,7 +1468,7 @@ namespace System
 
         private static unsafe bool NumberBufferToDecimal(ref NumberBuffer number, ref decimal value)
         {
-            char* p = number.digits;
+            char* p = number.GetDigitsPointer();
             int e = number.scale;
             bool sign = number.sign;
             uint c = *p;
