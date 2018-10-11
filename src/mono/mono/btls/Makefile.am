@@ -51,14 +51,14 @@ BUILDFILE = Makefile
 CMAKE_MAKE_PROGRAM = $(shell which gmake || which gnumake || which make)
 endif
 
-CMAKE_ARGS = -D CMAKE_MAKE_PROGRAM=$(CMAKE_MAKE_PROGRAM) -D CMAKE_INSTALL_PREFIX:PATH=$(prefix) -D BTLS_ROOT:PATH=$(BTLS_ROOT) \
-	-D SRC_DIR:PATH=$(abs_top_srcdir)/mono/btls -D BTLS_CFLAGS:STRING="$(BTLS_CFLAGS)" $(NINJA_ARGS)
+CMAKE_ARGS = -D CMAKE_MAKE_PROGRAM="$(CMAKE_MAKE_PROGRAM)" -D CMAKE_INSTALL_PREFIX:PATH="$(prefix)" -D BTLS_ROOT:PATH="$(BTLS_ROOT)" \
+	-D SRC_DIR:PATH="$(abs_top_srcdir)/mono/btls" -D BTLS_CFLAGS:STRING="$(BTLS_CFLAGS)" $(NINJA_ARGS)
 
 all-local: build-shared/libmono-btls-shared$(libsuffix)
 
 build-shared/$(BUILDFILE):
 	-mkdir -p build-shared
-	(cd build-shared && CC="$(CC)" CXX="$(CXX)" $(CMAKE) $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) -DBUILD_SHARED_LIBS=1 $(abs_top_srcdir)/mono/btls)
+	(cd build-shared && CC="$(CC)" CXX="$(CXX)" "$(CMAKE)" $(CMAKE_ARGS) $(BTLS_CMAKE_ARGS) -DBUILD_SHARED_LIBS=1 "$(abs_top_srcdir)/mono/btls")
 
 if NINJA
 build-shared/libmono-btls-shared$(libsuffix): build-shared/$(BUILDFILE) $(MONO_BTLS_SOURCES_FILES)
@@ -73,4 +73,10 @@ clean-local:
 
 install-exec-local:
 	$(mkinstalldirs) "$(DESTDIR)$(libdir)"
+if HOST_WIN32
+	$(mkinstalldirs) "$(DESTDIR)$(bindir)"
+	$(install_sh) build-shared/libmono-btls-shared*.a "$(DESTDIR)$(libdir)"
+	$(install_sh) build-shared/libmono-btls-shared*.dll "$(DESTDIR)$(bindir)"
+else
 	$(install_sh) build-shared/libmono-btls-shared.* "$(DESTDIR)$(libdir)"
+endif

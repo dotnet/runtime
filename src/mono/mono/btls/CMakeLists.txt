@@ -96,3 +96,8 @@ set (
 )
 
 add_library (mono-btls-shared SHARED ${MONO_BTLS_SOURCES})
+
+if (CYGWIN)
+	set (CMAKE_SHARED_LIBRARY_PREFIX "lib")
+	target_link_libraries (mono-btls-shared wsock32 ws2_32)
+endif ()
