@@ -491,6 +491,8 @@ public:
     BOOL isStructRequiringStackAllocRetBuf(CORINFO_CLASS_HANDLE cls);
 
     unsigned getClassSize (CORINFO_CLASS_HANDLE cls);
+    unsigned getHeapClassSize(CORINFO_CLASS_HANDLE cls);
+    BOOL canAllocateOnStack(CORINFO_CLASS_HANDLE cls);
     unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint);
     static unsigned getClassAlignmentRequirementStatic(TypeHandle clsHnd);
 
