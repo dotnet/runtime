@@ -15,23 +15,20 @@ using nuint = System.UInt32;
 
 namespace System
 {
-    internal static class Marvin
+    internal static partial class Marvin
     {
         /// <summary>
         /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int ComputeHash32(ReadOnlySpan<byte> data, ulong seed) => ComputeHash32(ref MemoryMarshal.GetReference(data), data.Length, seed);
+        public static int ComputeHash32(ReadOnlySpan<byte> data, ulong seed) => ComputeHash32(ref MemoryMarshal.GetReference(data), data.Length, (uint)seed, (uint)(seed >> 32));
 
         /// <summary>
         /// Compute a Marvin hash and collapse it into a 32-bit hash.
         /// </summary>
-        public static int ComputeHash32(ref byte data, int count, ulong seed)
+        public static int ComputeHash32(ref byte data, int count, uint p0, uint p1)
         {
             nuint ucount = (nuint)count;
-            uint p0 = (uint)seed;
-            uint p1 = (uint)(seed >> 32);
-
             nuint byteOffset = 0;
 
             while (ucount >= 8)
@@ -84,7 +81,7 @@ namespace System
                     goto case 3;
 
                 case 3:
-                    p0 += 0x80000000u | (((uint)(Unsafe.AddByteOffset(ref data, byteOffset + 2))) << 16)| (uint)(Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref data, byteOffset)));
+                    p0 += 0x80000000u | (((uint)(Unsafe.AddByteOffset(ref data, byteOffset + 2))) << 16) | (uint)(Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref data, byteOffset)));
                     break;
 
                 default:
@@ -97,7 +94,7 @@ namespace System
 
             return (int)(p1 ^ p0);
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Block(ref uint rp0, ref uint rp1)
         {
