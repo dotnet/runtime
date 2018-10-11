@@ -7,6 +7,7 @@
 #include "fx_ver.h"
 #include "trace.h"
 #include "utils.h"
+#include "sdk_info.h"
 
 typedef web::json::value json_value;
 typedef web::json::object json_object;
@@ -272,13 +273,16 @@ bool sdk_resolver_t::resolve_sdk_dotnet_path(
         return true;
     }
 
-    if (global_cli_version.empty())
+    if (!global_cli_version.empty())
     {
-        trace::verbose(_X("It was not possible to find any SDK version"));
+        trace::error(_X("A compatible installed dotnet SDK for global.json version: [%s] from [%s] was not found"), global_cli_version.c_str(), global.c_str());
+        trace::error(_X("Please install the [%s] SDK or update [%s] with an installed dotnet SDK:"), global_cli_version.c_str(), global.c_str());
     }
-    else
+    if (global_cli_version.empty() || !sdk_info::print_all_sdks(dotnet_root, _X("  ")))
     {
-        trace::error(_X("A compatible SDK version for global.json version: [%s] from [%s] was not found"), global_cli_version.c_str(), global.c_str());
+        trace::error(_X("  It was not possible to find any installed dotnet SDKs"));
+        trace::error(_X("  Did you mean to run dotnet SDK commands? Please install dotnet SDK from:"));
+        trace::error(_X("      %s"), DOTNET_CORE_GETTING_STARTED_URL);
     }
     return false;
 }
