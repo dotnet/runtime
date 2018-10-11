@@ -162,7 +162,7 @@ cert_select_callback (SSL *ssl, void *arg)
 	// SSL_get_client_CA_list() may only be called during this callback.
 	ca_list = SSL_get_client_CA_list (ssl);
 	if (ca_list) {
-		count = sk_X509_NAME_num (ca_list);
+		count = (int)sk_X509_NAME_num (ca_list);
 		cadata = OPENSSL_malloc (sizeof (void *) * (count + 1));
 		sizes = OPENSSL_malloc (sizeof (int) * (count + 1));
 		if (!cadata || !sizes) {
@@ -172,7 +172,7 @@ cert_select_callback (SSL *ssl, void *arg)
 		for (i = 0; i < count; i++) {
 			X509_NAME *name = sk_X509_NAME_value (ca_list, i);
 			cadata[i] = name->bytes->data;
-			sizes[i] = name->bytes->length;
+			sizes[i] = (int)name->bytes->length;
 		}
 	}
 

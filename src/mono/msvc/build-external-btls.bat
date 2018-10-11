@@ -196,7 +196,10 @@ if not exist "%VS_CONFIGURATION%\mono-btls-shared.dll" (
 
 : Copy files into distribution directory.
 copy "%VS_CONFIGURATION%\mono-btls-shared.dll" "%MONO_DIST_DIR%"
-copy "%VS_CONFIGURATION%\mono-btls-shared.pdb" "%MONO_DIST_DIR%"
+
+if exist "%VS_CONFIGURATION%\mono-btls-shared.pdb" (
+    copy "%VS_CONFIGURATION%\mono-btls-shared.pdb" "%MONO_DIST_DIR%"
+)
 
 goto ON_SUCCESS
 

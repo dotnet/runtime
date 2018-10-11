@@ -148,7 +148,9 @@
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <PropertyGroup>
-    <_BtlsCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">-D$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," -D"))</_BtlsCFlags>
+    <_BtlsCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," "))</_BtlsCFlags>
+    <_BtlsCFlags>$(_BtlsCFlags.Trim())</_BtlsCFlags>
+    <_BtlsCFlags Condition="'$(_BtlsCFlags)' != ''">-D$(_BtlsCFlags.Replace(" "," -D"))</_BtlsCFlags>
     <_BtlsBuildDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\external\btls-build-shared\$(Configuration)</_BtlsBuildDir>
     <_BtlsBuildCommand>build-external-btls.bat &quot;$(MONO_DIR)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(OutDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
     <_BtlsCheckCommand>findstr /i /r /c:&quot;.*#define.*HAVE_BTLS.*1&quot; $(MONO_DIR)/cygconfig.h >nul 2>&amp;1</_BtlsCheckCommand>
