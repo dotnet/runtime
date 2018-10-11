@@ -10,7 +10,7 @@ if exist %_VSWHERE% (
 if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
 if not exist "%_VSCOMNTOOLS%" (
     echo Error: Visual Studio 2015 or 2017 required.
-    echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+    echo        Please see https://github.com/dotnet/core-setup/blob/master/Documentation/building/windows-instructions.md for build instructions.
     exit /b 1
 )
 
