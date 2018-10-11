@@ -20,13 +20,15 @@ namespace R2RDump
             [XmlAttribute("Index")]
             public int Index { get; set; }
             public int StartOffset { get; set; }
+            public int StartRVA { get; set; }
             public long Section { get; set; }
             public uint SignatureRVA { get; set; }
             public string Signature { get; set; }
-            public ImportSectionEntry(int index, int startOffset, long section, uint signatureRVA, string signature)
+            public ImportSectionEntry(int index, int startOffset, int startRVA, long section, uint signatureRVA, string signature)
             {
                 Index = index;
                 StartOffset = startOffset;
+                StartRVA = startRVA;
                 Section = section;
                 SignatureRVA = signatureRVA;
                 Signature = signature;
@@ -36,6 +38,7 @@ namespace R2RDump
             {
                 StringBuilder builder = new StringBuilder();
                 builder.AppendFormat("+{0:X4}", StartOffset);
+                builder.AppendFormat(" ({0:X4})", StartRVA);
                 builder.AppendFormat("  Section: 0x{0:X8}", Section);
                 builder.AppendFormat("  SignatureRVA: 0x{0:X8}", SignatureRVA);
                 builder.AppendFormat("  {0}", Signature);
