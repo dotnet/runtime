@@ -339,7 +339,7 @@ namespace System
 
         private static unsafe void DecimalToNumber(ref decimal d, ref NumberBuffer number)
         {
-            char* buffer = number.digits;
+            char* buffer = number.GetDigitsPointer();
             number.precision = DecimalPrecision;
             number.sign = d.IsNegative;
             number.kind = NumberBufferKind.Decimal;
@@ -354,7 +354,7 @@ namespace System
             int i = (int)((byte*)(buffer + DecimalPrecision) - (byte*)p) >> 1;
             number.scale = i - d.Scale;
 
-            char* dst = number.digits;
+            char* dst = number.GetDigitsPointer();
             while (--i >= 0)
             {
                 *dst++ = *p++;
@@ -947,14 +947,14 @@ namespace System
                 value = -value;
             }
 
-            char* buffer = number.digits;
+            char* buffer = number.GetDigitsPointer();
             char* p = UInt32ToDecChars(buffer + Int32Precision, (uint)value, 0);
             int i = (int)(buffer + Int32Precision - p);
 
             number.scale = i;
             number.kind = NumberBufferKind.Integer;
 
-            char* dst = number.digits;
+            char* dst = number.GetDigitsPointer();
             while (--i >= 0)
                 *dst++ = *p++;
             *dst = '\0';
@@ -1065,13 +1065,13 @@ namespace System
             number.precision = UInt32Precision;
             number.sign = false;
 
-            char* buffer = number.digits;
+            char* buffer = number.GetDigitsPointer();
             char* p = UInt32ToDecChars(buffer + UInt32Precision, value, 0);
             int i = (int)(buffer + UInt32Precision - p);
             number.scale = i;
             number.kind = NumberBufferKind.Integer;
 
-            char* dst = number.digits;
+            char* dst = number.GetDigitsPointer();
             while (--i >= 0)
                 *dst++ = *p++;
             *dst = '\0';
@@ -1181,7 +1181,7 @@ namespace System
                 value = (ulong)(-input);
             }
 
-            char* buffer = number.digits;
+            char* buffer = number.GetDigitsPointer();
             char* p = buffer + Int64Precision;
             while (High32(value) != 0)
                 p = UInt32ToDecChars(p, Int64DivMod1E9(ref value), 9);
@@ -1191,7 +1191,7 @@ namespace System
             number.scale = i;
             number.kind = NumberBufferKind.Integer;
 
-            char* dst = number.digits;
+            char* dst = number.GetDigitsPointer();
             while (--i >= 0)
                 *dst++ = *p++;
             *dst = '\0';
@@ -1322,7 +1322,7 @@ namespace System
             number.precision = UInt64Precision;
             number.sign = false;
 
-            char* buffer = number.digits;
+            char* buffer = number.GetDigitsPointer();
             char* p = buffer + UInt64Precision;
 
             while (High32(value) != 0)
@@ -1333,7 +1333,7 @@ namespace System
             number.scale = i;
             number.kind = NumberBufferKind.Integer;
 
-            char* dst = number.digits;
+            char* dst = number.GetDigitsPointer();
             while (--i >= 0)
                 *dst++ = *p++;
             *dst = '\0';
@@ -1591,7 +1591,7 @@ SkipRounding:
 
             int section;
             int src;
-            char* dig = number.digits;
+            char* dig = number.GetDigitsPointer();
             char ch;
 
             section = FindSection(format, dig[0] == 0 ? 2 : number.sign ? 1 : 0);
@@ -1963,7 +1963,7 @@ SkipRounding:
         private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, int[] groupDigits, string sDecimal, string sGroup)
         {
             int digPos = number.scale;
-            char* dig = number.digits;
+            char* dig = number.GetDigitsPointer();
 
             if (digPos > 0)
             {
@@ -2087,7 +2087,7 @@ SkipRounding:
 
         private static unsafe void FormatScientific(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar)
         {
-            char* dig = number.digits;
+            char* dig = number.GetDigitsPointer();
 
             sb.Append((*dig != 0) ? *dig++ : '0');
 
@@ -2137,7 +2137,7 @@ SkipRounding:
                 }
             }
 
-            char* dig = number.digits;
+            char* dig = number.GetDigitsPointer();
 
             if (digPos > 0)
             {
@@ -2197,7 +2197,7 @@ SkipRounding:
 
         private static unsafe void RoundNumber(ref NumberBuffer number, int pos)
         {
-            char* dig = number.digits;
+            char* dig = number.GetDigitsPointer();
 
             int i = 0;
             while (i < pos && dig[i] != 0)
