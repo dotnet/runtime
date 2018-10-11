@@ -566,7 +566,7 @@ namespace System.Threading
                 else
                 {
                     if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
-                        FrameworkEventSource.Log.ThreadTransferSendObj(this, 1, string.Empty, true);
+                        FrameworkEventSource.Log.ThreadTransferSendObj(this, 1, string.Empty, true, (int)dueTime, (int)period);
 
                     success = m_associatedTimerQueue.UpdateTimer(this, dueTime, period);
                 }
