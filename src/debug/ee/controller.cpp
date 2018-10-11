@@ -944,17 +944,6 @@ HRESULT DebuggerController::Initialize()
 //
 //---------------------------------------------------------------------------------------
 
-#ifndef FEATURE_PAL
-bool DebuggerController::s_fUnwoundWriteBarrier;
-#ifdef _TARGET_X86_
-DWORD DebuggerController::s_eipBeforeUnwoundWriteBarrier;
-#ifdef WRITE_BARRIER_CHECK
-DWORD DebuggerController::s_ecxBeforeUnwoundWriteBarrier;
-DWORD DebuggerController::s_ebpBeforeUnwoundWriteBarrier;
-#endif // WRITE_BARRIER_CHECK
-#endif // _TARGET_X86_
-#endif // FEATURE_PAL
-
 DebuggerController::DebuggerController(Thread * pThread, AppDomain * pAppDomain)
   : m_pAppDomain(pAppDomain), 
     m_thread(pThread), 
@@ -2579,7 +2568,8 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                          CONTEXT *context,
                                          DebuggerControllerQueue *pDcq,
                                          SCAN_TRIGGER stWhat,
-                                         TP_RESULT *pTpr)
+                                         TP_RESULT *pTpr,
+                                         bool* pHitDataBp)
 {
     CONTRACTL
     {
@@ -2596,7 +2586,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         PRECONDITION(CheckPointer(context));
         PRECONDITION(CheckPointer(pDcq));
         PRECONDITION(CheckPointer(pTpr));
-
+        PRECONDITION(CheckPointer(pHitDataBp));
     }
     CONTRACTL_END;
 
@@ -2742,31 +2732,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
-        PCODE ip = GetIP(context);
-#if defined(_TARGET_X86_)
-        if (((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End)) || ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End)))
-        {
-            // TODO: Comment on the JIT helper as well
-            DWORD* esp = (DWORD*)context->Esp;
-            DebuggerController::s_eipBeforeUnwoundWriteBarrier = context->Eip;
-#if defined(WRITE_BARRIER_CHECK)
-            DebuggerController::s_ebpBeforeUnwoundWriteBarrier = context->Ebp;
-            DebuggerController::s_ecxBeforeUnwoundWriteBarrier = context->Ecx;
-            context->Ebp = *esp; esp++;
-            context->Ecx = *esp; esp++;
-#endif
-            context->Eip = *esp; esp++;
-            context->Esp = (DWORD)esp;
-            DebuggerController::s_fUnwoundWriteBarrier = true;
-        }
-#elif defined(_TARGET_AMD64_)
-        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
-        {
-            Thread::VirtualUnwindToFirstManagedCallFrame(context);
-        }
-#else
-        // TODO - ARM/ARM64
-#endif        
+        *pHitDataBp = true;
         DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
         pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
@@ -2980,7 +2946,44 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
     TP_RESULT tpr;
 
-    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr);
+    CONTEXT stash;
+    bool hitDataBp = false;
+    bool stashedContext = false;
+
+    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr, &hitDataBp);
+
+    if (hitDataBp)
+    {
+        PCODE ip = GetIP(context);
+#if defined(_TARGET_X86_)
+        bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
+        bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
+        if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
+        {
+            memcpy(&stash, context, sizeof(CONTEXT));
+            // TODO: Comment on the JIT helper as well
+            DWORD* esp = (DWORD*)context->Esp;
+            if (withinWriteBarrierGroup) {
+#if defined(WRITE_BARRIER_CHECK)
+                context->Ebp = *esp; esp++;
+                context->Ecx = *esp; esp++;
+#endif
+            }
+            context->Eip = *esp; esp++;
+            context->Esp = (DWORD)esp;
+            stashedContext = true;
+        }
+#elif defined(_TARGET_AMD64_)
+        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        {
+            memcpy(&stash, context, sizeof(CONTEXT));
+            Thread::VirtualUnwindToFirstManagedCallFrame(context);
+            stashedContext = true;
+        }
+#else
+        // TODO - ARM/ARM64
+#endif
+    }
 
     LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DC::DPOSS ScanForTriggers called and returned.\n"));
 
@@ -3056,22 +3059,10 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
         SENDIPCEVENT_END;
         
-        if (DebuggerController::s_fUnwoundWriteBarrier)
+        if (stashedContext)
         {
-#if defined(_TARGET_X86_)
-            DWORD* esp = (DWORD*)context->Esp;
-            context->Eip = DebuggerController::s_eipBeforeUnwoundWriteBarrier; esp--;
-#ifdef WRITE_BARRIER_CHECK
-            context->Ecx = DebuggerController::s_ecxBeforeUnwoundWriteBarrier; esp--;
-            context->Ebp = DebuggerController::s_ebpBeforeUnwoundWriteBarrier; esp--;
-#endif
-            context->Esp = (DWORD)esp;
-#elif defined(_TARGET_AMD64_)
-            // TODO: dead
-#else
-            // TODO: ARM/ARM64
-#endif
-            DebuggerController::s_fUnwoundWriteBarrier = false;
+            memcpy(context, &stash, sizeof(CONTEXT));
+            stashedContext = false;
         }
 
         if (!atSafePlace)
