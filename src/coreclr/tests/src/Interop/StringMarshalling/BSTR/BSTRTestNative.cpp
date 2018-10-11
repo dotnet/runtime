@@ -162,3 +162,88 @@ extern "C" DLL_EXPORT  BOOL __stdcall ReverseP_MarshalStrB_InOut(Test_Del_Marsha
     }
     return TRUE;
 }
+
+typedef struct Person Person;
+struct Person{
+    int age;
+    int _padding;
+    BSTR name;
+};
+
+extern "C" DLL_EXPORT BOOL Marshal_Struct_In(Person person)
+{
+    if (person.age != 12)
+    {
+        printf("Error in Marshal_Struct_In, The value for age field is incorrect\n");
+        return FALSE;
+    }
+
+    size_t len = TP_SysStringByteLen(person.name);
+    if (len != lenstrManaged || memcmp(person.name, strManaged, lenstrManaged) != 0)
+    {
+        printf("Error in Marshal_Struct_In, The value for name field is incorrect\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+extern "C" DLL_EXPORT BOOL MarshalPointer_Struct_InOut(Person* person)
+{
+    if (person->age != 12)
+    {
+        printf("Error in MarshalPointer_Struct_InOut, The value for age field is incorrect\n");
+        return FALSE;
+    }
+
+    size_t len = TP_SysStringByteLen(person->name);
+    if (len != lenstrManaged || memcmp(person->name, strManaged, lenstrManaged) != 0)
+    {
+        printf("Error in MarshalPointer_Struct_InOut, The value for name field is incorrect\n");
+        return FALSE;
+    }
+
+    person->age = 21;
+    person->name = TP_SysAllocString(strNative);
+    return TRUE;
+}
+
+typedef BOOL (* Test_DelMarshal_Struct_In)(Person person);
+extern "C" DLL_EXPORT BOOL RPInvoke_DelMarshal_Struct_In(Test_DelMarshal_Struct_In d)
+{
+    Person * pPerson = (Person *)TP_CoTaskMemAlloc(sizeof(Person));
+    pPerson->age = 21;
+    pPerson->name =  TP_SysAllocString(strNative);
+    
+    if (!d(*pPerson))
+    {
+        printf("Error in RPInvoke_DelMarshal_Struct_In, Managed delegate return false\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+typedef BOOL (* Test_DelMarshalPointer_Struct_InOut)(Person * person);
+extern "C" DLL_EXPORT BOOL RPInvoke_DelMarshalStructPointer_InOut(Test_DelMarshalPointer_Struct_InOut d)
+{
+    Person * pPerson = (Person *)TP_CoTaskMemAlloc(sizeof(Person));
+    pPerson->age = 21;
+    pPerson->name =  TP_SysAllocString(strNative);
+
+    if (!d(pPerson))
+    {
+       printf("Error in RPInvoke_DelMarshalStructPointer_InOut,The delegate return false\n");
+       return FALSE;
+    }
+
+    size_t len = TP_SysStringByteLen(pPerson->name);
+    if (len != lenstrManaged || memcmp(pPerson->name, strManaged, lenstrManaged) != 0)
+    {
+        printf("Error in RPInvoke_DelMarshalStructPointer_InOut,The value for name field for pPerson is incorrect\n");
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
