@@ -1279,7 +1279,10 @@ FCIMPL1(void, GCInterface::ReRegisterForFinalize, Object *obj)
     if (obj->GetMethodTable()->HasFinalizer())
     {
         HELPER_METHOD_FRAME_BEGIN_1(obj);
-        GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, obj);
+        if (!GCHeapUtilities::GetGCHeap()->RegisterForFinalization(-1, obj))
+        {
+            ThrowOutOfMemory();
+        }
         HELPER_METHOD_FRAME_END();
     }
 }
