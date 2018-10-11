@@ -694,7 +694,7 @@ namespace System.Runtime.InteropServices
         public static void ZeroFreeGlobalAllocUnicode(System.IntPtr s) { }
         public static void ZeroFreeCoTaskMemUTF8(System.IntPtr s) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false)]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited=false, AllowMultiple=false)]
     public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
     {
         public ManagedToNativeComInteropStubAttribute(System.Type classType, string methodName) { }

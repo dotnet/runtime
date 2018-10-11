@@ -11,6 +11,7 @@ namespace System.Diagnostics
     ///    <para>Provides a simple on/off switch that can be used to control debugging and tracing
     ///       output.</para>
     /// </devdoc>
+    [SwitchLevel(typeof(bool))]
     public class BooleanSwitch : Switch
     {
         /// <devdoc>

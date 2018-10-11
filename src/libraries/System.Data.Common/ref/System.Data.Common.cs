@@ -927,6 +927,7 @@ namespace System.Data
         OriginalRows = 42,
         Unchanged = 2,
     }
+    [System.ComponentModel.TypeConverter(typeof(System.ComponentModel.ExpandableObjectConverter))]
     public partial class DataViewSetting
     {
         internal DataViewSetting() { }

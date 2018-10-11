@@ -128,10 +128,12 @@ namespace System.Diagnostics
         public System.Type Target { get { throw null; } set { } }
         public string TargetTypeName { get { throw null; } set { } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
     public sealed class DebuggerStepperBoundaryAttribute : System.Attribute 
     {
         public DebuggerStepperBoundaryAttribute() { throw null; }
     }
+    [System.AttributeUsage(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed class DebuggerVisualizerAttribute : System.Attribute 
     {
         public DebuggerVisualizerAttribute(string visualizerTypeName) { throw null; }

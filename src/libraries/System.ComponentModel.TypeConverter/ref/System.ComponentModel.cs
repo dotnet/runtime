@@ -15,6 +15,7 @@ namespace System.ComponentModel
         public override int GetHashCode() { throw null; }
     }
     [System.ComponentModel.DesignerCategoryAttribute("Component")]
+    [System.ComponentModel.TypeConverter(typeof(ComponentConverter))]
     public partial class MarshalByValueComponent : System.ComponentModel.IComponent, System.IDisposable, System.IServiceProvider
     {
         public MarshalByValueComponent() { }

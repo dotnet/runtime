@@ -1,4 +1,12 @@
 Compat issues with assembly netstandard:
 TypeCannotChangeClassification : Type 'System.RuntimeArgumentHandle' is a 'ref struct' in the implementation but is a 'struct' in the contract.
 TypeCannotChangeClassification : Type 'System.TypedReference' is a 'ref struct' in the implementation but is a 'struct' in the contract.
-Total Issues: 2
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
+CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute' changed from '[AttributeUsageAttribute((AttributeTargets)(748), Inherited=false, AllowMultiple=false)]' in the contract to '[AttributeUsageAttribute((AttributeTargets)(749), Inherited=false, AllowMultiple=false)]' in the implementation.
+
+# System.Runtime is passed in (incorrectly) as a contract assembly for netstandard.  This causes issues because CCI can't determine a winner for duplicate types
+CannotRemoveAttribute : Attribute 'Microsoft.Cci.DummyTypeReference' exists on 'System.Threading.Tasks.ValueTask' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'Microsoft.Cci.DummyTypeReference' exists on 'System.Threading.Tasks.ValueTask<TResult>' in the contract but not the implementation.

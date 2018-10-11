@@ -10,6 +10,7 @@ namespace System.Diagnostics
     ///    <para>Provides a multi-level switch to enable or disable tracing
     ///       and debug output for a compiled application or framework.</para>
     /// </devdoc>
+    [SwitchLevel(typeof(TraceLevel))]
     public class TraceSwitch : Switch
     {
         /// <devdoc>

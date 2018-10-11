@@ -2426,7 +2426,7 @@ namespace System.Xml.Serialization
         void ReadXml(System.Xml.XmlReader reader);
         void WriteXml(System.Xml.XmlWriter writer);
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=false)]
     public partial class XmlAnyAttributeAttribute : System.Attribute
     {
         public XmlAnyAttributeAttribute() { }
@@ -2480,7 +2480,7 @@ namespace System.Xml.Serialization
     public partial class XmlIgnoreAttribute : System.Attribute
     {
         public XmlIgnoreAttribute() { }
-    }[System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    }[System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=false)]
     public partial class XmlNamespaceDeclarationsAttribute : System.Attribute
     {
         public XmlNamespaceDeclarationsAttribute() { }
