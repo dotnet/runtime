@@ -1281,35 +1281,6 @@ namespace System.Globalization
             return (this.Name.GetHashCode());
         }
 
-        internal static unsafe int GetIgnoreCaseHash(string source)
-        {
-            Debug.Assert(source != null, "source must not be null");
-
-            // Do not allocate on the stack if string is empty
-            if (source.Length == 0)
-            {
-                return source.GetHashCode();
-            }
-
-            char[] borrowedArr = null;
-            Span<char> span = source.Length <= 255 ?
-                stackalloc char[255] :
-                (borrowedArr = ArrayPool<char>.Shared.Rent(source.Length));
-
-            int charsWritten = source.AsSpan().ToUpperInvariant(span);
-
-            // Slice the array to the size returned by ToUpperInvariant.
-            int hash = Marvin.ComputeHash32(MemoryMarshal.AsBytes(span.Slice(0, charsWritten)), Marvin.DefaultSeed);
-
-            // Return the borrowed array if necessary.
-            if (borrowedArr != null)
-            {
-                ArrayPool<char>.Shared.Return(borrowedArr);
-            }
-
-            return hash;
-        }
-
         ////////////////////////////////////////////////////////////////////////
         //
         //  GetHashCodeOfString
@@ -1351,7 +1322,7 @@ namespace System.Globalization
 
             if (_invariantMode)
             {
-                return ((options & CompareOptions.IgnoreCase) != 0) ? GetIgnoreCaseHash(source) : source.GetHashCode();
+                return ((options & CompareOptions.IgnoreCase) != 0) ? source.GetHashCodeOrdinalIgnoreCase() : source.GetHashCode();
             }
 
             return GetHashCodeOfStringCore(source, options);
@@ -1371,7 +1342,7 @@ namespace System.Globalization
 
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
-                return GetIgnoreCaseHash(source);
+                return source.GetHashCodeOrdinalIgnoreCase();
             }
 
             //
