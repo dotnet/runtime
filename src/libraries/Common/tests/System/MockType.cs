@@ -74,7 +74,6 @@ namespace System
         public override MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => throw Unexpected;
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw Unexpected;
         protected override TypeCode GetTypeCodeImpl() => throw Unexpected;
-        public override bool IsAssignableFrom(Type c) => throw Unexpected;
         public override bool IsConstructedGenericType => throw Unexpected;
         protected override bool IsContextfulImpl() => throw Unexpected;
         public override bool IsEnum => throw Unexpected;
