@@ -519,6 +519,19 @@ unsigned interceptor_ICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
     return original_ICorJitInfo->getClassSize(cls);
 }
 
+// return the number of bytes needed by an instance of the class allocated on the heap
+unsigned interceptor_ICJI::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("getHeapClassSize");
+    return original_ICorJitInfo->getHeapClassSize(cls);
+}
+
+BOOL interceptor_ICJI::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("canAllocateOnStack");
+    return original_ICorJitInfo->canAllocateOnStack(cls);
+}
+
 unsigned interceptor_ICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
 {
     mcs->AddCall("getClassAlignmentRequirement");

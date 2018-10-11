@@ -326,6 +326,11 @@ size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDL
 // return the number of bytes needed by an instance of the class
 unsigned getClassSize(CORINFO_CLASS_HANDLE cls);
 
+// return the number of bytes needed by an instance of the class allocated on the heap
+unsigned getHeapClassSize(CORINFO_CLASS_HANDLE cls);
+
+BOOL canAllocateOnStack(CORINFO_CLASS_HANDLE cls);
+
 unsigned getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint = FALSE);
 
 // This is only called for Value classes.  It returns a boolean array

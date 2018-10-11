@@ -1937,6 +1937,72 @@ CEEInfo::getClassSize(
     return result;
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Get the size of a reference type as allocated on the heap. This includes the size of the fields
+// (and any padding between the fields) and the size of a method table pointer but doesn't include
+// object header size or any padding for minimum size.
+unsigned
+CEEInfo::getHeapClassSize(
+    CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    unsigned result = 0;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle VMClsHnd(clsHnd);
+    MethodTable* pMT = VMClsHnd.GetMethodTable();
+    _ASSERTE(pMT);
+    _ASSERTE(!pMT->IsValueType());
+
+    // Add OBJECT_SIZE to account for method table pointer.
+    result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
+
+    EE_TO_JIT_TRANSITION_LEAF();
+    return result;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Return TRUE if an object of this type can be allocated on the stack.
+BOOL CEEInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    BOOL result = FALSE;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle VMClsHnd(clsHnd);
+    MethodTable* pMT = VMClsHnd.GetMethodTable();
+    _ASSERTE(pMT);
+    _ASSERTE(!pMT->IsValueType());
+
+    result = !pMT->HasFinalizer();
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (IsReadyToRunCompilation() && !pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble())
+    {
+        result = false;
+    }
+#endif
+
+    EE_TO_JIT_TRANSITION_LEAF();
+    return result;
+}
+
 unsigned CEEInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE type, BOOL fDoubleAlignHint)
 {
     CONTRACTL {

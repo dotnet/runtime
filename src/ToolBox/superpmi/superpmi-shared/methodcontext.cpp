@@ -1722,6 +1722,50 @@ unsigned MethodContext::repGetClassSize(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetHeapClassSize(CORINFO_CLASS_HANDLE cls, unsigned result)
+{
+    if (GetHeapClassSize == nullptr)
+        GetHeapClassSize = new LightWeightMap<DWORDLONG, DWORD>();
+
+    GetHeapClassSize->Add((DWORDLONG)cls, (DWORD)result);
+    DEBUG_REC(dmpGetHeapClassSize((DWORDLONG)cls, (DWORD)result));
+}
+void MethodContext::dmpGetHeapClassSize(DWORDLONG key, DWORD val)
+{
+    printf("GetHeapClassSize key %016llX, value %u", key, val);
+}
+unsigned MethodContext::repGetHeapClassSize(CORINFO_CLASS_HANDLE cls)
+{
+    AssertCodeMsg(GetHeapClassSize != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
+    AssertCodeMsg(GetHeapClassSize->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
+        (DWORDLONG)cls);
+    unsigned result = (unsigned)GetHeapClassSize->Get((DWORDLONG)cls);
+    DEBUG_REP(dmpGetHeapClassSize((DWORDLONG)cls, (DWORD)result));
+    return result;
+}
+
+void MethodContext::recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, BOOL result)
+{
+    if (CanAllocateOnStack == nullptr)
+        CanAllocateOnStack = new LightWeightMap<DWORDLONG, DWORD>();
+
+    CanAllocateOnStack->Add((DWORDLONG)cls, (DWORD)result);
+    DEBUG_REC(dmpCanAllocateOnStack((DWORDLONG)cls, (DWORD)result));
+}
+void MethodContext::dmpCanAllocateOnStack(DWORDLONG key, DWORD val)
+{
+    printf("CanAllocateOnStack key %016llX, value %u", key, val);
+}
+BOOL MethodContext::repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    AssertCodeMsg(CanAllocateOnStack != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)cls);
+    AssertCodeMsg(CanAllocateOnStack->GetIndex((DWORDLONG)cls) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
+        (DWORDLONG)cls);
+    BOOL result = (BOOL)CanAllocateOnStack->Get((DWORDLONG)cls);
+    DEBUG_REP(dmpCanAllocateOnStack((DWORDLONG)cls, (DWORD)result));
+    return result;
+}
+
 void MethodContext::recGetClassNumInstanceFields(CORINFO_CLASS_HANDLE cls, unsigned result)
 {
     if (GetClassNumInstanceFields == nullptr)

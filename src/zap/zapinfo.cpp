@@ -3315,6 +3315,16 @@ unsigned ZapInfo::getClassSize(CORINFO_CLASS_HANDLE cls)
     return size;
 }
 
+unsigned ZapInfo::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
+{
+    return m_pEEJitInfo->getHeapClassSize(cls);
+}
+
+BOOL ZapInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    return m_pEEJitInfo->canAllocateOnStack(cls);
+}
+
 unsigned ZapInfo::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
 {
     return m_pEEJitInfo->getClassAlignmentRequirement(cls, fDoubleAlignHint);

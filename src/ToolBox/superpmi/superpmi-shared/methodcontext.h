@@ -696,6 +696,14 @@ public:
     void dmpGetClassSize(DWORDLONG key, DWORD val);
     unsigned repGetClassSize(CORINFO_CLASS_HANDLE cls);
 
+    void recGetHeapClassSize(CORINFO_CLASS_HANDLE cls, unsigned result);
+    void dmpGetHeapClassSize(DWORDLONG key, DWORD val);
+    unsigned repGetHeapClassSize(CORINFO_CLASS_HANDLE cls);
+
+    void recCanAllocateOnStack(CORINFO_CLASS_HANDLE cls, BOOL result);
+    void dmpCanAllocateOnStack(DWORDLONG key, DWORD val);
+    BOOL repCanAllocateOnStack(CORINFO_CLASS_HANDLE cls);
+
     void recGetClassNumInstanceFields(CORINFO_CLASS_HANDLE cls, unsigned result);
     void dmpGetClassNumInstanceFields(DWORDLONG key, DWORD value);
     unsigned repGetClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
@@ -1309,7 +1317,7 @@ private:
 };
 
 // ********************* Please keep this up-to-date to ease adding more ***************
-// Highest packet number: 168
+// Highest packet number: 171
 // *************************************************************************************
 enum mcPackets
 {
@@ -1378,6 +1386,8 @@ enum mcPackets
     Packet_GetTypeInstantiationArgument                  = 167, // Added 12/4/17
     Packet_GetClassNumInstanceFields                     = 46,
     Packet_GetClassSize                                  = 47,
+    Packet_GetHeapClassSize                              = 170, // Added 10/5/2018
+    Packet_CanAllocateOnStack                            = 171, // Added 10/5/2018
     Packet_GetIntConfigValue                             = 151, // Added 2/12/2015
     Packet_GetStringConfigValue                          = 152, // Added 2/12/2015
     Packet_GetCookieForPInvokeCalliSig                   = 48,

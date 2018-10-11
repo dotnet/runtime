@@ -577,6 +577,19 @@ unsigned MyICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repGetClassSize(cls);
 }
 
+// return the number of bytes needed by an instance of the class allocated on the heap
+unsigned MyICJI::getHeapClassSize(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getHeapClassSize");
+    return jitInstance->mc->repGetHeapClassSize(cls);
+}
+
+BOOL MyICJI::canAllocateOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("canAllocateOnStack");
+    return jitInstance->mc->repCanAllocateOnStack(cls);
+}
+
 unsigned MyICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, BOOL fDoubleAlignHint)
 {
     jitInstance->mc->cr->AddCall("getClassAlignmentRequirement");
