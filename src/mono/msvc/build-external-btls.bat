@@ -28,7 +28,8 @@ set VS_TARGET=%~7
 set MSBUILD_BIN_PATH=%~8
 
 :: Setup toolchain.
-set CMAKE=C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+:: set CMAKE=
+:: set GIT=
 set MSBUILD=%MSBUILD_BIN_PATH%msbuild.exe
 
 if "%MONO_DIR%" == "" (
@@ -87,22 +88,22 @@ if not exist %MONO_BTLS_ROOT_PATH% (
 
 set BTLS_CFLAGS=%VS_CFLAGS%
 set BTLS_ARCH=x86_64
-if "%VS_PLATFORM%" == "Win32" (
+if /i "%VS_PLATFORM%" == "win32" (
     set BTLS_ARCH=i386
 )
 
 set BTLS_BUILD_DIR=%MONO_BUILD_DIR%
 
 :: Check target.
-if "%VS_TARGET%" == "Build" (
+if /i "%VS_TARGET%" == "build" (
     goto ON_BUILD_BTLS
 )
 
-if "%VS_TARGET%" == "Install" (
+if /i "%VS_TARGET%" == "install" (
     goto ON_INSTALL_BTLS
 )
 
-if "%VS_TARGET%" == "Clean" (
+if /i "%VS_TARGET%" == "clean" (
     goto ON_CLEAN_BTLS
 )
 
@@ -155,7 +156,7 @@ if "%VisualStudioVersion%" == "15.0" (
     set CMAKE_GENERATOR=Visual Studio 15 2017
 )
 
-if "%VS_PLATFORM%" == "x64" (
+if /i "%VS_PLATFORM%" == "x64" (
     set CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64
 )
 
@@ -164,17 +165,6 @@ if not exist "%BTLS_BUILD_DIR%" (
 )
 
 cd "%BTLS_BUILD_DIR%"
-
-echo "%CMAKE%" ^
--D BTLS_ROOT:PATH="%BTLS_ROOT_PATH%" ^
--D SRC_DIR:PATH="%MONO_BTLS_ROOT_PATH%" ^
--D BTLS_CFLAGS="%BTLS_CFLAGS%" ^
--D OPENSSL_NO_ASM=1 ^
--D BTLS_ARCH="%BTLS_ARCH%" ^
--D BUILD_SHARED_LIBS=1 ^
--D CMAKE_BUILD_TYPE=%VS_CONFIGURATION% ^
--G "%CMAKE_GENERATOR%" ^
-"%MONO_BTLS_ROOT_PATH%"
 
 : Run cmake.
 "%CMAKE%" ^
