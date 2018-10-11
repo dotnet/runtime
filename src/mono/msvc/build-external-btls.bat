@@ -1,11 +1,11 @@
 @echo off
 setlocal
 
-set CMAKE_BIN_NAME=cmake.exe
-set GIT_BIN_NAME=git.exe
-
 set TEMP_PATH=%PATH%
 set BUILD_RESULT=1
+
+set CMAKE_BIN_NAME=cmake.exe
+set GIT_BIN_NAME=git.exe
 
 :: Arguments
 :: --------------------------------------------
@@ -15,6 +15,8 @@ set BUILD_RESULT=1
 :: %4 VS CFLAGS.
 :: %5 VS platform (Win32/x64)
 :: %6 VS configuration (Debug/Release)
+:: %7 VS target
+:: %8 MsBuild bin path, if used.
 
 set MONO_DIR=%~1
 set MONO_BUILD_DIR=%~2
@@ -22,6 +24,12 @@ set MONO_DIST_DIR=%~3
 set VS_CFLAGS=%~4
 set VS_PLATFORM=%~5
 set VS_CONFIGURATION=%~6
+set VS_TARGET=%~7
+set MSBUILD_BIN_PATH=%~8
+
+:: Setup toolchain.
+set CMAKE=C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe
+set MSBUILD=%MSBUILD_BIN_PATH%msbuild.exe
 
 if "%MONO_DIR%" == "" (
     echo Missing mono source directory argument.
@@ -51,13 +59,12 @@ if "%VS_CONFIGURATION%" == "" (
     set VS_CONFIGURATION=Release
 )
 
-if not exist %MONO_DIR% (
-    echo Could not find "%MONO_DIR%".
-    goto ON_ERROR
+if "%VS_TARGET%" == "" (
+    set VS_TARGET=Build
 )
 
-if not exist %MONO_BUILD_DIR% (
-    ECHO Could not find "%MONO_BUILD_DIR%".
+if not exist %MONO_DIR% (
+    echo Could not find "%MONO_DIR%".
     goto ON_ERROR
 )
 
@@ -84,7 +91,22 @@ if "%VS_PLATFORM%" == "Win32" (
     set BTLS_ARCH=i386
 )
 
-set BTLS_BUILD_DIR=%MONO_BUILD_DIR%\btls-build-shared\%VS_PLATFORM%
+set BTLS_BUILD_DIR=%MONO_BUILD_DIR%
+
+:: Check target.
+if "%VS_TARGET%" == "Build" (
+    goto ON_BUILD_BTLS
+)
+
+if "%VS_TARGET%" == "Install" (
+    goto ON_INSTALL_BTLS
+)
+
+if "%VS_TARGET%" == "Clean" (
+    goto ON_CLEAN_BTLS
+)
+
+:ON_BUILD_BTLS
 
 :: If not set by caller, check environment for working git.exe.
 if not exist "%GIT%" (
@@ -99,17 +121,17 @@ if not exist "%GIT%" (
 )
 
 :: Make sure boringssl submodule is up to date.
-REM pushd
-REM cd %MONO_BTLS_ROOT_PATH%
-REM %GIT% submodule update --init
-REM if ERRORLEVEL == 0 (
-REM     %GIT% submodule init
-REM     %GIT% submodule update
-REM     if ERRORLEVEL == 0 (
-REM         echo Git boringssl submodules failed to updated. You may experience compilation problems if some submodules are out of date.
-REM     )
-REM )
-REM popd
+pushd
+cd %MONO_BTLS_ROOT_PATH%
+"%GIT%" submodule update --init
+if not ERRORLEVEL == 0 (
+   "%GIT%" submodule init
+    "%GIT%" submodule update
+    if not ERRORLEVEL == 0 (
+        echo Git boringssl submodules failed to updated. You may experience compilation problems if some submodules are out of date.
+    )
+)
+popd
 
 :: If not set by caller, check environment for working cmake.exe.
 if not exist "%CMAKE%" (
@@ -118,7 +140,7 @@ if not exist "%CMAKE%" (
         where %CMAKE_BIN_NAME%
         set CMAKE=%CMAKE_BIN_NAME%
     ) || (
-        echo Failed to located working%CMAKE_BIN_NAME%, needs to be accessible in PATH or set using CMAKE environment variable.
+        echo Failed to located working %CMAKE_BIN_NAME%, needs to be accessible in PATH or set using CMAKE environment variable.
         goto ON_ERROR
     )
 )
@@ -138,41 +160,67 @@ if "%VS_PLATFORM%" == "x64" (
 )
 
 if not exist "%BTLS_BUILD_DIR%" (
-    mkdir %BTLS_BUILD_DIR%
+    mkdir "%BTLS_BUILD_DIR%"
 )
 
-cd %BTLS_BUILD_DIR%
+cd "%BTLS_BUILD_DIR%"
 
-echo %CMAKE% ^
+echo "%CMAKE%" ^
 -D BTLS_ROOT:PATH="%BTLS_ROOT_PATH%" ^
 -D SRC_DIR:PATH="%MONO_BTLS_ROOT_PATH%" ^
 -D BTLS_CFLAGS="%BTLS_CFLAGS%" ^
 -D OPENSSL_NO_ASM=1 ^
 -D BTLS_ARCH="%BTLS_ARCH%" ^
 -D BUILD_SHARED_LIBS=1 ^
+-D CMAKE_BUILD_TYPE=%VS_CONFIGURATION% ^
 -G "%CMAKE_GENERATOR%" ^
 "%MONO_BTLS_ROOT_PATH%"
 
 : Run cmake.
-%CMAKE% ^
+"%CMAKE%" ^
 -D BTLS_ROOT:PATH="%BTLS_ROOT_PATH%" ^
 -D SRC_DIR:PATH="%MONO_BTLS_ROOT_PATH%" ^
 -D BTLS_CFLAGS="%BTLS_CFLAGS%" ^
 -D OPENSSL_NO_ASM=1 ^
 -D BTLS_ARCH="%BTLS_ARCH%" ^
 -D BUILD_SHARED_LIBS=1 ^
+-D CMAKE_BUILD_TYPE=%VS_CONFIGURATION% ^
 -G "%CMAKE_GENERATOR%" ^
 "%MONO_BTLS_ROOT_PATH%"
 
+if not ERRORLEVEL == 0 (
+    goto ON_ERROR
+)
+
 : Build BTLS.
-call msbuild.exe mono-btls.sln /p:Configuration=%VS_CONFIGURATION% || (
-    echo msbuild.exe mono-btls.sln /p:Configuration=%VS_CONFIGURATION% failed.
+call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% || (
+    goto ON_ERROR
+)
+
+:ON_INSTALL_BTLS
+
+if not exist "%VS_CONFIGURATION%\mono-btls-shared.dll" (
+    echo Missing btls build output, "%VS_CONFIGURATION%\mono-btls-shared.dll"
     goto ON_ERROR
 )
 
 : Copy files into distribution directory.
-copy %VS_CONFIGURATION%\*.* %MONO_DIST_DIR%
+copy "%VS_CONFIGURATION%\mono-btls-shared.dll" "%MONO_DIST_DIR%"
+copy "%VS_CONFIGURATION%\mono-btls-shared.pdb" "%MONO_DIST_DIR%"
 
+goto ON_SUCCESS
+
+:ON_CLEAN_BTLS
+
+if exist "%BTLS_BUILD_DIR%\mono-btls.sln" (
+    "%MSBUILD%" "%BTLS_BUILD_DIR%\mono-btls.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean
+)
+
+goto ON_SUCCESS
+
+:ON_SUCCESS
+
+set BUILD_RESULT=0
 goto ON_EXIT
 
 :ECHO_USAGE:
@@ -180,7 +228,6 @@ goto ON_EXIT
 
 :ON_ERROR
 	echo Failed to build BTLS.
-	set BUILD_RESULT=0
 	goto ON_EXIT
 
 :ON_EXIT

@@ -18,13 +18,9 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\config.h" />
-    <ClInclude Include="..\winconfig.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{92AE7622-5F58-4234-9A26-9EC71876B3F4}</ProjectGuid>
-    <RootNamespace>buildinit</RootNamespace>
+    <ProjectGuid>{E41DDF41-0916-454B-A7C2-6E410E45CAFD}</ProjectGuid>
+    <RootNamespace>buildexternalbtls</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -77,19 +73,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -151,29 +147,31 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <PropertyGroup Label="LLVMProperties" Condition="$(MONO_ENABLE_LLVM)=='true'">
-    <LLVMConfig>$(MONO_LLVM_BIN_DIR)/llvm-config.exe</LLVMConfig>
+  <PropertyGroup>
+    <_BtlsCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">-D$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," -D"))</_BtlsCFlags>
+    <_BtlsBuildDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\external\btls-build-shared\$(Configuration)</_BtlsBuildDir>
+    <_BtlsBuildCommand>build-external-btls.bat &quot;$(MONO_DIR)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(OutDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
+    <_BtlsCheckCommand>findstr /i /r /c:&quot;.*#define.*HAVE_BTLS.*1&quot; $(MONO_DIR)/cygconfig.h >nul 2>&amp;1</_BtlsCheckCommand>
   </PropertyGroup>
-  <Target Name="AfterBuildWinSetup">
-    <Exec Command="winsetup.bat">
-      <Output TaskParameter="ExitCode" PropertyName="WinSetupExitCode" />
+  <Target Name="_CheckEnableBtls" Condition="'$(MONO_ENABLE_BTLS)' == ''">
+    <Exec Command="$(_BtlsCheckCommand)" IgnoreExitCode="true" EchoOff="true">
+      <Output TaskParameter="ExitCode" PropertyName="_CheckEnableBtlsExitCode"/>
     </Exec>
-    <Error Text="Failed running winsetup.bat" Condition="$(WinSetupExitCode) != 0" />
+    <PropertyGroup>
+      <MONO_ENABLE_BTLS Condition="'$(_CheckEnableBtlsExitCode)' == '0'">true</MONO_ENABLE_BTLS>
+      <MONO_ENABLE_BTLS Condition="'$(_CheckEnableBtlsExitCode)' == '1'">false</MONO_ENABLE_BTLS>
+    </PropertyGroup>
   </Target>
-  <Target Name="AfterBuildLLVMSetup" Condition="$(MONO_ENABLE_LLVM)=='true'">
-    <Message Importance="high" Text="Validating LLVM configuration..." />
-    <Error Text="LLVM executable $(LLVMConfig) not found." Condition="!Exists($(LLVMConfig))" />
-    <Message Importance="high" Text="LLVM Version:" />
-    <Exec Command="$(MONO_LLVM_BIN_DIR)/llvm-config.exe --version" ConsoleToMSBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="MonoLLVMVersion" />
+  <Target Name="_AfterBuildExternalBtls" Condition="'$(MONO_ENABLE_BTLS)' == 'true'">
+    <Exec Command="$(_BtlsBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
+      <Output TaskParameter="ExitCode" PropertyName="_BuildExternalBtlsExitCode" />
     </Exec>
-    <Message Importance="high" Text="LLVM API Version:" />
-    <Exec Command="$(MONO_LLVM_BIN_DIR)/llvm-config.exe --mono-api-version" ConsoleToMSBuild="true" EchoOff="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="MonoLLVMAPIVersion" />
-    </Exec>
-    <Error Text="Compiling with stock LLVM is not supported, please use the Mono LLVM repo at https://github.com/mono/llvm." Condition="!$(MonoLLVMVersion.Contains('mono'))" />
-    <Error Text="Expected llvm version 4, but llvm-config --version returned $(MonoLLVMAPIVersion)." Condition="$(MonoLLVMAPIVersion) != '4'" />
-    <Message Importance="high" Text="Successfully validated LLVM configuration." />
   </Target>
-  <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup;AfterBuildLLVMSetup" />
+  <Target Name="_AfterCleanExternalBtls" Condition="'$(MONO_ENABLE_BTLS)' == 'true'">
+    <Exec Command="$(_BtlsBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot;">
+      <Output TaskParameter="ExitCode" PropertyName="_CleanExternalBtlsExitCode" />
+    </Exec>
+  </Target>
+  <Target Name="AfterBuild" DependsOnTargets="_CheckEnableBtls;_AfterBuildExternalBtls" />
+  <Target Name="AfterClean" DependsOnTargets="_CheckEnableBtls;_AfterCleanExternalBtls" />
 </Project>
