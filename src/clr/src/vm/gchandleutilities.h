@@ -139,6 +139,18 @@ inline OBJECTHANDLE CreateSizedRefHandle(IGCHandleStore* store, OBJECTREF object
     return hnd;
 }
 
+inline OBJECTHANDLE CreateDependentHandle(IGCHandleStore* store, OBJECTREF primary, OBJECTREF secondary)
+{
+    OBJECTHANDLE hnd = store->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
+    if (!hnd)
+    {
+        COMPlusThrowOM();
+    }
+
+    DiagHandleCreated(hnd, primary);
+    return hnd;
+}
+
 // Global handle creation convenience functions
 inline OBJECTHANDLE CreateGlobalHandleCommon(OBJECTREF object, HandleType type)
 {

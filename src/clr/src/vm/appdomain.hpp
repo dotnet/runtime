@@ -1249,14 +1249,7 @@ public:
     OBJECTHANDLE CreateTypedHandle(OBJECTREF object, HandleType type)
     {
         WRAPPER_NO_CONTRACT;
-
-        OBJECTHANDLE hnd = m_handleStore->CreateHandleOfType(OBJECTREFToObject(object), type);
-        if (!hnd)
-        {
-            COMPlusThrowOM();
-        }
-
-        return hnd;
+        return ::CreateHandleCommon(m_handleStore, object, type);
     }
 
     OBJECTHANDLE CreateHandle(OBJECTREF object)
@@ -1323,14 +1316,7 @@ public:
 
     OBJECTHANDLE CreateWinRTWeakHandle(OBJECTREF object, IWeakReference* pWinRTWeakReference)
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
+        WRAPPER_NO_CONTRACT;
         return ::CreateWinRTWeakHandle(m_handleStore, object, pWinRTWeakReference);
     }
 #endif // FEATURE_COMINTEROP
@@ -1343,22 +1329,10 @@ public:
 
     OBJECTHANDLE CreateDependentHandle(OBJECTREF primary, OBJECTREF secondary)
     {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        OBJECTHANDLE hnd = m_handleStore->CreateDependentHandle(OBJECTREFToObject(primary), OBJECTREFToObject(secondary));
-        if (!hnd)
-        {
-            COMPlusThrowOM();
-        }
-
-        return hnd;
+        WRAPPER_NO_CONTRACT;
+        return ::CreateDependentHandle(m_handleStore, primary, secondary);
     }
+
 #endif // DACCESS_COMPILE && !CROSSGEN_COMPILE
 
     IUnknown *GetFusionContext() {LIMITED_METHOD_CONTRACT;  return m_pFusionContext; }
