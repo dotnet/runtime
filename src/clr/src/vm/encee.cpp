@@ -17,6 +17,10 @@
 #include "excep.h"
 #include "stackwalk.h"
 
+#ifdef DACCESS_COMPILE
+#include "../debug/daccess/gcinterface.dac.h"
+#endif // DACCESS_COMPILE
+
 #ifdef EnC_SUPPORTED
 
 // can't get this on the helper thread at runtime in ResolveField, so make it static and get when add a field.
@@ -1245,8 +1249,12 @@ PTR_CBYTE EnCSyncBlockInfo::ResolveField(OBJECTREF thisPointer, EnCFieldDesc *pF
 
     // we found a matching entry in the list of EnCAddedFields
     // Get the EnC helper object (see the detailed description in Allocate above)
+#ifdef DACCESS_COMPILE
+    OBJECTREF pHelper = GetDependentHandleSecondary(pEntry->m_FieldData);
+#else // DACCESS_COMPILE
     IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     OBJECTREF pHelper = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));
+#endif // DACCESS_COMPILE
     _ASSERTE(pHelper != NULL);
 
     FieldDesc *pHelperFieldDesc = NULL;
