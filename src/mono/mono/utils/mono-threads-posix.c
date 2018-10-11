@@ -211,6 +211,19 @@ mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 	return pthread_create (tid, NULL, (void *(*)(void *)) func, arg) == 0;
 }
 
+size_t
+mono_native_thread_get_name (MonoNativeThreadId tid, char *name_out, size_t max_len)
+{
+#ifdef HAVE_PTHREAD_GETNAME_NP
+	int error = pthread_getname_np(tid, name_out, max_len);
+	if (error != 0)
+		return 0;
+	return strlen(name_out);
+#else
+	return 0;
+#endif
+}
+
 void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {

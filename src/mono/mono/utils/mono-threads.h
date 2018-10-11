@@ -620,6 +620,9 @@ mono_native_thread_create (MonoNativeThreadId *tid, T func, gpointer arg)
 MONO_API void
 mono_native_thread_set_name (MonoNativeThreadId tid, const char *name);
 
+size_t
+mono_native_thread_get_name (MonoNativeThreadId tid, char *name_out, size_t max_len);
+
 MONO_API gboolean
 mono_native_thread_join (MonoNativeThreadId tid);
 

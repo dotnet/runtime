@@ -3307,6 +3307,8 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		else
 			mono_seq_point_info_free (seq_points);
 		mono_domain_unlock (domain);
+
+		jinfo->seq_points = seq_points;
 	}
 
 	/* Load debug info */

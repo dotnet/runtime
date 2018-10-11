@@ -229,15 +229,12 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 #ifndef DISABLE_CRASH_REPORTING
-	// Note: this function only returns for a single thread
-	// When it's invoked on other threads once the dump begins,
-	// those threads perform their dumps and then sleep until we
-	// die. The dump ends with the exit(1) below
+	// Note: this is only run from the non-controlling thread
 	MonoContext mctx;
 	gchar *output = NULL;
 	MonoStackHash hashes;
 	mono_sigctx_to_monoctx (ctx, &mctx);
-	if (!mono_threads_summarize (&mctx, &output, &hashes))
+	if (!mono_threads_summarize_execute (&mctx, &output, &hashes, FALSE, NULL, 0))
 		g_assert_not_reached ();
 
 #ifdef TARGET_OSX
@@ -247,14 +244,13 @@ MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 	} else
 #endif
 	{
-		// Only the dumping-supervisor thread exits mono_thread_summarize
-		MOSTLY_ASYNC_SAFE_PRINTF("Unhandled exception dump: \n######\n%s\n######\n", output);
-		sleep (3);
+		// Controlling thread gets the dump
+		if (output)
+			MOSTLY_ASYNC_SAFE_PRINTF("Unhandled exception dump: \n######\n%s\n######\n", output);
 	}
 #endif
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-	exit (1);
 }
 
 #if (defined (USE_POSIX_BACKEND) && defined (SIGRTMIN)) || defined (SIGPROF)
@@ -414,8 +410,14 @@ void
 mini_register_sigterm_handler (void)
 {
 #ifndef DISABLE_CRASH_REPORTING
-	/* always catch SIGTERM, conditionals inside of handler */
-	add_signal_handler (SIGTERM, sigterm_signal_handler, 0);
+	static gboolean enabled;
+
+	if (!enabled) {
+		enabled = TRUE;
+
+		/* always catch SIGTERM, conditionals inside of handler */
+		add_signal_handler (SIGTERM, sigterm_signal_handler, 0);
+	}
 #endif
 }
 
@@ -1022,8 +1024,14 @@ dump_native_stacktrace (const char *signal, void *ctx)
 			if (!leave) {
 				mono_sigctx_to_monoctx (ctx, &mctx);
 				// Do before forking
-				if (!mono_threads_summarize (&mctx, &output, &hashes))
+				if (!mono_threads_summarize (&mctx, &output, &hashes, FALSE, TRUE, NULL, 0))
 					g_assert_not_reached ();
+
+				// Wait for the other threads to clean up and exit their handlers
+				// We can't lock / wait indefinitely, in case one of these threads got stuck somehow
+				// while dumping. 
+				mono_runtime_printf_err ("\nWaiting for dumping threads to resume\n");
+				sleep (1);
 			}
 
 			// We want our crash, and don't have telemetry

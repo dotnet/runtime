@@ -27,7 +27,7 @@ MONO_BEGIN_DECLS
  */
 
 void
-mono_summarize_native_state_begin (void);
+mono_summarize_native_state_begin (char *mem, int size);
 
 char *
 mono_summarize_native_state_end (void);

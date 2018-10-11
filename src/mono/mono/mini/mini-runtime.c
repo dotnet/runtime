@@ -2544,6 +2544,8 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	g_hash_table_remove (info->jump_trampoline_hash, method);
 	g_hash_table_remove (info->seq_points, method);
 
+	ji->ji->seq_points = NULL;
+
 	/* requires the domain lock - took above */
 	mono_conc_hashtable_remove (info->runtime_invoke_hash, method);
 
@@ -2591,6 +2593,36 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	if (destroy)
 		mono_code_manager_destroy (ji->code_mp);
 	g_free (ji);
+}
+
+gpointer
+mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *method, MonoJitInfo **out_ji)
+{
+	gpointer code;
+	MonoJitInfo *ji;
+
+	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
+	if (!code) {
+		ERROR_DECL_VALUE (oerror);
+
+		/* Might be AOTed code */
+		mono_class_init (method->klass);
+		code = mono_aot_get_method (domain, method, &oerror);
+		if (code) {
+			mono_error_assert_ok (&oerror);
+			ji = mono_jit_info_table_find (domain, code);
+		} else {
+			if (!is_ok (&oerror))
+				mono_error_cleanup (&oerror);
+
+			/* Might be interpreted */
+			ji = mini_get_interp_callbacks ()->find_jit_info (domain, method);
+		}
+	}
+
+	*out_ji = ji;
+
+	return code;
 }
 
 gpointer
@@ -4319,7 +4351,7 @@ mini_init (const char *filename, const char *runtime_version)
 #endif
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 
-#ifdef TARGET_OSX
+#ifndef DISABLE_CRASH_REPORTING
 	callbacks.install_state_summarizer = mini_register_sigterm_handler;
 #endif
 

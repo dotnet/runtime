@@ -1109,6 +1109,9 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 char *
 mono_method_get_full_name (MonoMethod *method);
 
+const char*
+mono_wrapper_type_to_str (guint32 wrapper_type);
+
 MonoArrayType *mono_dup_array_type (MonoImage *image, MonoArrayType *a);
 MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMethodSignature *sig);
 

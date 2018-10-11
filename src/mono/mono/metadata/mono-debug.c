@@ -610,8 +610,8 @@ read_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
-void
-mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
+static void
+mono_debug_free_method_jit_info_full (MonoDebugMethodJitInfo *jit, gboolean stack)
 {
 	if (!jit)
 		return;
@@ -621,17 +621,23 @@ mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
 	g_free (jit->locals);
 	g_free (jit->gsharedvt_info_var);
 	g_free (jit->gsharedvt_locals_var);
-	g_free (jit);
+	if (!stack)
+		g_free (jit);
+}
+
+void
+mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
+{
+	return mono_debug_free_method_jit_info_full (jit, FALSE);
 }
 
 static MonoDebugMethodJitInfo *
-mono_debug_read_method (MonoDebugMethodAddress *address)
+mono_debug_read_method (MonoDebugMethodAddress *address, MonoDebugMethodJitInfo *jit)
 {
-	MonoDebugMethodJitInfo *jit;
 	guint32 i;
 	guint8 *ptr;
 
-	jit = g_new0 (MonoDebugMethodJitInfo, 1);
+	memset (jit, 0, sizeof (*jit));
 	jit->code_start = address->code_start;
 	jit->code_size = address->code_size;
 
@@ -677,7 +683,7 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 }
 
 static MonoDebugMethodJitInfo *
-find_method (MonoMethod *method, MonoDomain *domain)
+find_method (MonoMethod *method, MonoDomain *domain, MonoDebugMethodJitInfo *jit)
 {
 	MonoDebugDataTable *table;
 	MonoDebugMethodAddress *address;
@@ -688,19 +694,19 @@ find_method (MonoMethod *method, MonoDomain *domain)
 	if (!address)
 		return NULL;
 
-	return mono_debug_read_method (address);
+	return mono_debug_read_method (address, jit);
 }
 
 MonoDebugMethodJitInfo *
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain)
 {
-	MonoDebugMethodJitInfo *res;
+	MonoDebugMethodJitInfo *res = g_new0 (MonoDebugMethodJitInfo, 1);
 
 	if (mono_debug_format == MONO_DEBUG_FORMAT_NONE)
 		return NULL;
 
 	mono_debugger_lock ();
-	res = find_method (method, domain);
+	find_method (method, domain, res);
 	mono_debugger_unlock ();
 	return res;
 }
@@ -715,10 +721,10 @@ mono_debug_lookup_method_addresses (MonoMethod *method)
 static gint32
 il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_offset)
 {
-	MonoDebugMethodJitInfo *jit;
+	MonoDebugMethodJitInfo mem;
 	int i;
 
-	jit = find_method (method, domain);
+	MonoDebugMethodJitInfo *jit = find_method (method, domain, &mem);
 	if (!jit || !jit->line_numbers)
 		goto cleanup_and_fail;
 
@@ -726,13 +732,13 @@ il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_o
 		MonoDebugLineNumberEntry lne = jit->line_numbers [i];
 
 		if (lne.native_offset <= native_offset) {
-			mono_debug_free_method_jit_info (jit);
+			mono_debug_free_method_jit_info_full (jit, TRUE);
 			return lne.il_offset;
 		}
 	}
 
 cleanup_and_fail:
-	mono_debug_free_method_jit_info (jit);
+	mono_debug_free_method_jit_info_full (jit, TRUE);
 	return -1;
 }
 

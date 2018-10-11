@@ -539,8 +539,9 @@ MONO_COLD void
 mono_set_pending_exception_handle (MonoExceptionHandle exc);
 
 #define MONO_MAX_SUMMARY_NAME_LEN 140
+#define MONO_MAX_THREAD_NAME_LEN 140
 #define MONO_MAX_SUMMARY_THREADS 32
-#define MONO_MAX_SUMMARY_FRAMES 40
+#define MONO_MAX_SUMMARY_FRAMES 80
 
 typedef struct {
 	gboolean is_managed;
@@ -550,9 +551,17 @@ typedef struct {
 		int il_offset;
 		int native_offset;
 		const char *guid;
+
+#ifndef MONO_PRIVATE_CRASHES
+		// We use ifdef to make it a compile-time error to store this 
+		// symbolicated string on release builds
+		const char *name;
+#endif
+
 	} managed_data;
 	struct {
 		intptr_t ip;
+		const char *module;
 		gboolean is_trampoline;
 		gboolean has_name;
 	} unmanaged_data;
@@ -564,12 +573,28 @@ typedef struct {
 } MonoStackHash;
 
 typedef struct {
+	gboolean done; // Needed because cond wait can have spurious wakeups
+	MonoSemType done_wait; // Readers are finished with this
+
+	// For managed stack walking
+
+	MonoDomain *domain;
+	MonoJitTlsData *jit_tls;
+	MonoLMF *lmf;
+
+	// Emitted attributes
+
 	gboolean is_managed;
 
-	const char *name;
+	char name [MONO_MAX_THREAD_NAME_LEN];
+
 	intptr_t managed_thread_ptr;
 	intptr_t info_addr;
 	intptr_t native_thread_id;
+
+	// Print reason we don't have a complete
+	// managed trace
+	const char *error_msg;
 
 	int num_managed_frames;
 	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
@@ -578,9 +603,18 @@ typedef struct {
 	MonoFrameSummary unmanaged_frames [MONO_MAX_SUMMARY_FRAMES];
 
 	MonoStackHash hashes;
+
+	MonoContext *ctx;
+	MonoContext ctx_mem;
 } MonoThreadSummary;
 
 gboolean
-mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes);
+mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gboolean signal_handler_controller, gchar *mem, size_t provided_size);
+
+gboolean
+mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gchar *mem, size_t provided_size);
+
+gboolean
+mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

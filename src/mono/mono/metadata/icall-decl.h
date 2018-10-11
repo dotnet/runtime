@@ -379,5 +379,8 @@ ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, g
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ecvt_s(char*, size_t, double, int, int*, int*);
 ICALL_EXPORT void ves_icall_get_method_info (MonoMethod*, MonoMethodInfo*, MonoError*);
 ICALL_EXPORT void* ves_icall_System_Reflection_Assembly_GetManifestResourceInternal (MonoReflectionAssemblyHandle assembly_h, MonoStringHandle name, gint32* size, MonoReflectionModuleHandleOut ref_module, MonoError*);
+ICALL_EXPORT MonoStringHandle ves_icall_Mono_Runtime_DumpStateSingle (guint64 *portable_hash, guint64 *unportable_hash, MonoError *error);
+ICALL_EXPORT MonoStringHandle ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportable_hash, MonoError *error);
+ICALL_EXPORT void ves_icall_Mono_Runtime_RegisterReportingForNativeLib (const char *path_suffix, const char *module_name);
 
 #endif // __MONO_METADATA_ICALL_H__

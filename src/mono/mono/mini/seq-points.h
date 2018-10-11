@@ -10,7 +10,7 @@
 #include <mono/metadata/seq-points-data.h>
 
 void
-mono_save_seq_point_info (MonoCompile *cfg);
+mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo);
 
 MonoSeqPointInfo*
 mono_get_seq_points (MonoDomain *domain, MonoMethod *method);

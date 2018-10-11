@@ -99,7 +99,7 @@ collect_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GS
 }
 
 void
-mono_save_seq_point_info (MonoCompile *cfg)
+mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 {
 	MonoBasicBlock *bb;
 	GSList *bb_seq_points, *l;
@@ -244,6 +244,9 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		else
 			mono_seq_point_info_free (cfg->seq_point_info);
 		mono_domain_unlock (domain);
+
+		g_assert (jinfo);
+		jinfo->seq_points = cfg->seq_point_info;
 	}
 
 	g_ptr_array_free (cfg->seq_points, TRUE);

@@ -59,8 +59,8 @@ static const gint16 opidx [] = {
 #undef WRAPPER
 };
 
-static const char*
-wrapper_type_to_str (guint32 wrapper_type)
+const char*
+mono_wrapper_type_to_str (guint32 wrapper_type)
 {
 	g_assert (wrapper_type < MONO_WRAPPER_NUM);
 
@@ -902,7 +902,7 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 	}
 
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
-		sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
+		sprintf (wrapper, "(wrapper %s) ", mono_wrapper_type_to_str (method->wrapper_type));
 	else
 		strcpy (wrapper, "");
 
@@ -918,7 +918,7 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 		}
 
 		if (method->wrapper_type != MONO_WRAPPER_NONE)
-			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
+			sprintf (wrapper, "(wrapper %s) ", mono_wrapper_type_to_str (method->wrapper_type));
 		else
 			strcpy (wrapper, "");
 		if (ret && sig) {

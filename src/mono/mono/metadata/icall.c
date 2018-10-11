@@ -5866,6 +5866,93 @@ ves_icall_Mono_Runtime_DumpTelemetry (char *payload, guint64 portable_hash, guin
 #endif
 }
 
+ICALL_EXPORT MonoStringHandle
+ves_icall_Mono_Runtime_DumpStateSingle (guint64 *portable_hash, guint64 *unportable_hash, MonoError *error)
+{
+	MonoStringHandle result;
+
+#ifndef DISABLE_CRASH_REPORTING
+	MonoStackHash hashes;
+	memset (&hashes, 0, sizeof (MonoStackHash));
+	MonoContext *ctx = NULL;
+
+	MonoThreadSummary this_thread;
+	if (!mono_threads_summarize_one (&this_thread, ctx))
+		return mono_string_new_handle (mono_domain_get (), "", error);
+
+	*portable_hash = (guint64) this_thread.hashes.offset_free_hash;
+	*unportable_hash = (guint64) this_thread.hashes.offset_rich_hash;
+
+	JsonWriter writer;
+	mono_json_writer_init (&writer);
+	mono_native_state_init (&writer);
+	gboolean first_thread_added = TRUE;
+	mono_native_state_add_thread (&writer, &this_thread, NULL, first_thread_added);
+	char *output = mono_native_state_free (&writer, FALSE);
+	result = mono_string_new_handle (mono_domain_get (), output, error);
+	g_free (output);
+#else
+	*portable_hash = 0;
+	*unportable_hash = 0;
+	result = mono_string_new_handle (mono_domain_get (), "", error);
+#endif
+
+	return result;
+}
+
+
+ICALL_EXPORT void
+ves_icall_Mono_Runtime_RegisterReportingForNativeLib (const char *path_suffix, const char *module_name)
+{
+#ifndef DISABLE_CRASH_REPORTING
+	mono_get_eh_callbacks ()->mono_register_native_library (path_suffix, module_name);
+#endif
+}
+
+// Number derived from trials on relevant hardware.
+// If it seems large, please confirm it's safe to shrink
+// before doing so.
+#define MONO_MAX_SUMMARY_LEN_ICALL 500000
+
+ICALL_EXPORT MonoStringHandle
+ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportable_hash, MonoError *error)
+{
+	MonoStringHandle result;
+
+#ifndef DISABLE_CRASH_REPORTING
+	char *scratch = g_new0 (gchar, MONO_MAX_SUMMARY_LEN_ICALL);
+
+	char *out;
+	MonoStackHash hashes;
+	memset (&hashes, 0, sizeof (MonoStackHash));
+	MonoContext *ctx = NULL;
+
+	mono_get_runtime_callbacks ()->install_state_summarizer ();
+
+	// if this works
+	// - give back loader lock during stop
+	mono_thread_info_set_is_async_context (TRUE);
+	gboolean success = mono_threads_summarize (ctx, &out, &hashes, TRUE, FALSE, scratch, MONO_MAX_SUMMARY_LEN_ICALL);
+	mono_thread_info_set_is_async_context (FALSE);
+
+	if (!success)
+		return mono_string_new_handle (mono_domain_get (), "", error);
+
+	*portable_hash = (guint64) hashes.offset_free_hash;
+	*unportable_hash = (guint64) hashes.offset_rich_hash;
+	result = mono_string_new_handle (mono_domain_get (), out, error);
+
+	// out is now a pointer into garbage memory
+	g_free (scratch);
+#else
+	*portable_hash = 0;
+	*unportable_hash = 0;
+	result = mono_string_new_handle (mono_domain_get (), "", error);
+#endif
+
+	return result;
+}
+
 ICALL_EXPORT MonoBoolean
 ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char *name, MonoAssemblyName *aname, MonoBoolean *is_version_defined_arg, MonoBoolean *is_token_defined_arg)
 {
