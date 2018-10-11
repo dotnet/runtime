@@ -3289,7 +3289,7 @@ mono_gparam_is_reference_conversible (MonoClass *target, MonoClass *candidate, g
 		if (!pinfo || (pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) == 0)
 			return FALSE;
 	}
-	if (!mono_class_is_assignable_from (target, candidate))
+	if (!mono_class_is_assignable_from_internal (target, candidate))
 		return FALSE;
 	return TRUE;
 }
@@ -3418,7 +3418,7 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 			for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 				MonoClass *cc = *candidate_class;
 
-				if (mono_class_is_assignable_from (tc, cc))
+				if (mono_class_is_assignable_from_internal (tc, cc))
 					break;
 
 				/*
@@ -3444,11 +3444,29 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	if (cinfo->constraints) {
 		for (candidate_class = cinfo->constraints; *candidate_class; ++candidate_class) {
 			MonoClass *cc = *candidate_class;
-			if (mono_class_is_assignable_from (target, cc))
+			if (mono_class_is_assignable_from_internal (target, cc))
 				return TRUE;
 		}
 	}
 	return FALSE;
+}
+
+/**
+ * mono_class_is_assignable_from_internal:
+ * \param klass the class to be assigned to
+ * \param oklass the source class
+ *
+ * \returns TRUE if an instance of class \p oklass can be assigned to an
+ * instance of class \p klass
+ */
+gboolean
+mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass)
+{
+	gboolean result = FALSE;
+	ERROR_DECL (error);
+	mono_class_is_assignable_from_checked (klass, oklass, &result, error);
+	mono_error_cleanup (error);
+	return result;
 }
 
 /**
@@ -3459,14 +3477,12 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
  * \returns TRUE if an instance of class \p oklass can be assigned to an
  * instance of class \p klass
  */
-gboolean
+mono_bool
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
 {
-	gboolean result = FALSE;
+	gboolean result;
 	MONO_ENTER_GC_UNSAFE;
-	ERROR_DECL (error);
-	mono_class_is_assignable_from_checked (klass, oklass, &result, error);
-	mono_error_cleanup (error);
+	result = mono_class_is_assignable_from_internal (klass, oklass);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -3526,7 +3542,7 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 
 		if (constraints) {
 			for (i = 0; constraints [i]; ++i) {
-				if (mono_class_is_assignable_from (klass, constraints [i])) {
+				if (mono_class_is_assignable_from_internal (klass, constraints [i])) {
 					*result = TRUE;
 					return;
 				}
@@ -3595,7 +3611,7 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 
 				//array covariant casts only operates on scalar to scalar
 				//This is so int[] can't be casted to IComparable<int>[]
-				if (!(m_class_is_valuetype (obj_klass) && !m_class_is_valuetype (iface_klass)) && mono_class_is_assignable_from (iface_klass, obj_klass)) {
+				if (!(m_class_is_valuetype (obj_klass) && !m_class_is_valuetype (iface_klass)) && mono_class_is_assignable_from_internal (iface_klass, obj_klass)) {
 					*result = TRUE;
 					return;
 				}
@@ -3782,7 +3798,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 
 /*
  * Check if @oklass can be assigned to @klass.
- * This function does the same as mono_class_is_assignable_from but is safe to be used from mono_class_init context.
+ * This function does the same as mono_class_is_assignable_from_internal but is safe to be used from mono_class_init context.
  */
 gboolean
 mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
@@ -4755,7 +4771,7 @@ mono_class_is_delegate (MonoClass *klass)
 mono_bool
 mono_class_implements_interface (MonoClass* klass, MonoClass* iface)
 {
-	return mono_class_is_assignable_from (iface, klass);
+	return mono_class_is_assignable_from_internal (iface, klass);
 }
 
 /**

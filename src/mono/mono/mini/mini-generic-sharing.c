@@ -3022,7 +3022,7 @@ is_async_state_machine_class (MonoClass *klass)
 
 	iclass = mono_class_try_get_iasync_state_machine_class ();
 
-	if (iclass && m_class_is_valuetype (klass) && mono_class_is_assignable_from (iclass, klass))
+	if (iclass && m_class_is_valuetype (klass) && mono_class_is_assignable_from_internal (iclass, klass))
 		return TRUE;
 	return FALSE;
 }

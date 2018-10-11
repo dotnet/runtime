@@ -1747,7 +1747,7 @@ ves_icall_RuntimeTypeHandle_type_is_assignable_from (MonoReflectionTypeHandle re
 			 return m_class_is_valuetype (klass) == m_class_is_valuetype (klassc);
 		}
 	}
-	return mono_class_is_assignable_from (klass, klassc);
+	return mono_class_is_assignable_from_internal (klass, klassc);
 }
 
 ICALL_EXPORT MonoBoolean

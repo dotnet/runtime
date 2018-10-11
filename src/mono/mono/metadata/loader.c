@@ -1838,7 +1838,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 
 	error_init (error);
 
-	if (!mono_class_is_assignable_from (base_class, constrained_class)) {
+	if (!mono_class_is_assignable_from_internal (base_class, constrained_class)) {
 		char *base_class_name = mono_type_get_full_name (base_class);
 		char *constrained_class_name = mono_type_get_full_name (constrained_class);
 		mono_error_set_invalid_operation (error, "constrained call: %s is not assignable from %s", base_class_name, constrained_class_name);

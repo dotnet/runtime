@@ -123,7 +123,7 @@ MONO_API mono_bool
 mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
 						   mono_bool check_interfaces);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass);
 
 MONO_API MONO_RT_EXTERNAL_ONLY

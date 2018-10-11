@@ -2439,7 +2439,7 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 		 * parent class becomes the actual interface/class containing the override, i.e.
 		 * IFace<T> in:
 		 * class Foo<T> : IFace<T>
-		 * This is needed so the mono_class_is_assignable_from () calls in the
+		 * This is needed so the mono_class_is_assignable_from_internal () calls in the
 		 * conflict resolution work.
 		 */
 		if (mono_class_is_ginst (override_class)) {
@@ -2488,9 +2488,9 @@ handle_dim_conflicts (MonoMethod **vtable, MonoClass *klass, GHashTable *conflic
 				MonoMethod *m2 = (MonoMethod*)l2->data;
 				if (!m1 || !m2 || m1 == m2)
 					continue;
-				if (mono_class_is_assignable_from (m1->klass, m2->klass))
+				if (mono_class_is_assignable_from_internal (m1->klass, m2->klass))
 					l->data = NULL;
-				else if (mono_class_is_assignable_from (m2->klass, m1->klass))
+				else if (mono_class_is_assignable_from_internal (m2->klass, m1->klass))
 					l2->data = NULL;
 			}
 		}
