@@ -345,7 +345,7 @@ handle_enum:
 		return OP_FMOVE;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
 		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
@@ -865,7 +865,7 @@ handle_enum:
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		} else {
 			inst->klass = klass;
@@ -1850,7 +1850,7 @@ handle_enum:
 		return calli? OP_FCALL_REG: virt? OP_FCALL_MEMBASE: OP_FCALL;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		} else
 			return calli? OP_VCALL_REG: virt? OP_VCALL_MEMBASE: OP_VCALL;
@@ -2112,7 +2112,7 @@ handle_enum:
 			continue;
 		case MONO_TYPE_VALUETYPE:
 			if (m_class_is_enumtype (simple_type->data.klass)) {
-				simple_type = mono_class_enum_basetype (simple_type->data.klass);
+				simple_type = mono_class_enum_basetype_internal (simple_type->data.klass);
 				goto handle_enum;
 			}
 			if (args [i]->type != STACK_VTYPE)
@@ -5721,7 +5721,7 @@ handle_enum:
 		return 0;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
 		return 0;
@@ -7701,7 +7701,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (m_class_is_enumtype (constrained_class) && !strcmp (cmethod->name, "GetHashCode")) {
 					/* Use the corresponding method from the base type to avoid boxing */
-					MonoType *base_type = mono_class_enum_basetype (constrained_class);
+					MonoType *base_type = mono_class_enum_basetype_internal (constrained_class);
 					g_assert (base_type);
 					constrained_class = mono_class_from_mono_type (base_type);
 					cmethod = get_method_nofail (constrained_class, cmethod->name, 0, 0);
@@ -10184,7 +10184,7 @@ calli_end:
 					if (!addr)
 						addr = (char*)mono_vtable_get_static_field_data (vtable) + field->offset;
 					if (ro_type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
-						ro_type = mono_class_enum_basetype (ftype->data.klass)->type;
+						ro_type = mono_class_enum_basetype_internal (ftype->data.klass)->type;
 					}
 
 					GSHAREDVT_FAILURE (il_op);

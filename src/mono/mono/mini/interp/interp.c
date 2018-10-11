@@ -517,7 +517,7 @@ stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinv
 		return;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			stackval_from_data (mono_class_enum_basetype (type->data.klass), result, data, pinvoke);
+			stackval_from_data (mono_class_enum_basetype_internal (type->data.klass), result, data, pinvoke);
 			return;
 		} else if (pinvoke) {
 			memcpy (result->data.vt, data, mono_class_native_size (type->data.klass, NULL));
@@ -618,7 +618,7 @@ stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			stackval_to_data (mono_class_enum_basetype (type->data.klass), val, data, pinvoke);
+			stackval_to_data (mono_class_enum_basetype_internal (type->data.klass), val, data, pinvoke);
 			return;
 		} else if (pinvoke) {
 			memcpy (data, val->data.vt, mono_class_native_size (type->data.klass, NULL));
@@ -681,7 +681,7 @@ stackval_to_data_addr (MonoType *type_, stackval *val)
 		return &val->data.p;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass))
-			return stackval_to_data_addr (mono_class_enum_basetype (type->data.klass), val);
+			return stackval_to_data_addr (mono_class_enum_basetype_internal (type->data.klass), val);
 		else
 			return val->data.vt;
 	case MONO_TYPE_TYPEDBYREF:

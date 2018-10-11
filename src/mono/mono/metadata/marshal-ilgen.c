@@ -1029,7 +1029,7 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 				int len;
 
 				if (m_class_is_enumtype (ftype->data.klass)) {
-					ftype = mono_class_enum_basetype (ftype->data.klass);
+					ftype = mono_class_enum_basetype_internal (ftype->data.klass);
 					goto handle_enum;
 				}
 
@@ -1429,7 +1429,7 @@ handle_enum:
 			goto handle_enum;
 		case MONO_TYPE_VALUETYPE:
 			if (type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (t->data.klass)) {
-				type = mono_class_enum_basetype (t->data.klass)->type;
+				type = mono_class_enum_basetype_internal (t->data.klass)->type;
 				goto handle_enum;
 			}
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -1913,7 +1913,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			case MONO_TYPE_VALUETYPE:
 				klass = sig->ret->data.klass;
 				if (m_class_is_enumtype (klass)) {
-					type = mono_class_enum_basetype (sig->ret->data.klass)->type;
+					type = mono_class_enum_basetype_internal (sig->ret->data.klass)->type;
 					goto handle_enum;
 				}
 				mono_emit_marshal (&m, 0, sig->ret, spec, 0, NULL, MARSHAL_ACTION_CONV_RESULT);

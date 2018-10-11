@@ -1411,7 +1411,7 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob,
 		return_val_if_nok (error, NULL);
 		retval = mono_object_get_data (object);
 		if (m_class_is_enumtype (klass))
-			basetype = mono_class_enum_basetype (klass);
+			basetype = mono_class_enum_basetype_internal (klass);
 	} else {
 		retval = &object;
 	}

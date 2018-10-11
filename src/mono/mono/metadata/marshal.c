@@ -1186,7 +1186,7 @@ handle_enum:
 		return CEE_LDIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
 		return CEE_LDOBJ;
@@ -1241,7 +1241,7 @@ handle_enum:
 		return CEE_STIND_R8;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
 		return CEE_STOBJ;
@@ -2500,7 +2500,7 @@ handle_enum:
 		return mono_get_int_type ();
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (t->data.klass)) {
-			t = mono_class_enum_basetype (t->data.klass);
+			t = mono_class_enum_basetype_internal (t->data.klass);
 			goto handle_enum;
 		}
 		return t;
@@ -5732,7 +5732,7 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 		MonoClass *klass = mono_class_from_mono_type (t);
 
 		if (m_class_is_enumtype (klass))
-			return mono_type_native_stack_size (mono_class_enum_basetype (klass), align);
+			return mono_type_native_stack_size (mono_class_enum_basetype_internal (klass), align);
 		else {
 			size = mono_class_native_size (klass, align);
 			*align = *align + 3;

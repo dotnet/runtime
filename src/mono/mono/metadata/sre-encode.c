@@ -560,7 +560,7 @@ handle_enum:
 		MonoClass *klass = val->vtable->klass;
 		
 		if (m_class_is_enumtype (klass)) {
-			*ret_type = mono_class_enum_basetype (klass)->type;
+			*ret_type = mono_class_enum_basetype_internal (klass)->type;
 			goto handle_enum;
 		} else if (mono_is_corlib_image (m_class_get_image (klass)) && strcmp (m_class_get_name_space (klass), "System") == 0 && strcmp (m_class_get_name (klass), "DateTime") == 0) {
 			len = 8;

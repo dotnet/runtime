@@ -953,7 +953,7 @@ enum_parmtype:
 				MonoMarshalType *info;
 
 				if (m_class_is_enumtype (type->data.klass)) {
-					simpleType = mono_class_enum_basetype (type->data.klass)->type;
+					simpleType = mono_class_enum_basetype_internal (type->data.klass)->type;
 					fprintf (trFd, "{VALUETYPE} - ");
 					goto enum_parmtype;
 				}
@@ -1271,7 +1271,7 @@ handle_enum:
 	case MONO_TYPE_VALUETYPE: {
 		MonoMarshalType *info;
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		} else {
 			int size, align;
@@ -1755,7 +1755,7 @@ enum_retvalue:
 		case MONO_TYPE_VALUETYPE: {
 			MonoClass *klass = mono_class_from_mono_type (sig->ret);
 			if (m_class_is_enumtype (klass)) {
-				simpleType = mono_class_enum_basetype (klass)->type;
+				simpleType = mono_class_enum_basetype_internal (klass)->type;
 				goto enum_retvalue;
 			}
 			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
@@ -2762,7 +2762,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (mono_method_signature (method)->ret->data.klass)) {
-			rtype = mono_class_enum_basetype (mono_method_signature (method)->ret->data.klass)->type;
+			rtype = mono_class_enum_basetype_internal (mono_method_signature (method)->ret->data.klass)->type;
 			goto handle_enum;
 		}
 		save_mode = SAVE_STRUCT;

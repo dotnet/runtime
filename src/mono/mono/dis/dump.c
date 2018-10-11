@@ -897,7 +897,7 @@ handle_enum:
 		}
 		case MONO_TYPE_VALUETYPE:
 			if (m_class_is_enumtype (sig->params [i]->data.klass)) {
-				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
+				type = mono_class_enum_basetype_internal (sig->params [i]->data.klass)->type;
 				goto handle_enum;
 			} else {
 				g_warning ("generic valutype not handled in custom attr value decoding");

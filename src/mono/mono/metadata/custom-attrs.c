@@ -348,7 +348,7 @@ handle_enum:
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (t->data.klass)) {
-			type = mono_class_enum_basetype (t->data.klass)->type;
+			type = mono_class_enum_basetype_internal (t->data.klass)->type;
 			goto handle_enum;
 		} else {
 			MonoClass *k =  t->data.klass;
@@ -490,7 +490,7 @@ handle_enum:
 		return_val_if_nok (error, NULL);
 		basetype = m_class_get_byval_arg (tklass)->type;
 		if (basetype == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tklass))
-			basetype = mono_class_enum_basetype (tklass)->type;
+			basetype = mono_class_enum_basetype_internal (tklass)->type;
 
 		if (basetype == MONO_TYPE_GENERICINST) {
 			MonoGenericClass * mgc = m_class_get_byval_arg (tklass)->data.generic_class;

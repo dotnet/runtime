@@ -5090,7 +5090,7 @@ mono_type_size (MonoType *t, int *align)
 		return MONO_ABI_SIZEOF (gpointer);
 	case MONO_TYPE_VALUETYPE: {
 		if (m_class_is_enumtype (t->data.klass))
-			return mono_type_size (mono_class_enum_basetype (t->data.klass), align);
+			return mono_type_size (mono_class_enum_basetype_internal (t->data.klass), align);
 		else
 			return mono_class_value_size (t->data.klass, (guint32*)align);
 	}
@@ -5113,7 +5113,7 @@ mono_type_size (MonoType *t, int *align)
 
 		if (m_class_is_valuetype (container_class)) {
 			if (m_class_is_enumtype (container_class))
-				return mono_type_size (mono_class_enum_basetype (container_class), align);
+				return mono_type_size (mono_class_enum_basetype_internal (container_class), align);
 			else
 				return mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 		} else {
@@ -5220,7 +5220,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 		guint32 size;
 
 		if (m_class_is_enumtype (t->data.klass))
-			return mono_type_stack_size_internal (mono_class_enum_basetype (t->data.klass), align, allow_open);
+			return mono_type_stack_size_internal (mono_class_enum_basetype_internal (t->data.klass), align, allow_open);
 		else {
 			size = mono_class_value_size (t->data.klass, (guint32*)align);
 
@@ -5242,7 +5242,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 
 		if (m_class_is_valuetype (container_class)) {
 			if (m_class_is_enumtype (container_class))
-				return mono_type_stack_size_internal (mono_class_enum_basetype (container_class), align, allow_open);
+				return mono_type_stack_size_internal (mono_class_enum_basetype_internal (container_class), align, allow_open);
 			else {
 				guint32 size = mono_class_value_size (mono_class_from_mono_type (t), (guint32*)align);
 
@@ -6383,7 +6383,7 @@ handle_enum:
 	case MONO_TYPE_PTR: return MONO_NATIVE_UINT;
 	case MONO_TYPE_VALUETYPE: /*FIXME*/
 		if (m_class_is_enumtype (type->data.klass)) {
-			t = mono_class_enum_basetype (type->data.klass)->type;
+			t = mono_class_enum_basetype_internal (type->data.klass)->type;
 			goto handle_enum;
 		}
 		if (type->data.klass == mono_class_try_get_handleref_class ()){

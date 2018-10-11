@@ -1410,7 +1410,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (constrained_class) {
 		if (m_class_is_enumtype (constrained_class) && !strcmp (target_method->name, "GetHashCode")) {
 			/* Use the corresponding method from the base type to avoid boxing */
-			MonoType *base_type = mono_class_enum_basetype (constrained_class);
+			MonoType *base_type = mono_class_enum_basetype_internal (constrained_class);
 			g_assert (base_type);
 			constrained_class = mono_class_from_mono_type (base_type);
 			target_method = mono_class_get_method_from_name_checked (constrained_class, target_method->name, 0, 0, error);

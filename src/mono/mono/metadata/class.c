@@ -558,9 +558,9 @@ MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
 	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !type->byref)
-		return mono_class_enum_basetype (type->data.klass);
+		return mono_class_enum_basetype_internal (type->data.klass);
 	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !type->byref)
-		return mono_class_enum_basetype (type->data.generic_class->container_class);
+		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
 	return type;
 }
 
@@ -4034,7 +4034,7 @@ handle_enum:
 		return 8;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
+			type = mono_class_enum_basetype_internal (type->data.klass);
 			klass = m_class_get_element_class (klass);
 			goto handle_enum;
 		}
@@ -4284,6 +4284,23 @@ mono_class_is_enum (MonoClass *klass)
 }
 
 /**
+ * mono_class_enum_basetype_internal:
+ * \param klass the \c MonoClass to act on
+ *
+ * Use this function to get the underlying type for an enumeration value.
+ * 
+ * \returns The underlying type representation for an enumeration.
+ */
+MonoType*
+mono_class_enum_basetype_internal (MonoClass *klass)
+{
+	if (m_class_get_element_class (klass) == klass)
+		/* SRE or broken types */
+		return NULL;
+	return m_class_get_byval_arg (m_class_get_element_class (klass));
+}
+
+/**
  * mono_class_enum_basetype:
  * \param klass the \c MonoClass to act on
  *
@@ -4296,11 +4313,7 @@ mono_class_enum_basetype (MonoClass *klass)
 {
 	MonoType *res;
 	MONO_ENTER_GC_UNSAFE;
-	if (m_class_get_element_class (klass) == klass)
-		/* SRE or broken types */
-		res = NULL;
-	else
-		res = m_class_get_byval_arg (m_class_get_element_class (klass));
+	res = mono_class_enum_basetype_internal (klass);
 	MONO_EXIT_GC_UNSAFE;
 	return res;
 }

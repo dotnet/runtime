@@ -923,7 +923,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		mono_error_set_invalid_program (&prepared_error, "Arrays of System.TypedReference types are invalid.");
 		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
 		mono_error_cleanup (&prepared_error);
-	} else if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
+	} else if (eclass->enumtype && !mono_class_enum_basetype_internal (eclass)) {
 		guint32 ref_info_handle = mono_class_get_ref_info_handle (eclass);
 		if (!ref_info_handle || eclass->wastypebuilder) {
 			g_warning ("Only incomplete TypeBuilder objects are allowed to be an enum without base_type");
@@ -3439,7 +3439,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			}
 		}
 
-		if (!mono_class_enum_basetype (klass)) {
+		if (!mono_class_enum_basetype_internal (klass)) {
 			mono_class_set_type_load_failure (klass, "The enumeration's base type is invalid.");
 			return;
 		}
@@ -5150,7 +5150,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 		interfaces [1] = mono_class_bind_generic_parameters (
 			   mono_defaults.generic_ireadonlylist_class, 1, args, FALSE);
 		if (klass->element_class->enumtype) {
-			args [0] = mono_class_enum_basetype (klass->element_class);
+			args [0] = mono_class_enum_basetype_internal (klass->element_class);
 			interfaces [2] = mono_class_bind_generic_parameters (
 				mono_defaults.generic_ilist_class, 1, args, FALSE);
 			interfaces [3] = mono_class_bind_generic_parameters (

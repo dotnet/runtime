@@ -967,7 +967,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	g_hash_table_insert (cache, klass, die);
 
 	if (m_class_is_enumtype (klass)) {
-		int size = mono_class_value_size (mono_class_from_mono_type (mono_class_enum_basetype (klass)), NULL);
+		int size = mono_class_value_size (mono_class_from_mono_type (mono_class_enum_basetype_internal (klass)), NULL);
 
 		emit_label (w, die);
 
@@ -975,7 +975,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 		emit_string (w, full_name);
 		emit_uleb128 (w, size);
 		for (k = 0; k < G_N_ELEMENTS (basic_types); ++k)
-			if (basic_types [k].type == mono_class_enum_basetype (klass)->type)
+			if (basic_types [k].type == mono_class_enum_basetype_internal (klass)->type)
 				break;
 		g_assert (k < G_N_ELEMENTS (basic_types));
 		emit_symbol_diff (w, basic_types [k].die_name, ".Ldebug_info_start", 0);
@@ -996,7 +996,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 
 			p = mono_class_get_field_default_value (field, &def_type);
 			/* len = */ mono_metadata_decode_blob_size (p, &p);
-			switch (mono_class_enum_basetype (klass)->type) {
+			switch (mono_class_enum_basetype_internal (klass)->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
 			case MONO_TYPE_BOOLEAN:

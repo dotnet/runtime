@@ -2156,7 +2156,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_VALUETYPE:
 		if (type->data.klass->enumtype) {
-			simple_type = mono_class_enum_basetype (type->data.klass)->type;
+			simple_type = mono_class_enum_basetype_internal (type->data.klass)->type;
 			goto handle_enum;
 		} else {
 			g_warning ("generic valutype %s not handled in custom attr value decoding", type->data.klass->name);
@@ -2323,7 +2323,7 @@ handle_type:
 		memcpy (p, str, slen);
 		p += slen;
 		g_free (str);
-		simple_type = mono_class_enum_basetype (klass)->type;
+		simple_type = mono_class_enum_basetype_internal (klass)->type;
 		goto handle_enum;
 	}
 	default:
