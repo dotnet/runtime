@@ -552,7 +552,7 @@ mono_set_timeout_exec (int id)
 	}
 
 	if (exc) {
-		char *type_name = mono_type_get_full_name (mono_object_get_class (exc));
+		char *type_name = mono_type_get_full_name (mono_object_class (exc));
 		printf ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}

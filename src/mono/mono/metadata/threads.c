@@ -1185,7 +1185,7 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 			MonoException *ex = mono_error_convert_to_exception (error);
 
 			g_assert (ex != NULL);
-			MonoClass *klass = mono_object_get_class (&ex->object);
+			MonoClass *klass = mono_object_class (ex);
 			if ((mono_runtime_unhandled_exception_policy_get () != MONO_UNHANDLED_POLICY_LEGACY) &&
 			    !is_threadabort_exception (klass)) {
 				mono_unhandled_exception (&ex->object);

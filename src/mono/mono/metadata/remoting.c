@@ -464,7 +464,7 @@ static MonoException *
 mono_remoting_update_exception (MonoException *exc)
 {
 	MonoInternalThread *thread;
-	MonoClass *klass = mono_object_get_class ((MonoObject*)exc);
+	MonoClass *klass = mono_object_class (exc);
 
 	/* Serialization error can only happen when still in the target appdomain */
 	if (!(mono_class_get_flags (klass) & TYPE_ATTRIBUTE_SERIALIZABLE)) {
@@ -478,7 +478,7 @@ mono_remoting_update_exception (MonoException *exc)
 	}
 
 	thread = mono_thread_internal_current ();
-	if (mono_object_get_class ((MonoObject*)exc) == mono_defaults.threadabortexception_class &&
+	if (mono_object_class (exc) == mono_defaults.threadabortexception_class &&
 			thread->flags & MONO_THREAD_FLAG_APPDOMAIN_ABORT) {
 		mono_thread_internal_reset_abort (thread);
 		return mono_get_exception_appdomain_unloaded ();

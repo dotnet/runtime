@@ -203,7 +203,7 @@ mono_object_get_vtable      (MonoObject *obj);
 MONO_API MonoDomain*
 mono_object_get_domain      (MonoObject *obj);
 
-MONO_API MonoClass*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass*
 mono_object_get_class       (MonoObject *obj);
 
 MONO_API void*
