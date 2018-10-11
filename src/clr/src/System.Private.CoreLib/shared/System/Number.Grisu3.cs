@@ -366,7 +366,7 @@ namespace System
 
                 // Step 4: Generate digits.
 
-                bool isSuccess = DigitGen(ref D, precision, number.digits, out int length, out int kappa);
+                bool isSuccess = DigitGen(ref D, precision, number.GetDigitsPointer(), out int length, out int kappa);
 
                 if (isSuccess)
                 {

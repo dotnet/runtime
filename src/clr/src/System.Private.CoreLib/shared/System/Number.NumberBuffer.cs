@@ -19,22 +19,20 @@ namespace System
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal unsafe ref struct NumberBuffer
         {
-            public int precision;                       //  0
-            public int scale;                           //  4
-            private int _sign;                          //  8
-            private NumberBufferKind _kind;             // 12
-            private char* _allDigits;                   // 16
-            private DigitsAndNullTerminator _digits;    // 20 or 24
+            public int precision;
+            public int scale;
+            public bool sign;
+            public NumberBufferKind kind;
+            public fixed char digits[NumberMaxDigits + 1];
 
-            public bool sign { get => _sign != 0; set => _sign = value ? 1 : 0; }
-            public char* digits => (char*)Unsafe.AsPointer(ref _digits);
-            public NumberBufferKind kind { get => _kind; set => _kind = value; }
-
-            [StructLayout(LayoutKind.Sequential, Size = (NumberMaxDigits + 1) * sizeof(char))]
-            private struct DigitsAndNullTerminator { }
+            public char* GetDigitsPointer()
+            {
+                // This is safe to do since we are a ref struct
+                return (char*)(Unsafe.AsPointer(ref digits[0]));
+            }
         }
 
-        internal enum NumberBufferKind
+        internal enum NumberBufferKind : byte
         {
             Unknown = 0,
             Integer = 1,
