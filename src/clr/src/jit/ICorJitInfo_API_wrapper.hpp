@@ -481,6 +481,22 @@ unsigned WrapICorJitInfo::getClassSize(CORINFO_CLASS_HANDLE        cls)
     return temp;
 }
 
+unsigned WrapICorJitInfo::getHeapClassSize(CORINFO_CLASS_HANDLE     cls)
+{
+    API_ENTER(getHeapClassSize);
+    unsigned temp = wrapHnd->getHeapClassSize(cls);
+    API_LEAVE(getHeapClassSize);
+    return temp;
+}
+
+BOOL WrapICorJitInfo::canAllocateOnStack(CORINFO_CLASS_HANDLE    cls)
+{
+    API_ENTER(canAllocateOnStack);
+    BOOL temp = wrapHnd->canAllocateOnStack(cls);
+    API_LEAVE(canAllocateOnStack);
+    return temp;
+}
+
 unsigned WrapICorJitInfo::getClassAlignmentRequirement(
             CORINFO_CLASS_HANDLE        cls,
             BOOL                        fDoubleAlignHint)
