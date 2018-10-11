@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 45aafd4d-1d23-4647-9ce1-cf09a2677ca0 */
-    0x45aafd4d,
-    0x1d23,
-    0x4647,
-    {0x9c, 0xe1, 0xcf, 0x09, 0xa2, 0x67, 0x7c, 0xa0}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 12768bf8-549c-455b-a3df-57a751a81813 */
+    0x12768bf8,
+    0x549c,
+    0x455b,
+    {0xa3, 0xdf, 0x57, 0xa7, 0x51, 0xa8, 0x18, 0x13}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2382,6 +2382,15 @@ public:
     virtual unsigned getClassSize (
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
+
+    // return the number of bytes needed by an instance of the class allocated on the heap
+    virtual unsigned getHeapClassSize(
+        CORINFO_CLASS_HANDLE        cls
+    ) = 0;
+
+    virtual BOOL canAllocateOnStack(
+        CORINFO_CLASS_HANDLE cls
+    ) = 0;
 
     virtual unsigned getClassAlignmentRequirement (
             CORINFO_CLASS_HANDLE        cls,
