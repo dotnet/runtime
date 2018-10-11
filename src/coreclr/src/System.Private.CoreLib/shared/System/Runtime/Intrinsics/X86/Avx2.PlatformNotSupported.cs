@@ -1207,7 +1207,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) { throw new PlatformNotSupportedException(); }
+        public new static Vector256<uint> InsertVector128(Vector256<uint> value, Vector128<uint> data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, m128, imm8
@@ -1218,7 +1218,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) { throw new PlatformNotSupportedException(); }
+        public new static Vector256<long> InsertVector128(Vector256<long> value, Vector128<long> data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, m128, imm8
@@ -1229,7 +1229,7 @@ namespace System.Runtime.Intrinsics.X86
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, xmm, imm8
         /// </summary>
-        public static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw new PlatformNotSupportedException(); }
+        public new static Vector256<ulong> InsertVector128(Vector256<ulong> value, Vector128<ulong> data, byte index) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_inserti128_si256 (__m256i a, __m128i b, const int imm8)
         ///   VINSERTI128 ymm, ymm, m128, imm8
