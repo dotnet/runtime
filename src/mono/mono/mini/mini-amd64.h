@@ -346,8 +346,8 @@ typedef struct {
 	/* Floating registers */
 	double fregs [AMD64_XMM_NREG];
 	/* Stack usage, used for passing params on stack */
-	size_t stack_size;
-	gpointer *stack;
+	guint32 stack_size;
+	guint8 *stack;
 } CallContext;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->gregs [AMD64_RAX] = (gsize)exc; } while (0)
@@ -464,6 +464,7 @@ typedef struct {
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+#define MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED 1
 
 #if defined(TARGET_OSX) || defined(__linux__)

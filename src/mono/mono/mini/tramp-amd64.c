@@ -1021,6 +1021,79 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	return NULL;
 #endif /* DISABLE_INTERPRETER */
 }
+
+gpointer
+mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
+{
+#ifndef DISABLE_INTERPRETER
+	guint8 *start = NULL, *code;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+	int buf_len, i;
+	int framesize;
+
+	buf_len = 512;
+	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
+
+	unwind_ops = mono_arch_get_cie_program ();
+
+	amd64_push_reg (code, AMD64_RBP);
+	/* CFA = SP + 8 (RIP) + 8 (RBP) */
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 16);
+	mono_add_unwind_op_offset (unwind_ops, code, start, AMD64_RBP, -16);
+
+	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (mgreg_t));
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RBP, 16);
+
+	/* allocate the CallContext on the stack */
+	framesize = ALIGN_TO (MONO_ABI_SIZEOF (CallContext), MONO_ARCH_FRAME_ALIGNMENT);
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
+
+	/* save all general purpose registers into the CallContext */
+	for (i = 0; i < PARAM_REGS; i++)
+		amd64_mov_membase_reg (code, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, gregs) + param_regs [i] * sizeof (mgreg_t), param_regs [i], sizeof (mgreg_t));
+
+	/* save all floating registers into the CallContext  */
+	for (i = 0; i < FLOAT_PARAM_REGS; i++)
+		amd64_sse_movsd_membase_reg (code, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
+
+	/* set the stack pointer to the value at call site */
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RBP, sizeof (mgreg_t));
+	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, 2 * sizeof (mgreg_t));
+	amd64_mov_membase_reg (code, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, stack), AMD64_R11, sizeof (mgreg_t));
+
+	/* call interp_entry with the ccontext and rmethod as arguments */
+	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RSP, sizeof (mgreg_t));
+	amd64_mov_reg_membase (code, AMD64_ARG_REG2, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, arg), sizeof (mgreg_t));
+	amd64_mov_reg_membase (code, AMD64_R11, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, addr), sizeof (mgreg_t));
+	amd64_call_reg (code, AMD64_R11);
+
+	/* load the return values from the context */
+	for (i = 0; i < RETURN_REGS; i++)
+		amd64_mov_reg_membase (code, return_regs [i], AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, gregs) + return_regs [i] * sizeof (mgreg_t), sizeof (mgreg_t));
+
+	for (i = 0; i < FLOAT_RETURN_REGS; i++)
+		amd64_sse_movsd_reg_membase (code, i, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
+
+	/* reset stack and return */
+	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_RBP, 8);
+	amd64_pop_reg (code, AMD64_RBP);
+	amd64_ret (code);
+
+	g_assert (code - start < buf_len);
+
+	mono_arch_flush_icache (start, code - start);
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));
+
+	if (info)
+		*info = mono_tramp_info_create ("native_to_interp_trampoline", start, code - start, ji, unwind_ops);
+
+	return start;
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif /* DISABLE_INTERPRETER */
+}
 #endif /* !DISABLE_JIT */
 
 #ifdef DISABLE_JIT
@@ -1082,6 +1155,13 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 gpointer
 mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 {
 	g_assert_not_reached ();
 	return NULL;

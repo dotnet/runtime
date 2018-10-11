@@ -1727,19 +1727,23 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 void
 mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
 {
-	MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	MonoEECallbacks *interp_cb;
+	CallInfo *cinfo;
 	gpointer storage;
 	ArgInfo *ainfo;
 
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		ainfo = &cinfo->ret;
-		if (ainfo->storage != RegTypeStructByAddr) {
-			g_assert (!arg_need_temp (ainfo));
-			storage = arg_get_storage (ccontext, ainfo);
-			memset (ccontext, 0, sizeof (CallContext)); // FIXME
-			interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
-		}
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return;
+
+	interp_cb = mini_get_interp_callbacks ();
+	cinfo = get_call_info (NULL, sig);
+	ainfo = &cinfo->ret;
+
+	if (ainfo->storage != RegTypeStructByAddr) {
+		g_assert (!arg_need_temp (ainfo));
+		storage = arg_get_storage (ccontext, ainfo);
+		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
 
 	g_free (cinfo);
@@ -1782,18 +1786,22 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 void
 mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
 {
-	MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	MonoEECallbacks *interp_cb;
+	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	gpointer storage;
 
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		ainfo = &cinfo->ret;
-		if (ainfo->storage != RegTypeStructByAddr) {
-			g_assert (!arg_need_temp (ainfo));
-			storage = arg_get_storage (ccontext, ainfo);
-			interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
-		}
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return;
+
+	interp_cb = mini_get_interp_callbacks ();
+	cinfo = get_call_info (NULL, sig);
+	ainfo = &cinfo->ret;
+
+	if (ainfo->storage != RegTypeStructByAddr) {
+		g_assert (!arg_need_temp (ainfo));
+		storage = arg_get_storage (ccontext, ainfo);
+		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
 
 	g_free (cinfo);

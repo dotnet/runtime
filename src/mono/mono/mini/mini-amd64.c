@@ -1093,72 +1093,182 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	return cinfo;
 }
 
+static int
+arg_need_temp (ArgInfo *ainfo)
+{
+	if (ainfo->storage == ArgValuetypeInReg)
+		return ainfo->nregs * sizeof (host_mgreg_t);
+	return 0;
+}
+
+static gpointer
+arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
+{
+	switch (ainfo->storage) {
+		case ArgInIReg:
+			return &ccontext->gregs [ainfo->reg];
+		case ArgInFloatSSEReg:
+		case ArgInDoubleSSEReg:
+			return &ccontext->fregs [ainfo->reg];
+		case ArgOnStack:
+			return ccontext->stack + ainfo->offset;
+		case ArgValuetypeInReg:
+			// Empty struct
+			g_assert (!ainfo->nregs);
+			return NULL;
+		default:
+			g_error ("Arg storage type not yet supported");
+	}
+}
+
+static void
+arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
+{
+	g_assert (arg_need_temp (ainfo));
+
+	host_mgreg_t *dest_cast = (host_mgreg_t*)dest;
+	/* Reconstruct the value type */
+	for (int k = 0; k < ainfo->nregs; k++) {
+		int storage_type = ainfo->pair_storage [k];
+		int reg_storage = ainfo->pair_regs [k];
+		switch (storage_type) {
+			case ArgInIReg:
+				*dest_cast = ccontext->gregs [reg_storage];
+				break;
+			case ArgInFloatSSEReg:
+			case ArgInDoubleSSEReg:
+				*(double*)dest_cast = ccontext->fregs [reg_storage];
+				break;
+			default:
+				g_assert_not_reached ();
+		}
+		dest_cast++;
+	}
+}
+
+static void
+arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
+{
+	g_assert (arg_need_temp (ainfo));
+
+	host_mgreg_t *src_cast = (host_mgreg_t*)src;
+	for (int k = 0; k < ainfo->nregs; k++) {
+		int storage_type = ainfo->pair_storage [k];
+		int reg_storage = ainfo->pair_regs [k];
+		switch (storage_type) {
+			case ArgInIReg:
+				ccontext->gregs [reg_storage] = *src_cast;
+				break;
+			case ArgInFloatSSEReg:
+			case ArgInDoubleSSEReg:
+				ccontext->fregs [reg_storage] = *(double*)src_cast;
+				break;
+			default:
+				g_assert_not_reached ();
+		}
+		src_cast++;
+	}
+}
+
 void
 mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
 {
 	CallInfo *cinfo = get_call_info (NULL, sig);
 	MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
+	gpointer storage;
+	ArgInfo *ainfo;
 
 	memset (ccontext, 0, sizeof (CallContext));
 
 	ccontext->stack_size = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 	if (ccontext->stack_size)
-		ccontext->stack = (gpointer*)g_malloc (ccontext->stack_size);
+		ccontext->stack = (guint8*)g_calloc (1, ccontext->stack_size);
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
-			gpointer ret_storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, -1);
-			ccontext->gregs [cinfo->ret.reg] = (host_mgreg_t)ret_storage;
+		ainfo = &cinfo->ret;
+		if (ainfo->storage == ArgValuetypeAddrInIReg) {
+			storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, -1);
+			ccontext->gregs [cinfo->ret.reg] = (host_mgreg_t)storage;
+		}
+	}
+
+	g_assert (!sig->hasthis);
+
+	for (int i = 0; i < sig->param_count; i++) {
+		ainfo = &cinfo->args [i];
+		int temp_size = arg_need_temp (ainfo);
+
+		if (temp_size)
+			storage = alloca (temp_size); // FIXME? alloca in a loop
+		else
+			storage = arg_get_storage (ccontext, ainfo);
+
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
+		if (temp_size)
+			arg_set_val (ccontext, ainfo, storage);
+	}
+
+	g_free (cinfo);
+}
+
+void
+mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+{
+	MonoEECallbacks *interp_cb;
+	CallInfo *cinfo;
+	gpointer storage;
+	ArgInfo *ainfo;
+
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return;
+
+	interp_cb = mini_get_interp_callbacks ();
+	cinfo = get_call_info (NULL, sig);
+	ainfo = &cinfo->ret;
+
+	if (cinfo->ret.storage != ArgValuetypeAddrInIReg) {
+		int temp_size = arg_need_temp (ainfo);
+
+		if (temp_size)
+			storage = alloca (temp_size);
+		else
+			storage = arg_get_storage (ccontext, ainfo);
+		memset (ccontext, 0, sizeof (CallContext)); // FIXME
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, -1, storage);
+		if (temp_size)
+			arg_set_val (ccontext, ainfo, storage);
+	}
+
+	g_free (cinfo);
+}
+
+void
+mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+{
+	MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
+	CallInfo *cinfo = get_call_info (NULL, sig);
+	gpointer storage;
+	ArgInfo *ainfo;
+
+	if (sig->ret->type != MONO_TYPE_VOID) {
+		ainfo = &cinfo->ret;
+		if (ainfo->storage == ArgValuetypeAddrInIReg) {
+			storage = (gpointer) ccontext->gregs [cinfo->ret.reg];
+			interp_cb->frame_arg_set_storage ((MonoInterpFrameHandle)frame, sig, -1, storage);
 		}
 	}
 
 	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
-		ArgInfo *ainfo = &cinfo->args [i];
-		gpointer storage;
-		int storage_type = ainfo->storage;
-		int reg_storage = ainfo->reg;
-		switch (storage_type) {
-			case ArgInIReg: {
-				storage = &ccontext->gregs [reg_storage];
-				break;
-			}
-			case ArgInFloatSSEReg:
-			case ArgInDoubleSSEReg: {
-				storage = &ccontext->fregs [reg_storage];
-				break;
-			}
-			case ArgOnStack: {
-				storage = (char*)ccontext->stack + ainfo->offset;
-				break;
-			}
-			case ArgValuetypeInReg: {
-				// FIXME? Alloca in a loop.
-				storage = g_newa (mgreg_t, ainfo->nregs);
-				break;
-			}
-			default:
-				g_error ("Arg storage type not yet supported");
+		ainfo = &cinfo->args [i];
+		int temp_size = arg_need_temp (ainfo);
+
+		if (temp_size) {
+			storage = alloca (temp_size); // FIXME? alloca in a loop
+			arg_get_val (ccontext, ainfo, storage);
+		} else {
+			storage = arg_get_storage (ccontext, ainfo);
 		}
-		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
-		if (storage_type == ArgValuetypeInReg) {
-			/* Split up the value type into the reg pairs */
-			for (int k = 0; k < ainfo->nregs; k++) {
-				storage_type = ainfo->pair_storage [k];
-				reg_storage = ainfo->pair_regs [k];
-				switch (storage_type) {
-					case ArgInIReg:
-						ccontext->gregs [reg_storage] = *(mgreg_t*)storage;
-						break;
-					case ArgInFloatSSEReg:
-					case ArgInDoubleSSEReg:
-						ccontext->fregs [reg_storage] = *(double*)storage;
-						break;
-					default:
-						g_assert_not_reached ();
-				}
-				storage = (gpointer*)storage + 1;
-			}
-		}
+		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
 	}
 
 	g_free (cinfo);
@@ -1167,63 +1277,32 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 void
 mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
 {
-	MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
+	MonoEECallbacks *interp_cb;
 	CallInfo *cinfo;
+	ArgInfo *ainfo;
+	gpointer storage;
 
 	/* No return value */
 	if (sig->ret->type == MONO_TYPE_VOID)
 		return;
 
+	interp_cb = mini_get_interp_callbacks ();
 	cinfo = get_call_info (NULL, sig);
+	ainfo = &cinfo->ret;
 
 	/* The return values were stored directly at address passed in reg */
-	if (cinfo->ret.storage == ArgValuetypeAddrInIReg)
-		goto done;
+	if (cinfo->ret.storage != ArgValuetypeAddrInIReg) {
+		int temp_size = arg_need_temp (ainfo);
 
-	ArgInfo *ainfo;
-	ainfo = &cinfo->ret;
-	gpointer storage;
-	int storage_type;
-	storage_type = ainfo->storage;
-	int reg_storage;
-	reg_storage = ainfo->reg;
-	switch (storage_type) {
-		case ArgInIReg: {
-			storage = &ccontext->gregs [reg_storage];
-			break;
+		if (temp_size) {
+			storage = alloca (temp_size);
+			arg_get_val (ccontext, ainfo, storage);
+		} else {
+			storage = arg_get_storage (ccontext, ainfo);
 		}
-		case ArgInFloatSSEReg:
-		case ArgInDoubleSSEReg: {
-			storage = &ccontext->fregs [reg_storage];
-			break;
-		}
-		case ArgValuetypeInReg: {
-			storage = g_newa (mgreg_t, ainfo->nregs);
-			mgreg_t *storage_tmp = (mgreg_t*)storage;
-			/* Reconstruct the value type */
-			for (int k = 0; k < ainfo->nregs; k++) {
-				storage_type = ainfo->pair_storage [k];
-				reg_storage = ainfo->pair_regs [k];
-				switch (storage_type) {
-					case ArgInIReg:
-						*storage_tmp = ccontext->gregs [reg_storage];
-						break;
-					case ArgInFloatSSEReg:
-					case ArgInDoubleSSEReg:
-						*(double*)storage_tmp = ccontext->fregs [reg_storage];
-						break;
-					default:
-						g_assert_not_reached ();
-				}
-				storage_tmp++;
-			}
-			break;
-		}
-		default:
-			g_error ("Arg storage type not yet supported");
+		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
-	interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
-done:
+
 	g_free (cinfo);
 }
 
