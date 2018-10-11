@@ -263,6 +263,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Marvin.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Marvin.OrdinalIgnoreCase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Math.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MathF.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MarshalByRefObject.cs" />
