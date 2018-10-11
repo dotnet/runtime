@@ -314,7 +314,7 @@ namespace System
             }
 #endif
 
-            char* src = number.digits;
+            char* src = number.GetDigitsPointer();
             int total = GetLength(src);
             int remaining = total;
 
