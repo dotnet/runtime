@@ -54,9 +54,9 @@ class FieldMarshaler_WinBool;
 class FieldMarshaler_CBool;
 class FieldMarshaler_Decimal;
 class FieldMarshaler_Date;
+class FieldMarshaler_BSTR;
 #ifdef FEATURE_COMINTEROP
 class FieldMarshaler_SafeArray;
-class FieldMarshaler_BSTR;
 class FieldMarshaler_HSTRING;
 class FieldMarshaler_Interface;
 class FieldMarshaler_Variant;
@@ -466,9 +466,6 @@ protected:
 };
 
 
-
-#ifdef FEATURE_COMINTEROP
-
 //=======================================================================
 // BSTR <--> System.String
 //=======================================================================
@@ -484,6 +481,7 @@ public:
     COPY_TO_IMPL_BASE_STRUCT_ONLY()
 };
 
+#ifdef FEATURE_COMINTEROP
 //=======================================================================
 // HSTRING <--> System.String
 //=======================================================================
