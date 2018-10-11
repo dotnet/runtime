@@ -5874,10 +5874,11 @@ mono_arch_get_patch_offset (guint8 *code)
 	else if ((code [0] >= 0xb8) && (code [0] < 0xb8 + 8))
 		/* mov <REG>, imm */
 		return 1;
-	else {
-		g_assert_not_reached ();
-		return -1;
-	}
+	else if (code [0] == 0xE9)
+		/* jmp eip+32b */
+		return 1;
+	g_assert_not_reached ();
+	return -1;
 }
 
 /**
