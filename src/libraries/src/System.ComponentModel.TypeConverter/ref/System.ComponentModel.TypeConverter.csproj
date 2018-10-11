@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ComponentModel.cs" />
+    <Compile Include="System.ComponentModel.manual.cs" />
     <Compile Include="System.ComponentModel.TypeConverter.cs" />
   </ItemGroup>
   <ItemGroup>

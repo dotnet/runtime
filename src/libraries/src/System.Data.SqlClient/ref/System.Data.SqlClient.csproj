@@ -7,7 +7,7 @@
   <ItemGroup>
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM);uap10.0.16299" />
     <Compile Include="System.Data.SqlClient.cs" />
-    <Compile Include="System.Data.SqlClient.Manual.cs" />
+    <Compile Condition="'$(TargetsNetFx)' != 'true'" Include="System.Data.SqlClient.Manual.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNETCoreApp)' == 'true'">
     <Compile Include="System.Data.SqlClient.NetCoreApp.cs" />
@@ -24,6 +24,7 @@
     <Reference Include="System.Data.Common" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
@@ -33,6 +34,7 @@
     <ProjectReference Include="..\..\System.Data.Common\ref\System.Data.Common.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.ObjectModel\ref\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Xml.ReaderWriter\ref\System.Xml.ReaderWriter.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
   </ItemGroup>

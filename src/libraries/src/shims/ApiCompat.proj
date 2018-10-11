@@ -42,6 +42,8 @@
   >
     <PropertyGroup>
       <ApiCompatArgs>$(ApiCompatArgs) -implDirs:"$(ApiCompatImplementationDirs)"</ApiCompatArgs>
+      <!-- Uncomment once we have a new buildtools which tests for attributes 
+      <ApiCompatArgs Condition="'$(ApiCompatExcludeAttributeList)' != ''">$(ApiCompatArgs) -excludeAttributes:"$(ApiCompatExcludeAttributeList)"</ApiCompatArgs> -->
       <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">-baseline:"$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
       <ApiCompatExitCode>0</ApiCompatExitCode>
 

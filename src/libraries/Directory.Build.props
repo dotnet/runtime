@@ -115,6 +115,7 @@
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <AssemblyKey>Open</AssemblyKey>
     <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreappaot'">true</RunApiCompat>
+    <ApiCompatExcludeAttributeList>$(MSBuildThisFileDirectory)tools-local/DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
     <!-- Build as portable by default -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
     <!-- Used for launchSettings.json and runtime config files. -->

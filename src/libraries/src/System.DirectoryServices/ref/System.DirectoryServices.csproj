@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.DirectoryServices.cs" />
+    <Compile Include="System.DirectoryServices.manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.IO.FileSystem.AccessControl\ref\System.IO.FileSystem.AccessControl.csproj" />

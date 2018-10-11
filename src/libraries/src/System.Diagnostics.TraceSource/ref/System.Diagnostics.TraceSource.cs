@@ -8,6 +8,7 @@
 
 namespace System.Diagnostics
 {
+    [System.Diagnostics.SwitchLevel(typeof(bool))]
     public partial class BooleanSwitch : System.Diagnostics.Switch
     {
         public BooleanSwitch(string displayName, string description) : base(default(string), default(string)) { }
@@ -292,6 +293,7 @@ namespace System.Diagnostics
         protected virtual string[] GetSupportedAttributes() { throw null; }
         public void TraceTransfer(int id, string message, System.Guid relatedActivityId) { }
     }
+    [System.Diagnostics.SwitchLevel(typeof(TraceLevel))]
     public partial class TraceSwitch : System.Diagnostics.Switch
     {
         public TraceSwitch(string displayName, string description) : base(default(string), default(string)) { }
@@ -304,6 +306,7 @@ namespace System.Diagnostics
         protected override void OnSwitchSettingChanged() { }
         protected override void OnValueChanged() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Property)]
     public sealed class SwitchAttribute : System.Attribute 
     {
         public SwitchAttribute(string switchName, Type switchType) { throw null; }
@@ -312,6 +315,7 @@ namespace System.Diagnostics
         public System.Type SwitchType { get { throw null; } set { } }
         public static SwitchAttribute[] GetAll(System.Reflection.Assembly assembly) { throw null; }
     }
+    [System.AttributeUsage(System.AttributeTargets.Class)]
     public sealed class SwitchLevelAttribute : System.Attribute 
     {
         public SwitchLevelAttribute(Type switchLevelType) { throw null; }

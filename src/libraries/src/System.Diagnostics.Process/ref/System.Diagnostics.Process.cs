@@ -263,6 +263,7 @@ namespace System.Diagnostics
         Normal = 0,
     }
 
+    [System.AttributeUsage(AttributeTargets.All)]
     public class MonitoringDescriptionAttribute : System.ComponentModel.DescriptionAttribute 
     {
         public MonitoringDescriptionAttribute(string description) { throw null; }

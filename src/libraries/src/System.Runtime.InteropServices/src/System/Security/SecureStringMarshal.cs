@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Security
 {
+    [CLSCompliantAttribute(false)]
     public static class SecureStringMarshal
     {
         public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s) => Marshal.SecureStringToCoTaskMemAnsi(s);
