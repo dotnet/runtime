@@ -212,9 +212,9 @@ namespace R2RDump
         private const int _mdtMethodDef = 0x06000000;
 
         /// <summary>
-        /// ECMA metadata reader for the method module.
+        /// R2R reader representing the method module.
         /// </summary>
-        public MetadataReader MetadataReader { get; }
+        public R2RReader R2RReader { get; }
 
         /// <summary>
         /// An unique index for the method
@@ -271,7 +271,7 @@ namespace R2RDump
         /// </summary>
         public R2RMethod(
             int index, 
-            MetadataReader mdReader, 
+            R2RReader r2rReader, 
             EntityHandle methodHandle, 
             int entryPointId, 
             string owningType, 
@@ -283,7 +283,7 @@ namespace R2RDump
             MethodHandle = methodHandle;
             EntryPointRuntimeFunctionId = entryPointId;
 
-            MetadataReader = mdReader;
+            R2RReader = r2rReader;
             RuntimeFunctions = new List<RuntimeFunction>();
 
             EntityHandle owningTypeHandle;
@@ -297,8 +297,8 @@ namespace R2RDump
             {
                 case HandleKind.MethodDefinition:
                     {
-                        MethodDefinition methodDef = MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
-                        Name = MetadataReader.GetString(methodDef.Name);
+                        MethodDefinition methodDef = R2RReader.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)MethodHandle);
+                        Name = R2RReader.MetadataReader.GetString(methodDef.Name);
                         Signature = methodDef.DecodeSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = methodDef.GetDeclaringType();
                         genericParams = methodDef.GetGenericParameters();
@@ -307,8 +307,8 @@ namespace R2RDump
 
                 case HandleKind.MemberReference:
                     {
-                        MemberReference memberRef = MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
-                        Name = MetadataReader.GetString(memberRef.Name);
+                        MemberReference memberRef = R2RReader.MetadataReader.GetMemberReference((MemberReferenceHandle)MethodHandle);
+                        Name = R2RReader.MetadataReader.GetString(memberRef.Name);
                         Signature = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(typeProvider, genericContext);
                         owningTypeHandle = memberRef.Parent;
                     }
@@ -324,7 +324,7 @@ namespace R2RDump
             }
             else
             {
-                DeclaringType = MetadataNameFormatter.FormatHandle(MetadataReader, owningTypeHandle);
+                DeclaringType = MetadataNameFormatter.FormatHandle(R2RReader.MetadataReader, owningTypeHandle);
             }
 
             Fixups = fixups;
@@ -378,8 +378,8 @@ namespace R2RDump
 
             sb.AppendLine(SignatureString);
 
-            sb.AppendLine($"Handle: 0x{MetadataTokens.GetToken(MetadataReader, MethodHandle):X8}");
-            sb.AppendLine($"Rid: {MetadataTokens.GetRowNumber(MetadataReader, MethodHandle)}");
+            sb.AppendLine($"Handle: 0x{MetadataTokens.GetToken(R2RReader.MetadataReader, MethodHandle):X8}");
+            sb.AppendLine($"Rid: {MetadataTokens.GetRowNumber(R2RReader.MetadataReader, MethodHandle)}");
             sb.AppendLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
             sb.AppendLine($"Number of RuntimeFunctions: {RuntimeFunctions.Count}");
             if (Fixups != null)
@@ -387,7 +387,9 @@ namespace R2RDump
                 sb.AppendLine($"Number of fixups: {Fixups.Count()}");
                 foreach (FixupCell cell in Fixups)
                 {
-                    sb.AppendLine($"    TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}");
+                    R2RImportSection importSection = R2RReader.ImportSections[(int)cell.TableIndex];
+                    R2RImportSection.ImportSectionEntry entry = importSection.Entries[(int)cell.CellOffset];
+                    sb.AppendLine($"    TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}: {entry.Signature}");
                 }
             }
 
