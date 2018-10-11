@@ -2901,7 +2901,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             switch (cls)
             {
 #ifdef FEATURE_COMINTEROP
-            case NFT_BSTR:
             case NFT_HSTRING:
             case NFT_VARIANT:
             case NFT_VARIANTBOOL:
@@ -2919,6 +2918,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             case NFT_DELEGATE:
             case NFT_SAFEHANDLE:
             case NFT_CRITICALHANDLE:
+            case NFT_BSTR:
                 fieldClassificationType = SystemVClassificationTypeInteger;
                 break;
 

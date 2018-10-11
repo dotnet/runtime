@@ -9,7 +9,14 @@ using System.Text;
 
 namespace NativeDefs
 {
-    
+    public struct Person
+    {
+        public int age;
+        public int _padding;
+        [MarshalAs(UnmanagedType.BStr)]
+        public string name;
+    }
+
     [return: MarshalAs(UnmanagedType.BStr)]
     public delegate string Del_MarshalPointer_Out([MarshalAs(UnmanagedType.BStr)] out string s);
     
@@ -23,6 +30,10 @@ namespace NativeDefs
     [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     [return: MarshalAs(UnmanagedType.BStr)]
     public delegate string DelMarshal_InOut([MarshalAs(UnmanagedType.BStr)][In, Out]string s);
+
+    public delegate bool DelMarshal_Struct_In(Person person);
+
+    public delegate bool DelMarshalPointer_Struct_InOut(ref Person person);
 
     public static class PInvokeDef
     {
@@ -49,5 +60,17 @@ namespace NativeDefs
 
         [DllImport(NativeBinaryName, CallingConvention = CallingConvention.StdCall)]
         public static extern bool RPinvoke_DelMarshalPointer_Out(DelMarshalPointer_Out d);
+        
+        [DllImport(NativeBinaryName)]
+        public static extern bool Marshal_Struct_In(Person person);
+
+        [DllImport(NativeBinaryName)]
+        public static extern bool MarshalPointer_Struct_InOut(ref Person person);
+
+        [DllImport(NativeBinaryName)]
+        public static extern bool RPInvoke_DelMarshal_Struct_In(DelMarshal_Struct_In d);
+
+        [DllImport(NativeBinaryName)]
+        public static extern bool RPInvoke_DelMarshalStructPointer_InOut(DelMarshalPointer_Struct_InOut d);
     }
 }

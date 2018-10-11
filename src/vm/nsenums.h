@@ -54,10 +54,10 @@ DEFINE_NFT(NFT_INTERFACE,                   sizeof(IUnknown*),      false)
 
 DEFINE_NFT(NFT_SAFEHANDLE,                  sizeof(LPVOID),         false)
 DEFINE_NFT(NFT_CRITICALHANDLE,              sizeof(LPVOID),         false)
+DEFINE_NFT(NFT_BSTR,                        sizeof(BSTR),           false)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_NFT(NFT_SAFEARRAY,                   0,                      false)
-DEFINE_NFT(NFT_BSTR,                        sizeof(BSTR),           false)
 DEFINE_NFT(NFT_HSTRING,                     sizeof(HSTRING),        true)
 DEFINE_NFT(NFT_VARIANT,                     sizeof(VARIANT),        false)
 DEFINE_NFT(NFT_VARIANTBOOL,                 sizeof(VARIANT_BOOL),   false)

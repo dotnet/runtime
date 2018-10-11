@@ -7,13 +7,14 @@ using System;
 using System.Reflection;
 using System.Text;
 using NativeDefs;
+using System.Diagnostics;
 
 class Test
 {
 
     #region "Report Failure"
     static int fails = 0; //record the fail numbers
-    // Overload methods for reportfailure	
+    // Overload methods for reportfailure
     static int ReportFailure(string s)
     {
         Console.WriteLine(" === Fail:" + s);
@@ -93,6 +94,91 @@ class Test
         return retstr;
     }
 
+    #endregion
+    
+    #region "Struct"
+    static void TestStructIn()
+    {
+        string strManaged = "Managed\0String\0";
+        Person person = new Person();
+        person.age = 12;
+        person.name = strManaged;
+        if (!PInvokeDef.Marshal_Struct_In(person))
+        {
+            ReportFailure("Method PInvokeDef.Marshal_Struct_In[Managed Side],The native return false");
+        }
+    }
+
+    static void TestStructPointerInOut()
+    {
+        string strManaged = "Managed\0String\0";
+        Person person = new Person();
+        person.age = 12;
+        person.name = strManaged;
+
+        if (!PInvokeDef.MarshalPointer_Struct_InOut(ref person))
+        {
+            ReportFailure("Method PInvokeDef.MarshalPointer_Struct_InOut[Managed Side],The native return false");
+        }
+        
+        if(person.age != 21 || person.name != " Native")
+        {
+            ReportFailure("Method PInvokeDef.MarshalPointer_Struct_InOut[Managed Side],The Return struct is wrong");
+        }
+    }
+
+    static bool Call_Struct_Delegate_In(Person person)
+    {
+        if (person.age != 21 || person.name != " Native")
+        {
+            ReportFailure("Method Call_Struct_Delegate_In[Managed Side], The native passing in struct is incorrect");
+            return false;
+        }
+
+        return true;
+    } 
+
+    static void TestRPInvokeStructIn()
+    {
+        DelMarshal_Struct_In d = new DelMarshal_Struct_In(Call_Struct_Delegate_In);
+        if (!PInvokeDef.RPInvoke_DelMarshal_Struct_In(d))
+        {
+            ReportFailure("Method PInvokeDef.RPInvoke_DelMarshal_Struct_In[Managed Side],The Return value is wrong");
+        }
+    }
+   
+    static bool Call_StructPointer_Delegate_InOut(ref Person person)
+    {
+        if (person.age != 21 || person.name != " Native")
+        {
+            ReportFailure("Method Call_StructPointer_Delegate_InOut[Managed Side], The native passing in struct is incorrect");
+            return false;
+        }
+
+        string strManaged = "Managed\0String\0";
+        Person managedPerson = new Person();
+        managedPerson.age = 12;
+        managedPerson.name = strManaged;
+
+        person = managedPerson;
+        return true;
+    }
+    
+    static void TestRPInvokeStructPointerInOut()
+    {
+        DelMarshalPointer_Struct_InOut d = new DelMarshalPointer_Struct_InOut(Call_StructPointer_Delegate_InOut);
+        if(!PInvokeDef.RPInvoke_DelMarshalStructPointer_InOut(d))
+        {
+            ReportFailure("Method PInvokeDef.RPInvoke_DelMarshalStructPointer_InOut[Managed Side], The Return value is wrong");
+        }
+    }
+    static void TestStruct()
+    {
+        TestStructIn();
+        TestStructPointerInOut();
+        TestRPInvokeStructIn();
+        TestRPInvokeStructPointerInOut();
+    }
     #endregion
 
     public static int Main(string[] args)
@@ -195,6 +281,11 @@ class Test
         }
 
         #endregion
+
+        #region "Struct"
+        TestStruct();
+        #endregion
+
         return ExitTest();
     }
 }
