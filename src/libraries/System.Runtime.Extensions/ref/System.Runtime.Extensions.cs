@@ -995,6 +995,7 @@ namespace System
         public ContextMarshalException(string message) { }
         public ContextMarshalException(string message, System.Exception inner) { }
     }
+    [System.AttributeUsage(AttributeTargets.Field, Inherited = false)]
     public partial class ContextStaticAttribute : System.Attribute
     {
         public ContextStaticAttribute() { }

@@ -353,6 +353,7 @@ namespace System.Management
         public event System.Management.ProgressEventHandler Progress { add { } remove { } }
         public void Cancel() { }
     }
+    [System.ComponentModel.TypeConverter(typeof(System.ComponentModel.ExpandableObjectConverter))]
     public abstract partial class ManagementOptions : System.ICloneable
     {
         internal ManagementOptions() { }

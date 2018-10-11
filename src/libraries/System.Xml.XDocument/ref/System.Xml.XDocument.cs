@@ -210,6 +210,7 @@ namespace System.Xml.Linq
         public override void WriteTo(System.Xml.XmlWriter writer) { }
         public override System.Threading.Tasks.Task WriteToAsync(System.Xml.XmlWriter writer, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
+    [System.Xml.Serialization.XmlSchemaProvider(null, IsAny=true)]
     public partial class XElement : System.Xml.Linq.XContainer, System.Xml.Serialization.IXmlSerializable
     {
         public XElement(System.Xml.Linq.XElement other) { }

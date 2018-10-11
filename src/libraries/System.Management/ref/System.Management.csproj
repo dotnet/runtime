@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Management.cs" />
+    <Compile Include="System.Management.manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.CodeDom\ref\System.CodeDom.csproj" />

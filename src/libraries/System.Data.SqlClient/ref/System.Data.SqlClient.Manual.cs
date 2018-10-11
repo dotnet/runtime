@@ -17,4 +17,9 @@ namespace System.Data.SqlClient
         // SqlConection expects IDisposable methods to be implemented via System.ComponentModel.Component, which it no longer inherits from
         override protected void Dispose(bool disposing) { }
     }
+    [System.ComponentModel.TypeConverter(typeof(SqlParameterConverter))]
+    public sealed partial class SqlParameter
+    {
+      internal class SqlParameterConverter { }
+    }
 }

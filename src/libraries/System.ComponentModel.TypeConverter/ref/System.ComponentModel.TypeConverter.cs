@@ -797,6 +797,9 @@ namespace System.Timers
         public System.DateTime SignalTime { get { throw null; } }
     }
     public delegate void ElapsedEventHandler(object sender, System.Timers.ElapsedEventArgs e);
+    
+    [System.ComponentModel.DefaultProperty("Interval")]
+    [System.ComponentModel.DefaultEvent("Elapsed")]
     public partial class Timer : System.ComponentModel.Component, System.ComponentModel.ISupportInitialize
     {
         public Timer() { }

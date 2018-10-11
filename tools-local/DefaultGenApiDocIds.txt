@@ -4,7 +4,7 @@ T:System.ComponentModel.DesignerAttribute
 T:System.ComponentModel.Design.Serialization.DesignerSerializerAttribute
 T:System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute
 T:System.ComponentModel.EditorAttribute
-T:System.ComponentModel.TypeConverterAttribute
+T:System.ComponentModel.ToolboxItemAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute
@@ -15,7 +15,7 @@ T:System.Diagnostics.DebuggerNonUserCodeAttribute
 T:System.Diagnostics.DebuggerStepThroughAttribute
 T:System.Diagnostics.DebuggerTypeProxyAttribute
 T:System.Diagnostics.MonitoringDescriptionAttribute
-T:System.IO.IODescriptionAttribut
+T:System.IO.IODescriptionAttribute
 T:System.Runtime.CompilerServices.AsyncStateMachineAttribute
 T:System.Runtime.CompilerServices.CompilerGeneratedAttribute
 T:System.Runtime.CompilerServices.IteratorStateMachineAttribute
@@ -44,3 +44,14 @@ T:System.Xml.Serialization.XmlAttributeAttribute
 T:System.Xml.Serialization.XmlEnumAttribute
 T:System.Xml.Serialization.XmlIgnoreAttribute
 T:System.Xml.Serialization.XmlRootAttribute
+T:System.Runtime.Versioning.NonVersionableAttribute
+T:System.Runtime.CompilerServices.IntrinsicAttribute
+T:System.Runtime.CompilerServices.ExtensionAttribute
+T:System.Drawing.SRDescriptionAttribute
+T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
+T:System.Runtime.CompilerServices.AsyncMethodBuilderAttribute
+T:System.Reflection.DefaultMemberAttribute
+
+// These do not need to be persisted in the implementation
+T:System.ComponentModel.EditorBrowsableAttribute
+T:System.ObsoleteAttribute
