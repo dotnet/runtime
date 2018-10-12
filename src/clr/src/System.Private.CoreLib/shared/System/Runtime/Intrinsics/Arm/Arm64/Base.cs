@@ -12,7 +12,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     [CLSCompliant(false)]
     public static class Base
     {
-        public static bool IsSupported { get { return false; }}
+        public static bool IsSupported { get { return IsSupported; }}
 
         /// <summary>
         /// Vector LeadingSignCount
