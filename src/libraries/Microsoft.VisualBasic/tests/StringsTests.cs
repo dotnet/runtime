@@ -114,7 +114,7 @@ namespace Microsoft.VisualBasic.Tests
 
         [Theory]
         [InlineData(new string[] { }, "a", new string[] { }, new string[] { })]
-        public void NoElements(string[] source, string match, string[] includeExpected, string[] excludeExpected)
+        public void Filter_NoElements(string[] source, string match, string[] includeExpected, string[] excludeExpected)
         {
             Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true));
             Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false));
@@ -165,8 +165,8 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void Filter_Objects_WhenObjectCannotBeConvertedToString_ThrowsArgumentOutOfRangeException()
         {
-            var source = new object[] { typeof(object) };
-            var match = "a";
+            object[] source = new object[] { typeof(object) };
+            string match = "a";
 
             AssertExtensions.Throws<ArgumentException>("Source", null, () => Strings.Filter(source, match));
         }
@@ -174,10 +174,115 @@ namespace Microsoft.VisualBasic.Tests
         [Theory]
         [InlineData(new object[] { 42 }, "42", new string[] { "42" }, new string[] { })]
         [InlineData(new object[] { true }, "True", new string[] { "True" }, new string[] { })]
-        public void Objects(object[] source, string match, string[] includeExpected, string[] excludeExpected)
+        public void Filter_Objects(object[] source, string match, string[] includeExpected, string[] excludeExpected)
         {
             Assert.Equal(includeExpected, Strings.Filter(source, match, Include: true));
             Assert.Equal(excludeExpected, Strings.Filter(source, match, Include: false));
+        }
+
+        [Theory]
+        [MemberData(nameof(InStr_TestData_NullsAndEmpties))]
+        [MemberData(nameof(InStr_FromBegin_TestData))]
+        public void InStr_FromBegin(string string1, string string2, int expected)
+        {
+            Assert.Equal(expected, Strings.InStr(string1, string2));
+            Assert.Equal(expected, Strings.InStr(1, string1, string2));
+        }
+
+        [Theory]
+        [MemberData(nameof(InStr_TestData_NullsAndEmpties))]
+        [MemberData(nameof(InStr_FromWithin_TestData))]
+        public void InStr_FromWithin(string string1, string string2, int expected)
+        {
+            Assert.Equal(expected, Strings.InStr(2, string1, string2));
+        }
+
+        [Theory]
+        [InlineData("A", "a", 0)]
+        [InlineData("Aa", "a", 2)]
+        public void InStr_BinaryCompare(string string1, string string2, int expected)
+        {
+            Assert.Equal(expected, Strings.InStr(string1, string2, CompareMethod.Binary));
+            Assert.Equal(expected, Strings.InStr(1, string1, string2, CompareMethod.Binary));
+        }
+
+        [Theory]
+        [InlineData("A", "a", 1)]
+        [InlineData("Aa", "a", 1)]
+        public void InStr_TextCompare(string string1, string string2, int expected)
+        {
+            Assert.Equal(expected, Strings.InStr(string1, string2, CompareMethod.Text));
+            Assert.Equal(expected, Strings.InStr(1, string1, string2, CompareMethod.Text));
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void InStr_WhenStartGreatherThanLength_ReturnsZero(int start)
+        {
+            Assert.Equal(0, Strings.InStr(start, "a", "a"));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void InStr_WhenStartZeroOrLess_ThrowsArgumentException(int start)
+        {
+            AssertExtensions.Throws<ArgumentException>("Start", null, () => Strings.InStr(start, "a", "a"));
+        }
+
+        [Theory]
+        [MemberData(nameof(InStr_TestData_NullsAndEmpties))]
+        [MemberData(nameof(InStrRev_FromEnd_TestData))]
+        public void InStrRev_FromEnd(string stringCheck, string stringMatch, int expected)
+        {
+            Assert.Equal(expected, Strings.InStrRev(stringCheck, stringMatch));
+        }
+
+        [Theory]
+        [MemberData(nameof(InStrRev_FromWithin_TestData))]
+        public void InStrRev_FromWithin(string stringCheck, string stringMatch, int start, int expected)
+        {
+            Assert.Equal(expected, Strings.InStrRev(stringCheck, stringMatch, start));
+        }
+
+        [Theory]
+        [InlineData("A", "a", 1, 0)]
+        [InlineData("aA", "a", 2, 1)]
+        public void InStrRev_BinaryCompare(string stringCheck, string stringMatch, int start, int expected)
+        {
+            Assert.Equal(expected, Strings.InStrRev(stringCheck, stringMatch, start, CompareMethod.Binary));
+        }
+
+        [Theory]
+        [InlineData("A", "a", 1, 1)]
+        [InlineData("aA", "a", 2, 2)]
+        public void InStrRev_TextCompare(string stringCheck, string stringMatch, int start, int expected)
+        {
+            Assert.Equal(expected, Strings.InStrRev(stringCheck, stringMatch, start, CompareMethod.Text));
+        }
+
+        [Fact]
+        public void InStrRev_WhenStartMinusOne_SearchesFromEnd()
+        {
+            Assert.Equal(2, Strings.InStrRev("aa", "a", -1));
+        }
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void InStrRev_WhenStartGreatherThanLength_ReturnsZero(int start)
+        {
+            Assert.Equal(0, Strings.InStrRev("a", "a", start));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-2)]
+        [InlineData(-3)]
+        public void InStrRev_WhenStartZeroOrMinusTwoOrLess_ThrowsArgumentException(int start)
+        {
+            AssertExtensions.Throws<ArgumentException>("Start", null, () => Strings.InStrRev("a", "a", start));
         }
 
         [Theory]
@@ -301,5 +406,67 @@ namespace Microsoft.VisualBasic.Tests
             // Trims only space and \u3000 specifically
             Assert.Equal(expected, Strings.Trim(str));
         }
+
+        public static TheoryData<string, string, int> InStr_TestData_NullsAndEmpties() => new TheoryData<string, string, int>
+        {
+            {null, null, 0 },
+            {null, "", 0 },
+            {"", null, 0 },
+            {"", "", 0 },
+        };
+
+        public static TheoryData<string, string, int> InStr_FromBegin_TestData() => new TheoryData<string, string, int>
+        {
+            { null, "a", 0 },
+            { "a", null, 1 },
+            { "a", "a", 1 },
+            { "aa", "a", 1 },
+            { "ab", "a", 1 },
+            { "ba", "a", 2 },
+            { "b", "a", 0 },
+            { "a", "ab", 0 },
+            { "ab", "ab", 1 },
+        };
+
+        public static TheoryData<string, string, int> InStr_FromWithin_TestData() => new TheoryData<string, string, int>
+        {
+            { null, "a", 0 },
+            { "aa", null, 2 },
+            { "aa", "a", 2 },
+            { "aab", "a", 2 },
+            { "aba", "a", 3 },
+            { "ab", "a", 0 },
+            { "aa", "ab", 0 },
+            { "abab", "ab", 3 },
+        };
+
+        public static TheoryData<string, string, int> InStrRev_FromEnd_TestData() => new TheoryData<string, string, int>
+        {
+            { null, "a", 0 },
+            { "a", null, 1 },
+            { "a", "a", 1 },
+            { "aa", "a", 2 },
+            { "ba", "a", 2 },
+            { "ab", "a", 1 },
+            { "b", "a", 0 },
+            { "a", "ab", 0 },
+            { "ab", "ab", 1 },
+        };
+
+        public static TheoryData<string, string, int,int> InStrRev_FromWithin_TestData() => new TheoryData<string, string, int, int>
+        {
+            { null, null, 1, 0 },
+            { null, "", 1, 0 },
+            { "", null, 1, 0 },
+            { "", "", 1, 0 },
+            { null, "a", 1, 0 },
+            { "aa", null, 1, 1 },
+            { "aa", "a", 1, 1 },
+            { "baa", "a", 2, 2 },
+            { "aba", "a", 2, 1 },
+            { "ba", "a", 1, 0 },
+            { "aa", "ab", 1, 0 },
+            { "abab", "ab", 3, 1 },
+        };
     }
 }
