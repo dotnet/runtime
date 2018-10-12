@@ -226,14 +226,14 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     // On Windows we use the packer to put together everything. On *nix we use tar
                     steps {
                         if (osName == 'Windows 7' || osName == 'Windows_NT') {
-                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -ci -includetests -${configurationGroup} -os:${osGroup} -buildArch:${archGroup} -framework:${targetGroup}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -ci -includetests -${configurationGroup} -os:${osGroup} /p:ArchGroup:${archGroup} -framework:${targetGroup}")
                             batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                         }
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
                             def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh --ci -includetests -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -buildArch:${archGroup} ${useServerGC}")
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh --ci -includetests -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} /p:ArchGroup:${archGroup} ${useServerGC}")
                             // Tar up the appropriate bits.
                             shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
                         }
