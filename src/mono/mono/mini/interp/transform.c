@@ -573,17 +573,17 @@ load_arg(TransformData *td, int n)
 	MonoClass *klass = NULL;
 	MonoType *type;
 
-	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
 	if (hasthis && n == 0)
 		type = m_class_get_byval_arg (td->method->klass);
 	else
-		type = mono_method_signature (td->method)->params [hasthis ? n - 1 : n];
+		type = mono_method_signature_internal (td->method)->params [hasthis ? n - 1 : n];
 
 	mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
 		klass = mono_class_from_mono_type (type);
-		if (mono_method_signature (td->method)->pinvoke)
+		if (mono_method_signature_internal (td->method)->pinvoke)
 			size = mono_class_native_size (klass, NULL);
 		else
 			size = mono_class_value_size (klass, NULL);
@@ -622,17 +622,17 @@ store_arg(TransformData *td, int n)
 	CHECK_STACK (td, 1);
 	MonoType *type;
 
-	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
 	if (hasthis && n == 0)
 		type = m_class_get_byval_arg (td->method->klass);
 	else
-		type = mono_method_signature (td->method)->params [n - !!hasthis];
+		type = mono_method_signature_internal (td->method)->params [n - !!hasthis];
 
 	mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
 		MonoClass *klass = mono_class_from_mono_type (type);
-		if (mono_method_signature (td->method)->pinvoke)
+		if (mono_method_signature_internal (td->method)->pinvoke)
 			size = mono_class_native_size (klass, NULL);
 		else
 			size = mono_class_value_size (klass, NULL);
@@ -652,11 +652,11 @@ static void
 store_inarg(TransformData *td, int n)
 {
 	MonoType *type;
-	gboolean hasthis = mono_method_signature (td->method)->hasthis;
+	gboolean hasthis = mono_method_signature_internal (td->method)->hasthis;
 	if (hasthis && n == 0)
 		type = m_class_get_byval_arg (td->method->klass);
 	else
-		type = mono_method_signature (td->method)->params [n - !!hasthis];
+		type = mono_method_signature_internal (td->method)->params [n - !!hasthis];
 
 	int mt = mint_type (type);
 	if (hasthis && n == 0) {
@@ -667,7 +667,7 @@ store_inarg(TransformData *td, int n)
 	if (mt == MINT_TYPE_VT) {
 		MonoClass *klass = mono_class_from_mono_type (type);
 		gint32 size;
-		if (mono_method_signature (td->method)->pinvoke)
+		if (mono_method_signature_internal (td->method)->pinvoke)
 			size = mono_class_native_size (klass, NULL);
 		else
 			size = mono_class_value_size (klass, NULL);
@@ -1379,7 +1379,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				return_if_nok (error);
 			} else
 				target_method = (MonoMethod *)mono_method_get_wrapper_data (method, token);
-			csignature = mono_method_signature (target_method);
+			csignature = mono_method_signature_internal (target_method);
 
 			if (generic_context) {
 				csignature = mono_inflate_generic_signature (csignature, generic_context, error);
@@ -1389,7 +1389,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			}
 		}
 	} else {
-		csignature = mono_method_signature (target_method);
+		csignature = mono_method_signature_internal (target_method);
 	}
 
 	if (check_visibility && target_method && !mono_method_can_access_method (method, target_method))
@@ -1636,7 +1636,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (op == MINT_CALLRUN) {
 			ADD_CODE (td, get_data_item_index (td, target_method));
-			ADD_CODE (td, get_data_item_index (td, mono_method_signature (target_method)));
+			ADD_CODE (td, get_data_item_index (td, mono_method_signature_internal (target_method)));
 		}
 	} else if (!calli && !is_virtual && jit_call_supported (target_method, csignature)) {
 		ADD_CODE(td, MINT_JIT_CALL);
@@ -2052,7 +2052,7 @@ emit_seq_point (TransformData *td, int il_offset, InterpBasicBlock *cbb, gboolea
 static void
 generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context, MonoError *error)
 {
-	MonoMethodSignature *signature = mono_method_signature (method);
+	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoDomain *domain = rtm->domain;
 	MonoClass *constrained_class = NULL;
@@ -3250,7 +3250,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				goto_if_nok (error, exit);
 			}
 
-			csignature = mono_method_signature (m);
+			csignature = mono_method_signature_internal (m);
 			klass = m->klass;
 
 			if (!mono_class_init (klass)) {
@@ -5054,7 +5054,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	MonoMethod *method = imethod->method;
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodHeader *header = NULL;
-	MonoMethodSignature *signature = mono_method_signature (method);
+	MonoMethodSignature *signature = mono_method_signature_internal (method);
 	const unsigned char *ip, *end;
 	const MonoOpcode *opcode;
 	MonoMethod *m;
@@ -5086,7 +5086,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	MONO_PROFILER_RAISE (jit_begin, (method));
 
-	if (mono_method_signature (method)->is_inflated)
+	if (mono_method_signature_internal (method)->is_inflated)
 		generic_context = mono_method_get_context (method);
 	else {
 		MonoGenericContainer *generic_container = mono_method_get_generic_container (method);
@@ -5104,9 +5104,9 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		}
 
 		/* assumes all internal calls with an array this are built in... */
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature (method)->hasthis || m_class_get_rank (method->klass) == 0)) {
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) {
 			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
-			signature = mono_method_signature (nm);
+			signature = mono_method_signature_internal (nm);
 		} else {
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {

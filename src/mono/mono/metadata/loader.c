@@ -1569,7 +1569,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 
 #ifdef TARGET_WIN32
 					if (mangle_param_count == 0)
-						param_count = mono_method_signature (method)->param_count * sizeof (gpointer);
+						param_count = mono_method_signature_internal (method)->param_count * sizeof (gpointer);
 					else
 						/* Try brute force, since it would be very hard to compute the stack usage correctly */
 						param_count = mangle_param_count;
@@ -2023,7 +2023,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	signature = mono_method_signature (method);
+	signature = mono_method_signature_internal (method);
 	/*FIXME this check is somewhat redundant since the caller usally will have to get the signature to figure out the
 	  number of arguments and allocate a properly sized array. */
 	if (signature == NULL)
@@ -2047,7 +2047,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
-			for (i = 0; i < mono_method_signature (method)->param_count; ++i)
+			for (i = 0; i < mono_method_signature_internal (method)->param_count; ++i)
 				if (method_aux->param_names [i + 1])
 					names [i] = method_aux->param_names [i + 1];
 		}
@@ -2133,7 +2133,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	MonoMethodSignature *signature;
 	guint32 idx;
 
-	signature = mono_method_signature (method);
+	signature = mono_method_signature_internal (method);
 	g_assert (signature); /*FIXME there is no way to signal error from this function*/
 
 	for (i = 0; i < signature->param_count + 1; ++i)
@@ -2204,7 +2204,7 @@ mono_method_has_marshal_info (MonoMethod *method)
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {
-			for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
+			for (i = 0; i < mono_method_signature_internal (method)->param_count + 1; ++i)
 				if (dyn_specs [i])
 					return TRUE;
 		}
@@ -2466,7 +2466,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (m->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 		/* the lock is recursive */
-		signature = mono_method_signature (imethod->declaring);
+		signature = mono_method_signature_internal (imethod->declaring);
 		signature = inflate_generic_signature_checked (m_class_get_image (imethod->declaring->klass), signature, mono_method_get_context (m), error);
 		if (!mono_error_ok (error))
 			return NULL;
@@ -2598,22 +2598,33 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 }
 
 /**
+ * mono_method_signature_internal:
+ * \returns the signature of the method \p m. On failure, returns NULL.
+ */
+MonoMethodSignature*
+mono_method_signature_internal (MonoMethod *m)
+{
+	ERROR_DECL (error);
+	MonoMethodSignature *sig = mono_method_signature_checked (m, error);
+	if (sig)
+		return sig;
+	char *type_name = mono_type_get_full_name (m->klass);
+	g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error));
+	g_free (type_name);
+	mono_error_cleanup (error);
+	return NULL;
+}
+
+/**
  * mono_method_signature:
  * \returns the signature of the method \p m. On failure, returns NULL.
  */
 MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
 {
-	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 	MONO_ENTER_GC_UNSAFE;
-	sig = mono_method_signature_checked (m, error);
-	if (!sig) {
-		char *type_name = mono_type_get_full_name (m->klass);
-		g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error));
-		g_free (type_name);
-		mono_error_cleanup (error);
-	}
+	sig = mono_method_signature_internal (m);
 	MONO_EXIT_GC_UNSAFE;
 	return sig;
 }

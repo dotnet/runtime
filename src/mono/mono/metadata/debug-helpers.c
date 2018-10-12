@@ -454,9 +454,9 @@ mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
 		return FALSE;
 	if (!desc->args)
 		return TRUE;
-	if (desc->num_args != mono_method_signature (method)->param_count)
+	if (desc->num_args != mono_method_signature_internal (method)->param_count)
 		return FALSE;
-	sig = mono_signature_get_desc (mono_method_signature (method), desc->include_namespace);
+	sig = mono_signature_get_desc (mono_method_signature_internal (method), desc->include_namespace);
 	if (strcmp (sig, desc->args)) {
 		g_free (sig);
 		return FALSE;

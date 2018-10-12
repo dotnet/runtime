@@ -1034,7 +1034,7 @@ enter_method (MonoMethod *method, RegParm *rParm, char *sp)
 	if (rParm == NULL)
 		return;
 	
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	
 	cinfo = get_call_info (NULL, sig);
 
@@ -1150,7 +1150,7 @@ leave_method (MonoMethod *method, ...)
 	fprintf (trFd, "LEAVE: %s", fname);
 	g_free (fname);
 
-	type = mono_method_signature (method)->ret;
+	type = mono_method_signature_internal (method)->ret;
 
 handle_enum:
 	switch (type->type) {
@@ -1365,7 +1365,7 @@ handle_enum:
 		break;
 	default:
 		fprintf (trFd, "(unknown return type %x)", 
-			mono_method_signature (method)->ret->type);
+			mono_method_signature_internal (method)->ret->type);
 	}
 
 	ip = ((gint64) __builtin_extract_return_addr (__builtin_return_address (0)));
@@ -2085,7 +2085,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (frame_reg != STK_BASE) 
 		cfg->used_int_regs |= (1LL << frame_reg);		
 
-	sig     = mono_method_signature (cfg->method);
+	sig     = mono_method_signature_internal (cfg->method);
 	
 	cinfo   = get_call_info (cfg->mempool, sig);
 
@@ -2306,7 +2306,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	sig = mono_method_signature (cfg->method);
+	sig = mono_method_signature_internal (cfg->method);
 
 	cinfo = get_call_info (cfg->mempool, sig);
 
@@ -2651,7 +2651,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	MonoType *ret = mini_get_underlying_type (mono_method_signature (method)->ret);
+	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
@@ -2729,7 +2729,7 @@ mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean ena
 	int   	   save_mode = SAVE_NONE,
 		   saveOffset;
 	MonoMethod *method = cfg->method;
-	int rtype = mini_get_underlying_type (mono_method_signature (method)->ret)->type;
+	int rtype = mini_get_underlying_type (mono_method_signature_internal (method)->ret)->type;
 
 	set_code_cursor (cfg, code);
 	/*-----------------------------------------*/
@@ -2761,8 +2761,8 @@ handle_enum:
 		save_mode = SAVE_R8;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (mono_method_signature (method)->ret->data.klass)) {
-			rtype = mono_class_enum_basetype_internal (mono_method_signature (method)->ret->data.klass)->type;
+		if (m_class_is_enumtype (mono_method_signature_internal (method)->ret->data.klass)) {
+			rtype = mono_class_enum_basetype_internal (mono_method_signature_internal (method)->ret->data.klass)->type;
 			goto handle_enum;
 		}
 		save_mode = SAVE_STRUCT;
@@ -4275,7 +4275,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_TAILCALL_MEMBASE : {
 			MonoCallInst *call = (MonoCallInst *) ins;
 			MonoMethod *method = call->method;
-			MonoMethodSignature *sig = mono_method_signature(method);
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
 			CallInfo *cinfo = get_call_info (NULL, sig);
 			int32_t stackUsage = (cinfo->sz.stack_size - S390_MINIMAL_STACK_SIZE),
 				stackOffset = S390_MINIMAL_STACK_SIZE;
@@ -6249,7 +6249,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* load arguments allocated to register from the stack */
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	pos = 0;
 
 	cinfo = get_call_info (cfg->mempool, sig);

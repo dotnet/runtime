@@ -382,7 +382,7 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 			continue;
 
 		MonoClass *klass = centry->ctor->klass;
-		if (strcmp (m_class_get_name (klass), "CategoryAttribute") || mono_method_signature (centry->ctor)->param_count != 1)
+		if (strcmp (m_class_get_name (klass), "CategoryAttribute") || mono_method_signature_internal (centry->ctor)->param_count != 1)
 			continue;
 
 		gpointer *typed_args, *named_args;
@@ -1177,7 +1177,7 @@ compile_all_methods_thread_main_inner (CompileAllThreadArgs *args)
 
 		if (mono_class_is_gtd (method->klass))
 			continue;
-		sig = mono_method_signature (method);
+		sig = mono_method_signature_internal (method);
 		if (!sig) {
 			char * desc = mono_method_full_name (method, TRUE);
 			g_print ("Could not retrieve method signature for %s\n", desc);

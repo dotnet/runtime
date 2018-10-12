@@ -1065,8 +1065,8 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			gmethod = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 			if (!gmethod)
 				return NULL;
-			sig = mono_method_signature (method);
-			gsig = mono_method_signature (gmethod);
+			sig = mono_method_signature_internal (method);
+			gsig = mono_method_signature_internal (gmethod);
 
 			addr = mini_add_method_wrappers_llvmonly (method, addr, TRUE, FALSE, &arg);
 			return mini_create_llvmonly_ftndesc (domain, addr, arg);
@@ -1083,8 +1083,8 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 			gmethod = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 			if (!gmethod)
 				return NULL;
-			sig = mono_method_signature (method);
-			gsig = mono_method_signature (gmethod);
+			sig = mono_method_signature_internal (method);
+			gsig = mono_method_signature_internal (gmethod);
 
 			addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, -1, FALSE);
 			addr = mono_create_static_rgctx_trampoline (method, addr);
@@ -1952,7 +1952,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		g_assert (ji);
 		callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 		if (callee_gsharedvt)
-			callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
+			callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (ji)));
 		if (callee_gsharedvt) {
 			/* No need for a wrapper */
 			return mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (m));
@@ -2147,7 +2147,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 			g_assert (method->is_inflated);
 
-			sig = mono_method_signature (method);
+			sig = mono_method_signature_internal (method);
 			gsig = call_sig;
 
 			if (mono_llvm_only) {
@@ -2155,7 +2155,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 					/* The virtual case doesn't go through this code */
 					g_assert (!virtual_);
 
-					sig = mono_method_signature (jinfo_get_method (callee_ji));
+					sig = mono_method_signature_internal (jinfo_get_method (callee_ji));
 					gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, sig, gsig, -1, FALSE);
 					MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (domain, callee_ji->code_start, mini_method_get_rgctx (method));
 
@@ -2194,8 +2194,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 
 			if (mono_llvm_only) {
 				/* Both wrappers receive an extra <addr, rgctx> argument */
-				sig = mono_method_signature (method);
-				gsig = mono_method_signature (jinfo_get_method (callee_ji));
+				sig = mono_method_signature_internal (method);
+				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji));
 
 				/* Return a function descriptor */
 
@@ -2215,14 +2215,14 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				} else {
 					addr = mini_create_llvmonly_ftndesc (domain, addr, mini_method_get_rgctx (method));
 				}
-			} else if (call_sig == mono_method_signature (method)) {
+			} else if (call_sig == mono_method_signature_internal (method)) {
 			} else {
-				sig = mono_method_signature (method);
-				gsig = mono_method_signature (jinfo_get_method (callee_ji)); 
+				sig = mono_method_signature_internal (method);
+				gsig = mono_method_signature_internal (jinfo_get_method (callee_ji)); 
 
 				addr = mini_get_gsharedvt_wrapper (TRUE, callee_ji->code_start, sig, gsig, -1, FALSE);
 
-				sig = mono_method_signature (method);
+				sig = mono_method_signature_internal (method);
 				gsig = call_sig;
 
 				addr = mini_get_gsharedvt_wrapper (FALSE, addr, sig, gsig, -1, FALSE);
@@ -3041,7 +3041,7 @@ is_async_method (MonoMethod *method)
 	attr_class = mono_class_try_get_iasync_state_machine_class ();
 
 	/* Do less expensive checks first */
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	if (attr_class && sig && ((sig->ret->type == MONO_TYPE_VOID) ||
 				(sig->ret->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (sig->ret->data.generic_class->container_class), "Task")) ||
 				(sig->ret->type == MONO_TYPE_GENERICINST && !strcmp (m_class_get_name (sig->ret->data.generic_class->container_class), "Task`1")))) {
@@ -4153,7 +4153,7 @@ mini_is_gsharedvt_sharable_method (MonoMethod *method)
 		return FALSE;
 	}
 
-	sig = mono_method_signature (mono_method_get_declaring_generic_method (method));
+	sig = mono_method_signature_internal (mono_method_get_declaring_generic_method (method));
 	if (!sig)
 		return FALSE;
 

@@ -1245,7 +1245,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated*)method)->declaring;
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	hashes_count = sig->param_count + 4;
 	hashes_start = (guint32 *)g_malloc (hashes_count * sizeof (guint32));
 	hashes = hashes_start;
@@ -2910,11 +2910,11 @@ mono_class_get_virtual_method (MonoClass *klass, MonoMethod *method, gboolean is
 #ifndef DISABLE_REMOTING
 	if (is_proxy) {
 		/* It may be an interface, abstract class method or generic method */
-		if (!res || mono_method_signature (res)->generic_param_count)
+		if (!res || mono_method_signature_internal (res)->generic_param_count)
 			res = method;
 
 		/* generic methods demand invoke_with_check */
-		if (mono_method_signature (res)->generic_param_count)
+		if (mono_method_signature_internal (res)->generic_param_count)
 			res = mono_marshal_get_remoting_invoke_with_check (res, error);
 		else {
 #ifndef DISABLE_COM
@@ -4452,7 +4452,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	if (!sig) {
 		g_print ("Unable to load Main method.\n");
 		exit (-1);
@@ -4953,7 +4953,7 @@ do_exec_main_checked (MonoMethod *method, MonoArray *args, MonoError *error)
 	pa [0] = args;
 
 	/* FIXME: check signature of method */
-	if (mono_method_signature (method)->ret->type == MONO_TYPE_I4) {
+	if (mono_method_signature_internal (method)->ret->type == MONO_TYPE_I4) {
 		MonoObject *res;
 		res = mono_runtime_invoke_checked (method, NULL, pa, error);
 		if (is_ok (error))
@@ -4987,7 +4987,7 @@ do_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	pa [0] = args;
 
 	/* FIXME: check signature of method */
-	if (mono_method_signature (method)->ret->type == MONO_TYPE_I4) {
+	if (mono_method_signature_internal (method)->ret->type == MONO_TYPE_I4) {
 		ERROR_DECL_VALUE (inner_error);
 		MonoObject *res;
 		res = mono_runtime_try_invoke (method, NULL, pa, exc, &inner_error);
@@ -5326,7 +5326,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 	error_init (error);
 
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	gpointer *pa = NULL;
 	MonoObject *res;
 	int i;
@@ -8146,7 +8146,7 @@ mono_message_invoke (MonoObject *target, MonoMethodMessage *msg,
 
 	domain = mono_domain_get (); 
 	method = msg->method->method;
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	for (i = 0; i < sig->param_count; i++) {
 		if (sig->params [i]->byref) 
@@ -8452,7 +8452,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 	error_init (error);
 
 	MonoDomain *domain = mono_domain_get ();
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoMethodMessage *msg;
 	int i, count;
 
@@ -8515,7 +8515,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 
 	error_init (error);
 
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	int i, j, type, size, out_len;
 	
 	if (out_args == NULL)

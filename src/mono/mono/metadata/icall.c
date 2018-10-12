@@ -1995,7 +1995,7 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method, MonoErro
 	MonoDomain *domain = mono_domain_get (); 
 	MonoReflectionMarshalAsAttributeHandle res = MONO_HANDLE_NEW (MonoReflectionMarshalAsAttribute, NULL);
 
-	MonoMarshalSpec **mspecs = g_new (MonoMarshalSpec*, mono_method_signature (method)->param_count + 1);
+	MonoMarshalSpec **mspecs = g_new (MonoMarshalSpec*, mono_method_signature_internal (method)->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
 	if (mspecs [0]) {
@@ -2004,7 +2004,7 @@ ves_icall_System_MonoMethodInfo_get_retval_marshal (MonoMethod *method, MonoErro
 	}
 		
 leave:
-	for (int i = mono_method_signature (method)->param_count; i >= 0; i--)
+	for (int i = mono_method_signature_internal (method)->param_count; i >= 0; i--)
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
@@ -3251,7 +3251,7 @@ ICALL_EXPORT MonoBoolean
 ves_icall_MonoMethod_get_IsGenericMethod (MonoReflectionMethodHandle ref_method, MonoError *erro)
 {
 	MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
-	return mono_method_signature (method)->generic_param_count != 0;
+	return mono_method_signature_internal (method)->generic_param_count != 0;
 }
 
 ICALL_EXPORT MonoBoolean
@@ -3311,7 +3311,7 @@ ves_icall_MonoMethod_GetGenericArguments (MonoReflectionMethodHandle ref_method,
 		}
 	}
 
-	int count = mono_method_signature (method)->generic_param_count;
+	int count = mono_method_signature_internal (method)->generic_param_count;
 	MonoArrayHandle res = mono_array_new_handle (domain, mono_defaults.systemtype_class, count, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoArray, NULL_HANDLE));
 
@@ -3334,7 +3334,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 	 * greater flexibility.
 	 */
 	MonoMethod *m = method->method;
-	MonoMethodSignature *sig = mono_method_signature (m);
+	MonoMethodSignature *sig = mono_method_signature_internal (m);
 	MonoImage *image;
 	int pcount;
 	void *obj = this_arg;
@@ -3573,7 +3573,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 	ERROR_DECL (error);
 	MonoDomain *domain = mono_object_domain (method); 
 	MonoMethod *m = method->method;
-	MonoMethodSignature *sig = mono_method_signature (m);
+	MonoMethodSignature *sig = mono_method_signature_internal (m);
 	MonoArray *out_args;
 	MonoObject *result;
 	int i, j, outarg_count = 0;
@@ -4237,7 +4237,7 @@ property_accessor_override (MonoMethod *method1, MonoMethod *method2)
 			method2 = ((MonoMethodInflated*) method2)->declaring;
 	}
 
-	return mono_metadata_signature_equal (mono_method_signature (method1), mono_method_signature (method2));
+	return mono_metadata_signature_equal (mono_method_signature_internal (method1), mono_method_signature_internal (method2));
 }
 
 static gboolean
@@ -6546,7 +6546,7 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 	MonoClass *delegate_class = mono_class_from_mono_type (type);
 	gpointer func;
 	MonoMethod *method = MONO_HANDLE_GETVAL (info, method);
-	MonoMethodSignature *sig = mono_method_signature(method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 	mono_class_init_checked (delegate_class, error);
 	return_val_if_nok (error, NULL_HANDLE);
@@ -8001,7 +8001,7 @@ ves_icall_ParameterInfo_GetTypeModifiers (MonoReflectionParameterHandle param, M
 
 	image = m_class_get_image (method->klass);
 	pos = MONO_HANDLE_GETVAL (param, PositionImpl);
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	if (pos == -1)
 		type = sig->ret;
 	else
@@ -8015,10 +8015,10 @@ get_property_type (MonoProperty *prop)
 {
 	MonoMethodSignature *sig;
 	if (prop->get) {
-		sig = mono_method_signature (prop->get);
+		sig = mono_method_signature_internal (prop->get);
 		return sig->ret;
 	} else if (prop->set) {
-		sig = mono_method_signature (prop->set);
+		sig = mono_method_signature_internal (prop->set);
 		return sig->params [sig->param_count - 1];
 	}
 	return NULL;
@@ -8425,7 +8425,7 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 	sigstart = mname + typelen + 2 + mlen;
 	*sigstart = 0;
 
-	tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+	tmpsig = mono_signature_get_desc (mono_method_signature_internal (method), TRUE);
 	siglen = strlen (tmpsig);
 	if (typelen + mlen + siglen + 6 > sizeof (mname)) {
 		g_free (classname);

@@ -685,7 +685,7 @@ mono_image_get_methodref_token (MonoDynamicImage *assembly, MonoMethod *method, 
 		/*
 		 * A methodref signature can't contain an unmanaged calling convention.
 		 */
-		sig = mono_metadata_signature_dup (mono_method_signature (method));
+		sig = mono_metadata_signature_dup (mono_method_signature_internal (method));
 		if ((sig->call_convention != MONO_CALL_DEFAULT) && (sig->call_convention != MONO_CALL_VARARG))
 			sig->call_convention = MONO_CALL_DEFAULT;
 		token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass),
@@ -805,10 +805,10 @@ method_encode_methodspec (MonoDynamicImage *assembly, MonoMethod *method)
 	imethod = (MonoMethodInflated *) method;
 	declaring = imethod->declaring;
 
-	sig = mono_dynimage_encode_method_signature (assembly, mono_method_signature (declaring));
+	sig = mono_dynimage_encode_method_signature (assembly, mono_method_signature_internal (declaring));
 	mtoken = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (method->klass), declaring->name, sig);
 
-	if (!mono_method_signature (declaring)->generic_param_count)
+	if (!mono_method_signature_internal (declaring)->generic_param_count)
 		return mtoken;
 
 	switch (mono_metadata_token_table (mtoken)) {
@@ -850,11 +850,11 @@ mono_image_get_methodspec_token (MonoDynamicImage *assembly, MonoMethod *method)
 	g_assert (method->is_inflated);
 	imethod = (MonoMethodInflated *) method;
 
-	if (mono_method_signature (imethod->declaring)->generic_param_count) {
+	if (mono_method_signature_internal (imethod->declaring)->generic_param_count) {
 		token = method_encode_methodspec (assembly, method);
 	} else {
 		guint32 sig = mono_dynimage_encode_method_signature (
-			assembly, mono_method_signature (imethod->declaring));
+			assembly, mono_method_signature_internal (imethod->declaring));
 		token = mono_image_get_memberref_token (
 			assembly, m_class_get_byval_arg (method->klass), method->name, sig);
 	}
@@ -869,7 +869,7 @@ mono_image_get_inflated_method_token (MonoDynamicImage *assembly, MonoMethod *m)
 	MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 	guint32 sig, token;
 
-	sig = mono_dynimage_encode_method_signature (assembly, mono_method_signature (imethod->declaring));
+	sig = mono_dynimage_encode_method_signature (assembly, mono_method_signature_internal (imethod->declaring));
 	token = mono_image_get_memberref_token (
 		assembly, m_class_get_byval_arg (m->klass), m->name, sig);
 
@@ -1060,7 +1060,7 @@ create_method_token (MonoDynamicImage *assembly, MonoMethod *method, MonoArrayHa
 
 
 	int nargs = mono_array_handle_length (opt_param_types);
-	MonoMethodSignature *old = mono_method_signature (method);
+	MonoMethodSignature *old = mono_method_signature_internal (method);
 	MonoMethodSignature *sig = mono_metadata_signature_alloc ( &assembly->image, old->param_count + nargs);
 
 	sig->hasthis = old->hasthis;
@@ -1108,7 +1108,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObjectHandle obj
 	if (strcmp (klass->name, "MonoMethod") == 0 || strcmp (klass->name, "MonoCMethod") == 0) {
 		MonoReflectionMethodHandle ref_method = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
 		MonoMethod *method = MONO_HANDLE_GETVAL (ref_method, method);
-		g_assert (!MONO_HANDLE_IS_NULL (opt_param_types) && (mono_method_signature (method)->sentinelpos >= 0));
+		g_assert (!MONO_HANDLE_IS_NULL (opt_param_types) && (mono_method_signature_internal (method)->sentinelpos >= 0));
 		token = create_method_token (assembly, method, opt_param_types, error);
 		goto_if_nok (error, fail);
 	} else if (strcmp (klass->name, "MethodBuilder") == 0) {
@@ -1993,9 +1993,9 @@ get_prop_name_and_type (MonoObject *prop, char **name, MonoType **type, MonoErro
 		MonoReflectionProperty *p = (MonoReflectionProperty *)prop;
 		*name = g_strdup (p->property->name);
 		if (p->property->get)
-			*type = mono_method_signature (p->property->get)->ret;
+			*type = mono_method_signature_internal (p->property->get)->ret;
 		else
-			*type = mono_method_signature (p->property->set)->params [mono_method_signature (p->property->set)->param_count - 1];
+			*type = mono_method_signature_internal (p->property->set)->params [mono_method_signature_internal (p->property->set)->param_count - 1];
 	}
 }
 
@@ -2460,7 +2460,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 			return NULL;
 		}
 	} else {
-		sig = mono_method_signature (((MonoReflectionMethod*)ctor)->method);
+		sig = mono_method_signature_internal (((MonoReflectionMethod*)ctor)->method);
 	}
 
 	g_assert (mono_array_length (ctorArgs) == sig->param_count);
@@ -3110,7 +3110,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	if (rmb->pinfo) {
 		if (!method_aux)
 			method_aux = image_g_new0 (image, MonoReflectionMethodAux, 1);
-		method_aux->param_names = image_g_new0 (image, char *, mono_method_signature (m)->param_count + 1);
+		method_aux->param_names = image_g_new0 (image, char *, mono_method_signature_internal (m)->param_count + 1);
 		for (i = 0; i <= m->signature->param_count; ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {

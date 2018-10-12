@@ -3439,7 +3439,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_value (1, p, &p);
 				encode_klass_ref (acfg, method->klass, p, &p);
 			} else {
-				MonoMethodSignature *sig = mono_method_signature (method);
+				MonoMethodSignature *sig = mono_method_signature_internal (method);
 				WrapperInfo *info = mono_marshal_get_wrapper_info (method);
 
 				encode_value (0, p, &p);
@@ -3458,7 +3458,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		default:
 			g_assert_not_reached ();
 		}
-	} else if (mono_method_signature (method)->is_inflated) {
+	} else if (mono_method_signature_internal (method)->is_inflated) {
 		/* 
 		 * This is a generic method, find the original token which referenced it and
 		 * encode that.
@@ -3517,9 +3517,9 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			/* Encode directly */
 			encode_value ((MONO_AOT_METHODREF_ARRAY << 24), p, &p);
 			encode_klass_ref (acfg, method->klass, p, &p);
-			if (!strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == m_class_get_rank (method->klass))
+			if (!strcmp (method->name, ".ctor") && mono_method_signature_internal (method)->param_count == m_class_get_rank (method->klass))
 				encode_value (0, p, &p);
-			else if (!strcmp (method->name, ".ctor") && mono_method_signature (method)->param_count == m_class_get_rank (method->klass) * 2)
+			else if (!strcmp (method->name, ".ctor") && mono_method_signature_internal (method)->param_count == m_class_get_rank (method->klass) * 2)
 				encode_value (1, p, &p);
 			else if (!strcmp (method->name, "Get"))
 				encode_value (2, p, &p);
@@ -4051,7 +4051,7 @@ add_wrappers (MonoAotCompile *acfg)
 			skip = TRUE;
 
 		/* Skip methods which can not be handled by get_runtime_invoke () */
-		sig = mono_method_signature (method);
+		sig = mono_method_signature_internal (method);
 		if (!sig)
 			continue;
 		if ((sig->ret->type == MONO_TYPE_PTR) ||
@@ -4237,7 +4237,7 @@ add_wrappers (MonoAotCompile *acfg)
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
 		g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 
-		sig = mono_method_signature (method);
+		sig = mono_method_signature_internal (method);
 
 		if (sig->hasthis && (method->klass->marshalbyref || method->klass == mono_defaults.object_class)) {
 			m = mono_marshal_get_remoting_invoke_with_check (method);
@@ -4447,7 +4447,7 @@ add_wrappers (MonoAotCompile *acfg)
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
 			if (acfg->aot_opts.llvm_only) {
 				/* The wrappers have a different signature (hasthis is not set) so need to add this too */
-				add_gsharedvt_wrappers (acfg, mono_method_signature (method), FALSE, TRUE, FALSE);
+				add_gsharedvt_wrappers (acfg, mono_method_signature_internal (method), FALSE, TRUE, FALSE);
 			}
 		}
 	}
@@ -4481,7 +4481,7 @@ add_wrappers (MonoAotCompile *acfg)
 					break;
 			if (j < cattr->num_attrs) {
 				MonoCustomAttrEntry *e = &cattr->attrs [j];
-				MonoMethodSignature *sig = mono_method_signature (e->ctor);
+				MonoMethodSignature *sig = mono_method_signature_internal (e->ctor);
 				const char *p = (const char*)e->data;
 				const char *named;
 				int slen, num_named, named_type;
@@ -4993,7 +4993,7 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
 
 	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	if (sig) {
 		for (j = 0; j < sig->param_count; ++j)
@@ -6647,7 +6647,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 	for (i = 0; i < m_class_get_vtable_size (klass); ++i) {
 		MonoMethod *cm = klass_vtable [i];
 
-		if (cm && mono_method_signature (cm)->is_inflated && !g_hash_table_lookup (acfg->token_info_hash, cm))
+		if (cm && mono_method_signature_internal (cm)->is_inflated && !g_hash_table_lookup (acfg->token_info_hash, cm))
 			cant_encode = TRUE;
 	}
 
@@ -8169,7 +8169,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 
 		if (!cfg->method->wrapper_type || cfg->method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
 			/* These only need out wrappers */
-			add_gsharedvt_wrappers (acfg, mono_method_signature (cfg->method), FALSE, TRUE, FALSE);
+			add_gsharedvt_wrappers (acfg, mono_method_signature_internal (cfg->method), FALSE, TRUE, FALSE);
 
 		for (l = cfg->signatures; l; l = l->next) {
 			MonoMethodSignature *sig = mono_metadata_signature_dup ((MonoMethodSignature*)l->data);
@@ -8180,7 +8180,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	} else if (mono_aot_mode_is_full (&acfg->aot_opts) && mono_aot_mode_is_interp (&acfg->aot_opts)) {
 		/* The interpreter uses these wrappers to call aot-ed code */
 		if (!cfg->method->wrapper_type || cfg->method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE)
-			add_gsharedvt_wrappers (acfg, mono_method_signature (cfg->method), FALSE, TRUE, TRUE);
+			add_gsharedvt_wrappers (acfg, mono_method_signature_internal (cfg->method), FALSE, TRUE, TRUE);
 	}
 
 	/* 
@@ -8222,7 +8222,7 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		MonoMethodHeader *header;
 		int i;
 		
-		sig = mono_method_signature (method);
+		sig = mono_method_signature_internal (method);
 		args = (MonoInst **)mono_mempool_alloc (acfg->mempool, sizeof (MonoInst*) * (sig->param_count + sig->hasthis));
 		for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 			args [i] = (MonoInst *)mono_mempool_alloc (acfg->mempool, sizeof (MonoInst));
@@ -8801,7 +8801,7 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 	default:
 		g_assert_not_reached ();
 	}
-	return success && append_mangled_signature (s, mono_method_signature (method));
+	return success && append_mangled_signature (s, mono_method_signature_internal (method));
 }
 
 static void
@@ -8881,12 +8881,12 @@ append_mangled_method (GString *s, MonoMethod *method)
 		g_string_append_printf (s, "_%s");
 		append_mangled_context (s, &container->context);
 
-		return append_mangled_signature (s, mono_method_signature (method));
+		return append_mangled_signature (s, mono_method_signature_internal (method));
 	} else {
 		g_string_append_printf (s, "_");
 		append_mangled_klass (s, method->klass);
 		g_string_append_printf (s, "_%s_", method->name);
-		if (!append_mangled_signature (s, mono_method_signature (method))) {
+		if (!append_mangled_signature (s, mono_method_signature_internal (method))) {
 			g_string_free (s, TRUE);
 			return FALSE;
 		}
@@ -9520,7 +9520,7 @@ mono_aot_method_hash (MonoMethod *method)
 
 	/* Similar to the hash in mono_method_get_imt_slot () */
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	if (mono_class_is_ginst (method->klass))
 		class_ginst = mono_class_get_generic_class (method->klass)->context.class_inst;
@@ -9632,7 +9632,7 @@ mono_aot_get_array_helper_from_wrapper (MonoMethod *method)
 		helper_name = g_strdup_printf ("InternalArray__%s", mname);
 	else
 		helper_name = g_strdup_printf ("InternalArray__%s_%s", iname, mname);
-	m = get_method_nofail (mono_defaults.array_class, helper_name, mono_method_signature (method)->param_count, 0);
+	m = get_method_nofail (mono_defaults.array_class, helper_name, mono_method_signature_internal (method)->param_count, 0);
 	g_assert (m);
 	g_free (helper_name);
 	g_free (s);
@@ -11794,7 +11794,7 @@ resolve_profile_data (MonoAotCompile *acfg, ProfileData *data)
 
 			if (strcmp (m->name, mdata->name))
 				continue;
-			MonoMethodSignature *sig = mono_method_signature (m);
+			MonoMethodSignature *sig = mono_method_signature_internal (m);
 			if (!sig)
 				continue;
 			if (sig->param_count != mdata->param_count)

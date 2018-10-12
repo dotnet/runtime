@@ -405,7 +405,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 	if (mono_class_is_contextbound (this_obj->remote_class->proxy_class) && this_obj->rp->context == (MonoObject *) mono_context_get ())
 	{
 		int i;
-		MonoMethodSignature *sig = mono_method_signature (method);
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
 		int count = sig->param_count;
 		gpointer* mparams = g_newa (gpointer, count);
 
@@ -722,7 +722,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_XDOMAIN_DISPATCH)))
 		return res;
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	copy_return = (sig->ret->type != MONO_TYPE_VOID && ret_marshal_type != MONO_MARSHAL_SERIALIZE);
 
 	j = 0;
@@ -995,7 +995,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 		return method;
 
 	/* we cant remote methods without this pointer */
-	if (!mono_method_signature (method)->hasthis)
+	if (!mono_method_signature_internal (method)->hasthis)
 		return method;
 
 	mono_remoting_marshal_init ();
@@ -1187,7 +1187,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 
 	xdomain_method = mono_marshal_get_xappdomain_dispatch (method, marshal_types, complex_count, complex_out_count, ret_marshal_type);
 	mono_marshal_emit_load_domain_method (mb, xdomain_method);
-	mono_mb_emit_calli (mb, mono_method_signature (xdomain_method));
+	mono_mb_emit_calli (mb, mono_method_signature_internal (xdomain_method));
 
 	if (copy_return)
 		mono_mb_emit_stloc (mb, loc_return);
@@ -1363,7 +1363,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method, MonoError *erro
 		return method;
 
 	/* we cant remote methods without this pointer */
-	g_assert (mono_method_signature (method)->hasthis);
+	g_assert (mono_method_signature_internal (method)->hasthis);
 
 	if ((res = mono_marshal_remoting_find_in_cache (method, MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK)))
 		return res;
@@ -1389,7 +1389,7 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method, MonoError *erro
 			mono_mb_free (mb);
 			return NULL;
 		}
-		mono_mb_emit_managed_call (mb, native, mono_method_signature (native));
+		mono_mb_emit_managed_call (mb, native, mono_method_signature_internal (native));
 		mono_mb_emit_byte (mb, CEE_RET);
 		
 		mono_mb_patch_branch (mb, pos_rem);
@@ -1400,12 +1400,12 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method, MonoError *erro
 		mono_mb_free (mb);
 		return NULL;
 	}
-	mono_mb_emit_managed_call (mb, native, mono_method_signature (native));
+	mono_mb_emit_managed_call (mb, native, mono_method_signature_internal (native));
 	mono_mb_emit_byte (mb, CEE_RET);
 
 	/* not a proxy */
 	mono_mb_patch_branch (mb, pos);
-	mono_mb_emit_managed_call (mb, method, mono_method_signature (method));
+	mono_mb_emit_managed_call (mb, method, mono_method_signature_internal (method));
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 

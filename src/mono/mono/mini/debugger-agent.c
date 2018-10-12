@@ -5963,7 +5963,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	m = decode_methodid (p, &p, end, &domain, &err);
 	if (err != ERR_NONE)
 		return err;
-	sig = mono_method_signature (m);
+	sig = mono_method_signature_internal (m);
 
 	if (m_class_is_valuetype (m->klass))
 		this_buf = (guint8 *)g_alloca (mono_class_instance_size (m->klass));
@@ -7441,7 +7441,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 				for (j = 0; j < mono_array_length (typed_args); ++j) {
 					MonoObject *val = mono_array_get (typed_args, MonoObject*, j);
 
-					t = mono_method_signature (attr->ctor)->params [j];
+					t = mono_method_signature_internal (attr->ctor)->params [j];
 
 					buffer_add_cattr_arg (buf, t, domain, val);
 				}
@@ -8098,7 +8098,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 		break;
 	}
 	case CMD_METHOD_GET_PARAM_INFO: {
-		MonoMethodSignature *sig = mono_method_signature (method);
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
 		guint32 i;
 		char **names;
 
@@ -8209,7 +8209,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			guint8 attrs = 0;
 			if (method->is_generic)
 				attrs |= (1 << 0);
-			if (mono_method_signature (method)->generic_param_count)
+			if (mono_method_signature_internal (method)->generic_param_count)
 				attrs |= (1 << 1);
 			buffer_add_byte (buf, attrs);
 			if (method->is_generic || method->is_inflated) {
@@ -8237,7 +8237,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 				buffer_add_id (buf, 0);
 			}
 			if (CHECK_PROTOCOL_VERSION (2, 15)) {
-				if (mono_method_signature (method)->generic_param_count) {
+				if (mono_method_signature_internal (method)->generic_param_count) {
 					int count, i;
 
 					if (method->is_inflated) {
@@ -8254,7 +8254,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					} else if (method->is_generic) {
 						MonoGenericContainer *container = mono_method_get_generic_container (method);
 
-						count = mono_method_signature (method)->generic_param_count;
+						count = mono_method_signature_internal (method)->generic_param_count;
 						buffer_add_int (buf, count);
 						for (i = 0; i < count; i++) {
 							MonoGenericParam *param = mono_generic_container_get_param (container, i);
@@ -8663,7 +8663,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	jit = frame->jit;
 
-	sig = mono_method_signature (frame->actual_method);
+	sig = mono_method_signature_internal (frame->actual_method);
 
 	if (!(jit->has_var_info || frame->de.ji->is_interp) || !mono_get_seq_points (frame->de.domain, frame->actual_method))
 		/*

@@ -1812,7 +1812,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 		case MONO_TABLE_METHODSPEC:
 			if (!strcmp (iltoken_member_class_name, "MonoMethod")) {
 				MonoMethod *m = ((MonoReflectionMethod*)iltoken->member)->method;
-				g_assert (mono_method_signature (m)->generic_param_count);
+				g_assert (mono_method_signature_internal (m)->generic_param_count);
 				continue;
 			} else if (!strcmp (iltoken_member_class_name, "MethodBuilder")) {
 				g_assert_not_reached ();

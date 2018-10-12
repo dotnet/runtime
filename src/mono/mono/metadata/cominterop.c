@@ -269,7 +269,7 @@ cominterop_method_signature (MonoMethod* method)
 {
 	MonoMethodSignature *res;
 	MonoImage *image = m_class_get_image (method->klass);
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 	int sigsize;
 	int i;
@@ -945,7 +945,7 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
 	int i;
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	// create unmanaged wrapper
 	mb_native = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
@@ -1057,7 +1057,7 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 		mono_class_setup_methods (method->klass);
 	g_assert (!mono_class_has_failure (method->klass)); /*FIXME do proper error handling*/
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);
 
 #ifndef DISABLE_JIT
@@ -1950,7 +1950,7 @@ cominterop_setup_marshal_context (EmitMarshalContext *m, MonoMethod *method)
 {
 	MonoMethodSignature *sig, *csig;
 	MonoImage *method_klass_image = m_class_get_image (method->klass);
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	/* we copy the signature, so that we can modify it */
 	/* FIXME: which to use? */
 	csig = mono_metadata_signature_dup_full (method_klass_image, sig);
@@ -2093,12 +2093,12 @@ cominterop_get_ccw_checked (MonoObjectHandle object, MonoClass* itf, MonoError *
 			MonoMethod *wrapper_method, *adjust_method;
 			MonoMethod *method = m_class_get_methods (iface) [i];
 			MonoMethodSignature* sig_adjusted;
-			MonoMethodSignature* sig = mono_method_signature (method);
+			MonoMethodSignature* sig = mono_method_signature_internal (method);
 			gboolean preserve_sig = method->iflags & METHOD_IMPL_ATTRIBUTE_PRESERVE_SIG;
 
 			mb = mono_mb_new (iface, method->name, MONO_WRAPPER_NATIVE_TO_MANAGED);
 			adjust_method = cominterop_get_managed_wrapper_adjusted (method);
-			sig_adjusted = mono_method_signature (adjust_method);
+			sig_adjusted = mono_method_signature_internal (adjust_method);
 			
 			mspecs = g_new (MonoMarshalSpec*, sig_adjusted->param_count + 1);
 			mono_method_get_marshal_info (method, mspecs);
@@ -2329,7 +2329,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 		mono_error_assert_ok (error);
 	}
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	/* create unmanaged wrapper */
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_COMINTEROP);

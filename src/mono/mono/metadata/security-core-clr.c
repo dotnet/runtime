@@ -223,7 +223,7 @@ get_default_ctor (MonoClass *klass)
 			continue;
 		if ((method->name[0] != '.') || strcmp (".ctor", method->name))
 			continue;
-		sig = mono_method_signature (method);
+		sig = mono_method_signature_internal (method);
 		if (sig && (sig->param_count == 0))
 			return method;
 	}

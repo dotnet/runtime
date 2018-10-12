@@ -434,7 +434,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 		iargs [0] = dest;
 		iargs [1] = src;
 		iargs [2] = size_ins;
-		mini_emit_calli (cfg, mono_method_signature (mini_get_memcpy_method ()), iargs, memcpy_ins, NULL, NULL);
+		mini_emit_calli (cfg, mono_method_signature_internal (mini_get_memcpy_method ()), iargs, memcpy_ins, NULL, NULL);
 	} else {
 		mini_emit_memcpy_const_size (cfg, dest, src, size, align);
 	}

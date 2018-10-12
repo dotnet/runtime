@@ -379,14 +379,14 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 
 	if (ji && !ji->is_trampoline)
 		jmethod = jinfo_get_method (ji);
-	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod))) {
+	if (callee_gsharedvt && mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jmethod))) {
 		MonoMethodSignature *sig, *gsig;
 
 		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
 
 		/* Call from normal/gshared code to gsharedvt code with variable signature */
-		sig = mono_method_signature (m);
-		gsig = mono_method_signature (jmethod);
+		sig = mono_method_signature_internal (m);
+		gsig = mono_method_signature_internal (jmethod);
 
 		addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
 
@@ -492,7 +492,7 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		jmethod = jinfo_get_method (ji);
 
 	if (callee_gsharedvt)
-		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jmethod));
+		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jmethod));
 
 	if (!caller_gsharedvt && callee_gsharedvt) {
 		MonoMethodSignature *sig, *gsig;
@@ -501,8 +501,8 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		/* Here m is a generic instance, while ji->method is the gsharedvt method implementing it */
 
 		/* Call from normal/gshared code to gsharedvt code with variable signature */
-		sig = mono_method_signature (m);
-		gsig = mono_method_signature (jmethod);
+		sig = mono_method_signature_internal (m);
+		gsig = mono_method_signature_internal (jmethod);
 
 		wrapper_addr = mini_get_gsharedvt_wrapper (TRUE, addr, sig, gsig, -1, FALSE);
 
@@ -521,7 +521,7 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		/*
 		 * The callee uses the gsharedvt calling convention, have to add an out wrapper.
 		 */
-		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature (m), NULL, -1, FALSE);
+		gpointer out_wrapper = mini_get_gsharedvt_wrapper (FALSE, NULL, mono_method_signature_internal (m), NULL, -1, FALSE);
 		MonoFtnDesc *out_wrapper_arg = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, *out_arg);
 
 		addr = out_wrapper;
@@ -1306,7 +1306,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 
 	multicast = ((MonoMulticastDelegate*)delegate)->delegates != NULL;
 	if (!multicast && !callvirt) {
-		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature (method)->param_count == mono_method_signature (invoke)->param_count + 1)
+		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature_internal (method)->param_count == mono_method_signature_internal (invoke)->param_count + 1)
 			/* Closed static delegate */
 			code = impl_this;
 		else
@@ -1605,9 +1605,9 @@ mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, Mono
 
 	tramp_info = (MonoDelegateTrampInfo *)mono_domain_alloc0 (domain, sizeof (MonoDelegateTrampInfo));
 	tramp_info->invoke = invoke;
-	tramp_info->invoke_sig = mono_method_signature (invoke);
-	tramp_info->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), TRUE);
-	tramp_info->impl_nothis = mono_arch_get_delegate_invoke_impl (mono_method_signature (invoke), FALSE);
+	tramp_info->invoke_sig = mono_method_signature_internal (invoke);
+	tramp_info->impl_this = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), TRUE);
+	tramp_info->impl_nothis = mono_arch_get_delegate_invoke_impl (mono_method_signature_internal (invoke), FALSE);
 	tramp_info->method = method;
 	if (method) {
 		error_init (error);
@@ -1649,7 +1649,7 @@ mono_create_delegate_virtual_trampoline (MonoDomain *domain, MonoClass *klass, M
 	MonoMethod *invoke = mono_get_delegate_invoke (klass);
 	g_assert (invoke);
 
-	return mono_get_delegate_virtual_invoke_impl (mono_method_signature (invoke), method);
+	return mono_get_delegate_virtual_invoke_impl (mono_method_signature_internal (invoke), method);
 }
 
 gpointer

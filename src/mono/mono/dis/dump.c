@@ -968,7 +968,7 @@ dump_table_customattr (MonoImage *m)
 		method = get_method (m, mtoken, NULL);
 		meth = mono_get_method_checked (m, mtoken, NULL, NULL, error);
 		if (meth) {
-			params = custom_attr_params (m, mono_method_signature (meth), mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
+			params = custom_attr_params (m, mono_method_signature_internal (meth), mono_metadata_blob_heap (m, cols [MONO_CUSTOM_ATTR_VALUE]));
 			fprintf (output, "%d: %s: %s [%s]\n", i, desc, method, params);
 			g_free (params);
 		} else {

@@ -832,6 +832,9 @@ mono_class_get_context (MonoClass *klass);
 MONO_PROFILER_API MonoMethodSignature*
 mono_method_signature_checked (MonoMethod *m, MonoError *err);
 
+MONO_PROFILER_API MonoMethodSignature*
+mono_method_signature_internal (MonoMethod *m);
+
 MonoGenericContext*
 mono_method_get_context_general (MonoMethod *method, gboolean uninflated);
 

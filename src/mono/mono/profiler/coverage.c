@@ -277,7 +277,7 @@ dump_method (gpointer key, gpointer value, gpointer userdata)
 	image = mono_class_get_image (klass);
 	image_name = mono_image_get_name (image);
 
-	method_signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
+	method_signature = mono_signature_get_desc (mono_method_signature_internal (method), TRUE);
 	class_name = parse_generic_type_names (mono_type_get_name (m_class_get_byval_arg (klass)));
 	method_name = mono_method_get_name (method);
 

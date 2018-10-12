@@ -4317,7 +4317,7 @@ mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMetho
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	original_sig = mono_method_signature (method);
+	original_sig = mono_method_signature_internal (method);
 	if (original_sig->call_convention == MONO_CALL_VARARG) {
 		if (original_sig->hasthis != signature->hasthis)
 			return FALSE;

@@ -944,7 +944,7 @@ mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContex
  * On failure returns NULL and sets \p error.
  *
  * BEWARE: All non-trivial fields are invalid, including klass, signature, and header.
- *         Use mono_method_signature() and mono_method_get_header() to get the correct values.
+ *         Use mono_method_signature_internal () and mono_method_get_header () to get the correct values.
  */
 MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error)
@@ -1016,7 +1016,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	UnlockedAdd (&mono_inflated_methods_size,  sizeof (MonoMethodInflated));
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	if (!sig) {
 		char *name = mono_type_get_full_name (method->klass);
 		mono_error_set_bad_image (error, mono_method_get_image (method), "Could not resolve signature of method %s:%s", name, method->name);
@@ -5190,7 +5190,7 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 
 			if (method->name[0] == name [0] && 
 				!strcmp (name, method->name) &&
-				(param_count == -1 || mono_method_signature (method)->param_count == param_count) &&
+				(param_count == -1 || mono_method_signature_internal (method)->param_count == param_count) &&
 				((method->flags & flags) == flags)) {
 				res = method;
 				break;

@@ -2743,7 +2743,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 	if (mono_llvm_only && method->string_ctor)
 		info->sig = mono_marshal_get_string_ctor_signature (method);
 	else
-		info->sig = mono_method_signature (method);
+		info->sig = mono_method_signature_internal (method);
 
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	info->vtable = mono_class_vtable_checked (domain, method->klass, error);
@@ -3040,7 +3040,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 					ji = mini_jit_info_table_find (mono_domain_get (), (char *)mono_get_addr_from_ftnptr (compiled_method), NULL);
 					callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 					if (callee_gsharedvt)
-						callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
+						callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (ji)));
 				}
 
 				if (!callee_gsharedvt)
@@ -3104,7 +3104,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 	}
 	if (info->dyn_call_info) {
-		MonoMethodSignature *sig = mono_method_signature (method);
+		MonoMethodSignature *sig = mono_method_signature_internal (method);
 		gpointer *args;
 		int i, pindex, buf_size;
 		guint8 *buf;
@@ -3598,13 +3598,13 @@ mono_jit_create_remoting_trampoline (MonoDomain *domain, MonoMethod *method, Mon
 
 	error_init (error);
 
-	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && mono_method_signature (method)->generic_param_count) {
+	if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) && mono_method_signature_internal (method)->generic_param_count) {
 		return mono_create_specific_trampoline (method, MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 			domain, NULL);
 	}
 
 	if ((method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	    (mono_method_signature (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class)))
+	    (mono_method_signature_internal (method)->hasthis && (mono_class_is_marshalbyref (method->klass) || method->klass == mono_defaults.object_class)))
 		nm = mono_marshal_get_remoting_invoke_for_target (method, target, error);
 	else
 		nm = method;
@@ -3707,7 +3707,7 @@ is_callee_gsharedvt_variable (gpointer addr)
 	g_assert (ji);
 	callee_gsharedvt = mini_jit_info_is_gsharedvt (ji);
 	if (callee_gsharedvt)
-		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature (jinfo_get_method (ji)));
+		callee_gsharedvt = mini_is_gsharedvt_variable_signature (mono_method_signature_internal (jinfo_get_method (ji)));
 	return callee_gsharedvt;
 }
 
@@ -5074,7 +5074,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			mono_error_assert_ok (error);
 		}
 #ifndef DISABLE_REMOTING
-		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature (method)->hasthis) {
+		if (mono_class_is_marshalbyref (method->klass) && mono_method_signature_internal (method)->hasthis) {
 			invoke = mono_marshal_get_remoting_invoke_with_check (method, error);
 			mono_error_assert_ok (error);
 			mono_compile_method_checked (invoke, error);

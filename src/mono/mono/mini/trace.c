@@ -166,7 +166,7 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		goto unlock;
 	}
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	arg_info = g_newa (MonoJitArgumentInfo, sig->param_count + 1);
 
@@ -185,13 +185,13 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 
 	mono_arch_get_argument_info (sig, sig->param_count, arg_info);
 
-	if (MONO_TYPE_ISSTRUCT (mono_method_signature (method)->ret)) {
-		g_assert (!mono_method_signature (method)->ret->byref);
+	if (MONO_TYPE_ISSTRUCT (mono_method_signature_internal (method)->ret)) {
+		g_assert (!mono_method_signature_internal (method)->ret->byref);
 
 		printf ("VALUERET:%p, ", *((gpointer *)(ebp + 8)));
 	}
 
-	if (mono_method_signature (method)->hasthis) {
+	if (mono_method_signature_internal (method)->hasthis) {
 		gpointer *this_obj = (gpointer *)(ebp + arg_info [0].offset);
 		if (m_class_is_valuetype (method->klass)) {
 			printf ("value:%p, ", *arg_in_stack_slot(this_obj, gpointer *));
@@ -215,11 +215,11 @@ mono_trace_enter_method (MonoMethod *method, char *ebp)
 		}
 	}
 
-	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
+	for (i = 0; i < mono_method_signature_internal (method)->param_count; ++i) {
 		gpointer *cpos = (gpointer *)(ebp + arg_info [i + 1].offset);
 		int size = arg_info [i + 1].size;
 
-		MonoType *type = mono_method_signature (method)->params [i];
+		MonoType *type = mono_method_signature_internal (method)->params [i];
 		
 		if (type->byref) {
 			printf ("[BYREF:%p], ", *arg_in_stack_slot(cpos, gpointer *));
@@ -348,7 +348,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 		}
 	}
 
-	type = mini_get_underlying_type (mono_method_signature (method)->ret);
+	type = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
 	switch (type->type) {
 	case MONO_TYPE_VOID:
@@ -443,7 +443,7 @@ mono_trace_leave_method (MonoMethod *method, ...)
 		break;
 	}
 	default:
-		printf ("(unknown return type %x)", mono_method_signature (method)->ret->type);
+		printf ("(unknown return type %x)", mono_method_signature_internal (method)->ret->type);
 	}
 
 	//printf (" ip: %p\n", MONO_RETURN_ADDRESS_N (1));

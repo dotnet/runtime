@@ -1625,7 +1625,7 @@ static void
 process_variables (MonoCompile *cfg)
 {
 	MonoCompileGC *gcfg = cfg->gc_info;
-	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 	int i, locals_min_slot, locals_max_slot, cindex;
 	MonoBasicBlock *bb;
 	MonoInst *tmp;
@@ -2036,7 +2036,7 @@ compute_frame_size (MonoCompile *cfg)
 	int i, locals_min_offset, locals_max_offset, cfa_min_offset, cfa_max_offset;
 	int min_offset, max_offset;
 	MonoCompileGC *gcfg = cfg->gc_info;
-	MonoMethodSignature *sig = mono_method_signature (cfg->method);
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 	GSList *l;
 
 	/* Compute min/max offsets from the fp */

@@ -702,7 +702,7 @@ mono_array_new_va (MonoMethod *cm, ...)
 	int rank;
 	int i, d;
 
-	pcount = mono_method_signature (cm)->param_count;
+	pcount = mono_method_signature_internal (cm)->param_count;
 	rank = m_class_get_rank (cm->klass);
 
 	va_start (ap, cm);
@@ -749,7 +749,7 @@ mono_array_new_1 (MonoMethod *cm, guint32 length)
 	int pcount;
 	int rank;
 
-	pcount = mono_method_signature (cm)->param_count;
+	pcount = mono_method_signature_internal (cm)->param_count;
 	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length;
@@ -784,7 +784,7 @@ mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 	int pcount;
 	int rank;
 
-	pcount = mono_method_signature (cm)->param_count;
+	pcount = mono_method_signature_internal (cm)->param_count;
 	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length1;
@@ -820,7 +820,7 @@ mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	int pcount;
 	int rank;
 
-	pcount = mono_method_signature (cm)->param_count;
+	pcount = mono_method_signature_internal (cm)->param_count;
 	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length1;
@@ -857,7 +857,7 @@ mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 leng
 	int pcount;
 	int rank;
 
-	pcount = mono_method_signature (cm)->param_count;
+	pcount = mono_method_signature_internal (cm)->param_count;
 	rank = m_class_get_rank (cm->klass);
 
 	lengths [0] = length1;
@@ -942,7 +942,7 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 gpointer
 mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *method)
 {
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoGenericContext *generic_context;
 
 	if (sig->is_inflated) {
@@ -1367,7 +1367,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		klass = this_obj->vtable->klass;
 	}
 
-	if (mono_method_signature (cmethod)->pinvoke) {
+	if (mono_method_signature_internal (cmethod)->pinvoke) {
 		/* Object.GetType () */
 		m = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
 	} else {
@@ -1884,7 +1884,7 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 		if (mono_error_set_pending_exception (error))
 			return;
 
-		if (m_class_is_valuetype (m->klass) && mono_method_signature (m)->hasthis)
+		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis)
 		    addr = mono_aot_get_unbox_trampoline (m);
 
 		gpointer arg = mini_get_delegate_arg (del->method, addr);

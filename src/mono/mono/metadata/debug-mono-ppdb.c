@@ -537,7 +537,7 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 	if (!method->token)
 		return NULL;
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	if (!sig)
 		return NULL;
 

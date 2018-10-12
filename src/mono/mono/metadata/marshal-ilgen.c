@@ -3941,7 +3941,7 @@ static void
 emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
 {
 	int i, pos, pos2, this_local, taken_local, ret_local = 0;
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoExceptionClause *clause;
 
 	/* result */
@@ -4035,7 +4035,7 @@ emit_synchronized_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 static void
 emit_unbox_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method)
 {
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 	mono_mb_emit_ldarg (mb, 0); 
 	mono_mb_emit_icon (mb, MONO_ABI_SIZEOF (MonoObject));
@@ -4080,7 +4080,7 @@ static void
 emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
 	MonoImage *image = get_method_image (method);
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	int param_count = sig->param_count + sig->hasthis + 1;
 	int pos_leave, coop_gc_var, coop_gc_stack_dummy;
 	MonoExceptionClause *clause;
@@ -6231,7 +6231,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	gboolean uses_handles = FALSE;
 	gboolean save_handles_to_locals = FALSE;
 	IcallHandlesLocal *handles_locals = NULL;
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 	(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles);
 

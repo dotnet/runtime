@@ -2918,7 +2918,7 @@ collect_method_images (MonoMethodInflated *method, CollectData *data)
 	 * Dynamic assemblies have no references, so the images they depend on can be unloaded before them.
 	 */
 	if (image_is_dynamic (m_class_get_image (m->klass)))
-		collect_signature_images (mono_method_signature (m), data);
+		collect_signature_images (mono_method_signature_internal (m), data);
 }
 
 static void
@@ -2997,7 +2997,7 @@ inflated_method_in_image (gpointer key, gpointer value, gpointer data)
 	// https://bugzilla.novell.com/show_bug.cgi?id=458168
 	g_assert (m_class_get_image (method->declaring->klass) == image ||
 		(method->context.class_inst && ginst_in_image (method->context.class_inst, image)) ||
-			  (method->context.method_inst && ginst_in_image (method->context.method_inst, image)) || (((MonoMethod*)method)->signature && signature_in_image (mono_method_signature ((MonoMethod*)method), image)));
+			  (method->context.method_inst && ginst_in_image (method->context.method_inst, image)) || (((MonoMethod*)method)->signature && signature_in_image (mono_method_signature_internal ((MonoMethod*)method), image)));
 
 	return TRUE;
 }
@@ -3035,7 +3035,7 @@ check_gmethod (gpointer key, gpointer value, gpointer data)
 	if (method->context.method_inst)
 		g_assert (!ginst_in_image (method->context.method_inst, image));
 	if (((MonoMethod*)method)->signature)
-		g_assert (!signature_in_image (mono_method_signature ((MonoMethod*)method), image));
+		g_assert (!signature_in_image (mono_method_signature_internal ((MonoMethod*)method), image));
 }
 
 /*

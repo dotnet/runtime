@@ -236,7 +236,7 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	method = cfg->method;
 	header = cfg->header;
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	jit = info->jit;
 	jit->code_start = cfg->native_code;
@@ -552,14 +552,14 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 
 	if (jit->has_var_info) {
 		jit->num_locals = header->num_locals;
-		jit->num_params = mono_method_signature (method)->param_count;
+		jit->num_params = mono_method_signature_internal (method)->param_count;
 		jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 		jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 
 		for (i = 0; i < jit->num_params; ++i)
 			deserialize_variable (&jit->params [i], p, &p);
 
-		if (mono_method_signature (method)->hasthis) {
+		if (mono_method_signature_internal (method)->hasthis) {
 			jit->this_var = g_new0 (MonoDebugVarInfo, 1);
 			deserialize_variable (jit->this_var, p, &p);
 		}

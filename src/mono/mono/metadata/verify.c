@@ -374,7 +374,7 @@ mono_type_create_fnptr_from_mono_method (VerifyContext *ctx, MonoMethod *method)
 	_MEM_ALLOC (sizeof (MonoType));
 
 	//FIXME use mono_method_get_signature_full
-	res->data.method = mono_method_signature (method);
+	res->data.method = mono_method_signature_internal (method);
 	res->type = MONO_TYPE_FNPTR;
 	ctx->funptrs = g_slist_prepend (ctx->funptrs, res);
 	return res;
@@ -467,8 +467,8 @@ mono_class_has_default_constructor (MonoClass *klass)
 	for (i = 0; i < mcount; ++i) {
 		method = klass_methods [i];
 		if (mono_method_is_constructor (method) &&
-			mono_method_signature (method) &&
-			mono_method_signature (method)->param_count == 0 &&
+			mono_method_signature_internal (method) &&
+			mono_method_signature_internal (method)->param_count == 0 &&
 			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
 			return TRUE;
 	}
@@ -2749,14 +2749,14 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	invoke = mono_get_delegate_invoke (delegate);
 	method = funptr->method;
 
-	if (!method || !mono_method_signature (method)) {
+	if (!method || !mono_method_signature_internal (method)) {
 		char *name = mono_type_get_full_name (delegate);
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid method on stack to create delegate %s construction at 0x%04x", name, ctx->ip_offset));
 		g_free (name);
 		return;
 	}
 
-	if (!invoke || !mono_method_signature (invoke)) {
+	if (!invoke || !mono_method_signature_internal (invoke)) {
 		char *name = mono_type_get_full_name (delegate);
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Delegate type %s with bad Invoke method at 0x%04x", name, ctx->ip_offset));
 		g_free (name);
@@ -2766,11 +2766,11 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 	is_static_ldftn = (ip_offset > 5 && IS_LOAD_FUN_PTR (CEE_LDFTN)) && method->flags & METHOD_ATTRIBUTE_STATIC;
 
 	if (is_static_ldftn)
-		is_first_arg_bound = mono_method_signature (invoke)->param_count + 1 ==  mono_method_signature (method)->param_count;
+		is_first_arg_bound = mono_method_signature_internal (invoke)->param_count + 1 ==  mono_method_signature_internal (method)->param_count;
 
-	if (!mono_delegate_signature_equal (mono_method_signature (invoke), mono_method_signature (method), is_first_arg_bound)) {
-		char *fun_sig = mono_signature_get_desc (mono_method_signature (method), FALSE);
-		char *invoke_sig = mono_signature_get_desc (mono_method_signature (invoke), FALSE);
+	if (!mono_delegate_signature_equal (mono_method_signature_internal (invoke), mono_method_signature_internal (method), is_first_arg_bound)) {
+		char *fun_sig = mono_signature_get_desc (mono_method_signature_internal (method), FALSE);
+		char *invoke_sig = mono_signature_get_desc (mono_method_signature_internal (invoke), FALSE);
 		CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Function pointer signature '%s' doesn't match delegate's signature '%s' at 0x%04x", fun_sig, invoke_sig, ctx->ip_offset));
 		g_free (fun_sig);
 		g_free (invoke_sig);
@@ -2798,7 +2798,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 
 	//general tests
 	if (is_first_arg_bound) {
-		if (mono_method_signature (method)->param_count == 0 || !verify_stack_type_compatibility_full (ctx, mono_method_signature (method)->params [0], value, FALSE, TRUE))
+		if (mono_method_signature_internal (method)->param_count == 0 || !verify_stack_type_compatibility_full (ctx, mono_method_signature_internal (method)->params [0], value, FALSE, TRUE))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("This object not compatible with function pointer for delegate creation at 0x%04x", ctx->ip_offset));
 	} else {
 		if (method->flags & METHOD_ATTRIBUTE_STATIC) {
@@ -3366,7 +3366,7 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 	}
 
 	if ((ctx->prefix_set & PREFIX_TAIL)) {
-		if (!mono_delegate_ret_equal (mono_method_signature (ctx->method)->ret, sig->ret))
+		if (!mono_delegate_ret_equal (mono_method_signature_internal (ctx->method)->ret, sig->ret))
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Tail call with incompatible return type at 0x%04x", ctx->ip_offset));
 		if (ctx->header->code [ctx->ip_offset + 5] != CEE_RET)
 			CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Tail call not followed by ret at 0x%04x", ctx->ip_offset));
@@ -3906,7 +3906,7 @@ do_newobj (VerifyContext *ctx, int token)
 	}
 
 	//FIXME use mono_method_get_signature_full
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	if (!sig) {
 		ADD_VERIFY_ERROR (ctx, g_strdup_printf ("Invalid constructor signature to newobj at 0x%04x", ctx->ip_offset));
 		return;
@@ -4941,7 +4941,7 @@ mono_method_verify (MonoMethod *method, int level)
 	memset (&ctx, 0, sizeof (VerifyContext));
 
 	//FIXME use mono_method_get_signature_full
-	ctx.signature = mono_method_signature (method);
+	ctx.signature = mono_method_signature_internal (method);
 	if (!ctx.signature) {
 		ADD_VERIFY_ERROR (&ctx, g_strdup_printf ("Could not decode method signature"));
 

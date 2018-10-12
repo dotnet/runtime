@@ -1770,7 +1770,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	emit_section_change (w, ".debug_info", 0);
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	header = mono_method_get_header_checked (method, error);
 	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 

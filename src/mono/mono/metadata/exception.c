@@ -188,7 +188,7 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 		
 		if (strcmp (".ctor", mono_method_get_name (m)))
 			continue;
-		sig = mono_method_signature (m);
+		sig = mono_method_signature_internal (m);
 		if (sig->param_count != count)
 			continue;
 
@@ -827,7 +827,7 @@ mono_get_exception_type_initialization_handle (const gchar *type_name, MonoExcep
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (".ctor", mono_method_get_name (method))) {
-			MonoMethodSignature *sig = mono_method_signature (method);
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_STRING && mono_class_from_mono_type (sig->params [1]) == mono_defaults.exception_class)
 				break;
@@ -1028,7 +1028,7 @@ mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArra
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (".ctor", mono_method_get_name (method))) {
-			MonoMethodSignature *sig = mono_method_signature (method);
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_SZARRAY && sig->params [1]->type == MONO_TYPE_SZARRAY)
 				break;

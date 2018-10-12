@@ -34,7 +34,7 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, method), method->dreg);
 
 	if (ret) {
-		MonoInst *var = mono_compile_create_var (cfg, mono_method_signature (cfg->method)->ret, OP_LOCAL);
+		MonoInst *var = mono_compile_create_var (cfg, mono_method_signature_internal (cfg->method)->ret, OP_LOCAL);
 
 		MonoInst *store, *addr;
 
@@ -254,7 +254,7 @@ get_variable_buffer (MonoDebugMethodJitInfo *jit, MonoDebugVarInfo *var, MonoCon
 gpointer
 mini_profiler_context_get_this (MonoProfilerCallContext *ctx)
 {
-	if (!mono_method_signature (ctx->method)->hasthis)
+	if (!mono_method_signature_internal (ctx->method)->hasthis)
 		return NULL;
 
 	if (ctx->interp_frame)
@@ -271,7 +271,7 @@ mini_profiler_context_get_this (MonoProfilerCallContext *ctx)
 gpointer
 mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos)
 {
-	MonoMethodSignature *sig = mono_method_signature (ctx->method);
+	MonoMethodSignature *sig = mono_method_signature_internal (ctx->method);
 
 	if (pos >= sig->param_count)
 		return NULL;
@@ -320,7 +320,7 @@ mini_profiler_context_get_result (MonoProfilerCallContext *ctx)
 	if (!ctx->return_value)
 		return NULL;
 
-	return memdup_with_type (ctx->return_value, mono_method_signature (ctx->method)->ret);
+	return memdup_with_type (ctx->return_value, mono_method_signature_internal (ctx->method)->ret);
 }
 
 void

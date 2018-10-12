@@ -1280,7 +1280,7 @@ simd_intrinsic_emit_binary_op (MonoCompile *cfg, int opcode, int flags, MonoClas
 static MonoInst*
 simd_intrinsic_emit_binary (const SimdIntrinsic *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
-	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	MonoMethodSignature *sig = mono_method_signature_internal (cmethod);
 
 	g_assert (sig->param_count == 2);
 
@@ -1399,7 +1399,7 @@ static MonoInst*
 simd_intrinsic_emit_setter (const SimdIntrinsic *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
 	MonoInst *ins;
-	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	MonoMethodSignature *sig = mono_method_signature_internal (cmethod);
 	int size, align;
 	gboolean indirect;
 	int dreg;
@@ -1528,7 +1528,7 @@ simd_intrinsic_emit_getter_op (MonoCompile *cfg, int index, MonoClass *klass, Mo
 static MonoInst*
 simd_intrinsic_emit_getter (const SimdIntrinsic *intrinsic, MonoCompile *cfg, MonoMethod *cmethod, MonoInst **args)
 {
-	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	MonoMethodSignature *sig = mono_method_signature_internal (cmethod);
 
 	return simd_intrinsic_emit_getter_op (cfg, intrinsic->opcode, cmethod->klass, sig->ret, args [0]);
 }
@@ -1538,7 +1538,7 @@ simd_intrinsic_emit_long_getter (const SimdIntrinsic *intrinsic, MonoCompile *cf
 {
 	MonoInst *ins;
 	int vreg;
-	gboolean is_r8 = mono_method_signature (cmethod)->ret->type == MONO_TYPE_R8;
+	gboolean is_r8 = mono_method_signature_internal (cmethod)->ret->type == MONO_TYPE_R8;
 
 	vreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 
@@ -1565,7 +1565,7 @@ simd_intrinsic_emit_ctor (const SimdIntrinsic *intrinsic, MonoCompile *cfg, Mono
 	MonoInst *ins = NULL;
 	int i, addr_reg;
 	gboolean is_ldaddr = (args [0]->opcode == OP_LDADDR && args [0]->inst_left->opcode != OP_ARG);
-	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	MonoMethodSignature *sig = mono_method_signature_internal (cmethod);
 	int store_op = mono_type_to_store_membase (cfg, sig->params [0]);
 	int arg_size = mono_type_size (sig->params [0], &i);
 	int opcode;
@@ -1657,7 +1657,7 @@ simd_intrinsic_emit_cast (const SimdIntrinsic *intrinsic, MonoCompile *cfg, Mono
 
 	if (cmethod->is_inflated)
 		/* Vector<T> */
-		klass = mono_class_from_mono_type (mono_method_signature (cmethod)->ret);
+		klass = mono_class_from_mono_type (mono_method_signature_internal (cmethod)->ret);
 	else
 		klass = cmethod->klass;
 
@@ -1761,7 +1761,7 @@ simd_intrinsic_emit_shuffle (const SimdIntrinsic *intrinsic, MonoCompile *cfg, M
 {
 	MonoInst *ins;
 	int vreg, vreg2 = -1;
-	int param_count = mono_method_signature (cmethod)->param_count;
+	int param_count = mono_method_signature_internal (cmethod)->param_count;
 
 	if (args [param_count - 1]->opcode != OP_ICONST) {
 		/*TODO Shuffle with non literals is not yet supported */
@@ -2088,7 +2088,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp ("VectorOperations", class_name)) {
 		if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
 			goto on_exit;
-		class_name = m_class_get_name (mono_class_from_mono_type (mono_method_signature (cmethod)->params [0]));
+		class_name = m_class_get_name (mono_class_from_mono_type (mono_method_signature_internal (cmethod)->params [0]));
 	} else if (!m_class_is_simd_type (cmethod->klass))
 		goto on_exit;
 
@@ -2187,7 +2187,7 @@ static MonoInst*
 emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	const SimdIntrinsic *intrins;
-	MonoMethodSignature *sig = mono_method_signature (cmethod);
+	MonoMethodSignature *sig = mono_method_signature_internal (cmethod);
 	MonoType *type = m_class_get_byval_arg (cmethod->klass);
 
 	if (!m_class_is_simd_type (cmethod->klass))
@@ -2234,7 +2234,7 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 			ins = simd_intrinsic_emit_binary (intrins, cfg, cmethod, args);
 			/* The end result is in the lowest element */
-			return simd_intrinsic_emit_getter_op (cfg, 0, cmethod->klass, mono_method_signature (cmethod)->ret, ins);
+			return simd_intrinsic_emit_getter_op (cfg, 0, cmethod->klass, mono_method_signature_internal (cmethod)->ret, ins);
 		}
 		break;
 	case SN_Abs: {

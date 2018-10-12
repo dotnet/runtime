@@ -1334,7 +1334,7 @@ get_default_param_value_blobs (MonoMethod *method, char **blobs, guint32 *types)
 
 	MonoClass *klass = method->klass;
 	MonoImage *image = m_class_get_image (klass);
-	MonoMethodSignature *methodsig = mono_method_signature (method);
+	MonoMethodSignature *methodsig = mono_method_signature_internal (method);
 
 	MonoTableInfo *constt;
 	MonoTableInfo *methodt;
@@ -2502,7 +2502,7 @@ reflection_bind_generic_method_parameters (MonoMethod *method, MonoArrayHandle t
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	int count = mono_method_signature (method)->generic_param_count;
+	int count = mono_method_signature_internal (method)->generic_param_count;
 	if (count != mono_array_handle_length (types)) {
 		mono_error_set_argument (error, "typeArguments", "Incorrect number of generic arguments");
 		return NULL;
