@@ -14,27 +14,17 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
     }
 
     def logFolder = getLogFolder()
+    def commonprops = "--ci /p:ArchGroup=x64 /p:ConfigurationGroup=${params.CGroup}"
 
-    stage ('Initialize tools') {
-        // Init tools
-        sh './init-tools.sh'
-    }
-    stage ('Generate version assets') {
-        // Generate the version assets.  Do we need to even do this for non-official builds?
-        sh "./build-managed.sh -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true"
-    }
-    stage ('Sync') {
-        sh "./sync.sh -p -- /p:ArchGroup=x64"
-    }
     stage ('Build Product') {
-        sh "./build.sh -buildArch=x64 -${params.CGroup}"
+        sh "./build.sh ${commonprops}"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
         if (params.TestOuter) {
-            additionalArgs = '-Outerloop'
+            additionalArgs = '/p:Outerloop=true'
         }
-        sh "./build-tests.sh -buildArch=x64 -${params.CGroup} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true"
+        sh "./build.sh -test ${commonprops} /p:SkipTests=true ${additionalArgs} /p:ArchiveTests=true /p:EnableDumpling=true"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials
@@ -62,7 +52,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
                                       'SLES.15.Amd64.Open',]
             }
 
-            sh "./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.CGroup} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
+            sh "./eng/common/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.CGroup} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
 
             submittedHelixJson = readJSON file: "${logFolder}/SubmittedHelixRuns.txt"
         }

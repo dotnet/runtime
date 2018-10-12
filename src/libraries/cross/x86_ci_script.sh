@@ -27,12 +27,12 @@ function cross_build_native_with_docker {
     __dockerImage=" hseok82/dotnet-buildtools-prereqs:ubuntu-16.04-crossx86-ef0ac75-20175511035548"
     __dockerEnvironmentVariables="-e ROOTFS_DIR=/crossrootfs/x86"
     __runtimeOS="ubuntu.16.04"
-    
+
     __dockerCmd="docker run ${__dockerEnvironmentVariables} -i --rm -v $__currentWorkingDirectory:/opt/code -w /opt/code $__dockerImage"
 
     # Cross building corefx with rootfs in Docker
-    __buildNativeCmd="./build-native.sh -buildArch=x86 -$__buildConfig -- cross"
-    
+    __buildNativeCmd="./src/Native/build-native.sh x86 $__buildConfig cross"
+
     $__dockerCmd $__buildNativeCmd
     sudo chown -R $(id -u -n) ./bin
 }

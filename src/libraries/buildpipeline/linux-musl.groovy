@@ -10,27 +10,17 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
     stage ('Checkout source') {
         checkoutRepo()
     }
+    def commonprops = "--ci /p:ArchGroup=${params.AGroup} /p:ConfigurationGroup=${params.CGroup}"
 
-    stage ('Initialize tools') {
-        // Init tools
-        sh './init-tools.sh'
-    }
-    stage ('Generate version assets') {
-        // Generate the version assets.  Do we need to even do this for non-official builds?
-        sh "./build-managed.sh -runtimeos=linux-musl -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /p:PortableBuild=false"
-    }
-    stage ('Sync') {
-        sh "./sync.sh -p -runtimeos=linux-musl -- /p:ArchGroup=x64 /p:PortableBuild=false"
-    }
     stage ('Build Product') {
-        sh "./build.sh -buildArch=x64 -runtimeos=linux-musl -${params.CGroup} -- /p:PortableBuild=false"
+        sh "./build.sh ${commonprops} /p:RuntimeOs=linux-musl /p:PortableBuild=false"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
         if (params.TestOuter) {
-            additionalArgs = '-Outerloop'
+            additionalArgs = ' /p:OuterLoop=true'
         }
-        sh "./build-tests.sh -buildArch=x64 -${params.CGroup} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false"
+        sh "./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false${additionalArgs}"
     }
 
     // TODO: Add submission for Helix testing once we have queue for Alpine Linux working

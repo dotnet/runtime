@@ -42,13 +42,11 @@ You can navigate to this from your PR by clicking the "Details" link to the righ
 
 You can perform code coverage runs locally on your own machine.  Normally to build your entire CoreFX repo, from the root of your repo you'd run:
 
-    build
-    build-tests
+    build -includetests
 
-To include code coverage in this run, augment the `build-tests` call with the `coverage` argument:
+To include code coverage in this run, augment the `build -includetests` call with the `coverage` argument:
 
-    build
-    build-tests -coverage
+    build -includetests -coverage
 
 This will do the build and testing as with the normal ```build```, but it will run the tests using the OpenCover tool.  A resulting index.htm file providing the results of the run will be available at:
 
@@ -66,9 +64,9 @@ The results for this one library will then show up in the aforementioned index.h
 
     cd src\System.Diagnostics.Debug\tests\
     dotnet msbuild /t:BuildAndTest /p:Coverage=true
-    
+
 And then once the run completes:
-    
+
     ..\..\..\bin\tests\coverage\index.htm
 
 ## Code coverage with System.Private.CoreLib code
@@ -83,7 +81,7 @@ The build and test projects take care of copying assemblies and PDBs as needed f
 
 Note: as of 10/2017 OpenCover, the default coverage tool, requires PDBs to be Windows PDBs - the needed conversions are automatically performed by coverage runs. You can determine if it is a Windows PDB by doing 'more System.Private.CoreLib.pdb',  if it begins with 'Microsoft C/C++ MSF 7.00' it is a Windows PDB.  If you need a Windows PDB the Pdb2Pdb tool will convert (or you can do a dotnet msbuild /t:rebuild /p:DebugType=full).
 
-## Cross-platform Coverage 
+## Cross-platform Coverage
 As of 07/2018 CoreFx is only able to get coverage information on Windows. To correct this we are experimenting with [coverlet](https://github.com/tonerdo/coverlet).
 
 ### Know Issues ###
@@ -95,7 +93,7 @@ On Windows by default coverage runs will use OpenCover instead of coverlet, use 
 
 ```
 dotnet msbuild /t:RebuildAndTest /p:Coverage=True /p:UseCoverlet=True
-``` 
+```
 
 ### Unix Instructions ###
 On Unix just specifying `/p:Coverage=True` triggers the usage of coverlet. However, in order to generate the html report a few setup steps are needed.

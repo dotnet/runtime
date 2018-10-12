@@ -2,60 +2,87 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="Directory.Build.props" />
 
-  <!-- required to build the projects in their specified order -->
   <PropertyGroup>
-    <SerializeProjects>true</SerializeProjects>
-  </PropertyGroup>
-
-  <PropertyGroup>
+    <BuildRestore Condition="'$(BuildRestore)'==''">true</BuildRestore>
+    <BuildNative Condition="'$(BuildNative)'==''">true</BuildNative>
+    <BuildTests Condition="'$(BuildTests)'==''">false</BuildTests>
     <BuildPackages Condition="'$(BuildPackages)'==''">true</BuildPackages>
+
+    <BuildDependsOn Condition="'$(BuildRestore)'=='true'">$(BuildDependsOn);Restore</BuildDependsOn>
+    <BuildDependsOn Condition="'$(BuildNative)'=='true'">$(BuildDependsOn);BuildNative</BuildDependsOn>
+    <BuildDependsOn>$(BuildDependsOn);BuildManaged</BuildDependsOn>
+    <BuildDependsOn Condition="'$(BuildTests)'=='true'">$(BuildDependsOn);Test</BuildDependsOn>
+    <BuildDependsOn Condition="'$(BuildPackages)'=='true'">$(BuildDependsOn);Pack</BuildDependsOn>
+
+    <!-- Explicitly set Configuration based on BuildConfiguration for the root projects -->
+    <ProjectProperties>Configuration=$(BuildConfiguration)</ProjectProperties>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
-  <ItemGroup>
-    <Project Include="external\dir.proj" />
-    <Project Include="src\dirs.proj" />
-    <Project Include="src\tests.builds" Condition="'$(BuildTests)'=='true'" />
-    <!-- signing must happen before packaging -->
-    <Project Include="src\sign.proj" />
-    <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
-  </ItemGroup>
-
   <Import Project="Directory.Build.targets" />
 
-  <Import Project="dir.traversal.targets" />
+  <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <Target Name="Restore" DependsOnTargets="CreateOrUpdateCurrentVersionFile">
+    <ItemGroup>
+      <_RestoreProjects Include="external\dir.proj" />
+    </ItemGroup>
+
+    <!-- Generate the configurations for this repo -->
+    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(BuildConfigurationFolder)" />
+
+    <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties)" />
+  </Target>
+
+  <Target Name="BuildNative">
+    <ItemGroup>
+      <_BuildNativeProjects Include="src\Native\build-native.proj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_BuildNativeProjects)" Properties="$(ProjectProperties)" />
+  </Target>
+
+  <Target Name="BuildManaged">
+    <ItemGroup>
+      <_BuildMangedProjects Include="src\dirs.proj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_BuildMangedProjects)" Properties="$(ProjectProperties)" />
+  </Target>
+
+  <Target Name="Test">
+    <ItemGroup>
+      <_TestProjects Include="src\tests.builds" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_TestProjects)" Properties="$(ProjectProperties)" />
+  </Target>
+
+  <Target Name="Pack">
+    <ItemGroup>
+      <!-- signing needs to happen before packaging -->
+      <_PackProjects Include="src\sign.proj" />
+      <_PackProjects Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(_PackProjects)" Properties="$(ProjectProperties)" />
+  </Target>
 
   <Import Project="$(ToolsDir)clean.targets" />
 
-  <PropertyGroup>
-    <PrebuildSetupTargets>
-      GenerateConfigurationProperties;
-      CreateOrUpdateCurrentVersionFile
-    </PrebuildSetupTargets>
-  </PropertyGroup>
+  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
 
-  <PropertyGroup>
-    <TraversalBuildDependsOn>
-      $(PrebuildSetupTargets);
-      $(TraversalBuildDependsOn);
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
-
-  <!-- Generate the configurations for this repo -->
-  <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="GenerateConfigurationProperties">
-    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(BuildConfigurationFolder)" />
+  <Target Name="Clean">
+    <RemoveDir Directories="$(BinDir)" />
+    <!-- Temporarily outside BinDir -->
+    <RemoveDir Directories="$(PackageInstallPath)" />
   </Target>
 
-  <Target Name="Sync" DependsOnTargets="$(PrebuildSetupTargets)">
-    <ItemGroup>
-      <ExternalProject Include="external\dir.proj" />
-    </ItemGroup>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
-    <MSBuild Projects="@(ExternalProject)"
-             ContinueOnError="ErrorAndContinue" />
-  </Target>
+  <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
+  <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
 
   <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="UpdateVSConfigurations">
@@ -71,15 +98,4 @@
     <UpdateVSConfigurations ProjectsToUpdate="@(_projectsToUpdate)" SolutionsToUpdate="@(_solutionsToUpdate)" />
     <Message Importance="High" Text="Updating configurations for projects ... Done." />
   </Target>
-
-  <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
-  <Target Name="CleanAllProjects">
-    <RemoveDir Directories="$(BinDir)" />
-    <!-- Temporarily outside BinDir -->
-    <RemoveDir Directories="$(PackageInstallPath)" />
-  </Target>
-
-  <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
-  <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
-
 </Project>

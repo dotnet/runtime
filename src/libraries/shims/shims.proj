@@ -2,7 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="Directory.Build.props" />
 
-  <UsingTask TaskName="GenFacadesTask" AssemblyFile="$(PackagesDir)/$(MicrosoftDotNetGenFacadesPackage.ToLower())/$(MicrosoftDotNetGenFacadesPackageVersion)/tools/netcoreapp2.1/Microsoft.DotNet.GenFacades.dll" />
   <PropertyGroup>
     <PackageConfigurations>
       netcoreapp2.0;
