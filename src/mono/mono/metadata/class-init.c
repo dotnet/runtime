@@ -633,7 +633,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			MONO_PROFILER_RAISE (class_failed, (klass));
 			return NULL;
 		}
-		klass->cast_class = klass->element_class = mono_class_from_mono_type (enum_basetype);
+		klass->cast_class = klass->element_class = mono_class_from_mono_type_internal (enum_basetype);
 	}
 
 	/*
@@ -850,7 +850,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		} else {
 			/*
 			 * This case is very frequent not just during compilation because of calls
-			 * from mono_class_from_mono_type (), mono_array_new (),
+			 * from mono_class_from_mono_type_internal (), mono_array_new (),
 			 * Array:CreateInstance (), etc, so use a separate cache + a separate lock.
 			 */
 			mono_os_mutex_lock (&image->szarray_cache_lock);
@@ -1251,7 +1251,7 @@ mono_class_create_ptr (MonoType *type)
 	char *name;
 	MonoImageSet* image_set;
 
-	el_class = mono_class_from_mono_type (type);
+	el_class = mono_class_from_mono_type_internal (type);
 	image = el_class->image;
 	image_set = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_image_set_for_class (el_class) : NULL;
 
@@ -2279,7 +2279,7 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 		MonoClass *arg;
 		if (ginst->type_argv [i]->type != MONO_TYPE_GENERICINST)
 			continue;
-		arg = mono_class_from_mono_type (ginst->type_argv [i]);
+		arg = mono_class_from_mono_type_internal (ginst->type_argv [i]);
 		/*Those 2 will be checked by mono_class_setup_vtable itself*/
 		if (mono_class_has_gtd_parent (klass, arg) || mono_class_has_gtd_parent (arg, klass))
 			continue;
@@ -3353,13 +3353,13 @@ class_has_references (MonoClass *klass)
 static gboolean
 type_has_references (MonoClass *klass, MonoType *ftype)
 {
-	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type (ftype)))))
+	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
 	if (!ftype->byref && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
 		MonoGenericParam *gparam = ftype->data.generic_param;
 
 		if (gparam->gshared_constraint)
-			return class_has_references (mono_class_from_mono_type (gparam->gshared_constraint));
+			return class_has_references (mono_class_from_mono_type_internal (gparam->gshared_constraint));
 	}
 	return FALSE;
 }
@@ -3434,7 +3434,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		for (i = 0; i < top; i++) {
 			field = &klass->fields [i];
 			if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-				klass->cast_class = klass->element_class = mono_class_from_mono_type (field->type);
+				klass->cast_class = klass->element_class = mono_class_from_mono_type_internal (field->type);
 				break;
 			}
 		}
@@ -3477,7 +3477,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
 				blittable = FALSE;
 			} else {
-				MonoClass *field_class = mono_class_from_mono_type (field->type);
+				MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
 				if (field_class) {
 					mono_class_setup_fields (field_class);
 					if (mono_class_has_failure (field_class)) {

@@ -1539,7 +1539,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		if (!mono_error_ok (error))
 			return NULL;
 		mono_class_init (handle_class);
-		mono_class_init (mono_class_from_mono_type ((MonoType *)handle));
+		mono_class_init (mono_class_from_mono_type_internal ((MonoType *)handle));
 
 		target = mono_type_get_object_checked (domain, (MonoType *)handle, error);
 		if (!mono_error_ok (error))
@@ -2770,7 +2770,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+			if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 				supported = FALSE;
 		}
 
@@ -2803,7 +2803,7 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_R4:
 	case MONO_TYPE_R8:
-		info->ret_box_class = mono_class_from_mono_type (ret_type);
+		info->ret_box_class = mono_class_from_mono_type_internal (ret_type);
 		break;
 	case MONO_TYPE_PTR:
 		info->ret_box_class = mono_defaults.int_class;
@@ -2816,10 +2816,10 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_IS_REFERENCE (ret_type))
-			info->ret_box_class = mono_class_from_mono_type (ret_type);
+			info->ret_box_class = mono_class_from_mono_type_internal (ret_type);
 		break;
 	case MONO_TYPE_VALUETYPE:
-		info->ret_box_class = mono_class_from_mono_type (ret_type);
+		info->ret_box_class = mono_class_from_mono_type_internal (ret_type);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2913,8 +2913,8 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoType *t = sig->params [i];
 
-		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
-			MonoClass *klass = mono_class_from_mono_type (t);
+		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
+			MonoClass *klass = mono_class_from_mono_type_internal (t);
 			guint8 *nullable_buf;
 			int size;
 

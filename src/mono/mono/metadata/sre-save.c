@@ -1267,7 +1267,7 @@ mono_image_fill_export_table (MonoDomain *domain, MonoReflectionTypeBuilder *tb,
 	MonoType *t = mono_reflection_type_get_handle ((MonoReflectionType*)tb, error);
 	return_if_nok (error);
 
-	klass = mono_class_from_mono_type (t);
+	klass = mono_class_from_mono_type_internal (t);
 
 	guint32 tb_token = mono_metadata_make_token (MONO_TABLE_TYPEDEF, tb->table_idx);
 	if (m_class_get_type_token (klass) != tb_token) {
@@ -1368,7 +1368,7 @@ mono_image_fill_export_table_from_type_forwarders (MonoReflectionAssemblyBuilder
 		mono_error_assert_ok (error);
 		g_assert (type);
 
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 
 		add_exported_type (assemblyb, assembly, klass, 0);
 	}
@@ -1758,7 +1758,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 			if (!strcmp (iltoken_member_class_name, "TypeBuilder")) {
 				g_assert_not_reached ();
 			} else if (!strcmp (iltoken_member_class_name, "RuntimeType")) {
-				MonoClass *k = mono_class_from_mono_type (((MonoReflectionType*)iltoken->member)->type);
+				MonoClass *k = mono_class_from_mono_type_internal (((MonoReflectionType*)iltoken->member)->type);
 				MonoObject *obj = &mono_class_get_ref_info_raw (k)->type.object; /* FIXME use handles */
 				g_assert (obj);
 				g_assert (!strcmp (m_class_get_name (mono_object_class (obj)), "TypeBuilder"));
@@ -1771,7 +1771,7 @@ fixup_method (MonoReflectionILGen *ilgen, gpointer value, MonoDynamicImage *asse
 		case MONO_TABLE_TYPEREF:
 			g_assert (!strcmp (iltoken_member_class_name, "RuntimeType"));
 			MonoClass *k;
-			k = mono_class_from_mono_type (((MonoReflectionType*)iltoken->member)->type);
+			k = mono_class_from_mono_type_internal (((MonoReflectionType*)iltoken->member)->type);
 			MonoObject *obj;
 			obj = &mono_class_get_ref_info_raw (k)->type.object; /* FIXME use handles */
 			g_assert (obj);

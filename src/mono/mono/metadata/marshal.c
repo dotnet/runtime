@@ -2240,7 +2240,7 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 			target_type = mono_class_inflate_generic_type_checked (method->signature->params [0],
 				mono_method_get_context (method), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
-			target_class = mono_class_from_mono_type (target_type);
+			target_class = mono_class_from_mono_type_internal (target_type);
 		} else {
 			target_class = target_method->klass;
 		}
@@ -2461,7 +2461,7 @@ static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
 	if (t->byref) {
-		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 			return t;
 
 		/* The result needs loaded indirectly */
@@ -3255,7 +3255,7 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	      MonoType **conv_arg_type, MarshalAction action)
 {
 	/* Ensure that we have marshalling info for this param */
-	mono_marshal_load_type_info (mono_class_from_mono_type (t));
+	mono_marshal_load_type_info (mono_class_from_mono_type_internal (t));
 
 	if (spec && spec->native == MONO_NATIVE_CUSTOM)
 		return get_marshal_cb ()->emit_marshal_custom (m, argnum, t, spec, conv_arg, conv_arg_type, action);
@@ -5105,7 +5105,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandl
 	}
 
 	MonoType * const type = MONO_HANDLE_GETVAL (rtype, type);
-	MonoClass * const klass = mono_class_from_mono_type (type);
+	MonoClass * const klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
 		return 0;
 
@@ -5204,7 +5204,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 	return_val_if_nok (error, 0);
 
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
-	MonoClass *klass = mono_class_from_mono_type (type);
+	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
 		return 0;
 
@@ -5231,7 +5231,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 
 	if(match_index == -1) {
 		/* Get back original class instance */
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 
 		mono_error_set_argument_format (error, "fieldName", "Field passed in is not a marshaled member of the type %s", m_class_get_name (klass));
 		return 0;
@@ -5729,7 +5729,7 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_VALUETYPE: {
 		guint32 size;
-		MonoClass *klass = mono_class_from_mono_type (t);
+		MonoClass *klass = mono_class_from_mono_type_internal (t);
 
 		if (m_class_is_enumtype (klass))
 			return mono_type_native_stack_size (mono_class_enum_basetype_internal (klass), align);
@@ -5809,7 +5809,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 		*align = MONO_ABI_ALIGNOF (gpointer);
 		return TARGET_SIZEOF_VOID_P;
 	case MONO_NATIVE_STRUCT: 
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		if (klass == mono_defaults.object_class &&
 			(mspec && mspec->native == MONO_NATIVE_STRUCT)) {
 		*align = 16;
@@ -5828,7 +5828,7 @@ mono_marshal_type_size (MonoType *type, MonoMarshalSpec *mspec, guint32 *align,
 	case MONO_NATIVE_BYVALARRAY: {
 		// FIXME: Have to consider ArraySubType
 		int esize;
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		if (m_class_get_element_class (klass) == mono_defaults.char_class) {
 			esize = unicode ? 2 : 1;
 			*align = esize;

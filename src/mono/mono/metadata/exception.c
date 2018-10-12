@@ -829,7 +829,7 @@ mono_get_exception_type_initialization_handle (const gchar *type_name, MonoExcep
 		if (!strcmp (".ctor", mono_method_get_name (method))) {
 			MonoMethodSignature *sig = mono_method_signature_internal (method);
 
-			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_STRING && mono_class_from_mono_type (sig->params [1]) == mono_defaults.exception_class)
+			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_STRING && mono_class_from_mono_type_internal (sig->params [1]) == mono_defaults.exception_class)
 				break;
 		}
 		method = NULL;

@@ -1064,7 +1064,7 @@ print_field_value (const char *field_ptr, MonoClassField *field, int type_offset
 			/* fall through */
 		}
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *k = mono_class_from_mono_type (type);
+		MonoClass *k = mono_class_from_mono_type_internal (type);
 		g_print ("%s ValueType (type: %p) at %p\n", k->name, k, field_ptr);
 		break;
 	}

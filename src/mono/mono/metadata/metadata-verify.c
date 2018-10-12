@@ -1738,12 +1738,12 @@ is_valid_cattr_type (MonoType *type)
 		return TRUE;
 
 	if (type->type == MONO_TYPE_VALUETYPE) {
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		return klass && m_class_is_enumtype (klass);
 	}
 
 	if (type->type == MONO_TYPE_CLASS)
-		return mono_class_from_mono_type (type) == mono_defaults.systemtype_class;
+		return mono_class_from_mono_type_internal (type) == mono_defaults.systemtype_class;
 
 	return FALSE;
 }
@@ -1818,7 +1818,7 @@ get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end
 	}
 	g_free (enum_name);
 
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 	if (!klass || !m_class_is_enumtype (klass)) {
 		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute:Class %s::%s is not an enum", m_class_get_name_space (klass), m_class_get_name (klass)));
 		return NULL;
@@ -1903,7 +1903,7 @@ handle_enum:
 				klass = mono_defaults.systemtype_class;
 			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
 				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : (MonoTypeEnum)etype;
-				klass = mono_class_from_mono_type (&simple_type);
+				klass = mono_class_from_mono_type_internal (&simple_type);
 			} else
 				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
 
@@ -2037,7 +2037,7 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 				klass = mono_defaults.systemtype_class;
 			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
 				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : (MonoTypeEnum)etype;
-				klass = mono_class_from_mono_type (&simple_type);
+				klass = mono_class_from_mono_type_internal (&simple_type);
 			} else
 				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
 

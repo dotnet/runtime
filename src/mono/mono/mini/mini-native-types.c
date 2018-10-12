@@ -456,7 +456,7 @@ mono_class_is_magic_float (MonoClass *klass)
 gboolean
 mini_magic_is_int_type (MonoType *t)
 {
-	if (t->type != MONO_TYPE_I && t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
+	if (t->type != MONO_TYPE_I && t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type_internal (t)))
 		return FALSE;
 	return TRUE;
 }
@@ -464,7 +464,7 @@ mini_magic_is_int_type (MonoType *t)
 gboolean
 mini_magic_is_float_type (MonoType *t)
 {
-	if (t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8 && !mono_class_is_magic_float (mono_class_from_mono_type (t)))
+	if (t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8 && !mono_class_is_magic_float (mono_class_from_mono_type_internal (t)))
 		return FALSE;
 	return TRUE;
 }

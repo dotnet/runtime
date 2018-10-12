@@ -254,7 +254,7 @@ create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bi
 			g_assert ((foffset % TARGET_SIZEOF_VOID_P) == 0);
 			*wb_bitmap |= 1 << ((offset + foffset) / TARGET_SIZEOF_VOID_P);
 		} else {
-			MonoClass *field_class = mono_class_from_mono_type (field->type);
+			MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
 			if (m_class_has_references (field_class))
 				create_write_barrier_bitmap (cfg, field_class, wb_bitmap, offset + foffset);
 		}
@@ -356,7 +356,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 	*/
 
 	if (cfg->gshared)
-		klass = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (klass)));
+		klass = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (klass)));
 
 	/*
 	 * This check breaks with spilled vars... need to handle it during verification anyway.
@@ -490,7 +490,7 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 		tmp_var = mono_compile_create_var (cfg, type, OP_LOCAL);
 		EMIT_NEW_TEMPSTORE (cfg, mov, tmp_var->inst_c0, value);
 		EMIT_NEW_VARLOADA (cfg, addr, tmp_var, tmp_var->inst_vtype);
-		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type (type), 1, FALSE);
+		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type_internal (type), 1, FALSE);
 	} else {
 		MonoInst *ins;
 

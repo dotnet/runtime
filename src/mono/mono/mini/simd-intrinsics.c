@@ -1231,7 +1231,7 @@ get_simd_vreg_or_expanded_scalar (MonoCompile *cfg, MonoClass *klass, MonoType *
 	MonoInst *ins;
 	int expand_op;
 
-	if (m_class_is_simd_type (mono_class_from_mono_type (param_type)))
+	if (m_class_is_simd_type (mono_class_from_mono_type_internal (param_type)))
 		return get_simd_vreg (cfg, NULL, src);
 
 	expand_op = mono_type_to_expand_op (param_type);
@@ -1657,7 +1657,7 @@ simd_intrinsic_emit_cast (const SimdIntrinsic *intrinsic, MonoCompile *cfg, Mono
 
 	if (cmethod->is_inflated)
 		/* Vector<T> */
-		klass = mono_class_from_mono_type (mono_method_signature_internal (cmethod)->ret);
+		klass = mono_class_from_mono_type_internal (mono_method_signature_internal (cmethod)->ret);
 	else
 		klass = cmethod->klass;
 
@@ -1956,7 +1956,7 @@ mono_emit_vector_ldelema (MonoCompile *cfg, MonoType *array_type, MonoInst *arr,
 	guint32 size;
 	int mult_reg, add_reg, array_reg, index_reg, index2_reg, index3_reg;
 
-	size = mono_array_element_size (mono_class_from_mono_type (array_type));
+	size = mono_array_element_size (mono_class_from_mono_type_internal (array_type));
 	mult_reg = alloc_preg (cfg);
 	array_reg = arr->dreg;
 	index_reg = index->dreg;
@@ -2088,7 +2088,7 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	if (!strcmp ("VectorOperations", class_name)) {
 		if (!(cmethod->flags & METHOD_ATTRIBUTE_STATIC))
 			goto on_exit;
-		class_name = m_class_get_name (mono_class_from_mono_type (mono_method_signature_internal (cmethod)->params [0]));
+		class_name = m_class_get_name (mono_class_from_mono_type_internal (mono_method_signature_internal (cmethod)->params [0]));
 	} else if (!m_class_is_simd_type (cmethod->klass))
 		goto on_exit;
 
@@ -2331,7 +2331,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 
 	type = m_class_get_byval_arg (cmethod->klass);
 	etype = mono_class_get_context (cmethod->klass)->class_inst->type_argv [0];
-	size = mono_class_value_size (mono_class_from_mono_type (etype), NULL);
+	size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	g_assert (size);
 	len = 16 / size;
 
@@ -2390,7 +2390,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			MONO_EMIT_BOUNDS_CHECK (cfg, array_ins->dreg, MonoArray, max_length, end_index_reg);
 
 			/* Load the array slice into the simd reg */
-			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type (etype), array_ins, index_ins, TRUE);
+			ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE);
 			g_assert (args [0]->opcode == OP_LDADDR);
 			var = (MonoInst*)args [0]->inst_p0;
 			EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOADX_MEMBASE, var->dreg, ldelema_ins->dreg, 0);
@@ -2534,7 +2534,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		MONO_EMIT_NEW_COND_EXC (cfg, LE_UN, "ArgumentException");
 
 		/* Load the simd reg into the array slice */
-		ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type (etype), array_ins, index_ins, TRUE);
+		ldelema_ins = mini_emit_ldelema_1_ins (cfg, mono_class_from_mono_type_internal (etype), array_ins, index_ins, TRUE);
 		g_assert (args [0]->opcode == OP_LDADDR);
 		var = (MonoInst*)args [0]->inst_p0;
 		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, var->dreg);

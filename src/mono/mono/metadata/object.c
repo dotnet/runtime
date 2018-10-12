@@ -860,7 +860,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					/* fall through */
 				}
 			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = mono_class_from_mono_type (field->type);
+				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
 				if (m_class_has_references (fclass)) {
 					/* remove the object header */
 					compute_class_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS, max_set, FALSE);
@@ -993,7 +993,7 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 					/* fall through */
 				}
 			case MONO_TYPE_VALUETYPE: {
-				MonoClass *fclass = mono_class_from_mono_type (field->type);
+				MonoClass *fclass = mono_class_from_mono_type_internal (field->type);
 				/* remove the object header */
 				compute_class_non_ref_bitmap (fclass, bitmap, size, pos - MONO_OBJECT_HEADER_BITS);
 				break;
@@ -2095,7 +2095,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 					numbits = 1;
 					bitmap = default_bitmap;
 				} else if (mono_type_is_struct (field->type)) {
-					fclass = mono_class_from_mono_type (field->type);
+					fclass = mono_class_from_mono_type_internal (field->type);
 					bitmap = compute_class_bitmap (fclass, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE);
 					numbits = max_set + 1;
 				} else {
@@ -2119,7 +2119,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			}
 		}
 		if ((field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA)) {
-			MonoClass *fklass = mono_class_from_mono_type (field->type);
+			MonoClass *fklass = mono_class_from_mono_type_internal (field->type);
 			const char *data = mono_field_get_data (field);
 
 			g_assert (!(field->type->attrs & FIELD_ATTRIBUTE_HAS_DEFAULT));
@@ -2734,7 +2734,7 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 	gpointer result = NULL;
 	error_init (error);
 
-	mono_loader_lock (); /*FIXME mono_class_from_mono_type and mono_class_proxy_vtable take it*/
+	mono_loader_lock (); /*FIXME mono_class_from_mono_type_internal and mono_class_proxy_vtable take it*/
 	mono_domain_lock (domain);
 	gint32 target_domain_id = MONO_HANDLE_GETVAL (rp, target_domain_id);
 	if (target_domain_id != -1) {
@@ -2749,7 +2749,7 @@ mono_remote_class_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mon
 		MONO_HANDLE_GET (reftype, rp, class_to_proxy);
 		
 		MonoType *type = MONO_HANDLE_GETVAL (reftype, type);
-		MonoClass *klass = mono_class_from_mono_type (type);
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
 #ifndef DISABLE_COM
 		gboolean target_is_com = FALSE;
 		if (mono_class_is_com_object (klass) || (mono_class_get_com_object_class () && klass == mono_class_get_com_object_class ())) {
@@ -3280,7 +3280,7 @@ handle_enum:
 			t = mono_class_enum_basetype_internal (type->data.klass)->type;
 			goto handle_enum;
 		} else {
-			MonoClass *klass = mono_class_from_mono_type (type);
+			MonoClass *klass = mono_class_from_mono_type_internal (type);
 			int size = mono_class_value_size (klass, NULL);
 			if (value == NULL)
 				mono_gc_bzero_atomic (dest, size);
@@ -3607,7 +3607,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 	}
 
 	/* boxed value type */
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 
 	if (mono_class_is_nullable (klass))
 		return mono_nullable_box (mono_field_get_addr (obj, vtable, field), klass, error);
@@ -5111,7 +5111,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, gboolean* 
 			case MONO_TYPE_R4:
 			case MONO_TYPE_R8:
 			case MONO_TYPE_VALUETYPE:
-				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type (t_orig))) {
+				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type_internal (t_orig))) {
 					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
 					result = mono_array_get (params, MonoObject*, i);
 					if (t->byref)
@@ -5120,7 +5120,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, gboolean* 
 					/* MS seems to create the objects if a null is passed in */
 					gboolean was_null = FALSE;
 					if (!mono_array_get (params, MonoObject*, i)) {
-						MonoObject *o = mono_object_new_checked (mono_domain_get (), mono_class_from_mono_type (t_orig), error);
+						MonoObject *o = mono_object_new_checked (mono_domain_get (), mono_class_from_mono_type_internal (t_orig), error);
 						return_val_if_nok (error, NULL);
 						mono_array_setref (params, i, o); 
 						was_null = TRUE;
@@ -5438,7 +5438,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			for (i = 0; i < mono_array_length (params); i++) {
 				MonoType *t = sig->params [i];
 
-				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t)))
+				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 					mono_array_setref (params, i, pa [i]);
 			}
 		}
@@ -8483,7 +8483,7 @@ mono_method_call_message_new (MonoMethod *method, gpointer *params, MonoMethod *
 		else 
 			vpos = params [i];
 
-		klass = mono_class_from_mono_type (sig->params [i]);
+		klass = mono_class_from_mono_type_internal (sig->params [i]);
 
 		if (m_class_is_valuetype (klass)) {
 			arg = mono_value_box_checked (domain, klass, vpos, error);
@@ -8550,7 +8550,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 					else
 						mono_gc_memmove_atomic (*((gpointer *)params [i]), mono_object_get_data ((MonoObject*)arg), size);
 				} else {
-					size = mono_class_value_size (mono_class_from_mono_type (pt), NULL);
+					size = mono_class_value_size (mono_class_from_mono_type_internal (pt), NULL);
 					mono_gc_bzero_atomic (*((gpointer *)params [i]), size);
 				}
 			}
@@ -8630,7 +8630,7 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 		}
 	}
 	
-	field_class = mono_class_from_mono_type (field->type);
+	field_class = mono_class_from_mono_type_internal (field->type);
 
 	msg = (MonoMethodMessage *)mono_object_new_checked (domain, mono_defaults.mono_method_message_class, error);
 	return_val_if_nok (error, NULL);
@@ -8770,7 +8770,7 @@ mono_store_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoCla
 
 	g_assert (mono_object_is_transparent_proxy (this_obj));
 
-	field_class = mono_class_from_mono_type (field->type);
+	field_class = mono_class_from_mono_type_internal (field->type);
 
 	if (m_class_is_valuetype (field_class)) {
 		arg = mono_value_box_checked (domain, field_class, val, error);

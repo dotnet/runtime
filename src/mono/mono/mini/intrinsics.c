@@ -26,7 +26,7 @@ static MonoInst*
 emit_array_generic_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args, int is_set)
 {
 	MonoInst *addr, *store, *load;
-	MonoClass *eklass = mono_class_from_mono_type (fsig->params [2]);
+	MonoClass *eklass = mono_class_from_mono_type_internal (fsig->params [2]);
 
 	/* the bounds check is already done by the callers */
 	addr = mini_emit_ldelema_1_ins (cfg, eklass, args [0], args [1], FALSE);
@@ -52,7 +52,7 @@ mono_type_is_native_blittable (MonoType *t)
 	if (MONO_TYPE_IS_PRIMITIVE_SCALAR (t))
 		return TRUE;
 
-	MonoClass *klass = mono_class_from_mono_type (t);
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
 
 	//MonoClass::blitable depends on mono_class_setup_fields being done.
 	mono_class_setup_fields (klass);
@@ -204,7 +204,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 		g_assert (length_field);
 
 		MonoGenericClass *gclass = mono_class_get_generic_class (cmethod->klass);
-		MonoClass *param_class = mono_class_from_mono_type (gclass->context.class_inst->type_argv [0]);
+		MonoClass *param_class = mono_class_from_mono_type_internal (gclass->context.class_inst->type_argv [0]);
 
 		if (mini_is_gsharedvt_variable_klass (param_class))
 			return NULL;
@@ -444,7 +444,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			/* Resolve the argument class as possible so we can handle common cases fast */
 			t = mini_get_underlying_type (arg_type);
-			klass = mono_class_from_mono_type (t);
+			klass = mono_class_from_mono_type_internal (t);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (t))
 				EMIT_NEW_ICONST (cfg, ins, 1);
@@ -458,7 +458,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				g_assert (cfg->gshared);
 
 				/* Have to use the original argument class here */
-				MonoClass *arg_class = mono_class_from_mono_type (arg_type);
+				MonoClass *arg_class = mono_class_from_mono_type_internal (arg_type);
 				int context_used = mini_class_check_context_used (cfg, arg_class);
 
 				/* This returns 1 or 2 */
@@ -971,7 +971,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			g_assert (t->byref);
 			/* t is a byref type, so the reference check is more complicated */
-			is_ref = mini_type_is_reference (m_class_get_byval_arg (mono_class_from_mono_type (t)));
+			is_ref = mini_type_is_reference (m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));
 			if (t->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_LOAD_I1;
 			else if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_BOOLEAN)
@@ -1052,7 +1052,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			gboolean is_ref;
 
 			g_assert (t->byref);
-			is_ref = mini_type_is_reference (m_class_get_byval_arg (mono_class_from_mono_type (t)));
+			is_ref = mini_type_is_reference (m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));
 			if (t->type == MONO_TYPE_I1)
 				opcode = OP_ATOMIC_STORE_I1;
 			else if (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_BOOLEAN)
@@ -1262,9 +1262,9 @@ emit_array_unsafe_access (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst 
 	MonoClass *eklass;
 	
 	if (is_set)
-		eklass = mono_class_from_mono_type (fsig->params [2]);
+		eklass = mono_class_from_mono_type_internal (fsig->params [2]);
 	else
-		eklass = mono_class_from_mono_type (fsig->ret);
+		eklass = mono_class_from_mono_type_internal (fsig->ret);
 
 	if (is_set) {
 		return mini_emit_array_store (cfg, eklass, args, FALSE);
@@ -1281,8 +1281,8 @@ is_unsafe_mov_compatible (MonoCompile *cfg, MonoClass *param_klass, MonoClass *r
 	uint32_t align;
 	int param_size, return_size;
 
-	param_klass = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (param_klass)));
-	return_klass = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (return_klass)));
+	param_klass = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (param_klass)));
+	return_klass = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (return_klass)));
 
 	if (cfg->verbose_level > 3)
 		printf ("[UNSAFE-MOV-INTRISIC] %s <- %s\n", m_class_get_name (return_klass), m_class_get_name (param_klass));
@@ -1359,8 +1359,8 @@ is_unsafe_mov_compatible (MonoCompile *cfg, MonoClass *param_klass, MonoClass *r
 static MonoInst*
 emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args)
 {
-	MonoClass *param_klass = mono_class_from_mono_type (fsig->params [0]);
-	MonoClass *return_klass = mono_class_from_mono_type (fsig->ret);
+	MonoClass *param_klass = mono_class_from_mono_type_internal (fsig->params [0]);
+	MonoClass *return_klass = mono_class_from_mono_type_internal (fsig->ret);
 
 	if (mini_is_gsharedvt_variable_type (fsig->ret))
 		return NULL;

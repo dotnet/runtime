@@ -921,7 +921,7 @@ is_struct_returnable_via_regs  (MonoClass *klass, gboolean is_pinvoke)
 				} else if ((f->type->type >= MONO_TYPE_BOOLEAN) && (f->type->type <= MONO_TYPE_R8)) {
 					has_a_field = TRUE;
 				} else if (MONO_TYPE_ISSTRUCT (f->type)) {
-					MonoClass *klass = mono_class_from_mono_type (f->type);
+					MonoClass *klass = mono_class_from_mono_type_internal (f->type);
 					if (is_struct_returnable_via_regs(klass, is_pinvoke)) {
 						has_a_field = TRUE;
 					} else {
@@ -1116,7 +1116,7 @@ get_call_info (MonoMethodSignature *sig)
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_TYPEDBYREF: {
 			gint size;
-			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (simpletype->type == MONO_TYPE_TYPEDBYREF)
 				size = sizeof (MonoTypedRef);
 			else if (is_pinvoke)
@@ -5144,8 +5144,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (gpointer)));
 				/* FIXME: what if there is no class? */
-				if (sig->pinvoke && mono_class_from_mono_type (inst->inst_vtype))
-					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
+				if (sig->pinvoke && mono_class_from_mono_type_internal (inst->inst_vtype))
+					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
 					if (ainfo->size == 4) {
 						ppc_stfs (code, ainfo->reg + cur_reg, doffset, inst->inst_basereg);
@@ -5163,8 +5163,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				g_assert (ppc_is_imm16 (inst->inst_offset));
 				g_assert (ppc_is_imm16 (inst->inst_offset + ainfo->vtregs * sizeof (gpointer)));
 				/* FIXME: what if there is no class? */
-				if (sig->pinvoke && mono_class_from_mono_type (inst->inst_vtype))
-					size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), NULL);
+				if (sig->pinvoke && mono_class_from_mono_type_internal (inst->inst_vtype))
+					size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), NULL);
 				for (cur_reg = 0; cur_reg < ainfo->vtregs; ++cur_reg) {
 #if __APPLE__
 					/*

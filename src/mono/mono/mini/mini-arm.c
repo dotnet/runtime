@@ -1235,7 +1235,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize)
 	MonoType *ftype, *prev_ftype = NULL;
 	int nfields = 0;
 
-	klass = mono_class_from_mono_type (t);
+	klass = mono_class_from_mono_type_internal (t);
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
@@ -1352,7 +1352,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->ret.esize = esize;
 		} else {
 			if (is_pinvoke) {
-				int native_size = mono_class_native_size (mono_class_from_mono_type (t), &align);
+				int native_size = mono_class_native_size (mono_class_from_mono_type_internal (t), &align);
 				int max_size;
 
 #ifdef TARGET_WATCHOS
@@ -1511,7 +1511,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				size = MONO_ABI_SIZEOF (MonoTypedRef);
 				align = sizeof (target_mgreg_t);
 			} else {
-				MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
+				MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 				if (is_pinvoke)
 					size = mono_class_native_size (klass, &align);
 				else
@@ -2109,7 +2109,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
 		if (ins->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (t) && t->type != MONO_TYPE_TYPEDBYREF) {
-			size = mono_class_native_size (mono_class_from_mono_type (t), &ualign);
+			size = mono_class_native_size (mono_class_from_mono_type_internal (t), &ualign);
 			align = ualign;
 		}
 		else
@@ -3051,8 +3051,8 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 				p->regs [slot] = (host_mgreg_t)(gsize)*arg;
 				break;
 			} else {
-				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (t))) {
-					MonoClass *klass = mono_class_from_mono_type (t);
+				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
+					MonoClass *klass = mono_class_from_mono_type_internal (t);
 					guint8 *nullable_buf;
 					int size;
 

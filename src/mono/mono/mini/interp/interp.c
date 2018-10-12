@@ -527,7 +527,7 @@ stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinv
 		return;
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
-			mono_value_copy (result->data.vt, data, mono_class_from_mono_type (type));
+			mono_value_copy (result->data.vt, data, mono_class_from_mono_type_internal (type));
 			return;
 		}
 		stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
@@ -630,7 +630,7 @@ stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
 		MonoClass *container_class = type->data.generic_class->container_class;
 
 		if (m_class_is_valuetype (container_class) && !m_class_is_enumtype (container_class)) {
-			mono_value_copy (data, val->data.vt, mono_class_from_mono_type (type));
+			mono_value_copy (data, val->data.vt, mono_class_from_mono_type_internal (type));
 			return;
 		}
 		stackval_to_data (m_class_get_byval_arg (type->data.generic_class->container_class), val, data, pinvoke);
@@ -1605,7 +1605,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	InterpFrame frame, *old_frame;
 	ThreadContext *context = get_context ();
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
-	MonoClass *klass = mono_class_from_mono_type (sig->ret);
+	MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 	stackval result;
 	MonoMethod *target_method = method;
 
@@ -4307,7 +4307,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			MonoClassField *field = (MonoClassField*)rtm->data_items[* (guint16 *)(ip + 2)];
-			MonoClass *klass = mono_class_from_mono_type (field->type);
+			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 			i32 = mono_class_value_size (klass, NULL);
 
 			sp [-1].data.p = vt_sp;
@@ -4350,7 +4350,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			field = (MonoClassField*)rtm->data_items[* (guint16 *)(ip + 1)];
-			MonoClass *klass = mono_class_from_mono_type (field->type);
+			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 			i32 = mono_class_value_size (klass, NULL);
 	
 			ip += 2;
@@ -4404,7 +4404,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp -= 2;
 
 			MonoClassField *field = (MonoClassField*)rtm->data_items[* (guint16 *)(ip + 2)];
-			MonoClass *klass = mono_class_from_mono_type (field->type);
+			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 			i32 = mono_class_value_size (klass, NULL);
 
 			guint16 offset = * (guint16 *)(ip + 1);
@@ -4443,7 +4443,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			field = (MonoClassField*)rtm->data_items[* (guint16 *)(ip + 1)];
-			MonoClass *klass = mono_class_from_mono_type (field->type);
+			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 			i32 = mono_class_value_size (klass, NULL);
 			ip += 2;
 
@@ -4552,7 +4552,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			MonoClassField *field = (MonoClassField*)rtm->data_items [* (guint16 *)(ip + 1)];
 			gpointer addr = mono_class_static_field_address (rtm->domain, field);
 			EXCEPTION_CHECKPOINT;
-			MonoClass *klass = mono_class_from_mono_type (field->type);
+			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 			i32 = mono_class_value_size (klass, NULL);
 			ip += 2;
 

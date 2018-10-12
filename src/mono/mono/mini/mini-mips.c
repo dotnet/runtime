@@ -1169,7 +1169,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				size = sizeof (MonoTypedRef);
 				alignment = sizeof (gpointer);
 			} else {
-				klass = mono_class_from_mono_type (sig->params [i]);
+				klass = mono_class_from_mono_type_internal (sig->params [i]);
 				if (is_pinvoke)
 					size = mono_class_native_size (klass, NULL);
 				else
@@ -1474,7 +1474,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		 * pinvoke wrappers when they call functions returning structure
 		 */
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), (unsigned int *) &align);
+			size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), (unsigned int *) &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
 

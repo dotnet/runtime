@@ -348,7 +348,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->klass = var->klass;	\
 		(dest)->sreg1 = var->dreg;   \
         (dest)->dreg = alloc_dreg ((cfg), (MonoStackType)(dest)->type); \
-        if ((dest)->opcode == OP_VMOVE) (dest)->klass = mono_class_from_mono_type ((vartype)); \
+        if ((dest)->opcode == OP_VMOVE) (dest)->klass = mono_class_from_mono_type_internal ((vartype)); \
 	} while (0)
 
 #define DECOMPOSE_INTO_REGPAIR(stack_type) (mono_arch_is_soft_float () ? ((stack_type) == STACK_I8 || (stack_type) == STACK_R8) : ((stack_type) == STACK_I8))
@@ -385,7 +385,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 		(dest)->klass = (var)->klass;	\
         (dest)->sreg1 = (inst)->dreg; \
 		(dest)->dreg = (var)->dreg;   \
-        if ((dest)->opcode == OP_VMOVE) (dest)->klass = mono_class_from_mono_type ((vartype)); \
+        if ((dest)->opcode == OP_VMOVE) (dest)->klass = mono_class_from_mono_type_internal ((vartype)); \
 	} while (0)
 
 #define NEW_TEMPLOAD(cfg,dest,num) NEW_VARLOAD ((cfg), (dest), (cfg)->varinfo [(num)], (cfg)->varinfo [(num)]->inst_vtype)
@@ -440,7 +440,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
         (dest)->inst_destbasereg = base; \
         (dest)->inst_offset = offset; \
 	    mini_type_to_eval_stack_type ((cfg), (ltype), (dest)); \
-        (dest)->klass = mono_class_from_mono_type (ltype); \
+        (dest)->klass = mono_class_from_mono_type_internal (ltype); \
 	} while (0)
 
 #define NEW_SEQ_POINT(cfg,dest,il_offset,intr_loc) do {	 \

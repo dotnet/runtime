@@ -288,7 +288,7 @@ add_type (MonoProfiler *prof, MonoType *type)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_GENERICINST:
-		return add_class (prof, mono_class_from_mono_type (type));
+		return add_class (prof, mono_class_from_mono_type_internal (type));
 	default:
 		return -1;
 	}

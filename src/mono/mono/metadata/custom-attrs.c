@@ -217,7 +217,7 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char *boundp, const
 	return_val_if_nok (error, NULL);
 	p += slen;
 	*end = p;
-	return mono_class_from_mono_type (t);
+	return mono_class_from_mono_type_internal (t);
 }
 
 static MonoType*
@@ -438,7 +438,7 @@ handle_enum:
 					/* See Partition II, Appendix B3 */
 					etype = MONO_TYPE_OBJECT;
 				simple_type.type = (MonoTypeEnum)etype;
-				tklass = mono_class_from_mono_type (&simple_type);
+				tklass = mono_class_from_mono_type_internal (&simple_type);
 			}
 			goto handle_enum;
 		} else if (subt == MONO_TYPE_ENUM) {
@@ -454,11 +454,11 @@ handle_enum:
 			g_free (n);
 			return_val_if_nok (error, NULL);
 			p += slen;
-			subc = mono_class_from_mono_type (t);
+			subc = mono_class_from_mono_type_internal (t);
 		} else if (subt >= MONO_TYPE_BOOLEAN && subt <= MONO_TYPE_R8) {
 			MonoType simple_type = {{0}};
 			simple_type.type = (MonoTypeEnum)subt;
-			subc = mono_class_from_mono_type (&simple_type);
+			subc = mono_class_from_mono_type_internal (&simple_type);
 		} else {
 			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
 		}
@@ -600,7 +600,7 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 		if (!is_ok (error))
 			return NULL;
 
-		MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type (t), val, error);
+		MonoObject *boxed = mono_value_box_checked (domain, mono_class_from_mono_type_internal (t), val, error);
 		g_free (val);
 		return boxed;
 	}
@@ -2034,7 +2034,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 	if (klass == mono_defaults.runtimetype_class) {
 		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST(MonoReflectionType, obj), error);
 		goto_if_nok (error, leave);
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		/*We cannot mono_class_init the class from which we'll load the custom attributes since this must work with broken types.*/
 		cinfo = mono_custom_attrs_from_class_checked (klass, error);
 		goto_if_nok (error, leave);

@@ -1821,7 +1821,7 @@ get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContex
 	inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (catch_class), &context, error);
 	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
-	catch_class = mono_class_from_mono_type (inflated_type);
+	catch_class = mono_class_from_mono_type_internal (inflated_type);
 	mono_metadata_free_type (inflated_type);
 
 	return catch_class;
@@ -3837,7 +3837,7 @@ mono_llvm_match_exception (MonoJitInfo *jinfo, guint32 region_start, guint32 reg
 			inflated_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (catch_class), &context, error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
-			catch_class = mono_class_from_mono_type (inflated_type);
+			catch_class = mono_class_from_mono_type_internal (inflated_type);
 			mono_metadata_free_type (inflated_type);
 		}
 

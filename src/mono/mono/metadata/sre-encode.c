@@ -193,7 +193,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS: {
-		MonoClass *k = mono_class_from_mono_type (type);
+		MonoClass *k = mono_class_from_mono_type_internal (type);
 
 		if (mono_class_is_gtd (k)) {
 			MonoGenericClass *gclass = mono_metadata_lookup_generic_class (k, mono_class_get_generic_container (k)->context.class_inst, TRUE);
@@ -627,7 +627,7 @@ mono_dynimage_encode_field_signature (MonoDynamicImage *assembly, MonoReflection
 
 	type = mono_reflection_type_get_handle ((MonoReflectionType*)fb->type, error);
 	return_val_if_nok (error, 0);
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 
 	sigbuffer_init (&buf, 32);
 	
@@ -732,7 +732,7 @@ create_typespec (MonoDynamicImage *assembly, MonoType *type)
 		break;
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_VALUETYPE: {
-		MonoClass *k = mono_class_from_mono_type (type);
+		MonoClass *k = mono_class_from_mono_type_internal (type);
 		if (!k || !mono_class_is_gtd (k)) {
 			sigbuffer_free (&buf);
 			return 0;
@@ -777,7 +777,7 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	token = GPOINTER_TO_UINT (g_hash_table_lookup (assembly->typeref, type));
 	if (token)
 		goto leave;
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 
 	MonoReflectionTypeBuilderHandle tb;
 	tb = MONO_HANDLE_CAST (MonoReflectionTypeBuilder, mono_class_get_ref_info (klass));

@@ -449,7 +449,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	error_init (error);
 
 	g_assert (type != NULL);
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
@@ -984,9 +984,9 @@ add_parameter_object_to_array (MonoDomain *domain, MonoMethod *method, MonoObjec
 			/* For enums, types [i] contains the base type */
 
 			blob_type.type = MONO_TYPE_VALUETYPE;
-			blob_type.data.klass = mono_class_from_mono_type (sig_param);
+			blob_type.data.klass = mono_class_from_mono_type_internal (sig_param);
 		} else
-			blob_type.data.klass = mono_class_from_mono_type (&blob_type);
+			blob_type.data.klass = mono_class_from_mono_type_internal (&blob_type);
 
 		MonoObjectHandle default_val_obj = MONO_HANDLE_NEW (MonoObject, mono_get_object_from_blob (domain, &blob_type, blob, error)); /* FIXME make mono_get_object_from_blob return a handle */
 		goto_if_nok (error, leave);
@@ -1405,7 +1405,7 @@ mono_get_object_from_blob (MonoDomain *domain, MonoType *type, const char *blob,
 	if (!blob)
 		return NULL;
 	
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 	if (m_class_is_valuetype (klass)) {
 		object = mono_object_new_checked (domain, klass, error);
 		return_val_if_nok (error, NULL);
@@ -2007,7 +2007,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		if (!instance)
 			goto leave;
 
-		klass = mono_class_from_mono_type (instance);
+		klass = mono_class_from_mono_type_internal (instance);
 	}
 
 	for (mod = info->modifiers; mod; mod = mod->next) {
@@ -2329,7 +2329,7 @@ mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
 	} else if (strcmp (klass_name, "RuntimeType") == 0) {
 		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionType, obj), error);
 		return_val_if_nok (error, 0);
-		MonoClass *mc = mono_class_from_mono_type (type);
+		MonoClass *mc = mono_class_from_mono_type_internal (type);
 		if (!mono_class_init (mc)) {
 			mono_error_set_for_class_failure (error, mc);
 			return 0;
@@ -2428,7 +2428,7 @@ mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle reftype, int t
 		return NULL;
 	}
 
-	klass = mono_class_from_mono_type (t);
+	klass = mono_class_from_mono_type_internal (t);
 	if (!mono_class_is_gtd (klass)) {
 		mono_loader_unlock ();
 		mono_error_set_type_load_class (error, klass, "Cannot bind generic parameters of a non-generic type");
@@ -3055,5 +3055,5 @@ mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly)
 MonoClass*
 mono_class_from_mono_type_handle (MonoReflectionTypeHandle reftype)
 {
-	return mono_class_from_mono_type (MONO_HANDLE_RAW (reftype)->type);
+	return mono_class_from_mono_type_internal (MONO_HANDLE_RAW (reftype)->type);
 }

@@ -1597,7 +1597,7 @@ process_other_slots (MonoCompile *cfg)
 static gsize*
 get_vtype_bitmap (MonoType *t, int *numbits)
 {
-	MonoClass *klass = mono_class_from_mono_type (t);
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
 
 	if (klass->generic_container || mono_class_is_open_constructed_type (t)) {
 		/* FIXME: Generic sharing */

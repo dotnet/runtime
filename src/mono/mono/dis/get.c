@@ -1140,7 +1140,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix, gb
 static char *
 dis_stringify_object (MonoImage *m, MonoType *type, gboolean is_def)
 {
-	MonoClass *c = mono_class_from_mono_type (type);
+	MonoClass *c = mono_class_from_mono_type_internal (type);
 	return dis_stringify_object_with_class (m, c, TRUE, is_def);
 }
 

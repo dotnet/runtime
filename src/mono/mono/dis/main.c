@@ -1546,7 +1546,7 @@ dis_data (MonoImage *m)
 			mono_error_cleanup (error);
 			continue;
 		}
-		mono_class_init (mono_class_from_mono_type (type));
+		mono_class_init (mono_class_from_mono_type_internal (type));
 		size = mono_type_size (type, &align);
 
 		if (rva) {

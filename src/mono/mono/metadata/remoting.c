@@ -251,7 +251,7 @@ type_from_handle (MonoType *handle)
 	ERROR_DECL (error);
 	MonoReflectionType *ret;
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass = mono_class_from_mono_type (handle);
+	MonoClass *klass = mono_class_from_mono_type_internal (handle);
 
 	mono_class_init (klass);
 
@@ -410,13 +410,13 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 		gpointer* mparams = g_newa (gpointer, count);
 
 		for (i=0; i<count; i++) {
-			MonoClass *klass = mono_class_from_mono_type (sig->params [i]);
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
 			if (m_class_is_valuetype (klass)) {
 				if (sig->params [i]->byref) {
 					mparams[i] = *((gpointer *)params [i]);
 				} else {
 					/* runtime_invoke expects a boxed instance */
-					if (mono_class_is_nullable (mono_class_from_mono_type (sig->params [i]))) {
+					if (mono_class_is_nullable (mono_class_from_mono_type_internal (sig->params [i]))) {
 						mparams[i] = mono_nullable_box ((guint8 *)params [i], klass, error);
 						goto_if_nok (error, fail);
 					} else
@@ -752,7 +752,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 		loc_array = mono_mb_add_local (mb, mono_get_object_type ());
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		loc_return = mono_mb_add_local (mb, sig->ret);
-		ret_class = mono_class_from_mono_type (sig->ret);
+		ret_class = mono_class_from_mono_type_internal (sig->ret);
 	}
 
 	/* try */
@@ -795,7 +795,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	j = 0;
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *pt = sig->params [i];
-		MonoClass *pclass = mono_class_from_mono_type (pt);
+		MonoClass *pclass = mono_class_from_mono_type_internal (pt);
 		switch (marshal_types [i]) {
 		case MONO_MARSHAL_SERIALIZE: {
 			/* take the value from the serialized array */
@@ -869,7 +869,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 		if (marshal_types [i] == MONO_MARSHAL_COPY_OUT) {
 			mono_mb_emit_ldloc (mb, copy_locals_base + (j++));
 			mono_mb_emit_ldarg (mb, param_index);
-			mono_marshal_emit_xdomain_copy_out_value (mb, mono_class_from_mono_type (sig->params [i]));
+			mono_marshal_emit_xdomain_copy_out_value (mb, mono_class_from_mono_type_internal (sig->params [i]));
 		}
 		param_index++;
 	}
@@ -1033,7 +1033,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		ret_marshal_type = mono_get_xdomain_marshal_type (sig->ret);
-		ret_class = mono_class_from_mono_type (sig->ret);
+		ret_class = mono_class_from_mono_type_internal (sig->ret);
 		copy_return = ret_marshal_type != MONO_MARSHAL_SERIALIZE;
 	}
 	
@@ -1116,7 +1116,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 		for (i = 0; i < sig->param_count; i++) {
 			MonoClass *pclass;
 			if (marshal_types [i] != MONO_MARSHAL_SERIALIZE) continue;
-			pclass = mono_class_from_mono_type (sig->params[i]);
+			pclass = mono_class_from_mono_type_internal (sig->params[i]);
 			mono_mb_emit_byte (mb, CEE_DUP);
 			mono_mb_emit_icon (mb, j);
 			mono_mb_emit_ldarg (mb, i + 1);		/* 0=this */
@@ -1168,7 +1168,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 				/* make a local copy of the byref parameter. The real parameter
 				 * will be updated after the xdomain call
 				 */
-				MonoClass *pclass = mono_class_from_mono_type (sig->params [i]);
+				MonoClass *pclass = mono_class_from_mono_type_internal (sig->params [i]);
 				int copy_local = mono_mb_add_local (mb, m_class_get_byval_arg (pclass));
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
 				mono_mb_emit_stloc (mb, copy_local);
@@ -1224,7 +1224,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 		if (!sig->params [i]->byref || marshal_types [i] != MONO_MARSHAL_COPY) continue;
 		mono_mb_emit_ldarg (mb, i + 1);
 		mono_mb_emit_ldloc (mb, copy_locals_base + (j++));
-		mono_marshal_emit_xdomain_copy_value (mb, mono_class_from_mono_type (sig->params [i]));
+		mono_marshal_emit_xdomain_copy_value (mb, mono_class_from_mono_type_internal (sig->params [i]));
 		mono_mb_emit_byte (mb, CEE_STIND_REF);
 	}
 
@@ -1242,7 +1242,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 		for (i = 0; i < sig->param_count; i++) {
 			if (marshal_types [i] != MONO_MARSHAL_SERIALIZE) continue;
 			if (sig->params[i]->byref) {
-				MonoClass *pclass = mono_class_from_mono_type (sig->params [i]);
+				MonoClass *pclass = mono_class_from_mono_type_internal (sig->params [i]);
 				mono_mb_emit_ldarg (mb, i + 1);
 				mono_mb_emit_ldloc (mb, loc_array);
 				mono_mb_emit_icon (mb, j);
@@ -1454,11 +1454,11 @@ mono_marshal_get_ldfld_wrapper (MonoType *type)
 			klass = mono_defaults.int_class;
 		} else if (t == MONO_TYPE_GENERICINST) {
 			if (mono_type_generic_inst_is_valuetype (type))
-				klass = mono_class_from_mono_type (type);
+				klass = mono_class_from_mono_type_internal (type);
 			else
 				klass = mono_defaults.object_class;
 		} else {
-			klass = mono_class_from_mono_type (type);			
+			klass = mono_class_from_mono_type_internal (type);			
 		}
 	} else {
 		klass = mono_defaults.int_class;
@@ -1623,11 +1623,11 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 			klass = mono_defaults.int_class;
 		} else if (t == MONO_TYPE_GENERICINST) {
 			if (mono_type_generic_inst_is_valuetype (type))
-				klass = mono_class_from_mono_type (type);
+				klass = mono_class_from_mono_type_internal (type);
 			else
 				klass = mono_defaults.object_class;
 		} else {
-			klass = mono_class_from_mono_type (type);			
+			klass = mono_class_from_mono_type_internal (type);			
 		}
 	} else {
 		klass = mono_defaults.int_class;
@@ -1756,11 +1756,11 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 			klass = mono_defaults.int_class;
 		} else if (t == MONO_TYPE_GENERICINST) {
 			if (mono_type_generic_inst_is_valuetype (type))
-				klass = mono_class_from_mono_type (type);
+				klass = mono_class_from_mono_type_internal (type);
 			else
 				klass = mono_defaults.object_class;
 		} else {
-			klass = mono_class_from_mono_type (type);			
+			klass = mono_class_from_mono_type_internal (type);			
 		}
 	} else {
 		klass = mono_defaults.int_class;
@@ -1966,7 +1966,7 @@ mono_upgrade_remote_class_wrapper (MonoReflectionType *rtype_raw, MonoTransparen
 	MONO_HANDLE_DCL (MonoReflectionType, rtype);
 	MONO_HANDLE_DCL (MonoTransparentProxy, tproxy);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (tproxy);
-	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (rtype, type));
+	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (rtype, type));
 	mono_upgrade_remote_class (domain, MONO_HANDLE_CAST (MonoObject, tproxy), klass, error);
 	ICALL_RETURN ();
 }
@@ -2007,7 +2007,7 @@ mono_get_xdomain_marshal_type (MonoType *t)
 		return MONO_MARSHAL_COPY;
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_SZARRAY: {
-		MonoClass *elem_class = m_class_get_element_class (mono_class_from_mono_type (t));
+		MonoClass *elem_class = m_class_get_element_class (mono_class_from_mono_type_internal (t));
 		if (mono_get_xdomain_marshal_type (m_class_get_byval_arg (elem_class)) != MONO_MARSHAL_SERIALIZE)
 			return MONO_MARSHAL_COPY;
 		break;

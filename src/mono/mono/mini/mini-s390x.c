@@ -1753,7 +1753,7 @@ enum_retvalue:
 			}
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
-			MonoClass *klass = mono_class_from_mono_type (sig->ret);
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 			if (m_class_is_enumtype (klass)) {
 				simpleType = mono_class_enum_basetype_internal (klass)->type;
 				goto enum_retvalue;
@@ -1908,7 +1908,7 @@ enum_retvalue:
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoMarshalType *info;
-			MonoClass *klass = mono_class_from_mono_type (ptype);
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
 			if (sig->pinvoke)
 				size = mono_class_native_size(klass, NULL);

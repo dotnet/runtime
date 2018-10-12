@@ -644,7 +644,7 @@ cominterop_type_from_handle (MonoType *handle)
 	ERROR_DECL (error);
 	MonoReflectionType *ret;
 	MonoDomain *domain = mono_domain_get (); 
-	MonoClass *klass = mono_class_from_mono_type (handle);
+	MonoClass *klass = mono_class_from_mono_type_internal (handle);
 
 	mono_class_init (klass);
 
@@ -764,7 +764,7 @@ mono_cominterop_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, 
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
 		MonoClass *klass = NULL; 
 
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -1466,7 +1466,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
 		ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
 
-		klass = mono_class_from_mono_type (t);
+		klass = mono_class_from_mono_type_internal (t);
 		conv_arg = mono_mb_add_local (mb, m_class_get_byval_arg (klass));
 		*conv_arg_type = mono_get_int_type ();
 
@@ -1761,7 +1761,7 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 {
 	MonoDomain * const domain = MONO_HANDLE_DOMAIN (ref_type);
 	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
-	MonoClass * const klass = mono_class_from_mono_type (type);
+	MonoClass * const klass = mono_class_from_mono_type_internal (type);
 
 	/* Call mono_object_new_alloc_by_vtable instead of mono_object_new_by_vtable
 	 * because we want to actually create object. mono_object_new_by_vtable checks
@@ -1856,7 +1856,7 @@ ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoRe
 {
 #ifndef DISABLE_COM
 	MonoType * const type = MONO_HANDLE_GETVAL (ref_type, type);
-	MonoClass * const klass = mono_class_from_mono_type (type);
+	MonoClass * const klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
 		return NULL;
 
@@ -2379,7 +2379,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 
 	if (!MONO_TYPE_IS_VOID (sig->ret)) {
 		if (!preserve_sig) {
-			MonoClass *rclass = mono_class_from_mono_type (sig->ret);
+			MonoClass *rclass = mono_class_from_mono_type_internal (sig->ret);
 			if (m_class_is_valuetype (rclass)) {
 				mono_mb_emit_op (mb, CEE_STOBJ, rclass);
 			} else {

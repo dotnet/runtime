@@ -872,7 +872,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* inst->backend.is_pinvoke indicates native sized value types, this is used by the
 		* pinvoke wrappers when they call functions returning structure */
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype) && inst->inst_vtype->type != MONO_TYPE_TYPEDBYREF)
-			size = mono_class_native_size (mono_class_from_mono_type (inst->inst_vtype), &align);
+			size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), &align);
 		else
 			size = mini_type_stack_size (inst->inst_vtype, &align);
 

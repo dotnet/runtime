@@ -1260,6 +1260,9 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 MonoClass *
 mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
+MONO_PROFILER_API MonoClass *
+mono_class_from_mono_type_internal (MonoType *type);
+
 MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
 

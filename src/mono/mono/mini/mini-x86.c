@@ -230,7 +230,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	guint32 size;
 	MonoClass *klass;
 
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 	size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
 
 #if defined(TARGET_WIN32)
@@ -1350,7 +1350,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		case ArgOnStack:
 			if (mini_type_is_vtype (t)) {
-				if (mono_class_value_size (mono_class_from_mono_type (t), NULL) == 0)
+				if (mono_class_value_size (mono_class_from_mono_type_internal (t), NULL) == 0)
 				/* LLVM seems to allocate argument space for empty structures too */
 					linfo->args [i].storage = LLVMArgNone;
 				else

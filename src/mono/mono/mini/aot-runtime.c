@@ -515,7 +515,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (gclass), &ctx, error);
 		if (!type)
 			return NULL;
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		mono_metadata_free_type (type);
 		break;
 	}
@@ -538,7 +538,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 
 			t = mini_get_shared_gparam (m_class_get_byval_arg (par_klass), gshared_constraint);
 			mono_metadata_free_type (gshared_constraint);
-			klass = mono_class_from_mono_type (t);
+			klass = mono_class_from_mono_type_internal (t);
 		} else {
 			int type = decode_value (p, &p);
 			int num = decode_value (p, &p);
@@ -582,7 +582,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 			}
 			// FIXME: Maybe use types directly to avoid
 			// the overhead of creating MonoClass-es
-			klass = mono_class_from_mono_type (t);
+			klass = mono_class_from_mono_type_internal (t);
 
 			g_free (t);
 		}
@@ -602,7 +602,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		t = decode_type (module, p, &p, error);
 		if (!t)
 			return NULL;
-		klass = mono_class_from_mono_type (t);
+		klass = mono_class_from_mono_type_internal (t);
 		g_free (t);
 		break;
 	}
@@ -747,7 +747,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 		type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (gclass), &ctx, error);
 		if (!type)
 			goto fail;
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		t->data.generic_class = mono_class_get_generic_class (klass);
 		break;
 	}

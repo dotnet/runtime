@@ -348,13 +348,13 @@ handle_enum:
 			type = mono_class_enum_basetype_internal (type->data.klass);
 			goto handle_enum;
 		}
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
 		return OP_VMOVE;
 	case MONO_TYPE_TYPEDBYREF:
 		return OP_VMOVE;
 	case MONO_TYPE_GENERICINST:
-		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (type)))
+		if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type_internal (type)))
 			return OP_XMOVE;
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto handle_enum;
@@ -821,7 +821,7 @@ mini_type_to_eval_stack_type (MonoCompile *cfg, MonoType *type, MonoInst *inst)
 	MonoClass *klass;
 
 	type = mini_get_underlying_type (type);
-	inst->klass = klass = mono_class_from_mono_type (type);
+	inst->klass = klass = mono_class_from_mono_type_internal (type);
 	if (type->byref) {
 		inst->type = STACK_MP;
 		return;
@@ -1890,8 +1890,8 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 		/* FIXME: check that the pointed to types match */
 		if (arg->type == STACK_MP) {
 			/* This is needed to handle gshared types + ldaddr. We lower the types so we can handle enums and other typedef-like types. */
-			MonoClass *target_class_lowered = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (mono_class_from_mono_type (target))));
-			MonoClass *source_class_lowered = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (arg->klass)));
+			MonoClass *target_class_lowered = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (mono_class_from_mono_type_internal (target))));
+			MonoClass *source_class_lowered = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (arg->klass)));
 
 			/* if the target is native int& or X* or same type */
 			if (target->type == MONO_TYPE_I || target->type == MONO_TYPE_PTR || target_class_lowered == source_class_lowered)
@@ -1961,14 +1961,14 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 	case MONO_TYPE_VALUETYPE:
 		if (arg->type != STACK_VTYPE)
 			return 1;
-		klass = mono_class_from_mono_type (simple_type);
+		klass = mono_class_from_mono_type_internal (simple_type);
 		if (klass != arg->klass)
 			return 1;
 		return 0;
 	case MONO_TYPE_TYPEDBYREF:
 		if (arg->type != STACK_VTYPE)
 			return 1;
-		klass = mono_class_from_mono_type (simple_type);
+		klass = mono_class_from_mono_type_internal (simple_type);
 		if (klass != arg->klass)
 			return 1;
 		return 0;
@@ -1977,10 +1977,10 @@ target_type_is_incompatible (MonoCompile *cfg, MonoType *target, MonoInst *arg)
 			MonoClass *target_class;
 			if (arg->type != STACK_VTYPE)
 				return 1;
-			klass = mono_class_from_mono_type (simple_type);
-			target_class = mono_class_from_mono_type (target);
+			klass = mono_class_from_mono_type_internal (simple_type);
+			target_class = mono_class_from_mono_type_internal (target);
 			/* The second cases is needed when doing partial sharing */
-			if (klass != arg->klass && target_class != arg->klass && target_class != mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (arg->klass))))
+			if (klass != arg->klass && target_class != arg->klass && target_class != mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (arg->klass))))
 				return 1;
 			return 0;
 		} else {
@@ -3041,7 +3041,7 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 		return;
 	}
 
-	klass = mono_class_from_mono_type (mini_get_underlying_type (m_class_get_byval_arg (klass)));
+	klass = mono_class_from_mono_type_internal (mini_get_underlying_type (m_class_get_byval_arg (klass)));
 
 	n = mono_class_value_size (klass, &align);
 
@@ -4266,7 +4266,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 	 */
 	supported = ((cmethod->klass == mono_defaults.object_class) || mono_class_is_interface (cmethod->klass) || (!m_class_is_valuetype (cmethod->klass) && m_class_get_image (cmethod->klass) != mono_defaults.corlib));
 	if (supported)
-		supported = (MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || m_class_is_enumtype (mono_class_from_mono_type (fsig->ret)) || mini_is_gsharedvt_type (fsig->ret));
+		supported = (MONO_TYPE_IS_VOID (fsig->ret) || MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_IS_REFERENCE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || m_class_is_enumtype (mono_class_from_mono_type_internal (fsig->ret)) || mini_is_gsharedvt_type (fsig->ret));
 	if (supported) {
 		if (fsig->param_count == 0 || (!fsig->hasthis && fsig->param_count == 1)) {
 			supported = TRUE;
@@ -4313,7 +4313,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 			/* args [3] = deref_arg */
 			if (mini_is_gsharedvt_type (fsig->params [0])) {
 				int deref_arg_reg;
-				ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type (fsig->params [0]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
+				ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (fsig->params [0]), MONO_RGCTX_INFO_CLASS_BOX_TYPE);
 				deref_arg_reg = alloc_preg (cfg);
 				/* deref_arg = BOX_TYPE != MONO_GSHAREDVT_BOX_TYPE_VTYPE */
 				EMIT_NEW_BIALU_IMM (cfg, args [3], OP_ISUB_IMM, deref_arg_reg, ins->dreg, 1);
@@ -4340,8 +4340,8 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 		emit_widen = FALSE;
 
 		if (mini_is_gsharedvt_type (fsig->ret)) {
-			ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type (fsig->ret), ins);
-		} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || m_class_is_enumtype (mono_class_from_mono_type (fsig->ret))) {
+			ins = handle_unbox_gsharedvt (cfg, mono_class_from_mono_type_internal (fsig->ret), ins);
+		} else if (MONO_TYPE_IS_PRIMITIVE (fsig->ret) || MONO_TYPE_ISSTRUCT (fsig->ret) || m_class_is_enumtype (mono_class_from_mono_type_internal (fsig->ret))) {
 			MonoInst *add;
 
 			/* Unbox */
@@ -4983,9 +4983,9 @@ emit_init_rvar (MonoCompile *cfg, int dreg, MonoType *rtype)
 		MONO_ADD_INS (cfg->cbb, ins);
 	} else if ((t == MONO_TYPE_VALUETYPE) || (t == MONO_TYPE_TYPEDBYREF) ||
 		   ((t == MONO_TYPE_GENERICINST) && mono_type_generic_inst_is_valuetype (rtype))) {
-		MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (rtype));
+		MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type_internal (rtype));
 	} else if (((t == MONO_TYPE_VAR) || (t == MONO_TYPE_MVAR)) && mini_type_var_is_vt (rtype)) {
-		MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type (rtype));
+		MONO_EMIT_NEW_VZERO (cfg, dreg, mono_class_from_mono_type_internal (rtype));
 	} else {
 		MONO_EMIT_NEW_PCONST (cfg, dreg, NULL);
 	}
@@ -5749,7 +5749,7 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 			ins->dreg = alloc_ireg (cfg);
 			ins->sreg1 = sp [0]->dreg;
 			ins->type = STACK_I4;
-			ins->klass = mono_class_from_mono_type (header->locals [n]);
+			ins->klass = mono_class_from_mono_type_internal (header->locals [n]);
 			MONO_ADD_INS (cfg->cbb, ins);
 			*sp = mono_decompose_opcode (cfg, ins);
 		}
@@ -5785,7 +5785,7 @@ emit_starg_ir (MonoCompile *cfg, MonoInst **sp, int n)
 			ins->dreg = alloc_ireg (cfg);
 			ins->sreg1 = sp [0]->dreg;
 			ins->type = STACK_I4;
-			ins->klass = mono_class_from_mono_type (cfg->arg_types [n]);
+			ins->klass = mono_class_from_mono_type_internal (cfg->arg_types [n]);
 			MONO_ADD_INS (cfg->cbb, ins);
 			*sp = mono_decompose_opcode (cfg, ins);
 		}
@@ -6060,7 +6060,7 @@ handle_call_res_devirt (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *call_re
 		 *       return (EqualityComparer<T>)(object)new InternalStringComparer ();
 		 * #endif
 		 */
-		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type (param_type)) && param_type->type != MONO_TYPE_STRING) {
+		if (mono_class_is_assignable_from_internal (inst, mono_class_from_mono_type_internal (param_type)) && param_type->type != MONO_TYPE_STRING) {
 			MonoInst *typed_objref;
 			MonoClass *gcomparer_inst;
 
@@ -6431,7 +6431,7 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 		} else {
 			EMIT_NEW_RETLOADA (cfg, ret_addr);
 
-			MonoClass *ret_class = mono_class_from_mono_type (ret_type);
+			MonoClass *ret_class = mono_class_from_mono_type_internal (ret_type);
 			if (MONO_CLASS_IS_SIMD (cfg, ret_class))
 				EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ret_addr->dreg, 0, val->dreg);
 			else
@@ -7703,7 +7703,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* Use the corresponding method from the base type to avoid boxing */
 					MonoType *base_type = mono_class_enum_basetype_internal (constrained_class);
 					g_assert (base_type);
-					constrained_class = mono_class_from_mono_type (base_type);
+					constrained_class = mono_class_from_mono_type_internal (base_type);
 					cmethod = get_method_nofail (constrained_class, cmethod->name, 0, 0);
 					g_assert (cmethod);
 				}
@@ -9941,7 +9941,7 @@ calli_end:
 					} else {
 						EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
 					}
-					ins->klass = mono_class_from_mono_type (field->type);
+					ins->klass = mono_class_from_mono_type_internal (field->type);
 					ins->type = STACK_MP;
 					*sp++ = ins;
 				} else {
@@ -10160,7 +10160,7 @@ calli_end:
 			}
 
 			if (il_op == MONO_CEE_LDSFLDA) {
-				ins->klass = mono_class_from_mono_type (ftype);
+				ins->klass = mono_class_from_mono_type_internal (ftype);
 				ins->type = STACK_PTR;
 				*sp++ = ins;
 			} else if (il_op == MONO_CEE_STSFLD) {
@@ -10641,7 +10641,7 @@ field_access_end:
 					   typeof(Gen<>). */
 					context_used = 0;
 				} else if (handle_class == mono_defaults.typehandle_class) {
-					context_used = mini_class_check_context_used (cfg, mono_class_from_mono_type ((MonoType *)handle));
+					context_used = mini_class_check_context_used (cfg, mono_class_from_mono_type_internal ((MonoType *)handle));
 				} else if (handle_class == mono_defaults.fieldhandle_class)
 					context_used = mini_class_check_context_used (cfg, ((MonoClassField*)handle)->parent);
 				else if (handle_class == mono_defaults.methodhandle_class)
@@ -10681,7 +10681,7 @@ field_access_end:
 					(cmethod = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context)) &&
 					(cmethod->klass == mono_defaults.systemtype_class) &&
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
-					MonoClass *tclass = mono_class_from_mono_type ((MonoType *)handle);
+					MonoClass *tclass = mono_class_from_mono_type_internal ((MonoType *)handle);
 
 					mono_class_init (tclass);
 					if (context_used) {
@@ -10719,7 +10719,7 @@ field_access_end:
 					if (context_used) {
 						if (handle_class == mono_defaults.typehandle_class) {
 							ins = mini_emit_get_rgctx_klass (cfg, context_used,
-									mono_class_from_mono_type ((MonoType *)handle),
+									mono_class_from_mono_type_internal ((MonoType *)handle),
 									MONO_RGCTX_INFO_TYPE);
 						} else if (handle_class == mono_defaults.methodhandle_class) {
 							ins = emit_get_rgctx_method (cfg, context_used,

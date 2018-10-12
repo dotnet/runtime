@@ -3135,7 +3135,7 @@ encode_ginst (MonoAotCompile *acfg, MonoGenericInst *inst, guint8 *buf, guint8 *
 
 	encode_value (inst->type_argc, p, &p);
 	for (i = 0; i < inst->type_argc; ++i)
-		encode_klass_ref (acfg, mono_class_from_mono_type (inst->type_argv [i]), p, &p);
+		encode_klass_ref (acfg, mono_class_from_mono_type_internal (inst->type_argv [i]), p, &p);
 	*endbuf = p;
 }
 
@@ -3219,7 +3219,7 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
-		encode_klass_ref (acfg, mono_class_from_mono_type (t), p, &p);
+		encode_klass_ref (acfg, mono_class_from_mono_type_internal (t), p, &p);
 		break;
 	case MONO_TYPE_SZARRAY:
 		encode_klass_ref (acfg, t->data.klass, p, &p);
@@ -3251,7 +3251,7 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 	}
 	case MONO_TYPE_VAR:
 	case MONO_TYPE_MVAR:
-		encode_klass_ref (acfg, mono_class_from_mono_type (t), p, &p);
+		encode_klass_ref (acfg, mono_class_from_mono_type_internal (t), p, &p);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -3938,7 +3938,7 @@ can_marshal_struct (MonoClass *klass)
 		case MONO_TYPE_STRING:
 			break;
 		case MONO_TYPE_VALUETYPE:
-			if (!m_class_is_enumtype (mono_class_from_mono_type (field->type)) && !can_marshal_struct (mono_class_from_mono_type (field->type)))
+			if (!m_class_is_enumtype (mono_class_from_mono_type_internal (field->type)) && !can_marshal_struct (mono_class_from_mono_type_internal (field->type)))
 				can_marshal = FALSE;
 			break;
 		case MONO_TYPE_SZARRAY: {
@@ -4073,7 +4073,7 @@ add_wrappers (MonoAotCompile *acfg)
 			gboolean has_nullable = FALSE;
 
 			for (j = 0; j < sig->param_count; j++) {
-				if (sig->params [j]->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type (sig->params [j])))
+				if (sig->params [j]->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (sig->params [j])))
 					has_nullable = TRUE;
 			}
 
@@ -4499,7 +4499,7 @@ add_wrappers (MonoAotCompile *acfg)
 				}
 
 				g_assert (sig->param_count == 1);
-				g_assert (sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (mono_class_from_mono_type (sig->params [0])), "Type"));
+				g_assert (sig->params [0]->type == MONO_TYPE_CLASS && !strcmp (m_class_get_name (mono_class_from_mono_type_internal (sig->params [0])), "Type"));
 
 				/* 
 				 * Decode the cattr manually since we can't create objects
@@ -4518,7 +4518,7 @@ add_wrappers (MonoAotCompile *acfg)
 				mono_error_assert_ok (error);
 				g_free (n);
 
-				klass = mono_class_from_mono_type (t);
+				klass = mono_class_from_mono_type_internal (t);
 				g_assert (m_class_get_parent (klass) == mono_defaults.multicastdelegate_class);
 
 				p += slen;
@@ -4606,7 +4606,7 @@ has_type_vars (MonoClass *klass)
 			int i;
 
 			for (i = 0; i < context->class_inst->type_argc; ++i)
-				if (has_type_vars (mono_class_from_mono_type (context->class_inst->type_argv [i])))
+				if (has_type_vars (mono_class_from_mono_type_internal (context->class_inst->type_argv [i])))
 					return TRUE;
 		}
 	}
@@ -4640,7 +4640,7 @@ method_has_type_vars (MonoMethod *method)
 			int i;
 
 			for (i = 0; i < context->method_inst->type_argc; ++i)
-				if (has_type_vars (mono_class_from_mono_type (context->method_inst->type_argv [i])))
+				if (has_type_vars (mono_class_from_mono_type_internal (context->method_inst->type_argv [i])))
 					return TRUE;
 		}
 	}
@@ -4792,7 +4792,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->type == MONO_TYPE_GENERICINST)
-			add_generic_class_with_depth (acfg, mono_class_from_mono_type (field->type), depth + 1, "field");
+			add_generic_class_with_depth (acfg, mono_class_from_mono_type_internal (field->type), depth + 1, "field");
 	}
 
 	if (m_class_is_delegate (klass)) {
@@ -4819,7 +4819,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	 */
 	if (in_corlib && !strcmp (klass_name_space, "System.Collections.Generic") &&
 		(!strcmp(klass_name, "ICollection`1") || !strcmp (klass_name, "IEnumerable`1") || !strcmp (klass_name, "IList`1") || !strcmp (klass_name, "IEnumerator`1") || !strcmp (klass_name, "IReadOnlyList`1"))) {
-		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *array_class = mono_class_create_bounded_array (tclass, 1, FALSE);
 		gpointer iter;
 		char *name_prefix;
@@ -4861,7 +4861,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of GenericComparer<T> which is created dynamically by Comparer<T> */
 	if (in_corlib && !strcmp (klass_name_space, "System.Collections.Generic") && !strcmp (klass_name, "Comparer`1")) {
 		ERROR_DECL (error);
-		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *icomparable, *gcomparer, *icomparable_inst;
 		MonoGenericContext ctx;
 		MonoType *args [16];
@@ -4889,7 +4889,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of GenericEqualityComparer<T> which is created dynamically by EqualityComparer<T> */
 	if (in_corlib && !strcmp (klass_name_space, "System.Collections.Generic") && !strcmp (klass_name, "EqualityComparer`1")) {
 		ERROR_DECL (error);
-		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoClass *iface, *gcomparer, *iface_inst;
 		MonoGenericContext ctx;
 		MonoType *args [16];
@@ -4918,7 +4918,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of EnumComparer<T> which is created dynamically by EqualityComparer<T> for enums */
 	if (in_corlib && !strcmp (klass_name_space, "System.Collections.Generic") && !strcmp (klass_name, "EqualityComparer`1")) {
 		MonoClass *enum_comparer;
-		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoGenericContext ctx;
 		MonoType *args [16];
 
@@ -4940,7 +4940,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	/* Add an instance of ObjectComparer<T> which is created dynamically by Comparer<T> for enums */
 	if (in_corlib && !strcmp (klass_name_space, "System.Collections.Generic") && !strcmp (klass_name, "Comparer`1")) {
 		MonoClass *comparer;
-		MonoClass *tclass = mono_class_from_mono_type (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+		MonoClass *tclass = mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
 		MonoGenericContext ctx;
 		MonoType *args [16];
 
@@ -4998,7 +4998,7 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
 	if (sig) {
 		for (j = 0; j < sig->param_count; ++j)
 			if (sig->params [j]->type == MONO_TYPE_GENERICINST)
-				add_generic_class_with_depth (acfg, mono_class_from_mono_type (sig->params [j]), depth + 1, "arg");
+				add_generic_class_with_depth (acfg, mono_class_from_mono_type_internal (sig->params [j]), depth + 1, "arg");
 	}
 
 	header = mono_method_get_header_checked (method, error);
@@ -5006,7 +5006,7 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
 	if (header) {
 		for (j = 0; j < header->num_locals; ++j)
 			if (header->locals [j]->type == MONO_TYPE_GENERICINST)
-				add_generic_class_with_depth (acfg, mono_class_from_mono_type (header->locals [j]), depth + 1, "local");
+				add_generic_class_with_depth (acfg, mono_class_from_mono_type_internal (header->locals [j]), depth + 1, "local");
 		mono_metadata_free_mh (header);
 	} else {
 		mono_error_cleanup (error); /* FIXME report the error */
@@ -6147,7 +6147,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			encode_value (template_->info_type, p, &p);
 			switch (mini_rgctx_info_type_to_patch_info_type (template_->info_type)) {
 			case MONO_PATCH_INFO_CLASS:
-				encode_klass_ref (acfg, mono_class_from_mono_type ((MonoType *)template_->data), p, &p);
+				encode_klass_ref (acfg, mono_class_from_mono_type_internal ((MonoType *)template_->data), p, &p);
 				break;
 			case MONO_PATCH_INFO_FIELD:
 				encode_field_info (acfg, (MonoClassField *)template_->data, p, &p);
@@ -7792,7 +7792,7 @@ is_concrete_type (MonoType *t)
 
 		if (!MONO_TYPE_ISSTRUCT (t))
 			return TRUE;
-		klass = mono_class_from_mono_type (t);
+		klass = mono_class_from_mono_type_internal (t);
 		orig_ctx = &mono_class_get_generic_class (klass)->context;
 
 		inst = orig_ctx->class_inst;
@@ -7855,9 +7855,9 @@ add_gsharedvt_wrappers (MonoAotCompile *acfg, MonoMethodSignature *sig, gboolean
 			concrete = FALSE;
 		for (i = 0; i < sig->param_count; ++i) {
 			if (sig->params [i]->byref) {
-				MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type (sig->params [i]));
+				MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->params [i]));
 				t = mini_get_underlying_type (t);
-				copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type (t));
+				copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type_internal (t));
 			} else {
 				copy->params [i] = mini_get_underlying_type (sig->params [i]);
 			}
@@ -11840,7 +11840,7 @@ inst_references_image (MonoGenericInst *inst, MonoImage *image)
 	int i;
 
 	for (i = 0; i < inst->type_argc; ++i) {
-		MonoClass *k = mono_class_from_mono_type (inst->type_argv [i]);
+		MonoClass *k = mono_class_from_mono_type_internal (inst->type_argv [i]);
 		if (m_class_get_image (k) == image)
 			return TRUE;
 		if (mono_class_is_ginst (k)) {
@@ -11858,7 +11858,7 @@ is_local_inst (MonoGenericInst *inst, MonoImage *image)
 	int i;
 
 	for (i = 0; i < inst->type_argc; ++i) {
-		MonoClass *k = mono_class_from_mono_type (inst->type_argv [i]);
+		MonoClass *k = mono_class_from_mono_type_internal (inst->type_argv [i]);
 		if (!MONO_TYPE_IS_PRIMITIVE (inst->type_argv [i]) && m_class_get_image (k) != image)
 			return FALSE;
 	}
