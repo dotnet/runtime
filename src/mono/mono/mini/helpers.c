@@ -264,7 +264,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	 * The arm assembler inserts ELF directives instructing objdump to display 
 	 * everything as data.
 	 */
-	cmd = g_strdup_printf (ARCH_PREFIX "strip -x %s", o_file);
+	cmd = g_strdup_printf (ARCH_PREFIX "strip -s %s", o_file);
 	unused = system (cmd);
 	g_free (cmd);
 #endif
