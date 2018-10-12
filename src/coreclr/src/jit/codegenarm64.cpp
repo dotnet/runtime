@@ -5053,7 +5053,7 @@ void CodeGen::genHWIntrinsicUnaryOp(GenTreeHWIntrinsic* node)
 {
     GenTree*  op1       = node->gtGetOp1();
     regNumber targetReg = node->gtRegNum;
-    emitAttr  attr      = emitActualTypeSize(node);
+    emitAttr  attr      = emitActualTypeSize(op1->TypeGet());
 
     assert(targetReg != REG_NA);
     var_types targetType = node->TypeGet();
