@@ -23,7 +23,50 @@ Get the tag name from https://hub.docker.com/r/microsoft/dotnet-buildtools-prere
 - `docker exec -it _id /bin/sh`
 
 ## Notes on commands used in Linux 14.04
-- Not supported. The minimum required unixODBC version should be 2.3.1, but is not available on Ubuntu 14.04.
+This section describes the process to install unixODBC libraries and SQLite/MSSQL driver for Ubuntu 14.04.
+
+- `sudo su` 
+- `curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -`
+- `curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list > /etc/apt/sources.list.d/mssql-release.list`
+- `sudo apt-get update`
+- `sudo apt-get install unixodbc`
+
+SQLite Driver
+- `wget "http://www.ch-werner.de/sqliteodbc/sqliteodbc-0.9995.tar.gz"` download and install SQLite ODBC Driver
+- `gunzip sqliteodbc-0.9995.tar.gz`
+- `tar xvf sqliteodbc-0.9995.tar`
+- `cd sqliteodbc-0.9995/`
+- `./configure`
+- `make`
+- `sudo make install`
+- `sudo nano /etc/odbcinst.ini`
+
+```
+[SQLite3 ODBC Driver]
+Description=SQLite ODBC Driver
+Driver=/usr/local/lib/libsqlite3odbc.so
+Setup=/usr/local/lib/libsqlite3odbc.so
+Threading=4
+```
+
+Microsoft SQL Driver
+- `sudo ACCEPT_EULA=Y apt-get install msodbcsql17`
+- `sudo nano /etc/odbcinst.ini`
+
+```
+[ODBC Driver 17 for SQL Server]
+Description=Microsoft ODBC Driver 17 for SQL Server
+Driver=/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.2.so.0.1
+UsageCount=1
+```
+
+To use the Microsoft driver, here is sample `odbc.ini`
+```
+[SQLTest]
+Driver=ODBC Driver 17 for SQL Server
+Server=tcp:server,port
+Database=
+```
 
 ## Notes on commands used in Linux 16.04
 - `wget "ftp://ftp.unixodbc.org/pub/unixODBC/unixODBC-2.3.4.tar.gz"` download and install unixODBC
