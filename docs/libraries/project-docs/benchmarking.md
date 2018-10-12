@@ -52,7 +52,7 @@ If you want to run your benchmarks without spawning a new process per benchmark 
 
 1. Before you start benchmarking the code you need to build entire CoreFX in Release which is going to generate the right CoreRun bits for you:
 
-        C:\Projects\corefx>build.cmd -release -buildArch=x64
+        C:\Projects\corefx>build.cmd -release /p:ArchGroup=x64
 
 After that, you should be able to find `CoreRun.exe` in a location similar to:
 
