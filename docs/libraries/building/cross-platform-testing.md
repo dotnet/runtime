@@ -61,7 +61,7 @@ If needed, copy System.Private.Corelib:
 # rsync -v -r  ~/mnt/matell3/d/git/coreclr/bin/Product/ ~/git/coreclr/bin/Product/
 ```
 
-Then, run the tests. We need to pass an explict path to the location of CoreCLR.
+Then, run the tests. We need to pass an explicit path to the location of CoreCLR.
 
 ```
 # ./run-test.sh --coreclr-bins ~/git/coreclr/bin/Product/Linux.x64.Release

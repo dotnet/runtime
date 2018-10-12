@@ -36,4 +36,4 @@ We do not currently apply this check to test binaries as they do not need to run
 ### Implementation
 To enforce this the analyzer consults the list [here](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.CodeAnalysis/PackageFiles/PinvokeAnalyzer_Win32Apis.txt). 
 
-The analyzer is enabled by default when building for Windows, not a test, and not building for UWP. We aim to make all such configurations OneCore compilant, but in the rare cases where a library cannot be, the check can be disabled with `<EnablePInvokeAnalyzer>false<EnablePInvokeAnalyzer>` in the project file.
+The analyzer is enabled by default when building for Windows, not a test, and not building for UWP. We aim to make all such configurations OneCore compliant, but in the rare cases where a library cannot be, the check can be disabled with `<EnablePInvokeAnalyzer>false<EnablePInvokeAnalyzer>` in the project file.
