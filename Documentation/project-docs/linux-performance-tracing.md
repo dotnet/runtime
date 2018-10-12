@@ -125,7 +125,7 @@ VERSION is 2.1.0 the commands to update crossgen would be
 Once you have done this, perfcollect will use crossgen to include framework symbols.  The warning that perfcollect used to
 issue should go away.   This only has to be one once per machine (until you update your runtime). 
 
-## Alternative turn off use of precomppiled code
+### Alternative: Turn off use of precomppiled code
 
 If you don't have the abiltiy to update the .NET Rutnime (to add crossgen), or if the above procedure did not work
 for some reasion, there is another approach to getting framework symbols.   You can tell the runtime to simply 
@@ -137,7 +137,38 @@ in order to get symbols, you simply need to add one more.
 	> export COMPlus_ZapDisable=1
 	> ```
 With this change you should get the symbols for all .NET code. 
-    
+
+# Getting Symbols For the Native Runtime
+
+Most of the time you are interested in your own code, which perfcollect resolves by default.   Sometimes it is very
+useful to see what is going on inside the .NET Framework DLLs (which is what the last section was about), but sometimes
+what is going on in the NATIVE runtime dlls (typically libcoreclr.so), is interesting.  perfcollect will resolve the
+symbols for these when it converts its data, but ONLY if the symbols for these native DLLs are present (and are beside
+the library they are for).   
+
+There is a global command called [dotnet symbols](symbol downloader](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md#symbol-downloader-dotnet-cli-extension) which does this.   This tool was mostly desiged to download symbols
+for debugging, but it works for perfollect as well.  There are three steps to getting the symbols
+
+   1. Install dotnet symbols
+   2. Download the symbols.
+   3. Copy the symbols to the correct place 
+
+To install dotnet symbols issue the command 
+```
+     dotnet tool install -g dotnet-symbol
+```
+With that installed download the symbols to a local directory.  if your installed version of the .NET Core runtime is
+2.1.0 the command to do this is 
+```
+    mkdir mySymbols
+    dotnet symbols --symbols --output mySymbols  /usr/share/dotnet/shared/Microsoft.NETCore.App/2.1.0/lib*.so
+```
+Now all the symbols for those native dlls are in mySymbols.   You then have to copy them (as super user next to the 
+dlls that they are for.
+```
+    sudo cp mySymbols/* /usr/share/dotnet/shared/Microsoft.NETCore.App/2.1.0
+```
+After this, you should get symbolic names for the native dlls when you run perfcollect.  
 # Collecting in a Docker Container #
 Perfcollect can be used to collect data for an application running inside a Docker container.  The main thing to know is that collecting a trace requires elevated privileges because the [default seccomp profile](https://docs.docker.com/engine/security/seccomp/) blocks a required syscall - perf_events_open.
 
