@@ -663,9 +663,9 @@ mono_generic_param_is_constraint_compatible (VerifyContext *ctx, MonoGenericPara
 			cc = mono_class_from_mono_type (inflated);
 			mono_metadata_free_type (inflated);
 
-			if (mono_type_is_reference (m_class_get_byval_arg (cc)) && !MONO_CLASS_IS_INTERFACE (cc))
+			if (mono_type_is_reference (m_class_get_byval_arg (cc)) && !MONO_CLASS_IS_INTERFACE_INTERNAL (cc))
 				class_constraint_satisfied = TRUE;
-			else if (!mono_type_is_reference (m_class_get_byval_arg (cc)) && !MONO_CLASS_IS_INTERFACE (cc))
+			else if (!mono_type_is_reference (m_class_get_byval_arg (cc)) && !MONO_CLASS_IS_INTERFACE_INTERNAL (cc))
 				valuetype_constraint_satisfied = TRUE;
 		}
 	}
@@ -2166,8 +2166,8 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 
 	if (mono_class_has_variant_generic_params (target)) {
-		if (MONO_CLASS_IS_INTERFACE (target)) {
-			if (MONO_CLASS_IS_INTERFACE (candidate) && mono_class_is_variant_compatible (target, candidate, TRUE))
+		if (MONO_CLASS_IS_INTERFACE_INTERNAL (target)) {
+			if (MONO_CLASS_IS_INTERFACE_INTERNAL (candidate) && mono_class_is_variant_compatible (target, candidate, TRUE))
 				return TRUE;
 
 			if (m_class_get_rank (candidate) == 1) {
@@ -2221,7 +2221,7 @@ verifier_class_is_assignable_from (MonoClass *target, MonoClass *candidate)
 	if (mono_class_is_assignable_from_internal (target, candidate))
 		return TRUE;
 
-	if (!MONO_CLASS_IS_INTERFACE (target) || !mono_class_is_ginst (target) || m_class_get_rank (candidate) != 1)
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (target) || !mono_class_is_ginst (target) || m_class_get_rank (candidate) != 1)
 		return FALSE;
 
 	iface_gtd = mono_class_get_generic_class (target)->container_class;
@@ -6416,11 +6416,11 @@ mono_verifier_verify_class (MonoClass *klass)
 	/*Neither <Module>, object or ifaces have parent.*/
 	if (!klass_parent &&
 		klass != mono_defaults.object_class && 
-		!MONO_CLASS_IS_INTERFACE (klass) &&
+		!MONO_CLASS_IS_INTERFACE_INTERNAL (klass) &&
 		(!image_is_dynamic (m_class_get_image (klass)) && m_class_get_type_token (klass) != 0x2000001)) /*<Module> is the first type in the assembly*/
 		return FALSE;
 	if (m_class_get_parent (klass)) {
-		if (MONO_CLASS_IS_INTERFACE (klass_parent))
+		if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass_parent))
 			return FALSE;
 		if (!mono_class_is_ginst (klass) && mono_class_is_gtd (klass_parent))
 			return FALSE;

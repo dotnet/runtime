@@ -1019,5 +1019,6 @@ mono_type_in_image (MonoType *type, MonoImage *image);
 MonoAssemblyContextKind
 mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
 
-#endif /* __MONO_METADATA_INTERNALS_H__ */
+#define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
 
+#endif /* __MONO_METADATA_INTERNALS_H__ */

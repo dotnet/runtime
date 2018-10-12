@@ -4076,7 +4076,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 	if (is_generic_parameter (m_class_get_byval_arg (klass)))
 		nslots = mono_class_get_vtable_size (m_class_get_parent (klass));
 	else
-		nslots = MONO_CLASS_IS_INTERFACE (klass) ? mono_class_num_methods (klass) : mono_class_get_vtable_size (klass);
+		nslots = MONO_CLASS_IS_INTERFACE_INTERNAL (klass) ? mono_class_num_methods (klass) : mono_class_get_vtable_size (klass);
 	if (nslots >= sizeof (method_slots_default) * 8) {
 		method_slots = g_new0 (guint32, nslots / 32 + 1);
 	} else {
@@ -7320,7 +7320,7 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, ret);
 
-	if (MONO_CLASS_IS_INTERFACE (klass))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
 		return ret;
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC)
@@ -7390,7 +7390,7 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
 
-	if (MONO_CLASS_IS_INTERFACE (klass) || mono_class_is_abstract (klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || mono_class_is_abstract (klass)) {
 		mono_error_set_argument (error, "type", "Type cannot be instantiated");
 		return NULL_HANDLE;
 	}

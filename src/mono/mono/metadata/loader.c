@@ -469,7 +469,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	MonoClass *initial_class = in_class;
 
 	error_init (error);
-	is_interface = MONO_CLASS_IS_INTERFACE (in_class);
+	is_interface = MONO_CLASS_IS_INTERFACE_INTERNAL (in_class);
 
 	if (ic) {
 		class_name = mono_type_get_name_full (m_class_get_byval_arg (ic), MONO_TYPE_NAME_FORMAT_IL);
@@ -1850,7 +1850,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	/* If the constraining class is actually an interface, we don't learn
 	 * anything new by constraining.
 	 */
-	if (MONO_CLASS_IS_INTERFACE (constrained_class))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (constrained_class))
 		return method;
 
 	mono_class_setup_vtable (base_class);
@@ -1879,7 +1879,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		}
 	}
 	int vtable_slot = 0;
-	if (!MONO_CLASS_IS_INTERFACE (base_class)) {
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (base_class)) {
 		/*if the base class isn't an interface and the method isn't
 		 * virtual, there's nothing to do, we're already on the method
 		 * we want to call. */

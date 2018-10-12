@@ -2537,7 +2537,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 
 	error_init (error);
 
-	if (MONO_CLASS_IS_INTERFACE (klass) || m_class_get_rank (klass) || !amodule)
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || m_class_get_rank (klass) || !amodule)
 		return NULL;
 
 	info = &amodule->blob [mono_aot_get_offset (amodule->class_info_offsets, mono_metadata_token_index (m_class_get_type_token (klass)) - 1)];

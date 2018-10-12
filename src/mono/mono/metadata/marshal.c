@@ -4427,11 +4427,11 @@ get_virtual_stelemref_kind (MonoClass *element_class)
 		return STELEMREF_SEALED_CLASS;
 
 	/* magic ifaces requires aditional checks for when the element type is an array */
-	if (MONO_CLASS_IS_INTERFACE (element_class) && m_class_is_array_special_interface (element_class))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && m_class_is_array_special_interface (element_class))
 		return STELEMREF_COMPLEX;
 
 	/* Compressed interface bitmaps require code that is quite complex, so don't optimize for it. */
-	if (MONO_CLASS_IS_INTERFACE (element_class) && !mono_class_has_variant_generic_params (element_class))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (element_class) && !mono_class_has_variant_generic_params (element_class))
 #ifdef COMPRESSED_INTERFACE_BITMAP
 		return STELEMREF_COMPLEX;
 #else

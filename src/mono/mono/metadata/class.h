@@ -176,7 +176,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 const char*
 mono_class_get_namespace     (MonoClass *klass);
 
-MONO_API MonoType*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoType*
 mono_class_get_type          (MonoClass *klass);
 
 MONO_API uint32_t

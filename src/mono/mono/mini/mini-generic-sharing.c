@@ -3530,7 +3530,7 @@ mini_type_is_reference (MonoType *type)
 gboolean
 mini_method_is_default_method (MonoMethod *m)
 {
-	return MONO_CLASS_IS_INTERFACE (m->klass) && !(m->flags & METHOD_ATTRIBUTE_ABSTRACT);
+	return MONO_CLASS_IS_INTERFACE_INTERNAL (m->klass) && !(m->flags & METHOD_ATTRIBUTE_ABSTRACT);
 }
 
 gboolean

@@ -6005,7 +6005,7 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 	else
 		this_arg = NULL;
 
-	if (MONO_CLASS_IS_INTERFACE (m->klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (m->klass)) {
 		if (!this_arg) {
 			DEBUG_PRINTF (1, "[%p] Error: Interface method invoked without this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
 			return ERR_INVALID_ARGUMENT;

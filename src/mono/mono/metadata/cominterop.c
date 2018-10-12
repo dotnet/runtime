@@ -405,7 +405,7 @@ cominterop_get_method_interface (MonoMethod* method)
 	MonoClass *ic = method->klass;
 
 	/* if method is on a class, we need to look up interface method exists on */
-	if (!MONO_CLASS_IS_INTERFACE(method->klass)) {
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (method->klass)) {
 		GPtrArray *ifaces = mono_class_get_implemented_interfaces (method->klass, error);
 		mono_error_assert_ok (error);
 		if (ifaces) {
@@ -457,11 +457,11 @@ cominterop_get_com_slot_for_method (MonoMethod* method, MonoError* error)
 	error_init (error);
 
 	/* if method is on a class, we need to look up interface method exists on */
-	if (!MONO_CLASS_IS_INTERFACE(ic)) {
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (ic)) {
 		int offset = 0;
 		int i = 0;
 		ic = cominterop_get_method_interface (method);
-		if (!ic || !MONO_CLASS_IS_INTERFACE (ic)) {
+		if (!ic || !MONO_CLASS_IS_INTERFACE_INTERNAL (ic)) {
 			mono_cominterop_get_interface_missing_error (error, method);
 			return -1;
 		}
@@ -480,7 +480,7 @@ cominterop_get_com_slot_for_method (MonoMethod* method, MonoError* error)
 	}
 
 	g_assert (ic);
-	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (ic));
 
 	return slot + cominterop_get_com_slot_begin (ic);
 }
@@ -584,7 +584,7 @@ cominterop_get_interface_checked (MonoComObjectHandle obj, MonoClass* ic, MonoEr
 	gpointer itf = NULL;
 
 	g_assert (ic);
-	g_assert (MONO_CLASS_IS_INTERFACE (ic));
+	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (ic));
 
 	error_init (error);
 

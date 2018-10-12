@@ -3223,10 +3223,10 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 	mono_class_init (klass);
 	mono_class_init (klassc);
 	
-	if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && !MONO_CLASS_IS_INTERFACE (klass)) {
+	if (check_interfaces && MONO_CLASS_IS_INTERFACE_INTERNAL (klassc) && !MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, m_class_get_interface_id (klassc)))
 			return TRUE;
-	} else if (check_interfaces && MONO_CLASS_IS_INTERFACE (klassc) && MONO_CLASS_IS_INTERFACE (klass)) {
+	} else if (check_interfaces && MONO_CLASS_IS_INTERFACE_INTERNAL (klassc) && MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		int i;
 
 		MonoClass **klass_interfaces = m_class_get_interfaces (klass);
@@ -3236,7 +3236,7 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				return TRUE;
 		}
 	} else {
-		if (!MONO_CLASS_IS_INTERFACE (klass) && mono_class_has_parent (klass, klassc))
+		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass) && mono_class_has_parent (klass, klassc))
 			return TRUE;
 	}
 
@@ -3379,9 +3379,9 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
 			MonoClass *cc = *candidate_class;
 			MonoType *cc_byval_arg = m_class_get_byval_arg (cc);
 
-			if (mono_type_is_reference (cc_byval_arg) && !MONO_CLASS_IS_INTERFACE (cc))
+			if (mono_type_is_reference (cc_byval_arg) && !MONO_CLASS_IS_INTERFACE_INTERNAL (cc))
 				class_constraint_satisfied = TRUE;
-			else if (!mono_type_is_reference (cc_byval_arg) && !MONO_CLASS_IS_INTERFACE (cc))
+			else if (!mono_type_is_reference (cc_byval_arg) && !MONO_CLASS_IS_INTERFACE_INTERNAL (cc))
 				valuetype_constraint_satisfied = TRUE;
 		}
 	}
@@ -3553,7 +3553,7 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 		return;
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 
 		/* interface_offsets might not be set for dynamic classes */
 		if (mono_class_get_ref_info_handle (oklass) && !m_class_get_interface_bitmap (oklass)) {
@@ -3735,7 +3735,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 	int i;
 	gboolean is_variant = mono_class_has_variant_generic_params (target);
 
-	if (is_variant && MONO_CLASS_IS_INTERFACE (candidate)) {
+	if (is_variant && MONO_CLASS_IS_INTERFACE_INTERNAL (candidate)) {
 		if (mono_class_is_variant_compatible_slow (target, candidate))
 			return TRUE;
 	}
@@ -3812,7 +3812,7 @@ mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
 		return TRUE;
 
 	/*If target is not an interface there is no need to check them.*/
-	if (MONO_CLASS_IS_INTERFACE (target))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (target))
 		return mono_class_implement_interface_slow (target, candidate);
 
  	if (m_class_is_delegate (target) && mono_class_has_variant_generic_params (target))
@@ -3874,7 +3874,7 @@ mono_generic_param_get_base_type (MonoClass *klass)
 		for (i = 0; constraints [i]; ++i) {
 			MonoClass *constraint = constraints[i];
 
-			if (MONO_CLASS_IS_INTERFACE (constraint))
+			if (MONO_CLASS_IS_INTERFACE_INTERNAL (constraint))
 				continue;
 
 			MonoType *constraint_type = m_class_get_byval_arg (constraint);
@@ -4405,11 +4405,7 @@ mono_class_get_namespace (MonoClass *klass)
 MonoType*
 mono_class_get_type (MonoClass *klass)
 {
-	MonoType *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = m_class_get_byval_arg (klass);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
+	return m_class_get_byval_arg (klass);
 }
 
 /**
@@ -5323,7 +5319,7 @@ mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent)
 static gboolean
 is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoClass *context_klass)
 {
-	if (MONO_CLASS_IS_INTERFACE (member_klass) && !MONO_CLASS_IS_INTERFACE (access_klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (member_klass) && !MONO_CLASS_IS_INTERFACE_INTERNAL (access_klass)) {
 		/* Can happen with default interface methods */
 		if (!mono_class_implements_interface (access_klass, member_klass))
 			return FALSE;
@@ -5965,7 +5961,7 @@ mono_method_get_base_method (MonoMethod *method, gboolean definition, MonoError 
 		return method;
 
 	if (!(method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
-	    MONO_CLASS_IS_INTERFACE (method->klass) ||
+	    MONO_CLASS_IS_INTERFACE_INTERNAL (method->klass) ||
 	    method->flags & METHOD_ATTRIBUTE_NEW_SLOT)
 		return method;
 

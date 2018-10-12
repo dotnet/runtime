@@ -1137,7 +1137,7 @@ make_generic_param_class (MonoGenericParam *param)
 			;
 
 	pos = 0;
-	if ((count > 0) && !MONO_CLASS_IS_INTERFACE (pinfo->constraints [0])) {
+	if ((count > 0) && !MONO_CLASS_IS_INTERFACE_INTERNAL (pinfo->constraints [0])) {
 		CHECKED_METADATA_WRITE_PTR ( klass->parent , pinfo->constraints [0] );
 		pos++;
 	} else if (pinfo && pinfo->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) {
@@ -1717,7 +1717,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		}
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		num_ifaces++;
 		if (max_iid < klass->interface_id)
 			max_iid = klass->interface_id;
@@ -1768,7 +1768,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		}
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
 		set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, klass, cur_slot, TRUE);
 
 	for (interface_offsets_count = 0, i = 0; i < num_ifaces; i++) {
@@ -1854,7 +1854,7 @@ mono_class_setup_interface_offsets (MonoClass *klass)
 	 * It assumes that klass's interfaces can be assigned offsets starting
 	 * from 0. That assumption is incorrect for classes and valuetypes.
 	 */
-	g_assert (MONO_CLASS_IS_INTERFACE (klass) && !mono_class_is_ginst (klass));
+	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass) && !mono_class_is_ginst (klass));
 	setup_interface_offsets (klass, 0, FALSE);
 }
 
@@ -2322,7 +2322,7 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 	if (klass->vtable)
 		return;
 
-	if (MONO_CLASS_IS_INTERFACE (klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		/* This sets method->slot for all methods if this is an interface */
 		mono_class_setup_methods (klass);
 		return;
@@ -2409,7 +2409,7 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 
 	dslot += mono_class_interface_offset (klass, decl->klass);
 	vtable [dslot] = override;
-	if (!MONO_CLASS_IS_INTERFACE (override->klass)) {
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (override->klass)) {
 		/*
 		 * If override from an interface, then it is an override of a default interface method,
 		 * don't override its slot.
@@ -2915,7 +2915,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *override = overrides [i*2 + 1];
-		if (MONO_CLASS_IS_INTERFACE (decl->klass)) {
+		if (MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			if (!apply_override (klass, klass, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
 		}
@@ -3146,7 +3146,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	/* override non interface methods */
 	for (i = 0; i < onum; i++) {
 		MonoMethod *decl = overrides [i*2];
-		if (!MONO_CLASS_IS_INTERFACE (decl->klass)) {
+		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
 			g_assert (decl->slot != -1);
 			vtable [decl->slot] = overrides [i*2 + 1];
  			overrides [i * 2 + 1]->slot = decl->slot;
@@ -4043,7 +4043,7 @@ mono_get_unique_iid (MonoClass *klass)
 {
 	int iid;
 	
-	g_assert (MONO_CLASS_IS_INTERFACE (klass));
+	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass));
 
 	classes_lock ();
 
@@ -4174,7 +4174,7 @@ mono_class_init (MonoClass *klass)
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic Type Definition failed to init"))
 			goto leave;
 
-		if (MONO_CLASS_IS_INTERFACE (klass))
+		if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
 			mono_class_setup_interface_id (klass);
 	}
 
@@ -4226,7 +4226,7 @@ mono_class_init (MonoClass *klass)
 		} else {
 			vtable_size = szarray_vtable_size[slot];
 		}
-	} else if (mono_class_is_ginst (klass) && !MONO_CLASS_IS_INTERFACE (klass)) {
+	} else if (mono_class_is_ginst (klass) && !MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
 		/* Generic instance case */
@@ -4254,7 +4254,7 @@ mono_class_init (MonoClass *klass)
 		*/
 
 		/* C# doesn't allow interfaces to have cctors */
-		if (!MONO_CLASS_IS_INTERFACE (klass) || klass->image != mono_defaults.corlib) {
+		if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || klass->image != mono_defaults.corlib) {
 			MonoMethod *cmethod = NULL;
 
 			if (mono_class_is_ginst (klass)) {
@@ -4428,7 +4428,7 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 		return;
 	}
 
-	if (!MONO_CLASS_IS_INTERFACE (klass)) {
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		/* Imported COM Objects always derive from __ComObject. */
 #ifndef DISABLE_COM
 		if (MONO_CLASS_IS_IMPORT (klass)) {
@@ -4619,7 +4619,7 @@ mono_class_setup_mono_type (MonoClass *klass)
 		klass->this_arg.type = (MonoTypeEnum)t;
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		klass->interface_id = mono_get_unique_iid (klass);
 
 		if (is_corlib && !strcmp (nspace, "System.Collections.Generic")) {
@@ -4816,7 +4816,7 @@ mono_class_setup_methods (MonoClass *klass)
 		count = 0;
 	}
 
-	if (MONO_CLASS_IS_INTERFACE (klass)) {
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		int slot = 0;
 		/*Only assign slots to virtual methods as interfaces are allowed to have static methods.*/
 		for (i = 0; i < count; ++i) {
@@ -5112,7 +5112,7 @@ mono_class_setup_events (MonoClass *klass)
 void
 mono_class_setup_interface_id (MonoClass *klass)
 {
-	g_assert (MONO_CLASS_IS_INTERFACE (klass));
+	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass));
 	mono_loader_lock ();
 	if (!klass->interface_id)
 		klass->interface_id = mono_get_unique_iid (klass);
@@ -5208,7 +5208,7 @@ mono_class_setup_has_finalizer (MonoClass *klass)
 		return;
 
 	/* Interfaces and valuetypes are not supposed to have finalizers */
-	if (!(MONO_CLASS_IS_INTERFACE (klass) || m_class_is_valuetype (klass))) {
+	if (!(MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || m_class_is_valuetype (klass))) {
 		MonoMethod *cmethod = NULL;
 
 		if (m_class_get_rank (klass) == 1 && m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY) {

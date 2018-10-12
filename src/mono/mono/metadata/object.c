@@ -1250,7 +1250,7 @@ mono_method_get_imt_slot (MonoMethod *method)
 	hashes_start = (guint32 *)g_malloc (hashes_count * sizeof (guint32));
 	hashes = hashes_start;
 
-	if (! MONO_CLASS_IS_INTERFACE (method->klass)) {
+	if (! MONO_CLASS_IS_INTERFACE_INTERNAL (method->klass)) {
 		g_error ("mono_method_get_imt_slot: %s.%s.%s is not an interface MonoMethod",
 				m_class_get_name_space (method->klass), m_class_get_name (method->klass), method->name);
 	}
