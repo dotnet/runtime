@@ -70,6 +70,7 @@ namespace System.IO.Tests
         [Fact]
         public void NonExistentFile()
         {
+            Delete(Path.Combine(Path.GetPathRoot(TestDirectory), Path.GetRandomFileName()));
             Delete(GetTestFilePath());
         }
 
@@ -100,23 +101,17 @@ namespace System.IO.Tests
             Assert.False(File.Exists(linkPath), "linkPath should no longer exist");
         }
 
-        #endregion
-
-        #region PlatformSpecific
-
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting non-existent path throws
-        public void Windows_NonExistentPath_Throws_DirectoryNotFoundException()
+        public void NonExistentPath_Throws_DirectoryNotFoundException()
         {
+            Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(Path.GetRandomFileName(), "C")));
+            Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(Path.GetPathRoot(TestDirectory), Path.GetRandomFileName(), "C")));
             Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(TestDirectory, GetTestFileName(), "C")));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Deleting non-existent path doesn't throw
-        public void Unix_NonExistentPath_Nop()
-        {
-            Delete(Path.Combine(TestDirectory, GetTestFileName(), "C"));
-        }
+        #endregion
+
+        #region PlatformSpecific
 
         [Fact]
         [OuterLoop("Needs sudo access")]
