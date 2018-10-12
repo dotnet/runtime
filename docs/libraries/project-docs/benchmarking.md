@@ -72,7 +72,7 @@ class Program
 
         dotnet run -c Release -f netcoreapp2.1 -- -f * --coreRun "C:\Projects\corefx\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9\CoreRun.exe" --artifacts ".\before"
 
-6. Go to the coresponding CoreFX source folder (an example `corefx\src\System.Collections.Immutable`)
+6. Go to the corresponding CoreFX source folder (an example `corefx\src\System.Collections.Immutable`)
 7. Apply the optimization that you want to test
 8. Rebuild given CoreFX part in Release:
 
