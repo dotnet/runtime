@@ -61,7 +61,7 @@ static void assert_has_space (void)
 		return;
 
 	if (static_gstr.allocated_len - static_gstr.len < margin)
-		g_error ("Ran out of space to create crash dump json blob.");
+		g_error ("Ran out of memory to create crash dump json blob. Current state:\n%s\n", static_gstr.str);
 }
 
 static void
