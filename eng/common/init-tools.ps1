@@ -5,6 +5,7 @@ $configuration = if (Test-Path variable:configuration) { $configuration } else {
 $nodereuse = if (Test-Path variable:nodereuse) { $nodereuse } else { $true }
 $prepareMachine = if (Test-Path variable:prepareMachine) { $prepareMachine } else { $false }
 $restore = if (Test-Path variable:restore) { $restore } else { $true }
+$verbosity = if (Test-Path variable:verbosity) { $verbosity } else { "minimal" }
 $warnaserror = if (Test-Path variable:warnaserror) { $warnaserror } else { $true }
 
 set-strictmode -version 2.0
@@ -202,7 +203,7 @@ function MsBuild() {
 
   $msbuildArgs += " /nr:$nodereuse"
 
-  Write-Host "`"$buildDriver`" $msbuildArgs $extraArgs"
+  Write-Debug "`"$buildDriver`" $msbuildArgs $extraArgs"
   Invoke-Expression "& `"$buildDriver`" $msbuildArgs $extraArgs"
 
   return $lastExitCode

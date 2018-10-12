@@ -5,6 +5,7 @@ configuration=${configuration:-'Debug'}
 nodereuse=${nodereuse:-true}
 prepare_machine=${prepare_machine:-false}
 restore=${restore:-true}
+verbosity=${verbosity:-'minimal'}
 warnaserror=${warnaserror:-true}
 
 repo_root="$scriptroot/../.."
@@ -179,7 +180,7 @@ function MSBuild {
 
   msbuildArgs="$msbuildArgs /nr:$nodereuse"
 
-  echo "$build_driver $msbuildArgs $extraArgs"
+  #echo "$build_driver $msbuildArgs $extraArgs"
   "$build_driver" $msbuildArgs $extraArgs
 
   return $?
