@@ -138,7 +138,7 @@ in order to get symbols, you simply need to add one more.
 	> ```
 With this change you should get the symbols for all .NET code. 
 
-# Getting Symbols For the Native Runtime
+## Getting Symbols For the Native Runtime
 
 Most of the time you are interested in your own code, which perfcollect resolves by default.   Sometimes it is very
 useful to see what is going on inside the .NET Framework DLLs (which is what the last section was about), but sometimes
@@ -146,7 +146,7 @@ what is going on in the NATIVE runtime dlls (typically libcoreclr.so), is intere
 symbols for these when it converts its data, but ONLY if the symbols for these native DLLs are present (and are beside
 the library they are for).   
 
-There is a global command called [dotnet symbols](symbol downloader](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md#symbol-downloader-dotnet-cli-extension) which does this.   This tool was mostly desiged to download symbols
+There is a global command called [dotnet symbols](https://github.com/dotnet/symstore/blob/master/src/dotnet-symbol/README.md#symbol-downloader-dotnet-cli-extension) which does this.   This tool was mostly desiged to download symbols
 for debugging, but it works for perfollect as well.  There are three steps to getting the symbols
 
    1. Install dotnet symbols
