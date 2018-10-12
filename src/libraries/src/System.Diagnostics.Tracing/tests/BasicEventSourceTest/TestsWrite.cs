@@ -573,16 +573,5 @@ namespace BasicEventSourceTests
             }
             return ret;
         }
-
-        [Fact]
-        public void Test_Write_Nullable_Does_Not_Throw()
-        {
-            var eventSource = new EventSource("EventSourceName", EventSourceSettings.ThrowOnEventWriteErrors);
-            using (var listener = new EventCountListener())     // any EventListener should work
-            {
-                listener.EnableEvents(eventSource, EventLevel.Verbose, EventKeywords.All);
-                eventSource.Write("Test", new { Value = (int?)null });
-            }
-        }
     }
 }
