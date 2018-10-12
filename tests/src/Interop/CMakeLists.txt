@@ -38,6 +38,7 @@ add_subdirectory(SizeConst)
 add_subdirectory(DllImportAttribute/ExeFile)
 add_subdirectory(DllImportAttribute/FileNameContainDot)
 add_subdirectory(DllImportAttribute/Simple)
+add_subdirectory(ExecInDefAppDom)
 
 if(WIN32)
     # This test doesn't necessarily need to be Windows-only, but the implementation is very tied to Windows APIs
