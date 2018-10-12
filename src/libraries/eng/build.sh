@@ -36,6 +36,10 @@ while (($# > 0)); do
       arguments="$arguments /p:TargetGroup=$2"
       shift 2
       ;;
+     -os)
+      arguments="$arguments /p:OSGroup=$2"
+      shift 2
+      ;;
      -allconfigurations)
       arguments="$arguments /p:BuildAllConfigurations=true"
       shift 1

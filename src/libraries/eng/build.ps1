@@ -3,6 +3,7 @@ Param(
   [string] $ArchGroup,
   [switch] $Release,
   [Alias("framework")][string] $TargetGroup,
+  [Alias("os")][string] $OSGroup,
   [Alias("allconfigurations")][switch] $BuildAllConfigurations,
   [string] $RuntimeOS,
   [switch] $OuterLoop,
