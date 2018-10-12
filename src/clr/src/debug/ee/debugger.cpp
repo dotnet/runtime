@@ -953,7 +953,8 @@ Debugger::Debugger()
     m_pLazyData(NULL),
     m_defines(_defines),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
-    m_isGarbageCollectionEventsEnabled(FALSE)
+    m_isGarbageCollectionEventsEnabled(FALSE),
+    m_isGarbageCollectionEventsEnabledLatch(FALSE)
 {
     CONTRACTL
     {
@@ -6009,7 +6010,9 @@ void Debugger::BeforeGarbageCollection()
     }
     CONTRACTL_END;
 
-    if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabled)
+    this->m_isGarbageCollectionEventsEnabledLatch = this->m_isGarbageCollectionEventsEnabled;
+
+    if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;
     }
@@ -6047,7 +6050,7 @@ void Debugger::AfterGarbageCollection()
     }
     CONTRACTL_END;
 
-    if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabled)
+    if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;
     }
