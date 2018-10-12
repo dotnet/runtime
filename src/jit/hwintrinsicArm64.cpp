@@ -254,6 +254,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         case HWIntrinsicInfo::Unsupported:
             return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
 
+        case HWIntrinsicInfo::UnaryOp:
+            op1 = impPopStack().val;
+
+            return gtNewScalarHWIntrinsicNode(JITtype2varType(sig->retType), op1, intrinsic);
+
         case HWIntrinsicInfo::SimdBinaryOp:
         case HWIntrinsicInfo::SimdBinaryRMWOp:
             // op1 is the first operand
