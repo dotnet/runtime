@@ -4,6 +4,8 @@ syntax: glob
 
 # Tool Runtime Dir
 /[Tt]ools/
+.dotnet/
+.packages/
 
 # User-specific files
 *.suo
@@ -12,6 +14,7 @@ syntax: glob
 *.sln.docstates
 
 # Build results
+artifacts/
 .idea/
 [Dd]ebug/
 [Dd]ebugPublic/

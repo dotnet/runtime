@@ -11,8 +11,8 @@ if /I [%NO_DASHES_ARG:-=%] == [h] goto Usage
 tasklist /fi "imagename eq VBCSCompiler.exe" |find ":" > nul
 :: Compiler is running if errorlevel == 1
 if errorlevel 1 (
-	echo Stop VBCSCompiler.exe execution.
-	for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
+  echo Stop VBCSCompiler.exe execution.
+  for /f "tokens=2 delims=," %%F in ('tasklist /nh /fi "imagename eq VBCSCompiler.exe" /fo csv') do taskkill /f /PID %%~F
 )
 
 :: Strip all dashes off the argument and use invariant
@@ -26,19 +26,14 @@ if /I [%NO_DASHES_ARG:-=%] == [all] (
 )
 
 :no_args
-if [%1]==[] set __args=-b
-call %~dp0run.cmd clean %__args% %*
+powershell -ExecutionPolicy ByPass -NoProfile %~dp0eng\common\msbuild.ps1 %~dp0build.proj /t:Clean %__args% %*
 exit /b %ERRORLEVEL%
 
 :Usage
 echo.
-echo Usage: clean [-b] [-p] [-c] [-all]
-echo Repository cleaning script.
+echo Usage: clean [-all]
+echo  Deletes the binary output directory.
 echo Options:
-echo     -b     - Delete the binary output directory.
-echo     -p     - Delete the repo-local NuGet package directory.
-echo     -c     - Deletes the user-local NuGet package cache.
 echo     -all   - Cleans repository and restores it to pristine state.
 echo.
-echo ^If no option is specified then "clean -b" is implied.
 exit /b

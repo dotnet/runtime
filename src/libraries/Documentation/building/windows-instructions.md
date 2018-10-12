@@ -38,7 +38,7 @@ The following are the minimum requirements:
   * .NET Framework 4.6 Targeting Pack
   * Windows Universal CRT SDK
   * VC++ 2015.3 v140 Toolset (x86, x64)
-  
+
 #### Visual Studio 2017 - Command line install
 
 If you've installed Visual Studio 2017 already, go to `C:\Program Files (x86)\Microsoft Visual Studio\Installer` and run
@@ -56,7 +56,6 @@ For the best possible experience make sure to have the latest version of Visual 
 From a (non-admin) Command Prompt window:
 
 - `build.cmd` - Will cause basic tool initialization and build the default configuration for refs, libs, and packages.
-- `build-tests.cmd` - Will build and run tests for the default configuration.
 
 For information on different configurations see [project-guidelines](../coding-guidelines/project-guidelines.md).
 

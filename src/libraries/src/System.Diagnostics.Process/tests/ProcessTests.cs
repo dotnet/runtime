@@ -69,7 +69,7 @@ namespace System.Diagnostics.Tests
 
             try
             {
-                // We are not checking for RealTime case here, as RealTime priority process can 
+                // We are not checking for RealTime case here, as RealTime priority process can
                 // preempt the threads of all other processes, including operating system processes
                 // performing important tasks, which may cause the machine to be unresponsive.
 
@@ -280,7 +280,7 @@ namespace System.Diagnostics.Tests
         public void TestId()
         {
             CreateDefaultProcess();
-            
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Equal(_process.Id, Interop.GetProcessId(_process.SafeHandle));
@@ -339,7 +339,7 @@ namespace System.Diagnostics.Tests
         public void TestMachineName()
         {
             CreateDefaultProcess();
-            
+
             // Checking that the MachineName returns some value.
             Assert.NotNull(_process.MachineName);
         }
@@ -372,7 +372,7 @@ namespace System.Diagnostics.Tests
         public void TestMaxWorkingSet()
         {
             CreateDefaultProcess();
-            
+
             using (Process p = Process.GetCurrentProcess())
             {
                 Assert.True((long)p.MaxWorkingSet > 0);
@@ -427,7 +427,7 @@ namespace System.Diagnostics.Tests
         public void TestMinWorkingSet()
         {
             CreateDefaultProcess();
-            
+
             using (Process p = Process.GetCurrentProcess())
             {
                 Assert.True((long)p.MaxWorkingSet > 0);
@@ -499,7 +499,7 @@ namespace System.Diagnostics.Tests
         public void TestNonpagedSystemMemorySize64()
         {
             CreateDefaultProcess();
-            
+
             AssertNonZeroWindowsZeroUnix(_process.NonpagedSystemMemorySize64);
         }
 
@@ -650,7 +650,7 @@ namespace System.Diagnostics.Tests
         public void TestProcessorTime()
         {
             CreateDefaultProcess();
-            
+
             Assert.True(_process.UserProcessorTime.TotalSeconds >= 0);
             Assert.True(_process.PrivilegedProcessorTime.TotalSeconds >= 0);
 
@@ -750,7 +750,7 @@ namespace System.Diagnostics.Tests
         public void TestProcessorAffinity()
         {
             CreateDefaultProcess();
-            
+
             IntPtr curProcessorAffinity = _process.ProcessorAffinity;
             try
             {
@@ -975,7 +975,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/32780
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
@@ -1025,7 +1025,7 @@ namespace System.Diagnostics.Tests
             }
             catch (InvalidOperationException)
             {
-                // As we can't detect reliably if performance counters are enabled 
+                // As we can't detect reliably if performance counters are enabled
                 // we let possible InvalidOperationExceptions pass silently.
             }
         }
@@ -1078,13 +1078,13 @@ namespace System.Diagnostics.Tests
             }
             catch (InvalidOperationException)
             {
-                // As we can't detect reliably if performance counters are enabled 
+                // As we can't detect reliably if performance counters are enabled
                 // we let possible InvalidOperationExceptions pass silently.
             }
         }
 
         [Fact]
-        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]        
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void StartInfo_GetFileName_ReturnsExpected()
         {
             Process process = CreateProcessLong();
@@ -1097,9 +1097,9 @@ namespace System.Diagnostics.Tests
             process.Kill();
             Assert.True(process.WaitForExit(WaitInMS));
         }
-        
+
         [Fact]
-        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]        
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
         public void StartInfo_SetOnRunningProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcessLong();

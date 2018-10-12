@@ -120,9 +120,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label)",
+        "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label) $(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($account, $token, $container)\n.\\sync.cmd -ab -- /v:D /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container",
+        "inlineScript": "param($account, $token, $container, $downloadDir)\n ./build.cmd -inittools; msbuild src/syncAzure.proj /v:D /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container /p:DownloadDirectory=$downloadDir",
         "failOnStandardError": "false"
       }
     },
@@ -162,7 +162,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:SignPackages /p:SignType=$(PB_SignType) /p:ConfigurationGroup=$(PB_ConfigurationGroup)",
+        "arguments": "src\\publish.proj /t:SignPackages /p:SignType=$(PB_SignType) /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:DownloadDirectory=$(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -183,9 +183,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ApiKey $(MyGetApiKey) -PackagesGlob $(AzureContainerPackageDirectory)\\$(AzureContainerPackageGlob) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "arguments": "-ApiKey $(MyGetApiKey) -PackagesGlob $(AzureContainerPackageDirectory)\\$(AzureContainerPackageGlob) -MyGetFeedUrl $(PB_MyGetFeedUrl) -DownloadDir $(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($ApiKey, $PackagesGlob, $MyGetFeedUrl)\n.\\build-managed.cmd -- /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
+        "inlineScript": "param($ApiKey, $PackagesGlob, $MyGetFeedUrl, $DownloadDir)\n msbuild build.proj /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob `\n/p:DownloadDirectory=$DownloadDir" ,
         "failOnStandardError": "true"
       }
     },
@@ -204,7 +204,7 @@
       },
       "inputs": {
         "filename": "msbuild",
-        "arguments": "src\\publish.proj /t:PublishToAzureBlobFeed $(FeedPublishArguments)",
+        "arguments": "src\\publish.proj /t:PublishToAzureBlobFeed $(FeedPublishArguments) /p:DownloadDirectory=$(DownloadDirectory)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -227,7 +227,7 @@
         "scriptName": "",
         "arguments": "-ghAuthToken $(PB_DotNetBuildBotAccessToken) -root $(Pipeline.SourcesDirectory) -cg $(PB_ConfigurationGroup) -fullPkgGlob $(AzureContainerPackageDirectory)\\$(AzureContainerPackageGlob)",
         "workingFolder": "",
-        "inlineScript": "param($ghAuthToken, $root, $cg, $fullPkgGlob, $SignType=\"unset\")\nif ($cg -ne \"Release\" ) { exit }\ncd $root\n. $root\\build-managed.cmd -- /t:UpdatePublishedVersions `\n/p:GitHubUser=dotnet-helix-bot `\n/p:GitHubEmail=dotnet-helix-bot@microsoft.com `\n/p:GitHubAuthToken=$ghAuthToken `\n/p:VersionsRepoOwner=$env:PB_VersionsRepoOwner `\n/p:VersionsRepo=versions `\n/p:VersionsRepoPath=build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n/p:ShippedNuGetPackageGlobPath=$fullPkgGlob",
+        "inlineScript": "param($ghAuthToken, $root, $cg, $fullPkgGlob, $SignType=\"unset\")\nif ($cg -ne \"Release\" ) { exit }\ncd $root\n. msbuild $root\\build.proj /t:UpdatePublishedVersions `\n/p:GitHubUser=dotnet-helix-bot `\n/p:GitHubEmail=dotnet-helix-bot@microsoft.com `\n/p:GitHubAuthToken=$ghAuthToken `\n/p:VersionsRepoOwner=$env:PB_VersionsRepoOwner `\n/p:VersionsRepo=versions `\n/p:VersionsRepoPath=build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n/p:ShippedNuGetPackageGlobPath=$fullPkgGlob",
         "failOnStandardError": "true"
       }
     },
@@ -267,7 +267,7 @@
       "inputs": {
         "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
         "buildNumber": "dotnet/$(PB_GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/packages/$(PB_ConfigurationGroup)",
-        "sourcePath": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)",
+        "sourcePath": "$(AzureContainerPackageDirectory)",
         "dropExePath": "",
         "toLowerCase": "true",
         "detailedLog": "false",
@@ -443,8 +443,12 @@
       "value": null,
       "isSecret": true
     },
+    "DownloadDirectory": {
+      "value": "$(Pipeline.SourcesDirectory)\\bin\\AzureTransfer",
+      "allowOverride": true
+    },
     "AzureContainerPackageDirectory": {
-      "value": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)",
+      "value": "$(DownloadDirectory)\\$(PB_ConfigurationGroup)",
       "allowOverride": true
     },
     "AzureContainerPackageGlob": {

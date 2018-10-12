@@ -18,24 +18,16 @@ simpleNode('windows.10.amd64.clientrs4.devex.open') {
     def logFolder = getLogFolder()
     def framework = ''
     if (params.TGroup == 'all') {
-        framework = '-allConfigurations'
+        framework = '-allconfigurations'
     }
     else {
-        framework = "-framework:${params.TGroup}"
+        framework = "-framework ${params.TGroup}"
     }
 
-    stage ('Initialize tools') {
-        // Init tools
-        bat '.\\init-tools.cmd'
-    }
-    stage ('Sync') {
-        bat ".\\sync.cmd -p -- /p:ArchGroup=${params.AGroup} /p:RuntimeOS=win10"
-    }
-    stage ('Generate Version Assets') {
-        bat '.\\build-managed.cmd -GenerateVersion'
-    }
+    def commonprops = "-ci ${framework} /p:ArchGroup=${params.AGroup} /p:ConfigurationGroup=${params.CGroup}"
+
     stage ('Build Product') {
-        bat ".\\build.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup} -- /p:RuntimeOS=win10"
+        bat ".\\build.cmd ${commonprops} /p:RuntimeOS=win10"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
@@ -50,11 +42,11 @@ simpleNode('windows.10.amd64.clientrs4.devex.open') {
             additionalArgs += ' -SkipTests'
         }
         if (params.TGroup != 'all') {
-            bat ".\\build-tests.cmd ${framework} -buildArch=${params.AGroup} -${params.CGroup}${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=true"
+            bat ".\\build.cmd -test ${commonprops} /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=true${additionalArgs}"
         }
         else {
-            bat ".\\build-tests.cmd -framework:netstandard -buildArch=${params.AGroup} -${params.CGroup} -SkipTests"
-            bat ".\\build-tests.cmd ${framework} -${params.CGroup}${additionalArgs}"
+            bat ".\\build.cmd -test -ci /p:TargetGroup=netstandard /p:ArchGroup=${params.AGroup} /p:ConfigurationGroup=${params.CGroup} /p:SkipTests=true"
+            bat ".\\build.cmd -test ${commonprops}${additionalArgs}"
         }
     }
     if (submitToHelix) {

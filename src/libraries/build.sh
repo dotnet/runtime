@@ -1,47 +1,17 @@
 #!/usr/bin/env bash
 
-usage()
-{
-    echo
-    echo "There are new changes on how we build. Use this script only for generic"
-    echo "build instructions that apply for both build native and build managed."
-    echo "Otherwise:"
-    echo
-    echo "Before                Now"
-    echo "build.sh native      build-native.sh"
-    echo "build.sh managed     build-managed.sh"
-    echo
-    echo "For more information: https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md"
-    echo "----------------------------------------------------------------------------"
-    echo
-    echo
-}
+source="${BASH_SOURCE[0]}"
 
-if [ "$1" == "-?" ] || [ "$1" == "-h" ]; then
-    usage
-    if [ "$1" == "-h" ]; then
-        set -- "-?"
-    fi
-fi
+# resolve $SOURCE until the file is no longer a symlink
+while [[ -h $source ]]; do
+  scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+  source="$(readlink "$source")"
 
-__scriptpath=$(cd "$(dirname "$0")"; pwd -P)
-__workingDir=$(pwd -P)
+  # if $source was a relative symlink, we need to resolve it relative to the path where the
+  # symlink file was located
+  [[ $source != /* ]] && source="$scriptroot/$source"
+done
 
-if [ "$1" != "" ] && [[ "$1" != -* ]]; then
-    if [ -d $__workingDir/$1 ]; then
-        $__scriptpath/run.sh build-directory -directory:$__workingDir/$*
-        exit $?
-    fi
-    if [ -d $__scriptpath/src/$1 ]; then
-        $__scriptpath/run.sh build-directory -directory:$__scriptpath/$*
-        exit $?
-    fi
-fi
-
-"$__scriptpath/build-native.sh" "$@"
-if [ $? -ne 0 ];then
-   exit 1
-fi
-
-"$__scriptpath/build-managed.sh" -BuildPackages=true "$@"
+scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
+"$scriptroot/eng/build.sh" $@
 exit $?
