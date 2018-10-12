@@ -2959,6 +2959,9 @@ public:
 #endif
     BOOL m_isBlockedOnGarbageCollectionEvent;
     BOOL m_isGarbageCollectionEventsEnabled;
+    // this latches m_isGarbageCollectionEventsEnabled in BeforeGarbageCollection so we can 
+    // guarantee the corresponding AfterGC event is sent even if the events are disabled during GC.
+    BOOL m_isGarbageCollectionEventsEnabledLatch;
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
 
