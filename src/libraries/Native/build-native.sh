@@ -111,12 +111,7 @@ prepare_native_build()
     # Generate version.c if specified, else have an empty one.
     __versionSourceFile=$__rootRepo/bin/obj/version.c
     if [ ! -e "${__versionSourceFile}" ]; then
-        if [ $__generateversionsource == true ]; then
-            $__rootRepo/run.sh build-managed -project:"$__rootRepo/build.proj" -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
-        else
-            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-            echo $__versionSourceLine > $__versionSourceFile
-        fi
+        __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
     fi
 }
 
@@ -157,12 +152,10 @@ __rootbinpath="$__scriptpath/../../bin"
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __CMakeExtraArgs=""
 __MakeExtraArgs=""
-__generateversionsource=true
 __BuildArch=x64
 __BuildType=Debug
 __CMakeArgs=DEBUG
 __BuildOS=Linux
-__TargetGroup=netcoreapp
 __NumProc=1
 __UnprocessedBuildArgs=
 __CrossBuild=0
@@ -266,10 +259,6 @@ while :; do
         stripsymbols|-stripsymbols)
             __CMakeExtraArgs="$__CMakeExtraArgs -DSTRIP_SYMBOLS=true"
             ;;
-        --targetgroup)
-            shift
-            __TargetGroup=$1
-            ;;
         --numproc|-numproc|numproc)
             shift
             __NumProc=$1
@@ -285,9 +274,6 @@ while :; do
             if [ "$__HostOS" == "Linux" ]; then
                 __PortableBuild=1
             fi
-            ;;
-        skipgenerateversion|-skipgenerateversion)
-            __generateversionsource=false
             ;;
         --clang*)
                 # clangx.y or clang-x.y

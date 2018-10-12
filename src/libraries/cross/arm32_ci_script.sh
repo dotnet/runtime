@@ -167,7 +167,7 @@ function mount_emulator {
 
 #Cross builds corefx
 function cross_build_corefx {
-    #Apply fixes for armel 
+    #Apply fixes for armel
     if [ "$__buildArch" == "armel" ]; then
         #Export the needed environment variables
         (set +x; echo 'Exporting LINUX_ARM_* environment variable')
@@ -175,9 +175,9 @@ function cross_build_corefx {
     fi
 
     #Cross building for emulator rootfs
-    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-native.sh -buildArch=$__buildArch -$__buildConfig -- cross $__verboseFlag
+    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./src/Native/build-native.sh $__buildArch $__buildConfig cross $__verboseFlag
 
-    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build-managed.sh -$__buildConfig -skipTests -BuildPackages=false
+    ROOTFS_DIR="$__ARMRootfsMountPath" CPLUS_INCLUDE_PATH=$LINUX_ARM_INCPATH CXXFLAGS=$LINUX_ARM_CXXFLAGS ./build.sh -$__buildConfig /p:BuildNative=false /p:SkipTests=true /p:BuildPackages=false
 }
 
 # Cross builds corefx using Docker image
@@ -235,10 +235,10 @@ function cross_build_corefx_with_docker {
     # Cross building corefx with rootfs in Docker
     if [ "$__buildArch" == "armel" ]; then
         __extraCmd="/p:OverridePackageSource=https://tizen.myget.org/F/dotnet-core/api/v3/index.json"
-        __portableLinux="-PortableBuild=false"
+        __portableLinux="/p:PortableBuild=false"
     fi
 
-    __buildCmd="./build.sh -buildArch=$__buildArch -$__buildConfig -RuntimeOS=$__runtimeOS $__portableLinux -- $__extraCmd"
+    __buildCmd="./build.sh /p:ArchGroup=$__buildArch -$__buildConfig /p:RuntimeOS=$__runtimeOS $__portableLinux $__extraCmd"
     $__dockerCmd $__buildCmd
     sudo chown -R $(id -u -n) ./bin
 }

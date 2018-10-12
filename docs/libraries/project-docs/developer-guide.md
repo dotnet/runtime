@@ -19,11 +19,6 @@ The CoreFX repo can be built from a regular, non-admin command prompt. The build
 Developer Workflow
 ------------------
 The dev workflow describes the [development process](https://github.com/dotnet/buildtools/blob/master/Documentation/Dev-workflow.md) to follow. It is divided into specific tasks that are fast, transparent and easy to understand.
-The tasks are represented in scripts (cmd/sh) in the root of the repo:
-* clean - Cleans up the binary output and optionally the working directory (`-all`)
-* sync - Pulls down external dependencies needed to build (i.e. build tools, xunit, coreclr, etc)
-* build - Builds the shipping libraries in corefx.
-* build-tests - Builds and runs the corefx tests.
 
 For more information about the different options that each task has, use the argument `-?` when calling the script.  For example:
 ```
@@ -44,36 +39,41 @@ The build configurations are generally defaulted based on where you are building
 - `-debug|-release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `ConfigurationGroup`)
 - `-buildArch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
 
-These options are common for build, build-managed, build-native, and build-tests scripts.
-
 For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md#build-pivots).
 
 **Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
-**Common full clean build and test run**
+The most common workflow for developers is to call `build` from the root once (preceeded by a `clean -all` if you have built previously) and then go and work on the individual library that you are trying to make changes for. On windows folks will usually open up the solution file in the root of that library directory and work in VS.
+
+By default build only builds the product libraries and none of the tests if you want to build and run all the tests you can call `build -test` to build and run only the tests or `build -includetests` to build the project as well as the tests
+
+**Examples**
+- Clean and build the product libraries
 ```
 clean -all
 build
-build-tests
 ```
-
-**Examples**
 
 - Building in debug mode for platform x64
 ```
-build -debug -buildArch=x64
+build -debug /p:ArchGroup=x64
 ```
 
 - Building the src and then building and running the tests
 ```
-build -tests
+build -includetests
 ```
 
 - Building for different target frameworks
 ```
-build -framework=netcoreapp
-build -framework=netfx
-build -framework=uap
+build -framework netcoreapp
+build -framework netfx
+build -framework uap
+```
+
+- Build only managed components and skip the native build
+```
+build /p:BuildNative=false
 ```
 
 ### Build Native
@@ -87,50 +87,33 @@ The native component should be buildable on any system.
 
 - Building in debug mode for platform x64
 ```
-build-native -debug -buildArch=x64
+./src/Native/build-native debug x64
 ```
 
-- The following example shows the argument `--`. Everything that is after it is not going to be processed, and will be passed as-is.
+- The following example shows how you would do an arm cross-compile build.
 ```
-build-native -debug -buildArch=arm -- cross verbose
+./src/Native/build-native debug arm cross verbose
 ```
 
 For more information about extra parameters take a look at the scripts `build-native` under src/Native.
 
-### Build Managed
-Since the managed build uses the .NET Core CLI (which the build will download), managed components can only be built on a subset of distros.
-There are some additional prerequisites from the CLI which need to be installed. Both libicu and libunwind are used by CoreCLR to execute managed code, so they must be installed. Since CoreFX does not actually link against these packages, runtime versions are sufficient. We also require curl to be present, which we use to download the .NET Core CLI.
-
-**Examples**
-
-- Building in debug mode for platform x64
-```
-build-managed -debug -buildArch=x64
-```
-
-- Building in debug mode for platform x64 targeting OS Linux
-```
-build-managed -debug -buildArch=x64 -os=Linux
-```
-
 ### Build And Run Tests
-To build the tests and run them you can call the build-test script. The same parameters you pass to build should also be passed to build-tests script to ensure you are building and running the tests on the same configuration you have build the product on. However to run tests on the same machine you need to ensure the machine supports the configuration you are building.
+To build the tests and run them you can call the build script passing -tests option. The same parameters you pass to build should also be passed to ensure you are building and running the tests on the same configuration you have build the product on. However to run tests on the same machine you need to ensure the machine supports the configuration you are building.
 
 **Examples**
-- The following shows how to build tests but not run them
+- The following shows how to build only the tests but not run them
 ```
-build-tests -skiptests
+build -test -skiptests
 ```
 
 - The following builds and runs all tests for netcoreapp in release configuration.
 ```
-build-tests -release -framework=netcoreapp
+build -test -release -framework=netcoreapp
 ```
 
-- The following example shows the argument `--`. Everything that is after it is not going to be processed and it is going to be passed as it is.
-Use it to pass extra msbuild properties, in this case to ignore tests ignored in CI.
+- The following example shows how to pass extra msbuild properties to ignore tests ignored in CI.
 ```
-build-tests -- /p:WithoutCategories=IgnoreForCI
+build -test /p:WithoutCategories=IgnoreForCI
 ```
 
 ### Building individual libraries
