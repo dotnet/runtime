@@ -64,13 +64,12 @@ For information on different configurations see [project-guidelines](../coding-g
 Visual Studio Solution (.sln) files exist for related groups of libraries. These can be loaded to build, debug and test inside the Visual Studio IDE.
 
 Note that when calling the script `build.cmd` attempts to build both the native and managed code.
-Only use it when the parameters that you are passing to the script apply for both components. Otherwise, use the scripts `build-native.cmd` and `build-managed.cmd` respectively.
 
 For more information about the different options when building, run `build.cmd -?` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
 ### Running tests from the command line
 
-From the root, use `build-tests.cmd`.
+From the root, use `build.cmd -test`.
 For more details, or to test an individual project, see the [developer guide topic](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md).
 
 ### Running tests from Visual Studio

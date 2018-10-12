@@ -49,11 +49,11 @@ Once the rootfs has been generated, it will be possible to cross compile CoreFX.
 
 So, without `ROOTFS_DIR`:
 
-    lgs@ubuntu ~/git/corefx/ $ ./build-native.sh -debug -buildArch=arm -- verbose cross
+    lgs@ubuntu ~/git/corefx/ $ ./src/Native/build-native.sh debug arm verbose cross
 
 And with:
 
-    lgs@ubuntu ~/git/corefx/ $ ROOTFS_DIR=/home/lgs/corefx-cross/arm ./build-native.sh -debug -buildArch=arm -- verbose cross
+    lgs@ubuntu ~/git/corefx/ $ ROOTFS_DIR=/home/lgs/corefx-cross/arm ./src/Native/build-native.sh debug arm verbose cross
 
 As usual the generated binaries will be found in `bin/BuildOS.BuildArch.BuildType/native` as following:
 
