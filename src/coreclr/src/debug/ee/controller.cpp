@@ -2733,8 +2733,6 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
         *pHitDataBp = true;
-        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-        pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
 #endif
 
@@ -2955,6 +2953,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     if (hitDataBp)
     {
         PCODE ip = GetIP(context);
+        LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DataBreakpoint: My current IP is %p.\n", ip));
 #if defined(_TARGET_X86_)
         bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
         bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
@@ -2983,6 +2982,19 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 #else
         // TODO - ARM/ARM64
 #endif
+        LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DataBreakpoint: Unwound IP is %p.\n", GetIP(context)));
+        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+        if (!stashedContext)
+        {
+            dcq.dcqEnqueue(pDataBreakpoint, FALSE);
+        }
+        else
+        {
+            pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(context), FramePointer::MakeFramePointer(GetFP(context)), true, DPT_DEFAULT_TRACE_TYPE);
+            memcpy(context, &stash, sizeof(CONTEXT));
+            stashedContext = false;
+        }
+        LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DataBreakpoint: Rewound IP is %p.\n", GetIP(context)));
     }
 
     LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DC::DPOSS ScanForTriggers called and returned.\n"));
