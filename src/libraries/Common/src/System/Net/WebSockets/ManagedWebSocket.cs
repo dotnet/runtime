@@ -195,10 +195,19 @@ namespace System.Net.WebSockets
                 }
             }, this);
 
-            // Now that we're opened, initiate the keep alive timer to send periodic pings
+            // Now that we're opened, initiate the keep alive timer to send periodic pings.
+            // We use a weak reference from the timer to the web socket to avoid a cycle
+            // that could keep the web socket rooted in erroneous cases.
             if (keepAliveInterval > TimeSpan.Zero)
             {
-                _keepAliveTimer = new Timer(s => ((ManagedWebSocket)s).SendKeepAliveFrameAsync(), this, keepAliveInterval, keepAliveInterval);
+                _keepAliveTimer = new Timer(s =>
+                {
+                    var wr = (WeakReference<ManagedWebSocket>)s;
+                    if (wr.TryGetTarget(out ManagedWebSocket thisRef))
+                    {
+                        thisRef.SendKeepAliveFrameAsync();
+                    }
+                }, new WeakReference<ManagedWebSocket>(this), keepAliveInterval, keepAliveInterval);
             }
         }
 
