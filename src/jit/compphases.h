@@ -29,6 +29,7 @@ CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                 
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INIT,             "Morph - Init",                   "MOR-INIT" ,false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_INLINE,           "Morph - Inlining",               "MOR-INL",  false, -1, true)
+CompPhaseNameMacro(PHASE_ALLOCATE_OBJECTS,       "Allocate Objects",               "ALLOC-OBJ", false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_TRY,              "Remove empty try",               "EMPTYTRY", false, -1, false)
 CompPhaseNameMacro(PHASE_EMPTY_FINALLY,          "Remove empty finally",           "EMPTYFIN", false, -1, false)
 CompPhaseNameMacro(PHASE_MERGE_FINALLY_CHAINS,   "Merge callfinally chains",       "MRGCFCHN", false, -1, false)
@@ -46,7 +47,6 @@ CompPhaseNameMacro(PHASE_CREATE_FUNCLETS,        "Create EH funclets",          
 #endif // FEATURE_EH_FUNCLETS
 CompPhaseNameMacro(PHASE_OPTIMIZE_LAYOUT,        "Optimize layout",                "LAYOUT",   false, -1, false)
 CompPhaseNameMacro(PHASE_COMPUTE_REACHABILITY,   "Compute blocks reachability",    "BL_REACH", false, -1, false)
-CompPhaseNameMacro(PHASE_ALLOCATE_OBJECTS,       "Allocate Objects",               "ALLOC-OBJ",false, -1, false)
 CompPhaseNameMacro(PHASE_OPTIMIZE_LOOPS,         "Optimize loops",                 "LOOP-OPT", false, -1, false)
 CompPhaseNameMacro(PHASE_CLONE_LOOPS,            "Clone loops",                    "LP-CLONE", false, -1, false)
 CompPhaseNameMacro(PHASE_UNROLL_LOOPS,           "Unroll loops",                   "UNROLL",   false, -1, false)

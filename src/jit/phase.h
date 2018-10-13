@@ -12,7 +12,8 @@ public:
     virtual void Run();
 
 protected:
-    Phase(Compiler* _comp, const char* _name, Phases _phase = PHASE_NUMBER_OF) : comp(_comp), name(_name), phase(_phase)
+    Phase(Compiler* _comp, const char* _name, Phases _phase = PHASE_NUMBER_OF)
+        : comp(_comp), name(_name), phase(_phase), doChecks(true)
     {
     }
 
@@ -23,6 +24,7 @@ protected:
     Compiler*   comp;
     const char* name;
     Phases      phase;
+    bool        doChecks;
 };
 
 inline void Phase::Run()
@@ -42,7 +44,7 @@ inline void Phase::PrePhase()
         comp->fgDispBasicBlocks(true);
     }
 
-    if (comp->expensiveDebugCheckLevel >= 2)
+    if (doChecks && comp->expensiveDebugCheckLevel >= 2)
     {
         // If everyone used the Phase class, this would duplicate the PostPhase() from the previous phase.
         // But, not everyone does, so go ahead and do the check here, too.
@@ -69,8 +71,11 @@ inline void Phase::PostPhase()
     }
 
 #ifdef DEBUG
-    comp->fgDebugCheckBBlist();
-    comp->fgDebugCheckLinks();
+    if (doChecks)
+    {
+        comp->fgDebugCheckBBlist();
+        comp->fgDebugCheckLinks();
+    }
 #endif // DEBUG
 }
 

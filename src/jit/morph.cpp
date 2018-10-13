@@ -58,7 +58,7 @@ GenTree* Compiler::fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* ope
  *  the given argument list.
  */
 
-GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgList* args)
+GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgList* args, bool morphArgs)
 {
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
@@ -112,7 +112,10 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgLi
 
     /* Perform the morphing */
 
-    tree = fgMorphArgs(tree->AsCall());
+    if (morphArgs)
+    {
+        tree = fgMorphArgs(tree->AsCall());
+    }
 
     return tree;
 }
@@ -16872,6 +16875,11 @@ void Compiler::fgMorph()
     RecordStateAtEndOfInlining(); // Record "start" values for post-inlining cycles and elapsed time.
 
     EndPhase(PHASE_MORPH_INLINE);
+
+    // Transform each GT_ALLOCOBJ node into either an allocation helper call or
+    // local variable allocation on the stack.
+    ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
+    objectAllocator.Run();
 
     /* Add any internal blocks/trees we may need */
 

@@ -5012,7 +5012,7 @@ private:
 
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
 
-    GenTree* fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgList* args);
+    GenTree* fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeArgList* args, bool morphArgs = true);
 
     GenTree* fgMorphStackArgForVarArgs(unsigned lclNum, var_types varType, unsigned lclOffs);
 
