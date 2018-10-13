@@ -7,7 +7,7 @@
 **
 **
 ** Purpose: CoreCLR wrapper for Win32, either the native
-**          operations or the Unix PAL implemtation of them.
+**          operations or the Unix PAL implementation of them.
 **
 **
 ===========================================================*/
