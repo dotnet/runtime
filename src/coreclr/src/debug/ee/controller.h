@@ -1774,15 +1774,45 @@ private:
 
 class DebuggerDataBreakpoint : public DebuggerController
 {
+private:
+    CONTEXT context;
 public:
     DebuggerDataBreakpoint(Thread* pThread) : DebuggerController(pThread, NULL)
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Data Breakpoint event created\n"));
+        memcpy(&context, g_pEEInterface->GetThreadFilterContext(pThread), sizeof(CONTEXT));
     }
     
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
     {
         return DEBUGGER_CONTROLLER_DATA_BREAKPOINT;
+    }
+
+    virtual TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
+                              Thread *thread, 
+                              TRIGGER_WHY tyWhy)
+    {
+#ifndef FEATURE_PAL    
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
+#ifdef _TARGET_X86_
+        context->Dr0 = this->context.Dr0;
+        context->Dr1 = this->context.Dr1;
+        context->Dr2 = this->context.Dr2;
+        context->Dr3 = this->context.Dr3;
+        context->Dr6 = this->context.Dr6;
+        context->Dr7 = this->context.Dr7;
+#elif defined(_TARGET_AMD64_)
+        context->Dr0 = this->context.Dr0;
+        context->Dr1 = this->context.Dr1;
+        context->Dr2 = this->context.Dr2;
+        context->Dr3 = this->context.Dr3;
+        context->Dr6 = this->context.Dr6;
+        context->Dr7 = this->context.Dr7;
+#endif
+#endif
+#endif
+        return TPR_TRIGGER;
     }
 
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp)
@@ -1800,6 +1830,9 @@ public:
         CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 
         g_pDebugger->SendDataBreakpoint(thread, context, this);
+
+        Delete();
+
         return true;
     }
 
