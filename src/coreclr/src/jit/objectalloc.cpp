@@ -155,7 +155,9 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 
     GenTree* op1 = allocObj->gtGetOp1();
 
-    GenTree* helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, comp->gtNewArgList(op1));
+    const bool morphArgs = false;
+    GenTree*   helperCall =
+        comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, comp->gtNewArgList(op1), morphArgs);
 
     return helperCall;
 }
