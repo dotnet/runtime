@@ -269,7 +269,6 @@ namespace System.Diagnostics.Tracing
     internal sealed class NullableTypeInfo : TraceLoggingTypeInfo
     {
         private readonly TraceLoggingTypeInfo valueInfo;
-        private readonly Func<PropertyValue, PropertyValue> hasValueGetter;
         private readonly Func<PropertyValue, PropertyValue> valueGetter;
 
         public NullableTypeInfo(Type type, List<Type> recursionCheck)
@@ -278,7 +277,6 @@ namespace System.Diagnostics.Tracing
             var typeArgs = type.GenericTypeArguments;
             Debug.Assert(typeArgs.Length == 1);
             this.valueInfo = TraceLoggingTypeInfo.GetInstance(typeArgs[0], recursionCheck);
-            this.hasValueGetter = PropertyValue.GetPropertyGetter(type.GetTypeInfo().GetDeclaredProperty("HasValue"));
             this.valueGetter = PropertyValue.GetPropertyGetter(type.GetTypeInfo().GetDeclaredProperty("Value"));
         }
 
@@ -294,9 +292,11 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            var hasValue = hasValueGetter(value);
+            // It's not currently possible to get the HasValue property of a nullable type through reflection when the
+            // value is null. Instead, we simply check that the nullable is not null.
+            var hasValue = value.ReferenceValue != null;
             collector.AddScalar(hasValue);
-            var val = hasValue.ScalarValue.AsBoolean ? valueGetter(value) : valueInfo.PropertyValueFactory(Activator.CreateInstance(valueInfo.DataType));
+            var val = hasValue ? valueGetter(value) : valueInfo.PropertyValueFactory(Activator.CreateInstance(valueInfo.DataType));
             this.valueInfo.WriteData(collector, val);
         }
     }
