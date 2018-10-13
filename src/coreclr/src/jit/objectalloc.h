@@ -53,6 +53,9 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_IsObjectStackAllocationEnabled(false)
     , m_AnalysisDone(false)
 {
+    // Disable checks since this phase runs before fgComputePreds phase.
+    // Checks are not expected to pass before fgComputePreds.
+    doChecks = false;
 }
 
 inline bool ObjectAllocator::IsObjectStackAllocationEnabled() const
