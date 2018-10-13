@@ -1347,7 +1347,13 @@ HRESULT CorHost2::QueryInterface(REFIID riid, void **ppUnk)
     // Deliberately do NOT hand out ICorConfiguration.  They must explicitly call
     // GetConfiguration to obtain that interface.
     if (riid == IID_IUnknown)
+    {
         *ppUnk = static_cast<IUnknown *>(static_cast<ICLRRuntimeHost *>(this));
+    }
+    else if (riid == IID_ICLRRuntimeHost)
+    {
+        *ppUnk = static_cast<ICLRRuntimeHost *>(this);
+    }
     else if (riid == IID_ICLRRuntimeHost2)
     {
         ULONG version = 2;
