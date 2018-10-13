@@ -21878,8 +21878,9 @@ void Compiler::fgInline()
 
     if (verbose || fgPrintInlinedMethods)
     {
-        printf("**************** Inline Tree\n");
-        m_inlineStrategy->Dump();
+        JITDUMP("**************** Inline Tree");
+        printf("\n");
+        m_inlineStrategy->Dump(verbose);
     }
 
 #endif // DEBUG
@@ -22573,7 +22574,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
 #ifdef DEBUG
 
-    if (verbose || fgPrintInlinedMethods)
+    if (verbose)
     {
         printf("Successfully inlined %s (%d IL bytes) (depth %d) [%s]\n", eeGetMethodFullName(fncHandle),
                inlineCandidateInfo->methInfo.ILCodeSize, inlineDepth, inlineResult->ReasonString());

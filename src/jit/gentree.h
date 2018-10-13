@@ -3537,6 +3537,8 @@ struct GenTreeCall final : public GenTree
                                                     // stubs, because executable code cannot be generated at runtime.
 #define GTF_CALL_M_HELPER_SPECIAL_DCE    0x00020000 // GT_CALL -- this helper call can be removed if it is part of a comma and
                                                     // the comma result is unused.
+#define GTF_CALL_M_DEVIRTUALIZED         0x00040000 // GT_CALL -- this call was devirtualized
+#define GTF_CALL_M_UNBOXED               0x00080000 // GT_CALL -- this call was optimized to use the unboxed entry point
 
     // clang-format on
 
@@ -3741,6 +3743,16 @@ struct GenTreeCall final : public GenTree
     void SetFatPointerCandidate()
     {
         gtCallMoreFlags |= GTF_CALL_M_FAT_POINTER_CHECK;
+    }
+
+    bool IsDevirtualized() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_DEVIRTUALIZED) != 0;
+    }
+
+    bool IsUnboxed() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_UNBOXED) != 0;
     }
 
     unsigned gtCallMoreFlags; // in addition to gtFlags

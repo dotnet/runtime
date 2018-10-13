@@ -677,20 +677,32 @@ public:
         return m_Parent == nullptr;
     }
 
+    bool IsDevirtualized() const
+    {
+        return m_Devirtualized;
+    }
+
+    bool IsUnboxed() const
+    {
+        return m_Unboxed;
+    }
+
 private:
     InlineContext(InlineStrategy* strategy);
 
 private:
-    InlineStrategy*   m_InlineStrategy;   // overall strategy
-    InlineContext*    m_Parent;           // logical caller (parent)
-    InlineContext*    m_Child;            // first child
-    InlineContext*    m_Sibling;          // next child of the parent
-    BYTE*             m_Code;             // address of IL buffer for the method
-    unsigned          m_ILSize;           // size of IL buffer for the method
-    IL_OFFSETX        m_Offset;           // call site location within parent
-    InlineObservation m_Observation;      // what lead to this inline
-    int               m_CodeSizeEstimate; // in bytes * 10
-    bool              m_Success;          // true if this was a successful inline
+    InlineStrategy*   m_InlineStrategy;    // overall strategy
+    InlineContext*    m_Parent;            // logical caller (parent)
+    InlineContext*    m_Child;             // first child
+    InlineContext*    m_Sibling;           // next child of the parent
+    BYTE*             m_Code;              // address of IL buffer for the method
+    unsigned          m_ILSize;            // size of IL buffer for the method
+    IL_OFFSETX        m_Offset;            // call site location within parent
+    InlineObservation m_Observation;       // what lead to this inline
+    int               m_CodeSizeEstimate;  // in bytes * 10
+    bool              m_Success : 1;       // true if this was a successful inline
+    bool              m_Devirtualized : 1; // true if this was a devirtualized call
+    bool              m_Unboxed : 1;       // true if this call now invokes the unboxed entry
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -817,7 +829,7 @@ public:
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump textual description of inlines done so far.
-    void Dump();
+    void Dump(bool showBudget);
 
     // Dump data-format description of inlines done so far.
     void DumpData();
