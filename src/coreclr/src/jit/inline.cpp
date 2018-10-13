@@ -336,6 +336,8 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
     , m_Success(true)
+    , m_Devirtualized(false)
+    , m_Unboxed(false)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
     , m_Callee(nullptr)
@@ -392,19 +394,21 @@ void InlineContext::Dump(unsigned indent)
     else
     {
         // Inline attempt.
-        const char* inlineReason = InlGetObservationString(m_Observation);
-        const char* inlineResult = m_Success ? "" : "FAILED: ";
+        const char* inlineReason  = InlGetObservationString(m_Observation);
+        const char* inlineResult  = m_Success ? "" : "FAILED: ";
+        const char* devirtualized = m_Devirtualized ? " devirt" : "";
+        const char* unboxed       = m_Unboxed ? " unboxed" : "";
 
         if (m_Offset == BAD_IL_OFFSET)
         {
-            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
-                   inlineResult, inlineReason, calleeName);
+            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
+                   inlineResult, inlineReason, devirtualized, unboxed, calleeName);
         }
         else
         {
             IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID, calleeToken,
-                   inlineResult, inlineReason, calleeName);
+            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID, calleeToken,
+                   inlineResult, inlineReason, devirtualized, unboxed, calleeName);
         }
     }
 
@@ -1172,7 +1176,6 @@ InlineContext* InlineStrategy::NewRoot()
 // and link it into the context tree
 //
 // Arguments:
-//    stmt       - statement containing call being inlined
 //    inlineInfo - information about this inline
 //
 // Return Value:
@@ -1186,6 +1189,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
     InlineContext* parentContext = stmt->gtInlineContext;
+    GenTreeCall*   originalCall  = inlineInfo->inlineResult->GetCall();
 
     noway_assert(parentContext != nullptr);
 
@@ -1194,12 +1198,14 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Parent = parentContext;
     // Push on front here will put siblings in reverse lexical
     // order which we undo in the dumper
-    calleeContext->m_Sibling     = parentContext->m_Child;
-    parentContext->m_Child       = calleeContext;
-    calleeContext->m_Child       = nullptr;
-    calleeContext->m_Offset      = stmt->AsStmt()->gtStmtILoffsx;
-    calleeContext->m_Observation = inlineInfo->inlineResult->GetObservation();
-    calleeContext->m_Success     = true;
+    calleeContext->m_Sibling       = parentContext->m_Child;
+    parentContext->m_Child         = calleeContext;
+    calleeContext->m_Child         = nullptr;
+    calleeContext->m_Offset        = stmt->gtStmtILoffsx;
+    calleeContext->m_Observation   = inlineInfo->inlineResult->GetObservation();
+    calleeContext->m_Success       = true;
+    calleeContext->m_Devirtualized = originalCall->IsDevirtualized();
+    calleeContext->m_Unboxed       = originalCall->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
@@ -1211,13 +1217,13 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     // +1 here since we set this before calling NoteOutcome.
     calleeContext->m_Ordinal = m_InlineCount + 1;
     // Update offset with more accurate info
-    calleeContext->m_Offset = inlineInfo->inlineResult->GetCall()->gtRawILOffset;
+    calleeContext->m_Offset = originalCall->gtRawILOffset;
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
 #if defined(DEBUG)
 
-    calleeContext->m_TreeID = inlineInfo->inlineResult->GetCall()->gtTreeID;
+    calleeContext->m_TreeID = originalCall->gtTreeID;
 
 #endif // defined(DEBUG)
 
@@ -1237,8 +1243,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
 //    inlineResult - inlineResult for the attempt
 //
 // Return Value:
-//    A new InlineContext for diagnostic purposes, or nullptr if
-//    the desired context could not be created.
+//    A new InlineContext for diagnostic purposes
 
 InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlineResult)
 {
@@ -1247,31 +1252,34 @@ InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlin
     InlineContext* parentContext = stmt->gtInlineContext;
     assert(parentContext != nullptr);
     InlineContext* failedContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
+    GenTreeCall*   originalCall  = inlineResult->GetCall();
 
     // Pushing the new context on the front of the parent child list
     // will put siblings in reverse lexical order which we undo in the
     // dumper.
-    failedContext->m_Parent      = parentContext;
-    failedContext->m_Sibling     = parentContext->m_Child;
-    parentContext->m_Child       = failedContext;
-    failedContext->m_Child       = nullptr;
-    failedContext->m_Offset      = stmt->gtStmtILoffsx;
-    failedContext->m_Observation = inlineResult->GetObservation();
-    failedContext->m_Callee      = inlineResult->GetCallee();
-    failedContext->m_Success     = false;
+    failedContext->m_Parent        = parentContext;
+    failedContext->m_Sibling       = parentContext->m_Child;
+    parentContext->m_Child         = failedContext;
+    failedContext->m_Child         = nullptr;
+    failedContext->m_Offset        = stmt->gtStmtILoffsx;
+    failedContext->m_Observation   = inlineResult->GetObservation();
+    failedContext->m_Callee        = inlineResult->GetCallee();
+    failedContext->m_Success       = false;
+    failedContext->m_Devirtualized = originalCall->IsDevirtualized();
+    failedContext->m_Unboxed       = originalCall->IsUnboxed();
 
     assert(InlIsValidObservation(failedContext->m_Observation));
 
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Update offset with more accurate info
-    failedContext->m_Offset = inlineResult->GetCall()->gtRawILOffset;
+    failedContext->m_Offset = originalCall->gtRawILOffset;
 
 #endif // #if defined(DEBUG) || defined(INLINE_DATA)
 
 #if defined(DEBUG)
 
-    failedContext->m_TreeID = inlineResult->GetCall()->gtTreeID;
+    failedContext->m_TreeID = originalCall->gtTreeID;
 
 #endif // defined(DEBUG)
 
@@ -1282,10 +1290,18 @@ InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlin
 
 //------------------------------------------------------------------------
 // Dump: dump description of inline behavior
+//
+// Arguments:
+//   showBudget - also dump final budget values
 
-void InlineStrategy::Dump()
+void InlineStrategy::Dump(bool showBudget)
 {
     m_RootContext->Dump();
+
+    if (!showBudget)
+    {
+        return;
+    }
 
     printf("Budget: initialTime=%d, finalTime=%d, initialBudget=%d, currentBudget=%d\n", m_InitialTimeEstimate,
            m_CurrentTimeEstimate, m_InitialTimeBudget, m_CurrentTimeBudget);
