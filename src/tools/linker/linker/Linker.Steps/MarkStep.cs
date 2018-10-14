@@ -481,7 +481,7 @@ namespace Mono.Linker.Steps {
 
 		protected void MarkStaticConstructor (TypeDefinition type)
 		{
-			if (MarkMethodIf (type.Methods, IsStaticConstructor))
+			if (MarkMethodIf (type.Methods, IsNonEmptyStaticConstructor))
 				Annotations.SetPreservedStaticCtor (type);
 		}
 
@@ -933,6 +933,7 @@ namespace Mono.Linker.Steps {
 				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
 				if (ShouldMarkTypeStaticConstructor (type))
 					MarkStaticConstructor (type);
+
 				MarkMethodsIf (type.Methods, HasSerializationAttribute);
 			}
 
@@ -1292,9 +1293,18 @@ namespace Mono.Linker.Steps {
 			MarkMethodsIf (type.Methods, IsDefaultConstructor);
 		}
 
-		static bool IsStaticConstructor (MethodDefinition method)
+		static bool IsNonEmptyStaticConstructor (MethodDefinition method)
 		{
-			return method.IsConstructor && method.IsStatic;
+			if (!method.IsConstructor || !method.IsStatic)
+				return false;
+
+			if (!method.HasBody || !method.IsIL)
+				return true;
+
+			if (method.Body.CodeSize != 1)
+				return true;
+
+			return method.Body.Instructions [0].OpCode.Code != Code.Ret;
 		}
 
 		static bool HasSerializationAttribute (MethodDefinition method)

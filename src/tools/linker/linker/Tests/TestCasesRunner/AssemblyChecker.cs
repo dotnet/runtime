@@ -640,7 +640,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		protected static uint GetExpectedPseudoAttributeValue (ICustomAttributeProvider provider, uint sourceValue)
 		{
 			var removals = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (RemovedPseudoAttributeAttribute)).ToArray ();
-			return removals.Aggregate (sourceValue, (accum, item) => accum & ~((uint) item.ConstructorArguments [0].Value));
+			var adds = provider.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (AddedPseudoAttributeAttribute)).ToArray ();
+
+			return removals.Aggregate (sourceValue, (accum, item) => accum & ~((uint) item.ConstructorArguments [0].Value)) |
+				adds.Aggregate ((uint)0, (acum, item) => acum | (uint) item.ConstructorArguments [0].Value);
 		}
 
 		protected static IEnumerable<T> GetCustomAttributeCtorValues<T> (ICustomAttributeProvider provider, string attributeName) where T : class
