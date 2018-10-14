@@ -1398,11 +1398,11 @@ namespace System.Net.Http
 
             int remaining = _readLength - _readOffset;
             return remaining > 0 ?
-                CopyToUntilEofWithExistingBufferedDataAsync(destination, cancellationToken) :
+                CopyToUntilEofWithExistingBufferedDataAsync(destination, bufferSize, cancellationToken) :
                 _stream.CopyToAsync(destination, bufferSize, cancellationToken);
         }
 
-        private async Task CopyToUntilEofWithExistingBufferedDataAsync(Stream destination, CancellationToken cancellationToken)
+        private async Task CopyToUntilEofWithExistingBufferedDataAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             int remaining = _readLength - _readOffset;
             Debug.Assert(remaining > 0);
@@ -1410,7 +1410,7 @@ namespace System.Net.Http
             await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
             _readLength = _readOffset = 0;
 
-            await _stream.CopyToAsync(destination).ConfigureAwait(false);
+            await _stream.CopyToAsync(destination, bufferSize).ConfigureAwait(false);
         }
 
         // Copy *exactly* [length] bytes into destination; throws on end of stream.
