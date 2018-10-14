@@ -289,6 +289,10 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasEvents)
 				SweepCustomAttributeCollection (type.Events);
+
+			if (type.HasFields && !type.IsBeforeFieldInit && !Annotations.HasPreservedStaticCtor (type))
+				type.IsBeforeFieldInit = true;
+
 		}
 
 		protected void SweepNestedTypes (TypeDefinition type)

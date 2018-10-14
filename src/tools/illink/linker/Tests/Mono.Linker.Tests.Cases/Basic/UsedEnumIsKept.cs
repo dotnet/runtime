@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.Basic {
@@ -24,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.Basic {
 		[Kept]
 		[KeptMember ("value__")]
 		[KeptBaseType (typeof(Enum))]
+		[AddedPseudoAttributeAttribute ((uint)TypeAttributes.BeforeFieldInit)]
 		enum Used {
 			[Kept]
 			One,
