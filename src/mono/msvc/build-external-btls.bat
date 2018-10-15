@@ -189,16 +189,16 @@ call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%
 
 :ON_INSTALL_BTLS
 
-if not exist "%VS_CONFIGURATION%\mono-btls-shared.dll" (
-    echo Missing btls build output, "%VS_CONFIGURATION%\mono-btls-shared.dll"
+if not exist "%VS_CONFIGURATION%\libmono-btls-shared.dll" (
+    echo Missing btls build output, "%VS_CONFIGURATION%\libmono-btls-shared.dll"
     goto ON_ERROR
 )
 
 : Copy files into distribution directory.
-copy "%VS_CONFIGURATION%\mono-btls-shared.dll" "%MONO_DIST_DIR%"
+copy "%VS_CONFIGURATION%\libmono-btls-shared.dll" "%MONO_DIST_DIR%"
 
-if exist "%VS_CONFIGURATION%\mono-btls-shared.pdb" (
-    copy "%VS_CONFIGURATION%\mono-btls-shared.pdb" "%MONO_DIST_DIR%"
+if exist "%VS_CONFIGURATION%\libmono-btls-shared.pdb" (
+    copy "%VS_CONFIGURATION%\libmono-btls-shared.pdb" "%MONO_DIST_DIR%"
 )
 
 goto ON_SUCCESS
