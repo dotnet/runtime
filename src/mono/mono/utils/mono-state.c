@@ -26,7 +26,7 @@ extern GCStats mono_gc_stats;
 #include <mach/task_info.h>
 #endif
 
-#define MONO_MAX_SUMMARY_LEN 2500
+#define MONO_MAX_SUMMARY_LEN 500000
 static gchar output_dump_str [MONO_MAX_SUMMARY_LEN];
 
 static JsonWriter writer;
