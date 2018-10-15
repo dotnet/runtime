@@ -140,7 +140,6 @@
   <Target Name="SetupPublishSymbols">
     <PropertyGroup>
       <ConvertPortablePdbsToWindowsPdbs Condition="'$(ConvertPortablePdbsToWindowsPdbs)'==''">true</ConvertPortablePdbsToWindowsPdbs>
-      <SymbolVerboseLogging>true</SymbolVerboseLogging>
     </PropertyGroup>
     <ItemGroup>
       <SymbolPackagesToPublish Include="$(SymbolsPackagesPattern)" />
