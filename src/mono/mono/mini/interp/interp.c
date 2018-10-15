@@ -4680,7 +4680,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			o = sp [-1].data.o;
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
-			sp [-1].data.nati = mono_array_length_fast ((MonoArray *)o);
+			sp [-1].data.nati = mono_array_length_internal ((MonoArray *)o);
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDLEN_SPAN) {
@@ -4779,7 +4779,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			aindex = sp [1].data.i;
-			if (aindex >= mono_array_length_fast (o))
+			if (aindex >= mono_array_length_internal (o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
 			/*
@@ -4857,7 +4857,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
 			aindex = sp [1].data.i;
-			if (aindex >= mono_array_length_fast ((MonoArray *)o))
+			if (aindex >= mono_array_length_internal ((MonoArray *)o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 
 			switch (*ip) {

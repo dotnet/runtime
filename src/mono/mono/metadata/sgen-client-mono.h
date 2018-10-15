@@ -89,7 +89,7 @@ sgen_mono_array_size (GCVTable vtable, MonoArray *array, mword *bounds_size, mwo
 	else
 		element_size = m_class_get_sizes (vtable->klass).element_size;
 
-	size_without_bounds = size = MONO_SIZEOF_MONO_ARRAY + (mword)element_size * mono_array_length_fast (array);
+	size_without_bounds = size = MONO_SIZEOF_MONO_ARRAY + (mword)element_size * mono_array_length_internal (array);
 
 	if (G_UNLIKELY (array->bounds)) {
 		size += sizeof (mono_array_size_t) - 1;
@@ -112,7 +112,7 @@ sgen_client_slow_object_get_size (GCVTable vtable, GCObject* o)
 
 	/*
 	 * We depend on mono_string_length_fast and
-	 * mono_array_length_fast not using the object's vtable.
+	 * mono_array_length_internal not using the object's vtable.
 	 */
 	if (klass == mono_defaults.string_class) {
 		return MONO_SIZEOF_MONO_STRING + 2 * mono_string_length_fast ((MonoString*) o) + 2;
@@ -164,7 +164,7 @@ sgen_client_array_data_start (GCObject *obj)
 static MONO_ALWAYS_INLINE size_t G_GNUC_UNUSED
 sgen_client_array_length (GCObject *obj)
 {
-	return mono_array_length_fast ((MonoArray*)obj);
+	return mono_array_length_internal ((MonoArray*)obj);
 }
 
 static MONO_ALWAYS_INLINE gboolean G_GNUC_UNUSED
@@ -187,7 +187,7 @@ sgen_client_update_copied_object (char *destination, GCVTable gc_vtable, void *o
 	if (G_UNLIKELY (vt->rank && ((MonoArray*)obj)->bounds)) {
 		MonoArray *array = (MonoArray*)destination;
 		array->bounds = (MonoArrayBounds*)((char*)destination + ((char*)((MonoArray*)obj)->bounds - (char*)obj));
-		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array));
+		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length_internal (array));
 	}
 
 	if (MONO_PROFILER_ENABLED (gc_moves))

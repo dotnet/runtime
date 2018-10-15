@@ -7443,8 +7443,8 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 
 			/* Ctor args */
 			if (typed_args) {
-				buffer_add_int (buf, mono_array_length (typed_args));
-				for (j = 0; j < mono_array_length (typed_args); ++j) {
+				buffer_add_int (buf, mono_array_length_internal (typed_args));
+				for (j = 0; j < mono_array_length_internal (typed_args); ++j) {
 					MonoObject *val = mono_array_get (typed_args, MonoObject*, j);
 
 					t = mono_method_signature_internal (attr->ctor)->params [j];
@@ -7457,9 +7457,9 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 
 			/* Named args */
 			if (named_args) {
-				buffer_add_int (buf, mono_array_length (named_args));
+				buffer_add_int (buf, mono_array_length_internal (named_args));
 
-				for (j = 0; j < mono_array_length (named_args); ++j) {
+				for (j = 0; j < mono_array_length_internal (named_args); ++j) {
 					MonoObject *val = mono_array_get (named_args, MonoObject*, j);
 
 					if (arginfo [j].prop) {

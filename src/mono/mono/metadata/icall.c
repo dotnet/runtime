@@ -751,9 +751,9 @@ ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* d
 	if (source->bounds || dest->bounds)
 		return FALSE;
 
-	/* there's no integer overflow since mono_array_length returns an unsigned integer */
-	if ((dest_idx + length > mono_array_length_fast (dest)) ||
-		(source_idx + length > mono_array_length_fast (source)))
+	/* there's no integer overflow since mono_array_length_internal returns an unsigned integer */
+	if ((dest_idx + length > mono_array_length_internal (dest)) ||
+		(source_idx + length > mono_array_length_internal (source)))
 		return FALSE;
 
 	src_class = m_class_get_element_class (src_vtable->klass);
@@ -3379,7 +3379,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		return NULL;
 	}
 
-	pcount = params? mono_array_length (params): 0;
+	pcount = params? mono_array_length_internal (params): 0;
 	if (pcount != sig->param_count) {
 		mono_gc_wbarrier_generic_store (exc, (MonoObject*) mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException"));
 		return NULL;
@@ -3406,7 +3406,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 		int i;
 		uintptr_t *lengths;
 		intptr_t *lower_bounds;
-		pcount = mono_array_length (params);
+		pcount = mono_array_length_internal (params);
 		lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (i = 0; i < pcount; ++i)
@@ -3420,7 +3420,7 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 				return NULL;
 			}
 
-			for (i = 0; i < mono_array_length (arr); ++i) {
+			for (i = 0; i < mono_array_length_internal (arr); ++i) {
 				MonoArray *subarray = mono_array_new_full_checked (mono_object_domain (params), m_class_get_element_class (m->klass), &lengths [1], NULL, error);
 				if (!mono_error_ok (error)) {
 					mono_error_set_pending_exception (error);
@@ -3585,7 +3585,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 		}
 	}
 
-	for (i = 0; i < mono_array_length (params); i++) {
+	for (i = 0; i < mono_array_length_internal (params); i++) {
 		if (sig->params [i]->byref) 
 			outarg_count++;
 	}
@@ -3604,7 +3604,7 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 	if (mono_error_set_pending_exception (error))
 		return NULL;
 
-	for (i = 0, j = 0; i < mono_array_length (params); i++) {
+	for (i = 0, j = 0; i < mono_array_length_internal (params); i++) {
 		if (sig->params [i]->byref) {
 			gpointer arg;
 			arg = mono_array_get (params, gpointer, i);
@@ -7803,11 +7803,11 @@ mono_TypedReference_MakeTypedReferenceInternal (MonoObject *target, MonoArray *f
 	memset (&res, 0, sizeof (res));
 
 	g_assert (fields);
-	g_assert (mono_array_length (fields) > 0);
+	g_assert (mono_array_length_internal (fields) > 0);
 
 	klass = target->vtable->klass;
 
-	for (i = 0; i < mono_array_length (fields); ++i) {
+	for (i = 0; i < mono_array_length_internal (fields); ++i) {
 		f = mono_array_get (fields, MonoReflectionField*, i);
 		g_assert (f);
 

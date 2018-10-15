@@ -164,7 +164,13 @@ struct _MonoString {
 #define mono_string_chars_fast(s) ((mono_unichar2*)(s)->chars)
 #define mono_string_length_fast(s) ((s)->length)
 
-#define mono_array_length_fast(array) ((array)->max_length)
+/**
+ * mono_array_length_internal:
+ * \param array a \c MonoArray*
+ * \returns the total number of elements in the array. This works for
+ * both vectors and multidimensional arrays.
+ */
+#define mono_array_length_internal(array) ((array)->max_length)
 
 // Equivalent to mono_array_addr_with_size, except:
 // 1. A macro instead of a function.

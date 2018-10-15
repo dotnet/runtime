@@ -112,7 +112,7 @@ mono_array_clone	    (MonoArray *array);
 MONO_API char*
 mono_array_addr_with_size   (MonoArray *array, int size, uintptr_t idx);
 
-MONO_API uintptr_t
+MONO_API MONO_RT_EXTERNAL_ONLY uintptr_t
 mono_array_length           (MonoArray *array);
 
 MONO_API MonoString*

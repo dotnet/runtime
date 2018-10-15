@@ -5333,8 +5333,8 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	gboolean has_byref_nullables = FALSE;
 
 	if (NULL != params) {
-		pa = g_newa (gpointer, mono_array_length (params));
-		for (i = 0; i < mono_array_length (params); i++) {
+		pa = g_newa (gpointer, mono_array_length_internal (params));
+		for (i = 0; i < mono_array_length_internal (params); i++) {
 			MonoType *t = sig->params [i];
 			pa [i] = invoke_array_extract_argument (params, i, t, &has_byref_nullables, error);
 			return_val_if_nok (error, NULL);
@@ -5435,7 +5435,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			 * and stored them in pa, we just need to copy them back to the
 			 * managed array.
 			 */
-			for (i = 0; i < mono_array_length (params); i++) {
+			for (i = 0; i < mono_array_length_internal (params); i++) {
 				MonoType *t = sig->params [i];
 
 				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
@@ -5959,8 +5959,8 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 
 	g_assert (klass == mono_object_class (&dest->obj));
 
-	size = mono_array_length (src);
-	g_assert (size == mono_array_length (dest));
+	size = mono_array_length_internal (src);
+	g_assert (size == mono_array_length_internal (dest));
 	size *= mono_array_element_size (klass);
 
 	array_full_copy_unchecked_size (src, dest, klass, size);
@@ -5973,11 +5973,11 @@ array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klas
 		MonoClass *element_class = m_class_get_element_class (klass);
 		if (m_class_is_valuetype (element_class)) {
 			if (m_class_has_references (element_class))
-				mono_value_copy_array (dest, 0, mono_array_addr_with_size_fast (src, 0, 0), mono_array_length (src));
+				mono_value_copy_array (dest, 0, mono_array_addr_with_size_fast (src, 0, 0), mono_array_length_internal (src));
 			else
 				mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 		} else {
-			mono_array_memcpy_refs (dest, 0, src, 0, mono_array_length (src));
+			mono_array_memcpy_refs (dest, 0, src, 0, mono_array_length_internal (src));
 		}
 	} else {
 		mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
@@ -6969,7 +6969,7 @@ mono_object_get_size (MonoObject* o)
 		return MONO_SIZEOF_MONO_STRING + 2 * mono_string_length ((MonoString*) o) + 2;
 	} else if (o->vtable->rank) {
 		MonoArray *array = (MonoArray*)o;
-		size_t size = MONO_SIZEOF_MONO_ARRAY + mono_array_element_size (klass) * mono_array_length (array);
+		size_t size = MONO_SIZEOF_MONO_ARRAY + mono_array_element_size (klass) * mono_array_length_internal (array);
 		if (array->bounds) {
 			size += 3;
 			size &= ~3;
@@ -8520,7 +8520,7 @@ mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoAr
 	
 	if (out_args == NULL)
 		return;
-	out_len = mono_array_length (out_args);
+	out_len = mono_array_length_internal (out_args);
 	if (out_len == 0)
 		return;
 
@@ -8658,7 +8658,7 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 		return NULL;
 	}
 
-	if (mono_array_length (out_args) == 0)
+	if (mono_array_length_internal (out_args) == 0)
 		return NULL;
 
 	mono_gc_wbarrier_generic_store (res, mono_array_get (out_args, MonoObject *, 0));
@@ -8898,23 +8898,6 @@ mono_string_handle_length (MonoStringHandle s)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	return MONO_HANDLE_GETVAL (s, length);
-}
-
-
-/**
- * mono_array_length:
- * \param array a \c MonoArray*
- * \returns the total number of elements in the array. This works for
- * both vectors and multidimensional arrays.
- */
-uintptr_t
-mono_array_length (MonoArray *array)
-{
-	uintptr_t res;
-	MONO_ENTER_GC_UNSAFE;
-	res = array->max_length;
-	MONO_EXIT_GC_UNSAFE;
-	return res;
 }
 
 /**

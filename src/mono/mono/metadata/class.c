@@ -3747,7 +3747,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			MonoReflectionTypeBuilder *tb = mono_class_get_ref_info_raw (candidate); /* FIXME use handles */
 			int j;
 			if (tb && tb->interfaces) {
-				for (j = mono_array_length (tb->interfaces) - 1; j >= 0; --j) {
+				for (j = mono_array_length_internal (tb->interfaces) - 1; j >= 0; --j) {
 					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
 					MonoClass *iface_class;
 

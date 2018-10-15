@@ -932,7 +932,7 @@ mono_exception_walk_trace_internal (MonoException *ex, MonoExceptionFrameWalk fu
 	if (ta == NULL)
 		return FALSE;
 
-	len = mono_array_length (ta) / TRACE_IP_ENTRY_SIZE;
+	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
 	for (i = 0; i < len; i++) {
 		ExceptionTraceIp trace_ip;
 
@@ -981,7 +981,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		return res;
 	}
 
-	len = mono_array_length (ta) / TRACE_IP_ENTRY_SIZE;
+	len = mono_array_length_internal (ta) / TRACE_IP_ENTRY_SIZE;
 
 	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, error);
 	if (mono_error_set_pending_exception (error))
@@ -2084,7 +2084,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 	mono_ex = (MonoException*)obj;
 	MonoArray *initial_trace_ips = mono_ex->trace_ips;
 	if (initial_trace_ips) {
-		int len = mono_array_length (initial_trace_ips) / TRACE_IP_ENTRY_SIZE;
+		int len = mono_array_length_internal (initial_trace_ips) / TRACE_IP_ENTRY_SIZE;
 
 		// If we catch in managed/non-wrapper, we don't save the catching frame
 		if (!mono_ex->caught_in_unmanaged)
@@ -3745,7 +3745,7 @@ mono_llvm_load_exception (void)
 		GList *trace_ips = NULL;
 		gpointer ip = MONO_RETURN_ADDRESS ();
 
-		size_t upper = mono_array_length (mono_ex->trace_ips);
+		size_t upper = mono_array_length_internal (mono_ex->trace_ips);
 
 		for (int i = 0; i < upper; i += TRACE_IP_ENTRY_SIZE) {
 			gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);

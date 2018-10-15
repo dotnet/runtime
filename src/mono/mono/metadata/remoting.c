@@ -581,7 +581,7 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		int mt = mono_get_xdomain_marshal_type (m_class_get_byval_arg (m_class_get_element_class (mono_object_class (src))));
 		if (mt == MONO_MARSHAL_SERIALIZE) return;
 		if (mt == MONO_MARSHAL_COPY) {
-			int i, len = mono_array_length ((MonoArray *)dst);
+			int i, len = mono_array_length_internal ((MonoArray *)dst);
 			for (i = 0; i < len; i++) {
 				MonoObject *item = (MonoObject *)mono_array_get ((MonoArray *)src, gpointer, i);
 				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, error);

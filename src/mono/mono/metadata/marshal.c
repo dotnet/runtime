@@ -795,7 +795,7 @@ mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclas
 		char *as;
 		GError *gerror = NULL;
 
-		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length (arr), NULL, NULL, &gerror);
+		as = g_utf16_to_utf8 (mono_array_addr (arr, gunichar2, 0), mono_array_length_internal (arr), NULL, NULL, &gerror);
 		if (gerror) {
 			ERROR_DECL (error);
 			mono_error_set_argument (error, "string", gerror->message);

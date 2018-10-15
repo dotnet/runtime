@@ -293,10 +293,10 @@ mono_reflection_method_count_clauses (MonoReflectionILGen *ilgen)
 	int i;
 
 	MonoILExceptionInfo *ex_info;
-	for (i = 0; i < mono_array_length (ilgen->ex_handlers); ++i) {
+	for (i = 0; i < mono_array_length_internal (ilgen->ex_handlers); ++i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		if (ex_info->handlers)
-			num_clauses += mono_array_length (ex_info->handlers);
+			num_clauses += mono_array_length_internal (ex_info->handlers);
 		else
 			num_clauses++;
 	}
@@ -322,12 +322,12 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 	clauses = image_g_new0 (image, MonoExceptionClause, num_clauses);
 
 	clause_index = 0;
-	for (i = mono_array_length (ilgen->ex_handlers) - 1; i >= 0; --i) {
+	for (i = mono_array_length_internal (ilgen->ex_handlers) - 1; i >= 0; --i) {
 		ex_info = (MonoILExceptionInfo*)mono_array_addr (ilgen->ex_handlers, MonoILExceptionInfo, i);
 		finally_start = ex_info->start + ex_info->len;
 		if (!ex_info->handlers)
 			continue;
-		for (j = 0; j < mono_array_length (ex_info->handlers); ++j) {
+		for (j = 0; j < mono_array_length_internal (ex_info->handlers); ++j) {
 			ex_block = (MonoILExceptionBlock*)mono_array_addr (ex_info->handlers, MonoILExceptionBlock, j);
 			clause = &(clauses [clause_index]);
 
@@ -375,7 +375,7 @@ mono_save_custom_attrs (MonoImage *image, void *obj, MonoArray *cattrs)
 
 	MonoCustomAttrInfo *ainfo, *tmp;
 
-	if (!cattrs || !mono_array_length (cattrs))
+	if (!cattrs || !mono_array_length_internal (cattrs))
 		return;
 
 	ainfo = mono_custom_attrs_from_builders (image, image, cattrs);
@@ -2222,7 +2222,7 @@ handle_type:
 			*p++ = 0xff; *p++ = 0xff; *p++ = 0xff; *p++ = 0xff;
 			break;
 		}
-		len = mono_array_length ((MonoArray*)arg);
+		len = mono_array_length_internal ((MonoArray*)arg);
 		*p++ = len & 0xff;
 		*p++ = (len >> 8) & 0xff;
 		*p++ = (len >> 16) & 0xff;
@@ -2463,7 +2463,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		sig = mono_method_signature_internal (((MonoReflectionMethod*)ctor)->method);
 	}
 
-	g_assert (mono_array_length (ctorArgs) == sig->param_count);
+	g_assert (mono_array_length_internal (ctorArgs) == sig->param_count);
 	buflen = 256;
 	p = buffer = (char *)g_malloc (buflen);
 	/* write the prolog */
@@ -2476,14 +2476,14 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 	}
 	i = 0;
 	if (properties)
-		i += mono_array_length (properties);
+		i += mono_array_length_internal (properties);
 	if (fields)
-		i += mono_array_length (fields);
+		i += mono_array_length_internal (fields);
 	*p++ = i & 0xff;
 	*p++ = (i >> 8) & 0xff;
 	if (properties) {
 		MonoObject *prop;
-		for (i = 0; i < mono_array_length (properties); ++i) {
+		for (i = 0; i < mono_array_length_internal (properties); ++i) {
 			MonoType *ptype;
 			char *pname;
 
@@ -2499,7 +2499,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 
 	if (fields) {
 		MonoObject *field;
-		for (i = 0; i < mono_array_length (fields); ++i) {
+		for (i = 0; i < mono_array_length_internal (fields); ++i) {
 			MonoType *ftype;
 			char *fname;
 
@@ -2991,13 +2991,13 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			code = mono_array_addr (rmb->ilgen->code, guint8, 0);
 			code_size = rmb->ilgen->code_len;
 			max_stack = rmb->ilgen->max_stack;
-			num_locals = rmb->ilgen->locals ? mono_array_length (rmb->ilgen->locals) : 0;
+			num_locals = rmb->ilgen->locals ? mono_array_length_internal (rmb->ilgen->locals) : 0;
 			if (rmb->ilgen->ex_handlers)
 				num_clauses = mono_reflection_method_count_clauses (rmb->ilgen);
 		} else {
 			if (rmb->code) {
 				code = mono_array_addr (rmb->code, guint8, 0);
-				code_size = mono_array_length (rmb->code);
+				code_size = mono_array_length_internal (rmb->code);
 				/* we probably need to run a verifier on the code... */
 				max_stack = 8; 
 			}
@@ -3039,7 +3039,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	}
 
 	if (rmb->generic_params) {
-		int count = mono_array_length (rmb->generic_params);
+		int count = mono_array_length_internal (rmb->generic_params);
 		MonoGenericContainer *container;
 
 		container = (MonoGenericContainer *)mono_image_alloc0 (klass->image, sizeof (MonoGenericContainer));
@@ -3157,7 +3157,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	/* Parameter marshalling */
 	if (rmb->pinfo)		
-		for (i = 0; i < mono_array_length (rmb->pinfo); ++i) {
+		for (i = 0; i < mono_array_length_internal (rmb->pinfo); ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if (pb->marshal_info) {
@@ -3404,11 +3404,11 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 			return FALSE;
 
 	if (tb) {
-		num = tb->ctors? mono_array_length (tb->ctors): 0;
+		num = tb->ctors? mono_array_length_internal (tb->ctors): 0;
 		num += tb->num_methods;
 		mono_class_set_method_count (klass, num);
 		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * num);
-		num = tb->ctors? mono_array_length (tb->ctors): 0;
+		num = tb->ctors? mono_array_length_internal (tb->ctors): 0;
 		for (i = 0; i < num; ++i) {
 			MonoMethod *ctor = ctorbuilder_to_mono_method (klass, mono_array_get (tb->ctors, MonoReflectionCtorBuilder*, i), error);
 			if (!ctor)
@@ -3425,7 +3425,7 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 		}
 	
 		if (tb->interfaces) {
-			klass->interface_count = mono_array_length (tb->interfaces);
+			klass->interface_count = mono_array_length_internal (tb->interfaces);
 			klass->interfaces = (MonoClass **)mono_image_alloc (klass->image, sizeof (MonoClass*) * klass->interface_count);
 			for (i = 0; i < klass->interface_count; ++i) {
 				MonoType *iface = mono_type_array_get_and_resolve_raw (tb->interfaces, i, error); /* FIXME use handles */
@@ -3522,7 +3522,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_methods)
-				onum += mono_array_length (mb->override_methods);
+				onum += mono_array_length_internal (mb->override_methods);
 		}
 	}
 
@@ -3534,7 +3534,7 @@ mono_reflection_get_dynamic_overrides (MonoClass *klass, MonoMethod ***overrides
 			MonoReflectionMethodBuilder *mb = 
 				mono_array_get (tb->methods, MonoReflectionMethodBuilder*, i);
 			if (mb->override_methods) {
-				for (j = 0; j < mono_array_length (mb->override_methods); ++j) {
+				for (j = 0; j < mono_array_length_internal (mb->override_methods); ++j) {
 					m = mono_array_get (mb->override_methods, MonoReflectionMethod*, j);
 
 					(*overrides) [onum * 2] = mono_reflection_method_get_handle ((MonoObject*)m, error);
@@ -3646,7 +3646,7 @@ typebuilder_setup_fields (MonoClass *klass, MonoError *error)
 
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
 			char *base = mono_array_addr (rva_data, char, 0);
-			size_t size = mono_array_length (rva_data);
+			size_t size = mono_array_length_internal (rva_data);
 			char *data = (char *)mono_image_alloc (klass->image, size);
 			memcpy (data, base, size);
 			def_values [i].data = data;
@@ -3694,7 +3694,7 @@ typebuilder_setup_properties (MonoClass *klass, MonoError *error)
 		mono_class_set_property_info (klass, info);
 	}
 
-	info->count = tb->properties ? mono_array_length (tb->properties) : 0;
+	info->count = tb->properties ? mono_array_length_internal (tb->properties) : 0;
 	info->first = 0;
 
 	properties = image_g_new0 (image, MonoProperty, info->count);
@@ -3745,7 +3745,7 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 	info = mono_class_alloc0 (klass, sizeof (MonoClassEventInfo));
 	mono_class_set_event_info (klass, info);
 
-	info->count = tb->events ? mono_array_length (tb->events) : 0;
+	info->count = tb->events ? mono_array_length_internal (tb->events) : 0;
 	info->first = 0;
 
 	events = image_g_new0 (image, MonoEvent, info->count);
@@ -3767,8 +3767,8 @@ typebuilder_setup_events (MonoClass *klass, MonoError *error)
 #ifndef MONO_SMALL_CONFIG
 		if (eb->other_methods) {
 			int j;
-			events [i].other = image_g_new0 (image, MonoMethod*, mono_array_length (eb->other_methods) + 1);
-			for (j = 0; j < mono_array_length (eb->other_methods); ++j) {
+			events [i].other = image_g_new0 (image, MonoMethod*, mono_array_length_internal (eb->other_methods) + 1);
+			for (j = 0; j < mono_array_length_internal (eb->other_methods); ++j) {
 				MonoReflectionMethodBuilder *mb = 
 					mono_array_get (eb->other_methods,
 									MonoReflectionMethodBuilder*, j);
@@ -4311,7 +4311,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 		int nargs, i;
 
 		if (helper->arguments)
-			nargs = mono_array_length (helper->arguments);
+			nargs = mono_array_length_internal (helper->arguments);
 		else
 			nargs = 0;
 

@@ -3515,7 +3515,7 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 	}
 #endif
 
-	int const max_array_length = mono_array_length (input);
+	int const max_array_length = mono_array_length_internal (input);
 	int const dim = m_class_get_rank (mono_object_class (input));
 
 	*indices = g_malloc (dim * sizeof (int));

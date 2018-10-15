@@ -1486,7 +1486,7 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	ERROR_DECL (error);
 	int result = FALSE;
 	int i, size;
-	int num_counters = mono_array_length (items);
+	int num_counters = mono_array_length_internal (items);
 	int counters_data_size;
 	char *name = NULL;
 	char *chelp = NULL;

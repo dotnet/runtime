@@ -1026,7 +1026,7 @@ mono_object_describe (MonoObject *obj)
 		MonoArray *array = (MonoArray*)obj;
 		sep = print_name_space (klass);
 		g_print ("%s%s", sep, klass->name);
-		g_print (" at %p, rank: %d, length: %d\n", obj, klass->rank, (int)mono_array_length (array));
+		g_print (" at %p, rank: %d, length: %d\n", obj, klass->rank, (int)mono_array_length_internal (array));
 	} else {
 		sep = print_name_space (klass);
 		g_print ("%s%s", sep, klass->name);

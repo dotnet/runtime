@@ -616,7 +616,7 @@ sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
 		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", array);
 
 		cur = mono_array_addr (array, Ephemeron, 0);
-		array_end = cur + mono_array_length_fast (array);
+		array_end = cur + mono_array_length_internal (array);
 		tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
@@ -668,7 +668,7 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 		copy_func ((GCObject**)&array, queue);
 
 		cur = mono_array_addr (array, Ephemeron, 0);
-		array_end = cur + mono_array_length_fast (array);
+		array_end = cur + mono_array_length_internal (array);
 		tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
@@ -1769,7 +1769,7 @@ report_ephemeron_roots (void)
                         continue;
 
                 cur = mono_array_addr (array, Ephemeron, 0);
-                array_end = cur + mono_array_length_fast (array);
+                array_end = cur + mono_array_length_internal (array);
                 tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
                 for (; cur < array_end; ++cur) {

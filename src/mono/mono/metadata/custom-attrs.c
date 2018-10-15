@@ -681,7 +681,7 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 		return NULL;
 	/* FIXME: check in assembly the Run flag is set */
 
-	count = mono_array_length (cattrs);
+	count = mono_array_length_internal (cattrs);
 
 	/* Skip nonpublic attributes since MS.NET seems to do the same */
 	/* FIXME: This needs to be done more globally */
@@ -702,12 +702,12 @@ mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArr
 	for (i = 0; i < count; ++i) {
 		cattr = (MonoReflectionCustomAttr*)mono_array_get (cattrs, gpointer, i);
 		if (custom_attr_visible (image, cattr)) {
-			unsigned char *saved = (unsigned char *)mono_image_alloc (image, mono_array_length (cattr->data));
-			memcpy (saved, mono_array_addr (cattr->data, char, 0), mono_array_length (cattr->data));
+			unsigned char *saved = (unsigned char *)mono_image_alloc (image, mono_array_length_internal (cattr->data));
+			memcpy (saved, mono_array_addr (cattr->data, char, 0), mono_array_length_internal (cattr->data));
 			ainfo->attrs [index].ctor = cattr->ctor->method;
 			g_assert (cattr->ctor->method);
 			ainfo->attrs [index].data = saved;
-			ainfo->attrs [index].data_size = mono_array_length (cattr->data);
+			ainfo->attrs [index].data_size = mono_array_length_internal (cattr->data);
 			index ++;
 		}
 	}
@@ -1345,7 +1345,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 		mono_array_setref (typedargs, i, typedarg);
 	}
 
-	for (i = 0; i < mono_array_length (namedargs); ++i) {
+	for (i = 0; i < mono_array_length_internal (namedargs); ++i) {
 		MonoObject *obj = mono_array_get (namedargs, MonoObject*, i);
 		MonoObject *typedarg, *namedarg, *minfo;
 
