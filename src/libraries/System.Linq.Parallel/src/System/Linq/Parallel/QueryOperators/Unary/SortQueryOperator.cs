@@ -77,14 +77,6 @@ namespace System.Linq.Parallel
         }
 
         //---------------------------------------------------------------------------------------
-        // Accessor the key selector.
-        //
-
-        //---------------------------------------------------------------------------------------
-        // Accessor the key comparer.
-        //
-
-        //---------------------------------------------------------------------------------------
         // Opens the current operator. This involves opening the child operator tree, enumerating
         // the results, sorting them, and then returning an enumerator that walks the result.
         //
@@ -199,9 +191,6 @@ namespace System.Linq.Parallel
             _source = source;
             _keySelector = keySelector;
         }
-        //---------------------------------------------------------------------------------------
-        // Accessor for the key comparison routine.
-        //
 
         //---------------------------------------------------------------------------------------
         // Moves to the next element in the sorted output. When called for the first time, the
