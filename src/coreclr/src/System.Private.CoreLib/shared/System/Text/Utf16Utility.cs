@@ -35,7 +35,7 @@ namespace System.Text
             // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
             uint lowerIndicator = value + 0x00800080u - 0x00410041u;
 
-            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value <= 'Z'
+            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value > 'Z'
             uint upperIndicator = value + 0x00800080u - 0x005B005Bu;
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
@@ -64,7 +64,7 @@ namespace System.Text
             // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'a'
             uint lowerIndicator = value + 0x00800080u - 0x00610061u;
 
-            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value <= 'z'
+            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value > 'z'
             uint upperIndicator = value + 0x00800080u - 0x007B007Bu;
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'a' and <= 'z'
@@ -92,7 +92,7 @@ namespace System.Text
             // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'a'
             uint lowerIndicator = value + 0x00800080u - 0x00610061u;
 
-            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value <= 'z'
+            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value > 'z'
             uint upperIndicator = value + 0x00800080u - 0x007B007Bu;
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'a' and <= 'z'
@@ -117,7 +117,7 @@ namespace System.Text
             // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
             uint lowerIndicator = value + 0x00800080u - 0x00410041u;
 
-            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value <= 'Z'
+            // the 0x80 bit of each word of 'upperIndicator' will be set iff the word has value > 'Z'
             uint upperIndicator = value + 0x00800080u - 0x005B005Bu;
 
             // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
