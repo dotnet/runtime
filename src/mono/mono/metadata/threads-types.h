@@ -561,6 +561,7 @@ typedef struct {
 	} managed_data;
 	struct {
 		intptr_t ip;
+		gint32 offset;
 		const char *module;
 		gboolean is_trampoline;
 		gboolean has_name;

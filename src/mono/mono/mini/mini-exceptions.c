@@ -1361,28 +1361,47 @@ copy_summary_string_safe (char *in, const char *out)
 	return;
 }
 
-static GHashTable *native_library_whitelist;
+typedef struct {
+	char *suffix;
+	char *exported_name;
+} MonoLibWhitelistEntry;
+
+static GList *native_library_whitelist;
 
 static void
 mono_crash_reporting_register_native_library (const char *module_path, const char *module_name)
 {
-	Dl_info info;
-	if (!native_library_whitelist) {
-		native_library_whitelist = g_hash_table_new_full (NULL, NULL, NULL, g_free);
-
-		dladdr ((void*) mono_crash_reporting_register_native_library, &info);
-
-		if (info.dli_fname && strlen(info.dli_fname) > 0)
-			g_hash_table_insert (native_library_whitelist, g_strdup (info.dli_fname), g_strdup ("mono"));
-	}
-
 	// Examples: libsystem_pthread.dylib -> "pthread"
 	// Examples: libsystem_platform.dylib -> "platform"
 	// Examples: mono-sgen -> "mono" from above line
-	g_hash_table_insert (native_library_whitelist, g_strdup (module_path), g_strdup (module_name));
+	MonoLibWhitelistEntry *entry = g_new0 (MonoLibWhitelistEntry, 1);
+	entry->suffix = g_strdup (module_path);
+	entry->exported_name = g_strdup (module_name);
+	native_library_whitelist = g_list_append (native_library_whitelist, entry);
 }
 
 static gboolean
+check_whitelisted_module (const char *in_name, const char **out_module)
+{
+	if (g_str_has_suffix (in_name, "mono-sgen")) {
+		if (out_module)
+			*out_module = "mono";
+		return TRUE;
+	}
+
+	for (GList *cursor = native_library_whitelist; cursor; cursor = cursor->next) {
+		MonoLibWhitelistEntry *iter = (MonoLibWhitelistEntry *) cursor->data;
+		if (!g_str_has_suffix (in_name, iter->suffix))
+			continue;
+		if (out_module)
+			*out_module = iter->exported_name;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static intptr_t
 mono_make_portable_ip (intptr_t in_ip, intptr_t module_base)
 {
 	// FIXME: Make generalize away from llvm tools?
@@ -1398,37 +1417,7 @@ mono_make_portable_ip (intptr_t in_ip, intptr_t module_base)
 }
 
 static gboolean
-check_whitelisted_module (const char *in_name, const char **out_module)
-{
-	if (!native_library_whitelist) {
-		if (g_str_has_suffix (in_name, "mono-sgen")) {
-			if (out_module)
-				*out_module = "mono";
-			return TRUE;
-		}
-
-		return FALSE;
-	}
-
-	GHashTableIter iter;
-	char *file_suffix;
-	char *module_suffix;
-	g_hash_table_iter_init (&iter, native_library_whitelist);
-	while (g_hash_table_iter_next (&iter, (gpointer *) &file_suffix, (gpointer *) &module_suffix)) {
-		if (!g_str_has_suffix (in_name, file_suffix))
-			continue;
-		if (out_module)
-			*out_module = module_suffix;
-		return TRUE;
-	}
-
-	/*fprintf (stderr, "%s == %s\n", info.dli_fname, *out_module);*/
-
-	return FALSE;
-}
-
-static gboolean
-mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, const char **out_module, char *out_name)
+mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, gint32 *out_offset, const char **out_module, char *out_name)
 {
 	// Note: it's not safe for us to be interrupted while inside of dl_addr, because if we
 	// try to call dl_addr while interrupted while inside the lock, we will try to take a
@@ -1441,7 +1430,8 @@ mono_get_portable_ip (intptr_t in_ip, intptr_t *out_ip, const char **out_module,
 	if (!check_whitelisted_module (info.dli_fname, out_module))
 		return FALSE;
 
-	*out_ip = mono_make_portable_ip (in_ip, (intptr_t) info.dli_fbase);
+	*out_ip = mono_make_portable_ip ((intptr_t) info.dli_saddr, (intptr_t) info.dli_fbase);
+	*out_offset = in_ip - (intptr_t) info.dli_saddr;
 
 #ifndef MONO_PRIVATE_CRASHES
 	if (info.dli_saddr && out_name)
@@ -1477,7 +1467,7 @@ summarize_offset_rich_hash (guint64 accum, MonoFrameSummary *frame)
 	} else {
 		hash_accum += mono_metadata_str_hash (frame->str_descr);
 		hash_accum += frame->managed_data.token;
-		hash_accum += frame->managed_data.native_offset;
+		hash_accum += frame->managed_data.il_offset;
 	}
 
 	return hash_accum;
@@ -1499,7 +1489,7 @@ summarize_frame_internal (MonoMethod *method, gpointer ip, size_t native_offset,
 	dest->unmanaged_data.ip = (intptr_t) ip;
 	dest->is_managed = managed;
 
-	if (method && method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type < MONO_WRAPPER_NUM) {
+	if (!managed && method && method->wrapper_type != MONO_WRAPPER_NONE && method->wrapper_type < MONO_WRAPPER_NUM) {
 		dest->is_managed = FALSE;
 		dest->unmanaged_data.has_name = TRUE;
 		copy_summary_string_safe (dest->str_descr, mono_wrapper_type_to_str (method->wrapper_type));
@@ -1540,19 +1530,23 @@ summarize_frame_internal (MonoMethod *method, gpointer ip, size_t native_offset,
 }
 
 static gboolean
-summarize_frame_managed_walk (MonoMethod *method, gpointer ip, size_t native_offset, gboolean managed, gpointer user_data)
+summarize_frame_managed_walk (MonoMethod *method, gpointer ip, size_t frame_native_offset, gboolean managed, gpointer user_data)
 {
 	int il_offset = -1;
 
 	if (managed && method) {
-		MonoDebugSourceLocation *location = mono_debug_lookup_source_location (method, native_offset, mono_domain_get ());
+		MonoDebugSourceLocation *location = mono_debug_lookup_source_location (method, frame_native_offset, mono_domain_get ());
 		if (location) {
 			il_offset = location->il_offset;
 			mono_debug_free_source_location (location);
 		}
 	}
 
-	return summarize_frame_internal (method, ip, native_offset, il_offset, managed, user_data);
+	intptr_t portable_ip = 0;
+	gint32 offset = 0;
+	mono_get_portable_ip ((intptr_t) ip, &portable_ip, &offset, NULL, NULL);
+
+	return summarize_frame_internal (method, (gpointer) portable_ip, frame_native_offset, il_offset, managed, user_data);
 }
 
 
@@ -1567,8 +1561,9 @@ summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	if (frame->ji && (frame->ji->is_trampoline || frame->ji->async))
 		return FALSE; // Keep unwinding
 
-	intptr_t ip = 0x0;
-	mono_get_portable_ip ((intptr_t) MONO_CONTEXT_GET_IP (ctx), &ip, NULL, NULL);
+	intptr_t ip = 0;
+	gint32 offset = 0;
+	mono_get_portable_ip ((intptr_t) MONO_CONTEXT_GET_IP (ctx), &ip, &offset, NULL, NULL);
 	// Don't need to handle return status "success" because this ip is stored below only, NULL is okay
 
 	gboolean is_managed = (frame->type == FRAME_TYPE_MANAGED || frame->type == FRAME_TYPE_INTERP);
@@ -1579,7 +1574,7 @@ summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	if (is_managed)
 		method = jinfo_get_method (frame->ji);
 
-	return summarize_frame_internal (method, (gpointer) ip, frame->native_offset, frame->il_offset, is_managed, data);
+	return summarize_frame_internal (method, (gpointer) ip, offset, frame->il_offset, is_managed, data);
 }
 
 static void
@@ -1639,7 +1634,7 @@ mono_summarize_unmanaged_stack (MonoThreadSummary *out)
 		intptr_t ip = frame_ips [i];
 		MonoFrameSummary *frame = &out->unmanaged_frames [i];
 
-		int success = mono_get_portable_ip (ip, &frame->unmanaged_data.ip, &frame->unmanaged_data.module, (char *) frame->str_descr);
+		int success = mono_get_portable_ip (ip, &frame->unmanaged_data.ip, &frame->unmanaged_data.offset, &frame->unmanaged_data.module, (char *) frame->str_descr);
 		if (!success)
 			continue;
 
