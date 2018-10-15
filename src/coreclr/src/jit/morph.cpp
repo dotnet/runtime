@@ -8312,7 +8312,15 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                                                                               : CORINFO_TAILCALL_NORMAL);
             if (pfnCopyArgs == nullptr)
             {
-                szFailReason = "TailCallCopyArgsThunk not available.";
+                if (!info.compMatchedVM)
+                {
+                    // If we don't have a matched VM, we won't get valid results when asking for a thunk.
+                    pfnCopyArgs = (void*)0xCA11CA11; // "callcall"
+                }
+                else
+                {
+                    szFailReason = "TailCallCopyArgsThunk not available.";
+                }
             }
         }
 #endif // !_TARGET_X86_
