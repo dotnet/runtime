@@ -34,9 +34,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Reflection\MockParameterInfo.cs">
-      <Link>Common\System\Reflection\MockParameterInfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\Tests\System\StringTests.cs">
       <Link>System\StringTests.cs</Link>
     </Compile>
@@ -169,25 +166,17 @@
     <Compile Include="System\IO\PathTooLongException.InteropTests.cs" />
     <Compile Include="System\Reflection\AssemblyTests.cs" />
     <Compile Include="System\Reflection\AssemblyNameTests.cs" />
-    <Compile Include="System\Reflection\ConstructorInfoTests.cs" />
     <Compile Include="System\Reflection\CustomAttributeDataTests.cs" />
     <Compile Include="System\Reflection\CustomAttributesTestData.cs" />
     <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
-    <Compile Include="System\Reflection\EventInfoTests.cs" />
-    <Compile Include="System\Reflection\FieldInfoTests.cs" />
-    <Compile Include="System\Reflection\MemberInfoTests.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.cs" />
     <Compile Include="System\Reflection\MethodBodyTests.cs" />
     <Compile Include="System\Reflection\MethodInfoTests.cs" />
     <Compile Include="System\Reflection\ModuleTests.cs" />
-    <Compile Include="System\Reflection\ParameterInfoTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
-    <Compile Include="System\Reflection\PropertyInfoTests.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadExceptionTests.cs" />
-    <Compile Include="System\Reflection\RuntimeReflectionExtensionsTests.cs" />
     <Compile Include="System\Reflection\StrongNameKeyPairTests.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
-    <Compile Include="System\Reflection\TypeInfoTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetInterface.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
@@ -249,10 +238,8 @@
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
-    <Compile Include="System\Reflection\MemberInfoTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\SignatureTypes.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />
-    <Compile Include="System\Reflection\TypeInfoTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerArgumentExpressionAttributeTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
