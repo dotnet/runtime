@@ -19,7 +19,7 @@ The version is composed by two parts; the build number major and the build numbe
 Calculating BuildNumberMajor
 ----------------------------
 
-The BuildNumberMajor is represented by 5 digits, and is determined by calculating the time that has happened between the latest commit's date(SeedDate) and a VersionComparisonDate that gets passed in. In the case where VersionComparisonDate is not passed in, we will use April 1st 1996 as default. The reason why we use this specific date, is to ensure that the version produced by SeedDate is higher than the already shipped versions of the same library. The first portion of the BuildNumberMajor (first 3 digits) represent the number of month(s) since the VersionComparisonDate. The second portion of the BuildNumberMajor (last 2 digits) represent the day of the month of SeedDate. This part of the version is reproducible. 
+The BuildNumberMajor is represented by 5 digits, and is determined by calculating the time that has happened between the latest commit's date(SeedDate) and a VersionComparisonDate that gets passed in. In the case where VersionComparisonDate is not passed in, we will use April 1st 1996 as default. The reason why we use this specific date, is to ensure that the version produced by SeedDate is higher than the already shipped versions of the same library. The first portion of the BuildNumberMajor (first 3 digits) represent the number of month(s) since the VersionComparisonDate. The second portion of the BuildNumberMajor (last 2 digits) represent the day of the month of SeedDate. This part of the version is reproducible.
 
 Calculating BuildNumberMinor
 ----------------------------
@@ -46,9 +46,9 @@ When trying to get a version of a native binary in non-Windows, there are two wa
 How to force a dev build to produce a specific version
 ======================================================
 
-If you need to manually specify the version you want to produce your build output with, you can accomplish this by running the following from the root of the repo: 
-- `build-managed.cmd -BuildNumberMajor=00001 -BuildNumberMinor=01` in Windows
-- `build-managed.sh  -BuildNumberMajor=00001 -BuildNumberMinor=01` in non-Windows
+If you need to manually specify the version you want to produce your build output with, you can accomplish this by running the following from the root of the repo:
+- `build.cmd /p:BuildNumberMajor=00001 /p:BuildNumberMinor=01` in Windows
+- `build.sh  /p:BuildNumberMajor=00001 /p:BuildNumberMinor=01` in non-Windows
 
 Where is the version being consumed
 ===================================

@@ -30,14 +30,13 @@ The CoreFX build has two logical components, the native build which produces the
 the managed build which produces the MSIL code and NuGet packages that make up CoreFX.
 
 Calling the script `build` attempts to build both the native and managed code.
-Only use it when the parameters that you are passing to the script apply for both components. Otherwise, use the scripts `build-native` and `build-managed` respectively.
 
 The build configurations are generally defaulted based on where you are building (i.e. which OS or which architecture) but we have a few shortcuts for the individual properties that can be passed to the build scripts:
 
 - `-framework` identifies the target framework for the build. It defaults to `netcoreapp` but possible values include `netcoreapp`, `netfx` or `uap`. (msbuild property `TargetGroup`)
 - `-os` identifies the OS for the build. It defaults to the OS you are running on but possible values include `Windows_NT`, `Unix`, `Linux`, or `OSX`. (msbuild property `OSGroup`)
 - `-debug|-release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `ConfigurationGroup`)
-- `-buildArch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
+- `/p:ArchGroup` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `ArchGroup`)
 
 For more details on the build configurations see [project-guidelines](../coding-guidelines/project-guidelines.md#build-pivots).
 
@@ -194,9 +193,9 @@ dotnet msbuild System.Net.NetworkInformation.csproj /t:RebuildAll
 ### Building all for other OSes
 
 By default, building from the root will only build the libraries for the OS you are running on. One can
-build for another OS by specifying `build-managed -os=[value]`.
+build for another OS by specifying `build /p:OSGroup=[value]`.
 
-Note that you cannot generally build native components for another OS but you can for managed components so if you need to do that you can do it at the individual project level or build all via build-managed.
+Note that you cannot generally build native components for another OS but you can for managed components so if you need to do that you can do it at the individual project level or build all via passing `/p:BuildNative=false`.
 
 ### Building in Release or Debug
 
@@ -205,7 +204,7 @@ One can build in Debug or Release mode from the root by doing `build -release` o
 
 ### Building other Architectures
 
-One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build -buildArch=[value]` or in a project `/p:ArchGroup=[value]` after the `dotnet msbuild` command.
+One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build /p:ArchGroup=[value]` or in a project `/p:ArchGroup=[value]` after the `dotnet msbuild` command.
 
 ### Tests
 
@@ -213,7 +212,7 @@ We use the OSS testing framework [xunit](http://xunit.github.io/) with the [Buil
 
 #### Running tests on the command line
 
-By default, the core tests are run as part of `build.cmd` or `build.sh`. If the product binaries are already available, you could do `build-tests` which will build and run the tests.
+Do build tests you need to pass `-test` flag (`build -test`) to build.cmd/sh or if you want to build both you pass `-includetests` flag (`build -includetests`).
 
 For more information about cross-platform testing, please take a look [here](https://github.com/dotnet/corefx/blob/master/Documentation/building/cross-platform-testing.md).
 
@@ -264,7 +263,7 @@ The tests can also be filtered based on xunit trait attributes defined in [`Micr
 Tests marked as `Outerloop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet msbuild` but can be enabled manually by adding the `Outerloop` property e.g.
 
 ```cmd
-build-managed -Outerloop
+build -test -Outerloop
 ```
 
 To run <b>only</b> the Outerloop tests, use the following command:
@@ -424,7 +423,7 @@ Code coverage is built into the corefx build system.  It utilizes OpenCover for 
 
 ```cmd
 :: Run full coverage
-build-tests -Coverage
+build -test -Coverage
 
 :: To run a single project with code coverage enabled pass the /p:Coverage=true property
 cd src\System.Collections.Immutable\tests
@@ -474,7 +473,7 @@ dotnet msbuild /p:CoreCLROverridePath=d:\git\coreclr\bin\Product\Windows_NT.x64.
 
 By convention the project will look for PDBs in a directory under `$(CoreCLROverridePath)/PDB` and if found will also copy them. If not found no PDBs will be copied. If you want to explicitly set the PDB path then you can pass `CoreCLRPDBOverridePath` property to that PDB directory.
 
-Once you have updated your CoreCLR you can run tests however you usually do (via build-tests.cmd, individual test project, in VS, etc) and it should be using your copy of CoreCLR.
+Once you have updated your CoreCLR you can run tests however you usually do (via build.cmd -test, individual test project, in VS, etc) and it should be using your copy of CoreCLR.
 
 If you prefer, you can use a Debug build of System.Private.CoreLib, but if you do you must also use a Debug build of the native portions of the runtime, e.g. coreclr.dll. Tests with a Debug runtime will execute much more slowly than with Release runtime bits.
 

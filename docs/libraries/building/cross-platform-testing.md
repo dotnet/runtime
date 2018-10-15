@@ -24,13 +24,13 @@ instructions assume you are building for Linux, but are easily modifiable for OS
    respect to object sizes and layout so you need to ensure you have either a
    release coreclr and release System.Private.Corelib or debug coreclr and debug System.Private.Corelib.
 3. A Linux build of CoreFX. We currently have experimental support for building
-   CoreFX on Linux via `build.sh`. 
+   CoreFX on Linux via `build.sh`.
    The other option is:
 
-   * Build the managed parts of CoreFX on Windows. To do so run `build-managed.cmd -os=Linux`. It is okay to build a Debug version of CoreFX and run it
+   * Build the managed parts of CoreFX on Windows. To do so run `build.cmd /p:BuildNative=false -os=Linux`. It is okay to build a Debug version of CoreFX and run it
    on top of a release CoreCLR (which is exactly what we do in Jenkins).
 
-   * Build the native parts of CoreFX on Linux. To do so run `./build-native.sh` from the root of your CoreFX repo.
+   * Build the native parts of CoreFX on Linux. To do so run `./src/Native/build-native.sh` from the root of your CoreFX repo.
 
 4. The packages folder which contains all the packages restored from NuGet and
    MyGet when building CoreFX.
