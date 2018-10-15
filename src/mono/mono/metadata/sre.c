@@ -779,9 +779,9 @@ mono_image_get_fieldref_token (MonoDynamicImage *assembly, MonoClassField *field
 
 	if (mono_class_is_ginst (field->parent) && mono_class_get_generic_class (field->parent)->container_class && mono_class_get_generic_class (field->parent)->container_class->fields) {
 		int index = field - field->parent->fields;
-		type = mono_field_get_type (&mono_class_get_generic_class (field->parent)->container_class->fields [index]);
+		type = mono_field_get_type_internal (&mono_class_get_generic_class (field->parent)->container_class->fields [index]);
 	} else {
-		type = mono_field_get_type (field);
+		type = mono_field_get_type_internal (field);
 	}
 	token = mono_image_get_memberref_token (assembly, m_class_get_byval_arg (field->parent),
 											mono_field_get_name (field),

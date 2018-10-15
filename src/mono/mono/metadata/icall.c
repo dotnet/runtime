@@ -1836,7 +1836,7 @@ ves_icall_System_Reflection_FieldInfo_get_marshal_info (MonoReflectionFieldHandl
 	    (gklass && gklass->context.class_inst->is_open))
 		return MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, NULL_HANDLE);
 
-	MonoType *ftype = mono_field_get_type (field);
+	MonoType *ftype = mono_field_get_type_internal (field);
 	if (ftype && !(ftype->attrs & FIELD_ATTRIBUTE_HAS_FIELD_MARSHAL))
 		return MONO_HANDLE_CAST (MonoReflectionMarshalAsAttribute, NULL_HANDLE);
 

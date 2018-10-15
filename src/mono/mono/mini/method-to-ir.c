@@ -9762,7 +9762,7 @@ calli_end:
 				ensure_method_is_allowed_to_access_field (cfg, method, field);
 			*/
 
-			ftype = mono_field_get_type (field);
+			ftype = mono_field_get_type_internal (field);
 
 			/*
 			 * LDFLD etc. is usable on static fields as well, so convert those cases to

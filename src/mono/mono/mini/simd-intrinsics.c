@@ -2622,7 +2622,7 @@ mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, MonoInst *ad
 			if (cfg->verbose_level > 1)
 				printf ("  SIMD intrinsic field access: %s\n", field->name);
 
-			simd_inst = simd_intrinsic_emit_getter_op (cfg, index, field->parent, mono_field_get_type (field), addr);
+			simd_inst = simd_intrinsic_emit_getter_op (cfg, index, field->parent, mono_field_get_type_internal (field), addr);
 			goto on_exit;
 		}
 	}
