@@ -2960,7 +2960,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
         {
             memcpy(&stash, context, sizeof(CONTEXT));
-            // TODO: Comment on the JIT helper as well
             DWORD* esp = (DWORD*)context->Esp;
             if (withinWriteBarrierGroup) {
 #if defined(WRITE_BARRIER_CHECK)
