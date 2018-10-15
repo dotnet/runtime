@@ -218,7 +218,6 @@
   <Target Name="SetupPublishSymbols" Condition="'$(SymbolServerPath)'!=''" >
     <PropertyGroup>
       <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">1</SymbolExpirationInDays>
-      <SymbolVerboseLogging>true</SymbolVerboseLogging>
       <ConvertPortablePdbsToWindowsPdbs>true</ConvertPortablePdbsToWindowsPdbs>
     </PropertyGroup>
     <ItemGroup>
