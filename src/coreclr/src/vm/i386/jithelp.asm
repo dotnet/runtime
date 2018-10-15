@@ -130,6 +130,8 @@ ENDM
 
 ; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
 ; anything here, you might need to change AdjustContextForWriteBarrier as well
+; The code here is tightly coupled with DebuggerController::DispatchPatchOrSingleStep, if you change
+; anything here, you might need to change DebuggerController::DispatchPatchOrSingleStep as well
 WriteBarrierHelper MACRO rg
         ALIGN 4
 
