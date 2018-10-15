@@ -1,7 +1,7 @@
 Performance Tests
 ======================
 
-This document contains instructions for building, running, and adding Performance tests. 
+This document contains instructions for building, running, and adding Performance tests.
 
 Building and Running Tests
 -----------
@@ -15,7 +15,7 @@ Performance test files (if present) are stored within a library's ```tests/Perfo
  - Windows ```dotnet msbuild /t:BuildAndTest /p:ConfigurationGroup=Release```
  - Linux: ```dotnet msbuild /t:BuildAndTest /p:ConfigurationGroup=Release```
 
-**Note: Because build-tests.cmd/sh runs tests concurrently, do not use it for executing performance tests. If you still want to run them concurrently you need to pass the flag `/p:Performance=true` to it: `build-tests -release -- /p:Performance=true`.**
+**Note: Because test build runs tests concurrently, do not use it for executing performance tests. If you still want to run them concurrently you need to pass the flag `/p:Performance=true` to it: `build -test -release /p:Performance=true`.**
 
 The results files will be dropped in corefx/bin/tests/FLAVOR/TESTLIBRARY/TARGETFRAMEWORK.  The console output will also specify the location of these files.
 
@@ -25,7 +25,7 @@ To see memory usage as well as time, add the following property to the command l
 
 Adding New Performance Tests
 -----------
-Performance tests for CoreFX are built on top of xunit and [the Microsoft xunit-performance framework](https://github.com/Microsoft/xunit-performance/). 
+Performance tests for CoreFX are built on top of xunit and [the Microsoft xunit-performance framework](https://github.com/Microsoft/xunit-performance/).
 
 Performance tests should reside within their own "Performance" folder within the tests directory of a library (e.g. [corefx/src/System.IO.FileSystem/tests/Performance](https://github.com/dotnet/corefx/tree/master/src/System.IO.FileSystem/tests/Performance) contains perf tests for FileSystem).
 
