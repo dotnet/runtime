@@ -69,11 +69,6 @@ if not exist %MONO_DIR% (
     goto ON_ERROR
 )
 
-if not exist %MONO_DIST_DIR% (
-    echo Could not find "%MONO_DIST_DIR%".
-    goto ON_ERROR
-)
-
 set BTLS_ROOT_PATH=%MONO_DIR%\external\boringssl
 if not exist %BTLS_ROOT_PATH% (
     echo Could not find "%BTLS_ROOT_PATH%".
@@ -93,6 +88,36 @@ if /i "%VS_PLATFORM%" == "win32" (
 )
 
 set BTLS_BUILD_DIR=%MONO_BUILD_DIR%
+
+:: Check build environment.
+if "%VisualStudioVersion%" == "" (
+    echo VisualStudioVersion environment variable not set.
+    goto ON_ENV_WARNING
+)
+
+goto ON_ENV_OK
+
+:ON_ENV_WARNING
+
+:: VS 2015.
+set VC_VARS_ALL_FILE=%ProgramFiles(x86)%\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+IF EXIST "%VC_VARS_ALL_FILE%" (
+    echo For VS2015 builds, make sure to run this from within Visual Studio build or using "VS2015 x86|x64 Native Tools Command Prompt" command prompt.
+	echo Setup a "VS2015 x86|x64 Native Tools Command Prompt" command prompt by using "%VC_VARS_ALL_FILE% x86|amd64".
+)
+
+:: VS 2017.
+set VSWHERE_TOOLS_BIN=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+if exist "%VSWHERE_TOOLS_BIN%" (
+    echo For VS2017 builds, make sure to run this from within Visual Studio build or using "x86|x64 Native Tools Command Prompt for VS2017" command prompt.
+	for /f "tokens=*" %%a IN ('"%VSWHERE_TOOLS_BIN%" -latest -property installationPath') do (
+		echo Setup a "x86|x64 Native Tools Command Prompt for VS2017" command prompt by using "%%a\VC\Auxiliary\Build\vcvars32.bat|vcvars64.bat".
+	)
+)
+
+echo Could not detect Visual Studio build environment. You may experience build problems if wrong toolchain is auto detected.
+
+:ON_ENV_OK
 
 :: Check target.
 if /i "%VS_TARGET%" == "build" (
@@ -124,6 +149,7 @@ if not exist "%GIT%" (
 :: Make sure boringssl submodule is up to date.
 pushd
 cd %MONO_BTLS_ROOT_PATH%
+echo Updating boringssl submodule.
 "%GIT%" submodule update --init
 if not ERRORLEVEL == 0 (
    "%GIT%" submodule init
@@ -192,6 +218,12 @@ call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%
 if not exist "%VS_CONFIGURATION%\libmono-btls-shared.dll" (
     echo Missing btls build output, "%VS_CONFIGURATION%\libmono-btls-shared.dll"
     goto ON_ERROR
+)
+
+: Make sure build output folder exists.
+if not exist %MONO_DIST_DIR% (
+    echo Could not find "%MONO_DIST_DIR%", creating folder for build output.
+    mkdir "%MONO_DIST_DIR%""
 )
 
 : Copy files into distribution directory.
