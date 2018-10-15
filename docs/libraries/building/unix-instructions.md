@@ -8,7 +8,6 @@ Building CoreFX on FreeBSD, Linux and OS X
 4. Run the build script `./build.sh`
 
 Calling the script `build.sh` builds both the native and managed code.
-Only use it when the parameters that you are passing to the script apply for both components. Otherwise, use the scripts `build-native.sh` and `build-managed.sh` respectively.
 
 For more information about the different options when building, run `build.sh -?` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
@@ -52,7 +51,7 @@ For Ubuntu 14.04, install the following packages:
 `sudo apt-get install libunwind8 libicu52 curl`
 
 For Ubuntu 16.04 LTS / Bash on Ubuntu on Windows you may need to replace libicu52 with libicu55.
-Ubuntu 16.10 and Ubuntu 17.04 will require libicu57. 
+Ubuntu 16.10 and Ubuntu 17.04 will require libicu57.
 
 `sudo apt-get install libunwind8 libicu55 curl`
 
