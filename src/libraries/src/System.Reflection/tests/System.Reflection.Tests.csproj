@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Reflection\MockParameterInfo.cs">
+      <Link>Common\System\Reflection\MockParameterInfo.cs</Link>
+    </Compile>    
     <Compile Include="..\..\Common\tests\System\MockType.cs" Link="Common\System\MockType.cs" />
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
@@ -31,6 +34,10 @@
     <EmbeddedResource Include="Resources\ResourceTextFile.txt">
       <LogicalName>ResourceTextFile.txt</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
+    <Compile Include="MemberInfoTests.netcoreapp.cs" />
+    <Compile Include="TypeInfoTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj" />

@@ -249,6 +249,8 @@ namespace System.Reflection.Tests
             PropertyInfo propertyInfo1 = GetProperty(type1, name1);
             PropertyInfo propertyInfo2 = GetProperty(type2, name2);
             Assert.Equal(expected, propertyInfo1.Equals(propertyInfo2));
+            Assert.Equal(expected, propertyInfo1 == propertyInfo2);
+            Assert.Equal(!expected, propertyInfo1 != propertyInfo2);
         }
 
         [Fact]

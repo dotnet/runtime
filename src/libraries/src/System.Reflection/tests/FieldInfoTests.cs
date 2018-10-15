@@ -423,6 +423,16 @@ namespace System.Reflection.Tests
             Assert.Equal(initialValue, fi.GetValue(obj));
         }
 
+        [Fact]
+        public void SecurityAttributes()
+        {
+            FieldInfo info = GetField(typeof(FieldInfoTests), nameof(FieldInfoTests.s_intField));
+
+            Assert.True(info.IsSecurityCritical);
+            Assert.False(info.IsSecuritySafeCritical);
+            Assert.False(info.IsSecurityTransparent);
+        }        
+
         private static FieldInfo GetField(Type type, string name)
         {
             return type.GetTypeInfo().DeclaredFields.FirstOrDefault(fieldInfo => fieldInfo.Name.Equals(name));

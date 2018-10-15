@@ -38,6 +38,7 @@ namespace System.Reflection.Tests
         public void Equals(ConstructorInfo constructorInfo1, ConstructorInfo constructorInfo2, bool expected)
         {
             Assert.Equal(expected, constructorInfo1.Equals(constructorInfo2));
+            Assert.NotEqual(expected, constructorInfo1 != constructorInfo2);
         }
 
         [Fact]
@@ -146,7 +147,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void Invoke_ExistingInstance()
         {
-            // Should not prouce a second object.
+            // Should not produce a second object.
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
             ClassWith3Constructors obj1 = new ClassWith3Constructors(100, "hello");
             ClassWith3Constructors obj2 = (ClassWith3Constructors)constructors[2].Invoke(obj1, new object[] { 999, "initialized" });
