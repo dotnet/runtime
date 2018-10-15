@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -17,25 +19,27 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), 2)]
         [InlineData(typeof(ClassWithStaticConstructor), 0)]
         [InlineData(typeof(ClassWithMultipleConstructors), 4)]
-        public void DeclaredEvents(Type type, int expectedCount)
+        public void DeclaredConstructors(Type type, int expectedCount)
         {
             ConstructorInfo[] constructors = type.GetTypeInfo().DeclaredConstructors.Where(ctorInfo => !ctorInfo.IsStatic).ToArray();
             Assert.Equal(expectedCount, constructors.Length);
             foreach (ConstructorInfo constructorInfo in constructors)
             {
                 Assert.NotNull(constructorInfo);
+                Assert.True(constructorInfo.IsSpecialName);
             }
         }
 
         [Theory]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.EventPublic), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.EventPublicStatic), true)]
-        [InlineData(typeof(TI_BaseClass), "NoSuchEvent", false)]
-        [InlineData(typeof(TI_BaseClass), "", false)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.EventPublicNew), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.EventPublic), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.EventPublicStatic), false)]
-        public void DeclaredEvents(Type type, string name, bool exists)
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.EventPublic), true, "EventHandler")]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.EventPublicStatic), true, "EventHandler")]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.StuffHappened), true, "Action`1")]
+        [InlineData(typeof(TI_BaseClass), "NoSuchEvent", false, "EventHandler")]
+        [InlineData(typeof(TI_BaseClass), "", false, "EventHandler")]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.EventPublicNew), true, "EventHandler")]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.EventPublic), true, "EventHandler")]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.EventPublicStatic), false, "EventHandler")]
+        public void DeclaredEvents(Type type, string name, bool exists, string eventHandlerTypeName)
         {
             IEnumerable<EventInfo> events = type.GetTypeInfo().DeclaredEvents;
             Assert.Equal(exists, events.Any(eventInfo => eventInfo.Name.Equals(name)));
@@ -44,6 +48,7 @@ namespace System.Reflection.Tests
             if (exists)
             {
                 Assert.Equal(name, declaredEventInfo.Name);
+                Assert.Equal(eventHandlerTypeName, declaredEventInfo.EventHandlerType.Name);
             }
             else
             {
@@ -52,24 +57,26 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._field1), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._field2), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._readonlyField), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._volatileField), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_field), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_readonlyField), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_volatileField), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_arrayField), true)]
-        [InlineData(typeof(TI_BaseClass), "NoSuchField", false)]
-        [InlineData(typeof(TI_BaseClass), "", false)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass._field2), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass._readonlyField), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass._volatileField), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_field), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_readonlyField), true)]
-        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_volatileField), true)]
-        [InlineData(typeof(TI_BaseClass), nameof(TI_SubClass.s_arrayField), true)]
-        public void DeclaredFields(Type type, string name, bool exists)
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._field1), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._field2), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._readonlyField), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass._volatileField), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_field), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_readonlyField), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_volatileField), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.s_arrayField), true,  typeof(string[]), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.StuffHappened), true, typeof(Action<int>), true)]
+        [InlineData(typeof(TI_BaseClass), "_privateField", true, typeof(int), true)]
+        [InlineData(typeof(TI_BaseClass), "NoSuchField", false, default(Type), default(Boolean))]
+        [InlineData(typeof(TI_BaseClass), "", false, default(Type), default(Boolean))]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass._field2), true, typeof(string), false)]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass._readonlyField), true, typeof(string), false)]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass._volatileField), true, typeof(string), false)]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_field), true, typeof(string), false)]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_readonlyField), true, typeof(string), false)]
+        [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.s_volatileField), true, typeof(string), false)]
+        [InlineData(typeof(TI_BaseClass), nameof(TI_SubClass.s_arrayField), true,  typeof(string[]), false)]
+        public void DeclaredFields(Type type, string name, bool exists, Type fieldType, bool isPrivate)
         {
             IEnumerable<string> fields = type.GetTypeInfo().DeclaredFields.Select(fieldInfo => fieldInfo.Name);
             FieldInfo declaredFieldInfo = type.GetTypeInfo().GetDeclaredField(name);
@@ -77,6 +84,8 @@ namespace System.Reflection.Tests
             {
                 Assert.Equal(name, declaredFieldInfo.Name);
                 Assert.Contains(name, fields);
+                Assert.Equal(fieldType, declaredFieldInfo.FieldType);
+                Assert.Equal(isPrivate, declaredFieldInfo.IsPrivate);
             }
             else
             {
@@ -101,6 +110,10 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.VirtualVoidMethodReturningVoid1), true)]
         [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.VirtualVoidMethodReturningVoid2), true)]
         [InlineData(typeof(TI_BaseClass), nameof(TI_BaseClass.StaticVoidMethodReturningVoid), true)]
+        [InlineData(typeof(TI_BaseClass), "add_StuffHappened", true)]
+        [InlineData(typeof(TI_BaseClass), "remove_StuffHappened", true)]
+        [InlineData(typeof(TI_BaseClass), "set_StringProperty1", true)]
+        [InlineData(typeof(TI_BaseClass), "get_StringProperty1", true)]
         [InlineData(typeof(TI_BaseClass), "NoSuchMethod", false)]
         [InlineData(typeof(TI_BaseClass), "", false)]
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.VoidMethodReturningVoid2), true)]
@@ -165,8 +178,10 @@ namespace System.Reflection.Tests
         [InlineData(typeof(TI_SubClass), nameof(TI_SubClass.StaticStringProperty))]
         public void DeclaredProperties(Type type, string name)
         {
-            IEnumerable<string> properties = type.GetTypeInfo().DeclaredProperties.Select(property => property.Name);
+            TypeInfo typeInfo = type.GetTypeInfo();
+            IEnumerable<string> properties = typeInfo.DeclaredProperties.Select(property => property.Name);
             Assert.Contains(name, properties);
+            Assert.Equal(name, typeInfo.GetDeclaredProperty(name).Name);
         }
 
         [Fact]
@@ -511,6 +526,10 @@ namespace System.Reflection.Tests
         [InlineData(typeof(object), typeof(TI_ClassWithInterface1), true)]
         [InlineData(typeof(int?), typeof(int), true)]
         [InlineData(typeof(List<int>), typeof(List<>), false)]
+        [InlineData(typeof(IDisposable), typeof(Stream), true)]
+        [InlineData(typeof(IList), typeof(ArrayList), true)]
+        [InlineData(typeof(object), typeof(int), true)]
+        [InlineData(typeof(object), typeof(string), true)]        
         // Null
         [InlineData(typeof(BaseClassWithInterface1Interface2), null, false)]
         // Lists and arrays
@@ -1567,6 +1586,7 @@ namespace System.Reflection.Tests
 
         public event EventHandler EventPublic; // Inherited
         public static event EventHandler EventPublicStatic;
+        public event Action<int> StuffHappened;
 
         public static string[] s_arrayField = new string[5];
         public string _field1 = "";
@@ -1576,6 +1596,8 @@ namespace System.Reflection.Tests
         public static string s_field = "";
         public static readonly string s_readonlyField = "";
         public static volatile string s_volatileField = "";
+
+        private int _privateField;
 
         public void VoidMethodReturningVoid1() { }
         public void StringMethodReturningVoid(string str) { }

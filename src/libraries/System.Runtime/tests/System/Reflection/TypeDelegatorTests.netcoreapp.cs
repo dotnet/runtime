@@ -17,7 +17,6 @@ namespace System.Reflection.Tests
             yield return new object[] { typeof(int), false };
             yield return new object[] { typeof(int[]).MakeByRefType(), false };
             yield return new object[] { typeof(int[,]), false };
-            yield return new object[] { typeof(TypeInfoTests), false };
             if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 yield return new object[] { Array.CreateInstance(typeof(int), new[] { 2 }, new[] { -1 }).GetType(), false };
