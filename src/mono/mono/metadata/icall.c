@@ -6634,6 +6634,12 @@ ves_icall_System_Buffer_SetByteInternal (MonoArray *array, gint32 idx, gint8 val
 	mono_array_set_internal (array, gint8, idx, value);
 }
 
+void
+ves_icall_System_Buffer_MemcpyInternal (gpointer dest, gconstpointer src, gint32 count)
+{
+	memcpy (dest, src, count);
+}
+
 MonoBoolean
 ves_icall_System_Buffer_BlockCopyInternal (MonoArray *src, gint32 src_offset, MonoArray *dest, gint32 dest_offset, gint32 count) 
 {
