@@ -12,7 +12,7 @@
 #include <glib.h>
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/atomic.h"
-#include "loader-internals.h"
+#include "metadata/loader-internals.h"
 #include "pal-icalls.h"
 
 /*

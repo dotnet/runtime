@@ -9,8 +9,8 @@
 #ifndef __MONO_METADATA_PAL_ICALLS_H__
 #define __MONO_METADATA_PAL_ICALLS_H__
 
-#include "metadata.h"
-#include "class-internals.h"
+#include "mono/metadata/metadata.h"
+#include "mono/metadata/class-internals.h"
 
 MONO_API void mono_pal_init (void);
 
