@@ -1374,8 +1374,6 @@ Thread::Thread()
 #endif
 
     // Initialize data members related to thread statics
-    m_pTLBTable = NULL;
-    m_TLBTableSize = 0;
     m_pThreadLocalBlock = NULL;
 
     m_dwLockCount = 0;
@@ -2754,9 +2752,6 @@ Thread::~Thread()
 
     //Ensure DeleteThreadStaticData was executed
     _ASSERTE(m_pThreadLocalBlock == NULL);
-    _ASSERTE(m_pTLBTable == NULL);
-    _ASSERTE(m_TLBTableSize == 0);
-
 
 #ifdef FEATURE_PREJIT
     if (m_pIBCInfo) {
@@ -9100,24 +9095,12 @@ void Thread::DeleteThreadStaticData()
     CONTRACTL_END;
 
     // Deallocate the memory used by the table of ThreadLocalBlocks
-    if (m_pTLBTable != NULL)
+    if (m_pThreadLocalBlock != NULL)
     {
-        for (SIZE_T i = 0; i < m_TLBTableSize; ++i)
-        {
-            ThreadLocalBlock * pTLB = m_pTLBTable[i];
-            if (pTLB != NULL)
-            {
-                m_pTLBTable[i] = NULL;
-                pTLB->FreeTable();
-                delete pTLB;
-            }
-        }
-
-        delete m_pTLBTable;
-        m_pTLBTable = NULL;
+        m_pThreadLocalBlock->FreeTable();
+        delete m_pThreadLocalBlock;
+        m_pThreadLocalBlock = NULL;
     }
-    m_pThreadLocalBlock = NULL;
-    m_TLBTableSize = 0;
 }
 
 //+----------------------------------------------------------------------------
@@ -9132,13 +9115,9 @@ void Thread::DeleteThreadStaticData()
 
 void Thread::DeleteThreadStaticData(ModuleIndex index)
 {
-    for (SIZE_T i = 0; i < m_TLBTableSize; ++i)
+    if (m_pThreadLocalBlock != NULL)
     {
-        ThreadLocalBlock * pTLB = m_pTLBTable[i];
-        if (pTLB != NULL)
-        {
-            pTLB->FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
-        }
+        m_pThreadLocalBlock->FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
     }
 }
 
@@ -9163,14 +9142,8 @@ void Thread::DeleteThreadStaticData(AppDomain *pDomain)
     // Look up the AppDomain index
     SIZE_T index = pDomain->GetIndex().m_dwIndex;
 
-    ThreadLocalBlock * pTLB = NULL;
-
-    // NULL out the pointer to the ThreadLocalBlock
-    if (index < m_TLBTableSize)
-    {
-        pTLB = m_pTLBTable[index];
-        m_pTLBTable[index] = NULL;
-    }
+    ThreadLocalBlock * pTLB = m_pThreadLocalBlock;
+    m_pThreadLocalBlock = NULL;
 
     if (pTLB != NULL)
     {

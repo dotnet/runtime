@@ -197,8 +197,6 @@ class Thread
     friend class ThreadStatics;
 
     PTR_ThreadLocalBlock m_pThreadLocalBlock;
-    PTR_PTR_ThreadLocalBlock m_pTLBTable;
-    SIZE_T m_TLBTableSize;
 
 public:
     BOOL IsAddressInStack (PTR_VOID addr) const { return TRUE; }
@@ -4490,41 +4488,8 @@ public:
     
     // m_pThreadLocalBLock points to the ThreadLocalBlock that corresponds to the 
     // AppDomain that the Thread is currently in
-
-    // m_pTLBTable points to the this Thread's table of ThreadLocalBlocks, indexed by
-    // ADIndex. It's important to note that ADIndexes get recycled when AppDomains are
-    // torn down. m_TLBTableSize holds to current size the size of this Thread's TLB table.
-    // See "ThreadStatics.h" for more information.
     
     PTR_ThreadLocalBlock m_pThreadLocalBlock;
-    PTR_PTR_ThreadLocalBlock m_pTLBTable;
-    SIZE_T m_TLBTableSize;
-
-    // This getter is used by SOS; if m_pThreadLocalBlock is NULL, it's
-    // important that we look in the TLB table as well
-    /*
-    PTR_ThreadLocalBlock GetThreadLocalBlock()
-    {
-        // If the current TLB pointer is NULL, search the TLB table
-        if (m_pThreadLocalBlock != NULL)
-            return m_pThreadLocalBlock;
-        
-        ADIndex index = GetDomain()->GetIndex();
-
-        // Check to see if we have a ThreadLocalBlock for the the current AppDomain,
-        if (index.m_dwIndex < m_TLBTableSize)
-        {
-            // Update the current ThreadLocalBlock pointer,
-            // but only on non-DAC builds
-#ifndef DACCESS_COMPILE
-            m_pThreadLocalBlock = m_pTLBTable[index.m_dwIndex];
-#endif
-            return m_pTLBTable[index.m_dwIndex];
-        }
-    
-        return NULL;
-    }
-    */
 
     // Called during AssemblyLoadContext teardown to clean up all structures
     // associated with thread statics for the specific Module
