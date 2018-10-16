@@ -257,13 +257,15 @@ namespace System.Net.Sockets
                 //
                 // Create the event port and buffer
                 //
-                if (Interop.Sys.CreateSocketEventPort(out _port) != Interop.Error.SUCCESS)
+                Interop.Error err = Interop.Sys.CreateSocketEventPort(out _port);
+                if (err != Interop.Error.SUCCESS)
                 {
-                    throw new InternalException();
+                    throw new InternalException(err);
                 }
-                if (Interop.Sys.CreateSocketEventBuffer(EventBufferCount, out _buffer) != Interop.Error.SUCCESS)
+                err = Interop.Sys.CreateSocketEventBuffer(EventBufferCount, out _buffer);
+                if (err != Interop.Error.SUCCESS)
                 {
-                    throw new InternalException();
+                    throw new InternalException(err);
                 }
 
                 //
@@ -271,16 +273,18 @@ namespace System.Net.Sockets
                 // to the pipe will send an event to the event loop.
                 //
                 int* pipeFds = stackalloc int[2];
-                if (Interop.Sys.Pipe(pipeFds, Interop.Sys.PipeFlags.O_CLOEXEC) != 0)
+                int pipeResult = Interop.Sys.Pipe(pipeFds, Interop.Sys.PipeFlags.O_CLOEXEC);
+                if (pipeResult != 0)
                 {
-                    throw new InternalException();
+                    throw new InternalException(pipeResult);
                 }
                 _shutdownReadPipe = pipeFds[Interop.Sys.ReadEndOfPipe];
                 _shutdownWritePipe = pipeFds[Interop.Sys.WriteEndOfPipe];
 
-                if (Interop.Sys.TryChangeSocketEventRegistration(_port, (IntPtr)_shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle) != Interop.Error.SUCCESS)
+                err = Interop.Sys.TryChangeSocketEventRegistration(_port, (IntPtr)_shutdownReadPipe, Interop.Sys.SocketEvents.None, Interop.Sys.SocketEvents.Read, ShutdownHandle);
+                if (err != Interop.Error.SUCCESS)
                 {
-                    throw new InternalException();
+                    throw new InternalException(err);
                 }
 
                 //
@@ -320,7 +324,7 @@ namespace System.Net.Sockets
                     Interop.Error err = Interop.Sys.WaitForSocketEvents(_port, _buffer, &numEvents);
                     if (err != Interop.Error.SUCCESS)
                     {
-                        throw new InternalException();
+                        throw new InternalException(err);
                     }
 
                     // The native shim is responsible for ensuring this condition.
@@ -361,7 +365,7 @@ namespace System.Net.Sockets
             int bytesWritten = Interop.Sys.Write(_shutdownWritePipe, &b, 1);
             if (bytesWritten != 1)
             {
-                throw new InternalException();
+                throw new InternalException(bytesWritten);
             }
         }
 

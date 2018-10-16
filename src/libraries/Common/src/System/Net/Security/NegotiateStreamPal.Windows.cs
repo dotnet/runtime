@@ -169,7 +169,7 @@ namespace System.Net.Security
 
             // not sure why this is here - retained from Encrypt code above
             if (securityBuffer[1].type != SecurityBufferType.SECBUFFER_DATA)
-                throw new InternalException();
+                throw new InternalException(securityBuffer[1].type);
 
             // return validated payload size 
             return securityBuffer[1].size;

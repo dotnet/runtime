@@ -4,11 +4,26 @@
 
 namespace System.Net
 {
-    internal class InternalException : Exception
+    internal sealed class InternalException : Exception
     {
+        private readonly object _unexpectedValue;
+
         internal InternalException()
         {
             NetEventSource.Fail(this, "InternalException thrown.");
         }
+
+        internal InternalException(object unexpectedValue)
+        {
+            _unexpectedValue = unexpectedValue;
+            if (NetEventSource.IsEnabled)
+            {
+                NetEventSource.Fail(this, $"InternalException thrown for unexpected value: {unexpectedValue}");
+            }
+        }
+
+        public override string Message => _unexpectedValue != null ?
+            base.Message + " " + _unexpectedValue :
+            base.Message;
     }
 }

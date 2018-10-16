@@ -1135,7 +1135,7 @@ namespace System.Net.Sockets
                         }
                         else
                         {
-                            throw new InternalException();
+                            throw new InternalException(errorCode);
                         }
                     }
 

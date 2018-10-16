@@ -239,7 +239,7 @@ namespace System.Net.Security
 
             if (securityBuffer[1].type != SecurityBufferType.SECBUFFER_DATA)
             {
-                throw new InternalException();
+                throw new InternalException(securityBuffer[1].type);
             }
 
             newOffset = securityBuffer[1].offset;
@@ -290,7 +290,7 @@ namespace System.Net.Security
 
             if (securityBuffer[1].type != realDataType)
             {
-                throw new InternalException();
+                throw new InternalException(securityBuffer[1].type);
             }
 
             newOffset = securityBuffer[1].offset;

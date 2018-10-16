@@ -19,7 +19,7 @@ namespace System.Net
         {
             if ((kind & ThreadKinds.SourceMask) != ThreadKinds.Unknown)
             {
-                throw new InternalException();
+                throw new InternalException(kind);
             }
 
             // Ignore during shutdown.
@@ -79,7 +79,7 @@ namespace System.Net
 
                 if (_frameNumber != ThreadKindStack.Count)
                 {
-                    throw new InternalException();
+                    throw new InternalException(_frameNumber);
                 }
 
                 ThreadKinds previous = ThreadKindStack.Pop();
