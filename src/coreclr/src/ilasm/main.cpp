@@ -194,11 +194,12 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/32BITPREFERRED Create a 32BitPreferred image (PE32)");
       printf("\n/ENC=<file>     Create Edit-and-Continue deltas from specified source file");
       
-      printf("\n\nKey may be '-' or '/'\nOptions are recognized by first 3 characters\nDefault source file extension is .il\n");
+      printf("\n\nKey may be '-' or '/'\nOptions are recognized by first 3 characters (except ARM/ARM64)\nDefault source file extension is .il\n");
 
       printf("\nTarget defaults:");
       printf("\n/PE64      => /PE64 /X64");
       printf("\n/X64       => /PE64 /X64");
+      printf("\n/ARM64     => /PE64 /ARM64");
 
       printf("\n\n");
       exit(exitcode);
