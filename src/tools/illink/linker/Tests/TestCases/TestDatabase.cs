@@ -116,6 +116,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesByPrefix ("Inheritance.Complex.");
 		}
 
+		public static IEnumerable<TestCaseData> BCLFeaturesTests ()
+		{
+			return NUnitCasesByPrefix ("BCLFeatures.");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;

@@ -141,6 +141,8 @@ namespace Mono.Linker {
 
 		public MarkingHelpers MarkingHelpers { get; private set; }
 
+		public KnownMembers MarkedKnownMembers { get; private set; }
+
 		public Tracer Tracer { get; private set; }
 
 		public string[] ExcludedFeatures { get; set; }
@@ -177,6 +179,7 @@ namespace Mono.Linker {
 			_annotations = factory.CreateAnnotationStore (this);
 			MarkingHelpers = factory.CreateMarkingHelpers (this);
 			Tracer = factory.CreateTracer (this);
+			MarkedKnownMembers = new KnownMembers ();
 			StripResources = true;
 		}
 
