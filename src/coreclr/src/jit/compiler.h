@@ -1263,9 +1263,15 @@ public:
     unsigned slotNum;  // When an argument is passed in the OutArg area this is the slot number in the OutArg area
     unsigned numSlots; // Count of number of slots that this argument uses
 
-    unsigned alignment;  // 1 or 2 (slots/registers)
-    unsigned lateArgInx; // index into gtCallLateArgs list
-    unsigned tmpNum;     // the LclVar number if we had to force evaluation of this arg
+    unsigned alignment; // 1 or 2 (slots/registers)
+private:
+    unsigned _lateArgInx; // index into gtCallLateArgs list; UINT_MAX if this is not a late arg.
+public:
+    unsigned tmpNum; // the LclVar number if we had to force evaluation of this arg
+
+    var_types argType; // The type used to pass this argument. This is generally the original argument type, but when a
+                       // struct is passed as a scalar type, this is that type.
+                       // Note that if a struct is passed by reference, this will still be the struct type.
 
     bool needTmp : 1;       // True when we force this argument's evaluation into a temp LclVar
     bool needPlace : 1;     // True when we must replace this argument with a placeholder node
@@ -1277,13 +1283,31 @@ public:
                             // to be on the stack despite its arg list position.
     bool isStruct : 1;      // True if this is a struct arg
     bool _isVararg : 1;     // True if the argument is in a vararg context.
+    bool passedByRef : 1;   // True iff the argument is passed by reference.
 #ifdef FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA
-    bool _isHfaRegArg : 1; // True when the argument is passed as a HFA in FP registers.
-    bool _isDoubleHfa : 1; // True when the argument is passed as an HFA, with an element type of DOUBLE.
+    bool _isHfaArg : 1;    // True when the argument is an HFA type.
+    bool _isDoubleHfa : 1; // True when the argument is an HFA, with an element type of DOUBLE.
 #endif
+
+    bool isLateArg()
+    {
+        bool isLate = (_lateArgInx != UINT_MAX);
+        return isLate;
+    }
+
+    __declspec(property(get = getLateArgInx, put = setLateArgInx)) unsigned lateArgInx;
+    unsigned getLateArgInx()
+    {
+        assert(isLateArg());
+        return _lateArgInx;
+    }
+    void setLateArgInx(unsigned inx)
+    {
+        _lateArgInx = inx;
+    }
     __declspec(property(get = getRegNum)) regNumber regNum;
     regNumber getRegNum()
     {
@@ -1342,11 +1366,21 @@ public:
 #endif // FEATURE_VARARG
     }
 
+    __declspec(property(get = getIsHfaArg)) bool isHfaArg;
+    bool getIsHfaArg()
+    {
+#ifdef FEATURE_HFA
+        return _isHfaArg;
+#else
+        return false;
+#endif
+    }
+
     __declspec(property(get = getIsHfaRegArg)) bool isHfaRegArg;
     bool getIsHfaRegArg()
     {
 #ifdef FEATURE_HFA
-        return _isHfaRegArg;
+        return _isHfaArg && isPassedInRegisters();
 #else
         return false;
 #endif
@@ -1356,7 +1390,7 @@ public:
     var_types getHfaType()
     {
 #ifdef FEATURE_HFA
-        return _isHfaRegArg ? (_isDoubleHfa ? TYP_DOUBLE : TYP_FLOAT) : TYP_UNDEF;
+        return _isHfaArg ? (_isDoubleHfa ? TYP_DOUBLE : TYP_FLOAT) : TYP_UNDEF;
 #else
         return TYP_UNDEF;
 #endif
@@ -1367,35 +1401,36 @@ public:
 #ifdef FEATURE_HFA
         if (type != TYP_UNDEF)
         {
+            // We must already have set the passing mode.
+            assert(numRegs != 0 || numSlots != 0);
+            // We originally set numRegs according to the size of the struct, but if the size of the
+            // hfaType is not the same as the pointer size, we need to correct it.
+            // Note that hfaSlots is the number of registers we will use. For ARM, that is twice
+            // the number of "double registers".
             unsigned numHfaRegs = hfaSlots;
-// We originally set numRegs according to the size of the struct, but if the size of the
-// hfaType is not the same as the pointer size, we need to correct it.
-// Note that hfaSlots is the number of registers we will use. For ARM, that is twice
-// the number of "double registers".
+            if (isPassedInRegisters())
+            {
 #ifdef _TARGET_ARM_
-            if (type == TYP_DOUBLE)
-            {
-                // Must be an even number of registers.
-                assert((numRegs & 1) == 0);
-                numHfaRegs = hfaSlots / 2;
-            }
-            else
+                if (type == TYP_DOUBLE)
+                {
+                    // Must be an even number of registers.
+                    assert((numRegs & 1) == 0);
+                    numHfaRegs = hfaSlots / 2;
+                }
 #endif // _TARGET_ARM_
-            {
-                numHfaRegs = hfaSlots;
+                if (_isHfaArg)
+                {
+                    // This should already be set correctly.
+                    assert(numRegs == numHfaRegs);
+                    assert(_isDoubleHfa == (type == TYP_DOUBLE));
+                }
+                else
+                {
+                    numRegs = numHfaRegs;
+                }
             }
-            if (isHfaRegArg)
-            {
-                // This should already be set correctly.
-                assert(hfaType == type);
-                assert(numRegs == numHfaRegs);
-            }
-            else
-            {
-                _isDoubleHfa = (type == TYP_DOUBLE);
-                _isHfaRegArg = true;
-                numRegs      = numHfaRegs;
-            }
+            _isDoubleHfa = (type == TYP_DOUBLE);
+            _isHfaArg    = true;
         }
 #endif // FEATURE_HFA
     }
@@ -1426,14 +1461,72 @@ public:
         return !isSplit && (numRegs != 0);
     }
 
+    bool isPassedInFloatRegisters()
+    {
+#ifdef _TARGET_X86
+        return false;
+#else
+        return isValidFloatArgReg(regNum);
+#endif
+    }
+
     bool isSingleRegOrSlot()
     {
         return !isSplit && ((numRegs == 1) || (numSlots == 1));
     }
 
+    // Returns the number of "slots" used, where for this purpose a
+    // register counts as a slot.
+    unsigned getSlotCount()
+    {
+        if (isBackFilled)
+        {
+            assert(isPassedInRegisters());
+            assert(numRegs == 1);
+        }
+        else if (regNum == REG_STK)
+        {
+            assert(!isPassedInRegisters());
+            assert(numRegs == 0);
+        }
+        else
+        {
+            assert(numRegs > 0);
+        }
+        return numSlots + numRegs;
+    }
+
+    // Returns the size as a multiple of pointer-size.
+    // For targets without HFAs, this is the same as getSlotCount().
+    unsigned getSize()
+    {
+        unsigned size = getSlotCount();
+#ifdef FEATURE_HFA
+#ifdef _TARGET_ARM_
+        // We counted the number of regs, but if they are DOUBLE hfa regs we have to double the size.
+        if (isHfaRegArg && (hfaType == TYP_DOUBLE))
+        {
+            assert(!isSplit);
+            size <<= 1;
+        }
+#elif defined(_TARGET_ARM64_)
+        // We counted the number of regs, but if they are FLOAT hfa regs we have to halve the size.
+        if (isHfaRegArg && (hfaType == TYP_FLOAT))
+        {
+            // Round up in case of odd HFA count.
+            size = (size + 1) >> 1;
+        }
+#endif // _TARGET_ARM64_
+#endif
+        return size;
+    }
+
+    // Set the register numbers for a multireg argument.
+    // There's nothing to do on x64/Ux because the structDesc has already been used to set the
+    // register numbers.
     void SetMultiRegNums()
     {
-#if FEATURE_MULTIREG_ARGS
+#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
         if (numRegs == 1)
         {
             return;
@@ -1450,7 +1543,7 @@ public:
             argReg = (regNumber)(argReg + regSize);
             setRegNum(regIndex, argReg);
         }
-#endif
+#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI)
     }
 
     // Check that the value of 'isStruct' is consistent.
@@ -1564,15 +1657,13 @@ public:
                              bool     isStruct,
                              bool     isVararg = false);
 
-    void           RemorphReset();
-    fgArgTabEntry* RemorphRegArg(
-        unsigned argNum, GenTree* node, GenTree* parent, regNumber regNum, unsigned numRegs, unsigned alignment);
-
-    void RemorphStkArg(unsigned argNum, GenTree* node, GenTree* parent, unsigned numSlots, unsigned alignment);
+    void RemorphReset();
+    void UpdateRegArg(fgArgTabEntry* argEntry, GenTree* node, bool reMorphing);
+    void UpdateStkArg(fgArgTabEntry* argEntry, GenTree* node, bool reMorphing);
 
     void SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots);
 
-    void EvalToTmp(unsigned argNum, unsigned tmpNum, GenTree* newNode);
+    void EvalToTmp(fgArgTabEntry* curArgTabEntry, unsigned tmpNum, GenTree* newNode);
 
     void ArgsComplete();
 
@@ -1647,8 +1738,37 @@ public:
     }
 #endif // defined(UNIX_X86_ABI)
 
-    // Get the late arg for arg at position argIndex.  Caller must ensure this position has a late arg.
-    GenTree* GetLateArg(unsigned argIndex);
+    // Get the fgArgTabEntry for the arg at position argNum.
+    fgArgTabEntry* GetArgEntry(unsigned argNum, bool reMorphing = true)
+    {
+        fgArgTabEntry* curArgTabEntry = nullptr;
+
+        if (!reMorphing)
+        {
+            // The arg table has not yet been sorted.
+            curArgTabEntry = argTable[argNum];
+            assert(curArgTabEntry->argNum == argNum);
+            return curArgTabEntry;
+        }
+
+        for (unsigned i = 0; i < argCount; i++)
+        {
+            curArgTabEntry = argTable[i];
+            if (curArgTabEntry->argNum == argNum)
+            {
+                return curArgTabEntry;
+            }
+        }
+        noway_assert(!"GetArgEntry: argNum not found");
+        return nullptr;
+    }
+
+    // Get the node for the arg at position argIndex.
+    // Caller must ensure that this index is a valid arg index.
+    GenTree* GetArgNode(unsigned argIndex)
+    {
+        return GetArgEntry(argIndex)->node;
+    }
 
     void Dump(Compiler* compiler);
 };
@@ -2321,6 +2441,7 @@ public:
     static fgArgTabEntry* gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum);
     static fgArgTabEntry* gtArgEntryByNode(GenTreeCall* call, GenTree* node);
     fgArgTabEntry* gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx);
+    static GenTree* gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx);
     bool gtArgIsThisPtr(fgArgTabEntry* argEntry);
 
     GenTree* gtNewAssignNode(GenTree* dst, GenTree* src);
@@ -4407,18 +4528,16 @@ public:
     var_types getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg);
 
     // Get the type that is used to pass values of the given struct type.
-    // If you have already retrieved the struct size then pass it as the optional fourth argument
-    //
     // isVarArg is passed for use on Windows Arm64 to change the decision returned regarding
     // hfa types.
     //
     var_types getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                   structPassingKind*   wbPassStruct,
                                   bool                 isVarArg,
-                                  unsigned             structSize = 0);
+                                  unsigned             structSize);
 
     // Get the type that is used to return values of the given struct type.
-    // If you have already retrieved the struct size then pass it as the optional fourth argument
+    // If the size is unknown, pass 0 and it will be determined from 'clsHnd'.
     var_types getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                                      structPassingKind*   wbPassStruct = nullptr,
                                      unsigned             structSize   = 0);
@@ -5064,6 +5183,7 @@ private:
     GenTree* fgMorphCast(GenTree* tree);
     GenTree* fgUnwrapProxy(GenTree* objRef);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
+    void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
     GenTreeArgList* fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac);
 
