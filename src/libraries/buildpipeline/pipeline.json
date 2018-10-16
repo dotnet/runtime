@@ -55,7 +55,7 @@
             "PB_BuildArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) -stripSymbols /p:RuntimeOS=linux-musl /p:PortableBuild=false /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=linux-musl /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
-            "PB_TargetQueue": "Alpine.36.Amd64",
+            "PB_TargetQueue": "Alpine.36.Amd64+Alpine.38.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
           },
           "ReportingParameters": {
