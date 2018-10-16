@@ -9,8 +9,8 @@ namespace System.Net.NetworkInformation.Tests
 {
     public class DnsParsingTests : FileCleanupTestBase
     {
-        [InlineData("resolv.conf")]
-        [InlineData("resolv_nonewline.conf")]
+        [InlineData("NetworkFiles/resolv.conf")]
+        [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
         public void DnsSuffixParsing(string file)
         {
@@ -21,8 +21,8 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal("fake.suffix.net", suffix);
         }
 
-        [InlineData("resolv.conf")]
-        [InlineData("resolv_nonewline.conf")]
+        [InlineData("NetworkFiles/resolv.conf")]
+        [InlineData("NetworkFiles/resolv_nonewline.conf")]
         [Theory]
         public void DnsAddressesParsing(string file)
         {

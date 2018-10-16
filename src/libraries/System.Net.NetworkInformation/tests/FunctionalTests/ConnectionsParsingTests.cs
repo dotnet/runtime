@@ -14,8 +14,8 @@ namespace System.Net.NetworkInformation.Tests
         {
             string sockstatFile = GetTestFilePath();
             string sockstat6File = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("sockstat", sockstatFile);
-            FileUtil.NormalizeLineEndings("sockstat6", sockstat6File);
+            FileUtil.NormalizeLineEndings("NetworkFiles/sockstat", sockstatFile);
+            FileUtil.NormalizeLineEndings("NetworkFiles/sockstat6", sockstat6File);
 
             int numTcp = StringParsingHelpers.ParseNumSocketConnections(sockstatFile, "TCP");
             Assert.Equal(4, numTcp);
@@ -35,8 +35,8 @@ namespace System.Net.NetworkInformation.Tests
         {
             string tcpFile = GetTestFilePath();
             string tcp6File = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("tcp", tcpFile);
-            FileUtil.NormalizeLineEndings("tcp6", tcp6File);
+            FileUtil.NormalizeLineEndings("NetworkFiles/tcp", tcpFile);
+            FileUtil.NormalizeLineEndings("NetworkFiles/tcp6", tcp6File);
 
             TcpConnectionInformation[] infos = StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(tcpFile, tcp6File);
             Assert.Equal(10, infos.Length);
@@ -82,8 +82,8 @@ namespace System.Net.NetworkInformation.Tests
         {
             string tcpFile = GetTestFilePath();
             string tcp6File = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("tcp", tcpFile);
-            FileUtil.NormalizeLineEndings("tcp6", tcp6File);
+            FileUtil.NormalizeLineEndings("NetworkFiles/tcp", tcpFile);
+            FileUtil.NormalizeLineEndings("NetworkFiles/tcp6", tcp6File);
 
             IPEndPoint[] listeners = StringParsingHelpers.ParseActiveTcpListenersFromFiles(tcpFile, tcp6File);
             // There is only one socket in Listening state
@@ -96,8 +96,8 @@ namespace System.Net.NetworkInformation.Tests
         {
             string udpFile = GetTestFilePath();
             string udp6File = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("udp", udpFile);
-            FileUtil.NormalizeLineEndings("udp6", udp6File);
+            FileUtil.NormalizeLineEndings("NetworkFiles/udp", udpFile);
+            FileUtil.NormalizeLineEndings("NetworkFiles/udp6", udp6File);
 
             IPEndPoint[] listeners = StringParsingHelpers.ParseActiveUdpListenersFromFiles(udpFile, udp6File);
             Assert.Equal(15, listeners.Length);
