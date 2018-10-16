@@ -85987,3 +85987,11 @@ Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
+
+[vararg.cmd_12236]
+RelativePath=JIT\Directed\arglist\vararg\vararg.cmd
+WorkingDir=JIT\Directed\arglist\vararg
+Expected=0
+MaxAllowedDurationSeconds=600
+Categories=EXPECTED_PASS
+HostStyle=0
