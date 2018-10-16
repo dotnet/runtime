@@ -266,9 +266,9 @@ typedef union  {
 # define LEGACY_ 473 
 # define LIBRARY_ 474 
 # define X86_ 475 
-# define IA64_ 476 
-# define AMD64_ 477 
-# define ARM_ 478 
+# define AMD64_ 476 
+# define ARM_ 477 
+# define ARM64_ 478 
 # define MARSHAL_ 479 
 # define CUSTOM_ 480 
 # define SYSSTRING_ 481 
@@ -4770,13 +4770,13 @@ case 779:
 { SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_x86); } break;
 case 780:
 #line 1946 "asmparse.y"
-{ SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_IA64); } break;
+{ SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_AMD64); } break;
 case 781:
 #line 1947 "asmparse.y"
-{ SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_AMD64); } break;
+{ SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_ARM); } break;
 case 782:
 #line 1948 "asmparse.y"
-{ SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_ARM); } break;
+{ SET_PA(yyval.asmAttr,yypvt[-1].asmAttr,afPA_ARM64); } break;
 case 785:
 #line 1955 "asmparse.y"
 { PASMM->SetAssemblyHashAlg(yypvt[-0].int32); } break;

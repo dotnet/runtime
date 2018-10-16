@@ -798,6 +798,14 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
         // support to worry about on ARM so don't ever create the stub for ARM binaries.
         m_createCorMainStub = false;
     }
+    else if ((createFlags & ICEE_CREATE_MACHINE_MASK) == ICEE_CREATE_MACHINE_ARM64)
+    {
+        m_ntHeaders->FileHeader.Machine = VAL16(IMAGE_FILE_MACHINE_ARM64);
+
+        // The OS loader already knows how to initialize pure managed assemblies and we have no legacy OS
+        // support to worry about on ARM64 so don't ever create the stub for ARM64 binaries.
+        m_createCorMainStub = false;
+    }
     else
     {
         _ASSERTE(!"Invalid target machine");
