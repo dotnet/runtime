@@ -56,7 +56,7 @@ namespace System.Net
         {
             if (_completionStatus != StatusNotStarted)
             {
-                throw new InternalException(); // Pending operation is in progress.
+                throw new InternalException(_completionStatus); // Pending operation is in progress.
             }
 
             Buffer = buffer;

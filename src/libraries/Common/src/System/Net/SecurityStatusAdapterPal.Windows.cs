@@ -76,7 +76,7 @@ namespace System.Net
             if (!s_statusDictionary.TryGetForward(win32SecurityStatus, out statusCode))
             {
                 Debug.Fail("Unknown Interop.SecurityStatus value: " + win32SecurityStatus);
-                throw new InternalException();
+                throw new InternalException(win32SecurityStatus);
             }
 
             if (attachException)
@@ -95,7 +95,7 @@ namespace System.Net
             if (!s_statusDictionary.TryGetBackward(status.ErrorCode, out interopStatus))
             {
                 Debug.Fail("Unknown SecurityStatus value: " + status);
-                throw new InternalException();
+                throw new InternalException(status.ErrorCode);
             }
             return interopStatus;
         }
