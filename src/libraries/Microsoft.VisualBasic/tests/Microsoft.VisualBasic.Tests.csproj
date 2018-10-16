@@ -21,6 +21,7 @@
     <Compile Include="Microsoft/VisualBasic/CompilerServices/OptionCompareAttributeTests.cs" />
     <Compile Include="Microsoft/VisualBasic/CompilerServices/OptionTextAttributeTests.cs" />
     <Compile Include="Microsoft/VisualBasic/CompilerServices/StandardModuleAttributeTests.cs" />
+    <Compile Include="Microsoft/VisualBasic/CompilerServices/StructUtilsTests.cs" />
     <Compile Include="Microsoft/VisualBasic/Devices/NetworkAvailableEventArgsTests.cs" />
     <Compile Include="ConversionsTests.cs" />
     <Compile Include="OperatorsTests.cs" />

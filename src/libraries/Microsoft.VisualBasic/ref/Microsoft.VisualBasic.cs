@@ -150,6 +150,26 @@ namespace Microsoft.VisualBasic
         public static int InStr(string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
         public static int InStr(int StartPos, string String1, string String2, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
         public static int InStrRev(string StringCheck, string StringMatch, int Start = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] CompareMethod Compare = CompareMethod.Binary) { throw null; }
+        public static int Len(bool Expression) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Len(sbyte Expression) { throw null; }
+        public static int Len(byte Expression) { throw null; }
+        public static int Len(short Expression) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Len(ushort Expression) { throw null; }
+        public static int Len(int Expression) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Len(uint Expression) { throw null; }
+        public static int Len(long Expression) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Len(ulong Expression) { throw null; }
+        public static int Len(decimal Expression) { throw null; }
+        public static int Len(float Expression) { throw null; }
+        public static int Len(double Expression) { throw null; }
+        public static int Len(System.DateTime Expression) { throw null; }
+        public static int Len(char Expression) { throw null; }
+        public static int Len(string Expression) { throw null; }
+        public static int Len(object Expression) { throw null; }
         public static string Left(string str, int Length) { throw null; }
         public static string LTrim(string str) { throw null; }
         public static string Mid(string str, int Start) { throw null; }
