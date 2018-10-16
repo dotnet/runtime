@@ -1539,6 +1539,10 @@ void ZapImage::OutputTables()
 #endif // _DEBUG
         {
             dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE;
+#ifdef _TARGET_64BIT_
+            // Large address aware, required for High Entry VA, is always enabled for 64bit native images.
+            dllCharacteristics |= IMAGE_DLLCHARACTERISTICS_HIGH_ENTROPY_VA;
+#endif
         }
 
         SetDllCharacteristics(dllCharacteristics);
