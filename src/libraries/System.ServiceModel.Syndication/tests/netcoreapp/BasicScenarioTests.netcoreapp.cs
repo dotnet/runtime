@@ -18,7 +18,7 @@ namespace System.ServiceModel.Syndication.Tests
             // *** EXECUTE *** \\
             SyndicationFeed feed;
             DateTimeOffset dto = new DateTimeOffset(2017, 1, 2, 3, 4, 5, new TimeSpan(0));
-            using (XmlReader reader = XmlReader.Create(@"RssSpecCustomParser.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/RssSpecCustomParser.xml"))
             {
                 var formatter = new Rss20FeedFormatter();
                 formatter.DateTimeParser = (XmlDateTimeData xmlDateTimeData, out DateTimeOffset dateTimeOffset) =>
@@ -41,7 +41,7 @@ namespace System.ServiceModel.Syndication.Tests
             // *** SETUP *** \\
             // *** EXECUTE *** \\
             SyndicationFeed feed;
-            using (XmlReader reader = XmlReader.Create(@"RssSpecCustomParser.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/RssSpecCustomParser.xml"))
             {
                 var formatter = new Rss20FeedFormatter
                 {
@@ -76,7 +76,7 @@ namespace System.ServiceModel.Syndication.Tests
             // *** EXECUTE *** \\
             SyndicationFeed feed;
             DateTimeOffset dto = new DateTimeOffset(2017, 1, 2, 3, 4, 5, new TimeSpan(0));
-            using (XmlReader reader = XmlReader.Create(@"SimpleAtomFeedCustomParser.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/SimpleAtomFeedCustomParser.xml"))
             {
                 var formatter = new Atom10FeedFormatter
                 {
@@ -105,7 +105,7 @@ namespace System.ServiceModel.Syndication.Tests
             // *** SETUP *** \\
             // *** EXECUTE *** \\
             SyndicationFeed feed;
-            using (XmlReader reader = XmlReader.Create(@"SimpleAtomFeedCustomParser.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/SimpleAtomFeedCustomParser.xml"))
             {
                 var formatter = new Atom10FeedFormatter
                 {
@@ -134,7 +134,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_RSS_Optional_Elements()
         {
-            using (XmlReader reader = XmlReader.Create(@"rssSpecExample.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/rssSpecExample.xml"))
             {
                 SyndicationFeed feed = SyndicationFeed.Load(reader);
 
@@ -163,7 +163,7 @@ namespace System.ServiceModel.Syndication.Tests
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
             ReadWriteSyndicationFeed(
-                file: "rssOptionalElements.xml",
+                file: "TestFeeds/rssOptionalElements.xml",
                 feedFormatter: (feedObject) => new Rss20FeedFormatter(feedObject),
                 allowableDifferences: allowableDifferences
             );
@@ -174,7 +174,7 @@ namespace System.ServiceModel.Syndication.Tests
         {
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
             ReadWriteSyndicationFeed(
-                file: "rssOptionalElements.xml",
+                file: "TestFeeds/rssOptionalElements.xml",
                 feedFormatter: (feedObject) => new Rss20FeedFormatter(feedObject),
                 allowableDifferences: allowableDifferences,
                 verifySyndicationFeedRead: (feed) =>

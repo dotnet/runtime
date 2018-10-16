@@ -53,7 +53,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 // *** SETUP *** \\\
                 SyndicationFeed sf;
-                using (XmlReader xmlr = XmlReader.Create(@"SimpleRssFeed.xml"))
+                using (XmlReader xmlr = XmlReader.Create("TestFeeds/SimpleRssFeed.xml"))
                 {
                     sf = SyndicationFeed.Load(xmlr);
                     Assert.True(sf != null);
@@ -86,7 +86,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 // *** SETUP *** \\\
                 SyndicationFeed sf;
-                using (XmlReader xmlr = XmlReader.Create(@"rssSpecExample.xml"))
+                using (XmlReader xmlr = XmlReader.Create("TestFeeds/rssSpecExample.xml"))
                 {
                     sf = SyndicationFeed.Load(xmlr);
                     Assert.True(sf != null);
@@ -120,7 +120,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 // *** SETUP *** \\\
                 SyndicationFeed sf;
-                using (XmlReader xmlr = XmlReader.Create(@"SimpleAtomFeed.xml"))
+                using (XmlReader xmlr = XmlReader.Create("TestFeeds/SimpleAtomFeed.xml"))
                 {
                     sf = SyndicationFeed.Load(xmlr);
                     Assert.True(sf != null);
@@ -153,7 +153,7 @@ namespace System.ServiceModel.Syndication.Tests
             {
                 // *** SETUP *** \\\
                 SyndicationFeed sf;
-                using (XmlReader xmlr = XmlReader.Create(@"atom_spec_example.xml"))
+                using (XmlReader xmlr = XmlReader.Create("TestFeeds/atom_spec_example.xml"))
                 {
                     sf = SyndicationFeed.Load(xmlr);
                     Assert.True(sf != null);
@@ -236,7 +236,7 @@ namespace System.ServiceModel.Syndication.Tests
         public static void SyndicationFeed_Load_Rss()
         {
             XmlReaderSettings setting = new XmlReaderSettings();
-            using (XmlReader reader = XmlReader.Create(@"rssSpecExample.xml", setting))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/rssSpecExample.xml", setting))
             {
                 SyndicationFeed rss = SyndicationFeed.Load(reader);
                 Assert.True(rss.Items != null);
@@ -247,7 +247,7 @@ namespace System.ServiceModel.Syndication.Tests
         public static void SyndicationFeed_Load_Atom()
         {
             XmlReaderSettings setting = new XmlReaderSettings();
-            using (XmlReader reader = XmlReader.Create(@"atom_spec_example.xml", setting))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/atom_spec_example.xml", setting))
             {
                 SyndicationFeed atom = SyndicationFeed.Load(reader);
                 Assert.True(atom.Items != null);
@@ -258,7 +258,7 @@ namespace System.ServiceModel.Syndication.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disjoint items not supported on NetFX")]
         public static void SyndicationFeed_Rss_TestDisjointItems()
         {
-            using (XmlReader reader = XmlReader.Create(@"RssDisjointItems.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/RssDisjointItems.xml"))
             {
                 // *** EXECUTE *** \\
                 SyndicationFeed sf = SyndicationFeed.Load(reader);
@@ -279,7 +279,7 @@ namespace System.ServiceModel.Syndication.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disjoint items not supported on NetFX")]
         public static void SyndicationFeed_Atom_TestDisjointItems()
         {
-            using (XmlReader reader = XmlReader.Create(@"AtomDisjointItems.xml"))
+            using (XmlReader reader = XmlReader.Create("TestFeeds/AtomDisjointItems.xml"))
             {
                 // *** EXECUTE *** \\
                 SyndicationFeed sf = SyndicationFeed.Load(reader);
@@ -300,7 +300,7 @@ namespace System.ServiceModel.Syndication.Tests
         public static void SyndicationFeed_Rss_WrongDateFormat()
         {
             // *** SETUP *** \\
-            XmlReader reader = XmlReader.Create(@"rssSpecExampleWrongDateFormat.xml");
+            XmlReader reader = XmlReader.Create("TestFeeds/rssSpecExampleWrongDateFormat.xml");
 
             // *** EXECUTE *** \\
             SyndicationFeed res = SyndicationFeed.Load(reader);
@@ -318,14 +318,14 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void AtomEntryPositiveTest()
         {
-            string file = @"brief-entry-noerror.xml";
+            string file = "TestFeeds/brief-entry-noerror.xml";
             ReadWriteSyndicationItem(file, (itemObject) => new Atom10ItemFormatter(itemObject));
         }
 
         [Fact]
         public static void AtomEntryPositiveTest_write()
         {
-            string file = @"AtomEntryTest.xml";
+            string file = "TestFeeds/AtomEntryTest.xml";
             string serializeFilePath = Path.GetTempFileName();
             bool toDeletedFile = true;
 
@@ -372,7 +372,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void AtomFeedPositiveTest()
         {
-            string dataFile = @"atom_feeds.dat";
+            string dataFile = "TestFeeds/atom_feeds.dat";
             List<string> fileList = GetTestFilesForFeedTest(dataFile);
             List<AllowableDifference> allowableDifferences = GetAtomFeedPositiveTestAllowableDifferences();
 
@@ -385,14 +385,14 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void RssEntryPositiveTest()
         {
-            string file = @"RssEntry.xml";
+            string file = "TestFeeds/RssEntry.xml";
             ReadWriteSyndicationItem(file, (itemObject) => new Rss20ItemFormatter(itemObject));
         }
 
         [Fact]
         public static void RssFeedPositiveTest()
         {
-            string dataFile = @"rss_feeds.dat";
+            string dataFile = "TestFeeds/rss_feeds.dat";
             List<string> fileList = GetTestFilesForFeedTest(dataFile);
             List<AllowableDifference> allowableDifferences = GetRssFeedPositiveTestAllowableDifferences();
 
@@ -405,7 +405,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void DiffAtomNsTest()
         {
-            string file = @"diff_atom_ns.xml";
+            string file = "TestFeeds/FailureFeeds/diff_atom_ns.xml";
             using (XmlReader reader = XmlReader.Create(file))
             {
                 Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
@@ -415,7 +415,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void DiffRssNsTest()
         {
-            string file = @"diff_rss_ns.xml";
+            string file = "TestFeeds/FailureFeeds/diff_rss_ns.xml";
             using (XmlReader reader = XmlReader.Create(file))
             {
                 Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
@@ -425,7 +425,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void DiffRssVersionTest()
         {
-            string file = @"diff_rss_version.xml";
+            string file = "TestFeeds/FailureFeeds/diff_rss_version.xml";
             using (XmlReader reader = XmlReader.Create(file))
             {
                 Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
@@ -435,7 +435,7 @@ namespace System.ServiceModel.Syndication.Tests
         [Fact]
         public static void NoRssVersionTest()
         {
-            string file = @"no_rss_version.xml";
+            string file = "TestFeeds/FailureFeeds/no_rss_version.xml";
             using (XmlReader reader = XmlReader.Create(file))
             {
                 Assert.Throws(typeof(XmlException), () => { SyndicationItem.Load(reader); });
@@ -630,7 +630,7 @@ namespace System.ServiceModel.Syndication.Tests
                 {
                     if (!file.StartsWith("#"))
                     {
-                        file = file.Trim();
+                        file = Path.Combine("TestFeeds", file.Trim());
                         if (File.Exists(file))
                         {
                             fileList.Add(Path.GetFullPath(file));
