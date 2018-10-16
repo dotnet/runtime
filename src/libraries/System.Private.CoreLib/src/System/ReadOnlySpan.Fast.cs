@@ -153,7 +153,13 @@ namespace System
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public unsafe ref readonly T GetPinnableReference() => ref (_length != 0) ? ref _pointer.Value : ref Unsafe.AsRef<T>(null);
+        public unsafe ref readonly T GetPinnableReference()
+        {
+            // Ensure that the native code has just one forward branch that is predicted-not-taken.
+            ref T ret = ref Unsafe.AsRef<T>(null);
+            if (_length != 0) ret = ref _pointer.Value;
+            return ref ret;
+        }
 
         /// <summary>
         /// Copies the contents of this read-only span into destination span. If the source
