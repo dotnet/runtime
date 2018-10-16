@@ -6,13 +6,15 @@ namespace Mono.Linker.Steps
 	public class RemoveFeaturesStep : BaseStep
 	{
 		public bool FeatureCOM { get; set; }
+		public bool FeatureETW { get; set; }
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
-			if (Annotations.GetAction (assembly) == AssemblyAction.Link) {
-				foreach (var type in assembly.MainModule.Types)
-					ProcessType (type);
-			}
+			if (Annotations.GetAction (assembly) != AssemblyAction.Link)
+				return;
+
+			foreach (var type in assembly.MainModule.Types)
+				ProcessType (type);
 		}
 
 		void ProcessType (TypeDefinition type)
@@ -25,13 +27,85 @@ namespace Mono.Linker.Steps
 
 			foreach (var field in type.Fields)
 				RemoveCustomAttributes (field);
-
-			foreach (var method in type.Methods) {
+				
+			foreach (var method in type.Methods)
 				RemoveCustomAttributes (method);
-			}
 
 			foreach (var nested in type.NestedTypes)
 				ProcessType (nested);
+
+			if (FeatureETW) {
+				//
+				// The pattern here is that EventSource has IsEnabled method(s) which are
+				// always called before accessing any other members. We stub them which should
+				// make all other members unreachable
+				//
+				if (BCL.EventTracingForWindows.IsEventSourceType (type))
+					ExcludeEventSource (type);
+				else if (BCL.EventTracingForWindows.IsEventSourceImplementation (type))
+					ExcludeEventSourceImplementation (type);
+			}
+		}
+
+		void ExcludeEventSource (TypeDefinition type)
+		{
+			var annotations = Context.Annotations;
+
+			foreach (var method in type.Methods) {
+				if (annotations.GetAction (method) != MethodAction.Nothing)
+					continue;
+
+				if (method.IsStatic)
+					continue;
+
+				if (method.HasCustomAttributes)
+					method.CustomAttributes.Clear ();
+
+				if (method.IsDefaultConstructor ()) {
+					annotations.SetAction (method, MethodAction.ConvertToStub);
+					continue;
+				}
+
+				if (method.Name == "IsEnabled" || BCL.IsIDisposableImplementation (method) || method.IsFinalizer ()) {
+					annotations.SetAction (method, MethodAction.ConvertToStub);
+					continue;
+				}
+
+				annotations.SetAction (method, MethodAction.ConvertToThrow);
+			}
+		}
+
+		void ExcludeEventSourceImplementation (TypeDefinition type)
+		{
+			var annotations = Context.Annotations;
+
+			foreach (var method in type.Methods) {
+				if (annotations.GetAction (method) != MethodAction.Nothing)
+					continue;
+
+				if (method.IsStatic)
+					continue;
+
+				if (method.HasCustomAttributes)
+					method.CustomAttributes.Clear ();
+
+				if (method.IsFinalizer ()) {
+					annotations.SetAction (method, MethodAction.ConvertToStub);
+					continue;
+				}
+
+				if (method.IsConstructor) {
+					//
+					// Skip when it cannot be easily stubbed 
+					//
+					if (type.BaseType.HasDefaultConstructor ())
+						annotations.SetAction (method, MethodAction.ConvertToStub);
+
+					continue;
+				}
+
+				annotations.SetAction (method, MethodAction.ConvertToThrow);
+			}
 		}
 
 		bool RemoveCustomAttributes (ICustomAttributeProvider provider)
@@ -82,6 +156,17 @@ namespace Mono.Linker.Steps
 			case "SetWin32ContextInIDispatchAttribute":
 			case "ManagedToNativeComInteropStubAttribute":
 				if (!FeatureCOM || type.Namespace != "System.Runtime.InteropServices")
+					return false;
+
+				break;
+
+			case "EventSourceAttribute":
+			case "EventAttribute":
+			case "EventDataAttribute":
+			case "EventFieldAttribute":
+			case "EventIgnoreAttribute":
+			case "NonEventAttribute":
+				if (!FeatureETW || type.Namespace != "System.Diagnostics.Tracing")
 					return false;
 
 				break;

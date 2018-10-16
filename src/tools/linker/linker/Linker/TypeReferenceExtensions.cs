@@ -200,5 +200,19 @@ namespace Mono.Linker
 		{
 			return fullTypeName.Replace ('+', '/');
 		}
+
+		public static bool HasDefaultConstructor (this TypeReference type)
+		{
+			foreach (var m in type.GetMethods ()) {
+				if (m.HasParameters)
+					continue;
+
+				var definition = m.Resolve ();
+				if (definition?.IsDefaultConstructor () == true)
+					return true;
+			}
+
+			return false;
+		}
 	}
 }

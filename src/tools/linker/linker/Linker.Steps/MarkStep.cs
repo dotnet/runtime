@@ -503,7 +503,7 @@ namespace Mono.Linker.Steps {
 
 		protected void MarkStaticConstructor (TypeDefinition type)
 		{
-			if (MarkMethodIf (type.Methods, IsNonEmptyStaticConstructor))
+			if (MarkMethodIf (type.Methods, IsNonEmptyStaticConstructor) != null)
 				Annotations.SetPreservedStaticCtor (type);
 		}
 
@@ -933,8 +933,8 @@ namespace Mono.Linker.Steps {
 			if (IsSerializable (type))
 				MarkSerializable (type);
 
-			if (IsEventSource (type)) {
-				MarkEventSource (type);
+			if (!_context.IsFeatureExcluded ("etw") && BCL.EventTracingForWindows.IsEventSourceImplementation (type, _context)) {
+				MarkEventSourceProviders (type);
 			}
 
 			MarkTypeSpecialCustomAttributes (type);
@@ -1060,7 +1060,7 @@ namespace Mono.Linker.Steps {
 					MarkTypeWithDebuggerTypeProxyAttribute (type, attribute);
 					break;
 				case "System.Diagnostics.Tracing.EventDataAttribute":
-					MarkTypeWithEventDataAttribute (type);
+					MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
 					break;
 				}
 			}
@@ -1078,11 +1078,6 @@ namespace Mono.Linker.Steps {
 					break;
 				}
 			}
-		}
-
-		void MarkTypeWithEventDataAttribute (TypeDefinition type)
-		{
-			MarkMethodsIf (type.Methods, IsPublicInstancePropertyMethod);
 		}
 
 		void MarkXmlSchemaProvider (TypeDefinition type, CustomAttribute attribute)
@@ -1299,7 +1294,7 @@ namespace Mono.Linker.Steps {
 
 		static bool IsSpecialSerializationConstructor (MethodDefinition method)
 		{
-			if (!IsInstanceConstructor (method))
+			if (!method.IsInstanceConstructor ())
 				return false;
 
 			var parameters = method.Parameters;
@@ -1317,39 +1312,28 @@ namespace Mono.Linker.Steps {
 					MarkMethod (method);
 		}
 
-		protected bool MarkMethodIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate)
+		protected MethodDefinition MarkMethodIf (Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate)
 		{
 			foreach (MethodDefinition method in methods) {
 				if (predicate (method)) {
-					MarkMethod (method);
-					return true;
+					return MarkMethod (method);
 				}
 			}
 
-			return false;
+			return null;
 		}
 
-		static bool IsDefaultConstructor (MethodDefinition method)
+		protected bool MarkDefaultConstructor (TypeDefinition type)
 		{
-			return IsInstanceConstructor (method) && !method.HasParameters;
-		}
+			if (type?.HasMethods != true)
+				return false;
 
-		protected static bool IsInstanceConstructor (MethodDefinition method)
-		{
-			return method.IsConstructor && !method.IsStatic;
-		}
-
-		protected void MarkDefaultConstructor (TypeDefinition type)
-		{
-			if ((type == null) || !type.HasMethods)
-				return;
-
-			MarkMethodsIf (type.Methods, IsDefaultConstructor);
+			return MarkMethodIf (type.Methods, MethodDefinitionExtensions.IsDefaultConstructor) != null;
 		}
 
 		static bool IsNonEmptyStaticConstructor (MethodDefinition method)
 		{
-			if (!method.IsConstructor || !method.IsStatic)
+			if (!method.IsStaticConstructor ())
 				return false;
 
 			if (!method.HasBody || !method.IsIL)
@@ -1390,30 +1374,11 @@ namespace Mono.Linker.Steps {
 			return td.BaseType != null && td.BaseType.FullName == "System.MulticastDelegate";
 		}
 
-		bool IsEventSource (TypeDefinition td)
-		{
-			TypeReference type = td;
-			do {
-				if (type.FullName == "System.Diagnostics.Tracing.EventSource") {
-					return true;
-				}
-
-				TypeDefinition typeDef = type.Resolve ();
-				if (typeDef == null) {
-					HandleUnresolvedType (type);
-					return false;
-				}
-				type = typeDef.BaseType;
-			} while (type != null);
-			return false;
-		}
-
-		void MarkEventSource (TypeDefinition td)
+		void MarkEventSourceProviders (TypeDefinition td)
 		{
 			foreach (var nestedType in td.NestedTypes) {
-				if (nestedType.Name == "Keywords" || nestedType.Name == "Tasks" || nestedType.Name == "Opcodes") {
+				if (BCL.EventTracingForWindows.IsProviderName (nestedType.Name))
 					MarkStaticFields (nestedType);
-				}
 			}
 		}
 
@@ -1605,7 +1570,7 @@ namespace Mono.Linker.Steps {
 			return null;
 		}
 
-		protected void MarkStaticFields(TypeDefinition type)
+		protected void MarkStaticFields (TypeDefinition type)
 		{
 			if (!type.HasFields)
 				return;
@@ -1732,6 +1697,8 @@ namespace Mono.Linker.Steps {
 			if (method.IsVirtual)
 				_virtual_methods.Add (method);
 
+			MarkNewCodeDependencies (method);
+
 			MarkBaseMethods (method);
 
 			MarkType (method.ReturnType);
@@ -1764,7 +1731,7 @@ namespace Mono.Linker.Steps {
 			if (Annotations.IsInstantiated (method.DeclaringType))
 				return false;
 
-			if (method.IsConstructor && !method.IsStatic)
+			if (method.IsInstanceConstructor ())
 				return true;
 
 			if (method.DeclaringType.IsInterface)
@@ -1777,11 +1744,45 @@ namespace Mono.Linker.Steps {
 		{
 			if (Annotations.IsInstantiated (type))
 				return;
+
 			Annotations.MarkInstantiated (type);
+
 			MarkInterfaceImplementations (type);
 			MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
+
+		void MarkNewCodeDependencies (MethodDefinition method)
+		{
+			switch (Annotations.GetAction (method)) {
+			case MethodAction.ConvertToStub:
+				if (!method.IsInstanceConstructor ())
+					return;
+
+				var baseType = ResolveTypeDefinition (method.DeclaringType.BaseType);
+				if (!MarkDefaultConstructor (baseType))
+					throw new NotSupportedException ($"Cannot stub constructor on '{method.DeclaringType}' when base type does not have default constructor");
+
+				break;
+
+			case MethodAction.ConvertToThrow:
+				if (_context.MarkedKnownMembers.NotSupportedExceptionCtorString != null)
+					break;
+
+				var nse = BCL.FindPredefinedType ("System", "NotSupportedException", _context);
+				if (nse == null)
+					throw new NotSupportedException ("Missing predefined 'System.NotSupportedException' type");
+
+				MarkType (nse);
+
+				var nseCtor = MarkMethodIf (nse.Methods, KnownMembers.IsNotSupportedExceptionCtorString);
+				if (nseCtor == null)
+					throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
+
+				_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor;
+				break;
+			}
+		}		
 
 		void MarkBaseMethods (MethodDefinition method)
 		{

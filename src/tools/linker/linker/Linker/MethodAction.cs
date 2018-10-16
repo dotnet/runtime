@@ -31,6 +31,8 @@ namespace Mono.Linker {
 	public enum MethodAction {
 		Nothing,
 		Parse,
-		ForceParse
+		ForceParse,
+		ConvertToStub,
+		ConvertToThrow
 	}
 }

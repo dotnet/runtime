@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Mono.Linker.Tests.Cases</RootNamespace>
     <AssemblyName>Mono.Linker.Tests.Cases</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -435,6 +435,9 @@
     <Compile Include="Statics\MixedStaticFieldInitializerAndCtor.cs" />
     <Compile Include="LinkXml\UnusedTypeDeclarationPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\CanPreserveExcludedFeatureCom.cs" />
+    <Compile Include="BCLFeatures\ETW\CustomEventSource.cs" />
+    <Compile Include="BCLFeatures\ETW\Excluded.cs" />
+    <Compile Include="BCLFeatures\ETW\BaseRemovedEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
@@ -501,6 +504,8 @@
     <Folder Include="Attributes.StructLayout\" />
     <Folder Include="Inheritance.Complex" />
     <Folder Include="Reflection\Dependencies\" />
+    <Folder Include="BCLFeatures\" />
+    <Folder Include="BCLFeatures\ETW\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />
