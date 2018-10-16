@@ -39,6 +39,7 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\ProjectData.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\StandardModuleAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\StaticLocalInitFlag.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\StructUtils.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Symbols.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />

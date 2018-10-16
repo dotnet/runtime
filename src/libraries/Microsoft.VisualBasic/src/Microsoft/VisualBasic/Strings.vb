@@ -336,6 +336,134 @@ EmptyMatchString:
             End Try
         End Function
 
+        Public Function Len(ByVal Expression As Boolean) As Integer
+            Return 2
+        End Function
+
+        <CLSCompliant(False)>
+        Public Function Len(ByVal Expression As SByte) As Integer
+            Return 1
+        End Function
+
+        Public Function Len(ByVal Expression As Byte) As Integer
+            Return 1
+        End Function
+
+        Public Function Len(ByVal Expression As Int16) As Integer
+            Return 2
+        End Function
+
+        <CLSCompliant(False)>
+        Public Function Len(ByVal Expression As UInt16) As Integer
+            Return 2
+        End Function
+
+        Public Function Len(ByVal Expression As Int32) As Integer
+            Return 4
+        End Function
+
+        <CLSCompliant(False)>
+        Public Function Len(ByVal Expression As UInt32) As Integer
+            Return 4
+        End Function
+
+        Public Function Len(ByVal Expression As Int64) As Integer
+            Return 8
+        End Function
+
+        <CLSCompliant(False)>
+        Public Function Len(ByVal Expression As UInt64) As Integer
+            Return 8
+        End Function
+
+        Public Function Len(ByVal Expression As Decimal) As Integer
+            'This must return the length for VB6 Currency
+            Return 8
+        End Function
+
+        Public Function Len(ByVal Expression As Single) As Integer
+            Return 4
+        End Function
+
+        Public Function Len(ByVal Expression As Double) As Integer
+            Return 8
+        End Function
+
+        Public Function Len(ByVal Expression As DateTime) As Integer
+            Return 8
+        End Function
+
+        Public Function Len(ByVal Expression As Char) As Integer
+            Return 2
+        End Function
+
+        Public Function Len(ByVal Expression As String) As Integer
+            If Expression Is Nothing Then
+                Return 0
+            End If
+
+            Return Expression.Length
+        End Function
+
+        Public Function Len(ByVal Expression As Object) As Integer
+            If Expression Is Nothing Then
+                Return 0
+            End If
+
+            Dim ValueInterface As IConvertible = TryCast(Expression, IConvertible)
+            If Not ValueInterface Is Nothing Then
+                Select Case ValueInterface.GetTypeCode()
+                    Case TypeCode.Boolean
+                        Return 2
+                    Case TypeCode.SByte
+                        Return 1
+                    Case TypeCode.Byte
+                        Return 1
+                    Case TypeCode.Int16
+                        Return 2
+                    Case TypeCode.UInt16
+                        Return 2
+                    Case TypeCode.Int32
+                        Return 4
+                    Case TypeCode.UInt32
+                        Return 4
+                    Case TypeCode.Int64
+                        Return 8
+                    Case TypeCode.UInt64
+                        Return 8
+                    Case TypeCode.Decimal
+                        Return 16
+                    Case TypeCode.Single
+                        Return 4
+                    Case TypeCode.Double
+                        Return 8
+                    Case TypeCode.DateTime
+                        Return 8
+                    Case TypeCode.Char
+                        Return 2
+                    Case TypeCode.String
+                        Return Expression.ToString().Length
+                    Case TypeCode.Object
+                        'Fallthrough to below
+                End Select
+
+            Else
+                Dim CharArray As Char() = TryCast(Expression, Char())
+
+                If CharArray IsNot Nothing Then
+                    'REVIEW: Should this be char length or byte length?
+                    Return CharArray.Length
+                End If
+            End If
+
+            If TypeOf Expression Is ValueType Then
+                Dim Length As Integer = StructUtils.GetRecordLength(Expression, 1)
+                Return Length
+            End If
+
+            Throw VbMakeException(vbErrors.TypeMismatch)
+        End Function
+
         '============================================================================
         ' Left/Right/Mid/Trim functions.
         '============================================================================
