@@ -12195,80 +12195,18 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         GenTree*             op2ClassFromHandle = tree->gtOp.gtOp2->gtCall.gtCallArgs->gtOp.gtOp1;
         GenTree*             op1TunneledHandle  = nullptr;
         GenTree*             op2TunneledHandle  = nullptr;
-        CORINFO_CLASS_HANDLE cls1Hnd            = nullptr;
-        CORINFO_CLASS_HANDLE cls2Hnd            = nullptr;
+        CORINFO_CLASS_HANDLE cls1Hnd            = NO_CLASS_HANDLE;
+        CORINFO_CLASS_HANDLE cls2Hnd            = NO_CLASS_HANDLE;
         unsigned             runtimeLookupCount = 0;
 
-        // Try and find class handle for op1
-        if ((op1ClassFromHandle->gtOper == GT_CNS_INT) && (op1ClassFromHandle->gtType == TYP_I_IMPL))
-        {
-            assert(op1ClassFromHandle->IsIconHandle(GTF_ICON_CLASS_HDL));
-            cls1Hnd = (CORINFO_CLASS_HANDLE)op1ClassFromHandle->gtIntCon.gtCompileTimeHandle;
-        }
-        else if (op1ClassFromHandle->OperGet() == GT_RUNTIMELOOKUP)
-        {
-            cls1Hnd = op1ClassFromHandle->AsRuntimeLookup()->GetClassHandle();
-            runtimeLookupCount++;
-        }
-        // Tunnel through indirs we may see when prejitting
-        else if (op1ClassFromHandle->gtOper == GT_IND)
-        {
-            // The handle indirs we can optimize will be marked as non-faulting.
-            // Certain others (eg from refanytype) may not be.
-            if (op1ClassFromHandle->gtFlags & GTF_IND_NONFAULTING)
-            {
-                GenTree* op1HandleLiteral = op1ClassFromHandle->gtOp.gtOp1;
+        // Try and find class handles from op1 and op2
+        cls1Hnd = gtGetHelperArgClassHandle(op1ClassFromHandle, &runtimeLookupCount, &op1TunneledHandle);
+        cls2Hnd = gtGetHelperArgClassHandle(op2ClassFromHandle, &runtimeLookupCount, &op2TunneledHandle);
 
-                // If, after tunneling, we have a constant handle,
-                // remember the class and the value tree for later.
-                if ((op1HandleLiteral->gtOper == GT_CNS_INT) && (op1HandleLiteral->gtType == TYP_I_IMPL))
-                {
-                    JITDUMP("tunneling through indir on op1\n");
-                    op1TunneledHandle = op1HandleLiteral;
+        // If we have both class handles, try and resolve the type equality test completely.
+        bool resolveFailed = false;
 
-                    // These handle constants should be class handles.
-                    assert(op1TunneledHandle->IsIconHandle(GTF_ICON_CLASS_HDL));
-                    cls1Hnd = (CORINFO_CLASS_HANDLE)op1TunneledHandle->gtIntCon.gtCompileTimeHandle;
-                }
-            }
-        }
-
-        // Try and find class handle for op2
-        if ((op2ClassFromHandle->gtOper == GT_CNS_INT) && (op2ClassFromHandle->gtType == TYP_I_IMPL))
-        {
-            assert(op2ClassFromHandle->IsIconHandle(GTF_ICON_CLASS_HDL));
-            cls2Hnd = (CORINFO_CLASS_HANDLE)op2ClassFromHandle->gtIntCon.gtCompileTimeHandle;
-        }
-        else if (op2ClassFromHandle->OperGet() == GT_RUNTIMELOOKUP)
-        {
-            cls2Hnd = op2ClassFromHandle->AsRuntimeLookup()->GetClassHandle();
-            runtimeLookupCount++;
-        }
-        // Tunnel through indirs we may see when prejitting
-        else if (op2ClassFromHandle->gtOper == GT_IND)
-        {
-            // The handle indirs we can optimize will be marked as non-faulting.
-            // Certain others (eg from refanytype) may not be.
-            if (op2ClassFromHandle->gtFlags & GTF_IND_NONFAULTING)
-            {
-                GenTree* op2HandleLiteral = op2ClassFromHandle->gtOp.gtOp1;
-
-                // If, after tunneling, we have a constant handle,
-                // remember the class and the value tree for later.
-                if ((op2HandleLiteral->gtOper == GT_CNS_INT) && (op2HandleLiteral->gtType == TYP_I_IMPL))
-                {
-                    JITDUMP("tunneling through indir on op2\n");
-                    op2TunneledHandle = op2HandleLiteral;
-
-                    // These handle constants should be class handles.
-                    assert(op2TunneledHandle->IsIconHandle(GTF_ICON_CLASS_HDL));
-                    cls2Hnd = (CORINFO_CLASS_HANDLE)op2TunneledHandle->gtIntCon.gtCompileTimeHandle;
-                }
-            }
-        }
-
-        // If we have class handles, try and resolve the type equality test completely.
-        if ((cls1Hnd != nullptr) && (cls2Hnd != nullptr))
+        if ((cls1Hnd != NO_CLASS_HANDLE) && (cls2Hnd != NO_CLASS_HANDLE))
         {
             JITDUMP("Asking runtime to compare %p (%s) and %p (%s) for equality\n", dspPtr(cls1Hnd),
                     info.compCompHnd->getClassName(cls1Hnd), dspPtr(cls2Hnd), info.compCompHnd->getClassName(cls2Hnd));
@@ -12289,16 +12227,27 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 lvaGenericsContextUseCount -= runtimeLookupCount;
                 return result;
             }
+            else
+            {
+                resolveFailed = true;
+            }
         }
 
-        JITDUMP("Could not find handle for %s%s\n", (cls1Hnd == nullptr) ? " cls1" : "",
-                (cls2Hnd == nullptr) ? " cls2" : "");
+        if (resolveFailed)
+        {
+            JITDUMP("Runtime reports comparison is NOT known at jit time\n");
+        }
+        else
+        {
+            JITDUMP("Could not find handle for %s%s\n", (cls1Hnd == NO_CLASS_HANDLE) ? " cls1" : "",
+                    (cls2Hnd == NO_CLASS_HANDLE) ? " cls2" : "");
+        }
 
         // We can't answer the equality comparison definitively at jit
         // time, but can still simplfy the comparison.
         //
         // If we successfully tunneled through both operands, compare
-        // the tunnneled values, otherwise compare the orignal values.
+        // the tunneled values, otherwise compare the original values.
         GenTree* compare = nullptr;
         if ((op1TunneledHandle != nullptr) && (op2TunneledHandle != nullptr))
         {
@@ -12322,7 +12271,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     // method table comparison.
     //
     // TODO: if other operand is null...
-    if (op1Kind != TPK_GetType && op2Kind != TPK_GetType)
+    if ((op1Kind != TPK_GetType) && (op2Kind != TPK_GetType))
     {
         return tree;
     }
@@ -12332,39 +12281,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // Tunnel through the handle operand to get at the class handle involved.
     GenTree* const       opHandleArgument = opHandle->gtCall.gtCallArgs->gtOp.gtOp1;
-    GenTree*             opHandleLiteral  = opHandleArgument;
-    CORINFO_CLASS_HANDLE clsHnd           = nullptr;
-
-    // Unwrap any GT_NOP node used to prevent constant folding
-    if ((opHandleLiteral->gtOper == GT_NOP) && (opHandleLiteral->gtType == TYP_I_IMPL))
-    {
-        opHandleLiteral = opHandleLiteral->gtOp.gtOp1;
-    }
-
-    // For runtime lookups we can get at the handle directly
-    if (opHandleLiteral->gtOper == GT_RUNTIMELOOKUP)
-    {
-        clsHnd = opHandleLiteral->AsRuntimeLookup()->GetClassHandle();
-    }
-    else
-    {
-        // Tunnel through prejit indirs if necessary
-        if (opHandleLiteral->gtOper == GT_IND)
-        {
-            // Handle indirs should be marked as nonfaulting.
-            assert((opHandleLiteral->gtFlags & GTF_IND_NONFAULTING) != 0);
-            opHandleLiteral = opHandleLiteral->gtOp.gtOp1;
-        }
-
-        if ((opHandleLiteral->gtOper == GT_CNS_INT) && (opHandleLiteral->gtType == TYP_I_IMPL))
-        {
-            assert(opHandleLiteral->IsIconHandle(GTF_ICON_CLASS_HDL));
-            clsHnd = CORINFO_CLASS_HANDLE(opHandleLiteral->gtIntCon.gtCompileTimeHandle);
-        }
-    }
+    CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
-    if (clsHnd == nullptr)
+    if (clsHnd == NO_CLASS_HANDLE)
     {
         return tree;
     }
@@ -12412,6 +12332,72 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
 
     // And we're done
     return compare;
+}
+
+//------------------------------------------------------------------------
+// gtGetHelperArgClassHandle: find the compile time class handle from
+//   a helper call argument tree
+//
+// Arguments:
+//    tree - tree that passes the handle to the helper
+//    runtimeLookupCount [optional, in/out] - incremented if tree was a runtime lookup
+//    handleTree [optional, out] - set to the literal operand tree for indirect handles
+//
+// Returns:
+//    The compile time class handle if known.
+//
+CORINFO_CLASS_HANDLE Compiler::gtGetHelperArgClassHandle(GenTree*  tree,
+                                                         unsigned* runtimeLookupCount,
+                                                         GenTree** handleTree)
+{
+    CORINFO_CLASS_HANDLE result = NO_CLASS_HANDLE;
+
+    // Walk through any wrapping nop.
+    if ((tree->gtOper == GT_NOP) && (tree->gtType == TYP_I_IMPL))
+    {
+        tree = tree->gtOp.gtOp1;
+    }
+
+    // The handle could be a literal constant
+    if ((tree->OperGet() == GT_CNS_INT) && (tree->TypeGet() == TYP_I_IMPL))
+    {
+        assert(tree->IsIconHandle(GTF_ICON_CLASS_HDL));
+        result = (CORINFO_CLASS_HANDLE)tree->gtIntCon.gtCompileTimeHandle;
+    }
+    // Or the result of a runtime lookup
+    else if (tree->OperGet() == GT_RUNTIMELOOKUP)
+    {
+        result = tree->AsRuntimeLookup()->GetClassHandle();
+
+        if (runtimeLookupCount != nullptr)
+        {
+            *runtimeLookupCount = *runtimeLookupCount + 1;
+        }
+    }
+    // Or something reached indirectly
+    else if (tree->gtOper == GT_IND)
+    {
+        // The handle indirs we are looking for will be marked as non-faulting.
+        // Certain others (eg from refanytype) may not be.
+        if (tree->gtFlags & GTF_IND_NONFAULTING)
+        {
+            GenTree* handleTreeInternal = tree->gtOp.gtOp1;
+
+            if ((handleTreeInternal->OperGet() == GT_CNS_INT) && (handleTreeInternal->TypeGet() == TYP_I_IMPL))
+            {
+                // These handle constants should be class handles.
+                assert(handleTreeInternal->IsIconHandle(GTF_ICON_CLASS_HDL));
+                result = (CORINFO_CLASS_HANDLE)handleTreeInternal->gtIntCon.gtCompileTimeHandle;
+
+                if (handleTree != nullptr)
+                {
+                    *handleTree = handleTreeInternal;
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 /*****************************************************************************
