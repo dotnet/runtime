@@ -6378,21 +6378,7 @@ fgArgTabEntry* Compiler::gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum)
 {
     fgArgInfo* argInfo = call->fgArgInfo;
     noway_assert(argInfo != nullptr);
-
-    unsigned        argCount       = argInfo->ArgCount();
-    fgArgTabEntry** argTable       = argInfo->ArgTable();
-    fgArgTabEntry*  curArgTabEntry = nullptr;
-
-    for (unsigned i = 0; i < argCount; i++)
-    {
-        curArgTabEntry = argTable[i];
-        if (curArgTabEntry->argNum == argNum)
-        {
-            return curArgTabEntry;
-        }
-    }
-    noway_assert(!"gtArgEntryByArgNum: argNum not found");
-    return nullptr;
+    return argInfo->GetArgEntry(argNum);
 }
 
 /*****************************************************************************
@@ -6447,6 +6433,7 @@ fgArgTabEntry* Compiler::gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned la
 {
     fgArgInfo* argInfo = call->fgArgInfo;
     noway_assert(argInfo != nullptr);
+    assert(lateArgInx != UINT_MAX);
 
     unsigned        argCount       = argInfo->ArgCount();
     fgArgTabEntry** argTable       = argInfo->ArgTable();
@@ -6455,13 +6442,41 @@ fgArgTabEntry* Compiler::gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned la
     for (unsigned i = 0; i < argCount; i++)
     {
         curArgTabEntry = argTable[i];
-        if (curArgTabEntry->lateArgInx == lateArgInx)
+        if (curArgTabEntry->isLateArg() && curArgTabEntry->lateArgInx == lateArgInx)
         {
             return curArgTabEntry;
         }
     }
     noway_assert(!"gtArgEntryByNode: node not found");
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// gtArgNodeByLateArgInx: Given a call instruction, find the argument with the given
+//                        late arg index (i.e. the given position in the gtCallLateArgs list).
+// Arguments:
+//    call - the call node
+//    lateArgInx - the index into the late args list
+//
+// Return value:
+//    The late argument node.
+//
+GenTree* Compiler::gtArgNodeByLateArgInx(GenTreeCall* call, unsigned lateArgInx)
+{
+    GenTree* argx     = nullptr;
+    unsigned regIndex = 0;
+
+    for (GenTreeArgList *list = call->gtCall.gtCallLateArgs; list != nullptr; regIndex++, list = list->Rest())
+    {
+        argx = list->Current();
+        assert(!argx->IsArgPlaceHolderNode()); // No placeholder nodes are in gtCallLateArgs;
+        if (regIndex == lateArgInx)
+        {
+            break;
+        }
+    }
+    noway_assert(argx != nullptr);
+    return argx;
 }
 
 /*****************************************************************************
@@ -11738,7 +11753,7 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
                 }
                 else
                 {
-                    if (curArgTabEntry->lateArgInx == (unsigned)-1)
+                    if (!curArgTabEntry->isLateArg())
                     {
                         gtGetArgMsg(call, operand, curArgTabEntry->argNum, -1, buf, sizeof(buf));
                     }
