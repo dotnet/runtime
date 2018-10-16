@@ -74,7 +74,7 @@
     <value>{0} can only be called once for each asynchronous operation.</value>
   </data>
   <data name="net_bad_mac_address" xml:space="preserve">
-    <value>An invalid physical address was specified.</value>
+    <value>An invalid physical address was specified: '{0}'.</value>
   </data>
   <data name="net_collection_readonly" xml:space="preserve">
     <value>The collection is read-only.</value>
