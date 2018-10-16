@@ -210,6 +210,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Guid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\HashCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\HResults.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncDisposable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ICloneable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IComparable.cs" />
