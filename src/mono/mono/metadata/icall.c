@@ -4055,7 +4055,7 @@ mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bfla
 	compare_func = ((bflags & BFLAGS_IgnoreCase) || (mlisttype == MLISTTYPE_CaseInsensitive)) ? mono_utf8_strcasecmp : strcmp;
 
 	/* An optimization for calls made from Delegate:CreateDelegate () */
-	if (m_class_is_delegate (klass) && name && !strcmp (name, "Invoke") && (bflags == (BFLAGS_Public | BFLAGS_Static | BFLAGS_Instance))) {
+	if (m_class_is_delegate (klass) && klass != mono_defaults.delegate_class && klass != mono_defaults.multicastdelegate_class && name && !strcmp (name, "Invoke") && (bflags == (BFLAGS_Public | BFLAGS_Static | BFLAGS_Instance))) {
 		method = mono_get_delegate_invoke (klass);
 		g_assert (method);
 
