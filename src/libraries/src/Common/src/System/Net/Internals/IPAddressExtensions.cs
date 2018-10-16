@@ -22,9 +22,10 @@ namespace System.Net.Sockets
                     original.TryWriteBytes(addressBytes, out int bytesWritten);
                     Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
                     return new IPAddress(addressBytes, (uint)original.ScopeId);
-            }
 
-            throw new InternalException();
+                default:
+                    throw new InternalException(original.AddressFamily);
+            }
         }
     }
 }

@@ -311,7 +311,7 @@ namespace System.Net.Http.HPack
                     default:
                         // Can't happen
                         Debug.Fail("HPACK decoder reach an invalid state");
-                        throw new InternalException();
+                        throw new InternalException(_state);
                 }
             }
         }
