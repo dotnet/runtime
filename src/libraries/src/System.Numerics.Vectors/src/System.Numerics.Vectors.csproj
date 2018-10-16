@@ -4,9 +4,8 @@
     <RootNamespace>System.Numerics</RootNamespace>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsTargetingNetFx Condition="'$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='net46'">true</IsTargetingNetFx>
-    <IsTargetingNetCoreApp Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='uapaot' OR '$(TargetGroup)'=='netcoreappaot'">true</IsTargetingNetCoreApp>
-    <IsPartialFacadeAssembly Condition="'$(IsTargetingNetFx)'=='true' OR '$(IsTargetingNetCoreApp)'=='true'">true</IsPartialFacadeAssembly>
+    <TargetsNetCoreAppOrUap Condition="'$(TargetsNetCoreApp)'=='true' OR '$(TargetsUap)' == 'true'">true</TargetsNetCoreAppOrUap>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true' OR '$(TargetsNetCoreAppOrUap)'=='true'">true</IsPartialFacadeAssembly>
     <HasIntrinsics Condition="'$(TargetsNetCoreApp)'=='true'">true</HasIntrinsics>
     <DefineConstants Condition="'$(HasIntrinsics)'=='true'">$(DefineConstants);HAS_INTRINSICS</DefineConstants>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
@@ -22,7 +21,7 @@
     </Compile>
   </ItemGroup>
   <!-- On .NET Core, Vector<T> is in System.Private.CoreLib -->
-  <ItemGroup Condition="'$(IsTargetingNetCoreApp)' != 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreAppOrUap)' != 'true'">
     <Compile Include="$(CommonPath)\CoreLib\System\Numerics\ConstantHelper.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -46,13 +45,13 @@
     </Compile>
   </ItemGroup>
   <!-- Carry a copy of MathF where not available -->
-  <ItemGroup Condition="'$(IsTargetingNetFx)' == 'true' OR $(TargetGroup.StartsWith('netstandard'))">
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' OR $(TargetGroup.StartsWith('netstandard'))">
     <Compile Include="$(CommonPath)\System\MathF.netstandard.cs">
       <Link>System\MathF.netstandard.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Portable version only -->
-  <ItemGroup Condition="'$(IsTargetingNetFx)' != 'true'">
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Compile Include="System\Numerics\Matrix3x2.cs" />
     <Compile Include="System\Numerics\Matrix4x4.cs" />
     <Compile Include="System\Numerics\Plane.cs" />
@@ -67,7 +66,7 @@
   <ItemGroup Condition="'$(HasIntrinsics)' == 'true'">
     <Compile Include="System\Numerics\VectorMath.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsTargetingNetFx)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System.Numerics" />
   </ItemGroup>
@@ -91,10 +90,10 @@
       <Link>System\Numerics\Vector.tt</Link>
     </Content>
   </ItemGroup>
-  <ItemGroup Condition="'$(IsTargetingNetCoreApp)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreAppOrUap)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsTargetingNetCoreApp)' != 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreAppOrUap)' != 'true'">
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Globalization" />
     <Reference Include="System.Resources.ResourceManager" />
