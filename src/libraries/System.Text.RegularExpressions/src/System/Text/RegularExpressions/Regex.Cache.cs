@@ -18,7 +18,7 @@ namespace System.Text.RegularExpressions
         // the cache of code and factories that are currently loaded:
         // Dictionary for large cache
         private static readonly Dictionary<CachedCodeEntryKey, CachedCodeEntry> s_cache = new Dictionary<CachedCodeEntryKey, CachedCodeEntry>(s_cacheSize);
-         // linked list for MRU and for small cache
+         // linked list for LRU and for small cache
         private static int s_cacheCount = 0;
         private static CachedCodeEntry s_cacheFirst;
         private static CachedCodeEntry s_cacheLast;
