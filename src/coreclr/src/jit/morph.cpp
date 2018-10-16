@@ -16737,6 +16737,12 @@ void Compiler::fgMorph()
     // Transform each GT_ALLOCOBJ node into either an allocation helper call or
     // local variable allocation on the stack.
     ObjectAllocator objectAllocator(this); // PHASE_ALLOCATE_OBJECTS
+
+    if (JitConfig.JitObjectStackAllocation() && !opts.MinOpts() && !opts.compDbgCode)
+    {
+        objectAllocator.EnableObjectStackAllocation();
+    }
+
     objectAllocator.Run();
 
     /* Add any internal blocks/trees we may need */
