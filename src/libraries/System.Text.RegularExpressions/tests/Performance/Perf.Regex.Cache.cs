@@ -49,7 +49,7 @@ namespace System.Text.RegularExpressions.Tests
         [Benchmark]
         [MeasureGCAllocations]
         [InlineData(400_000, 7, 15)]         // default size, most common
-        [InlineData(400_000, 1, 15)]         // default size, to test MRU
+        [InlineData(400_000, 1, 15)]         // default size, to test LRU
         [InlineData(40_000, 7, 0)]          // cache turned off
         [InlineData(40_000, 1_600, 15)]    // default size, to compare when cache used
         [InlineData(40_000, 1_600, 800)]    // larger size, to test cache is not O(n)
@@ -82,7 +82,7 @@ namespace System.Text.RegularExpressions.Tests
         [Benchmark]
         [MeasureGCAllocations]
         [InlineData(400_000, 7, 15)]         // default size, most common
-        [InlineData(400_000, 1, 15)]         // default size, to test MRU
+        [InlineData(400_000, 1, 15)]         // default size, to test LRU
         [InlineData(40_000, 7, 0)]          // cache turned off
         [InlineData(40_000, 1_600, 15)]    // default size, to compare when cache used
         [InlineData(40_000, 1_600, 800)]    // larger size, to test cache is not O(n)
