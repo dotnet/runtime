@@ -748,6 +748,7 @@ typedef enum CorAssemblyFlags
     afPA_IA64               =   0x0030,     // Processor Architecture: Itanium (PE32+)
     afPA_AMD64              =   0x0040,     // Processor Architecture: AMD X64 (PE32+)
     afPA_ARM                =   0x0050,     // Processor Architecture: ARM (PE32)
+    afPA_ARM64              =   0x0060,     // Processor Architecture: ARM64 (PE32+)
     afPA_NoPlatform         =   0x0070,      // applies to any platform but cannot run on any (e.g. reference assembly), should not have "specified" set
     afPA_Specified          =   0x0080,     // Propagate PA flags to AssemblyRef record
     afPA_Mask               =   0x0070,     // Bits describing the processor architecture
@@ -777,6 +778,7 @@ typedef enum CorAssemblyFlags
 #define IsAfPA_IA64(x) (((x) & afPA_Mask) == afPA_IA64)
 #define IsAfPA_AMD64(x) (((x) & afPA_Mask) == afPA_AMD64)
 #define IsAfPA_ARM(x) (((x) & afPA_Mask) == afPA_ARM)
+#define IsAfPA_ARM64(x) (((x) & afPA_Mask) == afPA_ARM64)
 #define IsAfPA_NoPlatform(x) (((x) & afPA_FullMask) == afPA_NoPlatform)
 #define IsAfPA_Specified(x) ((x) & afPA_Specified)
 #define PAIndex(x) (((x) & afPA_Mask) >> afPA_Shift)
