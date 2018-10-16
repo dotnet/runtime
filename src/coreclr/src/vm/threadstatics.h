@@ -604,65 +604,20 @@ class ThreadStatics
   public:
 
 #ifndef DACCESS_COMPILE
-    static PTR_ThreadLocalBlock AllocateTLB(PTR_Thread pThread, ADIndex index);
+    static PTR_ThreadLocalBlock AllocateTLB(PTR_Thread pThread);
     static PTR_ThreadLocalModule AllocateTLM(Module * pModule);
     static PTR_ThreadLocalModule AllocateAndInitTLM(ModuleIndex index, PTR_ThreadLocalBlock pThreadLocalBlock, Module * pModule);
 
     static PTR_ThreadLocalModule GetTLM(ModuleIndex index, Module * pModule);
     static PTR_ThreadLocalModule GetTLM(MethodTable * pMT);
 #endif
-    static PTR_ThreadLocalBlock GetTLBIfExists(PTR_Thread pThread, ADIndex index);
 
 #ifndef DACCESS_COMPILE
-    // Grows the TLB table
-    inline static void EnsureADIndex(PTR_Thread pThread, ADIndex index)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-        SIZE_T size = max(16, pThread->m_TLBTableSize);
-        while (size <= index.m_dwIndex)
-        {
-            size *= 2;
-        }
-
-        // If this allocation fails, we will throw. If it succeeds,
-        // then we are good to go
-        PTR_ThreadLocalBlock * pNewTLBTable = (PTR_ThreadLocalBlock *)(void*)new PTR_ThreadLocalBlock [size];
-
-        // Zero out the new TLB table
-        memset(pNewTLBTable, 0, sizeof(PTR_ThreadLocalBlock) * size);
-
-        if (pThread->m_pTLBTable != NULL)
-        {
-            memcpy(pNewTLBTable, pThread->m_pTLBTable, sizeof(PTR_ThreadLocalBlock) * pThread->m_TLBTableSize);
-        }
-
-        PTR_ThreadLocalBlock * pOldTLBTable = pThread->m_pTLBTable;
-
-        pThread->m_pTLBTable = pNewTLBTable;
-        pThread->m_TLBTableSize = size;
-
-        delete pOldTLBTable;
-    }
-
     FORCEINLINE static PTR_ThreadLocalBlock GetCurrentTLBIfExists()
     {
         // Get the current thread
         PTR_Thread pThread = GetThread();
     
-        // If the current TLB pointer is NULL, search the TLB table
-        if (pThread->m_pThreadLocalBlock == NULL)
-        {
-            ADIndex index = pThread->GetDomain()->GetIndex();
-            pThread->m_pThreadLocalBlock = ThreadStatics::GetTLBIfExists(pThread, index);
-        }
-
         return pThread->m_pThreadLocalBlock;
     }
 #endif
@@ -671,23 +626,7 @@ class ThreadStatics
     {
         SUPPORTS_DAC;
 
-        // If the current TLB pointer is NULL, search the TLB table
         PTR_ThreadLocalBlock pTLB = pThread->m_pThreadLocalBlock;
-        if (pTLB == NULL)
-        {
-            if (pDomain == NULL)
-            {
-                pDomain = pThread->GetDomain();
-            }
-
-            pTLB = ThreadStatics::GetTLBIfExists(pThread, pDomain->GetIndex());
-
-            // Update the ThreadLocalBlock pointer,
-            // but only on non-DAC builds
-#ifndef DACCESS_COMPILE
-            pThread->m_pThreadLocalBlock = pTLB;
-#endif
-        }
 
         return pTLB;
     }
@@ -701,14 +640,9 @@ class ThreadStatics
         // If the current TLB pointer is NULL, search the TLB table
         if (pThread->m_pThreadLocalBlock == NULL)
         {
-            AppDomain * pDomain = pThread->GetDomain();
-            pThread->m_pThreadLocalBlock = ThreadStatics::GetTLBIfExists(pThread, pDomain->GetIndex());
-            if (pThread->m_pThreadLocalBlock == NULL)
-            {
-                // Allocate the new ThreadLocalBlock.
-                // If the allocation fails this will throw.
-                return ThreadStatics::AllocateTLB(pThread, pDomain->GetIndex());
-            }
+            // Allocate the new ThreadLocalBlock.
+            // If the allocation fails this will throw.
+            return ThreadStatics::AllocateTLB(pThread);
         }
 
         return pThread->m_pThreadLocalBlock;       

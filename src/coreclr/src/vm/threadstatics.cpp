@@ -697,7 +697,7 @@ PTR_ThreadLocalModule ThreadStatics::GetTLM(MethodTable * pMT) //static
     return GetTLM(pModule->GetModuleIndex(), pModule);
 }
 
-PTR_ThreadLocalBlock ThreadStatics::AllocateTLB(PTR_Thread pThread, ADIndex index) //static
+PTR_ThreadLocalBlock ThreadStatics::AllocateTLB(PTR_Thread pThread) //static
 {
     CONTRACTL
     {
@@ -709,21 +709,9 @@ PTR_ThreadLocalBlock ThreadStatics::AllocateTLB(PTR_Thread pThread, ADIndex inde
     CONTRACTL_END;
     _ASSERTE(pThread->m_pThreadLocalBlock == NULL);
 
-    // Grow the TLB table so that it has room to store the newly allocated 
-    // ThreadLocalBlock. If this growing the table fails we cannot proceed.
-    ThreadStatics::EnsureADIndex(pThread, index);
-
     // Allocate a new TLB and update this Thread's pointer to the current 
     // ThreadLocalBlock. Constructor zeroes out everything for us.
     pThread->m_pThreadLocalBlock = new ThreadLocalBlock();
-
-    // Store the newly allocated ThreadLocalBlock in the TLB table
-    if (pThread->m_pThreadLocalBlock != NULL)
-    {
-        // We grew the TLB table earlier, so it should have room
-        _ASSERTE(index.m_dwIndex >= 0 && index.m_dwIndex < pThread->m_TLBTableSize);
-        pThread->m_pTLBTable[index.m_dwIndex] = pThread->m_pThreadLocalBlock;
-    }
 
     return pThread->m_pThreadLocalBlock;
 }
@@ -758,24 +746,3 @@ PTR_ThreadLocalModule ThreadStatics::AllocateTLM(Module * pModule)
 }
 
 #endif
-
-PTR_ThreadLocalBlock ThreadStatics::GetTLBIfExists(PTR_Thread pThread, ADIndex index) //static
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    // Check to see if we have a ThreadLocalBlock for the this AppDomain, 
-    if (index.m_dwIndex < pThread->m_TLBTableSize)
-    {
-        return pThread->m_pTLBTable[index.m_dwIndex];
-    }
-    
-    return NULL;
-}
