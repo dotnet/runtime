@@ -382,7 +382,7 @@ public class BuiltinTests {
 		}
 	}
 
-	public int test_0_nint_fieldload ()
+	static int test_0_nint_fieldload ()
 	{
 		var x = new SomeNativeStructWithNint ((nint) 20f);
 
@@ -783,7 +783,7 @@ public class BuiltinTests {
 		}
 	}
 
-	public int test_0_nuint_fieldload ()
+	static int test_0_nuint_fieldload ()
 	{
 		var x = new SomeNativeStructWithNuint ((nuint) 20f);
 
@@ -1268,7 +1268,7 @@ public class BuiltinTests {
 		}
 	}
 
-	public int test_0_nfloat_fieldload ()
+	static int test_0_nfloat_fieldload ()
 	{
 		var x = new SomeNativeStructWithNfloat ((nfloat) 20f);
 

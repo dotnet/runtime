@@ -17,14 +17,15 @@
 #include <net/route.h>
 #endif
 
+in_addr_t gateway_from_rtm (struct rt_msghdr *rtm);
+
+#endif /* #if defined(HOST_DARWIN) || defined(HOST_BSD) */
+
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/icalls.h>
-
-in_addr_t gateway_from_rtm (struct rt_msghdr *rtm);
 
 /* Category icalls */
 ICALL_EXPORT
 MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfaceProperties_ParseRouteInfo_internal (MonoString *iface, MonoArray **gw_addr_list);
 
-#endif /* #if defined(HOST_DARWIN) || defined(HOST_BSD) */
 #endif /* __MONO_ROUTE_H__ */

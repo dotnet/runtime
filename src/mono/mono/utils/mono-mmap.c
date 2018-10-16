@@ -250,6 +250,13 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 		mflags |= MAP_FIXED;
 	if (flags & MONO_MMAP_32BIT)
 		mflags |= MAP_32BIT;
+
+#ifdef HOST_WASM
+	if (length == 0)
+		/* emscripten throws an exception on 0 length */
+		return NULL;
+#endif
+
 #if defined(__APPLE__) && defined(MAP_JIT)
 	if (flags & MONO_MMAP_JIT) {
 		if (get_darwin_version () >= DARWIN_VERSION_MOJAVE) {
@@ -329,6 +336,12 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		mflags |= MAP_FIXED;
 	if (flags & MONO_MMAP_32BIT)
 		mflags |= MAP_32BIT;
+
+#ifdef HOST_WASM
+	if (length == 0)
+		/* emscripten throws an exception on 0 length */
+		return NULL;
+#endif
 
 	BEGIN_CRITICAL_SECTION;
 	ptr = mmap (0, length, prot, mflags, fd, offset);

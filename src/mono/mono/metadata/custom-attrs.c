@@ -1413,6 +1413,7 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr, MonoError
 	if (!ctor) {
 		MonoMethod *tmp = mono_class_get_method_from_name_checked (cattr_data, ".ctor", 4, 0, error);
 		mono_error_assert_ok (error);
+		g_assert (tmp);
 
 		mono_memory_barrier (); //safe publish!
 		ctor = tmp;

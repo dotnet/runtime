@@ -9,6 +9,9 @@
 
 #include <config.h>
 
+#include <mono/metadata/object.h>
+#include <mono/metadata/mono-route.h>
+
 #if defined(HOST_DARWIN) || defined(HOST_BSD)
 #include <sys/socket.h>
 #include <net/if.h>
@@ -18,8 +21,6 @@
 #include <sys/sysctl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <mono/metadata/object.h>
-#include <mono/metadata/mono-route.h>
 
 extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfaceProperties_ParseRouteInfo_internal(MonoString *iface, MonoArray **gw_addr_list)
 {
@@ -130,6 +131,15 @@ in_addr_t gateway_from_rtm(struct rt_msghdr *rtm)
 	}
 
 	return 0;
+}
+
+#else
+
+MonoBoolean
+ves_icall_System_Net_NetworkInformation_MacOsIPInterfaceProperties_ParseRouteInfo_internal(MonoString *iface, MonoArray **gw_addr_list)
+{
+	g_assert_not_reached ();
+	return FALSE;
 }
 
 #endif /* #if defined(HOST_DARWIN) || defined(HOST_BSD) */
