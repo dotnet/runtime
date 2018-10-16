@@ -46,19 +46,41 @@ namespace System.Net.NetworkInformation
             // First line is header in each file.
             TcpConnectionInformation[] connections = new TcpConnectionInformation[v4connections.Length + v6connections.Length - 2];
             int index = 0;
+            int skip = 0;
 
             // TCP Connections
             for (int i = 1; i < v4connections.Length; i++) // Skip first line header.
             {
                 string line = v4connections[i];
-                connections[index++] = ParseTcpConnectionInformationFromLine(line);
+                connections[index] = ParseTcpConnectionInformationFromLine(line);
+                if (connections[index].State == TcpState.Listen)
+                {
+                    skip++;
+                }
+                else
+                {
+                    index++;
+                }
             }
 
             // TCP6 Connections
             for (int i = 1; i < v6connections.Length; i++) // Skip first line header.
             {
                 string line = v6connections[i];
-                connections[index++] = ParseTcpConnectionInformationFromLine(line);
+                connections[index] = ParseTcpConnectionInformationFromLine(line);
+                if (connections[index].State == TcpState.Listen)
+                {
+                    skip++;
+                }
+                else
+                {
+                    index++;
+                }
+            }
+
+            if (skip != 0)
+            {
+                Array.Resize(ref connections, connections.Length - skip);
             }
 
             return connections;
@@ -80,21 +102,41 @@ namespace System.Net.NetworkInformation
             /// First line is header in each file.
             IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
             int index = 0;
+            int skip = 0;
 
             // TCP Connections
             for (int i = 1; i < v4connections.Length; i++) // Skip first line header.
             {
-                string line = v4connections[i];
-                IPEndPoint endPoint = ParseLocalConnectionInformation(line);
-                endPoints[index++] = endPoint;
+                TcpConnectionInformation ti = ParseTcpConnectionInformationFromLine(v4connections[i]);
+                if (ti.State == TcpState.Listen)
+                {
+                    endPoints[index] = ti.LocalEndPoint;
+                    index++;
+                }
+                else
+                {
+                    skip++;
+                }
             }
 
             // TCP6 Connections
             for (int i = 1; i < v6connections.Length; i++) // Skip first line header.
             {
-                string line = v6connections[i];
-                IPEndPoint endPoint = ParseLocalConnectionInformation(line);
-                endPoints[index++] = endPoint;
+                TcpConnectionInformation ti = ParseTcpConnectionInformationFromLine(v6connections[i]);
+                if (ti.State == TcpState.Listen)
+                {
+                    endPoints[index] = ti.LocalEndPoint;
+                    index++;
+                }
+                else
+                {
+                    skip++;
+                }
+            }
+
+            if (skip != 0)
+            {
+                Array.Resize(ref endPoints, endPoints.Length - skip);
             }
 
             return endPoints;
