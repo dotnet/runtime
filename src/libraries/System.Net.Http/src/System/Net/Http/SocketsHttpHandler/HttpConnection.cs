@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1414,11 +1415,12 @@ namespace System.Net.Http
         }
 
         // Copy *exactly* [length] bytes into destination; throws on end of stream.
-        private async Task CopyToExactLengthAsync(Stream destination, ulong length, CancellationToken cancellationToken)
+        private async Task CopyToContentLengthAsync(Stream destination, ulong length, int bufferSize, CancellationToken cancellationToken)
         {
             Debug.Assert(destination != null);
             Debug.Assert(length > 0);
 
+            // Copy any data left in the connection's buffer to the destination.
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
             {
@@ -1433,19 +1435,68 @@ namespace System.Net.Http
                 {
                     return;
                 }
+
+                Debug.Assert(_readLength - _readOffset == 0, "HttpConnection's buffer should have been empty.");
             }
 
-            while (true)
+            // Repeatedly read into HttpConnection's buffer and write that buffer to the destination
+            // stream. If after doing so, we find that we filled the whole connection's buffer (which
+            // is sized mainly for HTTP headers rather than large payloads), grow the connection's
+            // read buffer to the requested buffer size to use for the remainder of the operation. We
+            // use a temporary buffer from the ArrayPool so that the connection doesn't hog large
+            // buffers from the pool for extended durations, especially if it's going to sit in the
+            // connection pool for a prolonged period.
+            byte[] origReadBuffer = null;
+            try
             {
-                await FillAsync().ConfigureAwait(false);
-
-                remaining = (ulong)_readLength < length ? _readLength : (int)length;
-                await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
-
-                length -= (ulong)remaining;
-                if (length == 0)
+                while (true)
                 {
-                    return;
+                    await FillAsync().ConfigureAwait(false);
+
+                    remaining = (ulong)_readLength < length ? _readLength : (int)length;
+                    await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
+
+                    length -= (ulong)remaining;
+                    if (length == 0)
+                    {
+                        return;
+                    }
+
+                    // If we haven't yet grown the buffer (if we previously grew it, then it's sufficiently large), and
+                    // if we filled the read buffer while doing the last read (which is at least one indication that the
+                    // data arrival rate is fast enough to warrant a larger buffer), and if the buffer size we'd want is
+                    // larger than the one we already have, then grow the connection's read buffer to that size.
+                    if (origReadBuffer == null)
+                    {
+                        byte[] currentReadBuffer = _readBuffer;
+                        if (remaining == currentReadBuffer.Length)
+                        {
+                            int desiredBufferSize = (int)Math.Min((ulong)bufferSize, length);
+                            if (desiredBufferSize > currentReadBuffer.Length)
+                            {
+                                origReadBuffer = currentReadBuffer;
+                                _readBuffer = ArrayPool<byte>.Shared.Rent(desiredBufferSize);
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (origReadBuffer != null)
+                {
+                    byte[] tmp = _readBuffer;
+                    _readBuffer = origReadBuffer;
+                    ArrayPool<byte>.Shared.Return(tmp);
+
+                    // _readOffset and _readLength may not be within range of the original
+                    // buffer, and even if they are, they won't refer to read data at this
+                    // point.  But we don't care what remaining data there was, other than
+                    // that there may have been some, as subsequent code is going to check
+                    // whether these are the same and then force the connection closed if
+                    // they're not.
+                    _readLength = _readOffset < _readLength ? 1 : 0;
+                    _readOffset = 0;
                 }
             }
         }
@@ -1481,15 +1532,17 @@ namespace System.Net.Http
             _currentRequest = null;
 
             // If we have extraneous data in the read buffer, don't reuse the connection;
-            // otherwise we'd interpret this as part of the next response.
-            if (RemainingBuffer.Length != 0)
+            // otherwise we'd interpret this as part of the next response. Plus, we may
+            // have been using a temporary buffer to read this erroneous data, and thus
+            // may not even have it any more.
+            if (_readLength != _readOffset)
             {
                 if (NetEventSource.IsEnabled)
                 {
                     Trace("Unexpected data on connection after response read.");
                 }
 
-                ConsumeFromRemainingBuffer(RemainingBuffer.Length);
+                _readOffset = _readLength = 0;
                 _connectionClose = true;
             }
 
