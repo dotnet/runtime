@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using Microsoft.VisualBasic.CompilerServices.Tests;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
@@ -302,6 +303,36 @@ namespace Microsoft.VisualBasic.Tests
         {
             Assert.Equal(expected, Strings.Left(str, length));
         }
+
+        [Theory]
+        [MemberData(nameof(Len_Object_Data))]
+        [MemberData(nameof(StructUtilsTestData.RecordsAndLength), MemberType = typeof(StructUtilsTestData))]
+        public void Len_Object(object o, int length)
+        {
+            Assert.Equal(length, Strings.Len(o));
+        }
+
+        public static TheoryData<object, int> Len_Object_Data() => new TheoryData<object, int>
+        {
+            { null, 0 },
+            { new bool(), 2 },
+            { new sbyte(), 1 },
+            { new byte(), 1 },
+            { new short(), 2 },
+            { new ushort(), 2 },
+            { new uint(), 4 },
+            { new int(), 4 },
+            { new ulong(), 8 },
+            { new decimal(), 16 },
+            { new float(), 4 },
+            { new double(), 8 },
+            { new DateTime(), 8 },
+            { new char(), 2 },
+            { "", 0 },
+            { "a", 1 },
+            { "ab", 2 },
+            { "ab\0", 3 },
+        };
 
         [Theory]
         [InlineData("a", -1)]
