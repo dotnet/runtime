@@ -10,12 +10,4 @@
   <ItemGroup>
     <Compile Include="DefaultApartmentStateMain.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="DefaultApartmentStateMain.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="DefaultApartmentStateMain.exe.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 </Project>

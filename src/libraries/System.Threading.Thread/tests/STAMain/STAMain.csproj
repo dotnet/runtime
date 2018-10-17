@@ -9,11 +9,5 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="STAMain.cs" />
-    <Content Include="STAMain.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="STAMain.exe.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 </Project>

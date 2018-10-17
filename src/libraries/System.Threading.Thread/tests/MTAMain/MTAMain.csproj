@@ -10,12 +10,4 @@
   <ItemGroup>
     <Compile Include="MTAMain.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="MTAMain.runtimeconfig.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="MTAMain.exe.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 </Project>
