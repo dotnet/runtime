@@ -150,6 +150,18 @@ namespace System.IO.Compression
             }
         }
 
+        public override ValueTask DisposeAsync()
+        {
+            if (GetType() != typeof(GZipStream))
+            {
+                return base.DisposeAsync();
+            }
+
+            DeflateStream ds = _deflateStream;
+            _deflateStream = null;
+            return ds.DisposeAsync();
+        }
+
         public Stream BaseStream => _deflateStream?.BaseStream;
 
         public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)

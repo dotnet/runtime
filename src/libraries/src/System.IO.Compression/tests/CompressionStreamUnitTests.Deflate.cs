@@ -77,6 +77,31 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, false)]
+        public async Task DisposeAsync_Flushes(bool derived, bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var ds = derived ?
+                new DerivedDeflateStream(ms, CompressionMode.Compress, leaveOpen) :
+                new DeflateStream(ms, CompressionMode.Compress, leaveOpen);
+            ds.WriteByte(1);
+            Assert.Equal(0, ms.Position);
+            await ds.DisposeAsync();
+            Assert.InRange(ms.ToArray().Length, 1, int.MaxValue);
+            if (leaveOpen)
+            {
+                Assert.InRange(ms.Position, 1, int.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<ObjectDisposedException>(() => ms.Position);
+            }
+        }
+
         private sealed class DerivedDeflateStream : DeflateStream
         {
             public bool ReadArrayInvoked = false, WriteArrayInvoked = false;
