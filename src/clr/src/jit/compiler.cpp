@@ -3661,6 +3661,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (verbose)
     {
+        // If we are compiling for a specific tier, make that very obvious in the output.
+        // Note that we don't expect multiple TIER flags to be set at one time, but there
+        // is nothing preventing that.
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+        {
+            printf("OPTIONS: Tier-0 compilation (set COMPlus_TieredCompilation=0 to disable)\n");
+        }
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
+        {
+            printf("OPTIONS: Tier-1 compilation\n");
+        }
+
         printf("OPTIONS: compCodeOpt = %s\n",
                (opts.compCodeOpt == BLENDED_CODE)
                    ? "BLENDED_CODE"
