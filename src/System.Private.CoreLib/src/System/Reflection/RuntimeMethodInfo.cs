@@ -257,7 +257,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType as RuntimeType, inherit);
+            return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
