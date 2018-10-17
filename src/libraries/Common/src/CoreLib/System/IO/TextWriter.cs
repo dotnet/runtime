@@ -290,12 +290,11 @@ namespace System.IO
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
         public virtual void Write(StringBuilder value)
         {
-            if (value == null)
+            if (value != null)
             {
-                throw new ArgumentNullException(nameof(value));
+                foreach (ReadOnlyMemory<char> chunk in value.GetChunks())
+                    Write(chunk);
             }
-            foreach (ReadOnlyMemory<char> chunk in value.GetChunks())
-                Write(chunk);
         }
 
         // Writes out a formatted string.  Uses the same semantics as
