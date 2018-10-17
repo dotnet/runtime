@@ -72,6 +72,8 @@ LoaderAllocator::LoaderAllocator()
     m_pJumpStubCache = NULL;
     m_IsCollectible = false;
 
+    m_pUMEntryThunkCache = NULL;
+
     m_nLoaderAllocator = InterlockedIncrement64((LONGLONG *)&LoaderAllocator::cLoaderAllocatorsCreated);
 }
 
@@ -1284,6 +1286,9 @@ void LoaderAllocator::Terminate()
         m_fGCPressure = false;
     }
 
+    delete m_pUMEntryThunkCache;
+    m_pUMEntryThunkCache = NULL;
+
     m_crstLoaderAllocator.Destroy();
     m_LoaderAllocatorReferences.RemoveAll();
 
@@ -1870,6 +1875,32 @@ void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
         // Release the managed ALC
         m_binderToRelease->ReleaseLoadContext();
     }
+}
+
+// U->M thunks created in this LoaderAllocator and not associated with a delegate.
+UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (!m_pUMEntryThunkCache)
+    {
+        UMEntryThunkCache *pUMEntryThunkCache = new UMEntryThunkCache(GetAppDomain());
+
+        if (FastInterlockCompareExchangePointer(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
+        {
+            // some thread swooped in and set the field
+            delete pUMEntryThunkCache;
+        }
+    }
+    _ASSERTE(m_pUMEntryThunkCache);
+    return m_pUMEntryThunkCache;
 }
 
 #endif // !CROSSGEN_COMPILE

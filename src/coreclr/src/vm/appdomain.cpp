@@ -3885,8 +3885,6 @@ AppDomain::AppDomain()
     memset(m_rpCLRTypes, 0, sizeof(m_rpCLRTypes));
 #endif // FEATURE_COMINTEROP
 
-    m_pUMEntryThunkCache = NULL;
-
     m_pAsyncPool = NULL;
     m_handleStore = NULL;
 
@@ -4221,12 +4219,6 @@ void AppDomain::Terminate()
 
     delete m_pDefaultContext;
     m_pDefaultContext = NULL;
-
-    if (m_pUMEntryThunkCache)
-    {
-        delete m_pUMEntryThunkCache;
-        m_pUMEntryThunkCache = NULL;
-    }
 
 #ifdef FEATURE_COMINTEROP
     if (m_pRCWCache)
@@ -7546,31 +7538,6 @@ BOOL AppDomain::WasSystemAssemblyLoadEventSent(void)
 }
 
 #ifndef CROSSGEN_COMPILE
-// U->M thunks created in this domain and not associated with a delegate.
-UMEntryThunkCache *AppDomain::GetUMEntryThunkCache()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (!m_pUMEntryThunkCache)
-    {
-        UMEntryThunkCache *pUMEntryThunkCache = new UMEntryThunkCache(this);
-
-        if (FastInterlockCompareExchangePointer(&m_pUMEntryThunkCache, pUMEntryThunkCache, NULL) != NULL)
-        {
-            // some thread swooped in and set the field
-            delete pUMEntryThunkCache;
-        }
-    }
-    _ASSERTE(m_pUMEntryThunkCache);
-    return m_pUMEntryThunkCache;
-}
 
 #ifdef FEATURE_COMINTEROP
 
