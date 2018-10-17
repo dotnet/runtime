@@ -970,7 +970,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     m_argSize = argSize;
     m_argTypeHandle = thValueType;
 
-#if defined(UNIX_AMD64_ABI)
+#if defined(UNIX_AMD64_ABI) || defined (_TARGET_ARM64_)
     m_hasArgLocDescForStructInRegs = false;
 #endif
 
