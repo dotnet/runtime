@@ -38,7 +38,6 @@ private:
 
     // SIMD related
     void RewriteSIMDOperand(LIR::Use& use, bool keepBlk);
-    void FixupIfSIMDLocal(GenTreeLclVarCommon* node);
 
     // Intrinsic related transformations
     void RewriteNodeAsCall(GenTree**             use,
