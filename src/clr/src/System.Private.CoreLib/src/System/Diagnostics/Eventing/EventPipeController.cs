@@ -94,7 +94,7 @@ namespace System.Diagnostics.Tracing
         private EventPipeController()
         {
             // Set the config file path.
-            m_configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, BuildConfigFileName());
+            m_configFilePath = Path.Combine(AppContext.BaseDirectory, BuildConfigFileName());
 
             // Initialize the timer, but don't set it to run.
             // The timer will be set to run each time PollForTracingCommand is called.
