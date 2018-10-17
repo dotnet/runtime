@@ -10,7 +10,7 @@ Param(
   [switch] $SkipTests,
   [Alias("sync")][switch] $Restore,
   [switch] $Clean,
-  [Alias("inlcudetests")][switch] $BuildTests,
+  [Alias("includetests")][switch] $BuildTests,
   [switch] $Test,
   [switch] $Coverage,
   [switch] $InitTools,
