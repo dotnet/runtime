@@ -5,6 +5,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Helpers.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="UnwrapTests.cs" />
     <Compile Include="AggregateExceptionTests.cs" />
@@ -46,6 +47,9 @@
     <Compile Include="System.Runtime.CompilerServices\AsyncTaskMethodBuilderTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadPoolHelpers.cs">
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
     <Compile Include="Task\TaskDisposeTests.cs" />
   </ItemGroup>
