@@ -115,11 +115,11 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/eng/common/msbuild.sh --ci $(PB_DockerVolumeName)/src/upload-tests.proj $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\" /p:\"ProductBuildId=$(ProductBuildId)\"",
+        "arguments": "run -e DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/eng/common/msbuild.sh --ci --warnaserror false $(PB_DockerVolumeName)/src/upload-tests.proj $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\" /p:\"ProductBuildId=$(ProductBuildId)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
-    },    
+    },
     {
       "environment": {},
       "enabled": true,
