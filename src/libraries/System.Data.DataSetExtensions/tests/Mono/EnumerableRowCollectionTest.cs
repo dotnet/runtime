@@ -39,7 +39,7 @@ namespace MonoTests.System.Data
 {
     public class EnumerableRowCollectionTest
     {
-        private string _testDataSet = "testdataset1.xml";
+        private string _testDataSet = "Mono/testdataset1.xml";
         
         [Fact]
         public void QueryWhere()
