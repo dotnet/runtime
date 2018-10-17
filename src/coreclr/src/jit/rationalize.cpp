@@ -229,73 +229,6 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
                       args);
 }
 
-// FixupIfSIMDLocal: Fixup the type of a lclVar tree, as needed, if it is a SIMD type vector.
-//
-// Arguments:
-//    comp      - the Compiler object.
-//    tree      - the GenTreeLclVarCommon tree to be fixed up.
-//
-// Return Value:
-//    None.
-//
-// TODO-1stClassStructs: This is now only here to preserve existing behavior. It is actually not
-// desirable to change the lclFld nodes back to TYP_SIMD (it will cause them to be loaded
-// into a vector register, and then moved to an int register).
-
-void Rationalizer::FixupIfSIMDLocal(GenTreeLclVarCommon* node)
-{
-#ifdef FEATURE_SIMD
-    if (!comp->featureSIMD)
-    {
-        return;
-    }
-
-    LclVarDsc* varDsc = &(comp->lvaTable[node->gtLclNum]);
-
-    // Don't mark byref of SIMD vector as a SIMD type.
-    // Note that struct args though marked as lvIsSIMD=true,
-    // the tree node representing such an arg should not be
-    // marked as a SIMD type, since it is a byref of a SIMD type.
-    if (!varTypeIsSIMD(varDsc))
-    {
-        return;
-    }
-    switch (node->OperGet())
-    {
-        default:
-            // Nothing to do for most tree nodes.
-            break;
-
-        case GT_LCL_FLD:
-            // We may see a lclFld used for pointer-sized structs that have been morphed, in which
-            // case we can change it to GT_LCL_VAR.
-            // However, we may also see a lclFld with FieldSeqStore::NotAField() for structs that can't
-            // be analyzed, e.g. those with overlapping fields such as the IL implementation of Vector<T>.
-            if ((node->AsLclFld()->gtFieldSeq == FieldSeqStore::NotAField()) && (node->AsLclFld()->gtLclOffs == 0) &&
-                (node->gtType == TYP_I_IMPL) && (varDsc->lvExactSize == TARGET_POINTER_SIZE))
-            {
-                node->SetOper(GT_LCL_VAR);
-                node->gtFlags &= ~(GTF_VAR_USEASG);
-            }
-            else
-            {
-                // If we access a field of a SIMD lclVar via GT_LCL_FLD, it cannot have been
-                // independently promoted.
-                assert(comp->lvaGetPromotionType(varDsc) != Compiler::PROMOTION_TYPE_INDEPENDENT);
-                return;
-            }
-            break;
-        case GT_STORE_LCL_FLD:
-            assert(node->gtType == TYP_I_IMPL);
-            node->SetOper(GT_STORE_LCL_VAR);
-            node->gtFlags &= ~(GTF_VAR_USEASG);
-            break;
-    }
-    unsigned simdSize = roundUp(varDsc->lvExactSize, TARGET_POINTER_SIZE);
-    node->gtType      = comp->getSIMDTypeForSize(simdSize);
-#endif // FEATURE_SIMD
-}
-
 #ifdef DEBUG
 
 void Rationalizer::ValidateStatement(GenTree* tree, BasicBlock* block)
@@ -858,12 +791,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             RewriteSIMDOperand(use, keepBlk);
         }
         break;
-
-        case GT_LCL_FLD:
-        case GT_STORE_LCL_FLD:
-            // TODO-1stClassStructs: Eliminate this.
-            FixupIfSIMDLocal(node->AsLclVarCommon());
-            break;
 
         case GT_SIMD:
         {
