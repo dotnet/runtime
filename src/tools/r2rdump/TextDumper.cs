@@ -266,6 +266,11 @@ namespace R2RDump
                     NativeParser instanceParser = new NativeParser(_r2r.Image, instanceSectionOffset);
                     NativeHashtable instMethodEntryPoints = new NativeHashtable(_r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
                     _writer.Write(instMethodEntryPoints.ToString());
+                    _writer.WriteLine();
+                    foreach (InstanceMethod instanceMethod in _r2r.InstanceMethods)
+                    {
+                        _writer.WriteLine($@"0x{instanceMethod.Bucket:X2} -> {instanceMethod.Method.SignatureString}");
+                    }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS:
                     int rtfOffset = _r2r.GetOffset(section.RelativeVirtualAddress);

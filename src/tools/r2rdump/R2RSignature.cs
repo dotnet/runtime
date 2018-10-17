@@ -444,20 +444,21 @@ namespace R2RDump
             switch ((ReadyToRunFixupKind)fixupType)
             {
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup:
-                    builder.Append("THIS_OBJ_DICTIONARY_LOOKUP");
-                    // TODO
+                    builder.Append("THISOBJ_DICTIONARY_LOOKUP @ ");
+                    ParseType(builder);
+                    builder.Append(": ");
+                    ParseSignature(builder);
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_TypeDictionaryLookup:
-                    builder.Append("TYPE_DICTIONARY_LOOKUP");
-                    // TODO
+                    builder.Append("TYPE_DICTIONARY_LOOKUP: ");
+                    ParseSignature(builder);
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodDictionaryLookup:
-                    builder.Append("METHOD_DICTIONARY_LOOKUP");
-                    // TODO
+                    builder.Append("METHOD_DICTIONARY_LOOKUP: ");
+                    ParseSignature(builder);
                     break;
-
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_TypeHandle:
                     ParseType(builder);
@@ -465,8 +466,8 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodHandle:
-                    builder.Append("METHOD_HANDLE");
-                    // TODO
+                    ParseMethod(builder);
+                    builder.Append(" (METHOD_HANDLE)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle:
@@ -507,8 +508,11 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_Slot:
-                    builder.Append("VIRTUAL_ENTRY_SLOT");
-                    // TODO
+                    {
+                        uint slot = ReadUInt();
+                        ParseType(builder);
+                        builder.Append($@" #{slot} (VIRTUAL_ENTRY_SLOT)");
+                    }
                     break;
 
 
@@ -708,7 +712,8 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_VAR:
-                    builder.Append("var");
+                    builder.Append("var #");
+                    builder.Append(ReadUInt());
                     break;
 
                 case CorElementType.ELEMENT_TYPE_ARRAY:
@@ -744,7 +749,8 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_MVAR:
-                    builder.Append("mvar");
+                    builder.Append("mvar #");
+                    builder.Append(ReadUInt());
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CMOD_REQD:
