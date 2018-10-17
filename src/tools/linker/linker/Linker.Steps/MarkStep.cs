@@ -468,9 +468,21 @@ namespace Mono.Linker.Steps {
 			return true;
 		}
 
-		protected virtual bool ShoulMarkTypeConstructor (TypeDefinition type)
+		protected virtual bool ShouldMarkTypeStaticConstructor (TypeDefinition type)
 		{
-			return !type.IsBeforeFieldInit && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit);
+			if (Annotations.HasPreservedStaticCtor (type))
+				return false;
+			
+			if (type.IsBeforeFieldInit && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit))
+				return false;
+
+			return true;
+		}
+
+		protected void MarkStaticConstructor (TypeDefinition type)
+		{
+			if (MarkMethodIf (type.Methods, IsStaticConstructor))
+				Annotations.SetPreservedStaticCtor (type);
 		}
 
 		protected virtual bool ShouldMarkTopLevelCustomAttribute (AttributeProviderPair app, MethodDefinition resolvedConstructor)
@@ -822,10 +834,8 @@ namespace Mono.Linker.Steps {
 			DoAdditionalFieldProcessing (field);
 
 			var parent = reference.DeclaringType.Resolve ();
-			if (parent.IsBeforeFieldInit && !Annotations.HasPreservedStaticCtor (parent) && _context.IsOptimizationEnabled (CodeOptimizations.BeforeFieldInit)) {
-				if (MarkMethodIf (parent.Methods, IsStaticConstructor))
-					Annotations.SetPreservedStaticCtor (parent);
-			}
+			if (!Annotations.HasPreservedStaticCtor (parent))
+				MarkStaticConstructor (parent);
 
 			Annotations.Mark (field);
 		}
@@ -921,10 +931,8 @@ namespace Mono.Linker.Steps {
 
 			if (type.HasMethods) {
 				MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
-
-				if (ShoulMarkTypeConstructor (type) && MarkMethodIf (type.Methods, IsStaticConstructor))
-					Annotations.SetPreservedStaticCtor (type);
-
+				if (ShouldMarkTypeStaticConstructor (type))
+					MarkStaticConstructor (type);
 				MarkMethodsIf (type.Methods, HasSerializationAttribute);
 			}
 
