@@ -71,9 +71,9 @@ static const int length_of_year[2] = { 365, 366 };
 int64_t btls_timegm64(const struct tm *date) {
     int64_t days    = 0;
     int64_t seconds = 0;
-    int64_t     year;
-    int64_t     orig_year = (int64_t)date->tm_year;
-    int      cycles  = 0;
+    int64_t year;
+    int64_t orig_year = (int64_t)date->tm_year;
+    int64_t cycles  = 0;
 
     if( orig_year > 100 ) {
         cycles = (orig_year - 100) / 400;

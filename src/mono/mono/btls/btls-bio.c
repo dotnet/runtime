@@ -77,7 +77,7 @@ mono_ctrl (BIO *bio, int cmd, long num, void *ptr)
 	// fprintf (stderr, "mono_ctrl: %x - %lx - %p\n", cmd, num, ptr);
 	switch (cmd) {
 		case BIO_CTRL_FLUSH:
-			return mono->control_func (mono->instance, MONO_BTLS_CONTROL_COMMAND_FLUSH, 0);
+			return (long)mono->control_func (mono->instance, MONO_BTLS_CONTROL_COMMAND_FLUSH, 0);
 		default:
 			return -1;
 	}
@@ -116,7 +116,7 @@ static const BIO_METHOD mono_method = {
 	NULL, NULL, mono_ctrl, mono_new, mono_free, NULL
 };
 
-MONO_API BIO *
+BIO *
 mono_btls_bio_mono_new (void)
 {
 	BIO *bio;
@@ -138,7 +138,7 @@ mono_btls_bio_mono_new (void)
 	return bio;
 }
 
-MONO_API void
+void
 mono_btls_bio_mono_initialize (BIO *bio, const void *instance,
 			      MonoBtlsReadFunc read_func, MonoBtlsWriteFunc write_func,
 			      MonoBtlsControlFunc control_func)
@@ -153,55 +153,55 @@ mono_btls_bio_mono_initialize (BIO *bio, const void *instance,
 	bio->init = 1;
 }
 
-MONO_API int
+int
 mono_btls_bio_read (BIO *bio, void *data, int len)
 {
 	return BIO_read (bio, data, len);
 }
 
-MONO_API int
+int
 mono_btls_bio_write (BIO *bio, const void *data, int len)
 {
 	return BIO_write (bio, data, len);
 }
 
-MONO_API int
+int
 mono_btls_bio_flush (BIO *bio)
 {
 	return BIO_flush (bio);
 }
 
-MONO_API int
+int
 mono_btls_bio_indent (BIO *bio, unsigned indent, unsigned max_indent)
 {
 	return BIO_indent (bio, indent, max_indent);
 }
 
-MONO_API int
+int
 mono_btls_bio_hexdump (BIO *bio, const uint8_t *data, int len, unsigned indent)
 {
 	return BIO_hexdump (bio, data, len, indent);
 }
 
-MONO_API void
+void
 mono_btls_bio_print_errors (BIO *bio)
 {
 	BIO_print_errors (bio);
 }
 
-MONO_API void
+void
 mono_btls_bio_free (BIO *bio)
 {
 	BIO_free (bio);
 }
 
-MONO_API BIO *
+BIO *
 mono_btls_bio_mem_new (void)
 {
 	return BIO_new (BIO_s_mem ());
 }
 
-MONO_API int
+int
 mono_btls_bio_mem_get_data (BIO *bio, void **data)
 {
 	return (int)BIO_get_mem_data (bio, (char**)data);

@@ -13,28 +13,31 @@
 #include "btls-ssl.h"
 #include "btls-x509.h"
 
-MonoBtlsX509Chain *
+MONO_API MonoBtlsX509Chain *
 mono_btls_x509_chain_new (void);
 
-MonoBtlsX509Chain *
+MONO_API MonoBtlsX509Chain *
 mono_btls_x509_chain_from_certs (STACK_OF(X509) *certs);
 
-STACK_OF(X509) *
+MONO_API STACK_OF(X509) *
 mono_btls_x509_chain_peek_certs (MonoBtlsX509Chain *chain);
 
-int
+MONO_API int
 mono_btls_x509_chain_get_count (MonoBtlsX509Chain *chain);
 
-X509 *
+MONO_API X509 *
 mono_btls_x509_chain_get_cert (MonoBtlsX509Chain *chain, int index);
 
-MonoBtlsX509Chain *
+MONO_API STACK_OF(X509) *
+mono_btls_x509_chain_get_certs (MonoBtlsX509Chain *chain);
+
+MONO_API MonoBtlsX509Chain *
 mono_btls_x509_chain_up_ref (MonoBtlsX509Chain *chain);
 
-int
+MONO_API int
 mono_btls_x509_chain_free (MonoBtlsX509Chain *chain);
 
-void
+MONO_API void
 mono_btls_x509_chain_add_cert (MonoBtlsX509Chain *chain, X509 *x509);
 
 #endif /* defined(__btls__btls_x509_chain__) */

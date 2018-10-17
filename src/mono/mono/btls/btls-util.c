@@ -14,8 +14,7 @@ extern int asn1_generalizedtime_to_tm (struct tm *tm, const ASN1_GENERALIZEDTIME
 
 extern int64_t btls_timegm64 (const struct tm *date);
 
-
-MONO_API void
+void
 mono_btls_free (void *data)
 {
 	OPENSSL_free (data);

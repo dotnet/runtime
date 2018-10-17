@@ -17,11 +17,13 @@ if(CCACHE_PROGRAM)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
 endif()
 
+if (NOT OPENSSL_NO_ASM)
 # FIXME: cmake's asm detection is broken when using xcrun.
 set (CMAKE_ASM_COMPILER "${CMAKE_C_COMPILER}")
 set (CMAKE_ASM_COMPILER_ARG1 "${CMAKE_C_COMPILER_ARG1}")
 set (CMAKE_ASM_COMPILER_ID "${CMAKE_C_COMPILER_ID}")
 enable_language(ASM)
+endif ()
 
 if (NOT "${BTLS_ARCH}" STREQUAL "")
 	message (WARNING "SET ARCH: ${BTLS_ARCH}")
@@ -39,7 +41,11 @@ endif ()
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${C_CXX_FLAGS} ${BTLS_CFLAGS}")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_CXX_FLAGS} ${BTLS_CFLAGS}")
+
+if (NOT OPENSSL_NO_ASM)
 set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${BTLS_CFLAGS}")
+endif ()
+
 set (CMAKE_MACOSX_RPATH 1)
 set (MONO_BTLS 1)
 
@@ -97,7 +103,10 @@ set (
 
 add_library (mono-btls-shared SHARED ${MONO_BTLS_SOURCES})
 
-if (CYGWIN)
+if (CYGWIN OR MSVC)
 	set (CMAKE_SHARED_LIBRARY_PREFIX "lib")
+endif ()
+
+if (CYGWIN)
 	target_link_libraries (mono-btls-shared wsock32 ws2_32)
 endif ()
