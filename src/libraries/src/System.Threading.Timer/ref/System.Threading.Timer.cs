@@ -23,6 +23,7 @@ namespace System.Threading
         public bool Change(uint dueTime, uint period) { throw null; }
         public void Dispose() { }
         public bool Dispose(System.Threading.WaitHandle notifyObject) { throw null; }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
 
     public delegate void TimerCallback(object state);
