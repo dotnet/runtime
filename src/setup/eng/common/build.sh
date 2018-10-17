@@ -18,18 +18,21 @@ build=false
 rebuild=false
 test=false
 pack=false
+publish=false
 integration_test=false
 performance_test=false
 sign=false
 public=false
 ci=false
 
+warnaserror=true
+nodereuse=true
+
 projects=''
 configuration='Debug'
 prepare_machine=false
 verbosity='minimal'
-msbuildArgs=''
-extraargs=''
+properties=''
 
 while (($# > 0)); do
   lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -58,6 +61,7 @@ while (($# > 0)); do
       echo "  --rebuild                Rebuild solution"
       echo "  --test                   Run all unit tests in the solution"
       echo "  --sign                   Sign build outputs"
+      echo "  --publish                Publish artifacts (e.g. symbols)"
       echo "  --pack                   Package build outputs into NuGet packages and Willow components"
       echo ""
       echo "Advanced settings:"
@@ -131,23 +135,24 @@ while (($# > 0)); do
   esac
 done
 
-. $scriptroot/init-tools.sh
+. "$scriptroot/tools.sh"
 
 if [[ -z $projects ]]; then
   projects="$repo_root/*.sln"
 fi
 
+InitializeTools
+
 build_log="$log_dir/Build.binlog"
 
-MSBuild $toolset_build_proj \
-  /bl:$build_log \
+MSBuild "$toolset_build_proj" \
+  /bl:"$build_log" \
   /p:Configuration=$configuration \
-  /p:Projects=$projects \
+  /p:Projects="$projects" \
   /p:RepoRoot="$repo_root" \
   /p:Restore=$restore \
   /p:Build=$build \
   /p:Rebuild=$rebuild \
-  /p:Deploy=$deploy \
   /p:Test=$test \
   /p:Pack=$pack \
   /p:IntegrationTest=$integration_test \
@@ -155,13 +160,12 @@ MSBuild $toolset_build_proj \
   /p:Sign=$sign \
   /p:Publish=$publish \
   /p:ContinuousIntegrationBuild=$ci \
-  /p:CIBuild=$ci \
   $properties
 
 lastexitcode=$?
 
 if [[ $lastexitcode != 0 ]]; then
-  echo "Build Failed (exit code '$lastexitcode'). See log: $build_log"
+  echo "Build failed (exit code '$lastexitcode'). See log: $build_log"
 fi
 
 ExitWithExitCode $lastexitcode

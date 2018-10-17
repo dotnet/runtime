@@ -13,6 +13,9 @@ done
 scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 
 verbosity='minimal'
+warnaserror=true
+nodereuse=true
+prepare_machine=false
 extraargs=''
 
 while (($# > 0)); do
@@ -45,7 +48,8 @@ while (($# > 0)); do
   esac
 done
 
-. $scriptroot/init-tools.sh
+. "$scriptroot/tools.sh"
 
+InitializeTools
 MSBuild $extraargs
 ExitWithExitCode $?

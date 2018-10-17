@@ -3,6 +3,7 @@ Param(
   [string] $configuration = "Debug",
   [string] $projects = "",
   [string] $verbosity = "minimal",
+  [string] $msbuildEngine = $null,
   [bool] $warnaserror = $true,
   [bool] $nodereuse = $true,
   [switch] $restore,
@@ -23,7 +24,7 @@ Param(
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
-. $PSScriptRoot\init-tools.ps1
+. $PSScriptRoot\tools.ps1
 
 function Print-Usage() {
     Write-Host "Common settings:"
@@ -51,6 +52,7 @@ function Print-Usage() {
     Write-Host "  -projects <value>       Semi-colon delimited list of sln/proj's to build. Globbing is supported (*.sln)"
     Write-Host "  -ci                     Set when running on CI server"
     Write-Host "  -prepareMachine         Prepare machine for CI run"
+    Write-Host "  -msbuildEngine <value>  Msbuild engine to use to run build ('dotnet', 'vs', or unspecified)."
     Write-Host ""
     Write-Host "Command line arguments not listed above are passed thru to msbuild."
     Write-Host "The above arguments can be shortened as much as to be unambiguous (e.g. -co for configuration, -t for test, etc.)."
@@ -65,6 +67,8 @@ try {
   if ($projects -eq "") {
     $projects = Join-Path $RepoRoot "*.sln"
   }
+
+  InitializeTools
 
   $BuildLog = Join-Path $LogDir "Build.binlog"
 
@@ -86,7 +90,6 @@ try {
     /p:Publish=$publish `
     /p:PublishBuildAssets=$publishBuildAssets `
     /p:ContinuousIntegrationBuild=$ci `
-    /p:CIBuild=$ci `
     @properties
 
   if ($lastExitCode -ne 0) {

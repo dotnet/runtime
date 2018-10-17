@@ -8,9 +8,10 @@ Param(
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$extraArgs
 )
 
-. $PSScriptRoot\init-tools.ps1
+. $PSScriptRoot\tools.ps1
 
 try {
+  InitializeTools
   MSBuild @extraArgs
   ExitWithExitCode $lastExitCode
 }
