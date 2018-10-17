@@ -30,7 +30,7 @@ typedef enum _tagPEKIND
 
 inline bool IsPE64(PEKIND x)
 {
-    return ( (x == peIA64) || (x == peAMD64) );
+    return ( (x == peIA64) || (x == peAMD64) || (x == peARM64) );
 }
 
 inline bool IsPE32(PEKIND x)

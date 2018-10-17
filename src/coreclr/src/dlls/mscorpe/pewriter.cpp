@@ -3,6 +3,11 @@
 // See the LICENSE file in the project root for more information.
 #include "stdafx.h"
 
+// Enable building with older SDKs that don't have IMAGE_FILE_MACHINE_ARM64 defined.
+#ifndef IMAGE_FILE_MACHINE_ARM64
+#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
+#endif
+
 #include "blobfetcher.h"
 #include "pedecoder.h"
 
@@ -796,6 +801,14 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
 
         // The OS loader already knows how to initialize pure managed assemblies and we have no legacy OS
         // support to worry about on ARM so don't ever create the stub for ARM binaries.
+        m_createCorMainStub = false;
+    }
+    else if ((createFlags & ICEE_CREATE_MACHINE_MASK) == ICEE_CREATE_MACHINE_ARM64)
+    {
+        m_ntHeaders->FileHeader.Machine = VAL16(IMAGE_FILE_MACHINE_ARM64);
+
+        // The OS loader already knows how to initialize pure managed assemblies and we have no legacy OS
+        // support to worry about on ARM64 so don't ever create the stub for ARM64 binaries.
         m_createCorMainStub = false;
     }
     else

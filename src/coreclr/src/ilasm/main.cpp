@@ -188,18 +188,18 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/HIGHENTROPYVA  Set High Entropy Virtual Address capable PE32+ images (default for /APPCONTAINER)");
       printf("\n/NOCORSTUB      Suppress generation of CORExeMain stub");
       printf("\n/STRIPRELOC     Indicate that no base relocations are needed");
-      printf("\n/ITANIUM        Target processor: Intel Itanium");
       printf("\n/X64            Target processor: 64bit AMD processor");
-      printf("\n/ARM            Target processor: ARM processor");
+      printf("\n/ARM            Target processor: ARM (AArch32) processor");
+      printf("\n/ARM64          Target processor: ARM64 (AArch64) processor");
       printf("\n/32BITPREFERRED Create a 32BitPreferred image (PE32)");
       printf("\n/ENC=<file>     Create Edit-and-Continue deltas from specified source file");
       
-      printf("\n\nKey may be '-' or '/'\nOptions are recognized by first 3 characters\nDefault source file extension is .il\n");
+      printf("\n\nKey may be '-' or '/'\nOptions are recognized by first 3 characters (except ARM/ARM64)\nDefault source file extension is .il\n");
 
       printf("\nTarget defaults:");
-      printf("\n/PE64      => /PE64 /ITANIUM");
-      printf("\n/ITANIUM   => /PE64 /ITANIUM");
+      printf("\n/PE64      => /PE64 /X64");
       printf("\n/X64       => /PE64 /X64");
+      printf("\n/ARM64     => /PE64 /ARM64");
 
       printf("\n\n");
       exit(exitcode);
@@ -314,11 +314,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     {
                       pAsm->m_fOptimize = TRUE;
                     }
-                    else if (!_stricmp(szOpt, "ITA"))
-                    {
-                      pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
-                      pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_IA64;
-                    }
                     else if (!_stricmp(szOpt, "X64"))
                     {
                       pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
@@ -326,8 +321,25 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     else if (!_stricmp(szOpt, "ARM"))
                     {
-                      pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
-                      pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_ARM;
+                        // szOpt is only 3 characters long.  That is not enough to distinguish "ARM" and "ARM64".
+                        // We could change it to be longer, but that would affect the existing usability (ARM64 was
+                        // added much later). Thus, just distinguish the two here.
+                        char szOpt2[5 + 1] = { 0 };
+                        WszWideCharToMultiByte(uCodePage, 0, &argv[i][1], 5, szOpt2, sizeof(szOpt2), NULL, NULL);
+                        if (!_stricmp(szOpt2, "ARM"))
+                        {
+                            pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
+                            pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_ARM;
+                        }
+                        else if (!_stricmp(szOpt2, "ARM64"))
+                        {
+                            pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;        
+                            pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_ARM64;
+                        }
+                        else
+                        {
+                            goto InvalidOption;
+                        }
                     }
                     else if (!_stricmp(szOpt, "32B"))
                     {
@@ -543,22 +555,22 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                 if((pAsm->m_dwCeeFileFlags & ICEE_CREATE_MACHINE_I386)
                    ||(pAsm->m_dwCeeFileFlags & ICEE_CREATE_MACHINE_ARM))
                 {
-                    printf("\nMachine type /ITANIUM or /X64 must be specified for 64 bit targets.");
+                    printf("\nMachine type /ARM64 or /X64 must be specified for 64 bit targets.");
                     if(!pAsm->OnErrGo)
                     {
                         pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_MACHINE_MASK;
-                        pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_IA64;
-                        printf(" Type set to ITANIUM.");
+                        pAsm->m_dwCeeFileFlags |= ICEE_CREATE_MACHINE_AMD64;
+                        printf(" Type set to X64.");
                     }
                     printf("\n");
                 }
             }
             else
             {
-                if((pAsm->m_dwCeeFileFlags & ICEE_CREATE_MACHINE_IA64)
+                if((pAsm->m_dwCeeFileFlags & ICEE_CREATE_MACHINE_ARM64)
                   ||(pAsm->m_dwCeeFileFlags & ICEE_CREATE_MACHINE_AMD64))
                 {
-                    printf("\n64 bit target must be specified for machine type /ITANIUM or /X64.");
+                    printf("\n64 bit target must be specified for machine type /ARM64 or /X64.");
                     if(!pAsm->OnErrGo)
                     {
                         pAsm->m_dwCeeFileFlags &= ~ICEE_CREATE_FILE_PE32;
@@ -567,10 +579,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
                     }
                     printf("\n");
                 }
-            }
-            if((pAsm->m_dwCeeFileFlags & ICEE_CREATE_MACHINE_IA64))
-            {
-                pAsm->m_dwComImageFlags &= ~COMIMAGE_FLAGS_ILONLY;
             }
             if(pAsm->m_dwCeeFileFlags & ICEE_CREATE_FILE_PE32)
             {
