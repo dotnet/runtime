@@ -60,16 +60,8 @@ try {
   }
   $ToolNameMoniker = "$ToolName-$Version-$ToolOs-$Arch"
   $ToolInstallDirectory = Join-Path $InstallPath "$ToolName\$Version\"
-  $ToolFilePath = Get-ChildItem $ToolInstallDirectory -Recurse -Filter "$ToolName.exe" | % { $_.FullName }
-  if (@($ToolFilePath).Length -Gt 1) {
-    Write-Error "There are too many $($ToolName)s in $ToolFilePath!"
-    exit 1
-  } elseif (@($ToolFilePath).Length -Lt 1) {
-    Write-Error "There are not enough $($ToolName)s in $ToolFilePath!"
-    exit 1
-  }
+  $Uri = "$BaseUri/windows/$ToolName/$ToolNameMoniker.zip"
   $ShimPath = Join-Path $InstallPath "$ToolName.exe"
-  $Uri = "$BaseUri/windows/$Toolname/$ToolNameMoniker.zip"
 
   if ($Clean) {
     Write-Host "Cleaning $ToolInstallDirectory"
@@ -89,7 +81,7 @@ try {
   }
 
   # Install tool
-  if ((Test-Path $ToolFilePath) -And (-Not $Force)) {
+  if ((Test-Path $ToolInstallDirectory) -And (-Not $Force)) {
     Write-Verbose "$ToolName ($Version) already exists, skipping install"
   }
   else {
@@ -105,6 +97,16 @@ try {
       exit 1
     }
   }
+
+  $ToolFilePath = Get-ChildItem $ToolInstallDirectory -Recurse -Filter "$ToolName.exe" | % { $_.FullName }
+  if (@($ToolFilePath).Length -Gt 1) {
+    Write-Error "There are multiple copies of $ToolName in $($ToolInstallDirectory): `n$(@($ToolFilePath | out-string))"
+    exit 1
+  } elseif (@($ToolFilePath).Length -Lt 1) {
+    Write-Error "$ToolName was not found in $ToolFilePath."
+    exit 1
+  }
+
   # Generate shim
   # Always rewrite shims so that we are referencing the expected version
   $GenerateShimStatus = CommonLibrary\New-ScriptShim -ShimName $ToolName `
