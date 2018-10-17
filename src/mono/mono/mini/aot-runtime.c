@@ -105,7 +105,7 @@ typedef struct MonoAotModule {
 	guint32 image_table_len;
 	gboolean out_of_date;
 	gboolean plt_inited;
-	gboolean got_initializing;
+	gboolean got_initialized;
 	guint8 *mem_begin;
 	guint8 *mem_end;
 	guint8 *jit_code_start;
@@ -1947,10 +1947,15 @@ init_amodule_got (MonoAotModule *amodule)
 	int i, npatches;
 
 	/* These can't be initialized in load_aot_module () */
-	if (amodule->shared_got [0] || amodule->got_initializing)
+	if (amodule->got_initialized)
 		return;
 
-	amodule->got_initializing = TRUE;
+	mono_loader_lock ();
+
+	if (amodule->got_initialized) {
+		mono_loader_unlock ();
+		return;
+	}
 
 	mp = mono_mempool_new ();
 	npatches = amodule->info.nshared_got_entries;
@@ -1996,6 +2001,10 @@ init_amodule_got (MonoAotModule *amodule)
 	}
 
 	mono_mempool_destroy (mp);
+
+	mono_memory_barrier ();
+	amodule->got_initialized = TRUE;
+	mono_loader_unlock ();
 }
 
 static void
