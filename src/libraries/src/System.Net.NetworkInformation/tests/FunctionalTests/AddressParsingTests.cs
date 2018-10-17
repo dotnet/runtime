@@ -14,7 +14,7 @@ namespace System.Net.NetworkInformation.Tests
         public void GatewayAddressParsing()
         {
             string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("route", fileName);
+            FileUtil.NormalizeLineEndings("NetworkFiles/route", fileName);
             List<GatewayIPAddressInformation> gatewayAddresses = StringParsingHelpers.ParseGatewayAddressesFromRouteFile(fileName, "wlan0");
             Assert.Equal(3, gatewayAddresses.Count);
 
@@ -27,7 +27,7 @@ namespace System.Net.NetworkInformation.Tests
         public void DhcpServerAddressParsing()
         {
             string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("dhclient.leases", fileName);
+            FileUtil.NormalizeLineEndings("NetworkFiles/dhclient.leases", fileName);
             List<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(fileName, "wlan0");
             Assert.Equal(1, dhcpServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("10.105.128.4"), dhcpServerAddresses[0]);
@@ -37,7 +37,7 @@ namespace System.Net.NetworkInformation.Tests
         public void WinsServerAddressParsing()
         {
             string fileName = GetTestFilePath();
-            FileUtil.NormalizeLineEndings("smb.conf", fileName);
+            FileUtil.NormalizeLineEndings("NetworkFiles/smb.conf", fileName);
 
             List<IPAddress> winsServerAddresses = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile(fileName);
             Assert.Equal(1, winsServerAddresses.Count);
