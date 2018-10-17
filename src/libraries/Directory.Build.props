@@ -72,11 +72,14 @@
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(DotNetRoot)</DotnetCliPath>
     <ToolHostCmd Condition="'$(ToolHostCmd)'==''">"$(DotNetRoot)dotnet"</ToolHostCmd>
   </PropertyGroup>
+
   <!-- Choose .targets files that come from Arcade rather than from buildtools -->
+  <!-- TODO: Remove when buildtools dependency removed. -->
   <PropertyGroup>
     <ExcludeNotSupportedImport>true</ExcludeNotSupportedImport>
     <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
     <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
+    <ExcludeReferenceAssembliesImport>true</ExcludeReferenceAssembliesImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
@@ -279,11 +282,6 @@
     <Deterministic>false</Deterministic>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
-    <!-- disable warnings about unused fields -->
-    <NoWarn>$(NoWarn);0169;0649</NoWarn>
-  </PropertyGroup>
-
   <!-- Set up some common paths -->
   <PropertyGroup>
     <CommonPath>$(SourceDir)Common\src</CommonPath>
@@ -306,7 +304,6 @@
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
 
-    <OutputPathSubfolder Condition="'$(IsCompatAssembly)'=='true'">/Compat</OutputPathSubfolder>
     <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)$(OutputPathSubfolder)</OutputPath>
 
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(RootIntermediateOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
@@ -403,6 +400,9 @@
     <!-- Disable VS Test SDK references if the .NET Native toolchain is used. -->
     <IncludeVSTestReferences Condition="'$(UseDotNetNativeToolchain)' == 'true'">false</IncludeVSTestReferences>
   </PropertyGroup>
+
+  <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
+  <Import Project="$(MSBuildThisFileDirectory)eng/ReferenceAssemblies.props" />
 
   <!-- Use Roslyn Compilers to build -->
   <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false' and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
