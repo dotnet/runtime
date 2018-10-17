@@ -498,22 +498,6 @@ static const WORD ExportStubARMTemplate[] =
     0x0000, 0x0000          //address of VTFixup slot
 };
 
-static const BYTE ExportStubIA64Template[] =
-{
-    // ld8    r9  = [gp]    ;;
-    // ld8    r10 = [r9],8
-    // nop.i                ;;
-    // ld8    gp  = [r9]
-    // mov    b6  = r10
-    // br.cond.sptk.few  b6
-    //
-    0x0B, 0x48, 0x00, 0x02, 0x18, 0x10, 0xA0, 0x40, 
-    0x24, 0x30, 0x28, 0x00, 0x00, 0x00, 0x04, 0x00, 
-    0x10, 0x08, 0x00, 0x12, 0x18, 0x10, 0x60, 0x50, 
-    0x04, 0x80, 0x03, 0x00, 0x60, 0x00, 0x80, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,//address of the template
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 //address of VTFixup slot
-};
 DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
 {
     DWORD EXPORT_STUB_SIZE = (DWORD)(sizeof(WORD)+sizeof(DWORD));
@@ -523,73 +507,53 @@ DWORD   Assembler::EmitExportStub(DWORD dwVTFSlotRVA)
     DWORD PEFileOffset;
     BYTE* outBuff;
     DWORD*  pdwVTFSlotRVA;
-    if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_IA64)
+
+    if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_AMD64)
     {
-        STUB_TEMPLATE = (BYTE*)&ExportStubIA64Template[0];
-        EXPORT_STUB_SIZE = sizeof(ExportStubIA64Template);
-        OFFSET_OF_ADDR = 40;
-        if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, EXPORT_STUB_SIZE, STUB_ALIGNMENT, (void **) &outBuff))) return 0;
-        memcpy(outBuff,STUB_TEMPLATE,EXPORT_STUB_SIZE);
-        pdwVTFSlotRVA = (DWORD*)(&outBuff[OFFSET_OF_ADDR]);
-        *pdwVTFSlotRVA = VAL32(dwVTFSlotRVA);
-    
-        // The offset where we start, (not where the alignment bytes start!)
-        if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
-    
-        PEFileOffset -= EXPORT_STUB_SIZE;
-        *((DWORD*)(&outBuff[OFFSET_OF_ADDR - 8])) = PEFileOffset; // set PLabel
-        m_pCeeFileGen->AddSectionReloc(m_pILSection, PEFileOffset+OFFSET_OF_ADDR-8,m_pILSection, srRelocHighLow);
-        m_pCeeFileGen->AddSectionReloc(m_pILSection, PEFileOffset+OFFSET_OF_ADDR,m_pGlobalDataSection, srRelocHighLow);
-        PEFileOffset += OFFSET_OF_ADDR - 8; // entry point is PLabel, which points at the template
+        STUB_TEMPLATE = (BYTE*)&ExportStubAMD64Template[0];
+        EXPORT_STUB_SIZE = sizeof(ExportStubAMD64Template);
+        OFFSET_OF_ADDR = 2;
+        STUB_ALIGNMENT = 4;
+    }
+    else if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_I386)
+    {
+        STUB_TEMPLATE = (BYTE*)&ExportStubX86Template[0];
+        EXPORT_STUB_SIZE = sizeof(ExportStubX86Template);
+        OFFSET_OF_ADDR = 2;
+    }
+    else if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_ARM)
+    {
+        STUB_TEMPLATE = (BYTE*)&ExportStubARMTemplate[0];
+        EXPORT_STUB_SIZE = sizeof(ExportStubARMTemplate);
+        OFFSET_OF_ADDR = 4;
+        STUB_ALIGNMENT = 4;
     }
     else
     {
-        if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_AMD64)
-        {
-            STUB_TEMPLATE = (BYTE*)&ExportStubAMD64Template[0];
-            EXPORT_STUB_SIZE = sizeof(ExportStubAMD64Template);
-            OFFSET_OF_ADDR = 2;
-            STUB_ALIGNMENT = 4;
-        }
-        else if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_I386)
-        {
-            STUB_TEMPLATE = (BYTE*)&ExportStubX86Template[0];
-            EXPORT_STUB_SIZE = sizeof(ExportStubX86Template);
-            OFFSET_OF_ADDR = 2;
-        }
-        else if(m_dwCeeFileFlags & ICEE_CREATE_MACHINE_ARM)
-        {
-            STUB_TEMPLATE = (BYTE*)&ExportStubARMTemplate[0];
-            EXPORT_STUB_SIZE = sizeof(ExportStubARMTemplate);
-            OFFSET_OF_ADDR = 4;
-            STUB_ALIGNMENT = 4;
-        }
-        else
-        {
-            report->error("Unmanaged exports are not implemented for unknown platform");
-            return NULL;
-        }
-        // Addr must be aligned, not the stub!
-        if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
-        if((PEFileOffset + OFFSET_OF_ADDR)&(STUB_ALIGNMENT-1))
-        {
-            ULONG L = STUB_ALIGNMENT - ((PEFileOffset + OFFSET_OF_ADDR)&(STUB_ALIGNMENT-1));
-            if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, L, 1, (void **) &outBuff))) return 0;
-            memset(outBuff,0,L);
-        }
-        
-        if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, EXPORT_STUB_SIZE, 1, (void **) &outBuff))) return 0;
-        memcpy(outBuff,STUB_TEMPLATE,EXPORT_STUB_SIZE);
-        pdwVTFSlotRVA = (DWORD*)(&outBuff[OFFSET_OF_ADDR]);
-        *pdwVTFSlotRVA = VAL32(dwVTFSlotRVA);
-    
-        // The offset where we start, (not where the alignment bytes start!)
-        if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
-    
-        PEFileOffset -= EXPORT_STUB_SIZE;
-        _ASSERTE(((PEFileOffset + OFFSET_OF_ADDR)&(STUB_ALIGNMENT-1))==0);
-        m_pCeeFileGen->AddSectionReloc(m_pILSection, PEFileOffset+OFFSET_OF_ADDR,m_pGlobalDataSection, srRelocHighLow);
+        report->error("Unmanaged exports are not implemented for unknown platform");
+        return NULL;
     }
+    // Addr must be aligned, not the stub!
+    if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
+    if((PEFileOffset + OFFSET_OF_ADDR)&(STUB_ALIGNMENT-1))
+    {
+        ULONG L = STUB_ALIGNMENT - ((PEFileOffset + OFFSET_OF_ADDR)&(STUB_ALIGNMENT-1));
+        if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, L, 1, (void **) &outBuff))) return 0;
+        memset(outBuff,0,L);
+    }
+    
+    if (FAILED(m_pCeeFileGen->GetSectionBlock (m_pILSection, EXPORT_STUB_SIZE, 1, (void **) &outBuff))) return 0;
+    memcpy(outBuff,STUB_TEMPLATE,EXPORT_STUB_SIZE);
+    pdwVTFSlotRVA = (DWORD*)(&outBuff[OFFSET_OF_ADDR]);
+    *pdwVTFSlotRVA = VAL32(dwVTFSlotRVA);
+
+    // The offset where we start, (not where the alignment bytes start!)
+    if (FAILED(m_pCeeFileGen->GetSectionDataLen (m_pILSection, &PEFileOffset))) return 0;
+
+    PEFileOffset -= EXPORT_STUB_SIZE;
+    _ASSERTE(((PEFileOffset + OFFSET_OF_ADDR)&(STUB_ALIGNMENT-1))==0);
+    m_pCeeFileGen->AddSectionReloc(m_pILSection, PEFileOffset+OFFSET_OF_ADDR,m_pGlobalDataSection, srRelocHighLow);
+
     if(m_dwCeeFileFlags & ICEE_CREATE_FILE_STRIP_RELOCS)
     {
         report->error("Base relocations are emitted, while /STRIPRELOC option has been specified");
