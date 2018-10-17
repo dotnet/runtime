@@ -1464,6 +1464,7 @@ namespace System.IO
         public override System.Text.Encoding Encoding { get { throw null; } }
         public override void Close() { }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override System.Threading.Tasks.Task FlushAsync() { throw null; }
         public override void Write(char value) { }
