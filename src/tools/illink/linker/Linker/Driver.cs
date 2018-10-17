@@ -163,7 +163,7 @@ namespace Mono.Linker {
 							continue;
 
 						case "--disable-opt":
-							var opt = GetParam ();
+							var opt = GetParam ().ToLower ();
 							if (!disabled_optimizations.Contains (opt))
 								disabled_optimizations.Add (opt);
 
