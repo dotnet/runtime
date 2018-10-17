@@ -347,7 +347,7 @@ namespace System.Diagnostics
                     Type declaringType = mb.DeclaringType;
                     string methodName = mb.Name;
                     bool methodChanged = false;
-                    if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute)))
+                    if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
                     {
                         isAsync = typeof(IAsyncStateMachine).IsAssignableFrom(declaringType);
                         if (isAsync || typeof(IEnumerator).IsAssignableFrom(declaringType))
@@ -502,7 +502,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                IEnumerable<StateMachineAttribute> attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>();
+                IEnumerable<StateMachineAttribute> attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
                 if (attributes == null)
                 {
                     continue;
