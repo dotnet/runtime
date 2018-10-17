@@ -1076,8 +1076,8 @@ PCODE COMDelegate::ConvertToCallback(MethodDesc* pMD)
     if (NDirect::MarshalingRequired(pMD, pMD->GetSig(), pMD->GetModule()))
         COMPlusThrow(kNotSupportedException, W("NotSupported_NonBlittableTypes"));
 
-    // Get UMEntryThunk from appdomain thunkcache cache.
-    UMEntryThunk *pUMEntryThunk = GetAppDomain()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
+    // Get UMEntryThunk from the thunk cache.
+    UMEntryThunk *pUMEntryThunk = pMD->GetLoaderAllocator()->GetUMEntryThunkCache()->GetUMEntryThunk(pMD);
 
 #if defined(_TARGET_X86_) && !defined(FEATURE_STUBS_AS_IL)
 
