@@ -114,11 +114,18 @@ Returns the duplicated X509 instance.
 DLLEXPORT X509* CryptoNative_X509Duplicate(X509* x509);
 
 /*
-Shims the PEM_read_bio_X509_AUX method.
+Shims the PEM_read_bio_X509 method.
 
 Returns the read X509 instance.
 */
 DLLEXPORT X509* CryptoNative_PemReadX509FromBio(BIO* bio);
+
+/*
+Shims the PEM_read_bio_X509_AUX method.
+
+Returns the read X509 instance.
+*/
+DLLEXPORT X509* CryptoNative_PemReadX509FromBioAux(BIO* bio);
 
 /*
 Shims the X509_get_serialNumber method.
