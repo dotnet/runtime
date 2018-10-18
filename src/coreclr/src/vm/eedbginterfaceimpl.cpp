@@ -1630,4 +1630,14 @@ void EEDbgInterfaceImpl::ObjectRefFlush(Thread *pThread)
 #endif
 #endif
 
+#ifndef DACCESS_COMPILE
+
+BOOL AdjustContextForWriteBarrier(EXCEPTION_RECORD *pExceptionRecord, CONTEXT *pContext);
+BOOL EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger(CONTEXT* context)
+{
+    WRAPPER_NO_CONTRACT;
+    return AdjustContextForWriteBarrier(nullptr, context);
+}
+#endif
+
 #endif // DEBUGGING_SUPPORTED
