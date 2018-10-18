@@ -343,6 +343,10 @@ public:
     virtual void ObjectRefFlush(Thread *pThread);
 #endif
 #endif
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL AdjustContextForWriteBarrierForDebugger(CONTEXT* context);
+#endif
 };
 
 #endif // DEBUGGING_SUPPORTED
