@@ -224,6 +224,94 @@ static OSStatus DeleteInKeychain(CFTypeRef needle, SecKeychainRef haystack)
     return status;
 }
 
+static bool IsCertInKeychain(CFTypeRef needle, SecKeychainRef haystack)
+{
+    CFMutableDictionaryRef query = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+    if (query == NULL)
+        return errSecAllocate;
+
+    const void* constHaystack = haystack;
+    CFTypeRef result = NULL;
+    CFArrayRef searchList = CFArrayCreate(NULL, &constHaystack, 1, &kCFTypeArrayCallBacks);
+
+    if (searchList == NULL)
+    {
+        CFRelease(query);
+        return errSecAllocate;
+    }
+
+    CFArrayRef itemMatch = CFArrayCreate(NULL, (const void**)(&needle), 1, &kCFTypeArrayCallBacks);
+
+    if (itemMatch == NULL)
+    {
+        CFRelease(searchList);
+        CFRelease(query);
+        return errSecAllocate;
+    }
+
+    CFDictionarySetValue(query, kSecReturnRef, kCFBooleanTrue);
+    CFDictionarySetValue(query, kSecMatchSearchList, searchList);
+    CFDictionarySetValue(query, kSecMatchItemList, itemMatch);
+    CFDictionarySetValue(query, kSecClass, kSecClassCertificate);
+    OSStatus status = SecItemCopyMatching(query, &result);
+
+    bool ret = true;
+
+    if (status == errSecItemNotFound)
+    {
+        ret = false;
+    }
+
+    CFRelease(itemMatch);
+    CFRelease(searchList);
+    CFRelease(query);
+
+    return ret;
+}
+
+static int32_t CheckTrustSettings(SecCertificateRef cert)
+{
+    const int32_t kErrorUserTrust = 2;
+    const int32_t kErrorAdminTrust = 3;
+
+    OSStatus status = noErr;
+    CFArrayRef settings = NULL;
+    if (status == noErr)
+    {
+        status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainUser, &settings);
+    }
+
+    if (settings != NULL)
+    {
+        CFRelease(settings);
+        settings = NULL;
+    }
+
+    if (status == noErr)
+    {
+        CFRelease(cert);
+        return kErrorUserTrust;
+    }
+
+    status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainAdmin, &settings);
+
+    if (settings != NULL)
+    {
+        CFRelease(settings);
+        settings = NULL;
+    }
+
+    if (status == noErr)
+    {
+        CFRelease(cert);
+        return kErrorAdminTrust;
+    }
+
+    return 0;
+}
+
 int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
 {
     if (pOSStatus != NULL)
@@ -315,7 +403,7 @@ int32_t AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecK
 }
 
 int32_t
-AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
+AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, uint8_t isReadOnlyMode, int32_t* pOSStatus)
 {
     if (pOSStatus != NULL)
         *pOSStatus = noErr;
@@ -350,40 +438,27 @@ AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeycha
         return -1;
     }
 
-    const int32_t kErrorUserTrust = 2;
-    const int32_t kErrorAdminTrust = 3;
+    const int32_t kErrorReadonlyDelete = 4;
 
-    CFArrayRef settings = NULL;
+    int32_t ret = 0;
 
-    if (status == noErr)
+    if (isReadOnlyMode)
     {
-        status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainUser, &settings);
+        ret = kErrorReadonlyDelete;
+    }
+    else
+    {
+        ret = CheckTrustSettings(cert);
     }
 
-    if (settings != NULL)
+    if (ret != 0)
     {
-        CFRelease(settings);
-        settings = NULL;
-    }
+        if (!IsCertInKeychain(cert, keychain))
+        {
+            return 1;
+        }
 
-    if (status == noErr)
-    {
-        CFRelease(cert);
-        return kErrorUserTrust;
-    }
-
-    status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainAdmin, &settings);
-
-    if (settings != NULL)
-    {
-        CFRelease(settings);
-        settings = NULL;
-    }
-
-    if (status == noErr)
-    {
-        CFRelease(cert);
-        return kErrorAdminTrust;
+        return ret;
     }
 
     *pOSStatus = DeleteInKeychain(cert, keychain);
