@@ -433,7 +433,7 @@ namespace System.Data.Tests
             }
 
             //The following two cases fail on mono. MS.net evaluates the expression
-            //immediatly upon assignment. We don't do this yet hence we don't throw
+            //immediately upon assignment. We don't do this yet hence we don't throw
             //an exception at this point.
             try
             {
