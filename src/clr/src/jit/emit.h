@@ -1442,7 +1442,6 @@ public:
 
 #ifdef TRANSLATE_PDB
 
-    inline void SetIDSource(instrDesc* pID);
     void MapCode(int ilOffset, BYTE* imgDest);
     void MapFunc(int                imgOff,
                  int                procLen,
@@ -1877,10 +1876,6 @@ public:
     static emitJumpKind emitInsToJumpKind(instruction ins);
     static emitJumpKind emitReverseJumpKind(emitJumpKind jumpKind);
 
-#ifdef _TARGET_ARM_
-    static unsigned emitJumpKindCondCode(emitJumpKind jumpKind);
-#endif
-
 #ifdef DEBUG
     void emitInsSanityCheck(instrDesc* id);
 #endif
@@ -1974,7 +1969,6 @@ public:
 
     /* Liveness of stack variables, and registers */
 
-    void emitUpdateLiveGCvars(int offs, BYTE* addr, bool birth);
     void emitUpdateLiveGCvars(VARSET_VALARG_TP vars, BYTE* addr);
     void emitUpdateLiveGCregs(GCtype gcType, regMaskTP regs, BYTE* addr);
 

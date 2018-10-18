@@ -822,8 +822,6 @@ public:
                     Compiler*            pComp,
                     RefCountState        state     = RCS_NORMAL,
                     bool                 propagate = true);
-    void setPrefReg(regNumber regNum, Compiler* pComp);
-    void addPrefReg(regMaskTP regMask, Compiler* pComp);
     bool IsFloatRegType() const
     {
         return isFloatRegType(lvType) || lvIsHfaRegArg();
@@ -1079,11 +1077,6 @@ class CompTimeSummaryInfo
 
     int          m_numFilteredMethods;
     CompTimeInfo m_filtered;
-
-    // This method computes the number of cycles/sec for the current machine.  The cycles are those counted
-    // by GetThreadCycleTime; we assume that these are of equal duration, though that is not necessarily true.
-    // If any OS interaction fails, returns 0.0.
-    double CyclesPerSecond();
 
     // This can use what ever data you want to determine if the value to be added
     // belongs in the filtered section (it's always included in the unfiltered section)
@@ -2339,9 +2332,6 @@ public:
     GenTree* gtNewSIMDVectorOne(var_types simdType, var_types baseType, unsigned size);
 #endif
 
-    GenTreeBlk* gtNewBlkOpNode(
-        genTreeOps oper, GenTree* dst, GenTree* srcOrFillVal, GenTree* sizeOrClsTok, bool isVolatile);
-
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock);
 
     GenTree* gtNewPutArgReg(var_types type, GenTree* arg, regNumber argReg);
@@ -2688,7 +2678,6 @@ public:
 
     GenTree** gtFindLink(GenTree* stmt, GenTree* node);
     bool gtHasCatchArg(GenTree* tree);
-    bool gtHasUnmanagedCall(GenTree* tree);
 
     typedef ArrayStack<GenTree*> GenTreeStack;
 
@@ -2990,22 +2979,6 @@ public:
 
     unsigned lvaLclSize(unsigned varNum);
     unsigned lvaLclExactSize(unsigned varNum);
-
-    bool lvaLclVarRefs(GenTree* tree, GenTree** findPtr, varRefKinds* refsPtr, void* result);
-
-    // Call lvaLclVarRefs on "true"; accumulate "*result" into whichever of
-    // "allVars" and "trkdVars" is indiated by the nullness of "findPtr"; return
-    // the return result.
-    bool lvaLclVarRefsAccum(
-        GenTree* tree, GenTree** findPtr, varRefKinds* refsPtr, ALLVARSET_TP* allVars, VARSET_TP* trkdVars);
-
-    // If "findPtr" is non-NULL, assumes "result" is an "ALLVARSET_TP*", and
-    // (destructively) unions "allVars" into "*result".  Otherwise, assumes "result" is a "VARSET_TP*",
-    // and (destructively) unions "trkedVars" into "*result".
-    void lvaLclVarRefsAccumIntoRes(GenTree**           findPtr,
-                                   void*               result,
-                                   ALLVARSET_VALARG_TP allVars,
-                                   VARSET_VALARG_TP    trkdVars);
 
     bool lvaHaveManyLocals() const;
 
@@ -3831,7 +3804,6 @@ private:
     };
     BlockListNode* impBlockListNodeFreeList;
 
-    BlockListNode* AllocBlockListNode();
     void FreeBlockListNode(BlockListNode* node);
 
     bool impIsValueType(typeInfo* pTypeInfo);
@@ -4824,8 +4796,6 @@ public:
 
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block);
 
-    bool fgOptimizeFallthroughTailDup(BasicBlock* block, BasicBlock* target);
-
     bool fgOptimizeEmptyBlock(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
@@ -4914,8 +4884,6 @@ public:
 #endif
 
     static GenTree* fgGetFirstNode(GenTree* tree);
-    static bool fgTreeIsInStmt(GenTree* tree, GenTreeStmt* stmt);
-    void fgTraverseRPO();
 
     //--------------------- Walking the trees in the IR -----------------------
 
@@ -5061,8 +5029,6 @@ public: // Used by linear scan register allocation
 
 private:
     GenTree* fgInsertStmtListAfter(BasicBlock* block, GenTree* stmtAfter, GenTree* stmtList);
-
-    GenTree* fgMorphSplitTree(GenTree** splitPoint, GenTree* stmt, BasicBlock* blk);
 
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
@@ -5238,7 +5204,6 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
-    GenTree* fgMorphSmpOpPre(GenTree* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
     GenTree* fgMorphRecognizeBoxNullable(GenTree* compare);
@@ -5423,10 +5388,6 @@ private:
 public:
     void optInit();
 
-protected:
-    LclVarDsc* optIsTrackedLocal(GenTree* tree);
-
-public:
     void optRemoveRangeCheck(GenTree* tree, GenTree* stmt);
     bool optIsRangeCheckRemovable(GenTree* tree);
 
@@ -6461,7 +6422,6 @@ protected:
 public:
     void optVnNonNullPropCurStmt(BasicBlock* block, GenTree* stmt, GenTree* tree);
     fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, GenTree* stmt, GenTree* tree);
-    GenTree* optVNConstantPropOnRelOp(GenTree* tree);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* stmt, GenTree* test);
     GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* stmt, GenTree* tree);
     GenTree* optPrepareTreeForReplacement(GenTree* extractTree, GenTree* replaceTree);
@@ -6536,7 +6496,6 @@ public:
     GenTree* optConstantAssertionProp(AssertionDsc* curAssertion,
                                       GenTree*      tree,
                                       GenTree* stmt DEBUGARG(AssertionIndex index));
-    GenTree* optVnConstantAssertionProp(GenTree* tree, GenTree* stmt);
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, GenTree* stmt);
@@ -6603,11 +6562,9 @@ public:
                                               unsigned          loopNum,
                                               BasicBlock*       head,
                                               BasicBlock*       slow);
-    void optInsertLoopCloningStress(BasicBlock* head);
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
-    GenTree* optFindLocalInit(BasicBlock* block, GenTree* local, VARSET_TP* pKilledInOut, bool* isKilledAfterInit);
 
     bool optReachWithoutCall(BasicBlock* srcBB, BasicBlock* dstBB);
 
@@ -6889,8 +6846,6 @@ public:
 
     // Method entry-points, instrs
 
-    void* eeGetFieldAddress(CORINFO_FIELD_HANDLE handle, void*** ppIndir);
-
     CORINFO_METHOD_HANDLE eeMarkNativeTarget(CORINFO_METHOD_HANDLE method);
 
     CORINFO_EE_INFO eeInfo;
@@ -6997,10 +6952,6 @@ public:
         return false;
 #endif
     }
-
-    // Exceptions
-
-    unsigned eeGetEHcount(CORINFO_METHOD_HANDLE handle);
 
     // Debugging support - Line number info
 
@@ -7438,7 +7389,6 @@ private:
 
     void unwindPushPopMaskInt(regMaskTP mask, bool useOpsize16);
     void unwindPushPopMaskFloat(regMaskTP mask);
-    void unwindSplit(FuncInfoDsc* func);
 
 #endif // _TARGET_ARM_
 
@@ -9106,11 +9056,6 @@ public:
     // if this changes "*pDest".
     BOOL tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
 
-    // Set pDest from the primitive value type.
-    // Eg. System.Int32 -> ELEMENT_TYPE_I4
-
-    BOOL tiFromPrimitiveValueClass(typeInfo* pDest, const typeInfo* pVC) const;
-
 #ifdef DEBUG
     // <BUGNUM> VSW 471305
     // IJW allows assigning REF to BYREF. The following allows us to temporarily
@@ -10149,36 +10094,6 @@ public:
     }
 };
 
-class IncLclVarRefCountsVisitor final : public GenTreeVisitor<IncLclVarRefCountsVisitor>
-{
-public:
-    enum
-    {
-        DoPreOrder    = true,
-        DoLclVarsOnly = true
-    };
-
-    IncLclVarRefCountsVisitor(Compiler* compiler);
-    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
-
-    static Compiler::fgWalkResult WalkTree(Compiler* compiler, GenTree* tree);
-};
-
-class DecLclVarRefCountsVisitor final : public GenTreeVisitor<DecLclVarRefCountsVisitor>
-{
-public:
-    enum
-    {
-        DoPreOrder    = true,
-        DoLclVarsOnly = true
-    };
-
-    DecLclVarRefCountsVisitor(Compiler* compiler);
-    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
-
-    static Compiler::fgWalkResult WalkTree(Compiler* compiler, GenTree* tree);
-};
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -10491,7 +10406,6 @@ void dDoms();
 void dLiveness();
 void dCVarSet(VARSET_VALARG_TP vars);
 
-void dVarSet(VARSET_VALARG_TP vars);
 void dRegMask(regMaskTP mask);
 
 void dFuncIR();

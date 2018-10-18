@@ -307,8 +307,6 @@ private:
 #endif // FEATURE_HW_INTRINSICS
 
     // Utility functions
-    void MorphBlkIntoHelperCall(GenTree* pTree, GenTree* treeStmt);
-
 public:
     static bool IndirsAreEquivalent(GenTree* pTreeA, GenTree* pTreeB);
 
