@@ -61,8 +61,6 @@
 
   <Target Name="Pack">
     <ItemGroup>
-      <!-- signing needs to happen before packaging -->
-      <_PackProjects Include="src\sign.proj" />
       <_PackProjects Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
     </ItemGroup>
 

@@ -1,0 +1,10 @@
+<Project>
+  <ItemGroup>
+    <!-- List of container files that will be opened and checked for files that need to be signed. -->
+    <ItemsToSign Include="$(RepoRoot)bin\packages\$(Configuration)\**\*.nupkg" />
+  </ItemGroup>
+
+  <Target Name="ValidateSignFileListIsNotEmpty" BeforeTargets="Sign">
+    <Error Condition="'@(ItemsToSign)' == ''" Text="List of files to sign is empty" />
+  </Target>
+</Project>
