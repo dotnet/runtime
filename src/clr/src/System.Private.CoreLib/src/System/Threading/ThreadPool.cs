@@ -1332,6 +1332,22 @@ namespace System.Threading
             return true;
         }
 
+        // TODO: https://github.com/dotnet/corefx/issues/32547. Make public.
+        internal static bool UnsafeQueueUserWorkItem<TState>(Action<TState> callBack, TState state, bool preferLocal)
+        {
+            if (callBack == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
+            }
+
+            EnsureVMInitialized();
+
+            ThreadPoolGlobals.workQueue.Enqueue(
+                new QueueUserWorkItemCallback<TState>(callBack, state, null), forceGlobal: !preferLocal);
+
+            return true;
+        }
+
         public static bool UnsafeQueueUserWorkItem(WaitCallback callBack, object state)
         {
             if (callBack == null)
