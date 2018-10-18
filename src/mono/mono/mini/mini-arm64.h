@@ -93,7 +93,6 @@ typedef struct {
 	guint8 *ret;
 	double fpregs [FP_PARAM_REGS];
 	int n_fpargs, n_fpret, n_stackargs;
-	guint8 buffer [256];
 	/* This should come last as the structure is dynamically extended */
 	/* The +1 is for r8 */
 	mgreg_t regs [PARAM_REGS + 1];

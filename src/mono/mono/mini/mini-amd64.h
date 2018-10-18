@@ -287,7 +287,6 @@ typedef struct {
 	double fregs [8];
 	mgreg_t has_fp;
 	mgreg_t nstack_args;
-	guint8 buffer [256];
 	/* This should come last as the structure is dynamically extended */
 	mgreg_t regs [PARAM_REGS];
 } DynCallArgs;

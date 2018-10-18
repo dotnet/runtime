@@ -386,6 +386,14 @@ class Tests
 		}
 
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static int NullableMany(long? i1, long? i2, long? i3, long? i4, long? i5, long? i6, long? i7, long? i8,
+										long? i11, long? i12, long? i13, long? i14, long? i15, long? i16, long? i17, long? i18,
+										long? i21, long? i22, long? i23, long? i24, long? i25, long? i26, long? i27, long? i28,
+										long? i31, long? i32, long? i33, long? i34, long? i35, long? i36, long? i37, long? i38) {
+			return (int)((i1 + i8 + i11 + i18 + i21 + i28 + i31 + i38).Value);
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public static Nullable<T> GetNull<T>() where T : struct {
 			return null;
 		}
@@ -424,6 +432,11 @@ class Tests
 		res2 = (int?)typeof (NullableMethods).GetMethod ("GetNull").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { });
 		if (res2.HasValue)
 			return 5;
+
+		NullableMethods.NullableMany (1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8);
+		res2 = (int?)typeof (NullableMethods).GetMethod ("NullableMany").Invoke (null, new object [] { 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L });
+		if (res2 != 36)
+			return 6;
 		return 0;
 	}
 
