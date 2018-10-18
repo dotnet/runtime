@@ -362,6 +362,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
+    REQUIRED_FUNCTION(PEM_read_bio_X509) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_AUX) \
     REQUIRED_FUNCTION(PEM_read_bio_X509_CRL) \
     REQUIRED_FUNCTION(PEM_write_bio_X509_CRL) \
@@ -708,6 +709,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
+#define PEM_read_bio_X509 PEM_read_bio_X509_ptr
 #define PEM_read_bio_X509_AUX PEM_read_bio_X509_AUX_ptr
 #define PEM_read_bio_X509_CRL PEM_read_bio_X509_CRL_ptr
 #define PEM_write_bio_X509_CRL PEM_write_bio_X509_CRL_ptr

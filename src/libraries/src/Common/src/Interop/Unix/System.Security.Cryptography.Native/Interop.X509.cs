@@ -61,6 +61,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBio")]
         internal static extern SafeX509Handle PemReadX509FromBio(SafeBioHandle bio);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBioAux")]
+        internal static extern SafeX509Handle PemReadX509FromBioAux(SafeBioHandle bio);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetSerialNumber")]
         private static extern SafeSharedAsn1IntegerHandle X509GetSerialNumber_private(SafeX509Handle x);
 
