@@ -314,7 +314,7 @@ namespace System.Threading
                             }
                             else
                             {
-                                ThreadPool.UnsafeQueueCustomWorkItem(timer, forceGlobal: true);
+                                ThreadPool.UnsafeQueueUserWorkItemInternal(timer, preferLocal: false);
                             }
                         }
                         else
@@ -619,6 +619,7 @@ namespace System.Threading
             return success;
         }
 
+        void IThreadPoolWorkItem.Execute() => Fire();
 
         internal void Fire()
         {
@@ -647,10 +648,6 @@ namespace System.Threading
             if (shouldSignal)
                 SignalNoCallbacksRunning();
         }
-
-        void IThreadPoolWorkItem.ExecuteWorkItem() => Fire();
-
-        void IThreadPoolWorkItem.MarkAborted(ThreadAbortException tae) { }
 
         internal void SignalNoCallbacksRunning()
         {
