@@ -3,6 +3,11 @@
   <PropertyGroup>
     <VersionPrefix>1.0.0</VersionPrefix>
     <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
+    <!-- Opt-out repo features -->
+    <UsingToolXliff>false</UsingToolXliff>
+
+    <!-- Always use shipping version insted of dummy version -->
+    <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
   </PropertyGroup>
   
   <!-- Package names if they are used in more then one location in the repo -->

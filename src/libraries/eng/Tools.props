@@ -37,14 +37,15 @@
     <PropertyGroup>
       <ToolsDir>$(RepoRoot)Tools</ToolsDir>
       <BuildToolsSemaphore>$(ToolsDir)/$(BuildToolsPackageVersion).init-tools.completed</BuildToolsSemaphore>
-      <BuildToolsPackageDir>$(NuGetPackageRoot)/$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
+      <PackagesDir>$(NuGetPackageRoot)/</PackagesDir>
+      <BuildToolsPackageDir>$(PackagesDir)$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
       <CmdExt>cmd</CmdExt>
       <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
       <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
       <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
       <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
 
-      <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(NuGetPackageRoot)\</InitToolsCmdLine>
+      <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(PackagesDir)</InitToolsCmdLine>
     </PropertyGroup>
 
     <Exec
@@ -52,6 +53,12 @@
         Command="$(InitToolsCmdLine) &gt; $(RepoRoot)init-tools.log" />
 
     <Touch Files="$(BuildToolsSemaphore)" AlwaysCreate="true" />
+    <OnError ExecuteTargets="DumpInitToolsLog" />
+  </Target>
+
+  <Target Name="DumpInitToolsLog">
+    <Message Text="Init-tools failed dumping log file $(RepoRoot)init-tools.log" />
+    <Exec Condition="Exists('$(RepoRoot)init-tools.log')" Command="type $(RepoRoot)init-tools.log" />
   </Target>
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
