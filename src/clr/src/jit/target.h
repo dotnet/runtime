@@ -201,21 +201,6 @@ typedef unsigned char   regNumberSmall;
 // #define PSEUDORANDOM_NOP_INSERTION
 // #endif
 
-// TODO-Cleanup: FEATURE_PREVENT_BAD_BYREFS guards code that prevents creating byref pointers to array elements
-// that are not "complete". That is, it only allows byref pointers to the exact array element, not to a portion
-// of the address expression leading to the full addressing expression. This prevents the possibility of creating
-// an illegal byref, which is an expression that points outside of the "host" object. Such bad byrefs won't get
-// updated properly during a GC, leaving them to point to garbage. This led to a GC hole on ARM due to ARM's
-// limited addressing modes (found in GCStress). The change is applicable and possibly desirable for other platforms,
-// but was put under ifdef to avoid introducing potential destabilizing change to those platforms at the end of the
-// .NET Core 2.1 ship cycle. More detail here: https://github.com/dotnet/coreclr/pull/17524. Consider making this
-// all-platform and removing these #ifdefs.
-#if defined(_TARGET_ARM_)
-#define FEATURE_PREVENT_BAD_BYREFS 1
-#else
-#define FEATURE_PREVENT_BAD_BYREFS 0
-#endif
-
 /*****************************************************************************/
 
 // clang-format off
