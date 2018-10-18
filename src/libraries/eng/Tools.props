@@ -25,6 +25,7 @@
       <BuildToolsPackageDir>$(NuGetPackageRoot)/$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
       <CmdExt>cmd</CmdExt>
       <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
+      <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
       <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
       <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
 

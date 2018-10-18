@@ -36,7 +36,7 @@ function DownloadAndExtract {
   )
   # Define verbose switch if undefined
   $Verbose = $VerbosePreference -Eq "Continue"
-  
+
   $TempToolPath = CommonLibrary\Get-TempPathFilename -Path $Uri
 
   # Download native tool
@@ -57,7 +57,7 @@ function DownloadAndExtract {
                                           -OutputDirectory $InstallDirectory `
                                           -Force:$Force `
                                           -Verbose:$Verbose
-  
+
   if ($UnzipStatus -Eq $False) {
     Write-Error "Unzip failed"
     return $False
@@ -155,8 +155,11 @@ Generate a shim for a native tool
 .DESCRIPTION
 Creates a wrapper script (shim) that passes arguments forward to native tool assembly
 
-.PARAMETER ShimPath
-Path to shim file
+.PARAMETER ShimName
+The name of the shim
+
+.PARAMETER ShimDirectory
+The directory where shims are stored
 
 .PARAMETER ToolFilePath
 Path to file that shim forwards to
@@ -171,38 +174,42 @@ function New-ScriptShim {
   [CmdletBinding(PositionalBinding=$false)]
   Param (
     [Parameter(Mandatory=$True)]
-    [string] $ShimPath,
+    [string] $ShimName,
+    [Parameter(Mandatory=$True)]
+    [string] $ShimDirectory,
     [Parameter(Mandatory=$True)]
     [string] $ToolFilePath,
+    [Parameter(Mandatory=$True)]
+    [string] $BaseUri,
     [switch] $Force
   )
   try {
-    Write-Verbose "Generating '$ShimPath' shim"
-
-    if ((Test-Path $ShimPath) -And (-Not $Force)) {
-      Write-Error "$ShimPath already exists"
-      return $False
-    }
+    Write-Verbose "Generating '$ShimName' shim"
 
     if (-Not (Test-Path $ToolFilePath)){
       Write-Error "Specified tool file path '$ToolFilePath' does not exist"
       return $False
     }
 
-    $ShimContents = "@echo off`n"
-    $ShimContents += "setlocal enableextensions enabledelayedexpansion`n"
-    $ShimContents += "set SHIMARGS=`n"
-    $ShimContents += "for %%x in (%*) do (set SHIMARGS=!SHIMARGS! `"%%~x`")`n"
-    $ShimContents += "`"$ToolFilePath`" %SHIMARGS%`n"
-    $ShimContents += "endlocal"
-
-    # Write shim file
-    $ShimContents | Out-File $ShimPath -Encoding "ASCII"
-
-    if (-Not $?) {
-      Write-Error "Failed to generate shim"
-      return $False
+    # WinShimmer is a small .NET Framework program that creates .exe shims to bootstrapped programs
+    # Many of the checks for installed programs expect a .exe extension for Windows tools, rather
+    # than a .bat or .cmd file.
+    # Source: https://github.com/dotnet/arcade/tree/master/src/WinShimmer
+    if (-Not (Test-Path "$ShimDirectory\WinShimmer\winshimmer.exe")) {
+      $InstallStatus = DownloadAndExtract -Uri "$BaseUri/windows/winshimmer/WinShimmer.zip" `
+                                          -InstallDirectory $ShimDirectory\WinShimmer `
+                                          -Force:$Force `
+                                          -DownloadRetries 2 `
+                                          -RetryWaitTimeInSeconds 5 `
+                                          -Verbose:$Verbose
     }
+
+    if ((Test-Path (Join-Path $ShimDirectory "$ShimName.exe"))) {
+      Write-Host "$ShimName.exe already exists; replacing..."
+      Remove-Item (Join-Path $ShimDirectory "$ShimName.exe")
+    }
+
+    Invoke-Expression "$ShimDirectory\WinShimmer\winshimmer.exe $ShimName $ToolFilePath $ShimDirectory"
     return $True
   }
   catch {
