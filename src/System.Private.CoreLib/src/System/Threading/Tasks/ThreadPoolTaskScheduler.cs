@@ -41,7 +41,8 @@ namespace System.Threading.Tasks
         /// <param name="task">The task to schedule.</param>
         protected internal override void QueueTask(Task task)
         {
-            if ((task.Options & TaskCreationOptions.LongRunning) != 0)
+            TaskCreationOptions options = task.Options;
+            if ((options & TaskCreationOptions.LongRunning) != 0)
             {
                 // Run LongRunning tasks on their own dedicated thread.
                 Thread thread = new Thread(s_longRunningThreadWork);
@@ -51,8 +52,8 @@ namespace System.Threading.Tasks
             else
             {
                 // Normal handling for non-LongRunning tasks.
-                bool forceToGlobalQueue = ((task.Options & TaskCreationOptions.PreferFairness) != 0);
-                ThreadPool.UnsafeQueueCustomWorkItem(task, forceToGlobalQueue);
+                bool preferLocal = ((options & TaskCreationOptions.PreferFairness) == 0);
+                ThreadPool.UnsafeQueueUserWorkItemInternal(task, preferLocal);
             }
         }
 
@@ -94,13 +95,13 @@ namespace System.Threading.Tasks
             return FilterTasksFromWorkItems(ThreadPool.GetQueuedWorkItems());
         }
 
-        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<IThreadPoolWorkItem> tpwItems)
+        private IEnumerable<Task> FilterTasksFromWorkItems(IEnumerable<object> tpwItems)
         {
-            foreach (IThreadPoolWorkItem tpwi in tpwItems)
+            foreach (object tpwi in tpwItems)
             {
-                if (tpwi is Task)
+                if (tpwi is Task t)
                 {
-                    yield return (Task)tpwi;
+                    yield return t;
                 }
             }
         }
