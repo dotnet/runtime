@@ -1318,14 +1318,6 @@ struct DfsNumEntry
     }
 };
 
-/*****************************************************************************/
-
-extern BasicBlock* __cdecl verAllocBasicBlock();
-
-#ifdef DEBUG
-extern void __cdecl verDispBasicBlocks();
-#endif
-
 /*****************************************************************************
  *
  *  The following call-backs supplied by the client; it's used by the code

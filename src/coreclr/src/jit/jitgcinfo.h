@@ -91,7 +91,6 @@ public:
     void gcMarkRegSetByref(regMaskTP regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegSetNpt(regMaskTP regMask DEBUGARG(bool forceOutput = false));
     void gcMarkRegPtrVal(regNumber reg, var_types type);
-    void gcMarkRegPtrVal(GenTree* tree);
 
 #ifdef DEBUG
     void gcDspGCrefSetChanges(regMaskTP gcRegGCrefSetNew DEBUGARG(bool forceOutput = false));

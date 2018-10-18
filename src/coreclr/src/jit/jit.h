@@ -594,11 +594,6 @@ const bool dspGCtbls = true;
 #else
 #define DOUBLE_ALIGN 0 // no special handling for double alignment
 #endif
-/*****************************************************************************/
-#ifdef DEBUG
-extern void _cdecl debugStop(const char* why, ...);
-#endif
-/*****************************************************************************/
 
 #ifdef DEBUG
 
@@ -726,8 +721,6 @@ public:
     void record(unsigned size);
 
 private:
-    void ensureAllocated();
-
     unsigned              m_sizeCount;
     const unsigned* const m_sizeTable;
     unsigned              m_counts[HISTOGRAM_MAX_SIZE_COUNT];
