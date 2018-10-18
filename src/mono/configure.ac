@@ -1826,6 +1826,9 @@ AC_TRY_COMPILE([
 
 AM_CONDITIONAL(ENABLE_GSS, test x$enable_gss = xyes)
 
+# `target_ios=yes` does not detect watch devices and fails when cross-compiling
+AC_MONO_APPLE_TARGET(TARGET_OS_IPHONE, [mono_native_platform_ios=yes])
+
 if test x$host_win32 = xno; then
 	dnl *************************************
 	dnl *** Checks for time capabilities ***
@@ -3040,11 +3043,16 @@ if test x$host_win32 = xno; then
 		AC_CHECK_TYPES([struct flock64], [AC_DEFINE(HAVE_FLOCK64, 1, struct flock64)], , [#include <fcntl.h>])
 	fi
 
+	if test x$mono_native_platform_ios = xno; then
+		# On iOS, `stat64()` is deprecated and there is no `struct stat64` and `stat()`
+		# is either 32-bit or 64-bit based on the device / simulator that you're running on.
+		AC_CHECK_FUNC(stat64,            [AC_DEFINE(HAVE_STAT64, 1, [stat64])])
+	fi
+
 	AC_CHECK_FUNC(lseek64,           [AC_DEFINE(HAVE_LSEEK64, 1, [lseek64])])
 	AC_CHECK_FUNC(mmap64,            [AC_DEFINE(HAVE_MMAP64, 1, [mmap64])])
 	AC_CHECK_FUNC(ftruncate64,       [AC_DEFINE(HAVE_FTRUNCATE64, 1, [ftruncate64])])
 	AC_CHECK_FUNC(posix_fadvise64,   [AC_DEFINE(HAVE_POSIX_FADVISE64, 1, [posix_fadvise64])])
-	AC_CHECK_FUNC(stat64,            [AC_DEFINE(HAVE_STAT64, 1, [stat64])])
 	AC_CHECK_DECL(pipe2,             [AC_DEFINE(HAVE_PIPE2, 1, [pipe2])])
 	AC_CHECK_FUNC(getmntinfo,        [AC_DEFINE(HAVE_GETMNTINFO, 1, [getmntinfo])], [], [[#include <unistd.h>]])
 	AC_CHECK_FUNC(strcpy_s,          [AC_DEFINE(HAVE_STRCPY_S, 1, [strcpy_s])])
@@ -5605,9 +5613,6 @@ fi
 # to verify that it's the correct version of it.
 #
 
-# `target_ios=yes` does not detect watch devices and fails when cross-compiling
-AC_MONO_APPLE_TARGET(TARGET_OS_IPHONE, [mono_native_platform_ios=yes])
-
 sed_version_pattern='[[0-9]]\{1,2\}\(\.[[0-9]]\{1,2\}\)'
 if test x$target_osx = xyes; then
 	sed_remove_mac_version_pattern="s/-mmacosx-version-min=$sed_version_pattern//g"
@@ -5697,7 +5702,17 @@ elif test x$mono_native_platform_ios = xyes; then
 
 	mono_native_compat_version=`echo $CC | grep -o -e $grep_find_ios_version_pattern`
 
-	mono_native_ldflags="-framework CoreFoundation -framework Foundation -no-undefined -fatal_warnings"
+	if test x$with_bitcode = xyes; then
+		mono_native_ldflags="-framework CoreFoundation -framework Foundation -no-undefined -fatal_warnings"
+		MONO_NATIVE_LIBADD="../mini/$LIBMONO_LA"
+	else
+		mono_native_ldflags="-framework CoreFoundation -framework Foundation -fatal_warnings"
+	fi
+
+	if test x$enable_gss = xyes; then
+		mono_native_ldflags="$mono_native_ldflags -framework GSS"
+	fi
+
 	MONO_NATIVE_CC=`echo $CC | sed -e $sed_remove_ios_version_pattern`
 	MONO_NATIVE_CXX=`echo $CXX | sed -e $sed_remove_ios_version_pattern`
 	MONO_NATIVE_CPPFLAGS=`echo $CPPFLAGS | sed -e $sed_remove_ios_version_pattern`
@@ -5756,6 +5771,7 @@ AC_SUBST(MONO_NATIVE_LDFLAGS)
 AC_SUBST(MONO_NATIVE_COMPAT_LDFLAGS)
 AC_SUBST(MONO_NATIVE_UNIFIED_LDFLAGS)
 AC_SUBST(MONO_NATIVE_LIBRARY_NAME)
+AC_SUBST(MONO_NATIVE_LIBADD)
 
 AM_CONDITIONAL(MONO_NATIVE, test x$mono_native = xyes)
 AM_CONDITIONAL(MONO_NATIVE_COMPAT, test x$mono_native_compat = xyes)

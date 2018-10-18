@@ -23,3 +23,9 @@ typedef enum {
 
 MONO_API int32_t
 mono_native_get_platform_type (void);
+
+MONO_API int32_t
+mono_native_is_initialized (void);
+
+MONO_API void
+mono_native_initialize (void);
