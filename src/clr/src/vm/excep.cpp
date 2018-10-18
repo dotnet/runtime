@@ -6966,6 +6966,37 @@ AdjustContextForWriteBarrier(
 {
     WRAPPER_NO_CONTRACT;
 
+    if (pExceptionRecord == nullptr)
+    {
+        PCODE ip = GetIP(pContext);
+#if defined(_TARGET_X86_)
+        bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
+        bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
+        if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
+        {
+            DWORD* esp = (DWORD*)pContext->Esp;
+            if (withinWriteBarrierGroup) {
+#if defined(WRITE_BARRIER_CHECK)
+                pContext->Ebp = *esp; esp++;
+                pContext->Ecx = *esp; esp++;
+#endif
+            }
+            pContext->Eip = *esp; esp++;
+            pContext->Esp = (DWORD)esp;
+            return TRUE;
+        }
+#elif defined(_TARGET_AMD64_)
+        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
+        {
+            Thread::VirtualUnwindToFirstManagedCallFrame(pContext);
+            return TRUE;
+        }
+#else
+        // TODO - ARM/ARM64
+#endif
+        return FALSE;
+    }
+
 #if defined(_TARGET_X86_) && !defined(PLATFORM_UNIX)
     void* f_IP = (void *)GetIP(pContext);
 

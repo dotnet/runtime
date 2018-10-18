@@ -5214,7 +5214,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     {
         SO_NOT_MAINLINE;
         NOTHROW;
-        if (isEESuspendedForGC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
+        GC_NOTRIGGER;
         PRECONDITION(ThreadHoldsLock());
 
         // Anyone sending the synccomplete must hold the TSL.

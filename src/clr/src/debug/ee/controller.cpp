@@ -2568,8 +2568,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
                                          CONTEXT *context,
                                          DebuggerControllerQueue *pDcq,
                                          SCAN_TRIGGER stWhat,
-                                         TP_RESULT *pTpr,
-                                         bool* pHitDataBp)
+                                         TP_RESULT *pTpr)
 {
     CONTRACTL
     {
@@ -2586,7 +2585,6 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         PRECONDITION(CheckPointer(context));
         PRECONDITION(CheckPointer(pDcq));
         PRECONDITION(CheckPointer(pTpr));
-        PRECONDITION(CheckPointer(pHitDataBp));
     }
     CONTRACTL_END;
 
@@ -2732,7 +2730,19 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
-        *pHitDataBp = true;
+        CONTEXT contextToAdjust;
+        bool adjustedContext = false;
+        memcpy(&contextToAdjust, context, sizeof(CONTEXT));
+        adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);
+        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+        if (adjustedContext)
+        {
+            pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
+        }
+        else
+        {
+            pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
+        }
     }
 #endif
 
@@ -2944,57 +2954,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
 
     TP_RESULT tpr;
 
-    CONTEXT stash;
-    bool hitDataBp = false;
-    bool stashedContext = false;
-
-    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr, &hitDataBp);
-
-    if (hitDataBp)
-    {
-        PCODE ip = GetIP(context);
-        LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DataBreakpoint: My current IP is %p.\n", ip));
-#if defined(_TARGET_X86_)
-        bool withinWriteBarrierGroup = ((ip >= (PCODE) JIT_WriteBarrierGroup) && (ip <= (PCODE) JIT_WriteBarrierGroup_End));
-        bool withinPatchedWriteBarrierGroup = ((ip >= (PCODE) JIT_PatchedWriteBarrierGroup) && (ip <= (PCODE) JIT_PatchedWriteBarrierGroup_End));
-        if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
-        {
-            memcpy(&stash, context, sizeof(CONTEXT));
-            DWORD* esp = (DWORD*)context->Esp;
-            if (withinWriteBarrierGroup) {
-#if defined(WRITE_BARRIER_CHECK)
-                context->Ebp = *esp; esp++;
-                context->Ecx = *esp; esp++;
-#endif
-            }
-            context->Eip = *esp; esp++;
-            context->Esp = (DWORD)esp;
-            stashedContext = true;
-        }
-#elif defined(_TARGET_AMD64_)
-        if (IsIPInMarkedJitHelper((UINT_PTR)ip))
-        {
-            memcpy(&stash, context, sizeof(CONTEXT));
-            Thread::VirtualUnwindToFirstManagedCallFrame(context);
-            stashedContext = true;
-        }
-#else
-        // TODO - ARM/ARM64
-#endif
-        LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DataBreakpoint: Unwound IP is %p.\n", GetIP(context)));
-        DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-        if (!stashedContext)
-        {
-            dcq.dcqEnqueue(pDataBreakpoint, FALSE);
-        }
-        else
-        {
-            pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(context), FramePointer::MakeFramePointer(GetFP(context)), true, DPT_DEFAULT_TRACE_TYPE);
-            memcpy(context, &stash, sizeof(CONTEXT));
-            stashedContext = false;
-        }
-        LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DataBreakpoint: Rewound IP is %p.\n", GetIP(context)));
-    }
+    used = ScanForTriggers((CORDB_ADDRESS_TYPE *)address, thread, context, &dcq, which, &tpr);
 
     LOG((LF_CORDB|LF_ENC, LL_EVERYTHING, "DC::DPOSS ScanForTriggers called and returned.\n"));
 
@@ -3069,12 +3029,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
 
         SENDIPCEVENT_END;
-        
-        if (stashedContext)
-        {
-            memcpy(context, &stash, sizeof(CONTEXT));
-            stashedContext = false;
-        }
 
         if (!atSafePlace)
             g_pDebugger->DecThreadsAtUnsafePlaces();
@@ -8634,6 +8588,7 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
     // Restore the thread's context to what it was before we hijacked it for this func eval.
     CONTEXT *pCtx = GetManagedLiveCtx(thread);
     // TODO: Support other architectures
+    // If a data breakpoint is set while we hit a breakpoint inside a FuncEval, this will make sure the data breakpoint stays
 #ifdef _TARGET_X86_
     m_pDE->m_context.Dr0 = pCtx->Dr0;
     m_pDE->m_context.Dr1 = pCtx->Dr1;
