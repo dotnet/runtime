@@ -22,12 +22,12 @@
     <!-- Coverlet related properties -->
     <CoverletPackageId>coverlet.msbuild</CoverletPackageId>
     <CoverletPackageVersion>2.3.0</CoverletPackageVersion>
-    <!-- In case the project language is not set -->
-    <Language Condition="'$(Language)' == ''">unknown</Language>
+    <!-- Explicitly set Language to c# to handle the analyzer resolution in nuget -->
+    <Language Condition="'$(Language)' == ''">c#</Language>
     <!-- Don't warn if some dependencies were rolled forward -->
     <NoWarn>$(NoWarn);NU1603</NoWarn>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <!-- xunit packages -->
     <PackageReference Include="xunit">
