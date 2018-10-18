@@ -310,6 +310,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RemoveReadOnlyNonExistingDoesNotThrow()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                store.Remove(cert);
+            }
+        }
+
+        [Fact]
         public static void RemoveDisposedIsIgnored()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))

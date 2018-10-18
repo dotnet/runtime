@@ -129,10 +129,11 @@ Returns
 1 on success (including no item to delete),
 2 on blocking user trust modification,
 3 on blocking system trust modification,
+4 on deleting an existing certificate while in read only mode,
 any other value is invalid
 
 Output:
 pOSStatus: Receives the last OSStatus value..
 */
 DLLEXPORT int32_t
-AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus);
+AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, uint8_t isReadOnlyMode, int32_t* pOSStatus);
