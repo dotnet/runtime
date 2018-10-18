@@ -373,6 +373,10 @@ public:
     virtual void ObjectRefFlush(Thread *pThread) = 0;
 #endif
 #endif
+
+#ifndef DACCESS_COMPILE
+    virtual BOOL AdjustContextForWriteBarrierForDebugger(CONTEXT* context) = 0;
+#endif
 };
 
 #endif // _eedbginterface_h_

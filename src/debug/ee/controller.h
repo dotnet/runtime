@@ -1079,8 +1079,7 @@ class DebuggerController
                                 CONTEXT *context,
                                 DebuggerControllerQueue *pDcq,
                                 SCAN_TRIGGER stWhat,
-                                TP_RESULT *pTpr,
-                                bool* pHitDataBp);
+                                TP_RESULT *pTpr);
 
 
     static DebuggerPatchSkip *ActivatePatchSkip(Thread *thread, 
@@ -1775,12 +1774,12 @@ private:
 class DebuggerDataBreakpoint : public DebuggerController
 {
 private:
-    CONTEXT context;
+    CONTEXT m_context;
 public:
     DebuggerDataBreakpoint(Thread* pThread) : DebuggerController(pThread, NULL)
     {
         LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Data Breakpoint event created\n"));
-        memcpy(&context, g_pEEInterface->GetThreadFilterContext(pThread), sizeof(CONTEXT));
+        memcpy(&m_context, g_pEEInterface->GetThreadFilterContext(pThread), sizeof(CONTEXT));
     }
     
     virtual DEBUGGER_CONTROLLER_TYPE GetDCType(void)
@@ -1796,19 +1795,19 @@ public:
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
 #ifdef _TARGET_X86_
-        context->Dr0 = this->context.Dr0;
-        context->Dr1 = this->context.Dr1;
-        context->Dr2 = this->context.Dr2;
-        context->Dr3 = this->context.Dr3;
-        context->Dr6 = this->context.Dr6;
-        context->Dr7 = this->context.Dr7;
+        context->Dr0 = this->m_context.Dr0;
+        context->Dr1 = this->m_context.Dr1;
+        context->Dr2 = this->m_context.Dr2;
+        context->Dr3 = this->m_context.Dr3;
+        context->Dr6 = this->m_context.Dr6;
+        context->Dr7 = this->m_context.Dr7;
 #elif defined(_TARGET_AMD64_)
-        context->Dr0 = this->context.Dr0;
-        context->Dr1 = this->context.Dr1;
-        context->Dr2 = this->context.Dr2;
-        context->Dr3 = this->context.Dr3;
-        context->Dr6 = this->context.Dr6;
-        context->Dr7 = this->context.Dr7;
+        context->Dr0 = this->m_context.Dr0;
+        context->Dr1 = this->m_context.Dr1;
+        context->Dr2 = this->m_context.Dr2;
+        context->Dr3 = this->m_context.Dr3;
+        context->Dr6 = this->m_context.Dr6;
+        context->Dr7 = this->m_context.Dr7;
 #endif
 #endif
 #endif
