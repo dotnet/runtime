@@ -82,7 +82,13 @@ namespace System.Collections.Generic
             {
                 _size = 0;
                 _items = s_emptyArray;
-                AddEnumerable(collection);
+                using (IEnumerator<T> en = collection.GetEnumerator())
+                {
+                    while (en.MoveNext())
+                    {
+                        Add(en.Current);
+                    }
+                }
             }
         }
 
@@ -748,9 +754,8 @@ namespace System.Collections.Generic
                     _size += count;
                 }
             }
-            else if (index < _size)
+            else
             {
-                // We're inserting a lazy enumerable. Call Insert on each of the constituent items.
                 using (IEnumerator<T> en = collection.GetEnumerator())
                 {
                     while (en.MoveNext())
@@ -758,11 +763,6 @@ namespace System.Collections.Generic
                         Insert(index++, en.Current);
                     }
                 }
-            }
-            else
-            {
-                // We're adding a lazy enumerable because the index is at the end of this list.
-                AddEnumerable(collection);
             }
             _version++;
         }
@@ -1087,31 +1087,6 @@ namespace System.Collections.Generic
                 }
             }
             return true;
-        }
-
-        private void AddEnumerable(IEnumerable<T> enumerable)
-        {
-            Debug.Assert(enumerable != null);
-            Debug.Assert(!(enumerable is ICollection<T>), "We should have optimized for this beforehand.");
-
-            _version++; // Even if the enumerable has no items, we can update _version.
-            using (IEnumerator<T> en = enumerable.GetEnumerator())
-            {
-
-                while (en.MoveNext())
-                {
-                    // Capture Current before doing anything else. If this throws
-                    // an exception, we want to make a clean break.
-                    T current = en.Current;
-
-                    if (_size == _items.Length)
-                    {
-                        EnsureCapacity(_size + 1);
-                    }
-
-                    _items[_size++] = current;
-                }
-            }
         }
 
         public struct Enumerator : IEnumerator<T>, IEnumerator
