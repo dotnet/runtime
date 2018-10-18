@@ -166,6 +166,22 @@ namespace Internal.Cryptography.Pal
 
         internal static bool TryReadX509Pem(SafeBioHandle bio, out ICertificatePal certPal)
         {
+            SafeX509Handle cert = Interop.Crypto.PemReadX509FromBioAux(bio);
+
+            if (cert.IsInvalid)
+            {
+                cert.Dispose();
+                certPal = null;
+                Interop.Crypto.ErrClearError();
+                return false;
+            }
+
+            certPal = new OpenSslX509CertificateReader(cert);
+            return true;
+        }
+
+        internal static bool TryReadX509PemNoAux(SafeBioHandle bio, out ICertificatePal certPal)
+        {
             SafeX509Handle cert = Interop.Crypto.PemReadX509FromBio(bio);
 
             if (cert.IsInvalid)

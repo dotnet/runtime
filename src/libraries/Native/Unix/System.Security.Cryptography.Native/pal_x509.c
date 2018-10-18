@@ -101,6 +101,11 @@ X509* CryptoNative_X509Duplicate(X509* x509)
 
 X509* CryptoNative_PemReadX509FromBio(BIO* bio)
 {
+    return PEM_read_bio_X509(bio, NULL, NULL, NULL);
+}
+
+X509* CryptoNative_PemReadX509FromBioAux(BIO* bio)
+{
     return PEM_read_bio_X509_AUX(bio, NULL, NULL, NULL);
 }
 
