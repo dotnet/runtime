@@ -122,11 +122,6 @@ private:
     void genCodeForLockAdd(GenTreeOp* node);
 #endif
 
-    //-------------------------------------------------------------------------
-    // Register-related methods
-
-    void rsInit();
-
 #ifdef REG_OPT_RSVD
     // On some targets such as the ARM we may need to have an extra reserved register
     //  that is used when addressing stack based locals and stack based temps.
@@ -233,8 +228,6 @@ protected:
 
 #ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
-
-    void genStressRegs(GenTree* tree);
 #endif // DEBUG
 
     void genCodeForBBlist();
@@ -553,8 +546,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                          Compiler::siVarLoc& loc);
 
     void genSetScopeInfo();
-
-    void genRemoveBBsection(BasicBlock* head, BasicBlock* tail);
 
 protected:
     /*
@@ -897,7 +888,6 @@ protected:
     void genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg);
     void genSIMDIntrinsicInit(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicInitN(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicInitArray(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode);
     void genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode);
@@ -919,7 +909,6 @@ protected:
     void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
     void genSIMDIntrinsicWiden(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic(GenTreeSIMD* simdNode);
-    void genSIMDCheck(GenTree* treeNode);
 
     // TYP_SIMD12 (i.e Vector3 of size 12 bytes) is not a hardware supported size and requires
     // two reads/writes on 64-bit targets. These routines abstract reading/writing of Vector3
@@ -1250,7 +1239,6 @@ public:
 
     void inst_IV(instruction ins, int val);
     void inst_IV_handle(instruction ins, int val);
-    void inst_FS(instruction ins, unsigned stk = 0);
 
     void inst_RV_IV(
         instruction ins, regNumber reg, target_ssize_t val, emitAttr size, insFlags flags = INS_FLAGS_DONT_CARE);
@@ -1265,18 +1253,6 @@ public:
         instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size = EA_UNKNOWN);
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
-    void instEmit_indCall(GenTreeCall* call,
-                          size_t       argSize,
-                          emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
-
-    void instEmit_RM(instruction ins, GenTree* tree, GenTree* addr, unsigned offs);
-
-    void instEmit_RM_RV(instruction ins, emitAttr size, GenTree* tree, regNumber reg, unsigned offs);
-
-    void instEmit_RV_RM(instruction ins, emitAttr size, regNumber reg, GenTree* tree, unsigned offs);
-
-    void instEmit_RV_RIA(instruction ins, regNumber reg1, regNumber reg2, unsigned offs);
-
     void inst_TT(instruction ins, GenTree* tree, unsigned offs = 0, int shfv = 0, emitAttr size = EA_UNKNOWN);
 
     void inst_TT_RV(instruction ins,
@@ -1286,31 +1262,12 @@ public:
                     emitAttr    size  = EA_UNKNOWN,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
 
-    void inst_TT_IV(instruction ins,
-                    GenTree*    tree,
-                    ssize_t     val,
-                    unsigned    offs  = 0,
-                    emitAttr    size  = EA_UNKNOWN,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
-
-    void inst_RV_AT(instruction ins,
-                    emitAttr    size,
-                    var_types   type,
-                    regNumber   reg,
-                    GenTree*    tree,
-                    unsigned    offs  = 0,
-                    insFlags    flags = INS_FLAGS_DONT_CARE);
-
-    void inst_AT_IV(instruction ins, emitAttr size, GenTree* baseTree, int icon, unsigned offs = 0);
-
     void inst_RV_TT(instruction ins,
                     regNumber   reg,
                     GenTree*    tree,
                     unsigned    offs  = 0,
                     emitAttr    size  = EA_UNKNOWN,
                     insFlags    flags = INS_FLAGS_DONT_CARE);
-
-    void inst_RV_TT_IV(instruction ins, regNumber reg, GenTree* tree, int val);
 
     void inst_FS_TT(instruction ins, GenTree* tree);
 
@@ -1331,8 +1288,6 @@ public:
     void inst_RV_ST(instruction ins, emitAttr size, regNumber reg, GenTree* tree);
 
     void inst_mov_RV_ST(regNumber reg, GenTree* tree);
-
-    void instGetAddrMode(GenTree* addr, regNumber* baseReg, unsigned* indScale, regNumber* indReg, unsigned* cns);
 
     void inst_set_SV_var(GenTree* tree);
 

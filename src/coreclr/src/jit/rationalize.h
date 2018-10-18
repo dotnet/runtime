@@ -28,7 +28,6 @@ public:
     virtual void DoPhase() override;
 
     static void RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment);
-    static void MorphAsgIntoStoreObj(Compiler::fgWalkData* data, GenTreeStmt* stmt, GenTree** ppTree);
 
 private:
     inline LIR::Range& BlockRange() const

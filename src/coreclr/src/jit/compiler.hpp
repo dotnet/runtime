@@ -3612,34 +3612,6 @@ inline bool Compiler::optIsVarAssgLoop(unsigned lnum, unsigned var)
     }
 }
 
-/*****************************************************************************
- * If the tree is a tracked local variable, return its LclVarDsc ptr.
- */
-
-inline LclVarDsc* Compiler::optIsTrackedLocal(GenTree* tree)
-{
-    LclVarDsc* varDsc;
-    unsigned   lclNum;
-
-    if (tree->gtOper != GT_LCL_VAR)
-    {
-        return nullptr;
-    }
-
-    lclNum = tree->gtLclVarCommon.gtLclNum;
-
-    assert(lclNum < lvaCount);
-    varDsc = lvaTable + lclNum;
-
-    /* if variable not tracked, return NULL */
-    if (!varDsc->lvTracked)
-    {
-        return nullptr;
-    }
-
-    return varDsc;
-}
-
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
