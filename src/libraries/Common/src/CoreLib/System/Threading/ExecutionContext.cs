@@ -21,6 +21,8 @@ namespace System.Threading
 {
     public delegate void ContextCallback(object state);
 
+    internal delegate void ContextCallback<TState>(ref TState state);
+
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext(isDefault: true);
@@ -164,6 +166,85 @@ namespace System.Threading
             try
             {
                 callback.Invoke(state);
+            }
+            catch (Exception ex)
+            {
+                // Note: we have a "catch" rather than a "finally" because we want
+                // to stop the first pass of EH here.  That way we can restore the previous
+                // context before any of our callers' EH filters run.
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+
+            // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
+            SynchronizationContext previousSyncCtx1 = previousSyncCtx;
+            Thread currentThread1 = currentThread;
+            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
+            if (currentThread1.SynchronizationContext != previousSyncCtx1)
+            {
+                // Restore changed SynchronizationContext back to previous
+                currentThread1.SynchronizationContext = previousSyncCtx1;
+            }
+
+            ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
+            ExecutionContext currentExecutionCtx1 = currentThread1.ExecutionContext;
+            if (currentExecutionCtx1 != previousExecutionCtx1)
+            {
+                // Restore changed ExecutionContext back to previous
+                currentThread1.ExecutionContext = previousExecutionCtx1;
+                if ((currentExecutionCtx1 != null && currentExecutionCtx1.HasChangeNotifications) ||
+                    (previousExecutionCtx1 != null && previousExecutionCtx1.HasChangeNotifications))
+                {
+                    // There are change notifications; trigger any affected
+                    OnValuesChanged(currentExecutionCtx1, previousExecutionCtx1);
+                }
+            }
+
+            // If exception was thrown by callback, rethrow it now original contexts are restored
+            edi?.Throw();
+        }
+
+        // Direct copy of the above RunInternal overload, except that it passes the state into the callback strongly-typed and by ref.
+        internal static void RunInternal<TState>(ExecutionContext executionContext, ContextCallback<TState> callback, ref TState state)
+        {
+            // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
+            // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
+            //       https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/eh-writethru.md
+
+            // Enregister variables with 0 post-fix so they can be used in registers without EH forcing them to stack
+            // Capture references to Thread Contexts
+            Thread currentThread0 = Thread.CurrentThread;
+            Thread currentThread = currentThread0;
+            ExecutionContext previousExecutionCtx0 = currentThread0.ExecutionContext;
+
+            // Store current ExecutionContext and SynchronizationContext as "previousXxx".
+            // This allows us to restore them and undo any Context changes made in callback.Invoke
+            // so that they won't "leak" back into caller.
+            // These variables will cross EH so be forced to stack
+            ExecutionContext previousExecutionCtx = previousExecutionCtx0;
+            SynchronizationContext previousSyncCtx = currentThread0.SynchronizationContext;
+
+            if (executionContext != null && executionContext.m_isDefault)
+            {
+                // Default is a null ExecutionContext internally
+                executionContext = null;
+            }
+
+            if (previousExecutionCtx0 != executionContext)
+            {
+                // Restore changed ExecutionContext
+                currentThread0.ExecutionContext = executionContext;
+                if ((executionContext != null && executionContext.HasChangeNotifications) ||
+                    (previousExecutionCtx0 != null && previousExecutionCtx0.HasChangeNotifications))
+                {
+                    // There are change notifications; trigger any affected
+                    OnValuesChanged(previousExecutionCtx0, executionContext);
+                }
+            }
+
+            ExceptionDispatchInfo edi = null;
+            try
+            {
+                callback.Invoke(ref state);
             }
             catch (Exception ex)
             {
