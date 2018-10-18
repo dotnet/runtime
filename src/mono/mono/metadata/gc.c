@@ -640,7 +640,7 @@ void
 ves_icall_System_GC_register_ephemeron_array (MonoObjectHandle array, MonoError *error)
 {
 	if (!mono_gc_ephemeron_array_add (MONO_HANDLE_RAW (array)))
-		mono_error_set_exception_instance (error, MONO_HANDLE_DOMAIN (array)->out_of_memory_ex);
+		mono_error_set_out_of_memory (error, "");
 }
 
 MonoObjectHandle
