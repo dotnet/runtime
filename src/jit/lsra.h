@@ -371,7 +371,6 @@ class RefInfoListNodePool final
 public:
     RefInfoListNodePool(Compiler* compiler, unsigned preallocate = defaultPreallocation);
     RefInfoListNode* GetNode(RefPosition* r, GenTree* t, unsigned regIdx = 0);
-    void ReturnNodes(RefInfoList& list);
     void ReturnNode(RefInfoListNode* listNode);
 };
 
@@ -698,9 +697,6 @@ public:
 
     void resolveEdges();
 
-    // Finally, the register assignments are written back to the tree nodes.
-    void recordRegisterAssignments();
-
     // Keep track of how many temp locations we'll need for spill
     void initMaxSpill();
     void updateMaxSpill(RefPosition* refPosition);
@@ -982,12 +978,8 @@ private:
     bool canSpillReg(RegRecord* physRegRecord, LsraLocation refLocation, unsigned* recentAssignedRefWeight);
     bool isRegInUse(RegRecord* regRec, RefPosition* refPosition);
 
-    RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
-
     // insert refpositions representing prolog zero-inits which will be added later
     void insertZeroInitRefPositions();
-
-    void AddMapping(GenTree* node, LsraLocation loc);
 
     // add physreg refpositions for a tree node, based on calling convention and instruction selection predictions
     void addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, RefType refType, bool isLastUse);
@@ -1026,8 +1018,6 @@ private:
         }
         return false;
     }
-
-    static Compiler::fgWalkResult markAddrModeOperandsHelperMD(GenTree* tree, void* p);
 
     // Helpers for getKillSetForNode().
     regMaskTP getKillSetForStoreInd(GenTreeStoreInd* tree);
@@ -1149,8 +1139,6 @@ private:
     void checkConflictingDefUse(RefPosition* rp);
 
     void associateRefPosWithInterval(RefPosition* rp);
-
-    void associateRefPosWithRegister(RefPosition* rp);
 
     unsigned getWeight(RefPosition* refPos);
 
@@ -1337,8 +1325,6 @@ private:
                                  Interval*     interval     = nullptr,
                                  regNumber     reg          = REG_NA,
                                  BasicBlock*   currentBlock = nullptr);
-
-    void dumpBlockHeader(BasicBlock* block);
 
     void validateIntervals();
 #endif // DEBUG
@@ -1531,9 +1517,6 @@ private:
         pendingDelayFree         = false;
     }
 
-    RefInfoListNode* getRefInfo(GenTree* node);
-    RefInfoListNode* getRefInfo(GenTree* node, int multiRegIdx);
-
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
 
     void setDelayFree(RefPosition* use);
@@ -1545,9 +1528,7 @@ private:
     // These methods return the number of sources.
     int BuildNode(GenTree* stmt);
 
-    void BuildCheckByteable(GenTree* tree);
     GenTree* getTgtPrefOperand(GenTreeOp* tree);
-    bool CheckAndSetDelayFree(GenTree* delayUseSrc);
     bool supportsSpecialPutArg();
 
     int BuildSimple(GenTree* tree);
