@@ -80,6 +80,8 @@
     <ExcludePartialFacadesImport>true</ExcludePartialFacadesImport>
     <ExcludeApiCompatImport>true</ExcludeApiCompatImport>
     <ExcludeReferenceAssembliesImport>true</ExcludeReferenceAssembliesImport>
+    <ExcludePackagingImport>true</ExcludePackagingImport>
+    <ExcludePackageLibsImport>true</ExcludePackageLibsImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->

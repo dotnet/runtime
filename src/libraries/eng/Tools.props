@@ -15,6 +15,7 @@
     <PackageReference Include="$(MicrosoftDotNetApiCompatPackage)" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetGenApiPackage)" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetGenFacadesPackage)" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetBuildTasksPackagingPackage)" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
   </ItemGroup>
 
   <Target Name="InitTools" AfterTargets="Restore">
