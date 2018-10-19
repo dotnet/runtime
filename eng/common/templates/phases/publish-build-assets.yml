@@ -11,7 +11,7 @@ phases:
         - task: DownloadBuildArtifacts@0
           displayName: Download artifact
           inputs:
-            artifactName: AssetManifests    
+            artifactName: AssetManifests
             downloadPath: '$(Build.StagingDirectory)/Download'
           condition: succeeded()
         - task: AzureKeyVault@1

@@ -3,7 +3,7 @@ $verbosity = "m"
 
 function InstallDarcCli {
   $darcCliPackageName = "microsoft.dotnet.darc"
-  $dotnet = $env:DOTNET_INSTALL_DIR
+  $dotnet = "$env:DOTNET_INSTALL_DIR\dotnet.exe"
   $toolList = Invoke-Expression "$dotnet tool list -g"
 
   if ($toolList -like "*$darcCliPackageName*") {
