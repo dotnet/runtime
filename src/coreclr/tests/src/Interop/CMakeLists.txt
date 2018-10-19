@@ -13,6 +13,7 @@ SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(common)
 add_subdirectory(PInvoke/Primitives/Int)
+add_subdirectory(PInvoke/ExactSpelling)
 add_subdirectory(NativeCallable)
 add_subdirectory(PrimitiveMarshalling/Bool)
 add_subdirectory(PrimitiveMarshalling/UIntPtr)
