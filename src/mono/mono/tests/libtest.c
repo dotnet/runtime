@@ -3372,6 +3372,7 @@ struct MonoComObject
 static GUID IID_ITest = {0, 0, 0, {0,0,0,0,0,0,0,1}};
 static GUID IID_IMonoUnknown = {0, 0, 0, {0xc0,0,0,0,0,0,0,0x46}};
 static GUID IID_IMonoDispatch = {0x00020400, 0, 0, {0xc0,0,0,0,0,0,0,0x46}};
+static GUID IID_INotImplemented = {0x12345678, 0, 0, {0x9a, 0xbc, 0xde, 0xf0, 0, 0, 0, 0}};
 
 LIBTEST_API int STDCALL
 MonoQueryInterface(MonoComObject* pUnk, gpointer riid, gpointer* ppv)
@@ -7706,4 +7707,14 @@ mono_test_cleanup_ftptr_eh_callback (void)
 {
 	mono_test_init_symbols ();
 	sym_mono_install_ftnptr_eh_callback (NULL);
+}
+
+LIBTEST_API int STDCALL
+mono_test_cominterop_ccw_queryinterface (MonoComObject *pUnk)
+{
+	void *pp;
+	int hr = pUnk->vtbl->QueryInterface (pUnk, &IID_INotImplemented, &pp);
+
+	// Return true if we can't get INotImplemented
+	return pUnk == NULL && hr == S_OK;
 }

@@ -1980,15 +1980,14 @@ mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_k
 		if (centry->ctor == NULL)
 			continue;
 		MonoClass *klass = centry->ctor->klass;
-		if (attr_klass == klass || mono_class_is_assignable_from_internal (attr_klass, klass))
-			break;
+		if (attr_klass == klass || mono_class_is_assignable_from_internal (attr_klass, klass)) {
+			HANDLE_FUNCTION_ENTER ();
+			MonoObjectHandle result = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, error);
+			HANDLE_FUNCTION_RETURN_OBJ (result);
+		}
 	}
-	if (centry == NULL)
-		return NULL;
 
-	HANDLE_FUNCTION_ENTER ();
-	MonoObjectHandle result = create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, error);
-	HANDLE_FUNCTION_RETURN_OBJ (result);
+	return NULL;
 }
 
 /**
