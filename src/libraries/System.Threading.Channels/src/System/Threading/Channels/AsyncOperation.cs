@@ -247,6 +247,7 @@ namespace System.Threading.Channels
                 }
                 else
                 {
+                    sc = null;
                     ts = TaskScheduler.Current;
                     if (ts != TaskScheduler.Default)
                     {

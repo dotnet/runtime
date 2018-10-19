@@ -9,7 +9,7 @@ namespace System.Collections.Generic
     /// <summary>Provides a double-ended queue data structure.</summary>
     /// <typeparam name="T">Type of the data stored in the dequeue.</typeparam>
     [DebuggerDisplay("Count = {_size}")]
-    internal sealed class Dequeue<T>
+    internal sealed class Deque<T>
     {
         private T[] _array = Array.Empty<T>();
         private int _head; // First valid element in the queue

@@ -976,19 +976,20 @@ namespace System.Threading.Channels.Tests
             from completeBeforeOnCompleted in new[] { true, false }
             from flowExecutionContext in new[] { true, false }
             from continueOnCapturedContext in new bool?[] { null, false, true }
-            select new object[] { readOrWait, completeBeforeOnCompleted, flowExecutionContext, continueOnCapturedContext };
+            from setNonDefaultTaskScheduler in new[] { true, false }
+            select new object[] { readOrWait, completeBeforeOnCompleted, flowExecutionContext, continueOnCapturedContext, setNonDefaultTaskScheduler };
 
         [Theory]
         [MemberData(nameof(Reader_ContinuesOnCurrentContextIfDesired_MemberData))]
         public async Task Reader_ContinuesOnCurrentSynchronizationContextIfDesired(
-            bool readOrWait, bool completeBeforeOnCompleted, bool flowExecutionContext, bool? continueOnCapturedContext)
+            bool readOrWait, bool completeBeforeOnCompleted, bool flowExecutionContext, bool? continueOnCapturedContext, bool setNonDefaultTaskScheduler)
         {
             if (AllowSynchronousContinuations)
             {
                 return;
             }
 
-            await Task.Run(async () =>
+            await Task.Factory.StartNew(async () =>
             {
                 Assert.Null(SynchronizationContext.Current);
 
@@ -1063,13 +1064,21 @@ namespace System.Threading.Channels.Tests
                 {
                     Assert.Equal(flowExecutionContext, executionContextWasFlowed);
                 }
-            });
+            }, CancellationToken.None, TaskCreationOptions.None, setNonDefaultTaskScheduler ? new CustomTaskScheduler() : TaskScheduler.Default);
         }
 
+        public static IEnumerable<object[]> Reader_ContinuesOnCurrentSchedulerIfDesired_MemberData() =>
+            from readOrWait in new[] { true, false }
+            from completeBeforeOnCompleted in new[] { true, false }
+            from flowExecutionContext in new[] { true, false }
+            from continueOnCapturedContext in new bool?[] { null, false, true }
+            from setDefaultSyncContext in new[] { true, false }
+            select new object[] { readOrWait, completeBeforeOnCompleted, flowExecutionContext, continueOnCapturedContext, setDefaultSyncContext };
+
         [Theory]
-        [MemberData(nameof(Reader_ContinuesOnCurrentContextIfDesired_MemberData))]
+        [MemberData(nameof(Reader_ContinuesOnCurrentSchedulerIfDesired_MemberData))]
         public async Task Reader_ContinuesOnCurrentTaskSchedulerIfDesired(
-            bool readOrWait, bool completeBeforeOnCompleted, bool flowExecutionContext, bool? continueOnCapturedContext)
+            bool readOrWait, bool completeBeforeOnCompleted, bool flowExecutionContext, bool? continueOnCapturedContext, bool setDefaultSyncContext)
         {
             if (AllowSynchronousContinuations)
             {
@@ -1105,6 +1114,11 @@ namespace System.Threading.Channels.Tests
 
                 await Task.Factory.StartNew(() =>
                 {
+                    if (setDefaultSyncContext)
+                    {
+                        SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
+                    }
+
                     Assert.IsType<CustomTaskScheduler>(TaskScheduler.Current);
                     asyncLocal.Value = 42;
                     switch (continueOnCapturedContext)
