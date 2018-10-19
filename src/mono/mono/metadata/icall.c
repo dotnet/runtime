@@ -104,12 +104,10 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/environment-internal.h>
-
+#include "icall-decl.h"
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
-
-#include "icall-decl.h"
 
 //#define MONO_DEBUG_ICALLARRAY
 
@@ -7462,6 +7460,18 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError 
 }
 
 ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_GetMachineConfigPath (MonoError *error)
+{
+	return ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (error);
+}
+
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Web_Util_ICalls_GetMachineConfigPath (MonoError *error)
+{
+	return ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (error);
+}
+
+ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config (MonoError *error)
 {
 	error_init (error);
@@ -8780,3 +8790,39 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 {
 	return mono_cpu_count ();
 }
+
+// Generate wrappers.
+
+#ifdef DISABLE_POLICY_EVIDENCE
+#define ENABLE_POLICY_EVIDENCE 0
+#else
+#define ENABLE_POLICY_EVIDENCE 1
+#endif
+#undef DISABLE_POLICY_EVIDENCE // Not redefined so keep at end of file.
+
+#define ICALL_TYPE(id,name,first) /* nothing */
+#define ICALL(id,name,func) /* nothing */
+#define NOHANDLES(inner)  /* nothing */
+
+// Some native functions are exposed via multiple managed names.
+// Producing a wrapper for these results in duplicate wrappers with the same names,
+// which fails to compile. Do not produce such duplicate wrappers. Alternatively,
+// a one line native function with a different name that calls the main one could be used.
+// i.e. the wrapper would also have a different name.
+#define HANDLES_REUSE_WRAPPER(...) /* nothing  */
+
+#define HANDLES_MAYBE(cond, id, name, func, ret, nargs, argtypes) \
+	MONO_HANDLE_DECLARE (id, name, func, ret, nargs, argtypes); \
+	MONO_HANDLE_IMPLEMENT_MAYBE (cond, id, name, func, ret, nargs, argtypes)
+
+#define HANDLES(id, name, func, ret, nargs, argtypes) \
+	HANDLES_MAYBE (TRUE, id, name, func, ret, nargs, argtypes)
+
+#include "metadata/icall-def.h"
+
+#undef HANDLES
+#undef HANDLES_MAYBE
+#undef HANDLES_REUSE_WRAPPER
+#undef ICALL_TYPE
+#undef ICALL
+#undef NOHANDLES

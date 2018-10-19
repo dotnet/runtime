@@ -6217,10 +6217,10 @@ mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *err
 		mono_error_set_pending_exception (error);
 }
 
-MonoObjectHandle
+MonoRawHandle
 mono_icall_handle_new (gpointer rawobj)
 {
-	return MONO_HANDLE_NEW (MonoObject, (MonoObject*)rawobj);
+	return mono_handle_new ((MonoObject*)rawobj);
 }
 
 gpointer

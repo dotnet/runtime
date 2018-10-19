@@ -223,8 +223,8 @@ common_sources = \
 	icall.c			\
 	icalls.h		\
 	icall-decl.h		\
-	icall-internals.h \
 	icall-def.h		\
+	icall-internals.h \
 	icall-table.h	\
 	image.c			\
 	image-internals.h	\

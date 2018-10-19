@@ -6221,6 +6221,19 @@ signature_param_uses_handles (MonoMethodSignature *sig, MonoMethodSignature *gen
 }
 
 static void
+mono_emit_handle_raw (MonoMethodBuilder *mb)
+{
+	// This is similar to MONO_HANDLE_RAW() but not quite the same.
+	// MONO_HANDLE_RAW accepts a struct by value, that contains
+	// a pointer to a pointer, checks the pointer for null,
+	// and dereferences it if it is not null.
+	//
+	// This code receives the pointer instead of the struct
+	// and assumes it is not null.
+	mono_mb_emit_byte (mb, CEE_LDIND_REF);
+}
+
+static void
 emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
 {
 	// FIXME:
@@ -6405,8 +6418,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			// }
 			mono_mb_emit_byte (mb, CEE_DUP);
 			int pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
-			mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
-			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+			mono_emit_handle_raw (mb);
 			mono_mb_patch_branch (mb, pos);
 		}
 		if (save_handles_to_locals) {
@@ -6426,8 +6438,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 						/* handleI */
 						mono_mb_emit_ldloc (mb, handles_locals [j].handle);
 						/* MONO_HANDLE_RAW(handleI) */
-						mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
-						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+						mono_emit_handle_raw (mb);
 						/* *argI_raw = MONO_HANDLE_RAW(handleI) */
 						mono_mb_emit_byte (mb, CEE_STIND_REF);
 						break;

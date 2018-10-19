@@ -32,36 +32,35 @@
 #include <wchar.h>
 #endif
 
-#include <mono/metadata/icall-table.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/bsearch.h>
 #include <mono/metadata/icalls.h>
+#include "handle-decl.h"
 #include "icall-decl.h"
+
+// These definitions are used for multiple includes of icall-def.h and eventually undefined.
+#define NOHANDLES(inner) inner
+#define HANDLES_MAYBE(cond, id, name, func, ret, nargs, argtypes) HANDLES (id, name, func, ret, nargs, argtypes)
+#define HANDLES(id, name, func, ...)	ICALL (id, name, func ## _raw)
+#define HANDLES_REUSE_WRAPPER		HANDLES
 
 // Generate Icall_ constants
 enum {
+#define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) Icall_ ## id,
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 	Icall_last
 };
 
 enum {
 #define ICALL_TYPE(id,name,first) Icall_type_ ## id,
-#define ICALL(id,name,func)
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
+#define ICALL(id,name,func) 		/* nothing */
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 	Icall_type_num
 };
 
@@ -71,14 +70,10 @@ typedef struct {
 
 static const IcallTypeDesc icall_type_descs [] = {
 #define ICALL_TYPE(id,name,firstic) {(Icall_ ## firstic)},
-#define ICALL(id,name,func)
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
+#define ICALL(id,name,func) 		/* nothing */
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 	{Icall_last}
 };
 
@@ -91,117 +86,93 @@ static const IcallTypeDesc icall_type_descs [] = {
 
 static const struct msgstrtn_t {
 #define ICALL_TYPE(id,name,first) char MSGSTRFIELD(__LINE__) [sizeof (name)];
-#define ICALL(id,name,func)
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
+#define ICALL(id,name,func) 		/* nothing */
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 } icall_type_names_str = {
 #define ICALL_TYPE(id,name,first) (name),
 #define ICALL(id,name,func)
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 };
 
 static const guint16 icall_type_names_idx [] = {
 #define ICALL_TYPE(id,name,first) (offsetof (struct msgstrtn_t, MSGSTRFIELD(__LINE__))),
-#define ICALL(id,name,func)
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
+#define ICALL(id,name,func) 		/* nothing */
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 };
 
 #define icall_type_name_get(id) ((const char*)&icall_type_names_str + icall_type_names_idx [(id)])
 
 static const struct msgstr_t {
-#define ICALL_TYPE(id,name,first)
+#define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) char MSGSTRFIELD(__LINE__) [sizeof (name)];
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 } icall_names_str = {
 #define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) (name),
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 };
 
 static const guint16 icall_names_idx [] = {
-#define ICALL_TYPE(id,name,first)
+#define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) (offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__))),
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 };
 
 #define icall_name_get(id) ((const char*)&icall_names_str + icall_names_idx [(id)])
 
 static const gconstpointer icall_functions [] = {
-#define ICALL_TYPE(id,name,first)
+#define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) ((gpointer)(func)),
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 	NULL
 };
 
 #ifdef ENABLE_ICALL_SYMBOL_MAP
 
 static const gconstpointer icall_symbols [] = {
-#define ICALL_TYPE(id,name,first)
+#define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) #func,
-#define HANDLES(inner) inner
-#define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 	NULL
 };
 
 #endif // ENABLE_ICALL_SYMBOL_MAP
 
+#undef HANDLES
+#undef HANDLES_MAYBE
+#undef NOHANDLES
+
 static const guchar icall_uses_handles [] = {
-#define ICALL_TYPE(id,name,first)
+#define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) 0,
-#define HANDLES(inner) 1,
+#define HANDLES(...) 1,
+#define HANDLES_MAYBE(...) 1,
 #define NOHANDLES(inner) 0,
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
-#undef HANDLES
-#undef NOHANDLES
 };
+
+#undef HANDLES
+#undef HANDLES_MAYBE
+#undef HANDLES_REUSE_WRAPPER
+#undef NOHANDLES
 
 static int
 compare_method_imap (const void *key, const void *elem)

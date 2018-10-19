@@ -12,8 +12,6 @@
 
 MONO_BEGIN_DECLS
 
-typedef mono_byte MonoBoolean;
-
 typedef struct _MonoString MONO_RT_MANAGED_ATTR MonoString;
 typedef struct _MonoArray MONO_RT_MANAGED_ATTR MonoArray;
 typedef struct _MonoReflectionMethod MONO_RT_MANAGED_ATTR MonoReflectionMethod;

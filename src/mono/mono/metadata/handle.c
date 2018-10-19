@@ -107,11 +107,7 @@ chunk_element (HandleChunk *chunk, int idx)
 static HandleChunkElem*
 handle_to_chunk_element (MonoObjectHandle o)
 {
-#if MONO_TYPE_SAFE_HANDLES
 	return (HandleChunkElem*)o.__raw;
-#else
-	return (HandleChunkElem*)o;
-#endif
 }
 
 /* Given a HandleChunkElem* search through the current handle stack to find its chunk and offset. */

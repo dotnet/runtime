@@ -646,7 +646,7 @@ mono_icall_start (HandleStackMark *stackmark, MonoError *error);
 void
 mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *error);
 
-MonoObjectHandle
+MonoRawHandle
 mono_icall_handle_new (gpointer rawobj);
 
 gpointer

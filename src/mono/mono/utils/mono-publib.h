@@ -87,6 +87,7 @@ typedef unsigned __int64	uint64_t;
 
 typedef int32_t		mono_bool;
 typedef uint8_t		mono_byte;
+typedef mono_byte       MonoBoolean;
 #ifdef _WIN32
 MONO_END_DECLS
 #include <wchar.h>
