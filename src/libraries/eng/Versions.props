@@ -10,6 +10,7 @@
     <MicrosoftDotNetGenApiPackage>Microsoft.DotNet.GenAPI</MicrosoftDotNetGenApiPackage>
     <MicrosoftDotNetGenFacadesPackage>Microsoft.DotNet.GenFacades</MicrosoftDotNetGenFacadesPackage>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
+    <MicrosoftDotNetBuildTasksPackagingPackage>Microsoft.DotNet.Build.Tasks.Packaging</MicrosoftDotNetBuildTasksPackagingPackage>
   </PropertyGroup>
   <!-- Package versions -->
   <PropertyGroup>
@@ -17,5 +18,6 @@
     <MicrosoftDotNetGenApiPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenApiPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenFacadesPackageVersion>
     <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.18506.1</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.18518.2</MicrosoftDotNetBuildTasksPackagingPackageVersion>
   </PropertyGroup>
 </Project>
