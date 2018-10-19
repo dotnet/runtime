@@ -25,10 +25,10 @@ namespace System.Threading.Channels
         /// <returns>true if the item was written; otherwise, false if it wasn't written.</returns>
         public abstract bool TryWrite(T item);
 
-        /// <summary>Returns a <see cref="Task{Boolean}"/> that will complete when space is available to write an item.</summary>
+        /// <summary>Returns a <see cref="ValueTask{Boolean}"/> that will complete when space is available to write an item.</summary>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the wait operation.</param>
         /// <returns>
-        /// A <see cref="Task{Boolean}"/> that will complete with a <c>true</c> result when space is available to write an item
+        /// A <see cref="ValueTask{Boolean}"/> that will complete with a <c>true</c> result when space is available to write an item
         /// or with a <c>false</c> result when no further writing will be permitted.
         /// </returns>
         public abstract ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken = default);
@@ -36,7 +36,7 @@ namespace System.Threading.Channels
         /// <summary>Asynchronously writes an item to the channel.</summary>
         /// <param name="item">The value to write to the channel.</param>
         /// <param name="cancellationToken">A <see cref="CancellationToken"/> used to cancel the write operation.</param>
-        /// <returns>A <see cref="Task"/> that represents the asynchronous write operation.</returns>
+        /// <returns>A <see cref="ValueTask"/> that represents the asynchronous write operation.</returns>
         public virtual ValueTask WriteAsync(T item, CancellationToken cancellationToken = default)
         {
             try
