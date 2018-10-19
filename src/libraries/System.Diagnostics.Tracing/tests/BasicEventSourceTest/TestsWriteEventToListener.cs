@@ -163,37 +163,6 @@ namespace BasicEventSourceTests
                     #region Validate DateTime
                     Test_WriteEvent_ArgsBasicTypes_Etw_Validate_DateTime(log);
                     #endregion
-
-                    #region Validate "int?" arguments
-
-                    // These tests are currently disabled due to "Unsupported type Nullable in event source" (issue #32796)
-
-                    //log.EventNullableInt1(10);
-                    //Assert.Equal(53, LoudListener.t_lastEvent.EventId);
-                    //Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
-                    //Assert.Equal(10, (int?)LoudListener.t_lastEvent.Payload[0]);
-
-                    //log.EventNullableInt2(null, 11);
-                    //Assert.Equal(54, LoudListener.t_lastEvent.EventId);
-                    //Assert.Equal(2, LoudListener.t_lastEvent.Payload.Count);
-                    //Assert.Equal(null, (int?)LoudListener.t_lastEvent.Payload[0]);
-                    //Assert.Equal(11, (int?)LoudListener.t_lastEvent.Payload[1]);
-
-                    //log.EventNullableInt3(10, null, 12);
-                    //Assert.Equal(55, LoudListener.t_lastEvent.EventId);
-                    //Assert.Equal(3, LoudListener.t_lastEvent.Payload.Count);
-                    //Assert.Equal(10, (int?)LoudListener.t_lastEvent.Payload[0]);
-                    //Assert.Equal(null, (int?)LoudListener.t_lastEvent.Payload[1]);
-                    //Assert.Equal(12, (int?)LoudListener.t_lastEvent.Payload[2]);
-
-                    //log.EventNullableInt3(10, 11, null);
-                    //Assert.Equal(55, LoudListener.t_lastEvent.EventId);
-                    //Assert.Equal(3, LoudListener.t_lastEvent.Payload.Count);
-                    //Assert.Equal(10, (int?)LoudListener.t_lastEvent.Payload[0]);
-                    //Assert.Equal(11, (int?)LoudListener.t_lastEvent.Payload[1]);
-                    //Assert.Equal(null, (int?)LoudListener.t_lastEvent.Payload[2]);
-
-                    #endregion
                 }
             }
 
