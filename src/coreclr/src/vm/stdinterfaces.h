@@ -539,16 +539,8 @@ HRESULT TryGetGuid(MethodTable* pClass, GUID* pGUID, BOOL b);
 
 //------------------------------------------------------------------------------------------
 // Helpers to get the ITypeInfo* for a type.
-HRESULT ExportTypeLibFromLoadedAssemblyNoThrow(Assembly *pAssembly, LPCWSTR szTlb, ITypeLib **ppTlb, ITypeLibExporterNotifySink *pINotify, int flags);
-void    ExportTypeLibFromLoadedAssembly(Assembly *pAssembly, LPCWSTR szTlb, ITypeLib **ppTlb, ITypeLibExporterNotifySink *pINotify, int flags);
-HRESULT GetITypeLibForEEClass(MethodTable *pMT, ITypeLib **ppTLB, int bAutoCreate, int flags);
 HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, int bClassInfo=false, int bAutoCreate=true, int flags=0);
-HRESULT GetTypeLibIdForRegisteredEEClass(MethodTable *pMT, GUID *pGuid);
 HRESULT GetDefaultInterfaceForCoclass(ITypeInfo *pTI, ITypeInfo **ppTIDef);
-
-//-------------------------------------------------------------------------------------
-// Helper to get the ITypeLib* for a Assembly.
-HRESULT GetITypeLibForAssembly(Assembly *pAssembly, ITypeLib **ppTLB, int bAutoCreate, int flags);
 
 //-------------------------------------------------------------------------------------
 // Helper to get the GUID of the typelib that is created from an assembly.

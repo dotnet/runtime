@@ -31,6 +31,7 @@ enum DispatchWrapperType
 {
     DispatchWrapperType_Unknown         = 0x00000001,
     DispatchWrapperType_Dispatch        = 0x00000002,
+    //DispatchWrapperType_Record          = 0x00000004,
     DispatchWrapperType_Error           = 0x00000008,
     DispatchWrapperType_Currency        = 0x00000010,
     DispatchWrapperType_BStr            = 0x00000020,
