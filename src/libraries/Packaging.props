@@ -61,8 +61,8 @@
     </File>
 
     <!-- Add version file to packages -->
-    <File Condition="Exists('$(SyncInfoFile)')"
-          Include="$(SyncInfoFile)" >
+    <File Condition="Exists('$(VersionFileForPackages)')"
+          Include="$(VersionFileForPackages)">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
 

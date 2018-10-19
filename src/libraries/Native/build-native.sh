@@ -109,7 +109,7 @@ prepare_native_build()
     fi
 
     # Generate version.c if specified, else have an empty one.
-    __versionSourceFile=$__rootRepo/bin/obj/version.c
+    __versionSourceFile=$__rootRepo/artifacts/obj/_version.c
     if [ ! -e "${__versionSourceFile}" ]; then
         __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
         echo "${__versionSourceLine}" > ${__versionSourceFile}
