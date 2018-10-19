@@ -46,5 +46,29 @@ namespace System.Collections.Tests
             Assert.Throws<ArgumentNullException>(() => list.AddRange(null));
             Assert.Equal(listBeforeAdd, list);
         }
+
+        [Fact]
+        public void AddRange_AddSelfAsEnumerable_ThrowsExceptionWhenNotEmpty()
+        {
+            List<T> list = GenericListFactory(0);
+
+            // Succeeds when list is empty.
+            list.AddRange(list);
+            list.AddRange(list.Where(_ => true));
+
+            // Succeeds when list has elements and is added as collection.
+            list.Add(default);
+            Assert.Equal(1, list.Count);
+            list.AddRange(list);
+            Assert.Equal(2, list.Count);
+            list.AddRange(list);
+            Assert.Equal(4, list.Count);
+
+            // Fails version check when list has elements and is added as non-collection.
+            Assert.Throws<InvalidOperationException>(() => list.AddRange(list.Where(_ => true)));
+            Assert.Equal(5, list.Count);
+            Assert.Throws<InvalidOperationException>(() => list.AddRange(list.Where(_ => true)));
+            Assert.Equal(6, list.Count);
+        }
     }
 }
