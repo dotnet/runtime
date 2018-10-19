@@ -6,7 +6,7 @@ set(CMAKE_INSTALL_PREFIX $ENV{__CMakeBinDir})
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../version.c")
+set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/../../../../artifacts/obj/_version.c")
 
 # We mark the function which needs exporting with DLLEXPORT
 add_compile_options(-fvisibility=hidden)
@@ -65,7 +65,7 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     string(FIND "$ENV{DEBUG_SANITIZERS}" "ubsan" __UBSAN_POS)
     if ((${__ASAN_POS} GREATER -1) OR (${__UBSAN_POS} GREATER -1))
       set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS} -fsanitize=")
-      if (${__ASAN_POS} GREATER -1) 
+      if (${__ASAN_POS} GREATER -1)
         set(CLR_SANITIZE_LINK_FLAGS "${CLR_SANITIZE_LINK_FLAGS}address,")
         message("Address Sanitizer (asan) enabled")
       endif ()
@@ -94,11 +94,11 @@ endif ()
 
 if (APPLE)
     add_definitions(-D__APPLE_USE_RFC_3542)
-   
-   # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)  
-   add_compile_options(-fstack-protector)  
-else ()  
-   add_compile_options(-fstack-protector-strong)  
+
+   # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
+   add_compile_options(-fstack-protector)
+else ()
+   add_compile_options(-fstack-protector-strong)
 endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
@@ -196,7 +196,7 @@ function(strip_symbols targetName outputFilename)
                 add_custom_command(
                     TARGET ${targetName}
                     POST_BUILD
-                    VERBATIM 
+                    VERBATIM
                     COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
                     COMMAND ${STRIP} -u -r ${strip_source_file}
                     COMMENT Stripping symbols from ${strip_source_file} into file ${strip_destination_file}
@@ -207,7 +207,7 @@ function(strip_symbols targetName outputFilename)
                 add_custom_command(
                     TARGET ${targetName}
                     POST_BUILD
-                    VERBATIM 
+                    VERBATIM
                     COMMAND ${OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
                     COMMAND ${OBJCOPY} --strip-unneeded ${strip_source_file}
                     COMMAND ${OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}

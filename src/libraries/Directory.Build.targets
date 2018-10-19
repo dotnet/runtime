@@ -18,7 +18,9 @@
     <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightExtension'">MicrosoftShared</StrongNameKeyId>
   </PropertyGroup>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(UsingMicrosoftNETSdk)' == 'true'" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <Import Project="eng\versioning.targets" />
 
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
@@ -198,5 +200,11 @@
     <Exec Command="$(_GenAPICmd)" />
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
+
+  <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
+  <Target Name="CreateVersionFileDuringBuild" />
+
+  <!-- Define this target to override the workaround in arcade as we don't need it for our pkgprojs -->
+  <Target Name="InitializeStandardNuspecProperties" />
 
 </Project>

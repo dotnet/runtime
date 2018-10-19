@@ -12,13 +12,6 @@
     <IsSourceProject Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</IsSourceProject>
   </PropertyGroup>
 
-  <!-- We shipped assembly file version 4.6.x up until the end of rc3.  Version assembly as
-        4.6.x to ensure compatability in Visual Studio for an in-place update. -->
-  <PropertyGroup>
-    <MajorVersion>4</MajorVersion>
-    <MinorVersion>6</MinorVersion>
-  </PropertyGroup>
-
   <!-- Define vNext UAP Moniker -->
   <PropertyGroup>
     <UAPvNextVersion>10.0.16300</UAPvNextVersion>
@@ -93,6 +86,8 @@
     <ExcludePackageLibsImport>true</ExcludePackageLibsImport>
     <ExcludeCodeAnalysisImport>true</ExcludeCodeAnalysisImport>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
+    <ExcludeVersioningImport>true</ExcludeVersioningImport>
+    <ExcludeSigningImport>true</ExcludeSigningImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
@@ -300,7 +295,6 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
-    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
   </PropertyGroup>
 
   <!-- Language configuration -->
@@ -391,6 +385,8 @@
 
     <!-- interop is not available on NETStandard1.0 -->
     <IncludeDllSafeSearchPathAttribute Condition="'$(TargetGroup)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
+
+    <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
   </PropertyGroup>
 
   <!-- Properties related to multi-file mode for ILC tests -->

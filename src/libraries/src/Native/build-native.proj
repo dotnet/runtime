@@ -2,15 +2,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
   <!-- Target that builds all the native binaries in the Native folder -->
-  <Target Name="Build" DependsOnTargets="BuildNativeUnix;BuildNativeWindows" />
-
-  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
-    <GenerateVersionSourceFile>true</GenerateVersionSourceFile>
-  </PropertyGroup>
-
-  <PropertyGroup  Condition="'$(OS)' == 'Windows_NT'">
-    <GenerateNativeVersionInfo>true</GenerateNativeVersionInfo>
-  </PropertyGroup>
+  <Target Name="Build" DependsOnTargets="GenerateNativeVersionFile;BuildNativeUnix;BuildNativeWindows" />
 
   <PropertyGroup>
     <_BuildNativeArgs>$(ArchGroup) $(ConfigurationGroup) $(OSGroup)</_BuildNativeArgs>
@@ -18,8 +10,7 @@
 
   <Target Name="BuildNativeUnix"
           Condition="'$(OS)' != 'Windows_NT'"
-          DependsOnTargets="GenerateVersionSourceFile">
-
+  >
     <PropertyGroup>
       <!--
         MSBuildNodeCount should a good approximation for how many procs to use for native build, if we find that doesn't work
@@ -39,8 +30,7 @@
 
   <Target Name="BuildNativeWindows"
           Condition="'$(OS)' == 'Windows_NT'"
-          DependsOnTargets="GenerateVersionHeader">
-
+  >
     <PropertyGroup>
       <_BuildNativeWindowsArgs>$(_BuildNativeArgs)</_BuildNativeWindowsArgs>
     </PropertyGroup>
