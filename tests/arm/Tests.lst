@@ -364,14 +364,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[MemoryStreamCtor4.cmd_50]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor4\MemoryStreamCtor4.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [decimal_cs_do.cmd_51]
 RelativePath=JIT\Methodical\MDArray\DataTypes\decimal_cs_do\decimal_cs_do.cmd
 WorkingDir=JIT\Methodical\MDArray\DataTypes\decimal_cs_do
@@ -1708,14 +1700,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesAnd.cmd_235]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesAnd\OpCodesAnd.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesAnd
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [pow2_cs_ro.cmd_236]
 RelativePath=JIT\Directed\intrinsic\pow\pow2_cs_ro\pow2_cs_ro.cmd
 WorkingDir=JIT\Directed\intrinsic\pow\pow2_cs_ro
@@ -2068,14 +2052,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_U4.cmd_284]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U4\OpCodesConv_U4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [struct6_4.cmd_285]
 RelativePath=JIT\jit64\gc\misc\struct6_4\struct6_4.cmd
 WorkingDir=JIT\jit64\gc\misc\struct6_4
@@ -2127,14 +2103,6 @@ HostStyle=0
 [b15786.cmd_291]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09\b15786\b15786\b15786.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09\b15786\b15786
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBrfalse.cmd_292]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrfalse\OpCodesBrfalse.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrfalse
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -2836,14 +2804,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesXor.cmd_387]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesXor\OpCodesXor.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesXor
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [UInt32IConvertibleToInt16.cmd_388]
 RelativePath=CoreMangLib\cti\system\uint32\UInt32IConvertibleToInt16\UInt32IConvertibleToInt16.cmd
 WorkingDir=CoreMangLib\cti\system\uint32\UInt32IConvertibleToInt16
@@ -3012,14 +2972,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesCeq.cmd_414]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCeq\OpCodesCeq.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCeq
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Ge1.cmd_415]
 RelativePath=JIT\CodeGenBringUpTests\Ge1_ro\Ge1_ro.cmd
 WorkingDir=JIT\CodeGenBringUpTests\Ge1_ro
@@ -3124,14 +3076,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesNewobj.cmd_429]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNewobj\OpCodesNewobj.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNewobj
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b15728.cmd_430]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b15728\b15728\b15728.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b15728\b15728
@@ -3167,14 +3111,6 @@ HostStyle=0
 [plainarr_cs_d.cmd_434]
 RelativePath=JIT\Methodical\MDArray\GaussJordan\plainarr_cs_d\plainarr_cs_d.cmd
 WorkingDir=JIT\Methodical\MDArray\GaussJordan\plainarr_cs_d
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStsfld.cmd_435]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStsfld\OpCodesStsfld.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStsfld
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -3364,14 +3300,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodeName.cmd_462]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeName\OpCodeName.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeName
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [CheckAddLong.cmd_463]
 RelativePath=baseservices\threading\interlocked\add\CheckAddLong\CheckAddLong.cmd
 WorkingDir=baseservices\threading\interlocked\add\CheckAddLong
@@ -3543,14 +3471,6 @@ HostStyle=0
 [Generated145.cmd_489]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest145\Generated145\Generated145.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest145\Generated145
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem_R8.cmd_490]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_R8\OpCodesLdelem_R8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_R8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -4348,14 +4268,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdind_I8.cmd_601]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I8\OpCodesLdind_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [AssemblyDescriptionAttributeCtor.cmd_602]
 RelativePath=CoreMangLib\cti\system\reflection\assemblydescriptionattribute\AssemblyDescriptionAttributeCtor\AssemblyDescriptionAttributeCtor.cmd
 WorkingDir=CoreMangLib\cti\system\reflection\assemblydescriptionattribute\AssemblyDescriptionAttributeCtor
@@ -4511,14 +4423,6 @@ HostStyle=0
 [b25507.cmd_623]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b25507\b25507\b25507.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b25507\b25507
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_U4.cmd_624]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U4\OpCodesConv_Ovf_U4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -4908,14 +4812,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[StreamDispose2_PSC.cmd_677]
-RelativePath=CoreMangLib\cti\system\io\stream\StreamDispose2_PSC\StreamDispose2_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\stream\StreamDispose2_PSC
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [box-unbox-generics028.cmd_678]
 RelativePath=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics028\box-unbox-generics028.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics028
@@ -5199,14 +5095,6 @@ HostStyle=0
 [catch1_r.cmd_716]
 RelativePath=JIT\Directed\leave\catch1_r\catch1_r.cmd
 WorkingDir=JIT\Directed\leave\catch1_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4_3.cmd_717]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_3\OpCodesLdc_I4_3.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_3
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -6108,14 +5996,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesVolatile.cmd_842]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesVolatile\OpCodesVolatile.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesVolatile
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b19394.cmd_843]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b19394\b19394\b19394.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b19394\b19394
@@ -6218,14 +6098,6 @@ WorkingDir=JIT\Methodical\int64\unsigned\_il_dbgldsfld_mulovf
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesLdloca.cmd_858]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloca\OpCodesLdloca.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloca
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated848.cmd_860]
@@ -7228,14 +7100,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesRem.cmd_993]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRem\OpCodesRem.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRem
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ldarga_i.cmd_994]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ldarga_i\ldarga_i.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldarga_i
@@ -7444,14 +7308,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_U.cmd_1023]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U\OpCodesConv_Ovf_U.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [uint16_do.cmd_1024]
 RelativePath=JIT\Directed\shift\uint16_do\uint16_do.cmd
 WorkingDir=JIT\Directed\shift\uint16_do
@@ -7511,14 +7367,6 @@ HostStyle=0
 [waitoneex2.cmd_1031]
 RelativePath=baseservices\threading\waithandle\waitone\waitoneex2\waitoneex2.cmd
 WorkingDir=baseservices\threading\waithandle\waitone\waitoneex2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLocalloc.cmd_1032]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLocalloc\OpCodesLocalloc.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLocalloc
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -7788,14 +7636,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_I2.cmd_1069]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I2\OpCodesConv_I2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [thread19.cmd_1070]
 RelativePath=baseservices\threading\generics\WaitCallback\thread19\thread19.cmd
 WorkingDir=baseservices\threading\generics\WaitCallback\thread19
@@ -7826,14 +7666,6 @@ WorkingDir=GC\Features\Finalizer\finalizeother\finalizeexcep
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesLdind_I.cmd_1074]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I\OpCodesLdind_I.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b14066.cmd_1075]
@@ -8295,14 +8127,6 @@ HostStyle=0
 [Generated1459.cmd_1137]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1459\Generated1459\Generated1459.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1459\Generated1459
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBox.cmd_1138]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBox\OpCodesBox.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBox
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -8852,14 +8676,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdc_R4.cmd_1214]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_R4\OpCodesLdc_R4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_R4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b71005.cmd_1215]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b71005\b71005\b71005.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b71005\b71005
@@ -8914,14 +8730,6 @@ WorkingDir=JIT\Directed\UnrollLoop\loop4_cs_ro
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesPrefix1.cmd_1222]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix1\OpCodesPrefix1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated963.cmd_1223]
@@ -8996,14 +8804,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesUnbox_Any.cmd_1232]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesUnbox_Any\OpCodesUnbox_Any.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesUnbox_Any
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [tighttimercallback.cmd_1233]
 RelativePath=baseservices\threading\generics\TimerCallback\tighttimercallback\tighttimercallback.cmd
 WorkingDir=baseservices\threading\generics\TimerCallback\tighttimercallback
@@ -9015,14 +8815,6 @@ HostStyle=0
 [_speed_relrefanyval.cmd_1234]
 RelativePath=JIT\Methodical\xxobj\operand\_speed_relrefanyval\_speed_relrefanyval.cmd
 WorkingDir=JIT\Methodical\xxobj\operand\_speed_relrefanyval
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdstr.cmd_1235]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdstr\OpCodesLdstr.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdstr
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -9335,14 +9127,6 @@ HostStyle=0
 [b33792.cmd_1275]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b33792\b33792\b33792.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b33792\b33792
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_U8_Un.cmd_1276]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U8_Un\OpCodesConv_Ovf_U8_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U8_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -9839,14 +9623,6 @@ HostStyle=0
 [_il_relfinally.cmd_1343]
 RelativePath=JIT\Methodical\Boxing\boxunbox\_il_relfinally\_il_relfinally.cmd
 WorkingDir=JIT\Methodical\Boxing\boxunbox\_il_relfinally
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdloc_S.cmd_1344]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_S\OpCodesLdloc_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -10476,14 +10252,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[SZArrayHelperSetItem.cmd_1428]
-RelativePath=CoreMangLib\cti\system\szarrayhelper\SZArrayHelperSetItem\SZArrayHelperSetItem.cmd
-WorkingDir=CoreMangLib\cti\system\szarrayhelper\SZArrayHelperSetItem
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GCSimulator_138.cmd_1429]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_138\GCSimulator_138.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_138
@@ -11028,14 +10796,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBge_Un.cmd_1505]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge_Un\OpCodesBge_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated951.cmd_1506]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest951\Generated951\Generated951.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest951\Generated951
@@ -11279,14 +11039,6 @@ HostStyle=0
 [pow2_cs_r.cmd_1544]
 RelativePath=JIT\Directed\intrinsic\pow\pow2_cs_r\pow2_cs_r.cmd
 WorkingDir=JIT\Directed\intrinsic\pow\pow2_cs_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdsflda.cmd_1545]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdsflda\OpCodesLdsflda.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdsflda
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -11604,14 +11356,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdarg_0.cmd_1592]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_0\OpCodesLdarg_0.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_0
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ArrayCreateInstance2.cmd_1593]
 RelativePath=CoreMangLib\cti\system\array\ArrayCreateInstance2\ArrayCreateInstance2.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArrayCreateInstance2
@@ -11759,14 +11503,6 @@ HostStyle=0
 [eh11_small.cmd_1612]
 RelativePath=JIT\jit64\localloc\ehverify\eh11_small\eh11_small.cmd
 WorkingDir=JIT\jit64\localloc\ehverify\eh11_small
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStarg.cmd_1613]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStarg\OpCodesStarg.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStarg
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -12220,14 +11956,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesTakesSingleByteArgument.cmd_1678]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesTakesSingleByteArgument\OpCodesTakesSingleByteArgument.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesTakesSingleByteArgument
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [refpinned2iu_il_d.cmd_1679]
 RelativePath=JIT\Directed\refbyref\refpinned2iu_il_d\refpinned2iu_il_d.cmd
 WorkingDir=JIT\Directed\refbyref\refpinned2iu_il_d
@@ -12668,14 +12396,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBr.cmd_1735]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBr\OpCodesBr.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBr
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1163.cmd_1736]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1163\Generated1163\Generated1163.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1163\Generated1163
@@ -13012,22 +12732,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBle_S.cmd_1783]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle_S\OpCodesBle_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBge.cmd_1784]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge\OpCodesBge.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_dbgs_addsub.cmd_1785]
 RelativePath=JIT\Methodical\int64\signed\_dbgs_addsub\_dbgs_addsub.cmd
 WorkingDir=JIT\Methodical\int64\signed\_dbgs_addsub
@@ -13359,14 +13063,6 @@ HostStyle=0
 [init_uint64.cmd_1832]
 RelativePath=JIT\Directed\zeroinit\init_uint64\init_uint64.cmd
 WorkingDir=JIT\Directed\zeroinit\init_uint64
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStelem_I4.cmd_1833]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I4\OpCodesStelem_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -14476,14 +14172,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesLdind_I2.cmd_1986]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I2\OpCodesLdind_I2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Float_Xor_Op_cs_ro.cmd_1987]
 RelativePath=JIT\Directed\cmov\Float_Xor_Op_cs_ro\Float_Xor_Op_cs_ro.cmd
 WorkingDir=JIT\Directed\cmov\Float_Xor_Op_cs_ro
@@ -14996,14 +14684,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdnull.cmd_2062]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdnull\OpCodesLdnull.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdnull
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [abstract09.cmd_2063]
 RelativePath=Loader\classloader\generics\Instantiation\Negative\abstract09\abstract09.cmd
 WorkingDir=Loader\classloader\generics\Instantiation\Negative\abstract09
@@ -15444,14 +15124,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_I8.cmd_2126]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I8\OpCodesConv_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [convr8a_cs_d.cmd_2128]
 RelativePath=JIT\Methodical\FPtrunc\convr8a_cs_d\convr8a_cs_d.cmd
 WorkingDir=JIT\Methodical\FPtrunc\convr8a_cs_d
@@ -15676,14 +15348,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBge_S.cmd_2159]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge_S\OpCodesBge_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [MulMatrix.cmd_2160]
 RelativePath=JIT\Performance\CodeQuality\Benchstones\BenchI\MulMatrix\MulMatrix\MulMatrix.cmd
 WorkingDir=JIT\Performance\CodeQuality\Benchstones\BenchI\MulMatrix\MulMatrix
@@ -15748,14 +15412,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBlt_S.cmd_2169]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt_S\OpCodesBlt_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [uint32_cs_r.cmd_2170]
 RelativePath=JIT\Directed\shift\uint32_cs_r\uint32_cs_r.cmd
 WorkingDir=JIT\Directed\shift\uint32_cs_r
@@ -15807,14 +15463,6 @@ HostStyle=0
 [semaphorector3.cmd_2176]
 RelativePath=baseservices\threading\semaphore\ctoropen\semaphorector3\semaphorector3.cmd
 WorkingDir=baseservices\threading\semaphore\ctoropen\semaphorector3
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4_S.cmd_2177]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_S\OpCodesLdc_I4_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -15882,14 +15530,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26512\b26512
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesLdlen.cmd_2187]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdlen\OpCodesLdlen.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdlen
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [thread01.cmd_2189]
@@ -16036,14 +15676,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_I_Un.cmd_2211]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I_Un\OpCodesConv_Ovf_I_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [repro177066.cmd_2212]
 RelativePath=Loader\binding\assemblies\assemblybugs\177066w\repro177066\repro177066.cmd
 WorkingDir=Loader\binding\assemblies\assemblybugs\177066w\repro177066
@@ -16063,14 +15695,6 @@ HostStyle=0
 [JTrueGtFP.cmd_2214]
 RelativePath=JIT\CodeGenBringUpTests\JTrueGtFP_ro\JTrueGtFP_ro.cmd
 WorkingDir=JIT\CodeGenBringUpTests\JTrueGtFP_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesPrefix6.cmd_2215]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix6\OpCodesPrefix6.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix6
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -16892,14 +16516,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[IOExceptionctor2.cmd_2323]
-RelativePath=CoreMangLib\cti\system\io\ioexception\IOExceptionctor2\IOExceptionctor2.cmd
-WorkingDir=CoreMangLib\cti\system\io\ioexception\IOExceptionctor2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [mcc_i61.cmd_2324]
 RelativePath=JIT\jit64\mcc\interop\mcc_i61\mcc_i61.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i61
@@ -17103,14 +16719,6 @@ HostStyle=0
 [b36975.cmd_2350]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b36975\b36975\b36975.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b36975\b36975
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdsfld.cmd_2351]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdsfld\OpCodesLdsfld.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdsfld
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -17364,14 +16972,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[StreamWriteTimeOut_PSC.cmd_2390]
-RelativePath=CoreMangLib\cti\system\io\stream\StreamWriteTimeOut_PSC\StreamWriteTimeOut_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\stream\StreamWriteTimeOut_PSC
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [r8_cs_ro.cmd_2391]
 RelativePath=JIT\Methodical\AsgOp\r8\r8_cs_ro\r8_cs_ro.cmd
 WorkingDir=JIT\Methodical\AsgOp\r8\r8_cs_ro
@@ -17583,14 +17183,6 @@ HostStyle=0
 [BooleanGetHashCode.cmd_2419]
 RelativePath=CoreMangLib\cti\system\boolean\BooleanGetHashCode\BooleanGetHashCode.cmd
 WorkingDir=CoreMangLib\cti\system\boolean\BooleanGetHashCode
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_I8.cmd_2420]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I8\OpCodesConv_Ovf_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -18023,14 +17615,6 @@ HostStyle=0
 [MethodCalls.cmd_2476]
 RelativePath=Loader\classloader\regressions\dev10_568786\4_Misc\MethodCalls\MethodCalls.cmd
 WorkingDir=Loader\classloader\regressions\dev10_568786\4_Misc\MethodCalls
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesSizeof.cmd_2477]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSizeof\OpCodesSizeof.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSizeof
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -18524,14 +18108,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesCall.cmd_2547]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCall\OpCodesCall.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCall
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ManualResetEventCtor.cmd_2548]
 RelativePath=CoreMangLib\cti\system\threading\manualresetevent\ManualResetEventCtor\ManualResetEventCtor.cmd
 WorkingDir=CoreMangLib\cti\system\threading\manualresetevent\ManualResetEventCtor
@@ -18740,14 +18316,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesNop.cmd_2575]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNop\OpCodesNop.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNop
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [KeepAlive.cmd_2576]
 RelativePath=GC\API\GC\KeepAlive\KeepAlive.cmd
 WorkingDir=GC\API\GC\KeepAlive
@@ -18847,14 +18415,6 @@ HostStyle=0
 [Generated1029.cmd_2589]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1029\Generated1029\Generated1029.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1029\Generated1029
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesDiv_Un.cmd_2590]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesDiv_Un\OpCodesDiv_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesDiv_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -19007,14 +18567,6 @@ HostStyle=0
 [mixedexpr1_r_loop.cmd_2611]
 RelativePath=JIT\jit64\opt\cse\mixedexpr1_r_loop\mixedexpr1_r_loop.cmd
 WorkingDir=JIT\jit64\opt\cse\mixedexpr1_r_loop
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdarg_2.cmd_2612]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_2\OpCodesLdarg_2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -19268,14 +18820,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_R_Un.cmd_2647]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R_Un\OpCodesConv_R_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1016.cmd_2648]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1016\Generated1016\Generated1016.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1016\Generated1016
@@ -19295,14 +18839,6 @@ HostStyle=0
 [box-unbox-generics009.cmd_2650]
 RelativePath=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics009\box-unbox-generics009.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics009
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStloc_S.cmd_2651]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_S\OpCodesStloc_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -19615,14 +19151,6 @@ HostStyle=0
 [Generated1088.cmd_2694]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1088\Generated1088\Generated1088.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1088\Generated1088
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesAdd_Ovf_Un.cmd_2695]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesAdd_Ovf_Un\OpCodesAdd_Ovf_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesAdd_Ovf_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -20148,14 +19676,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBrfalse_S.cmd_2767]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrfalse_S\OpCodesBrfalse_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrfalse_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [WeakReferenceIsAlive_PSC.cmd_2768]
 RelativePath=CoreMangLib\cti\system\weakreference\WeakReferenceIsAlive_PSC\WeakReferenceIsAlive_PSC.cmd
 WorkingDir=CoreMangLib\cti\system\weakreference\WeakReferenceIsAlive_PSC
@@ -20231,14 +19751,6 @@ HostStyle=0
 [seq_gc_double_1_r.cmd_2779]
 RelativePath=JIT\Methodical\explicit\coverage\seq_gc_double_1_r\seq_gc_double_1_r.cmd
 WorkingDir=JIT\Methodical\explicit\coverage\seq_gc_double_1_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_I4_Un.cmd_2780]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I4_Un\OpCodesConv_Ovf_I4_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I4_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -20503,14 +20015,6 @@ HostStyle=0
 [deadtryfinallythrow_r.cmd_2816]
 RelativePath=JIT\Methodical\eh\deadcode\deadtryfinallythrow_r\deadtryfinallythrow_r.cmd
 WorkingDir=JIT\Methodical\eh\deadcode\deadtryfinallythrow_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[FileStreamDispose_PSC.cmd_2817]
-RelativePath=CoreMangLib\cti\system\io\filestream\FileStreamDispose_PSC\FileStreamDispose_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\filestream\FileStreamDispose_PSC
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -20852,14 +20356,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesJmp.cmd_2862]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesJmp\OpCodesJmp.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesJmp
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1168.cmd_2863]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1168\Generated1168\Generated1168.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1168\Generated1168
@@ -21188,14 +20684,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdind_R4.cmd_2909]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_R4\OpCodesLdind_R4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_R4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b57952.cmd_2910]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57952\b57952\b57952.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b57952\b57952
@@ -21300,14 +20788,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBeq_S.cmd_2925]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBeq_S\OpCodesBeq_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBeq_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [unaligned.cmd_2926]
 RelativePath=JIT\IL_Conformance\Old\Base\unaligned\unaligned.cmd
 WorkingDir=JIT\IL_Conformance\Old\Base\unaligned
@@ -21335,14 +20815,6 @@ HostStyle=0
 [Generated329.cmd_2929]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest329\Generated329\Generated329.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest329\Generated329
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesCgt_Un.cmd_2930]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCgt_Un\OpCodesCgt_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCgt_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -21583,14 +21055,6 @@ HostStyle=0
 [method014.cmd_2964]
 RelativePath=Loader\classloader\generics\GenericMethods\method014\method014.cmd
 WorkingDir=Loader\classloader\generics\GenericMethods\method014
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[StreamNull_PSC.cmd_2966]
-RelativePath=CoreMangLib\cti\system\io\stream\StreamNull_PSC\StreamNull_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\stream\StreamNull_PSC
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -21967,14 +21431,6 @@ HostStyle=0
 [nested-try-catch10.cmd_3020]
 RelativePath=baseservices\exceptions\generics\nested-try-catch10\nested-try-catch10.cmd
 WorkingDir=baseservices\exceptions\generics\nested-try-catch10
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLeave.cmd_3022]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLeave\OpCodesLeave.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLeave
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -22956,14 +22412,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesLdloca_S.cmd_3160]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloca_S\OpCodesLdloca_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloca_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated160.cmd_3161]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest160\Generated160\Generated160.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest160\Generated160
@@ -23252,14 +22700,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesRefanytype.cmd_3199]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRefanytype\OpCodesRefanytype.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRefanytype
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ObjectFinalize.cmd_3200]
 RelativePath=CoreMangLib\cti\system\object\ObjectFinalize\ObjectFinalize.cmd
 WorkingDir=CoreMangLib\cti\system\object\ObjectFinalize
@@ -23351,14 +22791,6 @@ HostStyle=0
 [Bool_No_Op_cs_ro.cmd_3212]
 RelativePath=JIT\Directed\cmov\Bool_No_Op_cs_ro\Bool_No_Op_cs_ro.cmd
 WorkingDir=JIT\Directed\cmov\Bool_No_Op_cs_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem_I2.cmd_3213]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I2\OpCodesLdelem_I2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -23527,14 +22959,6 @@ HostStyle=0
 [CompareExchangeLong_2.cmd_3236]
 RelativePath=baseservices\threading\interlocked\compareexchange\CompareExchangeLong_2\CompareExchangeLong_2.cmd
 WorkingDir=baseservices\threading\interlocked\compareexchange\CompareExchangeLong_2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodeValue.cmd_3237]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeValue\OpCodeValue.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeValue
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -23770,14 +23194,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b60723\b60723
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[MemoryStreamCtor7.cmd_3271]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor7\MemoryStreamCtor7.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor7
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [bleref_il_r.cmd_3272]
@@ -24356,14 +23772,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[MemoryStreamCtor2.cmd_3351]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor2\MemoryStreamCtor2.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GCSimulator_82.cmd_3352]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_82\GCSimulator_82.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_82
@@ -24375,14 +23783,6 @@ HostStyle=0
 [NestedEx1.cmd_3353]
 RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\NestedEx1\NestedEx1.cmd
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\NestedEx1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdfld.cmd_3354]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdfld\OpCodesLdfld.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdfld
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -24636,14 +24036,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesConv_I1.cmd_3388]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I1\OpCodesConv_I1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b37608.cmd_3389]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b37608\b37608\b37608.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b37608\b37608
@@ -24679,14 +24071,6 @@ HostStyle=0
 [Generated1179.cmd_3393]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1179\Generated1179\Generated1179.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1179\Generated1179
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBgt.cmd_3394]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt\OpCodesBgt.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -24863,14 +24247,6 @@ HostStyle=0
 [Generated250.cmd_3416]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest250\Generated250\Generated250.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest250\Generated250
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesReadonly.cmd_3417]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesReadonly\OpCodesReadonly.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesReadonly
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -25063,14 +24439,6 @@ HostStyle=0
 [dev10_897464.cmd_3442]
 RelativePath=Loader\classloader\regressions\dev10_897464\dev10_897464\dev10_897464.cmd
 WorkingDir=Loader\classloader\regressions\dev10_897464\dev10_897464
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesOr.cmd_3443]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesOr\OpCodesOr.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesOr
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -25463,14 +24831,6 @@ HostStyle=0
 [b14350.cmd_3496]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b14350\b14350\b14350.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b14350\b14350
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesUnbox.cmd_3497]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesUnbox\OpCodesUnbox.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesUnbox
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -26228,14 +25588,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdelem_I8.cmd_3600]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I8\OpCodesLdelem_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated834.cmd_3601]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest834\Generated834\Generated834.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest834\Generated834
@@ -26335,14 +25687,6 @@ HostStyle=0
 [b22680.cmd_3614]
 RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M02\b22680\b22680\b22680.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M02\b22680\b22680
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBgt_Un_S.cmd_3615]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt_Un_S\OpCodesBgt_Un_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt_Un_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -26564,14 +25908,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_U2.cmd_3649]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U2\OpCodesConv_Ovf_U2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b71318.cmd_3650]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b71318\b71318\b71318.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b71318\b71318
@@ -26602,14 +25938,6 @@ WorkingDir=JIT\Methodical\Arrays\range\_il_relfloat64_range2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodeStackBehaviourPop.cmd_3655]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeStackBehaviourPop\OpCodeStackBehaviourPop.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeStackBehaviourPop
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [tryfinallytrycatch_r.cmd_3657]
@@ -27732,14 +27060,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_I.cmd_3808]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I\OpCodesConv_I.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b41149.cmd_3809]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41149\b41149\b41149.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41149\b41149
@@ -27996,14 +27316,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesConv_Ovf_U2_Un.cmd_3843]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U2_Un\OpCodesConv_Ovf_U2_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U2_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [25paramMixed_il_r.cmd_3844]
 RelativePath=JIT\Methodical\Invoke\25params\25paramMixed_il_r\25paramMixed_il_r.cmd
 WorkingDir=JIT\Methodical\Invoke\25params\25paramMixed_il_r
@@ -28116,14 +27428,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesClt_Un.cmd_3859]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesClt_Un\OpCodesClt_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesClt_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [nullable.cmd_3860]
 RelativePath=Regressions\coreclr\0044\nullable\nullable.cmd
 WorkingDir=Regressions\coreclr\0044\nullable
@@ -28215,14 +27519,6 @@ HostStyle=0
 [_il_relmdarray.cmd_3874]
 RelativePath=JIT\Methodical\xxobj\operand\_il_relmdarray\_il_relmdarray.cmd
 WorkingDir=JIT\Methodical\xxobj\operand\_il_relmdarray
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdarga_S.cmd_3875]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarga_S\OpCodesLdarga_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarga_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -28396,14 +27692,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdelem_R4.cmd_3899]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_R4\OpCodesLdelem_R4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_R4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated555.cmd_3900]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest555\Generated555\Generated555.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest555\Generated555
@@ -28508,14 +27796,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG;Pri1
 HostStyle=0
 
-[OpCodesSub.cmd_3915]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSub\OpCodesSub.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSub
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [AssemblyKeyNameAttributeCtor.cmd_3916]
 RelativePath=CoreMangLib\cti\system\reflection\assemblykeynameattribute\AssemblyKeyNameAttributeCtor\AssemblyKeyNameAttributeCtor.cmd
 WorkingDir=CoreMangLib\cti\system\reflection\assemblykeynameattribute\AssemblyKeyNameAttributeCtor
@@ -28599,14 +27879,6 @@ HostStyle=0
 [stfldstatic1_il_r.cmd_3929]
 RelativePath=JIT\Directed\coverage\importer\Desktop\stfldstatic1_il_r\stfldstatic1_il_r.cmd
 WorkingDir=JIT\Directed\coverage\importer\Desktop\stfldstatic1_il_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_I2.cmd_3930]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I2\OpCodesConv_Ovf_I2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -28791,14 +28063,6 @@ HostStyle=0
 [mul4.cmd_3955]
 RelativePath=JIT\CodeGenBringUpTests\mul4_ro\mul4_ro.cmd
 WorkingDir=JIT\CodeGenBringUpTests\mul4_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdarga.cmd_3956]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarga\OpCodesLdarga.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarga
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -29500,14 +28764,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG;Pri1
 HostStyle=0
 
-[OpCodeToString.cmd_4055]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeToString\OpCodeToString.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeToString
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_speed_relctor_recurse.cmd_4056]
 RelativePath=JIT\Methodical\VT\etc\_speed_relctor_recurse\_speed_relctor_recurse.cmd
 WorkingDir=JIT\Methodical\VT\etc\_speed_relctor_recurse
@@ -29567,22 +28823,6 @@ HostStyle=0
 [Generated741.cmd_4063]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest741\Generated741\Generated741.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest741\Generated741
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBlt.cmd_4064]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt\OpCodesBlt.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodeSize.cmd_4065]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeSize\OpCodeSize.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeSize
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -30503,14 +29743,6 @@ HostStyle=0
 [Generated1158.cmd_4202]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1158\Generated1158\Generated1158.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1158\Generated1158
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStelem_Ref.cmd_4203]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_Ref\OpCodesStelem_Ref.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_Ref
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -31508,14 +30740,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdc_R8.cmd_4344]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_R8\OpCodesLdc_R8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_R8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Normal.cmd_4345]
 RelativePath=GC\API\GCHandle\Normal\Normal.cmd
 WorkingDir=GC\API\GCHandle\Normal
@@ -31924,14 +31148,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBne_Un.cmd_4399]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBne_Un\OpCodesBne_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBne_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [struct1_2.cmd_4400]
 RelativePath=JIT\jit64\gc\misc\struct1_2\struct1_2.cmd
 WorkingDir=JIT\jit64\gc\misc\struct1_2
@@ -31983,14 +31199,6 @@ HostStyle=0
 [i4div_cs_d.cmd_4409]
 RelativePath=JIT\Methodical\divrem\div\i4div_cs_d\i4div_cs_d.cmd
 WorkingDir=JIT\Methodical\divrem\div\i4div_cs_d
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesDiv.cmd_4410]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesDiv\OpCodesDiv.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesDiv
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -32164,14 +31372,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_U4_Un.cmd_4433]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U4_Un\OpCodesConv_Ovf_U4_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U4_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1393.cmd_4434]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1393\Generated1393\Generated1393.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1393\Generated1393
@@ -32335,14 +31535,6 @@ HostStyle=0
 [StringIConvertibleToInt16.cmd_4455]
 RelativePath=CoreMangLib\cti\system\string\StringIConvertibleToInt16\StringIConvertibleToInt16.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringIConvertibleToInt16
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdind_U4.cmd_4456]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_U4\OpCodesLdind_U4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_U4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -32751,14 +31943,6 @@ HostStyle=0
 [long_cs_r.cmd_4518]
 RelativePath=JIT\Methodical\MDArray\DataTypes\long_cs_r\long_cs_r.cmd
 WorkingDir=JIT\Methodical\MDArray\DataTypes\long_cs_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStarg_S.cmd_4519]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStarg_S\OpCodesStarg_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStarg_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -33186,14 +32370,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b54611\b54611
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesLdc_I8.cmd_4580]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I8\OpCodesLdc_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [GCSimulator_409.cmd_4581]
@@ -34668,14 +33844,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdelem_I1.cmd_4779]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I1\OpCodesLdelem_I1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [box-unbox-value011.cmd_4780]
 RelativePath=JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value011\box-unbox-value011.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value011
@@ -34695,14 +33863,6 @@ HostStyle=0
 [structret5_2.cmd_4782]
 RelativePath=JIT\jit64\gc\misc\structret5_2\structret5_2.cmd
 WorkingDir=JIT\jit64\gc\misc\structret5_2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdloc_1.cmd_4784]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_1\OpCodesLdloc_1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -34860,14 +34020,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_I2_Un.cmd_4805]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I2_Un\OpCodesConv_Ovf_I2_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I2_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_il_relcompat_r4_r8_inl.cmd_4806]
 RelativePath=JIT\Methodical\tailcall\_il_relcompat_r4_r8_inl\_il_relcompat_r4_r8_inl.cmd
 WorkingDir=JIT\Methodical\tailcall\_il_relcompat_r4_r8_inl
@@ -34879,14 +34031,6 @@ HostStyle=0
 [static_equalnull_class01.cmd_4807]
 RelativePath=JIT\Generics\Fields\static_equalnull_class01\static_equalnull_class01.cmd
 WorkingDir=JIT\Generics\Fields\static_equalnull_class01
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[MemoryStreamCtor3.cmd_4808]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor3\MemoryStreamCtor3.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor3
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35071,14 +34215,6 @@ HostStyle=0
 [testExplicitOverride.cmd_4832]
 RelativePath=Loader\classloader\generics\regressions\395780\testExplicitOverride\testExplicitOverride.cmd
 WorkingDir=Loader\classloader\generics\regressions\395780\testExplicitOverride
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesDup.cmd_4833]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesDup\OpCodesDup.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesDup
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -35420,14 +34556,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[MemoryStreamCtor6.cmd_4879]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor6\MemoryStreamCtor6.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor6
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [mcc_i31.cmd_4880]
 RelativePath=JIT\jit64\mcc\interop\mcc_i31\mcc_i31.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i31
@@ -35551,22 +34679,6 @@ HostStyle=0
 [emptyfinally_r.cmd_4899]
 RelativePath=JIT\Methodical\eh\basics\emptyfinally_r\emptyfinally_r.cmd
 WorkingDir=JIT\Methodical\eh\basics\emptyfinally_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdloc_0.cmd_4900]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_0\OpCodesLdloc_0.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_0
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodeFlowControl.cmd_4901]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeFlowControl\OpCodeFlowControl.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeFlowControl
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -36004,14 +35116,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesMkrefany.cmd_4959]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMkrefany\OpCodesMkrefany.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMkrefany
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [waitoneex2a.cmd_4960]
 RelativePath=baseservices\threading\waithandle\waitone\waitoneex2a\waitoneex2a.cmd
 WorkingDir=baseservices\threading\waithandle\waitone\waitoneex2a
@@ -36172,14 +35276,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdind_U1.cmd_4982]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_U1\OpCodesLdind_U1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_U1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_relval_ctor.cmd_4983]
 RelativePath=JIT\Methodical\Invoke\ctor\_relval_ctor\_relval_ctor.cmd
 WorkingDir=JIT\Methodical\Invoke\ctor\_relval_ctor
@@ -36263,22 +35359,6 @@ HostStyle=0
 [Shift.cmd_4994]
 RelativePath=JIT\CodeGenBringUpTests\Shift_ro\Shift_ro.cmd
 WorkingDir=JIT\CodeGenBringUpTests\Shift_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdloc_2.cmd_4995]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_2\OpCodesLdloc_2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[BinaryWriterOutStream_PSC.cmd_4996]
-RelativePath=CoreMangLib\cti\system\io\binarywriter\BinaryWriterOutStream_PSC\BinaryWriterOutStream_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\binarywriter\BinaryWriterOutStream_PSC
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -36516,14 +35596,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;GCSTRESS_EXCLUDE;Pri1
 HostStyle=0
 
-[OpCodesRefanyval.cmd_5029]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRefanyval\OpCodesRefanyval.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRefanyval
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_reljumper.cmd_5030]
 RelativePath=JIT\Methodical\VT\callconv\_reljumper\_reljumper.cmd
 WorkingDir=JIT\Methodical\VT\callconv\_reljumper
@@ -36583,14 +35655,6 @@ HostStyle=0
 [bne_s.cmd_5038]
 RelativePath=JIT\IL_Conformance\Old\Base\bne_s\bne_s.cmd
 WorkingDir=JIT\IL_Conformance\Old\Base\bne_s
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesCpblk.cmd_5039]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCpblk\OpCodesCpblk.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCpblk
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -36671,14 +35735,6 @@ HostStyle=0
 [SingleToByte.cmd_5049]
 RelativePath=CoreMangLib\cti\system\single\SingleToByte\SingleToByte.cmd
 WorkingDir=CoreMangLib\cti\system\single\SingleToByte
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStind_R4.cmd_5050]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_R4\OpCodesStind_R4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_R4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37108,14 +36164,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesMul.cmd_5112]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMul\OpCodesMul.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMul
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [CharEnumeratorCurrent.cmd_5113]
 RelativePath=CoreMangLib\cti\system\charenumerator\CharEnumeratorCurrent\CharEnumeratorCurrent.cmd
 WorkingDir=CoreMangLib\cti\system\charenumerator\CharEnumeratorCurrent
@@ -37159,14 +36207,6 @@ HostStyle=0
 [fact.cmd_5119]
 RelativePath=JIT\opt\Inline\tests\fact\fact.cmd
 WorkingDir=JIT\opt\Inline\tests\fact
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStind_R8.cmd_5120]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_R8\OpCodesStind_R8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_R8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37335,14 +36375,6 @@ HostStyle=0
 [r4NaNadd_cs_do.cmd_5142]
 RelativePath=JIT\Methodical\NaN\r4NaNadd_cs_do\r4NaNadd_cs_do.cmd
 WorkingDir=JIT\Methodical\NaN\r4NaNadd_cs_do
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdarg_1.cmd_5143]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_1\OpCodesLdarg_1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -37815,14 +36847,6 @@ HostStyle=0
 [rethrowinfinallyaftercatch_ro.cmd_5207]
 RelativePath=JIT\Methodical\eh\rethrow\rethrowinfinallyaftercatch_ro\rethrowinfinallyaftercatch_ro.cmd
 WorkingDir=JIT\Methodical\eh\rethrow\rethrowinfinallyaftercatch_ro
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4_0.cmd_5208]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_0\OpCodesLdc_I4_0.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_0
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -38343,14 +37367,6 @@ HostStyle=0
 [Generated293.cmd_5278]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest293\Generated293\Generated293.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest293\Generated293
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem_U1.cmd_5279]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_U1\OpCodesLdelem_U1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_U1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -39284,22 +38300,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesCpobj.cmd_5404]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCpobj\OpCodesCpobj.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCpobj
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdind_R8.cmd_5405]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_R8\OpCodesLdind_R8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_R8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ArrayWithFunc_o.cmd_5406]
 RelativePath=JIT\jit64\opt\rngchk\ArrayWithFunc_o\ArrayWithFunc_o.cmd
 WorkingDir=JIT\jit64\opt\rngchk\ArrayWithFunc_o
@@ -39844,14 +38844,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBle_Un_S.cmd_5478]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle_Un_S\OpCodesBle_Un_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle_Un_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated124.cmd_5479]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest124\Generated124\Generated124.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest124\Generated124
@@ -39863,14 +38855,6 @@ HostStyle=0
 [Generated1199.cmd_5480]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1199\Generated1199\Generated1199.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1199\Generated1199
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_I1_Un.cmd_5481]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I1_Un\OpCodesConv_Ovf_I1_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I1_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -39954,14 +38938,6 @@ WorkingDir=JIT\Generics\Exceptions\general_class_instance01
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesNot.cmd_5495]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNot\OpCodesNot.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNot
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b06440b.cmd_5496]
@@ -40788,14 +39764,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdind_U2.cmd_5607]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_U2\OpCodesLdind_U2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_U2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1392.cmd_5608]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1392\Generated1392\Generated1392.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1392\Generated1392
@@ -41042,14 +40010,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b47080\b47080
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesLdc_I4_5.cmd_5643]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_5\OpCodesLdc_I4_5.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_5
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_opt_dbgrefarg_i4.cmd_5644]
@@ -41892,14 +40852,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesRethrow.cmd_5762]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRethrow\OpCodesRethrow.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRethrow
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b141062.cmd_5763]
 RelativePath=JIT\Regression\VS-ia64-JIT\M00\b141062\b141062\b141062.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\M00\b141062\b141062
@@ -42140,14 +41092,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesClt.cmd_5798]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesClt\OpCodesClt.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesClt
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GCSimulator_17.cmd_5799]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_17\GCSimulator_17.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_17
@@ -42239,14 +41183,6 @@ HostStyle=0
 [Generated1056.cmd_5810]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1056\Generated1056\Generated1056.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1056\Generated1056
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdtoken.cmd_5811]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdtoken\OpCodesLdtoken.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdtoken
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -42548,14 +41484,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesLdelem_I4.cmd_5853]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I4\OpCodesLdelem_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [castclass-null002.cmd_5854]
 RelativePath=JIT\jit64\valuetypes\nullable\castclass\null\castclass-null002\castclass-null002.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\castclass\null\castclass-null002
@@ -42775,14 +41703,6 @@ HostStyle=0
 [try-fault-struct01.cmd_5885]
 RelativePath=baseservices\exceptions\generics\try-fault-struct01\try-fault-struct01.cmd
 WorkingDir=baseservices\exceptions\generics\try-fault-struct01
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBne_Un_S.cmd_5886]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBne_Un_S\OpCodesBne_Un_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBne_Un_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -43284,14 +42204,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdc_I4_M1.cmd_5953]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_M1\OpCodesLdc_I4_M1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_M1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [repro369794.cmd_5954]
 RelativePath=Loader\classloader\explicitlayout\Regressions\369794\repro369794\repro369794.cmd
 WorkingDir=Loader\classloader\explicitlayout\Regressions\369794\repro369794
@@ -43436,14 +42348,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_U1_Un.cmd_5977]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U1_Un\OpCodesConv_Ovf_U1_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U1_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [longtimeout.cmd_5978]
 RelativePath=baseservices\threading\monitor\tryenter\longtimeout\longtimeout.cmd
 WorkingDir=baseservices\threading\monitor\tryenter\longtimeout
@@ -43495,14 +42399,6 @@ HostStyle=0
 [GCSimulator_240.cmd_5984]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_240\GCSimulator_240.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_240
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBge_Un_S.cmd_5985]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge_Un_S\OpCodesBge_Un_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBge_Un_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -43788,14 +42684,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStind_I8.cmd_6025]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I8\OpCodesStind_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b61028.cmd_6026]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b61028\b61028\b61028.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b61028\b61028
@@ -43903,14 +42791,6 @@ HostStyle=0
 [dev10_468712.cmd_6041]
 RelativePath=Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712\dev10_468712.cmd
 WorkingDir=Loader\classloader\generics\Variance\Regressions\dev10_468712\dev10_468712
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesAdd_Ovf.cmd_6042]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesAdd_Ovf\OpCodesAdd_Ovf.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesAdd_Ovf
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -44596,14 +43476,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStind_Ref.cmd_6143]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_Ref\OpCodesStind_Ref.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_Ref
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ConditionalAttributeCtor.cmd_6144]
 RelativePath=CoreMangLib\cti\system\diagnostics\conditionalattribute\ConditionalAttributeCtor\ConditionalAttributeCtor.cmd
 WorkingDir=CoreMangLib\cti\system\diagnostics\conditionalattribute\ConditionalAttributeCtor
@@ -44706,14 +43578,6 @@ WorkingDir=JIT\Methodical\eh\nested\general\rethrowincatchnestedinfinally_d
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesLdloc.cmd_6158]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc\OpCodesLdloc.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated1034.cmd_6159]
@@ -45228,14 +44092,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesLdobj.cmd_6227]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdobj\OpCodesLdobj.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdobj
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated819.cmd_6228]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest819\Generated819\Generated819.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest819\Generated819
@@ -45500,14 +44356,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesLdarg_S.cmd_6269]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_S\OpCodesLdarg_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_relsizeof64.cmd_6270]
 RelativePath=JIT\Methodical\xxobj\sizeof\_relsizeof64\_relsizeof64.cmd
 WorkingDir=JIT\Methodical\xxobj\sizeof\_relsizeof64
@@ -45607,14 +44455,6 @@ HostStyle=0
 [add.cmd_6283]
 RelativePath=JIT\Directed\PREFIX\unaligned\4\Desktop\add\add.cmd
 WorkingDir=JIT\Directed\PREFIX\unaligned\4\Desktop\add
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConstrained.cmd_6284]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConstrained\OpCodesConstrained.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConstrained
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -45788,14 +44628,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[MemoryStreamCtor.cmd_6308]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor\MemoryStreamCtor.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [DefaultMemberAttributeMemberName.cmd_6309]
 RelativePath=CoreMangLib\cti\system\reflection\defaultmemberattribute\DefaultMemberAttributeMemberName\DefaultMemberAttributeMemberName.cmd
 WorkingDir=CoreMangLib\cti\system\reflection\defaultmemberattribute\DefaultMemberAttributeMemberName
@@ -45927,14 +44759,6 @@ HostStyle=0
 [Generated70.cmd_6329]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest70\Generated70\Generated70.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest70\Generated70
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesMul_Ovf.cmd_6330]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMul_Ovf\OpCodesMul_Ovf.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMul_Ovf
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -46588,14 +45412,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesInitblk.cmd_6425]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesInitblk\OpCodesInitblk.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesInitblk
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [AttributeTargetsModule.cmd_6426]
 RelativePath=CoreMangLib\cti\system\attributetargets\AttributeTargetsModule\AttributeTargetsModule.cmd
 WorkingDir=CoreMangLib\cti\system\attributetargets\AttributeTargetsModule
@@ -46970,14 +45786,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b45956\b45956
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesBgt_Un.cmd_6476]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt_Un\OpCodesBgt_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [vsw593884.cmd_6477]
@@ -47700,14 +46508,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesMul_Ovf_Un.cmd_6575]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMul_Ovf_Un\OpCodesMul_Ovf_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesMul_Ovf_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b71231.cmd_6576]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b71231\b71231\b71231.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b71231\b71231
@@ -48095,14 +46895,6 @@ HostStyle=0
 [Generated818.cmd_6631]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest818\Generated818\Generated818.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest818\Generated818
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLeave_S.cmd_6632]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLeave_S\OpCodesLeave_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLeave_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -48516,14 +47308,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesIsinst.cmd_6689]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesIsinst\OpCodesIsinst.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesIsinst
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [castclass-generics003.cmd_6693]
 RelativePath=JIT\jit64\valuetypes\nullable\castclass\generics\castclass-generics003\castclass-generics003.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\castclass\generics\castclass-generics003
@@ -48692,14 +47476,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[IOExceptionctor1.cmd_6715]
-RelativePath=CoreMangLib\cti\system\io\ioexception\IOExceptionctor1\IOExceptionctor1.cmd
-WorkingDir=CoreMangLib\cti\system\io\ioexception\IOExceptionctor1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [5w1d-01_cs_r.cmd_6716]
 RelativePath=JIT\Methodical\fp\exgen\5w1d-01_cs_r\5w1d-01_cs_r.cmd
 WorkingDir=JIT\Methodical\fp\exgen\5w1d-01_cs_r
@@ -48844,14 +47620,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStelem_I.cmd_6739]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I\OpCodesStelem_I.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated670.cmd_6740]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest670\Generated670\Generated670.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest670\Generated670
@@ -48951,14 +47719,6 @@ HostStyle=0
 [Generated830.cmd_6753]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest830\Generated830\Generated830.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest830\Generated830
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodeEquals1.cmd_6754]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeEquals1\OpCodeEquals1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeEquals1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -49564,14 +48324,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesCgt.cmd_6840]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCgt\OpCodesCgt.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCgt
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [exchange3.cmd_6841]
 RelativePath=baseservices\threading\interlocked\exchange\exchange3\exchange3.cmd
 WorkingDir=baseservices\threading\interlocked\exchange\exchange3
@@ -49812,14 +48564,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBle_Un.cmd_6874]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle_Un\OpCodesBle_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1421.cmd_6875]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1421\Generated1421\Generated1421.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1421\Generated1421
@@ -49871,14 +48615,6 @@ HostStyle=0
 [Generated171.cmd_6882]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest171\Generated171\Generated171.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest171\Generated171
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStind_I4.cmd_6883]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I4\OpCodesStind_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -50108,14 +48844,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdind_Ref.cmd_6915]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_Ref\OpCodesLdind_Ref.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_Ref
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [method001.cmd_6916]
 RelativePath=Loader\classloader\generics\GenericMethods\method001\method001.cmd
 WorkingDir=Loader\classloader\generics\GenericMethods\method001
@@ -50156,14 +48884,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBlt_Un_S.cmd_6923]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt_Un_S\OpCodesBlt_Un_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt_Un_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [MathCosh.cmd_6924]
 RelativePath=CoreMangLib\cti\system\math\MathCosh\MathCosh.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathCosh
@@ -50186,14 +48906,6 @@ WorkingDir=JIT\Methodical\Invoke\thiscall\_speed_dbgthisnull
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesConv_Ovf_U1.cmd_6927]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U1\OpCodesConv_Ovf_U1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated1266.cmd_6928]
@@ -50407,14 +49119,6 @@ HostStyle=0
 [MathSin.cmd_6957]
 RelativePath=CoreMangLib\cti\system\math\MathSin\MathSin.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathSin
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4_6.cmd_6958]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_6\OpCodesLdc_I4_6.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_6
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -51148,14 +49852,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdc_I4_1.cmd_7064]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_1\OpCodesLdc_I4_1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b10940b.cmd_7068]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b10940\b10940b\b10940b.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b10940\b10940b
@@ -51548,22 +50244,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesSub_Ovf_Un.cmd_7122]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSub_Ovf_Un\OpCodesSub_Ovf_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSub_Ovf_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4_7.cmd_7123]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_7\OpCodesLdc_I4_7.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_7
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [UInt64IConvertibleToChar.cmd_7124]
 RelativePath=CoreMangLib\cti\system\uint64\UInt64IConvertibleToChar\UInt64IConvertibleToChar.cmd
 WorkingDir=CoreMangLib\cti\system\uint64\UInt64IConvertibleToChar
@@ -51847,14 +50527,6 @@ HostStyle=0
 [Generated399.cmd_7164]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest399\Generated399\Generated399.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest399\Generated399
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesRem_Un.cmd_7165]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRem_Un\OpCodesRem_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRem_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52348,14 +51020,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStloc_2.cmd_7232]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_2\OpCodesStloc_2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_speed_relgcarr.cmd_7233]
 RelativePath=JIT\Methodical\Arrays\misc\_speed_relgcarr\_speed_relgcarr.cmd
 WorkingDir=JIT\Methodical\Arrays\misc\_speed_relgcarr
@@ -52511,14 +51175,6 @@ HostStyle=0
 [DevDiv_816617_d.cmd_7254]
 RelativePath=JIT\Regression\JitBlue\DevDiv_816617\DevDiv_816617_d\DevDiv_816617_d.cmd
 WorkingDir=JIT\Regression\JitBlue\DevDiv_816617\DevDiv_816617_d
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdarg_3.cmd_7255]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_3\OpCodesLdarg_3.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg_3
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -52847,14 +51503,6 @@ HostStyle=0
 [thread04.cmd_7298]
 RelativePath=baseservices\threading\generics\WaitCallback\thread04\thread04.cmd
 WorkingDir=baseservices\threading\generics\WaitCallback\thread04
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdvirtftn.cmd_7299]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdvirtftn\OpCodesLdvirtftn.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdvirtftn
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -53284,14 +51932,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBlt_Un.cmd_7359]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt_Un\OpCodesBlt_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBlt_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [FieldOffsetAttributeValue.cmd_7360]
 RelativePath=CoreMangLib\cti\system\runtime\interopservices\fieldoffsetattribute\FieldOffsetAttributeValue\FieldOffsetAttributeValue.cmd
 WorkingDir=CoreMangLib\cti\system\runtime\interopservices\fieldoffsetattribute\FieldOffsetAttributeValue
@@ -53516,14 +52156,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdc_I4_4.cmd_7389]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_4\OpCodesLdc_I4_4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GitHub_2580.cmd_7390]
 RelativePath=JIT\Regression\JitBlue\GitHub_2580\GitHub_2580\GitHub_2580.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_2580\GitHub_2580
@@ -53690,14 +52322,6 @@ WorkingDir=Interop\StringMarshalling\LPSTR\LPSTRTest
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesStelem_R8.cmd_7412]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_R8\OpCodesStelem_R8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_R8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [b11021.cmd_7413]
@@ -53996,14 +52620,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesCalli.cmd_7450]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCalli\OpCodesCalli.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCalli
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GCSimulator_323.cmd_7451]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_323\GCSimulator_323.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_323
@@ -54164,14 +52780,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesNeg.cmd_7474]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNeg\OpCodesNeg.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNeg
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1365.cmd_7475]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1365\Generated1365\Generated1365.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1365\Generated1365
@@ -54226,14 +52834,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b31102\b31102
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesCastclass.cmd_7483]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCastclass\OpCodesCastclass.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCastclass
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [TestCase5.cmd_7485]
@@ -54423,14 +53023,6 @@ HostStyle=0
 [Generated607.cmd_7510]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest607\Generated607\Generated607.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest607\Generated607
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesPrefix2.cmd_7512]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix2\OpCodesPrefix2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -54676,14 +53268,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdelem_U4.cmd_7548]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_U4\OpCodesLdelem_U4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_U4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [clt.cmd_7549]
 RelativePath=JIT\IL_Conformance\Old\Base\clt\clt.cmd
 WorkingDir=JIT\IL_Conformance\Old\Base\clt
@@ -54751,22 +53335,6 @@ HostStyle=0
 [_speed_relvcall.cmd_7558]
 RelativePath=JIT\Methodical\VT\identity\_speed_relvcall\_speed_relvcall.cmd
 WorkingDir=JIT\Methodical\VT\identity\_speed_relvcall
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesCallvirt.cmd_7559]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCallvirt\OpCodesCallvirt.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCallvirt
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdftn.cmd_7560]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdftn\OpCodesLdftn.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdftn
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -55396,14 +53964,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_FAIL;GCSTRESS_EXCLUDE
 HostStyle=0
 
-[OpCodeOperandType.cmd_7644]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeOperandType\OpCodeOperandType.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeOperandType
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [throwincascadedcatchnofin_r.cmd_7645]
 RelativePath=JIT\Methodical\eh\nested\cascadedcatchret\throwincascadedcatchnofin_r\throwincascadedcatchnofin_r.cmd
 WorkingDir=JIT\Methodical\eh\nested\cascadedcatchret\throwincascadedcatchnofin_r
@@ -55439,14 +53999,6 @@ HostStyle=0
 [ceq_i.cmd_7649]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ceq_i\ceq_i.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ceq_i
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesArglist.cmd_7650]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesArglist\OpCodesArglist.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesArglist
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -56060,14 +54612,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesLdc_I4_2.cmd_7732]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_2\OpCodesLdc_I4_2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1183.cmd_7733]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1183\Generated1183\Generated1183.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1183\Generated1183
@@ -56119,14 +54663,6 @@ HostStyle=0
 [TestCase3_Nested_I.cmd_7741]
 RelativePath=Loader\classloader\InterfaceFolding\TestCase3_Nested_I\TestCase3_Nested_I.cmd
 WorkingDir=Loader\classloader\InterfaceFolding\TestCase3_Nested_I
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[SecurityExceptionCtor2.cmd_7742]
-RelativePath=CoreMangLib\cti\system\security\securityexception\SecurityExceptionCtor2\SecurityExceptionCtor2.cmd
-WorkingDir=CoreMangLib\cti\system\security\securityexception\SecurityExceptionCtor2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -56242,14 +54778,6 @@ WorkingDir=JIT\jit64\opt\rngchk\BadMatrixMul_o
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesStelem_I2.cmd_7762]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I2\OpCodesStelem_I2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [Generated1253.cmd_7763]
@@ -57356,14 +55884,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStind_I1.cmd_7912]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I1\OpCodesStind_I1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [sub_ovf_i4.cmd_7913]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\sub_ovf_i4\sub_ovf_i4.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\sub_ovf_i4
@@ -57647,14 +56167,6 @@ HostStyle=0
 [Generated548.cmd_7951]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest548\Generated548\Generated548.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest548\Generated548
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4.cmd_7953]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4\OpCodesLdc_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -58119,14 +56631,6 @@ HostStyle=0
 [leaveinsameregion_r.cmd_8018]
 RelativePath=JIT\Methodical\eh\leaves\leaveinsameregion_r\leaveinsameregion_r.cmd
 WorkingDir=JIT\Methodical\eh\leaves\leaveinsameregion_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem_I.cmd_8019]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I\OpCodesLdelem_I.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_I
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -59220,14 +57724,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesShr_Un.cmd_8173]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesShr_Un\OpCodesShr_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesShr_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1227.cmd_8174]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1227\Generated1227\Generated1227.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1227\Generated1227
@@ -59303,14 +57799,6 @@ HostStyle=0
 [ByteIConvertibleToInt32.cmd_8185]
 RelativePath=CoreMangLib\cti\system\byte\ByteIConvertibleToInt32\ByteIConvertibleToInt32.cmd
 WorkingDir=CoreMangLib\cti\system\byte\ByteIConvertibleToInt32
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStind_I.cmd_8187]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I\OpCodesStind_I.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -59588,14 +58076,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesCkfinite.cmd_8226]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCkfinite\OpCodesCkfinite.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesCkfinite
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b43378.cmd_8227]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b43378\b43378\b43378.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b43378\b43378
@@ -59836,14 +58316,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodeGetHashCode.cmd_8262]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeGetHashCode\OpCodeGetHashCode.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeGetHashCode
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [FPSub.cmd_8263]
 RelativePath=JIT\CodeGenBringUpTests\FPSub_ro\FPSub_ro.cmd
 WorkingDir=JIT\CodeGenBringUpTests\FPSub_ro
@@ -59903,14 +58375,6 @@ HostStyle=0
 [Generated326.cmd_8271]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest326\Generated326\Generated326.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest326\Generated326
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_R4.cmd_8272]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R4\OpCodesConv_R4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -60292,14 +58756,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesInitobj.cmd_8326]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesInitobj\OpCodesInitobj.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesInitobj
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [DoubleToString3.cmd_8327]
 RelativePath=CoreMangLib\cti\system\double\DoubleToString3\DoubleToString3.cmd
 WorkingDir=CoreMangLib\cti\system\double\DoubleToString3
@@ -60535,14 +58991,6 @@ HostStyle=0
 [box-unbox-value042.cmd_8359]
 RelativePath=JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value042\box-unbox-value042.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\box-unbox\value\box-unbox-value042
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBreak.cmd_8360]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBreak\OpCodesBreak.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBreak
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -61060,14 +59508,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesSub_Ovf.cmd_8433]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSub_Ovf\OpCodesSub_Ovf.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSub_Ovf
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b188478.cmd_8434]
 RelativePath=JIT\Regression\CLR-x86-JIT\v2.1\DDB\b188478\b188478\b188478.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\DDB\b188478\b188478
@@ -61247,14 +59687,6 @@ HostStyle=0
 [CharIsNumber2.cmd_8456]
 RelativePath=CoreMangLib\cti\system\char\CharIsNumber2\CharIsNumber2.cmd
 WorkingDir=CoreMangLib\cti\system\char\CharIsNumber2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[SecurityExceptionCtor3.cmd_8457]
-RelativePath=CoreMangLib\cti\system\security\securityexception\SecurityExceptionCtor3\SecurityExceptionCtor3.cmd
-WorkingDir=CoreMangLib\cti\system\security\securityexception\SecurityExceptionCtor3
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -61732,14 +60164,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesSwitch.cmd_8520]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSwitch\OpCodesSwitch.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesSwitch
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b61025.cmd_8521]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b61025\b61025\b61025.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b61025\b61025
@@ -62060,14 +60484,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesStelem_I8.cmd_8564]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I8\OpCodesStelem_I8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [expl_float_1_d.cmd_8565]
 RelativePath=JIT\Methodical\explicit\coverage\expl_float_1_d\expl_float_1_d.cmd
 WorkingDir=JIT\Methodical\explicit\coverage\expl_float_1_d
@@ -62255,14 +60671,6 @@ HostStyle=0
 [Generated771.cmd_8588]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest771\Generated771\Generated771.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest771\Generated771
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesPop.cmd_8589]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPop\OpCodesPop.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPop
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -62471,14 +60879,6 @@ HostStyle=0
 [box-unbox-generics010.cmd_8618]
 RelativePath=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics010\box-unbox-generics010.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics010
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStloc.cmd_8620]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc\OpCodesStloc.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -62858,14 +61258,6 @@ WorkingDir=CoreMangLib\cti\system\string\StringJoin
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_FAIL;Pri1
-HostStyle=0
-
-[StringWriterEncoding_PSC.cmd_8678]
-RelativePath=CoreMangLib\cti\system\io\stringwriter\StringWriterEncoding_PSC\StringWriterEncoding_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\stringwriter\StringWriterEncoding_PSC
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [GCSimulator_25.cmd_8680]
@@ -63708,14 +62100,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[SecurityExceptionCtor1.cmd_8799]
-RelativePath=CoreMangLib\cti\system\security\securityexception\SecurityExceptionCtor1\SecurityExceptionCtor1.cmd
-WorkingDir=CoreMangLib\cti\system\security\securityexception\SecurityExceptionCtor1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GCSimulator_383.cmd_8801]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_383\GCSimulator_383.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_383
@@ -64540,14 +62924,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesPrefix3.cmd_8920]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix3\OpCodesPrefix3.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix3
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GitHub_8220.cmd_8922]
 RelativePath=JIT\Regression\JitBlue\GitHub_8220\GitHub_8220\GitHub_8220.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_8220\GitHub_8220
@@ -64567,14 +62943,6 @@ HostStyle=0
 [UInt32IConvertibleToDecimal.cmd_8924]
 RelativePath=CoreMangLib\cti\system\uint32\UInt32IConvertibleToDecimal\UInt32IConvertibleToDecimal.cmd
 WorkingDir=CoreMangLib\cti\system\uint32\UInt32IConvertibleToDecimal
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdloc_3.cmd_8925]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_3\OpCodesLdloc_3.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdloc_3
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -64783,14 +63151,6 @@ HostStyle=0
 [EnterExit03.cmd_8954]
 RelativePath=baseservices\threading\generics\Monitor\EnterExit03\EnterExit03.cmd
 WorkingDir=baseservices\threading\generics\Monitor\EnterExit03
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_I4.cmd_8955]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I4\OpCodesConv_Ovf_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -65044,14 +63404,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_I1.cmd_8991]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I1\OpCodesConv_Ovf_I1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [r8_cs_d.cmd_8992]
 RelativePath=JIT\Methodical\AsgOp\r8\r8_cs_d\r8_cs_d.cmd
 WorkingDir=JIT\Methodical\AsgOp\r8\r8_cs_d
@@ -65159,14 +63511,6 @@ HostStyle=0
 [hfa_nf0A_r.cmd_9005]
 RelativePath=JIT\jit64\hfa\main\testA\hfa_nf0A_r\hfa_nf0A_r.cmd
 WorkingDir=JIT\jit64\hfa\main\testA\hfa_nf0A_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdc_I4_8.cmd_9006]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_8\OpCodesLdc_I4_8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdc_I4_8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -65532,14 +63876,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[StreamReadTimeOut_PSC.cmd_9054]
-RelativePath=CoreMangLib\cti\system\io\stream\StreamReadTimeOut_PSC\StreamReadTimeOut_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\stream\StreamReadTimeOut_PSC
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [_speed_relsuperlong.cmd_9055]
 RelativePath=JIT\Methodical\int64\superlong\_speed_relsuperlong\_speed_relsuperlong.cmd
 WorkingDir=JIT\Methodical\int64\superlong\_speed_relsuperlong
@@ -65567,14 +63903,6 @@ HostStyle=0
 [StringPadLeft.cmd_9058]
 RelativePath=CoreMangLib\cti\system\string\StringPadLeft\StringPadLeft.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringPadLeft
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBeq.cmd_9060]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBeq\OpCodesBeq.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBeq
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -65631,14 +63959,6 @@ HostStyle=0
 [castclass-interface001.cmd_9070]
 RelativePath=JIT\jit64\valuetypes\nullable\castclass\interface\castclass-interface001\castclass-interface001.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\castclass\interface\castclass-interface001
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodeOpCodeType.cmd_9071]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeOpCodeType\OpCodeOpCodeType.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeOpCodeType
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -66071,14 +64391,6 @@ HostStyle=0
 [Generated571.cmd_9129]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest571\Generated571\Generated571.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest571\Generated571
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[MemoryStreamCtor5.cmd_9130]
-RelativePath=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor5\MemoryStreamCtor5.cmd
-WorkingDir=CoreMangLib\cti\system\io\memorystream\MemoryStreamCtor5
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -66927,14 +65239,6 @@ HostStyle=0
 [RethrowAndFinally.cmd_9249]
 RelativePath=baseservices\exceptions\unittests\RethrowAndFinally\RethrowAndFinally.cmd
 WorkingDir=baseservices\exceptions\unittests\RethrowAndFinally
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[StreamDispose1_PSC.cmd_9250]
-RelativePath=CoreMangLib\cti\system\io\stream\StreamDispose1_PSC\StreamDispose1_PSC.cmd
-WorkingDir=CoreMangLib\cti\system\io\stream\StreamDispose1_PSC
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -67796,14 +66100,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_U8.cmd_9375]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U8\OpCodesConv_U8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U8
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b67744.cmd_9376]
 RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b67744\b67744\b67744.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b67744\b67744
@@ -68156,14 +66452,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesNewarr.cmd_9422]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNewarr\OpCodesNewarr.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesNewarr
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated265.cmd_9423]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest265\Generated265\Generated265.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest265\Generated265
@@ -68268,14 +66556,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesPrefix7.cmd_9437]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix7\OpCodesPrefix7.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix7
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GCSimulator_376.cmd_9438]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_376\GCSimulator_376.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_376
@@ -68343,14 +66623,6 @@ HostStyle=0
 [Generated1154.cmd_9448]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1154\Generated1154\Generated1154.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1154\Generated1154
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem_U2.cmd_9449]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_U2\OpCodesLdelem_U2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_U2
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -68604,14 +66876,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesConv_Ovf_I.cmd_9484]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I\OpCodesConv_Ovf_I.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [b440158.cmd_9485]
 RelativePath=JIT\Regression\CLR-x86-JIT\dev10\b440158\b440158\b440158.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\dev10\b440158\b440158
@@ -68767,14 +67031,6 @@ HostStyle=0
 [StringFormat2.cmd_9506]
 RelativePath=CoreMangLib\cti\system\string\StringFormat2\StringFormat2.cmd
 WorkingDir=CoreMangLib\cti\system\string\StringFormat2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_U8.cmd_9507]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U8\OpCodesConv_Ovf_U8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -69220,14 +67476,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesShl.cmd_9574]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesShl\OpCodesShl.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesShl
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [SingleToUInt32.cmd_9575]
 RelativePath=CoreMangLib\cti\system\single\SingleToUInt32\SingleToUInt32.cmd
 WorkingDir=CoreMangLib\cti\system\single\SingleToUInt32
@@ -69255,14 +67503,6 @@ HostStyle=0
 [Generated52.cmd_9578]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest52\Generated52\Generated52.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest52\Generated52
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem_Ref.cmd_9579]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_Ref\OpCodesLdelem_Ref.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem_Ref
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -70220,14 +68460,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesThrow.cmd_9708]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesThrow\OpCodesThrow.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesThrow
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [long_cs_ro.cmd_9709]
 RelativePath=JIT\Methodical\MDArray\DataTypes\long_cs_ro\long_cs_ro.cmd
 WorkingDir=JIT\Methodical\MDArray\DataTypes\long_cs_ro
@@ -70404,25 +68636,9 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesStfld.cmd_9731]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStfld\OpCodesStfld.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStfld
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [twoEndFinallys_il.cmd_9732]
 RelativePath=JIT\Methodical\flowgraph\bug619534\twoEndFinallys_il\twoEndFinallys_il.cmd
 WorkingDir=JIT\Methodical\flowgraph\bug619534\twoEndFinallys_il
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesPrefixref.cmd_9733]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefixref\OpCodesPrefixref.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefixref
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -70519,14 +68735,6 @@ HostStyle=0
 [Generated960.cmd_9746]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest960\Generated960\Generated960.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest960\Generated960
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_Ovf_I8_Un.cmd_9747]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I8_Un\OpCodesConv_Ovf_I8_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_I8_Un
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -70924,14 +69132,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStelem.cmd_9802]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem\OpCodesStelem.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [starg_i4.cmd_9803]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\starg_i4\starg_i4.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\starg_i4
@@ -71092,14 +69292,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesStloc_3.cmd_9825]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_3\OpCodesStloc_3.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_3
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [box-unbox-generics017.cmd_9826]
 RelativePath=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics017\box-unbox-generics017.cmd
 WorkingDir=JIT\jit64\valuetypes\nullable\box-unbox\generics\box-unbox-generics017
@@ -71183,14 +69375,6 @@ HostStyle=0
 [array1.cmd_9836]
 RelativePath=JIT\Methodical\refany\array1\array1.cmd
 WorkingDir=JIT\Methodical\refany\array1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStelem_I1.cmd_9837]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I1\OpCodesStelem_I1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_I1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -71338,14 +69522,6 @@ WorkingDir=JIT\jit64\opt\cse\staticFieldExprUnchecked1_r_loop_try
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesConv_U2.cmd_9860]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U2\OpCodesConv_U2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [TestCase1_Nested_J_Nested_I.cmd_9861]
@@ -73036,14 +71212,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesEndfilter.cmd_10101]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesEndfilter\OpCodesEndfilter.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesEndfilter
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated832.cmd_10102]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest832\Generated832\Generated832.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest832\Generated832
@@ -73223,14 +71391,6 @@ HostStyle=0
 [static_equalnull_struct01.cmd_10127]
 RelativePath=JIT\Generics\Fields\static_equalnull_struct01\static_equalnull_struct01.cmd
 WorkingDir=JIT\Generics\Fields\static_equalnull_struct01
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_I4.cmd_10128]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I4\OpCodesConv_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_I4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -73620,14 +71780,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodeStackBehaviourPush.cmd_10183]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeStackBehaviourPush\OpCodeStackBehaviourPush.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeStackBehaviourPush
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [catchtryintryfinally_d.cmd_10184]
 RelativePath=JIT\Methodical\eh\disconnected\catchtryintryfinally_d\catchtryintryfinally_d.cmd
 WorkingDir=JIT\Methodical\eh\disconnected\catchtryintryfinally_d
@@ -73647,14 +71799,6 @@ HostStyle=0
 [Generated253.cmd_10187]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest253\Generated253\Generated253.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest253\Generated253
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStobj.cmd_10190]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStobj\OpCodesStobj.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStobj
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -73698,14 +71842,6 @@ WorkingDir=GC\API\GCSettings\InputValidation
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesTailcall.cmd_10197]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesTailcall\OpCodesTailcall.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesTailcall
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [castclass-generics006.cmd_10198]
@@ -73770,14 +71906,6 @@ WorkingDir=JIT\Regression\CLR-x86-JIT\v2.1\DDB\B168384\LdfldaHack
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesBgt_S.cmd_10206]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt_S\OpCodesBgt_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBgt_S
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [_speed_relldfld_mul.cmd_10207]
@@ -73871,14 +71999,6 @@ HostStyle=0
 [MathFloor.cmd_10219]
 RelativePath=CoreMangLib\cti\system\math\MathFloor\MathFloor.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathFloor
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdflda.cmd_10220]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdflda\OpCodesLdflda.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdflda
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -74524,14 +72644,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_U.cmd_10309]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U\OpCodesConv_U.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ArrayBinarySearch4.cmd_10310]
 RelativePath=CoreMangLib\cti\system\array\ArrayBinarySearch4\ArrayBinarySearch4.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArrayBinarySearch4
@@ -74735,22 +72847,6 @@ HostStyle=0
 [ArrayInitialize.cmd_10336]
 RelativePath=CoreMangLib\cti\system\array\ArrayInitialize\ArrayInitialize.cmd
 WorkingDir=CoreMangLib\cti\system\array\ArrayInitialize
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesEndfinally.cmd_10338]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesEndfinally\OpCodesEndfinally.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesEndfinally
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBrtrue.cmd_10339]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrtrue\OpCodesBrtrue.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrtrue
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -76012,14 +74108,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesShr.cmd_10504]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesShr\OpCodesShr.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesShr
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [rvastatic5.cmd_10505]
 RelativePath=JIT\Directed\rvastatics\rvastatic5\rvastatic5.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic5
@@ -76588,14 +74676,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
 HostStyle=0
 
-[OpCodesStelem_R4.cmd_10586]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_R4\OpCodesStelem_R4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStelem_R4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [callnonvirt.cmd_10587]
 RelativePath=JIT\IL_Conformance\Old\objectmodel\callnonvirt\callnonvirt.cmd
 WorkingDir=JIT\IL_Conformance\Old\objectmodel\callnonvirt
@@ -76615,14 +74695,6 @@ HostStyle=0
 [Generated87.cmd_10589]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest87\Generated87\Generated87.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest87\Generated87
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdind_I4.cmd_10590]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I4\OpCodesLdind_I4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I4
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -76695,14 +74767,6 @@ HostStyle=0
 [SafeHandleSetHandleAsInvalid_PSC.cmd_10599]
 RelativePath=CoreMangLib\cti\system\runtime\interopservices\safehandle\SafeHandleSetHandleAsInvalid_PSC\SafeHandleSetHandleAsInvalid_PSC.cmd
 WorkingDir=CoreMangLib\cti\system\runtime\interopservices\safehandle\SafeHandleSetHandleAsInvalid_PSC
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesConv_R8.cmd_10600]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R8\OpCodesConv_R8.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_R8
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -76978,14 +75042,6 @@ WorkingDir=JIT\jit64\localloc\ehverify\eh05_dynamic
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodeEquals2.cmd_10639]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeEquals2\OpCodeEquals2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodeEquals2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [GThread23.cmd_10640]
@@ -77404,14 +75460,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_U1.cmd_10701]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U1\OpCodesConv_U1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_U1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [CharIConvertibleToSByte.cmd_10702]
 RelativePath=CoreMangLib\cti\system\char\CharIConvertibleToSByte\CharIConvertibleToSByte.cmd
 WorkingDir=CoreMangLib\cti\system\char\CharIConvertibleToSByte
@@ -77772,14 +75820,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[SecurityExceptionToString.cmd_10748]
-RelativePath=CoreMangLib\cti\system\security\securityexception\SecurityExceptionToString\SecurityExceptionToString.cmd
-WorkingDir=CoreMangLib\cti\system\security\securityexception\SecurityExceptionToString
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [GThread03.cmd_10750]
 RelativePath=baseservices\threading\generics\syncdelegate\GThread03\GThread03.cmd
 WorkingDir=baseservices\threading\generics\syncdelegate\GThread03
@@ -78052,14 +76092,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesConv_Ovf_U_Un.cmd_10785]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U_Un\OpCodesConv_Ovf_U_Un.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesConv_Ovf_U_Un
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [catchrettoinnertry_cs_d.cmd_10786]
 RelativePath=JIT\Methodical\eh\finallyexec\catchrettoinnertry_cs_d\catchrettoinnertry_cs_d.cmd
 WorkingDir=JIT\Methodical\eh\finallyexec\catchrettoinnertry_cs_d
@@ -78071,14 +76103,6 @@ HostStyle=0
 [Except.cmd_10787]
 RelativePath=baseservices\exceptions\regressions\V1\SEH\asm\Except\Except.cmd
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\asm\Except
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStloc_1.cmd_10788]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_1\OpCodesStloc_1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_1
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -78860,14 +76884,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdind_I1.cmd_10896]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I1\OpCodesLdind_I1.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdind_I1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [ldc_conv_ovf_r8_i.cmd_10898]
 RelativePath=JIT\IL_Conformance\Old\Conformance_Base\ldc_conv_ovf_r8_i\ldc_conv_ovf_r8_i.cmd
 WorkingDir=JIT\IL_Conformance\Old\Conformance_Base\ldc_conv_ovf_r8_i
@@ -79223,14 +77239,6 @@ HostStyle=0
 [seq_gc_short_1_r.cmd_10947]
 RelativePath=JIT\Methodical\explicit\coverage\seq_gc_short_1_r\seq_gc_short_1_r.cmd
 WorkingDir=JIT\Methodical\explicit\coverage\seq_gc_short_1_r
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBrtrue_S.cmd_10948]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrtrue_S\OpCodesBrtrue_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBrtrue_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -80084,14 +78092,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesRet.cmd_11064]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRet\OpCodesRet.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesRet
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated205.cmd_11066]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest205\Generated205\Generated205.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest205\Generated205
@@ -80204,14 +78204,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesStind_I2.cmd_11080]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I2\OpCodesStind_I2.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStind_I2
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [nonlocalexittobeginningoftry_r.cmd_11082]
 RelativePath=JIT\Methodical\eh\finallyexec\nonlocalexittobeginningoftry_r\nonlocalexittobeginningoftry_r.cmd
 WorkingDir=JIT\Methodical\eh\finallyexec\nonlocalexittobeginningoftry_r
@@ -80306,14 +78298,6 @@ WorkingDir=JIT\Directed\cmov\Int_Or_Op_cs_do
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS
-HostStyle=0
-
-[OpCodesPrefix5.cmd_11094]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix5\OpCodesPrefix5.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix5
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
 [or.cmd_11095]
@@ -80708,14 +78692,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesPrefix4.cmd_11151]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix4\OpCodesPrefix4.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesPrefix4
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated1317.cmd_11153]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1317\Generated1317\Generated1317.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1317\Generated1317
@@ -80807,14 +78783,6 @@ HostStyle=0
 [Generated1329.cmd_11164]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1329\Generated1329\Generated1329.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1329\Generated1329
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesBr_S.cmd_11165]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBr_S\OpCodesBr_S.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBr_S
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -81028,14 +78996,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesBle.cmd_11193]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle\OpCodesBle.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesBle
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [csgen.1.cmd_11195]
 RelativePath=Regressions\coreclr\0582\csgen.1\csgen.1.cmd
 WorkingDir=Regressions\coreclr\0582\csgen.1
@@ -81079,14 +79039,6 @@ HostStyle=0
 [BooleanIConvertibleToUInt16.cmd_11200]
 RelativePath=CoreMangLib\cti\system\boolean\BooleanIConvertibleToUInt16\BooleanIConvertibleToUInt16.cmd
 WorkingDir=CoreMangLib\cti\system\boolean\BooleanIConvertibleToUInt16
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdelem.cmd_11201]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem\OpCodesLdelem.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelem
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -81492,14 +79444,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG;Pri1
 HostStyle=0
 
-[OpCodesUnaligned.cmd_11258]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesUnaligned\OpCodesUnaligned.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesUnaligned
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated652.cmd_11259]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest652\Generated652\Generated652.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest652\Generated652
@@ -81604,14 +79548,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[OpCodesLdelema.cmd_11273]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelema\OpCodesLdelema.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdelema
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [SingleToSByte.cmd_11274]
 RelativePath=CoreMangLib\cti\system\single\SingleToSByte\SingleToSByte.cmd
 WorkingDir=CoreMangLib\cti\system\single\SingleToSByte
@@ -81687,14 +79623,6 @@ HostStyle=0
 [Generated1438.cmd_11283]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1438\Generated1438\Generated1438.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1438\Generated1438
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesStloc_0.cmd_11284]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_0\OpCodesStloc_0.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesStloc_0
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
@@ -82119,14 +80047,6 @@ HostStyle=0
 [GCSimulator_279.cmd_11339]
 RelativePath=GC\Scenarios\GCSimulator\GCSimulator_279\GCSimulator_279.cmd
 WorkingDir=GC\Scenarios\GCSimulator\GCSimulator_279
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
-[OpCodesLdarg.cmd_11340]
-RelativePath=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg\OpCodesLdarg.cmd
-WorkingDir=CoreMangLib\cti\system\reflection\emit\opcodes\OpCodesLdarg
 Expected=0
 MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
