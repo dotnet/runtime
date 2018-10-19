@@ -10,6 +10,7 @@ namespace System.Drawing
     public readonly partial struct Color : System.IEquatable<System.Drawing.Color>
     {
         private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public static readonly System.Drawing.Color Empty;
         public byte A { get { throw null; } }
         public static System.Drawing.Color AliceBlue { get { throw null; } }
@@ -358,7 +359,7 @@ namespace System.Drawing
     }
     public partial struct Point : System.IEquatable<System.Drawing.Point>
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Drawing.Point Empty;
         public Point(System.Drawing.Size sz) { throw null; }
         public Point(int dw) { throw null; }
@@ -387,7 +388,7 @@ namespace System.Drawing
     }
     public partial struct PointF : System.IEquatable<System.Drawing.PointF>
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Drawing.PointF Empty;
         public PointF(float x, float y) { throw null; }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -411,7 +412,7 @@ namespace System.Drawing
     }
     public partial struct Rectangle : System.IEquatable<System.Drawing.Rectangle>
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Drawing.Rectangle Empty;
         public Rectangle(System.Drawing.Point location, System.Drawing.Size size) { throw null; }
         public Rectangle(int x, int y, int width, int height) { throw null; }
@@ -458,7 +459,7 @@ namespace System.Drawing
     }
     public partial struct RectangleF : System.IEquatable<System.Drawing.RectangleF>
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Drawing.RectangleF Empty;
         public RectangleF(System.Drawing.PointF location, System.Drawing.SizeF size) { throw null; }
         public RectangleF(float x, float y, float width, float height) { throw null; }
@@ -503,7 +504,7 @@ namespace System.Drawing
     }
     public partial struct Size : System.IEquatable<System.Drawing.Size>
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Drawing.Size Empty;
         public Size(System.Drawing.Point pt) { throw null; }
         public Size(int width, int height) { throw null; }
@@ -535,7 +536,7 @@ namespace System.Drawing
     }
     public partial struct SizeF : System.IEquatable<System.Drawing.SizeF>
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public static readonly System.Drawing.SizeF Empty;
         public SizeF(System.Drawing.PointF pt) { throw null; }
         public SizeF(System.Drawing.SizeF size) { throw null; }
