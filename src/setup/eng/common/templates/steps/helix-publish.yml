@@ -8,6 +8,7 @@ parameters:
   HelixPostCommands: ''
   WorkItemDirectory: ''
   WorkItemCommand: ''
+  IncludeDotNetSdk: false
   EnableXUnitReporter: false
   WaitForWorkItemCompletion: true
 
@@ -18,7 +19,7 @@ steps:
       projects: eng/common/helixpublish.proj
       custom: msbuild
       arguments: '/t:test /p:Language=msbuild'
-    displayName: Send tests job to Helix
+    displayName: Send job to Helix
     env:
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
@@ -27,6 +28,7 @@ steps:
       HelixAccessToken: ${{ parameters.HelixAccessToken }}
       HelixPreCommands: ${{ parameters.HelixPreCommands }}
       HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
       EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
