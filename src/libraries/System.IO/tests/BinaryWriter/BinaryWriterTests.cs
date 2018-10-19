@@ -261,7 +261,7 @@ namespace System.IO.Tests
             {
                 writer.Write("012345789".ToCharArray());
 
-                AssertExtensions.Throws<ArgumentException>(null, () => 
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     writer.Seek(3, ~SeekOrigin.Begin);
                 });
@@ -372,6 +372,24 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((uint)4));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write((ulong)5));
             Assert.Throws<ObjectDisposedException>(() => binaryWriter.Write("Bah"));
+        }
+
+        private class BinaryWriterOutStream : BinaryWriter
+        {
+            public BinaryWriterOutStream(Stream output)
+                : base(output)
+            {
+            }
+
+            public Stream GetOutStream => OutStream;
+        }
+
+        [Fact]
+        public void BinaryWriter_OutStream()
+        {
+            var stream = new MemoryStream();
+            var bw = new BinaryWriterOutStream(stream);
+            Assert.Same(stream, bw.GetOutStream);
         }
     }
 }
