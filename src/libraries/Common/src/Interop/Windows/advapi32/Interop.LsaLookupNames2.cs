@@ -16,8 +16,8 @@ internal static partial class Interop
             int flags,
             int count,
             UNICODE_STRING[] names,
-            ref SafeLsaMemoryHandle referencedDomains,
-            ref SafeLsaMemoryHandle sids
+            out SafeLsaMemoryHandle referencedDomains,
+            out SafeLsaMemoryHandle sids
             );
     }
 }
