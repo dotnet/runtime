@@ -8,6 +8,9 @@
     <Compile Include="System.Drawing.Design.Primitives.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />
     <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
     <ProjectReference Include="..\..\System.Drawing.Common\ref\System.Drawing.Common.csproj" />

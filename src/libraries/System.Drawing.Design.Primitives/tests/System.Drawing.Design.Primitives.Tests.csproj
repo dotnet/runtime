@@ -6,6 +6,8 @@
   <ItemGroup>
     <Compile Include="Design\PropertyValueUIItemTests.cs" />
     <Compile Include="Design\PaintValueEventArgsTests.cs" />
+    <Compile Include="Design\ToolboxItemTests.cs" />
+    <Compile Include="Design\ToolboxItemCollectionTests.cs" />
     <Compile Include="Design\UITypeEditorTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
       <Link>Common\System\Drawing\Helpers.cs</Link>
