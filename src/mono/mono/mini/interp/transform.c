@@ -967,8 +967,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 
 			if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
 				switch (type_index) {
-				case 0: case 1:
+				case 0:
 					ADD_CODE (td, MINT_CONV_I8_I4);
+					break;
+				case 1:
+					ADD_CODE (td, MINT_CONV_I8_U4);
 					break;
 				case 2:
 					ADD_CODE (td, MINT_CONV_R8_R4);
@@ -1046,8 +1049,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 #if SIZEOF_VOID_P == 8
 			if (src_size < dst_size) { // 4 -> 8
 				switch (type_index) {
-				case 0: case 1:
+				case 0:
 					ADD_CODE (td, MINT_CONV_I8_I4);
+					break;
+				case 1:
+					ADD_CODE (td, MINT_CONV_I8_U4);
 					break;
 				case 2:
 					ADD_CODE (td, MINT_CONV_R8_R4);
