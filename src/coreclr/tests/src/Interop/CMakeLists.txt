@@ -38,6 +38,9 @@ add_subdirectory(DllImportAttribute/FileNameContainDot)
 add_subdirectory(DllImportAttribute/Simple)
 
 if(WIN32)
+    # This test doesn't necessarily need to be Windows-only, but the implementation is very tied to Windows APIs
+    add_subdirectory(PInvoke/DateTime)
+
     add_subdirectory(COM/NativeServer)
     add_subdirectory(COM/NativeClients/Primitives)
     add_subdirectory(IJW/FakeMscoree)
