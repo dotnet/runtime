@@ -19,7 +19,10 @@ namespace SdtEventSources
     /// <summary>
     /// A sample Event source. The Guid and Name attributes are "idempotent", i.e. they 
     /// don't change the default computed by EventSource; they're specified here just to 
-    /// increase the code coverage.
+    /// increase the code coverage. 
+    /// 
+    /// Also, this EventSource uses manifest-based ETW and is not self-describing. That means
+    /// it does not support complex data types, including nullables, as event arguments.
     /// </summary>
     [EventSource(Guid = "69e2aa3e-083b-5014-cad4-3e511a0b94cf", Name = "EventSourceTest")]
     public sealed class EventSourceTest : EventSource
@@ -333,20 +336,6 @@ namespace SdtEventSources
             this.WriteEvent(52, arr);
         }
 
-        // Nullable tests are currently disabled due to "Unsupported type Nullable in event source" (issue #32796)
-
-        //[Event(53, Keywords = Keywords.HasNullableArgs, Level = EventLevel.Informational)]
-        //public void EventNullableInt1(int? arg1) { WriteEvent(53, arg1); }
-
-        //[Event(54, Keywords = Keywords.HasNullableArgs, Level = EventLevel.Informational)]
-        //public void EventNullableInt2(int? arg1, int? arg2) { WriteEvent(54, arg1, arg2); }
-
-        //[Event(55, Keywords = Keywords.HasNullableArgs, Level = EventLevel.Informational)]
-        //public void EventNullableInt3(int? arg1, int? arg2, int? arg3) { WriteEvent(55, arg1, arg2, arg3); }
-
-        //[Event(56, Keywords = Keywords.HasNullableArgs, Level = EventLevel.Informational)]
-        //public void EventNullableInt4(int? arg1, int? arg2, int? arg3, int? arg4) { WriteEvent(56, arg1, arg2, arg3, arg4); }
-
         #region Keywords / Tasks /Opcodes / Channels
         public class Keywords
         {
@@ -357,7 +346,6 @@ namespace SdtEventSources
             public const EventKeywords HasDateTimeArgs = (EventKeywords)0x0010;
             public const EventKeywords HasEnumArgs = (EventKeywords)0x0020;
             public const EventKeywords Transfer = (EventKeywords)0x0040;
-            public const EventKeywords HasNullableArgs = (EventKeywords)0x0080;
         }
 
         public class Tasks
