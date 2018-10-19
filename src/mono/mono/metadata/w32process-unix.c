@@ -1717,8 +1717,8 @@ close_my_fds (void)
 			   "%s: getprocs64 failed, using fallback",
 			   __func__);
 	}
-#endif
 fallback:
+#endif
 	/* Fallback: Close FDs blindly, according to an FD limit */
 	for (guint32 i = max_fd_count () - 1; i > 2; i--)
 		close (i);
