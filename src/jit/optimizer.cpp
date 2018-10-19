@@ -8322,7 +8322,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     {
         return false;
     }
-#ifdef _TARGET_AMD64_ // TODO-ARM64: should this be _TARGET_64BIT_? If not, add comment why not.
+#ifdef _TARGET_64BIT_
     if (index->gtOper != GT_CAST)
     {
         return false;
