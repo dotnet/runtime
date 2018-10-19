@@ -144,5 +144,41 @@ namespace System.Threading.Tasks.Tests
                 await Task.WhenAll(tasks);
             }
         }
+
+        [Fact]
+        public static void Register_ExecutionContextFlowsIfExpected()
+        {
+            var cts = new CancellationTokenSource();
+
+            const int Iters = 5;
+            int invoked = 0;
+
+            AsyncLocal<int> al = new AsyncLocal<int>();
+            for (int i = 1; i <= Iters; i++)
+            {
+                bool flowExecutionContext = i % 2 == 0;
+
+                al.Value = i;
+                Action<object> callback = s =>
+                {
+                    invoked++;
+                    Assert.Equal(flowExecutionContext ? (int)s : 0, al.Value);
+                };
+
+                CancellationToken ct = cts.Token;
+                if (flowExecutionContext)
+                {
+                    ct.Register(callback, i);
+                }
+                else
+                {
+                    ct.UnsafeRegister(callback, i);
+                }
+            }
+            al.Value = 0;
+
+            cts.Cancel();
+            Assert.Equal(Iters, invoked);
+        }
     }
 }
