@@ -455,6 +455,7 @@ DEFINE_METASIG(IM(IntPtr_UInt_IntPtr_IntPtr_RetVoid, I K I I, v))
 DEFINE_METASIG(IM(Obj_Bool_RetVoid, j F, v))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG(SM(Obj_RetStr, j, s))
+DEFINE_METASIG_T(IM(Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj, s g(BINDING_FLAGS) j a(j) a(F) a(i) a(C(TYPE)) C(TYPE), j))
 #endif // FEATURE_COMINTEROP
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) C(CULTURE_INFO), v))
 DEFINE_METASIG_T(IM(Obj_Obj_BindingFlags_Binder_ArrObj_CultureInfo_RetVoid, j j g(BINDING_FLAGS) C(BINDER) a(j) C(CULTURE_INFO), v))
