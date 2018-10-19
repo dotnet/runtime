@@ -19,7 +19,7 @@ namespace System.Threading.Channels
         /// <summary>The items in the channel.</summary>
         private readonly ConcurrentQueue<T> _items = new ConcurrentQueue<T>();
         /// <summary>Readers blocked reading from the channel.</summary>
-        private readonly Dequeue<AsyncOperation<T>> _blockedReaders = new Dequeue<AsyncOperation<T>>();
+        private readonly Deque<AsyncOperation<T>> _blockedReaders = new Deque<AsyncOperation<T>>();
         /// <summary>Whether to force continuations to be executed asynchronously from producer writes.</summary>
         private readonly bool _runContinuationsAsynchronously;
 

@@ -102,7 +102,7 @@ namespace System.Threading.Channels
         /// <summary>Removes all operations from the queue, failing each.</summary>
         /// <param name="operations">The queue of operations to complete.</param>
         /// <param name="error">The error with which to complete each operations.</param>
-        internal static void FailOperations<T, TInner>(Dequeue<T> operations, Exception error) where T : AsyncOperation<TInner>
+        internal static void FailOperations<T, TInner>(Deque<T> operations, Exception error) where T : AsyncOperation<TInner>
         {
             Debug.Assert(error != null);
             while (!operations.IsEmpty)
