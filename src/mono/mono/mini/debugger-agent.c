@@ -273,7 +273,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 48
+#define MINOR_VERSION 49
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -500,6 +500,9 @@ typedef struct {
 	char *category, *message;
 	/* For EVENT_KIND_TYPE_LOAD */
 	MonoClass *klass;
+	/* For EVENT_KIND_CRASH  */
+	char *dump;
+	MonoStackHash *hashes;
 } EventInfo;
 
 typedef struct {
@@ -3627,6 +3630,7 @@ event_to_string (EventKind event)
 	case EVENT_KIND_KEEPALIVE: return "KEEPALIVE";
 	case EVENT_KIND_USER_BREAK: return "USER_BREAK";
 	case EVENT_KIND_USER_LOG: return "USER_LOG";
+	case EVENT_KIND_CRASH: return "CRASH";
 	default:
 		g_assert_not_reached ();
 		return "";
@@ -3764,6 +3768,12 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			if (CHECK_PROTOCOL_VERSION (2, 27))
 				buffer_add_int (&buf, mono_environment_exitcode_get ());
 			break;
+		case EVENT_KIND_CRASH: {
+			EventInfo *ei = (EventInfo *)arg;
+			buffer_add_long (&buf, ei->hashes->offset_free_hash);
+			buffer_add_string (&buf, ei->dump);
+			break;
+		}
 		case EVENT_KIND_EXCEPTION: {
 			EventInfo *ei = (EventInfo *)arg;
 			buffer_add_objid (&buf, ei->exc);
@@ -4845,6 +4855,58 @@ ss_clear_for_assembly (SingleStepReq *req, MonoAssembly *assembly)
 			}
 		}
 	}
+}
+
+/*
+ * This takes a lot of locks and stuff. Do this at the end, after
+ * other things have dumped us, so that getting stuck here won't
+ * prevent seeing other crash information
+ */
+static void
+mono_debugger_agent_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
+{
+#ifndef DISABLE_CRASH_REPORTING
+	int suspend_policy;
+	GSList *events;
+	EventInfo ei;
+
+	if (!agent_config.enabled)
+		return;
+
+	// Don't send the event if the client doesn't expect it
+	if (!CHECK_PROTOCOL_VERSION (2, 49))
+		return;
+
+	// It doesn't make sense to wait for lldb/gdb to finish if we're not
+	// actually enabled. Therefore we do the wait here.
+	sleep (pause);
+
+	// Don't heap allocate when we can avoid it
+	EventRequest request;
+	memset (&request, 0, sizeof (request));
+	request.event_kind = EVENT_KIND_CRASH;
+
+	gpointer pdata [1];
+	pdata [0] = &request;
+	GPtrArray array;
+	memset (&array, 0, sizeof (array));
+	array.pdata = pdata;
+	array.len = 1;
+
+	mono_loader_lock ();
+	events = create_event_list (EVENT_KIND_CRASH, &array, NULL, NULL, &suspend_policy);
+	mono_loader_unlock ();
+
+	ei.dump = json_dump;
+	ei.hashes = hashes;
+
+	g_assert (events != NULL);
+
+	process_event (EVENT_KIND_CRASH, &ei, 0, NULL, events, suspend_policy);
+
+	// Don't die before it is sent.
+	sleep (4);
+#endif
 }
 
 /*
@@ -9685,6 +9747,7 @@ mono_debugger_agent_init (void)
 	cbs.user_break = debugger_agent_user_break;
 	cbs.debug_log = debugger_agent_debug_log;
 	cbs.debug_log_is_enabled = debugger_agent_debug_log_is_enabled;
+	cbs.send_crash = mono_debugger_agent_send_crash;
 
 	mini_install_dbg_callbacks (&cbs);
 }

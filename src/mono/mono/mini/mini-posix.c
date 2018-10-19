@@ -1001,10 +1001,10 @@ dump_native_stacktrace (const char *signal, void *ctx)
 		pid_t pid;
 		int status;
 		pid_t crashed_pid = getpid ();
+		gchar *output = NULL;
+		MonoStackHash hashes;
 
 #ifndef DISABLE_CRASH_REPORTING
-		MonoStackHash hashes;
-		gchar *output = NULL;
 		MonoContext mctx;
 		if (ctx) {
 			gboolean leave = FALSE;
@@ -1084,12 +1084,18 @@ dump_native_stacktrace (const char *signal, void *ctx)
 		if (pid == 0) {
 			dup2 (STDERR_FILENO, STDOUT_FILENO);
 
+			mono_runtime_printf_err ("\nDebug info from gdb:\n");
 			mono_gdb_render_native_backtraces (crashed_pid);
 			exit (1);
 		}
 
-		mono_runtime_printf_err ("\nDebug info from gdb:\n");
 		waitpid (pid, &status, 0);
+
+		// We've already done our gdb dump and our telemetry steps. Before exiting,
+		// see if we can notify any attached debugger instances.
+		//
+		// At this point we are accepting that the below step might end in a crash
+		mini_get_dbg_callbacks ()->send_crash (output, &hashes, 0 /* wait # seconds */);
 	}
 #endif
 #else
