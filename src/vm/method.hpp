@@ -2837,6 +2837,8 @@ public:
     LPVOID FindEntryPoint(HINSTANCE hMod) const;
 
 private:
+    FARPROC FindEntryPointWithMangling(HINSTANCE mod, PTR_CUTF8 entryPointName) const;
+
 #ifdef MDA_SUPPORTED    
     Stub* GenerateStubForMDA(LPVOID pNativeTarget, Stub *pInnerStub);
 #endif // MDA_SUPPORTED

@@ -4948,6 +4948,51 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
 }
 
 #ifndef CROSSGEN_COMPILE
+FARPROC NDirectMethodDesc::FindEntryPointWithMangling(HINSTANCE hMod, PTR_CUTF8 entryPointName) const
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    FARPROC pFunc = GetProcAddress(hMod, entryPointName);
+
+#if defined(_TARGET_X86_)
+
+    if (pFunc)
+    {
+        return pFunc;
+    }
+
+    if (IsStdCall())
+    {
+        DWORD probedEntrypointNameLength = (DWORD)(strlen(entryPointName) + 1); // 1 for null terminator
+        int dstbufsize = (int)(sizeof(char) * (probedEntrypointNameLength + 10)); // 10 for stdcall mangling
+        LPSTR szProbedEntrypointName = ((LPSTR)_alloca(dstbufsize + 1));
+        szProbedEntrypointName[0] = '_';
+        strcpy_s(szProbedEntrypointName + 1, dstbufsize, entryPointName);
+        szProbedEntrypointName[probedEntrypointNameLength] = '\0'; // Add an extra '\0'.
+
+        UINT16 numParamBytesMangle = GetStackArgumentSize();
+            
+        if (IsStdCallWithRetBuf())
+        {
+            _ASSERTE(numParamBytesMangle >= sizeof(LPVOID));
+            numParamBytesMangle -= (UINT16)sizeof(LPVOID);
+        }
+
+        sprintf_s(szProbedEntrypointName + probedEntrypointNameLength, dstbufsize - probedEntrypointNameLength + 1, "@%lu", (ULONG)numParamBytesMangle);
+        pFunc = GetProcAddress(hMod, szProbedEntrypointName);
+    }
+
+#endif
+
+    return pFunc;
+}
+
 //*******************************************************************************
 LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
 {
@@ -4959,84 +5004,54 @@ LPVOID NDirectMethodDesc::FindEntryPoint(HINSTANCE hMod) const
     }
     CONTRACTL_END;
 
-    char const * funcName = NULL;
+    char const * funcName = GetEntrypointName();
     
-    FARPROC pFunc = NULL, pFuncW = NULL;
+    FARPROC pFunc = NULL;
 
 #ifndef FEATURE_PAL
     // Handle ordinals.
-    if (GetEntrypointName()[0] == '#')
+    if (funcName[0] == '#')
     {
-        long ordinal = atol(GetEntrypointName()+1);
+        long ordinal = atol(funcName + 1);
         return reinterpret_cast<LPVOID>(GetProcAddress(hMod, (LPCSTR)(size_t)((UINT16)ordinal)));
     }
 #endif
 
-    // Just look for the unmangled name.  If it is unicode fcn, we are going
+    // Just look for the user-provided name without charset suffixes.  If it is unicode fcn, we are going
     // to need to check for the 'W' API because it takes precedence over the
     // unmangled one (on NT some APIs have unmangled ANSI exports).
-    pFunc = GetProcAddress(hMod, funcName = GetEntrypointName());
+    pFunc = FindEntryPointWithMangling(hMod, funcName);
     if ((pFunc != NULL && IsNativeAnsi()) || IsNativeNoMangled())
     {
-        return (LPVOID)pFunc;
+        return reinterpret_cast<LPVOID>(pFunc);
     }
+
+    DWORD probedEntrypointNameLength = (DWORD)(strlen(funcName) + 1); // +1 for charset decorations
 
     // Allocate space for a copy of the entry point name.
-    int dstbufsize = (int)(sizeof(char) * (strlen(GetEntrypointName()) + 1 + 20)); // +1 for the null terminator
-                                                                         // +20 for various decorations
+    int dstbufsize = (int)(sizeof(char) * (probedEntrypointNameLength + 1)); // +1 for the null terminator
 
-    // Allocate a single character before the start of this string to enable quickly
-    // prepending a '_' character if we look for a stdcall entrypoint later on.
-    LPSTR szAnsiEntrypointName = ((LPSTR)_alloca(dstbufsize + 1)) + 1;
+    LPSTR szProbedEntrypointName = ((LPSTR)_alloca(dstbufsize));
 
     // Copy the name so we can mangle it.
-    strcpy_s(szAnsiEntrypointName,dstbufsize,GetEntrypointName());
-    DWORD nbytes = (DWORD)(strlen(GetEntrypointName()) + 1);
-    szAnsiEntrypointName[nbytes] = '\0'; // Add an extra '\0'.
+    strcpy_s(szProbedEntrypointName, dstbufsize, funcName);
+    szProbedEntrypointName[probedEntrypointNameLength] = '\0'; // Add an extra '\0'.
 
-
-    // If the program wants the ANSI api or if Unicode APIs are unavailable.
-    if (IsNativeAnsi())
+    if(!IsNativeNoMangled())
     {
-        szAnsiEntrypointName[nbytes-1] = 'A';
-        pFunc = GetProcAddress(hMod, funcName = szAnsiEntrypointName);
-    }
-    else
-    {
-        szAnsiEntrypointName[nbytes-1] = 'W';
-        pFuncW = GetProcAddress(hMod, szAnsiEntrypointName);
+        szProbedEntrypointName[probedEntrypointNameLength - 1] = IsNativeAnsi() ? 'A' : 'W';
 
-        // This overrides the unmangled API. See the comment above.
-        if (pFuncW != NULL)
+        FARPROC pProbedFunc = FindEntryPointWithMangling(hMod, szProbedEntrypointName);
+
+        if(pProbedFunc != NULL)
         {
-            pFunc = pFuncW;
-            funcName = szAnsiEntrypointName;
+            pFunc = pProbedFunc;
         }
+
+        probedEntrypointNameLength++;
     }
 
-    if (!pFunc)
-    {
-
-#if defined(_TARGET_X86_)
-        /* try mangled names only for __stdcalls */
-        if (!pFunc && IsStdCall())
-        {
-            UINT16 numParamBytesMangle = GetStackArgumentSize();
-                
-            if (IsStdCallWithRetBuf())
-            {
-                _ASSERTE(numParamBytesMangle >= sizeof(LPVOID));
-                numParamBytesMangle -= (UINT16)sizeof(LPVOID);
-            }
-
-            szAnsiEntrypointName[-1] = '_';
-            sprintf_s(szAnsiEntrypointName + nbytes - 1, dstbufsize - (nbytes - 1), "@%ld", (ULONG)numParamBytesMangle);
-            pFunc = GetProcAddress(hMod, funcName = szAnsiEntrypointName - 1);
-        }
-#endif // _TARGET_X86_
-    }
-
-    return (LPVOID)pFunc;
+    return reinterpret_cast<LPVOID>(pFunc);
 }
 #endif // CROSSGEN_COMPILE
 
