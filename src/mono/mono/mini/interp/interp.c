@@ -3941,10 +3941,17 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			g_assert (m_class_is_valuetype (c));
 			/* if this assertion fails, we need to add a write barrier */
 			g_assert (!MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)));
-			if (mint_type (m_class_get_byval_arg (c)) == MINT_TYPE_VT)
-				stackval_from_data (m_class_get_byval_arg (c), &sp [-2], sp [-1].data.p, FALSE);
-			else
-				stackval_from_data (m_class_get_byval_arg (c), (stackval*)sp [-2].data.p, sp [-1].data.p, FALSE);
+			stackval_from_data (m_class_get_byval_arg (c), (stackval*)sp [-2].data.p, sp [-1].data.p, FALSE);
+			ip += 2;
+			sp -= 2;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CPOBJ_VT) {
+			c = (MonoClass*)rtm->data_items[* (guint16 *)(ip + 1)];
+			g_assert (m_class_is_valuetype (c));
+			/* if this assertion fails, we need to add a write barrier */
+			g_assert (!MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)));
+			stackval_from_data (m_class_get_byval_arg (c), &sp [-2], sp [-1].data.p, FALSE);
 			ip += 2;
 			sp -= 2;
 			MINT_IN_BREAK;
@@ -3954,7 +3961,15 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			c = (MonoClass*)rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
 			p = sp [-1].data.p;
-			if (mint_type (m_class_get_byval_arg (c)) == MINT_TYPE_VT && !m_class_is_enumtype (c)) {
+			stackval_from_data (m_class_get_byval_arg (c), &sp [-1], p, FALSE);
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDOBJ_VT) {
+			void *p;
+			c = (MonoClass*)rtm->data_items[* (guint16 *)(ip + 1)];
+			ip += 2;
+			p = sp [-1].data.p;
+			if (!m_class_is_enumtype (c)) {
 				int size = mono_class_value_size (c, NULL);
 				sp [-1].data.p = vt_sp;
 				vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
@@ -4644,21 +4659,27 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		MINT_IN_CASE(MINT_BOX) {
 			c = (MonoClass*)rtm->data_items [* (guint16 *)(ip + 1)];
 			guint16 offset = * (guint16 *)(ip + 2);
+
+			stackval_to_data (m_class_get_byval_arg (c), &sp [-1 - offset], (char *) &sp [-1 - offset], FALSE);
+			sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, &sp [-1 - offset], error);
+			mono_error_cleanup (error); /* FIXME: don't swallow the error */
+
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_BOX_VT) {
+			c = (MonoClass*)rtm->data_items [* (guint16 *)(ip + 1)];
+			guint16 offset = * (guint16 *)(ip + 2);
 			gboolean pop_vt_sp = !(offset & BOX_NOT_CLEAR_VT_SP);
 			offset &= ~BOX_NOT_CLEAR_VT_SP;
 
-			if (mint_type (m_class_get_byval_arg (c)) == MINT_TYPE_VT && !m_class_is_enumtype (c) && !(mono_class_is_magic_int (c) || mono_class_is_magic_float (c))) {
-				int size = mono_class_value_size (c, NULL);
-				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, sp [-1 - offset].data.p, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-				size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
-				if (pop_vt_sp)
-					vt_sp -= size;
-			} else {
-				stackval_to_data (m_class_get_byval_arg (c), &sp [-1 - offset], (char *) &sp [-1 - offset], FALSE);
-				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, &sp [-1 - offset], error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-			}
+			int size = mono_class_value_size (c, NULL);
+			sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, sp [-1 - offset].data.p, error);
+			mono_error_cleanup (error); /* FIXME: don't swallow the error */
+			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			if (pop_vt_sp)
+				vt_sp -= size;
+
 			ip += 3;
 			MINT_IN_BREAK;
 		}
