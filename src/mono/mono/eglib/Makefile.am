@@ -56,6 +56,10 @@ libeglib_la_SOURCES = \
 	$(os_files)
 
 CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@) @CXX_ADD_CFLAGS@
+
+eglibdir=$(datadir)/mono-$(API_VER)/mono/eglib
+eglib_DATA = eglib-config.h
+
 libeglib_la_CFLAGS = -g -Wall -D_FORTIFY_SOURCE=2 -D_GNU_SOURCE
 
 AM_CPPFLAGS = -I$(srcdir)
