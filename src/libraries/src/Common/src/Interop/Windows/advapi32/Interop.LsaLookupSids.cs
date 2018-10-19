@@ -15,8 +15,8 @@ internal static partial class Interop
             SafeLsaPolicyHandle handle,
             int count,
             IntPtr[] sids,
-            ref SafeLsaMemoryHandle referencedDomains,
-            ref SafeLsaMemoryHandle names
+            out SafeLsaMemoryHandle referencedDomains,
+            out SafeLsaMemoryHandle names
             );
     }
 }

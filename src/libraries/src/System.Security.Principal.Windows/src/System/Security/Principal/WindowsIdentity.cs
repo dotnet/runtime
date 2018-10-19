@@ -372,10 +372,10 @@ namespace System.Security.Principal
                     if (authId.LowPart == Interop.LuidOptions.ANONYMOUS_LOGON_LUID)
                         return string.Empty; // no authentication, just return an empty string
 
-                    SafeLsaReturnBufferHandle pLogonSessionData = SafeLsaReturnBufferHandle.InvalidHandle;
+                    SafeLsaReturnBufferHandle pLogonSessionData = null;
                     try
                     {
-                        int status = Interop.SspiCli.LsaGetLogonSessionData(ref authId, ref pLogonSessionData);
+                        int status = Interop.SspiCli.LsaGetLogonSessionData(ref authId, out pLogonSessionData);
                         if (status < 0) // non-negative numbers indicate success
                             throw GetExceptionFromNtStatus(status);
 
@@ -386,8 +386,7 @@ namespace System.Security.Principal
                     }
                     finally
                     {
-                        if (!pLogonSessionData.IsInvalid)
-                            pLogonSessionData.Dispose();
+                        pLogonSessionData?.Dispose();
                     }
                 }
 
