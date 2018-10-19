@@ -1754,12 +1754,7 @@ ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType *childType, MonoType *baseT
 	MonoClass *baseClass;
 
 	childClass = mono_class_from_mono_type_internal (childType);
-	mono_class_init_checked (childClass, error);
-	goto_if_nok (error, done);
-
 	baseClass = mono_class_from_mono_type_internal (baseType);
-	mono_class_init_checked (baseClass, error);
-	goto_if_nok (error, done);
 
 	if (G_UNLIKELY (childType->byref)) {
 		result = !baseType->byref && baseClass == mono_defaults.object_class;
