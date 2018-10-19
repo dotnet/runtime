@@ -286,6 +286,7 @@ namespace System.IO.Tests
         public static void GetEncoding()
         {
             var sw = new StringWriter();
+            Assert.Equal(new UnicodeEncoding(false, false), sw.Encoding);
             Assert.Equal(Encoding.Unicode.WebName, sw.Encoding.WebName);
         }
 

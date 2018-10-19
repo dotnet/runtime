@@ -272,6 +272,8 @@ namespace System.Reflection.Emit.Tests
 
             Assert.True(OpCodes.Sub != OpCodes.Sub_Ovf);
             Assert.False(OpCodes.Nop != default(OpCode));
+
+            Assert.True(OpCodes.Unbox.GetHashCode() != OpCodes.Unbox_Any.GetHashCode());
         }
     }
 }

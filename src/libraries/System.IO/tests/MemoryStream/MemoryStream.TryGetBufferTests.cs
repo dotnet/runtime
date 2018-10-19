@@ -15,6 +15,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_AlwaysReturnsTrue()
         {
             var stream = new MemoryStream();
+            Assert.Equal(0, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.True(stream.TryGetBuffer(out segment));
@@ -28,6 +29,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_Int32_AlwaysReturnsTrue()
         {
             var stream = new MemoryStream(512);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.True(stream.TryGetBuffer(out segment));
@@ -41,6 +43,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_ByteArray_AlwaysReturnsFalse()
         {
             var stream = new MemoryStream(new byte[512]);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.False(stream.TryGetBuffer(out segment));
@@ -50,6 +53,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_ByteArray_Bool_AlwaysReturnsFalse()
         {
             var stream = new MemoryStream(new byte[512], writable: true);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.False(stream.TryGetBuffer(out segment));
@@ -59,6 +63,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_AlwaysReturnsFalse()
         {
             var stream = new MemoryStream(new byte[512], index: 0, count: 512);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.False(stream.TryGetBuffer(out segment));
@@ -68,6 +73,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_AlwaysReturnsFalse()
         {
             var stream = new MemoryStream(new byte[512], index: 0, count: 512, writable: true);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.False(stream.TryGetBuffer(out segment));
@@ -77,6 +83,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_FalseAsPubliclyVisible_ReturnsFalse()
         {
             var stream = new MemoryStream(new byte[512], index: 0, count: 512, writable: true, publiclyVisible: false);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.False(stream.TryGetBuffer(out segment));
@@ -86,6 +93,7 @@ namespace System.IO.Tests
         public static void TryGetBuffer_Constructor_ByteArray_Int32_Int32_Bool_Bool_TrueAsPubliclyVisible_ReturnsTrue()
         {
             var stream = new MemoryStream(new byte[512], index: 0, count: 512, writable: true, publiclyVisible: true);
+            Assert.Equal(512, stream.Capacity);
 
             ArraySegment<byte> segment;
             Assert.True(stream.TryGetBuffer(out segment));
