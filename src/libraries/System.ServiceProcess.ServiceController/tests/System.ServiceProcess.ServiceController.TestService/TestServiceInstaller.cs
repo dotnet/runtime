@@ -105,7 +105,7 @@ namespace System.ServiceProcess.Tests
                         {
                             svc.Start();
                             if (!ServiceName.StartsWith("PropagateExceptionFromOnStart"))
-                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+                                svc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(120));
                         }
                     }
                 }
