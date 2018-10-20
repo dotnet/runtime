@@ -153,5 +153,6 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs</Link>
     </Compile>
+    <Compile Include="SafeEvpPKeyHandleTests.cs" />
   </ItemGroup>
 </Project>

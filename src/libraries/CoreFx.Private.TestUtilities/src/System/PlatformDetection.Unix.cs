@@ -60,7 +60,7 @@ namespace System
 
         public static Version OSXVersion { get; } = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion);
 
-        public static Version OpenSslVersion => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? Interop.OpenSsl.OpenSslVersion : throw new PlatformNotSupportedException();
+        public static Version OpenSslVersion => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetOpenSslVersion() : throw new PlatformNotSupportedException();
 
         public static string GetDistroVersionString()
         {
@@ -267,6 +267,30 @@ namespace System
 
             // In case of exception or couldn't get the version 
             return new Version(0, 0, 0);
+        }
+
+        private static Version s_opensslVersion;
+        private static Version GetOpenSslVersion()
+        {
+            if (s_opensslVersion == null)
+            {
+                // OpenSSL version numbers are encoded as
+                // 0xMNNFFPPS: major (one nybble), minor (one byte, unaligned),
+                // "fix" (one byte, unaligned), patch (one byte, unaligned), status (one nybble)
+                //
+                // e.g. 1.0.2a final is 0x1000201F
+                //
+                // Currently they don't exceed 29-bit values, but we use long here to account
+                // for the expanded range on their 64-bit C-long return value.
+                long versionNumber = Interop.OpenSsl.OpenSslVersionNumber();
+                int major = (int)((versionNumber >> 28) & 0xF);
+                int minor = (int)((versionNumber >> 20) & 0xFF);
+                int fix = (int)((versionNumber >> 12) & 0xFF);
+
+                s_opensslVersion = new Version(major, minor, fix);
+            }
+
+            return s_opensslVersion;
         }
 
         [DllImport("libc", SetLastError = true)]
