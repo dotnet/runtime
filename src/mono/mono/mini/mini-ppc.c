@@ -1345,7 +1345,7 @@ get_call_info (MonoMethodSignature *sig)
 #ifndef DISABLE_JIT
 
 gboolean
-mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig, gboolean virtual_)
 {
 	CallInfo *caller_info = get_call_info (caller_sig);
 	CallInfo *callee_info = get_call_info (callee_sig);

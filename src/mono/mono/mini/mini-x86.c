@@ -678,10 +678,19 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 #ifndef DISABLE_JIT
 
 gboolean
-mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig, gboolean virtual_)
 {
 	g_assert (caller_sig);
 	g_assert (callee_sig);
+
+	// Direct AOT calls usually go through the PLT/GOT.
+	//   Unless we can determine here if is_direct_callable will return TRUE?
+	// But the PLT/GOT is addressed with nonvolatile ebx, which
+	// gets restored before the jump.
+	// See https://github.com/mono/mono/commit/f5373adc8a89d4b0d1d549fdd6d9adc3ded4b400
+	// See https://github.com/mono/mono/issues/11265
+	if (!virtual_ && cfg->compile_aot && !cfg->full_aot)
+		return FALSE;
 
 	CallInfo *caller_info = get_call_info (NULL, caller_sig);
 	CallInfo *callee_info = get_call_info (NULL, callee_sig);
