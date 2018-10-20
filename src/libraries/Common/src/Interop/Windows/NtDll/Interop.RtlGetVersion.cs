@@ -11,20 +11,25 @@ internal partial class Interop
         [DllImport(Libraries.NtDll, ExactSpelling=true)]
         private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOEX lpVersionInformation);
 
-        internal static unsafe string RtlGetVersion()
+        internal static unsafe int RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi)
         {
-            var osvi = new RTL_OSVERSIONINFOEX();
+            osvi = new RTL_OSVERSIONINFOEX();
             osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
-            const string version = "Microsoft Windows";
-            if (RtlGetVersion(ref osvi) == 0)
+            return RtlGetVersion(ref osvi);
+        }
+
+        internal static unsafe string RtlGetVersion()
+        {            
+            const string Version = "Microsoft Windows";
+            if (RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi) == 0)
             {
                 return osvi.szCSDVersion[0] != '\0' ?
-                    string.Format("{0} {1}.{2}.{3} {4}", version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, new string(&(osvi.szCSDVersion[0]))) :
-                    string.Format("{0} {1}.{2}.{3}", version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
+                    string.Format("{0} {1}.{2}.{3} {4}", Version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, new string(&(osvi.szCSDVersion[0]))) :
+                    string.Format("{0} {1}.{2}.{3}", Version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
             }
             else
             {
-                return version;
+                return Version;
             }
         }
     }
