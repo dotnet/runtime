@@ -86,6 +86,9 @@ typedef struct {
 	MonoJitInfo *jinfo;
 } JitInfoMap;
 
+#define GOT_INITIALIZING 1
+#define GOT_INITIALIZED  2
+
 typedef struct MonoAotModule {
 	char *aot_name;
 	/* Pointer to the Global Offset Table */
@@ -105,7 +108,7 @@ typedef struct MonoAotModule {
 	guint32 image_table_len;
 	gboolean out_of_date;
 	gboolean plt_inited;
-	gboolean got_initialized;
+	int got_initialized;
 	guint8 *mem_begin;
 	guint8 *mem_end;
 	guint8 *jit_code_start;
@@ -1947,15 +1950,22 @@ init_amodule_got (MonoAotModule *amodule)
 	int i, npatches;
 
 	/* These can't be initialized in load_aot_module () */
-	if (amodule->got_initialized)
+	if (amodule->got_initialized == GOT_INITIALIZED)
 		return;
 
 	mono_loader_lock ();
 
+	/*
+	 * If it is initialized some other thread did it in the meantime. If it is
+	 * initializing it means the current thread is initializing it since we are
+	 * holding the loader lock, skip it.
+	 */
 	if (amodule->got_initialized) {
 		mono_loader_unlock ();
 		return;
 	}
+
+	amodule->got_initialized = GOT_INITIALIZING;
 
 	mp = mono_mempool_new ();
 	npatches = amodule->info.nshared_got_entries;
@@ -2003,7 +2013,7 @@ init_amodule_got (MonoAotModule *amodule)
 	mono_mempool_destroy (mp);
 
 	mono_memory_barrier ();
-	amodule->got_initialized = TRUE;
+	amodule->got_initialized = GOT_INITIALIZED;
 	mono_loader_unlock ();
 }
 
