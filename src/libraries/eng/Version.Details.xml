@@ -2,29 +2,29 @@
 <Dependencies>
   <ProductDependencies></ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.18518.9">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.18519.9">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bdc33cde167e598fd89e82c0099f62f2f59c62d1</Sha>
+      <Sha>79bb729e1447a75e5b59bf7184e324db41b3f02e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="1.0.0-beta.18518.9">
+    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="1.0.0-beta.18519.9">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bdc33cde167e598fd89e82c0099f62f2f59c62d1</Sha>
+      <Sha>79bb729e1447a75e5b59bf7184e324db41b3f02e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenApi" Version="1.0.0-beta.18478.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>55c0d49b9bec66981f7dd6d8f51a8dad43e8fbe0</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenFacades" Version="1.0.0-beta.18518.9">
+    <Dependency Name="Microsoft.DotNet.GenFacades" Version="1.0.0-beta.18519.9">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bdc33cde167e598fd89e82c0099f62f2f59c62d1</Sha>
+      <Sha>79bb729e1447a75e5b59bf7184e324db41b3f02e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="2.4.0-beta.18518.9">
+    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="2.4.0-beta.18519.9">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bdc33cde167e598fd89e82c0099f62f2f59c62d1</Sha>
+      <Sha>79bb729e1447a75e5b59bf7184e324db41b3f02e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.18518.9">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.18519.9">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bdc33cde167e598fd89e82c0099f62f2f59c62d1</Sha>
+      <Sha>79bb729e1447a75e5b59bf7184e324db41b3f02e</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
