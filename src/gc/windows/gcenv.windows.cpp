@@ -935,12 +935,9 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
     MEMORYSTATUSEX memStatus;
-    if (::GlobalMemoryStatusEx(&memStatus))
-    {
-        return (size_t)memStatus.ullAvailVirtual;
-    }
-
-    return 0;
+    GetProcessMemoryLoad(&memStatus);
+    assert(memStatus.ullAvailVirtual != 0);
+    return (size_t)memStatus.ullAvailVirtual;
 }
 
 // Get the physical memory that this process can use.
@@ -956,12 +953,9 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
         return restricted_limit;
 
     MEMORYSTATUSEX memStatus;
-    if (::GlobalMemoryStatusEx(&memStatus))
-    {
-        return memStatus.ullTotalPhys;
-    }
-
-    return 0;
+    GetProcessMemoryLoad(&memStatus);
+    assert(memStatus.ullTotalPhys != 0);
+    return memStatus.ullTotalPhys;
 }
 
 // Get memory status
