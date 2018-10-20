@@ -39,6 +39,12 @@
     <Compile Include="..\..\Common\src\System\PasteArguments.Windows.cs">
       <Link>Common\System\PasteArguments.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.RTL_OSVERSIONINFOEX.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs</Link>
     </Compile>
