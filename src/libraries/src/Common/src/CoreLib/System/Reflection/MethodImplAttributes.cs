@@ -31,6 +31,7 @@ namespace System.Reflection
         NoInlining = 0x0008,   // Method may not be inlined.
         AggressiveInlining = 0x0100,   // Method should be inlined if possible.
         NoOptimization = 0x0040,   // Method may not be optimized.
+        AggressiveOptimization = 0x0200, // Method may contain hot code and should be aggressively optimized.
 
         MaxMethodImplVal = 0xffff,
     }
