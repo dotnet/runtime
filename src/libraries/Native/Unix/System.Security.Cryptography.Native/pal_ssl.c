@@ -72,7 +72,7 @@ Returns 1 on success, 0 on failure.
 static long TrySetECDHNamedCurve(SSL_CTX* ctx)
 {
 #ifdef NEED_OPENSSL_1_0
-    uint32_t version = CryptoNative_OpenSslVersionNumber();
+    int64_t version = CryptoNative_OpenSslVersionNumber();
     long result = 0;
 
     if (version >= OPENSSL_VERSION_1_1_0_RTM)

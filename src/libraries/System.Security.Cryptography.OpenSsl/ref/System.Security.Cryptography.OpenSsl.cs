@@ -93,5 +93,6 @@ namespace System.Security.Cryptography
         public override bool IsInvalid { get { throw null; } }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateHandle() { throw null; }
         protected override bool ReleaseHandle() { throw null; }
+        public static long OpenSslVersion { get; }
     }
 }
