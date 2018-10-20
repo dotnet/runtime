@@ -131,12 +131,12 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("Write/Basic/int?/12",
                     delegate ()
                     {
-                        logger.Write("Int?-12", new { nInteger = nullableInt });
+                        logger.Write("Int12", new { nInteger = nullableInt });
                     },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("Int?-12", evt.EventName);
+                        Assert.Equal("Int12", evt.EventName);
 
                         var eventNullableInt = evt.PayloadValue(0, "nInteger");
                         Assert.Equal(eventNullableInt, nullableInt);
@@ -146,12 +146,12 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("Write/Basic/int?/null",
                     delegate ()
                     {
-                        logger.Write("Int?-null", new { nInteger = nullableInt });
+                        logger.Write("IntNull", new { nInteger = nullableInt });
                     },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("Int?-null", evt.EventName);
+                        Assert.Equal("IntNull", evt.EventName);
 
                         var eventNullableInt = evt.PayloadValue(0, "nInteger");
                         Assert.Equal(eventNullableInt, nullableInt);
@@ -161,12 +161,12 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("Write/Basic/DateTime?/Now",
                     delegate ()
                     {
-                        logger.Write("DateTime-Now", new { nowTime = nullableDate });
+                        logger.Write("DateTimeNow", new { nowTime = nullableDate });
                     },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("DateTime-Now", evt.EventName);
+                        Assert.Equal("DateTimeNow", evt.EventName);
 
                         var eventNullableDate = evt.PayloadValue(0, "nowTime");
                         Assert.Equal(eventNullableDate, nullableDate);
@@ -176,12 +176,12 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("Write/Basic/DateTime?/Null",
                     delegate ()
                     {
-                        logger.Write("DateTime-Null", new { nowTime = nullableDate });
+                        logger.Write("DateTimeNull", new { nowTime = nullableDate });
                     },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("DateTime-Null", evt.EventName);
+                        Assert.Equal("DateTimeNull", evt.EventName);
 
                         var eventNullableDate = evt.PayloadValue(0, "nowTime");
                         Assert.Equal(eventNullableDate, nullableDate);
