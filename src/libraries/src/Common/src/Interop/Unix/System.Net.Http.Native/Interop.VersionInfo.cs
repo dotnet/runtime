@@ -64,7 +64,7 @@ internal static partial class Interop
 
         private static string DetermineRequiredOpenSslDescription()
         {
-            uint ver = Interop.OpenSsl.OpenSslVersionNumber();
+            long ver = Interop.OpenSsl.OpenSslVersionNumber();
 
             // OpenSSL version numbers are encoded as
             // 0xMNNFFPPS: major (one nybble), minor (one byte, unaligned),
@@ -107,7 +107,7 @@ internal static partial class Interop
                 patch = new string((char)('`' + patchValue), 1);
             }
 
-            return $"{OpenSslDescriptionPrefix}{ver >> 28:x}.{(byte)(ver >> 20):x}.{(byte)(ver >> 12):x}{patch}";
+            return $"{OpenSslDescriptionPrefix}{(ver >> 28) & 0xF:x}.{(byte)(ver >> 20):x}.{(byte)(ver >> 12):x}{patch}";
         }
 #endif
     }

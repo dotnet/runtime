@@ -1276,9 +1276,9 @@ Gets the version of openssl library.
 Return values:
 Version number as MNNFFRBB (major minor fix final beta/patch)
 */
-uint32_t CryptoNative_OpenSslVersionNumber()
+int64_t CryptoNative_OpenSslVersionNumber()
 {
-    return (uint32_t)OpenSSL_version_num();
+    return (int64_t)OpenSSL_version_num();
 }
 
 #ifdef NEED_OPENSSL_1_0
