@@ -141,6 +141,7 @@ namespace BasicEventSourceTests
                         var structValue = evt.PayloadValue(0, "nInteger");
                         var structValueAsDictionary = structValue as IDictionary<string, object>;
                         Assert.NotNull(structValueAsDictionary);
+
                         Assert.Equal(structValueAsDictionary["Value"], 12);
                     }));
                 /*************************************************************************/
