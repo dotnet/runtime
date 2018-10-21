@@ -24,11 +24,7 @@ namespace BasicEventSourceTests
     internal enum ColorUInt64 : ulong { Red, Blue, Green };
 
     public partial class TestsWrite
-    {
-
-        private readonly Xunit.Abstractions.ITestOutputHelper output;
-        public TestsWrite(Xunit.Abstractions.ITestOutputHelper output) => this.output = output;
-
+    {   
         [EventData]
         private struct PartB_UserInfo
         {
@@ -142,14 +138,10 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Int12", evt.EventName);
 
-                        var eventNullableInt = evt.PayloadValue(0, "nInteger");
-                        if (eventNullableInt is int?)
-                            TypeIsNullableInt();
-                        if (eventNullableInt is int)
-                            TypeIsInt();
-                        TypeIsSomethingElse();
-                        //output.WriteLine($"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Type of eventNullableInt is {eventNullableInt.GetType().Name}");
-                        Assert.Equal(eventNullableInt, 12);
+                        var structValue = evt.PayloadValue(0, "nInteger");
+                        var structValueAsDictionary = structValue as IDictionary<string, object>;
+                        Assert.NotNull(structValueAsDictionary);
+                        Assert.Equal(structValueAsDictionary["Value"], 12);
                     }));
                 /*************************************************************************/
                 //int? nullableInt2 = null;
@@ -464,11 +456,7 @@ namespace BasicEventSourceTests
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
-
-        private static void TypeIsInt() => throw new NotImplementedException();
-        private static void TypeIsNullableInt() => throw new NotImplementedException();
-        private static void TypeIsSomethingElse() => throw new NotImplementedException();
-
+        
         static partial void Test_Write_T_AddEtwTests(Listener listener, List<SubTest> tests, EventSource logger);
 
         [Fact]
