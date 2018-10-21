@@ -143,7 +143,12 @@ namespace BasicEventSourceTests
                         Assert.Equal("Int12", evt.EventName);
 
                         var eventNullableInt = evt.PayloadValue(0, "nInteger");
-                        output.WriteLine($"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Type of eventNullableInt is {eventNullableInt.GetType().Name}");
+                        if (eventNullableInt is int?)
+                            TypeIsNullableInt();
+                        if (eventNullableInt is int)
+                            TypeIsInt();
+                        TypeIsSomethingElse();
+                        //output.WriteLine($"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Type of eventNullableInt is {eventNullableInt.GetType().Name}");
                         Assert.Equal(eventNullableInt, 12);
                     }));
                 /*************************************************************************/
@@ -459,6 +464,10 @@ namespace BasicEventSourceTests
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
+
+        private static void TypeIsInt() => throw new NotImplementedException();
+        private static void TypeIsNullableInt() => throw new NotImplementedException();
+        private static void TypeIsSomethingElse() => throw new NotImplementedException();
 
         static partial void Test_Write_T_AddEtwTests(Listener listener, List<SubTest> tests, EventSource logger);
 
