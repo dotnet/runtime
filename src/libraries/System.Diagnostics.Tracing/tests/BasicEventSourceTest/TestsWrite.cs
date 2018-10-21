@@ -138,9 +138,9 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Int12", evt.EventName);
 
-                        int? eventNullableInt = (int?)evt.PayloadValue(0, "nInteger");
-                        int nval = eventNullableInt.Value;
-                        Assert.Equal(nval, 12);
+                        var eventNullableInt = evt.PayloadValue(0, "nInteger");
+                        Console.WriteLine($"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Type of eventNullableInt is {eventNullableInt.GetType().Name}");
+                        Assert.Equal(eventNullableInt, 12);
                     }));
                 /*************************************************************************/
                 //int? nullableInt2 = null;
