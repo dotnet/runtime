@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError getsockopt(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
             [Out] out int optionValue,
@@ -19,7 +19,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError getsockopt(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
             [Out] byte[] optionValue,
@@ -27,7 +27,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError getsockopt(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
             [Out] out Linger optionValue,
@@ -35,7 +35,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError getsockopt(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
             [Out] out IPMulticastRequest optionValue,
@@ -43,7 +43,7 @@ internal static partial class Interop
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError getsockopt(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] SocketOptionLevel optionLevel,
             [In] SocketOptionName optionName,
             [Out] out IPv6MulticastRequest optionValue,

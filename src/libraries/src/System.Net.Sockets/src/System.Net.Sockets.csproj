@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <ProjectGuid>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</ProjectGuid>
@@ -88,8 +88,8 @@
     <Compile Include="$(CommonPath)\System\Net\RangeValidationHelpers.cs">
       <Link>Common\System\Net\RangeValidationHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.cs">
-      <Link>Common\System\Net\SafeCloseSocket.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.cs">
+      <Link>Common\System\Net\SafeSocketHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
       <Link>Common\System\Net\SocketAddress.cs</Link>
@@ -131,8 +131,8 @@
     <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
     <Compile Include="System\Net\Sockets\TransmitFileAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\UnixDomainSocketEndPoint.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
-      <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.Windows.cs">
+      <Link>Common\System\Net\SafeSocketHandle.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
@@ -264,8 +264,8 @@
     <Compile Include="$(CommonPath)\System\Net\InteropIPAddressExtensions.Unix.cs">
       <Link>Common\System\Net\InteropIPAddressExtensions.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Unix.cs">
-      <Link>Common\System\Net\SafeCloseSocket.Unix.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.Unix.cs">
+      <Link>Common\System\Net\SafeSocketHandle.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>

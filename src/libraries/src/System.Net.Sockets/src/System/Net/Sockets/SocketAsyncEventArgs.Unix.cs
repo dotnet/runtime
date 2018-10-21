@@ -65,7 +65,7 @@ namespace System.Net.Sockets
             _acceptAddressBufferCount = socketAddressSize;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle)
         {
             if (!_buffer.Equals(default))
             {
@@ -94,7 +94,7 @@ namespace System.Net.Sockets
             CompletionCallback(0, SocketFlags.None, socketError);
         }
 
-        internal unsafe SocketError DoOperationConnect(Socket socket, SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
         {
             SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress.Buffer, _socketAddress.Size, ConnectCompletionCallback);
             if (socketError != SocketError.IOPending)
@@ -104,7 +104,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
+        internal SocketError DoOperationDisconnect(Socket socket, SafeSocketHandle handle)
         {
             SocketError socketError = SocketPal.Disconnect(socket, handle, _disconnectReuseSocket);
             FinishOperationSync(socketError, 0, SocketFlags.None);
@@ -128,7 +128,7 @@ namespace System.Net.Sockets
             _receivedFlags = receivedFlags;
         }
 
-        internal unsafe SocketError DoOperationReceive(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceive(SafeSocketHandle handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -154,7 +154,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveFrom(SafeSocketHandle handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -198,7 +198,7 @@ namespace System.Net.Sockets
             _receiveMessageFromPacketInfo = ipPacketInformation;
         }
 
-        internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeSocketHandle handle)
         {
             _receiveMessageFromPacketInfo = default(IPPacketInformation);
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
@@ -220,7 +220,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal unsafe SocketError DoOperationSend(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSend(SafeSocketHandle handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -245,7 +245,7 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
+        internal SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle)
         {
             Debug.Assert(_sendPacketsElements != null);
             SendPacketsElement[] elements = (SendPacketsElement[])_sendPacketsElements.Clone();
@@ -304,7 +304,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        internal SocketError DoOperationSendTo(SafeCloseSocket handle)
+        internal SocketError DoOperationSendTo(SafeSocketHandle handle)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -369,7 +369,7 @@ namespace System.Net.Sockets
         {
             System.Buffer.BlockCopy(_acceptBuffer, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
             _acceptSocket = _currentSocket.CreateAcceptSocket(
-                SafeCloseSocket.CreateSocket(_acceptedFileDescriptor),
+                SafeSocketHandle.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint.Create(remoteSocketAddress));
             return SocketError.Success;
         }

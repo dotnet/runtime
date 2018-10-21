@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError WSAEventSelect(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] SafeHandle Event,
             [In] AsyncEventBits NetworkEvents);
 
