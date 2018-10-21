@@ -128,6 +128,7 @@ case "$host" in
 		libdl="-ldl"
 		libgc_threads=pthreads
 		platform_wasm=yes
+		MONO_DEV_RANDOM=/dev/mono_random
 		;;
 	*-mingw*|*-*-cygwin*)
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
@@ -3621,6 +3622,10 @@ dnl Everywhere else, it's /dev/random
 esac
 
 AC_DEFINE_UNQUOTED(NAME_DEV_RANDOM, "$NAME_DEV_RANDOM", [Name of /dev/random])
+
+if test "x$MONO_DEV_RANDOM" != "x"; then
+   AC_DEFINE_UNQUOTED(MONO_DEV_RANDOM, "$MONO_DEV_RANDOM", [Name of random device])
+fi
 
 dnl Now check if the device actually exists
 
