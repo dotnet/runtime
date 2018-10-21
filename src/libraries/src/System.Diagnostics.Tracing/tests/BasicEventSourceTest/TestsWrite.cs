@@ -141,54 +141,61 @@ namespace BasicEventSourceTests
                         var structValue = evt.PayloadValue(0, "nInteger");
                         var structValueAsDictionary = structValue as IDictionary<string, object>;
                         Assert.NotNull(structValueAsDictionary);
-
-                        Assert.Equal(structValueAsDictionary["Value"], 12);
+                        Assert.Equal(structValueAsDictionary["HasValue"], true);
+                        Assert.Equal(structValueAsDictionary["Value"], nullableInt.Value);
                     }));
                 /*************************************************************************/
-                //int? nullableInt2 = null;
-                //tests.Add(new SubTest("Write/Basic/int?/null",
-                //    delegate ()
-                //    {
-                //        logger.Write("IntNull", new { nInteger = nullableInt2 });
-                //    },
-                //    delegate (Event evt)
-                //    {
-                //        Assert.Equal(logger.Name, evt.ProviderName);
-                //        Assert.Equal("IntNull", evt.EventName);
+                int? nullableInt2 = null;
+                tests.Add(new SubTest("Write/Basic/int?/null",
+                    delegate ()
+                    {
+                        logger.Write("IntNull", new { nInteger = nullableInt2 });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("IntNull", evt.EventName);
 
-                //        var eventNullableInt = (int?)evt.PayloadValue(0, "nInteger");
-                //        Assert.Equal(eventNullableInt, nullableInt2);
-                //    }));
+                        var structValue = evt.PayloadValue(0, "nInteger");
+                        var structValueAsDictionary = structValue as IDictionary<string, object>;
+                        Assert.NotNull(structValueAsDictionary);
+                        Assert.Equal(structValueAsDictionary["HasValue"], false);
+                    }));
                 ///*************************************************************************/
-                //DateTime? nullableDate = DateTime.Now;
-                //tests.Add(new SubTest("Write/Basic/DateTime?/Now",
-                //    delegate ()
-                //    {
-                //        logger.Write("DateTimeNow", new { nowTime = nullableDate });
-                //    },
-                //    delegate (Event evt)
-                //    {
-                //        Assert.Equal(logger.Name, evt.ProviderName);
-                //        Assert.Equal("DateTimeNow", evt.EventName);
+                DateTime? nullableDate = DateTime.Now;
+                tests.Add(new SubTest("Write/Basic/DateTime?/Now",
+                    delegate ()
+                    {
+                        logger.Write("DateTimeNow", new { nowTime = nullableDate });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("DateTimeNow", evt.EventName);
 
-                //        var eventNullableDate = (DateTime?)evt.PayloadValue(0, "nowTime");
-                //        Assert.Equal(eventNullableDate, nullableDate);
-                //    }));
+                        var structValue = evt.PayloadValue(0, "nowTime");
+                        var structValueAsDictionary = structValue as IDictionary<string, object>;
+                        Assert.NotNull(structValueAsDictionary);
+                        Assert.Equal(structValueAsDictionary["HasValue"], true);
+                        Assert.Equal(structValueAsDictionary["Value"], nullableDate.Value);
+                    }));
                 ///*************************************************************************/
-                //DateTime? nullableDate2 = null;
-                //tests.Add(new SubTest("Write/Basic/DateTime?/Null",
-                //    delegate ()
-                //    {
-                //        logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
-                //    },
-                //    delegate (Event evt)
-                //    {
-                //        Assert.Equal(logger.Name, evt.ProviderName);
-                //        Assert.Equal("DateTimeNull", evt.EventName);
+                DateTime? nullableDate2 = null;
+                tests.Add(new SubTest("Write/Basic/DateTime?/Null",
+                    delegate ()
+                    {
+                        logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("DateTimeNull", evt.EventName);
 
-                //        var eventNullableDate = (DateTime?)evt.PayloadValue(0, "nowTime");
-                //        Assert.Equal(eventNullableDate, nullableDate2);
-                //    }));
+                        var structValue = evt.PayloadValue(0, "nowTime");
+                        var structValueAsDictionary = structValue as IDictionary<string, object>;
+                        Assert.NotNull(structValueAsDictionary);
+                        Assert.Equal(structValueAsDictionary["HasValue"], false);
+                    }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
                     delegate ()
