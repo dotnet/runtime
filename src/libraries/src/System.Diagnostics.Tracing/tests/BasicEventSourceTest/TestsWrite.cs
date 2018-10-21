@@ -25,6 +25,10 @@ namespace BasicEventSourceTests
 
     public partial class TestsWrite
     {
+
+        private readonly Xunit.Abstractions.ITestOutputHelper output;
+        public TestsWrite(Xunit.Abstractions.ITestOutputHelper output) => this.output = output;
+
         [EventData]
         private struct PartB_UserInfo
         {
@@ -139,7 +143,7 @@ namespace BasicEventSourceTests
                         Assert.Equal("Int12", evt.EventName);
 
                         var eventNullableInt = evt.PayloadValue(0, "nInteger");
-                        Console.WriteLine($"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Type of eventNullableInt is {eventNullableInt.GetType().Name}");
+                        output.WriteLine($"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Type of eventNullableInt is {eventNullableInt.GetType().Name}");
                         Assert.Equal(eventNullableInt, 12);
                     }));
                 /*************************************************************************/
