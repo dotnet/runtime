@@ -13,7 +13,7 @@ internal static partial class Interop
         // Used with SIOGETEXTENSIONFUNCTIONPOINTER - we're assuming that will never block.
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError WSAIoctl(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] int ioControlCode,
             [In, Out] ref Guid guid,
             [In] int guidSize,

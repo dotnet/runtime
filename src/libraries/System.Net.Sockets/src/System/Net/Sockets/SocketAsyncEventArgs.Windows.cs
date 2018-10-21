@@ -200,7 +200,7 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeCloseSocket handle, SafeCloseSocket acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle acceptHandle)
         {
             bool userBuffer = _count != 0;
             Debug.Assert(!userBuffer || (!_buffer.Equals(default) && _count >= _acceptAddressBufferCount));
@@ -234,7 +234,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationConnect(Socket socket, SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationConnect(Socket socket, SafeSocketHandle handle)
         {
             // ConnectEx uses a sockaddr buffer containing the remote address to which to connect.
             // It can also optionally take a single buffer of data to send after the connection is complete.
@@ -268,7 +268,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationDisconnect(Socket socket, SafeSocketHandle handle)
         {
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
@@ -288,11 +288,11 @@ namespace System.Net.Sockets
             }
         }
 
-        internal SocketError DoOperationReceive(SafeCloseSocket handle) => _bufferList == null ? 
+        internal SocketError DoOperationReceive(SafeSocketHandle handle) => _bufferList == null ? 
             DoOperationReceiveSingleBuffer(handle) :
             DoOperationReceiveMultiBuffer(handle);
 
-        internal unsafe SocketError DoOperationReceiveSingleBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveSingleBuffer(SafeSocketHandle handle)
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
@@ -325,7 +325,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveMultiBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveMultiBuffer(SafeSocketHandle handle)
         {
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
@@ -350,7 +350,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveFrom(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveFrom(SafeSocketHandle handle)
         {
             // WSARecvFrom uses a WSABuffer array describing buffers in which to 
             // receive data and from which to send data respectively. Single and multiple buffers
@@ -364,7 +364,7 @@ namespace System.Net.Sockets
                 DoOperationReceiveFromMultiBuffer(handle);
         }
 
-        internal unsafe SocketError DoOperationReceiveFromSingleBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveFromSingleBuffer(SafeSocketHandle handle)
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
@@ -399,7 +399,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveFromMultiBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveFromMultiBuffer(SafeSocketHandle handle)
         {
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
@@ -426,7 +426,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationReceiveMessageFrom(Socket socket, SafeSocketHandle handle)
         {
             // WSARecvMsg uses a WSAMsg descriptor.
             // The WSAMsg buffer is pinned with a GCHandle to avoid complicating the use of Overlapped.
@@ -556,11 +556,11 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationSend(SafeCloseSocket handle) => _bufferList == null ?
+        internal unsafe SocketError DoOperationSend(SafeSocketHandle handle) => _bufferList == null ?
             DoOperationSendSingleBuffer(handle) :
             DoOperationSendMultiBuffer(handle);
 
-        internal unsafe SocketError DoOperationSendSingleBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSendSingleBuffer(SafeSocketHandle handle)
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
@@ -592,7 +592,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationSendMultiBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSendMultiBuffer(SafeSocketHandle handle)
         {
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
@@ -616,7 +616,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle)
         {
             // Cache copy to avoid problems with concurrent manipulation during the async operation.
             Debug.Assert(_sendPacketsElements != null);
@@ -719,7 +719,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationSendTo(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSendTo(SafeSocketHandle handle)
         {
             // WSASendTo uses a WSABuffer array describing buffers in which to 
             // receive data and from which to send data respectively. Single and multiple buffers
@@ -734,7 +734,7 @@ namespace System.Net.Sockets
                 DoOperationSendToMultiBuffer(handle);
         }
 
-        internal unsafe SocketError DoOperationSendToSingleBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSendToSingleBuffer(SafeSocketHandle handle)
         {
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(_buffer.Span))
             {
@@ -768,7 +768,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal unsafe SocketError DoOperationSendToMultiBuffer(SafeCloseSocket handle)
+        internal unsafe SocketError DoOperationSendToMultiBuffer(SafeSocketHandle handle)
         {
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try

@@ -10,6 +10,7 @@ using System.IO;
 using System.Net.Internals;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -19,7 +20,7 @@ namespace System.Net.Sockets
     {
         internal const int DefaultCloseTimeout = -1; // NOTE: changing this default is a breaking change.
 
-        private SafeCloseSocket _handle;
+        private SafeSocketHandle _handle;
 
         // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
         // correct type (IPEndPoint, etc).
@@ -115,7 +116,7 @@ namespace System.Net.Sockets
         }
 
         // Called by the class to create a socket to accept an incoming request.
-        private Socket(SafeCloseSocket fd)
+        private Socket(SafeSocketHandle fd)
         {
             // NOTE: If this ctor is ever made public/protected, this check will need
             // to be converted into a runtime exception.
@@ -288,7 +289,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal SafeCloseSocket SafeHandle
+        public SafeSocketHandle SafeHandle
         {
             get
             {
@@ -1063,7 +1064,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = IPEndPointExtensions.Serialize(_rightEndPoint);
 
             // This may throw ObjectDisposedException.
-            SafeCloseSocket acceptedSocketHandle;
+            SafeSocketHandle acceptedSocketHandle;
             SocketError errorCode = SocketPal.Accept(
                 _handle,
                 socketAddress.Buffer,
@@ -3636,7 +3637,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustlisten);
             }
 
-            SafeCloseSocket acceptHandle;
+            SafeSocketHandle acceptHandle;
             asyncResult.AcceptSocket = GetOrCreateAcceptSocket(acceptSocket, false, nameof(acceptSocket), out acceptHandle);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
@@ -3792,7 +3793,7 @@ namespace System.Net.Sockets
             }
 
             // Handle AcceptSocket property.
-            SafeCloseSocket acceptHandle;
+            SafeSocketHandle acceptHandle;
             e.AcceptSocket = GetOrCreateAcceptSocket(e.AcceptSocket, true, "AcceptSocket", out acceptHandle);
 
             // Prepare for and make the native call.
@@ -5072,7 +5073,7 @@ namespace System.Net.Sockets
         }
 
         // CreateAcceptSocket - pulls unmanaged results and assembles them into a new Socket object.
-        internal Socket CreateAcceptSocket(SafeCloseSocket fd, EndPoint remoteEP)
+        internal Socket CreateAcceptSocket(SafeSocketHandle fd, EndPoint remoteEP)
         {
             // Internal state of the socket is inherited from listener.
             Debug.Assert(fd != null && !fd.IsInvalid);

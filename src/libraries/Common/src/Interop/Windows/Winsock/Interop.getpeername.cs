@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError getpeername(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [Out] byte[] socketAddress,
             [In, Out] ref int socketAddressSize);
     }

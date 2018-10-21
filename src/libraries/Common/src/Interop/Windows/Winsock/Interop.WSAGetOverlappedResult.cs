@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe extern bool WSAGetOverlappedResult(
-            [In] SafeCloseSocket socketHandle,
+            [In] SafeSocketHandle socketHandle,
             [In] NativeOverlapped* overlapped,
             [Out] out uint bytesTransferred,
             [In] bool wait,

@@ -12,7 +12,7 @@ namespace System.Net.Sockets
 {
     internal sealed class SafeNativeOverlapped : SafeHandle
     {
-        private readonly SafeCloseSocket _socketHandle;
+        private readonly SafeSocketHandle _socketHandle;
 
         private SafeNativeOverlapped()
             : this(IntPtr.Zero)
@@ -26,7 +26,7 @@ namespace System.Net.Sockets
             SetHandle(handle);
         }
 
-        public unsafe SafeNativeOverlapped(SafeCloseSocket socketHandle, NativeOverlapped* handle)
+        public unsafe SafeNativeOverlapped(SafeSocketHandle socketHandle, NativeOverlapped* handle)
             : this((IntPtr)handle)
         {
             _socketHandle = socketHandle;

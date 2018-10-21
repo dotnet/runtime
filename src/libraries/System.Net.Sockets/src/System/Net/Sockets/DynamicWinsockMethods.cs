@@ -60,7 +60,7 @@ namespace System.Net.Sockets
             _lockObject = new object();
         }
 
-        public T GetDelegate<T>(SafeCloseSocket socketHandle)
+        public T GetDelegate<T>(SafeSocketHandle socketHandle)
             where T : class
         {
             if (typeof(T) == typeof(AcceptExDelegate))
@@ -115,7 +115,7 @@ namespace System.Net.Sockets
         }
 
         // Private methods that actually load the function pointers.
-        private IntPtr LoadDynamicFunctionPointer(SafeCloseSocket socketHandle, ref Guid guid)
+        private IntPtr LoadDynamicFunctionPointer(SafeSocketHandle socketHandle, ref Guid guid)
         {
             IntPtr ptr = IntPtr.Zero;
             int length;
@@ -147,7 +147,7 @@ namespace System.Net.Sockets
         //       to the fields of the delegate instances are visible before the write to the field
         //       that holds the reference to the delegate instance.
 
-        private void EnsureAcceptEx(SafeCloseSocket socketHandle)
+        private void EnsureAcceptEx(SafeSocketHandle socketHandle)
         {
             if (_acceptEx == null)
             {
@@ -163,7 +163,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void EnsureGetAcceptExSockaddrs(SafeCloseSocket socketHandle)
+        private void EnsureGetAcceptExSockaddrs(SafeSocketHandle socketHandle)
         {
             if (_getAcceptExSockaddrs == null)
             {
@@ -179,7 +179,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void EnsureConnectEx(SafeCloseSocket socketHandle)
+        private void EnsureConnectEx(SafeSocketHandle socketHandle)
         {
             if (_connectEx == null)
             {
@@ -195,7 +195,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void EnsureDisconnectEx(SafeCloseSocket socketHandle)
+        private void EnsureDisconnectEx(SafeSocketHandle socketHandle)
         {
             if (_disconnectEx == null)
             {
@@ -211,7 +211,7 @@ namespace System.Net.Sockets
                 }
             }
         }
-        private void EnsureWSARecvMsg(SafeCloseSocket socketHandle)
+        private void EnsureWSARecvMsg(SafeSocketHandle socketHandle)
         {
             if (_recvMsg == null)
             {
@@ -228,7 +228,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void EnsureWSARecvMsgBlocking(SafeCloseSocket socketHandle)
+        private void EnsureWSARecvMsgBlocking(SafeSocketHandle socketHandle)
         {
             if (_recvMsgBlocking == null)
             {
@@ -244,7 +244,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private void EnsureTransmitPackets(SafeCloseSocket socketHandle)
+        private void EnsureTransmitPackets(SafeSocketHandle socketHandle)
         {
             if (_transmitPackets == null)
             {
@@ -263,8 +263,8 @@ namespace System.Net.Sockets
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal unsafe delegate bool AcceptExDelegate(
-                SafeCloseSocket listenSocketHandle,
-                SafeCloseSocket acceptSocketHandle,
+                SafeSocketHandle listenSocketHandle,
+                SafeSocketHandle acceptSocketHandle,
                 IntPtr buffer,
                 int len,
                 int localAddressLength,
@@ -286,7 +286,7 @@ namespace System.Net.Sockets
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal unsafe delegate bool ConnectExDelegate(
-                SafeCloseSocket socketHandle,
+                SafeSocketHandle socketHandle,
                 IntPtr socketAddress,
                 int socketAddressSize,
                 IntPtr buffer,
@@ -296,21 +296,21 @@ namespace System.Net.Sockets
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal unsafe delegate bool DisconnectExDelegate(
-                SafeCloseSocket socketHandle, 
+                SafeSocketHandle socketHandle, 
                 NativeOverlapped* overlapped, 
                 int flags, 
                 int reserved);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal delegate bool DisconnectExDelegateBlocking(
-                SafeCloseSocket socketHandle, 
+                SafeSocketHandle socketHandle, 
                 IntPtr overlapped, 
                 int flags, 
                 int reserved);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal unsafe delegate SocketError WSARecvMsgDelegate(
-                SafeCloseSocket socketHandle,
+                SafeSocketHandle socketHandle,
                 IntPtr msg,
                 out int bytesTransferred,
                 NativeOverlapped* overlapped,
@@ -326,7 +326,7 @@ namespace System.Net.Sockets
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal unsafe delegate bool TransmitPacketsDelegate(
-                SafeCloseSocket socketHandle,
+                SafeSocketHandle socketHandle,
                 IntPtr packetArray,
                 int elementCount,
                 int sendSize,

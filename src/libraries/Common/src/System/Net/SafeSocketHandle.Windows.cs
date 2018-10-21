@@ -9,20 +9,15 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    internal partial class SafeCloseSocket :
-#if DEBUG
-        DebugSafeHandleMinusOneIsInvalid
-#else
-        SafeHandleMinusOneIsInvalid
-#endif
+    partial class SafeSocketHandle
     {
         private ThreadPoolBoundHandle _iocpBoundHandle;
         private bool _skipCompletionPortOnSuccess;
         private object _iocpBindingLock = new object();
 
-        public void SetExposed() { /* nop */ }
+        internal void SetExposed() { /* nop */ }
 
-        public ThreadPoolBoundHandle IOCPBoundHandle
+        internal ThreadPoolBoundHandle IOCPBoundHandle
         {
             get
             {
@@ -30,10 +25,10 @@ namespace System.Net.Sockets
             }
         }
 
-        public ThreadPoolBoundHandle GetThreadPoolBoundHandle() => !_released ? _iocpBoundHandle : null;
+        internal ThreadPoolBoundHandle GetThreadPoolBoundHandle() => !_released ? _iocpBoundHandle : null;
 
         // Binds the Socket Win32 Handle to the ThreadPool's CompletionPort.
-        public ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle(bool trySkipCompletionPortOnSuccess)
+        internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle(bool trySkipCompletionPortOnSuccess)
         {
             if (_released)
             {
@@ -91,7 +86,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public bool SkipCompletionPortOnSuccess
+        internal bool SkipCompletionPortOnSuccess
         {
             get
             {
@@ -100,13 +95,13 @@ namespace System.Net.Sockets
             }
         }
 
-        internal static SafeCloseSocket CreateWSASocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        internal static SafeSocketHandle CreateWSASocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType));
         }
 
-        internal static SafeCloseSocket Accept(
-            SafeCloseSocket socketHandle,
+        internal static SafeSocketHandle Accept(
+            SafeSocketHandle socketHandle,
             byte[] socketAddress,
             ref int socketAddressSize)
         {
@@ -225,7 +220,7 @@ namespace System.Net.Sockets
                 return result;
             }
 
-            internal static InnerSafeCloseSocket Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize)
+            internal static InnerSafeCloseSocket Accept(SafeSocketHandle socketHandle, byte[] socketAddress, ref int socketAddressSize)
             {
                 InnerSafeCloseSocket result = Interop.Winsock.accept(socketHandle.DangerousGetHandle(), socketAddress, ref socketAddressSize);
                 if (result.IsInvalid)
