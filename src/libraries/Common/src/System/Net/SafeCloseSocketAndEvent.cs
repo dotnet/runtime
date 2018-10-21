@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace System.Net.Sockets
 {
-    internal sealed class SafeCloseSocketAndEvent : SafeCloseSocket
+    internal sealed class SafeCloseSocketAndEvent : SafeSocketHandle
     {
         private AutoResetEvent _waitHandle;
 

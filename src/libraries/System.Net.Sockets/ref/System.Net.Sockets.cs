@@ -186,6 +186,12 @@ namespace System.Net.Sockets
         Unknown = -1,
         Unspecified = 0,
     }
+
+    public sealed class SafeSocketHandle : Microsoft.Win32.SafeHandles.SafeHandleMinusOneIsInvalid
+    {
+        public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle) : base(ownsHandle) { }
+        protected override bool ReleaseHandle() { throw null; }
+    }
     public enum SelectMode
     {
         SelectError = 2,
@@ -231,6 +237,7 @@ namespace System.Net.Sockets
         public int ReceiveBufferSize { get { throw null; } set { } }
         public int ReceiveTimeout { get { throw null; } set { } }
         public System.Net.EndPoint RemoteEndPoint { get { throw null; } }
+        public SafeSocketHandle SafeHandle { get { throw null; } }
         public int SendBufferSize { get { throw null; } set { } }
         public int SendTimeout { get { throw null; } set { } }
         public System.Net.Sockets.SocketType SocketType { get { throw null; } }

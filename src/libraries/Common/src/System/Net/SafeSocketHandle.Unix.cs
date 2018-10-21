@@ -10,12 +10,7 @@ using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
-    internal partial class SafeCloseSocket :
-#if DEBUG
-        DebugSafeHandleMinusOneIsInvalid
-#else
-        SafeHandleMinusOneIsInvalid
-#endif
+    partial class SafeSocketHandle
     {
         private int _receiveTimeout = -1;
         private int _sendTimeout = -1;
@@ -28,7 +23,7 @@ namespace System.Net.Sockets
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
 
-        public void RegisterConnectResult(SocketError error)
+        internal void RegisterConnectResult(SocketError error)
         {
             switch (error)
             {
@@ -41,7 +36,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public void TransferTrackedState(SafeCloseSocket target)
+        internal void TransferTrackedState(SafeSocketHandle target)
         {
             target._trackedOptions = _trackedOptions;
             target.LastConnectFailed = LastConnectFailed;
@@ -49,11 +44,11 @@ namespace System.Net.Sockets
             target.ExposedHandleOrUntrackedConfiguration = ExposedHandleOrUntrackedConfiguration;
         }
 
-        public void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
+        internal void SetExposed() => ExposedHandleOrUntrackedConfiguration = true;
 
-        public bool IsTrackedOption(TrackedSocketOptions option) => (_trackedOptions & option) != 0;
+        internal bool IsTrackedOption(TrackedSocketOptions option) => (_trackedOptions & option) != 0;
 
-        public void TrackOption(SocketOptionLevel level, SocketOptionName name)
+        internal void TrackOption(SocketOptionLevel level, SocketOptionName name)
         {
             // As long as only these options are set, we can support Connect{Async}(IPAddress[], ...).
             switch (level)
@@ -99,7 +94,7 @@ namespace System.Net.Sockets
             ExposedHandleOrUntrackedConfiguration = true;
         }
 
-        public SocketAsyncContext AsyncContext
+        internal SocketAsyncContext AsyncContext
         {
             get
             {
@@ -125,7 +120,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public bool IsNonBlocking
+        internal bool IsNonBlocking
         {
             get
             {
@@ -148,7 +143,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public int ReceiveTimeout
+        internal int ReceiveTimeout
         {
             get
             {
@@ -161,7 +156,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public int SendTimeout
+        internal int SendTimeout
         {
             get
             {
@@ -174,26 +169,26 @@ namespace System.Net.Sockets
             }
         }
 
-        public bool IsDisconnected { get; private set; } = false;
+        internal bool IsDisconnected { get; private set; } = false;
 
-        public void SetToDisconnected()
+        internal void SetToDisconnected()
         {
             IsDisconnected = true;
         }
 
-        public static unsafe SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
+        internal static unsafe SafeSocketHandle CreateSocket(IntPtr fileDescriptor)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
         }
 
-        public static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeCloseSocket socket)
+        internal static unsafe SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
             SocketError errorCode;
             socket = CreateSocket(InnerSafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out errorCode));
             return errorCode;
         }
 
-        public static unsafe SocketError Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeCloseSocket socket)
+        internal static unsafe SocketError Accept(SafeSocketHandle socketHandle, byte[] socketAddress, ref int socketAddressSize, out SafeSocketHandle socket)
         {
             SocketError errorCode;
             socket = CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize, out errorCode));
@@ -286,14 +281,14 @@ namespace System.Net.Sockets
                 return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
             }
 
-            public static InnerSafeCloseSocket CreateSocket(IntPtr fileDescriptor)
+            internal static InnerSafeCloseSocket CreateSocket(IntPtr fileDescriptor)
             {
                 var res = new InnerSafeCloseSocket();
                 res.SetHandle(fileDescriptor);
                 return res;
             }
 
-            public static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SocketError errorCode)
+            internal static unsafe InnerSafeCloseSocket CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SocketError errorCode)
             {
                 IntPtr fd;
                 Interop.Error error = Interop.Sys.Socket(addressFamily, socketType, protocolType, &fd);
@@ -329,7 +324,7 @@ namespace System.Net.Sockets
                 return res;
             }
 
-            public static unsafe InnerSafeCloseSocket Accept(SafeCloseSocket socketHandle, byte[] socketAddress, ref int socketAddressLen, out SocketError errorCode)
+            internal static unsafe InnerSafeCloseSocket Accept(SafeSocketHandle socketHandle, byte[] socketAddress, ref int socketAddressLen, out SocketError errorCode)
             {
                 IntPtr acceptedFd;
                 if (!socketHandle.IsNonBlocking)

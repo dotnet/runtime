@@ -1059,7 +1059,7 @@ namespace System.Net.Sockets
             // Called when the socket is closed.
             public void StopAndAbort(SocketAsyncContext context)
             {
-                // We should be called exactly once, by SafeCloseSocket.
+                // We should be called exactly once, by SafeSocketHandle.
                 Debug.Assert(_state != QueueState.Stopped);
 
                 using (Lock())
@@ -1098,7 +1098,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private readonly SafeCloseSocket _socket;
+        private readonly SafeSocketHandle _socket;
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
         private SocketAsyncEngine.Token _asyncEngineToken;
@@ -1107,7 +1107,7 @@ namespace System.Net.Sockets
 
         private readonly object _registerLock = new object();
 
-        public SocketAsyncContext(SafeCloseSocket socket)
+        public SocketAsyncContext(SafeSocketHandle socket)
         {
             _socket = socket;
 

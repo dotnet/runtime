@@ -39,7 +39,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            public bool TryRegister(SafeCloseSocket socket, out Interop.Error error)
+            public bool TryRegister(SafeSocketHandle socket, out Interop.Error error)
             {
                 Debug.Assert(WasAllocated, "Expected WasAllocated to be true");
                 return _engine.TryRegister(socket, _handle, out error);
@@ -389,7 +389,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool TryRegister(SafeCloseSocket socket, IntPtr handle, out Interop.Error error)
+        private bool TryRegister(SafeSocketHandle socket, IntPtr handle, out Interop.Error error)
         {
             error = Interop.Sys.TryChangeSocketEventRegistration(_port, socket, Interop.Sys.SocketEvents.None, 
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, handle);

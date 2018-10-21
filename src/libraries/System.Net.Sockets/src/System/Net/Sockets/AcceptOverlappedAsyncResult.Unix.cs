@@ -37,7 +37,7 @@ namespace System.Net.Sockets
 				System.Buffer.BlockCopy(socketAddress, 0, remoteSocketAddress.Buffer, 0, socketAddressLen);
 
 				_acceptedSocket = _listenSocket.CreateAcceptSocket(
-					SafeCloseSocket.CreateSocket(acceptedFileDescriptor),
+					SafeSocketHandle.CreateSocket(acceptedFileDescriptor),
 					_listenSocket._rightEndPoint.Create(remoteSocketAddress));
 			}
 

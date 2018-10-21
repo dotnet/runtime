@@ -1,10 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.NetworkInformation</AssemblyName>
     <OutputType>Library</OutputType>
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
+    <!-- System.Net.Sockets.SafeSocketHandle is defined both in System.Net.Sockets (public)
+         and System.Net.NetworkInformation (internal). -->
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
     <Configurations>netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -129,11 +132,11 @@
     <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
       <Link>Common\System\Net\IPAddressParserStatics.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.cs">
-      <Link>Common\System\Net\SafeCloseSocket.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.cs">
+      <Link>Common\System\Net\SafeSocketHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
-      <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
+    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.Windows.cs">
+      <Link>Common\System\Net\SafeSocketHandle.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SafeCloseSocketAndEvent.cs">
       <Link>Common\System\Net\SafeCloseSocketAndEvent.cs</Link>
