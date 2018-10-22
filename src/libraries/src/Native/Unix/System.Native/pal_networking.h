@@ -216,6 +216,8 @@ typedef enum
     SocketEvents_SA_READCLOSE = 0x04,
     SocketEvents_SA_CLOSE = 0x08,
     SocketEvents_SA_ERROR = 0x10,
+    // Force the enum to use int32_t instead of uint32_t
+    SocketEvents__IGNORE_SIGNED = -1,
 } SocketEvents;
 
 /**

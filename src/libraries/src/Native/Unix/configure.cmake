@@ -350,7 +350,7 @@ check_function_exists(
 
 check_symbol_exists(
     kqueue
-    "sys/event.h"
+    "sys/types.h;sys/event.h"
     HAVE_KQUEUE)
 
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
