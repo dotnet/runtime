@@ -7460,18 +7460,6 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError 
 }
 
 ICALL_EXPORT MonoStringHandle
-ves_icall_System_Environment_GetMachineConfigPath (MonoError *error)
-{
-	return ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (error);
-}
-
-ICALL_EXPORT MonoStringHandle
-ves_icall_System_Web_Util_ICalls_GetMachineConfigPath (MonoError *error)
-{
-	return ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (error);
-}
-
-ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config (MonoError *error)
 {
 	error_init (error);
