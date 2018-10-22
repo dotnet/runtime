@@ -16,7 +16,7 @@
 
 #ifndef MONO_API
 
-#ifndef MONO_DLL_IMPORT
+#if !defined(MONO_DLL_IMPORT) && !defined(MONO_DLL_EXPORT)
 #define MONO_DLL_EXPORT
 #endif
 
