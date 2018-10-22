@@ -104,10 +104,10 @@
 #include <mono/utils/mono-state.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/environment-internal.h>
-#include "icall-decl.h"
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
+#include "icall-decl.h"
 
 //#define MONO_DEBUG_ICALLARRAY
 

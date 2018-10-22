@@ -58,7 +58,9 @@ typedef enum {
 // Generate prototypes for coop icall wrappers.
 #define ICALL_TYPE(id, name, first)	/* nothing */
 #define ICALL(id, name, func) 		/* nothing */
-#define HANDLES(id, name, func, ret, nargs, argtypes) MONO_HANDLE_DECLARE_RAW (id, name, func, ret, nargs, argtypes);
+#define HANDLES(id, name, func, ret, nargs, argtypes) \
+	MONO_HANDLE_DECLARE_RAW (id, name, func, ret, nargs, argtypes); \
+	MONO_HANDLE_DECLARE (id, name, func, ret, nargs, argtypes);
 #include "icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
@@ -91,6 +93,8 @@ ICALL_EXPORT MonoObject* ves_icall_System_Runtime_CompilerServices_RuntimeHelper
 ICALL_EXPORT MonoObject* ves_icall_property_info_get_default_value (MonoReflectionProperty*);
 ICALL_EXPORT MonoReflectionType* ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxy*);
 ICALL_EXPORT MonoString* ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString*);
+ICALL_EXPORT MonoStringHandle ves_icall_System_Environment_GetMachineConfigPath (MonoError *error); // FIXME Use HANDLES_REUSE_WRAPPER.
+ICALL_EXPORT MonoStringHandle ves_icall_System_Web_Util_ICalls_GetMachineConfigPath (MonoError *error); // FIXME Use HANDLES_REUSE_WRAPPER.
 ICALL_EXPORT MonoType* mono_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT MonoTypedRef mono_ArgIterator_IntGetNextArg (MonoArgIterator*);
 ICALL_EXPORT MonoTypedRef mono_ArgIterator_IntGetNextArgT (MonoArgIterator*, MonoType*);

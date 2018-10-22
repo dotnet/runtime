@@ -29,6 +29,7 @@
 #include "number-ms.h"
 #include "utils/mono-compiler.h"
 #include "icalls.h"
+#include "icall-decl.h"
 
 ICALL_EXPORT
 gdouble

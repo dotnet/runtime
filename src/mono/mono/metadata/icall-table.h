@@ -9,6 +9,7 @@
 #include <config.h>
 #include <glib.h>
 #include <mono/utils/mono-publib.h>
+#include "marshal.h"
 
 #define MONO_ICALL_TABLE_CALLBACKS_VERSION 1
 
@@ -58,8 +59,6 @@ typedef MonoProperty *MonoProperty_ptr;
 typedef MonoPropertyInfo *MonoPropertyInfo_ref;
 typedef MonoType *MonoType_ptr;
 typedef MonoTypedRef *MonoTypedRef_ptr;
-typedef gunichar2 *mono_bstr;
-typedef const gunichar2 *mono_bstr_const;
 typedef unsigned *unsigned_ptr;
 typedef mono_unichar2 *mono_unichar2_ptr;
 typedef WSABUF *WSABUF_ptr;
