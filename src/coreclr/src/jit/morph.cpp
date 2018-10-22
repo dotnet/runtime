@@ -13066,6 +13066,12 @@ DONE_MORPHING_CHILDREN:
                         tree->gtType = typ = temp->TypeGet();
                         foldAndReturnTemp  = true;
                     }
+                    else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
+                             !lvaTable[lclNum].lvNormalizeOnLoad())
+                    {
+                        tree->gtType = typ = temp->TypeGet();
+                        foldAndReturnTemp  = true;
+                    }
                     else
                     {
                         // Assumes that when Lookup returns "false" it will leave "fieldSeq" unmodified (i.e.
