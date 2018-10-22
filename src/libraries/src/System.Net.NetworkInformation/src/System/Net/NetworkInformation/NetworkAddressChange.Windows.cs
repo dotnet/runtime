@@ -201,127 +201,127 @@ namespace System.Net.NetworkInformation
 
             private static void StartHelper(NetworkAddressChangedEventHandler caller, bool captureContext, StartIPOptions startIPOptions)
             {
-                if (caller != null)
+                lock (s_globalLock)
                 {
-                    lock (s_globalLock)
+                    // Setup changedEvent and native overlapped struct.
+                    if (s_ipv4Socket == null)
                     {
-                        // Setup changedEvent and native overlapped struct.
-                        if (s_ipv4Socket == null)
+                        int blocking;
+
+                        // Sockets will be initialized by the call to OSSupportsIP*.
+                        if (Socket.OSSupportsIPv4)
                         {
-                            int blocking;
-
-                            // Sockets will be initialized by the call to OSSupportsIP*.
-                            if (Socket.OSSupportsIPv4)
-                            {
-                                blocking = -1;
-                                s_ipv4Socket = SafeCloseSocketAndEvent.CreateWSASocketWithEvent(AddressFamily.InterNetwork, SocketType.Dgram, (ProtocolType)0, true, false);
-                                Interop.Winsock.ioctlsocket(s_ipv4Socket, Interop.Winsock.IoctlSocketConstants.FIONBIO, ref blocking);
-                                s_ipv4WaitHandle = s_ipv4Socket.GetEventHandle();
-                            }
-
-                            if (Socket.OSSupportsIPv6)
-                            {
-                                blocking = -1;
-                                s_ipv6Socket = SafeCloseSocketAndEvent.CreateWSASocketWithEvent(AddressFamily.InterNetworkV6, SocketType.Dgram, (ProtocolType)0, true, false);
-                                Interop.Winsock.ioctlsocket(s_ipv6Socket, Interop.Winsock.IoctlSocketConstants.FIONBIO, ref blocking);
-                                s_ipv6WaitHandle = s_ipv6Socket.GetEventHandle();
-                            }
+                            blocking = -1;
+                            s_ipv4Socket = SafeCloseSocketAndEvent.CreateWSASocketWithEvent(AddressFamily.InterNetwork, SocketType.Dgram, (ProtocolType)0, true, false);
+                            Interop.Winsock.ioctlsocket(s_ipv4Socket, Interop.Winsock.IoctlSocketConstants.FIONBIO, ref blocking);
+                            s_ipv4WaitHandle = s_ipv4Socket.GetEventHandle();
                         }
 
-                        s_addressChangedSubscribers.TryAdd(caller, captureContext ? ExecutionContext.Capture() : null);
-
-                        if (s_isListening || s_addressChangedSubscribers.Count == 0)
+                        if (Socket.OSSupportsIPv6)
                         {
-                            return;
+                            blocking = -1;
+                            s_ipv6Socket = SafeCloseSocketAndEvent.CreateWSASocketWithEvent(AddressFamily.InterNetworkV6, SocketType.Dgram, (ProtocolType)0, true, false);
+                            Interop.Winsock.ioctlsocket(s_ipv6Socket, Interop.Winsock.IoctlSocketConstants.FIONBIO, ref blocking);
+                            s_ipv6WaitHandle = s_ipv6Socket.GetEventHandle();
                         }
-
-                        if (!s_isPending)
-                        {
-                            int length;
-                            SocketError errorCode;
-
-                            if (Socket.OSSupportsIPv4 && (startIPOptions & StartIPOptions.StartIPv4) != 0)
-                            {
-                                s_registeredWait = ThreadPool.RegisterWaitForSingleObject(
-                                    s_ipv4WaitHandle,
-                                    new WaitOrTimerCallback(AddressChangedCallback),
-                                    StartIPOptions.StartIPv4,
-                                    -1,
-                                    true);
-
-                                errorCode = Interop.Winsock.WSAIoctl_Blocking(
-                                    s_ipv4Socket.DangerousGetHandle(),
-                                    (int)IOControlCode.AddressListChange,
-                                    null, 0, null, 0,
-                                    out length,
-                                    IntPtr.Zero, IntPtr.Zero);
-
-                                if (errorCode != SocketError.Success)
-                                {
-                                    NetworkInformationException exception = new NetworkInformationException();
-                                    if (exception.ErrorCode != (uint)SocketError.WouldBlock)
-                                    {
-                                        throw exception;
-                                    }
-                                }
-
-                                SafeWaitHandle s_ipv4SocketGetEventHandleSafeWaitHandle =
-                                    s_ipv4Socket.GetEventHandle().GetSafeWaitHandle();
-
-                                errorCode = Interop.Winsock.WSAEventSelect(
-                                    s_ipv4Socket,
-                                    s_ipv4SocketGetEventHandleSafeWaitHandle,
-                                    Interop.Winsock.AsyncEventBits.FdAddressListChange);
-
-                                if (errorCode != SocketError.Success)
-                                {
-                                    throw new NetworkInformationException();
-                                }
-                            }
-
-                            if (Socket.OSSupportsIPv6 && (startIPOptions & StartIPOptions.StartIPv6) != 0)
-                            {
-                                s_registeredWait = ThreadPool.RegisterWaitForSingleObject(
-                                    s_ipv6WaitHandle,
-                                    new WaitOrTimerCallback(AddressChangedCallback),
-                                    StartIPOptions.StartIPv6,
-                                    -1,
-                                    true);
-
-                                errorCode = Interop.Winsock.WSAIoctl_Blocking(
-                                    s_ipv6Socket.DangerousGetHandle(),
-                                    (int)IOControlCode.AddressListChange,
-                                    null, 0, null, 0,
-                                    out length,
-                                    IntPtr.Zero, IntPtr.Zero);
-
-                                if (errorCode != SocketError.Success)
-                                {
-                                    NetworkInformationException exception = new NetworkInformationException();
-                                    if (exception.ErrorCode != (uint)SocketError.WouldBlock)
-                                    {
-                                        throw exception;
-                                    }
-                                }
-
-                                SafeWaitHandle s_ipv6SocketGetEventHandleSafeWaitHandle =
-                                    s_ipv6Socket.GetEventHandle().GetSafeWaitHandle();
-
-                                errorCode = Interop.Winsock.WSAEventSelect(
-                                    s_ipv6Socket,
-                                    s_ipv6SocketGetEventHandleSafeWaitHandle,
-                                    Interop.Winsock.AsyncEventBits.FdAddressListChange);
-
-                                if (errorCode != SocketError.Success)
-                                {
-                                    throw new NetworkInformationException();
-                                }
-                            }
-                        }
-
-                        s_isListening = true;
-                        s_isPending = true;
                     }
+
+                    if (caller != null)
+                    {
+                        s_addressChangedSubscribers.TryAdd(caller, captureContext ? ExecutionContext.Capture() : null);
+                    }
+
+                    if (s_isListening || s_addressChangedSubscribers.Count == 0)
+                    {
+                        return;
+                    }
+
+                    if (!s_isPending)
+                    {
+                        int length;
+                        SocketError errorCode;
+
+                        if (Socket.OSSupportsIPv4 && (startIPOptions & StartIPOptions.StartIPv4) != 0)
+                        {
+                            s_registeredWait = ThreadPool.RegisterWaitForSingleObject(
+                                s_ipv4WaitHandle,
+                                new WaitOrTimerCallback(AddressChangedCallback),
+                                StartIPOptions.StartIPv4,
+                                -1,
+                                true);
+
+                            errorCode = Interop.Winsock.WSAIoctl_Blocking(
+                                s_ipv4Socket.DangerousGetHandle(),
+                                (int)IOControlCode.AddressListChange,
+                                null, 0, null, 0,
+                                out length,
+                                IntPtr.Zero, IntPtr.Zero);
+
+                            if (errorCode != SocketError.Success)
+                            {
+                                NetworkInformationException exception = new NetworkInformationException();
+                                if (exception.ErrorCode != (uint)SocketError.WouldBlock)
+                                {
+                                    throw exception;
+                                }
+                            }
+
+                            SafeWaitHandle s_ipv4SocketGetEventHandleSafeWaitHandle =
+                                s_ipv4Socket.GetEventHandle().GetSafeWaitHandle();
+
+                            errorCode = Interop.Winsock.WSAEventSelect(
+                                s_ipv4Socket,
+                                s_ipv4SocketGetEventHandleSafeWaitHandle,
+                                Interop.Winsock.AsyncEventBits.FdAddressListChange);
+
+                            if (errorCode != SocketError.Success)
+                            {
+                                throw new NetworkInformationException();
+                            }
+                        }
+
+                        if (Socket.OSSupportsIPv6 && (startIPOptions & StartIPOptions.StartIPv6) != 0)
+                        {
+                            s_registeredWait = ThreadPool.RegisterWaitForSingleObject(
+                                s_ipv6WaitHandle,
+                                new WaitOrTimerCallback(AddressChangedCallback),
+                                StartIPOptions.StartIPv6,
+                                -1,
+                                true);
+
+                            errorCode = Interop.Winsock.WSAIoctl_Blocking(
+                                s_ipv6Socket.DangerousGetHandle(),
+                                (int)IOControlCode.AddressListChange,
+                                null, 0, null, 0,
+                                out length,
+                                IntPtr.Zero, IntPtr.Zero);
+
+                            if (errorCode != SocketError.Success)
+                            {
+                                NetworkInformationException exception = new NetworkInformationException();
+                                if (exception.ErrorCode != (uint)SocketError.WouldBlock)
+                                {
+                                    throw exception;
+                                }
+                            }
+
+                            SafeWaitHandle s_ipv6SocketGetEventHandleSafeWaitHandle =
+                                s_ipv6Socket.GetEventHandle().GetSafeWaitHandle();
+
+                            errorCode = Interop.Winsock.WSAEventSelect(
+                                s_ipv6Socket,
+                                s_ipv6SocketGetEventHandleSafeWaitHandle,
+                                Interop.Winsock.AsyncEventBits.FdAddressListChange);
+
+                            if (errorCode != SocketError.Success)
+                            {
+                                throw new NetworkInformationException();
+                            }
+                        }
+                    }
+
+                    s_isListening = true;
+                    s_isPending = true;
                 }
             }
 
