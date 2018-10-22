@@ -138,14 +138,27 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("Int12", evt.EventName);
 
-                        var structValue = evt.PayloadValue(0, "nInteger");
-                        var typeName = structValue.GetType().Namespace + "." + structValue.GetType().Name;
-                        Assert.Equal(typeName, "WhatAmI");
-
-                        //var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        //Assert.NotNull(structValueAsDictionary);
-                        //Assert.Equal(structValueAsDictionary["HasValue"], true);
-                        //Assert.Equal(structValueAsDictionary["Value"], nullableInt.Value);
+                        var payload = evt.PayloadValue(0, "nInteger");
+                        if (payload is int)                     // Payload is Int32 when testing locally
+                        {
+                            Assert.Equal(payload, 12);
+                        }
+                        else
+                        {
+                            // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
+                            // However, casting to IDictionary<string, object> fails
+                            if ((payload as object[]) != null)
+                            {
+                                var keyValueDict = GetDictionaryFromKeyValueArray(payload);
+                                Assert.Equal(true, keyValueDict["HasValue"]);
+                                Assert.Equal(12, keyValueDict["Value"]);
+                            }
+                            else
+                            {
+                                // We don't know what it is. Assert it's type name to find out
+                                Assert.Equal(payload.GetType().Name, "~WhatAmI~");
+                            }
+                        }
                     }));
                 /*************************************************************************/
                 int? nullableInt2 = null;
@@ -159,10 +172,21 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("IntNull", evt.EventName);
 
-                        var structValue = evt.PayloadValue(0, "nInteger");
-                        var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["HasValue"], false);
+                        var payload = evt.PayloadValue(0, "nInteger");
+
+                        // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
+                        // However, casting to IDictionary<string, object> fails
+                        if ((payload as object[]) != null)
+                        {
+                            var keyValueDict = GetDictionaryFromKeyValueArray(payload);
+                            Assert.Equal(false, keyValueDict["HasValue"]);
+                        }
+                        else
+                        {
+                            // Payload is a null object reference locally
+                            if (payload != null)
+                                Assert.Equal(payload.GetType().Name, "~WhatAmI~");  // We don't know what it is. Assert it's type name to find out
+                        }
                     }));
                 ///*************************************************************************/
                 DateTime? nullableDate = DateTime.Now;
@@ -176,11 +200,27 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("DateTimeNow", evt.EventName);
 
-                        var structValue = evt.PayloadValue(0, "nowTime");
-                        var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["HasValue"], true);
-                        Assert.Equal(structValueAsDictionary["Value"], nullableDate.Value);
+                        var payload = evt.PayloadValue(0, "nowTime");
+                        if (payload is DateTime)                     // Payload is DateTime when testing locally
+                        {
+                            Assert.Equal(payload, nullableDate.Value);
+                        }
+                        else
+                        {
+                            // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
+                            // However, casting to IDictionary<string, object> fails
+                            if ((payload as object[]) != null)
+                            {
+                                var keyValueDict = GetDictionaryFromKeyValueArray(payload);
+                                Assert.Equal(true, keyValueDict["HasValue"]);
+                                Assert.Equal(nullableDate.Value, keyValueDict["Value"]);
+                            }
+                            else
+                            {
+                                // We don't know what it is. Assert it's type name to find out
+                                Assert.Equal(payload.GetType().Name, "~WhatAmI~");
+                            }
+                        }
                     }));
                 ///*************************************************************************/
                 DateTime? nullableDate2 = null;
@@ -194,10 +234,20 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("DateTimeNull", evt.EventName);
 
-                        var structValue = evt.PayloadValue(0, "nowTime");
-                        var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["HasValue"], false);
+                        var payload = evt.PayloadValue(0, "nowTime");
+                        // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
+                        // However, casting to IDictionary<string, object> fails
+                        if ((payload as object[]) != null)
+                        {
+                            var keyValueDict = GetDictionaryFromKeyValueArray(payload);
+                            Assert.Equal(false, keyValueDict["HasValue"]);
+                        }
+                        else
+                        {
+                            // Payload is a null object reference locally
+                            if (payload != null)
+                                Assert.Equal(payload.GetType().Name, "~WhatAmI~");  // We don't know what it is. Assert it's type name to find out
+                        }
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
