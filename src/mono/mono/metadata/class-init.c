@@ -4159,9 +4159,15 @@ mono_class_init (MonoClass *klass)
 	klass_byval_arg = m_class_get_byval_arg (klass);
 	if (klass_byval_arg->type == MONO_TYPE_ARRAY || klass_byval_arg->type == MONO_TYPE_SZARRAY) {
 		MonoClass *element_class = klass->element_class;
+		MonoClass *cast_class = klass->cast_class;
+
 		if (!element_class->inited) 
 			mono_class_init (element_class);
 		if (mono_class_set_type_load_failure_causedby_class (klass, element_class, "Could not load array element class"))
+			goto leave;
+		if (!cast_class->inited)
+			mono_class_init (cast_class);
+		if (mono_class_set_type_load_failure_causedby_class (klass, cast_class, "Could not load array cast class"))
 			goto leave;
 	}
 
