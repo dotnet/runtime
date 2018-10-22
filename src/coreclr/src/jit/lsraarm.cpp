@@ -36,18 +36,11 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     //
     //  Size?                   Init Memory?    # temp regs
     //   0                          -               0
-    //   const and <=4 str instr    -             hasPspSym ? 1 : 0
-    //   const and <PageSize        No            hasPspSym ? 1 : 0
-    //   >4 ptr words               Yes           hasPspSym ? 2 : 1
-    //   Non-const                  Yes           hasPspSym ? 2 : 1
-    //   Non-const                  No            hasPspSym ? 2 : 1
-
-    bool hasPspSym;
-#if FEATURE_EH_FUNCLETS
-    hasPspSym = (compiler->lvaPSPSym != BAD_VAR_NUM);
-#else
-    hasPspSym = false;
-#endif
+    //   const and <=4 str instr    -               0
+    //   const and <PageSize        No              0
+    //   >4 ptr words               Yes             1
+    //   Non-const                  Yes             1
+    //   Non-const                  No              1
 
     GenTree* size = tree->gtGetOp1();
     int      internalIntCount;
@@ -87,18 +80,13 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             {
                 internalIntCount = 1;
             }
-
-            if (hasPspSym)
-            {
-                internalIntCount++;
-            }
         }
     }
     else
     {
-        // target (regCnt) + tmp + [psp]
+        // target (regCnt) + tmp
         srcCount         = 1;
-        internalIntCount = hasPspSym ? 2 : 1;
+        internalIntCount = 1;
         BuildUse(size);
     }
 

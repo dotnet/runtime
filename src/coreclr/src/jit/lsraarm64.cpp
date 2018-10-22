@@ -522,18 +522,10 @@ int LinearScan::BuildNode(GenTree* tree)
             //   0                          -               0
             //   const and <=6 ptr words    -               0
             //   const and <PageSize        No              0
-            //   >6 ptr words               Yes           hasPspSym ? 1 : 0
-            //   Non-const                  Yes           hasPspSym ? 1 : 0
+            //   >6 ptr words               Yes             0
+            //   Non-const                  Yes             0
             //   Non-const                  No              2
             //
-            // PSPSym - If the method has PSPSym increment internalIntCount by 1.
-            //
-            bool hasPspSym;
-#if FEATURE_EH_FUNCLETS
-            hasPspSym = (compiler->lvaPSPSym != BAD_VAR_NUM);
-#else
-            hasPspSym = false;
-#endif
 
             GenTree* size = tree->gtGetOp1();
             if (size->IsCnsIntOrI())
@@ -572,14 +564,6 @@ int LinearScan::BuildNode(GenTree* tree)
                             buildInternalIntRegisterDefForNode(tree);
                         }
                     }
-                    else if (hasPspSym)
-                    {
-                        // greater than 4 and need to zero initialize allocated stack space.
-                        // If the method has PSPSym, we need an internal register to hold regCnt
-                        // since targetReg allocated to GT_LCLHEAP node could be the same as one of
-                        // the the internal registers.
-                        buildInternalIntRegisterDefForNode(tree);
-                    }
                 }
             }
             else
@@ -590,24 +574,8 @@ int LinearScan::BuildNode(GenTree* tree)
                     buildInternalIntRegisterDefForNode(tree);
                     buildInternalIntRegisterDefForNode(tree);
                 }
-                else if (hasPspSym)
-                {
-                    // If the method has PSPSym, we need an internal register to hold regCnt
-                    // since targetReg allocated to GT_LCLHEAP node could be the same as one of
-                    // the the internal registers.
-                    buildInternalIntRegisterDefForNode(tree);
-                }
             }
 
-            // If the method has PSPSym, we need an additional register to relocate it on stack.
-            if (hasPspSym)
-            {
-                // Exclude const size 0
-                if (!size->IsCnsIntOrI() || (size->gtIntCon.gtIconVal > 0))
-                {
-                    buildInternalIntRegisterDefForNode(tree);
-                }
-            }
             if (!size->isContained())
             {
                 BuildUse(size);
