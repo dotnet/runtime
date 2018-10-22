@@ -83,6 +83,7 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/w32api.h>
+#include "object-internals.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 242
@@ -2058,7 +2059,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 			MONO_HANDLE_ARRAY_GETREF (var, array, i);
 			gchandle_t gchandle = 0;
 			env_strings [i] = mono_unicode_to_external (mono_string_handle_pin_chars (var, &gchandle));
-			mono_gchandle_free (gchandle);
+			mono_gchandle_free_internal (gchandle);
 		}
 	} else {
 		gsize env_count = 0;
@@ -2461,10 +2462,10 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 		return NULL;
 	}
 	if (sizeof (guint32) == sizeof (gpointer)) {
-		memcpy (mono_array_addr (procs, guint32, 0), pidarray, count * sizeof (gint32));
+		memcpy (mono_array_addr_internal (procs, guint32, 0), pidarray, count * sizeof (gint32));
 	} else {
 		for (i = 0; i < count; ++i)
-			*(mono_array_addr (procs, guint32, i)) = GPOINTER_TO_UINT (pidarray [i]);
+			*(mono_array_addr_internal (procs, guint32, i)) = GPOINTER_TO_UINT (pidarray [i]);
 	}
 	g_free (pidarray);
 

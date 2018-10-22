@@ -2976,10 +2976,10 @@ sgen_thread_detach_with_lock (SgenThreadInfo *p)
  */
 
 /**
- * mono_gc_wbarrier_arrayref_copy:
+ * mono_gc_wbarrier_arrayref_copy_internal:
  */
 void
-mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
+mono_gc_wbarrier_arrayref_copy_internal (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	HEAVY_STAT (++stat_wbarrier_arrayref_copy);
 	/*This check can be done without taking a lock since dest_ptr array is pinned*/
@@ -3004,10 +3004,10 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 }
 
 /**
- * mono_gc_wbarrier_generic_nostore:
+ * mono_gc_wbarrier_generic_nostore_internal:
  */
 void
-mono_gc_wbarrier_generic_nostore (gpointer ptr)
+mono_gc_wbarrier_generic_nostore_internal (gpointer ptr)
 {
 	gpointer obj;
 
@@ -3034,25 +3034,25 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 }
 
 /**
- * mono_gc_wbarrier_generic_store:
+ * mono_gc_wbarrier_generic_store_internal:
  */
 void
-mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
+mono_gc_wbarrier_generic_store_internal (gpointer ptr, GCObject* value)
 {
 	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (value)) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value) || sgen_concurrent_collection_in_progress)
-		mono_gc_wbarrier_generic_nostore (ptr);
+		mono_gc_wbarrier_generic_nostore_internal (ptr);
 	sgen_dummy_use (value);
 }
 
 /**
- * mono_gc_wbarrier_generic_store_atomic:
+ * mono_gc_wbarrier_generic_store_atomic_internal:
  * Same as \c mono_gc_wbarrier_generic_store but performs the store
  * as an atomic operation with release semantics.
  */
 void
-mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
+mono_gc_wbarrier_generic_store_atomic_internal (gpointer ptr, GCObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
@@ -3061,7 +3061,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 	mono_atomic_store_ptr ((volatile gpointer *)ptr, value);
 
 	if (ptr_in_nursery (value) || sgen_concurrent_collection_in_progress)
-		mono_gc_wbarrier_generic_nostore (ptr);
+		mono_gc_wbarrier_generic_nostore_internal (ptr);
 
 	sgen_dummy_use (value);
 }

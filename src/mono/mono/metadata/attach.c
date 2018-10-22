@@ -320,7 +320,7 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 			g_free (agent);
 			return 1;
 		}
-		mono_array_set (main_args, MonoString*, 0, args_str);
+		mono_array_set_internal (main_args, MonoString*, 0, args_str);
 	}
 
 

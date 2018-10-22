@@ -60,7 +60,7 @@ ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, Mono
 	*err = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 	if (gchandle)
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 
 	return event;
 }
@@ -105,7 +105,7 @@ ves_icall_System_Threading_Events_OpenEvent_internal (MonoStringHandle name, gin
 	MONO_EXIT_GC_SAFE;
 
 	if (gchandle)
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 
 	return handle;
 }

@@ -970,7 +970,7 @@ debugger_agent_init (void)
 	/* Needed by the hash_table_new_type () call below */
 	mono_gc_base_init ();
 
-	thread_to_tls = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger TLS Table");
+	thread_to_tls = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger TLS Table");
 
 	tid_to_thread = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
 
@@ -1922,7 +1922,7 @@ free_objref (gpointer value)
 {
 	ObjRef *o = (ObjRef *)value;
 
-	mono_gchandle_free (o->handle);
+	mono_gchandle_free_internal (o->handle);
 
 	g_free (o);
 }
@@ -1932,7 +1932,7 @@ objrefs_init (void)
 {
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
-	suspended_objs = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Suspended Object Table");
+	suspended_objs = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Suspended Object Table");
 }
 
 static void
@@ -1973,12 +1973,12 @@ get_objref (MonoObject *obj)
 		 * Objects can move, so use a hash table mapping hash codes to lists of
 		 * ObjRef structures.
 		 */
-		hash = mono_object_hash (obj);
+		hash = mono_object_hash_internal (obj);
 
 		reflist = (GSList *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (hash));
 		for (l = reflist; l; l = l->next) {
 			ref = (ObjRef *)l->data;
-			if (ref && mono_gchandle_get_target (ref->handle) == obj) {
+			if (ref && mono_gchandle_get_target_internal (ref->handle) == obj) {
 				mono_loader_unlock ();
 				return ref;
 			}
@@ -1987,7 +1987,7 @@ get_objref (MonoObject *obj)
 		/* Use a hash table with masked pointers to internalize object references */
 		ref = (ObjRef *)g_hash_table_lookup (obj_to_objref, GINT_TO_POINTER (~((gsize)obj)));
 		/* ref might refer to a different object with the same addr which was GCd */
-		if (ref && mono_gchandle_get_target (ref->handle) == obj) {
+		if (ref && mono_gchandle_get_target_internal (ref->handle) == obj) {
 			mono_loader_unlock ();
 			return ref;
 		}
@@ -1995,7 +1995,7 @@ get_objref (MonoObject *obj)
 
 	ref = g_new0 (ObjRef, 1);
 	ref->id = mono_atomic_inc_i32 (&objref_id);
-	ref->handle = mono_gchandle_new_weakref (obj, FALSE);
+	ref->handle = mono_gchandle_new_weakref_internal (obj, FALSE);
 
 	g_hash_table_insert (objrefs, GINT_TO_POINTER (ref->id), ref);
 
@@ -2057,7 +2057,7 @@ get_object_allow_null (int objid, MonoObject **obj)
 	ref = (ObjRef *)g_hash_table_lookup (objrefs, GINT_TO_POINTER (objid));
 
 	if (ref) {
-		*obj = mono_gchandle_get_target (ref->handle);
+		*obj = mono_gchandle_get_target_internal (ref->handle);
 		mono_loader_unlock ();
 		if (!(*obj))
 			return ERR_INVALID_OBJECT;
@@ -5251,7 +5251,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 		} else {
 			if (m_class_is_valuetype (obj->vtable->klass)) {
 				t = m_class_get_byval_arg (obj->vtable->klass);
-				addr = mono_object_unbox (obj);
+				addr = mono_object_unbox_internal (obj);
 				boxed_vtype = TRUE;
 				goto handle_vtype;
 			} else if (m_class_get_rank (obj->vtable->klass)) {
@@ -5501,7 +5501,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				DEBUG_PRINTF (1, "Expected type '%s', got object '%s'\n", mono_type_full_name (t), m_class_get_name (obj->vtable->klass));
 				return ERR_INVALID_ARGUMENT;
 			}
-			memcpy (addr, mono_object_unbox (obj), mono_class_value_size (obj->vtable->klass, NULL));
+			memcpy (addr, mono_object_unbox_internal (obj), mono_class_value_size (obj->vtable->klass, NULL));
 		} else {
 			err = decode_vtype (t, domain, addr, buf, &buf, limit);
 			if (err != ERR_NONE)
@@ -5529,7 +5529,7 @@ decode_value_internal (MonoType *t, int type, MonoDomain *domain, guint8 *addr, 
 				if (obj && obj->vtable->domain != domain)
 					return ERR_INVALID_ARGUMENT;
 
-				mono_gc_wbarrier_generic_store (addr, obj);
+				mono_gc_wbarrier_generic_store_internal (addr, obj);
 			} else if (type == VALUE_TYPE_ID_NULL) {
 				*(MonoObject**)addr = NULL;
 			} else if (type == MONO_TYPE_VALUETYPE) {
@@ -6072,21 +6072,21 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 			DEBUG_PRINTF (1, "[%p] Error: Interface method invoked without this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
 			return ERR_INVALID_ARGUMENT;
 		}
-		m = mono_object_get_virtual_method (this_arg, m);
+		m = mono_object_get_virtual_method_internal (this_arg, m);
 		/* Transform this to the format the rest of the code expects it to be */
 		if (m_class_is_valuetype (m->klass)) {
 			this_buf = (guint8 *)g_alloca (mono_class_instance_size (m->klass));
-			memcpy (this_buf, mono_object_unbox (this_arg), mono_class_instance_size (m->klass));
+			memcpy (this_buf, mono_object_unbox_internal (this_arg), mono_class_instance_size (m->klass));
 		}
 	} else if ((m->flags & METHOD_ATTRIBUTE_VIRTUAL) && !m_class_is_valuetype (m->klass) && invoke->flags & INVOKE_FLAG_VIRTUAL) {
 		if (!this_arg) {
 			DEBUG_PRINTF (1, "[%p] Error: invoke with INVOKE_FLAG_VIRTUAL flag set without this argument.\n", (gpointer) (gsize) mono_native_thread_id_get ());
 			return ERR_INVALID_ARGUMENT;
 		}
-		m = mono_object_get_virtual_method (this_arg, m);
+		m = mono_object_get_virtual_method_internal (this_arg, m);
 		if (m_class_is_valuetype (m->klass)) {
 			this_buf = (guint8 *)g_alloca (mono_class_instance_size (m->klass));
-			memcpy (this_buf, mono_object_unbox (this_arg), mono_class_instance_size (m->klass));
+			memcpy (this_buf, mono_object_unbox_internal (this_arg), mono_class_instance_size (m->klass));
 		}
 	}
 
@@ -6221,9 +6221,9 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 
 				if (sig->ret->byref) {
 					MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
-					buffer_add_value (buf, ret_byval, mono_object_unbox (res), domain);
+					buffer_add_value (buf, ret_byval, mono_object_unbox_internal (res), domain);
 				} else {
-					buffer_add_value (buf, sig->ret, mono_object_unbox (res), domain);
+					buffer_add_value (buf, sig->ret, mono_object_unbox_internal (res), domain);
 				}
 			}
 		} else {
@@ -7201,7 +7201,7 @@ domain_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		o = mono_object_new_checked (domain, klass, error);
 		mono_error_assert_ok (error);
 
-		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox (o), p, &p, end);
+		err = decode_value (m_class_get_byval_arg (klass), domain, (guint8 *)mono_object_unbox_internal (o), p, &p, end);
 		if (err != ERR_NONE)
 			return err;
 
@@ -7466,7 +7466,7 @@ buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *
 	} else if (MONO_TYPE_IS_REFERENCE (t))
 		buffer_add_value (buf, t, &val, domain);
 	else
-		buffer_add_value (buf, t, mono_object_unbox (val), domain);
+		buffer_add_value (buf, t, mono_object_unbox_internal (val), domain);
 }
 
 static ErrorCode
@@ -7507,7 +7507,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			if (typed_args) {
 				buffer_add_int (buf, mono_array_length_internal (typed_args));
 				for (j = 0; j < mono_array_length_internal (typed_args); ++j) {
-					MonoObject *val = mono_array_get (typed_args, MonoObject*, j);
+					MonoObject *val = mono_array_get_internal (typed_args, MonoObject*, j);
 
 					t = mono_method_signature_internal (attr->ctor)->params [j];
 
@@ -7522,7 +7522,7 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 				buffer_add_int (buf, mono_array_length_internal (named_args));
 
 				for (j = 0; j < mono_array_length_internal (named_args); ++j) {
-					MonoObject *val = mono_array_get (named_args, MonoObject*, j);
+					MonoObject *val = mono_array_get_internal (named_args, MonoObject*, j);
 
 					if (arginfo [j].prop) {
 						buffer_add_byte (buf, 0x54);
@@ -7887,9 +7887,9 @@ type_commands_internal (int command, MonoClass *klass, MonoDomain *domain, guint
 				return err;
 			}
 			if (MONO_TYPE_IS_REFERENCE (f->type))
-				mono_field_static_set_value (vtable, f, *(gpointer*)val);
+				mono_field_static_set_value_internal (vtable, f, *(gpointer*)val);
 			else
-				mono_field_static_set_value (vtable, f, val);
+				mono_field_static_set_value_internal (vtable, f, val);
 			g_free (val);
 		}
 		break;
@@ -8389,7 +8389,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			s = mono_ldstr_checked (domain, m_class_get_image (method->klass), mono_metadata_token_index (token), error);
 			mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
-			s2 = mono_string_to_utf8_checked (s, error);
+			s2 = mono_string_to_utf8_checked_internal (s, error);
 			mono_error_assert_ok (error);
 
 			buffer_add_byte (buf, TOKEN_TYPE_STRING);
@@ -8432,7 +8432,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 			} else if (handle_class == mono_defaults.string_class) {
 				char *s;
 
-				s = mono_string_to_utf8_checked ((MonoString *)val, error);
+				s = mono_string_to_utf8_checked_internal ((MonoString *)val, error);
 				mono_error_assert_ok (error);
 				buffer_add_byte (buf, TOKEN_TYPE_STRING);
 				buffer_add_string (buf, s);
@@ -9009,17 +9009,17 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	switch (command) {
 	case CMD_STRING_REF_GET_VALUE:
 		if (CHECK_PROTOCOL_VERSION (2, 41)) {
-			for (i = 0; i < mono_string_length (str); ++i)
-				if (mono_string_chars (str)[i] == 0)
+			for (i = 0; i < mono_string_length_internal (str); ++i)
+				if (mono_string_chars_internal (str)[i] == 0)
 					use_utf16 = TRUE;
 			buffer_add_byte (buf, use_utf16 ? 1 : 0);
 		}
 		if (use_utf16) {
-			buffer_add_int (buf, mono_string_length (str) * 2);
-			buffer_add_data (buf, (guint8*)mono_string_chars (str), mono_string_length (str) * 2);
+			buffer_add_int (buf, mono_string_length_internal (str) * 2);
+			buffer_add_data (buf, (guint8*)mono_string_chars_internal (str), mono_string_length_internal (str) * 2);
 		} else {
 			ERROR_DECL (error);
-			s = mono_string_to_utf8_checked (str, error);
+			s = mono_string_to_utf8_checked_internal (str, error);
 			if (!mono_error_ok (error)) {
 				if (s)
 					g_free (s);
@@ -9031,14 +9031,14 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		}
 		break;
 	case CMD_STRING_REF_GET_LENGTH:
-		buffer_add_long (buf, mono_string_length (str));
+		buffer_add_long (buf, mono_string_length_internal (str));
 		break;
 	case CMD_STRING_REF_GET_CHARS:
 		index = decode_long (p, &p, end);
 		length = decode_long (p, &p, end);
-		if (index > mono_string_length (str) - length)
+		if (index > mono_string_length_internal (str) - length)
 			return ERR_INVALID_ARGUMENT;
-		c = mono_string_chars (str) + index;
+		c = mono_string_chars_internal (str) + index;
 		for (i = 0; i < length; ++i)
 			buffer_add_short (buf, c [i]);
 		break;
@@ -9220,7 +9220,7 @@ object_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 					g_free (val);
 					return err;
 				}
-				mono_field_static_set_value (vtable, f, val);
+				mono_field_static_set_value_internal (vtable, f, val);
 				g_free (val);
 			} else {
 				err = decode_value (f->type, obj->vtable->domain, (guint8*)obj + f->offset, p, &p, end);

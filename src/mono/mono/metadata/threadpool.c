@@ -47,6 +47,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/refcount.h>
 #include <mono/utils/mono-os-wait.h>
+#include "monitor.h"
 
 // consistency with coreclr https://github.com/dotnet/coreclr/blob/643b09f966e68e06d5f0930755985a01a2a2b096/src/vm/win32threadpool.h#L111
 #define MAX_POSSIBLE_THREADS 0x7fff
@@ -372,7 +373,7 @@ worker_callback (void)
 				else
 					mono_error_cleanup (error);
 				mono_thread_internal_unhandled_exception (exc);
-			} else if (res && *(MonoBoolean*) mono_object_unbox (res) == FALSE) {
+			} else if (res && *(MonoBoolean*) mono_object_unbox_internal (res) == FALSE) {
 				retire = TRUE;
 			}
 
@@ -434,23 +435,23 @@ mono_threadpool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod
 
 	error_init (error);
 
-	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL, error);
+	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke_internal (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL, error);
 	return_val_if_nok (error, NULL);
 
 	async_call = (MonoAsyncCall*) mono_object_new_checked (domain, async_call_klass, error);
 	return_val_if_nok (error, NULL);
 
-	MONO_OBJECT_SETREF (async_call, msg, message);
-	MONO_OBJECT_SETREF (async_call, state, state);
+	MONO_OBJECT_SETREF_INTERNAL (async_call, msg, message);
+	MONO_OBJECT_SETREF_INTERNAL (async_call, state, state);
 
 	if (async_callback) {
-		MONO_OBJECT_SETREF (async_call, cb_method, mono_get_delegate_invoke (((MonoObject*) async_callback)->vtable->klass));
-		MONO_OBJECT_SETREF (async_call, cb_target, async_callback);
+		MONO_OBJECT_SETREF_INTERNAL (async_call, cb_method, mono_get_delegate_invoke_internal (((MonoObject*) async_callback)->vtable->klass));
+		MONO_OBJECT_SETREF_INTERNAL (async_call, cb_target, async_callback);
 	}
 
 	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL, (MonoObject*) async_call, error);
 	return_val_if_nok (error, NULL);
-	MONO_OBJECT_SETREF (async_result, async_delegate, target);
+	MONO_OBJECT_SETREF_INTERNAL (async_result, async_delegate, target);
 
 	mono_threadpool_enqueue_work_item (domain, (MonoObject*) async_result, error);
 	return_val_if_nok (error, NULL);
@@ -471,11 +472,11 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 	*out_args = NULL;
 
 	/* check if already finished */
-	mono_monitor_enter ((MonoObject*) ares);
+	mono_monitor_enter_internal ((MonoObject*) ares);
 
 	if (ares->endinvoke_called) {
 		mono_error_set_invalid_operation(error, "Delegate EndInvoke method called more than once");
-		mono_monitor_exit ((MonoObject*) ares);
+		mono_monitor_exit_internal ((MonoObject*) ares);
 		return NULL;
 	}
 
@@ -483,7 +484,7 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 
 	/* wait until we are really finished */
 	if (ares->completed) {
-		mono_monitor_exit ((MonoObject *) ares);
+		mono_monitor_exit_internal ((MonoObject *) ares);
 	} else {
 		gpointer wait_event;
 		if (ares->handle) {
@@ -496,9 +497,9 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 				mono_w32event_close (wait_event);
 				return NULL;
 			}
-			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);
+			MONO_OBJECT_SETREF_INTERNAL (ares, handle, (MonoObject*) wait_handle);
 		}
-		mono_monitor_exit ((MonoObject*) ares);
+		mono_monitor_exit_internal ((MonoObject*) ares);
 #ifdef HOST_WIN32
 		MONO_ENTER_GC_SAFE;
 		mono_win32_wait_for_single_object_ex (wait_event, INFINITE, TRUE);

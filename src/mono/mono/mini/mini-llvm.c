@@ -9495,9 +9495,9 @@ void
 default_mono_llvm_unhandled_exception (void)
 {
 	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
-	MonoObject *target = mono_gchandle_get_target (jit_tls->thrown_exc);
+	MonoObject *target = mono_gchandle_get_target_internal (jit_tls->thrown_exc);
 
-	mono_unhandled_exception (target);
+	mono_unhandled_exception_internal (target);
 	mono_invoke_unhandled_exception_hook (target);
 	g_assert_not_reached ();
 }

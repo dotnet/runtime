@@ -3648,11 +3648,10 @@ typedef struct _TestStruct {
 static gpointer
 lookup_mono_symbol (const char *symbol_name)
 {
-	gpointer symbol;
-	if (g_module_symbol (g_module_open (NULL, G_MODULE_BIND_LAZY), symbol_name, &symbol))
-		return symbol;
-	else
-		return NULL;
+	gpointer symbol = NULL;
+	const gboolean success = g_module_symbol (g_module_open (NULL, G_MODULE_BIND_LAZY), symbol_name, &symbol);
+	g_assertf (success, "%s", symbol_name);
+	return success ? symbol : NULL;
 }
 
 LIBTEST_API gpointer STDCALL

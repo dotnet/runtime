@@ -525,7 +525,7 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 	guint32 buffer_handle = 0;
 	buffer = MONO_ARRAY_HANDLE_PIN (dest, guchar, dest_offset, &buffer_handle);
 	result = mono_w32file_read (handle, buffer, count, &n, io_error);
-	mono_gchandle_free (buffer_handle);
+	mono_gchandle_free_internal (buffer_handle);
 
 	if (!result)
 		return -1;
@@ -555,7 +555,7 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArrayHandle src,
 	guint32 src_handle = 0;
 	buffer = MONO_ARRAY_HANDLE_PIN (src, guchar, src_offset, &src_handle);
 	result = mono_w32file_write (handle, buffer, count, &n, io_error);
-	mono_gchandle_free (src_handle);
+	mono_gchandle_free_internal (src_handle);
 
 	if (!result)
 		return -1;
@@ -848,7 +848,7 @@ mono_filesize_from_path (MonoString *string)
 	ERROR_DECL (error);
 	struct stat buf;
 	gint64 res;
-	char *path = mono_string_to_utf8_checked (string, error);
+	char *path = mono_string_to_utf8_checked_internal (string, error);
 	mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 
 	gint stat_res;

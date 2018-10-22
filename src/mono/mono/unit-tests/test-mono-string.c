@@ -14,7 +14,7 @@ new_string_ok (void)
 	MonoString *s = mono_string_new_checked (mono_domain_get (), "abcd", error);
 	static const gunichar2 u16s[] = { 0x61, 0x62, 0x63, 0x64, 0 }; /* u16 "abcd" */
 	mono_error_assert_ok (error);
-	gunichar2* c = mono_string_chars (s);
+	gunichar2* c = mono_string_chars_internal (s);
 
 	g_assert (c != NULL && !memcmp (&u16s, c, sizeof (u16s)));
 	return 0;
@@ -28,7 +28,7 @@ new_string_utf8 (void)
 	static const unsigned char bytes[] = { 0xE2, 0x98, 0x83, 0x00 }; /* U+2603 NUL */
 	MonoString *s = mono_string_new_checked (mono_domain_get (), (const char*)bytes, error);
 	mono_error_assert_ok (error);
-	gunichar2* c = mono_string_chars (s);
+	gunichar2* c = mono_string_chars_internal (s);
 	g_assert (c != NULL &&
 		  (c[0] == snowman) &&
 		  (c[1] == 0));

@@ -522,12 +522,12 @@ stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinv
 		} else if (pinvoke) {
 			memcpy (result->data.vt, data, mono_class_native_size (type->data.klass, NULL));
 		} else {
-			mono_value_copy (result->data.vt, data, type->data.klass);
+			mono_value_copy_internal (result->data.vt, data, type->data.klass);
 		}
 		return;
 	case MONO_TYPE_GENERICINST: {
 		if (mono_type_generic_inst_is_valuetype (type)) {
-			mono_value_copy (result->data.vt, data, mono_class_from_mono_type_internal (type));
+			mono_value_copy_internal (result->data.vt, data, mono_class_from_mono_type_internal (type));
 			return;
 		}
 		stackval_from_data (m_class_get_byval_arg (type->data.generic_class->container_class), result, data, pinvoke);
@@ -608,7 +608,7 @@ stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY: {
 		gpointer *p = (gpointer *) data;
-		mono_gc_wbarrier_generic_store (p, val->data.o);
+		mono_gc_wbarrier_generic_store_internal (p, val->data.o);
 		return;
 	}
 	case MONO_TYPE_PTR: {
@@ -623,14 +623,14 @@ stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
 		} else if (pinvoke) {
 			memcpy (data, val->data.vt, mono_class_native_size (type->data.klass, NULL));
 		} else {
-			mono_value_copy (data, val->data.vt, type->data.klass);
+			mono_value_copy_internal (data, val->data.vt, type->data.klass);
 		}
 		return;
 	case MONO_TYPE_GENERICINST: {
 		MonoClass *container_class = type->data.generic_class->container_class;
 
 		if (m_class_is_valuetype (container_class) && !m_class_is_enumtype (container_class)) {
-			mono_value_copy (data, val->data.vt, mono_class_from_mono_type_internal (type));
+			mono_value_copy_internal (data, val->data.vt, mono_class_from_mono_type_internal (type));
 			return;
 		}
 		stackval_to_data (m_class_get_byval_arg (type->data.generic_class->container_class), val, data, pinvoke);
@@ -1286,7 +1286,7 @@ interp_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpoint
 	InterpMethod *imethod = (InterpMethod*)addr;
 
 	if (!(imethod->method->flags & METHOD_ATTRIBUTE_STATIC)) {
-		MonoMethod *invoke = mono_get_delegate_invoke (mono_handle_class (this_obj));
+		MonoMethod *invoke = mono_get_delegate_invoke_internal (mono_handle_class (this_obj));
 		/* virtual invoke delegates must not have null check */
 		if (mono_method_signature_internal (imethod->method)->param_count == mono_method_signature_internal (invoke)->param_count
 				&& MONO_HANDLE_IS_NULL (target)) {
@@ -2871,7 +2871,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				MonoObject *this_arg = (MonoObject*)sp->data.p;
 
 				if (m_class_is_valuetype (this_arg->vtable->klass)) {
-					gpointer unboxed = mono_object_unbox (this_arg);
+					gpointer unboxed = mono_object_unbox_internal (this_arg);
 					sp [0].data.p = unboxed;
 				}
 			}
@@ -3012,7 +3012,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg);
 				if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
 					/* unbox */
-					gpointer unboxed = mono_object_unbox (this_arg);
+					gpointer unboxed = mono_object_unbox_internal (this_arg);
 					sp [0].data.p = unboxed;
 				}
 			}
@@ -3527,7 +3527,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 		MINT_IN_CASE(MINT_STIND_REF) 
 			++ip;
 			sp -= 2;
-			mono_gc_wbarrier_generic_store (sp->data.p, sp [1].data.o);
+			mono_gc_wbarrier_generic_store_internal (sp->data.p, sp [1].data.o);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I1)
 			++ip;
@@ -3990,7 +3990,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
 				s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
 			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				s = mono_string_new_wrapper ((const char*)mono_method_get_wrapper_data (method, strtoken));
+				s = mono_string_new_wrapper_internal ((const char*)mono_method_get_wrapper_data (method, strtoken));
 			} else {
 				g_assert_not_reached ();
 			}
@@ -4247,7 +4247,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (!(isinst_obj || ((m_class_get_rank (o->vtable->klass) == 0) && (m_class_get_element_class (o->vtable->klass) == m_class_get_element_class (c)))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
-			sp [-1].data.p = mono_object_unbox (o);
+			sp [-1].data.p = mono_object_unbox_internal (o);
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_THROW)
@@ -4408,7 +4408,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			sp -= 2;
-			mono_gc_wbarrier_set_field (o, (char *) o + * (guint16 *)(ip + 1), sp [1].data.o);
+			mono_gc_wbarrier_set_field_internal (o, (char *) o + * (guint16 *)(ip + 1), sp [1].data.o);
 			ip += 2;
 			MINT_IN_BREAK;
 
@@ -4423,7 +4423,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			i32 = mono_class_value_size (klass, NULL);
 
 			guint16 offset = * (guint16 *)(ip + 1);
-			mono_value_copy ((char *) o + offset, sp [1].data.p, klass);
+			mono_value_copy_internal ((char *) o + offset, sp [1].data.p, klass);
 
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 3;
@@ -4469,7 +4469,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */
 			} else
 #endif
-				mono_value_copy ((char *) o + field->offset, sp [-1].data.p, klass);
+				mono_value_copy_internal ((char *) o + field->offset, sp [-1].data.p, klass);
 
 			sp -= 2;
 			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
@@ -4592,7 +4592,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 
 			g_assert (!m_class_get_byval_arg (c)->byref);
 			if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)))
-				mono_gc_wbarrier_generic_store (sp [-2].data.o, sp [-1].data.o);
+				mono_gc_wbarrier_generic_store_internal (sp [-2].data.o, sp [-1].data.o);
 			else
 				stackval_to_data (m_class_get_byval_arg (c), &sp [-1], sp [-2].data.p, FALSE);
 			sp -= 2;
@@ -4719,10 +4719,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			if (!s)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			i32 = sp [-1].data.i;
-			if (i32 < 0 || i32 >= mono_string_length (s))
+			if (i32 < 0 || i32 >= mono_string_length_internal (s))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
 			--sp;
-			sp [-1].data.i = mono_string_chars(s)[i32];
+			sp [-1].data.i = mono_string_chars_internal (s)[i32];
 			++ip;
 			MINT_IN_BREAK;
 		}
@@ -4752,7 +4752,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			o = sp [-1].data.o;
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
-			sp [-1].data.i = mono_string_length ((MonoString*) o);
+			sp [-1].data.i = mono_string_length_internal ((MonoString*) o);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ARRAY_RANK)
 			o = sp [-1].data.o;
@@ -5848,7 +5848,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				 * in ctor but we would need to handle AllocDelegateLike_internal separately
 				 */
 				ERROR_DECL (error);
-				MonoMethod *invoke = mono_get_delegate_invoke (del->object.vtable->klass);
+				MonoMethod *invoke = mono_get_delegate_invoke_internal (del->object.vtable->klass);
 				del->interp_invoke_impl = mono_interp_get_imethod (del->object.vtable->domain, mono_marshal_get_delegate_invoke (invoke, del), error);
 				mono_error_assert_ok (error);
 			}

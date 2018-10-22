@@ -4265,7 +4265,7 @@ add_wrappers (MonoAotCompile *acfg)
 			continue;
 
 		if (!mono_class_is_gtd (klass)) {
-			method = mono_get_delegate_invoke (klass);
+			method = mono_get_delegate_invoke_internal (klass);
 
 			m = mono_marshal_get_delegate_invoke (method, NULL);
 
@@ -4297,7 +4297,7 @@ add_wrappers (MonoAotCompile *acfg)
 					MonoMethod *del_invoke;
 
 					/* Add wrappers needed by mono_ftnptr_to_delegate () */
-					invoke = mono_get_delegate_invoke (klass);
+					invoke = mono_get_delegate_invoke_internal (klass);
 					wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
 					del_invoke = mono_marshal_get_delegate_invoke_internal (invoke, FALSE, TRUE, wrapper);
 					add_method (acfg, wrapper);
@@ -4313,7 +4313,7 @@ add_wrappers (MonoAotCompile *acfg)
 			 * Emit gsharedvt versions of the generic delegate-invoke wrappers
 			 */
 			/* Invoke */
-			method = mono_get_delegate_invoke (klass);
+			method = mono_get_delegate_invoke_internal (klass);
 			create_gsharedvt_inst (acfg, method, &ctx);
 
 			inst = mono_class_inflate_generic_method_checked (method, &ctx, error);
@@ -4328,7 +4328,7 @@ add_wrappers (MonoAotCompile *acfg)
 			add_extra_method (acfg, gshared);
 
 			/* begin-invoke */
-			method = mono_get_delegate_begin_invoke (klass);
+			method = mono_get_delegate_begin_invoke_internal (klass);
 			if (method) {
 				create_gsharedvt_inst (acfg, method, &ctx);
 
@@ -4345,7 +4345,7 @@ add_wrappers (MonoAotCompile *acfg)
 			}
 
 			/* end-invoke */
-			method = mono_get_delegate_end_invoke (klass);
+			method = mono_get_delegate_end_invoke_internal (klass);
 			if (method) {
 				create_gsharedvt_inst (acfg, method, &ctx);
 
@@ -4796,7 +4796,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	}
 
 	if (m_class_is_delegate (klass)) {
-		method = mono_get_delegate_invoke (klass);
+		method = mono_get_delegate_invoke_internal (klass);
 
 		method = mono_marshal_get_delegate_invoke (method, NULL);
 

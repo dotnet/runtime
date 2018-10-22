@@ -578,7 +578,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 
 		if (mono_object_is_transparent_proxy (this_arg)) {
 			/* Use the slow path for now */
-		    m = mono_object_get_virtual_method (this_arg, imt_method);
+		    m = mono_object_get_virtual_method_internal (this_arg, imt_method);
 			vtable_slot_to_patch = NULL;
 		} else {
 			if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst) {
@@ -1264,7 +1264,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL && 
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
 			mono_class_is_abstract (method->klass)) {
-			method = mono_object_get_virtual_method (delegate->target, method);
+			method = mono_object_get_virtual_method_internal (delegate->target, method);
 			enable_caching = FALSE;
 		}
 
@@ -1600,7 +1600,7 @@ mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, Mono
 	if (tramp_info)
 		return tramp_info;
 
-	invoke = mono_get_delegate_invoke (klass);
+	invoke = mono_get_delegate_invoke_internal (klass);
 	g_assert (invoke);
 
 	tramp_info = (MonoDelegateTrampInfo *)mono_domain_alloc0 (domain, sizeof (MonoDelegateTrampInfo));
@@ -1646,7 +1646,7 @@ mono_create_delegate_trampoline (MonoDomain *domain, MonoClass *klass)
 gpointer
 mono_create_delegate_virtual_trampoline (MonoDomain *domain, MonoClass *klass, MonoMethod *method)
 {
-	MonoMethod *invoke = mono_get_delegate_invoke (klass);
+	MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
 	g_assert (invoke);
 
 	return mono_get_delegate_virtual_invoke_impl (mono_method_signature_internal (invoke), method);

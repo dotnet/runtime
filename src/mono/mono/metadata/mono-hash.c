@@ -95,7 +95,7 @@ static inline void mono_g_hash_table_key_store (MonoGHashTable *hash, int slot, 
 {
 	MonoObject **key_addr = &hash->keys [slot];
 	if (hash->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_wbarrier_generic_store (key_addr, key);
+		mono_gc_wbarrier_generic_store_internal (key_addr, key);
 	else
 		*key_addr = key;
 }
@@ -104,7 +104,7 @@ static inline void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot
 {
 	MonoObject **value_addr = &hash->values [slot];
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_wbarrier_generic_store (value_addr, value);
+		mono_gc_wbarrier_generic_store_internal (value_addr, value);
 	else
 		*value_addr = value;
 }

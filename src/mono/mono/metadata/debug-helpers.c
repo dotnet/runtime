@@ -1008,7 +1008,7 @@ mono_object_describe (MonoObject *obj)
 	}
 	klass = mono_object_class (obj);
 	if (klass == mono_defaults.string_class) {
-		char *utf8 = mono_string_to_utf8_checked ((MonoString*)obj, error);
+		char *utf8 = mono_string_to_utf8_checked_internal ((MonoString*)obj, error);
 		mono_error_cleanup (error); /* FIXME don't swallow the error */
 		if (utf8 && strlen (utf8) > 60) {
 			utf8 [57] = '.';
@@ -1017,9 +1017,9 @@ mono_object_describe (MonoObject *obj)
 			utf8 [60] = 0;
 		}
 		if (utf8) {
-			g_print ("String at %p, length: %d, '%s'\n", obj, mono_string_length ((MonoString*) obj), utf8);
+			g_print ("String at %p, length: %d, '%s'\n", obj, mono_string_length_internal ((MonoString*) obj), utf8);
 		} else {
-			g_print ("String at %p, length: %d, unable to decode UTF16\n", obj, mono_string_length ((MonoString*) obj));
+			g_print ("String at %p, length: %d, unable to decode UTF16\n", obj, mono_string_length_internal ((MonoString*) obj));
 		}
 		g_free (utf8);
 	} else if (klass->rank) {

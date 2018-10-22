@@ -35,7 +35,7 @@ extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfacePrope
 
 	MonoDomain *domain = mono_domain_get ();
 
-	ifacename = mono_string_to_utf8_checked(iface, error);
+	ifacename = mono_string_to_utf8_checked_internal (iface, error);
 	if (mono_error_set_pending_exception (error))
 		return FALSE;
 
@@ -106,7 +106,7 @@ extern MonoBoolean ves_icall_System_Net_NetworkInformation_MacOsIPInterfacePrope
 
 		addr_string = mono_string_new_checked (domain, addr, error);
 		goto_if_nok (error, leave);
-		mono_array_setref (*gw_addr_list, gwnum, addr_string);
+		mono_array_setref_internal (*gw_addr_list, gwnum, addr_string);
 		gwnum++;
 	}
 leave:

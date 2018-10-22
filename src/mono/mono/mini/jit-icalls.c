@@ -73,7 +73,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 		return NULL;
 	}
 
-	res = mono_object_get_virtual_method (obj, method);
+	res = mono_object_get_virtual_method_internal (obj, method);
 
 	if (gshared && method->is_inflated && mono_method_get_context (method)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
@@ -1117,7 +1117,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	vmethod = mono_object_get_virtual_method (obj, method);
+	vmethod = mono_object_get_virtual_method_internal (obj, method);
 	g_assert (!mono_class_is_gtd (vmethod->klass));
 	g_assert (!mono_class_is_ginst (vmethod->klass) || !mono_class_get_generic_class (vmethod->klass)->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
@@ -1130,7 +1130,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 
 	/* Since this is a virtual call, have to unbox vtypes */
 	if (m_class_is_valuetype (obj->vtable->klass))
-		*this_arg = mono_object_unbox (obj);
+		*this_arg = mono_object_unbox_internal (obj);
 	else
 		*this_arg = obj;
 
@@ -1400,7 +1400,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 			*/
 			MonoObject *this_obj = *(MonoObject**)mp;
 
-			*this_arg = mono_object_unbox (this_obj);
+			*this_arg = mono_object_unbox_internal (this_obj);
 		} else {
 			/*
 			 * Calling a vtype method with a vtype receiver
@@ -1464,9 +1464,9 @@ void
 mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 {
 	if (m_class_is_valuetype (klass))
-		mono_value_copy (dest, src, klass);
+		mono_value_copy_internal (dest, src, klass);
 	else
-        mono_gc_wbarrier_generic_store (dest, *(MonoObject**)src);
+        mono_gc_wbarrier_generic_store_internal (dest, *(MonoObject**)src);
 }
 
 void
@@ -1904,7 +1904,7 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 
 	g_assert (target);
 
-	method = mono_object_get_virtual_method (target, method);
+	method = mono_object_get_virtual_method_internal (target, method);
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);

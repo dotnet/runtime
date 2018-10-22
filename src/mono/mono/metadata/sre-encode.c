@@ -388,12 +388,12 @@ mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, Refle
 		MonoReflectionType *pt;
 
 		if (mb->param_modreq && (i < mono_array_length_internal (mb->param_modreq)))
-			modreq = mono_array_get (mb->param_modreq, MonoArray*, i);
+			modreq = mono_array_get_internal (mb->param_modreq, MonoArray*, i);
 		if (mb->param_modopt && (i < mono_array_length_internal (mb->param_modopt)))
-			modopt = mono_array_get (mb->param_modopt, MonoArray*, i);
+			modopt = mono_array_get_internal (mb->param_modopt, MonoArray*, i);
 		encode_custom_modifiers_raw (assembly, modreq, modopt, &buf, error);
 		goto_if_nok (error, leave);
-		pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
+		pt = mono_array_get_internal (mb->parameters, MonoReflectionType*, i);
 		encode_reflection_type_raw (assembly, pt, &buf, error);
 		goto_if_nok (error, leave);
 	}
@@ -402,7 +402,7 @@ mono_dynimage_encode_method_builder_signature (MonoDynamicImage *assembly, Refle
 	for (i = 0; i < notypes; ++i) {
 		MonoReflectionType *pt;
 
-		pt = mono_array_get (mb->opt_types, MonoReflectionType*, i);
+		pt = mono_array_get_internal (mb->opt_types, MonoReflectionType*, i);
 		encode_reflection_type_raw (assembly, pt, &buf, error);
 		goto_if_nok (error, leave);
 	}
@@ -431,7 +431,7 @@ mono_dynimage_encode_locals (MonoDynamicImage *assembly, MonoReflectionILGen *il
 	sigbuffer_add_value (&buf, 0x07);
 	sigbuffer_add_value (&buf, nl);
 	for (i = 0; i < nl; ++i) {
-		MonoReflectionLocalBuilder *lb = mono_array_get (ilgen->locals, MonoReflectionLocalBuilder*, i);
+		MonoReflectionLocalBuilder *lb = mono_array_get_internal (ilgen->locals, MonoReflectionLocalBuilder*, i);
 		
 		if (lb->is_pinned)
 			sigbuffer_add_value (&buf, MONO_TYPE_PINNED);
@@ -577,15 +577,15 @@ handle_enum:
 		mono_metadata_encode_value (len, b, &b);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 		{
-			char *swapped = g_malloc (2 * mono_string_length (str));
-			const char *p = (const char*)mono_string_chars (str);
+			char *swapped = g_malloc (2 * mono_string_length_internal (str));
+			const char *p = (const char*)mono_string_chars_internal (str);
 
-			swap_with_size (swapped, p, 2, mono_string_length (str));
+			swap_with_size (swapped, p, 2, mono_string_length_internal (str));
 			idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, swapped, len);
 			g_free (swapped);
 		}
 #else
-		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, mono_string_chars (str), len);
+		idx = mono_dynamic_image_add_to_blob_cached (assembly, blob_size, b-blob_size, mono_string_chars_internal (str), len);
 #endif
 
 		g_free (buf);
@@ -994,7 +994,7 @@ reflection_sighelper_get_signature_local (MonoReflectionSigHelperHandle sig, Mon
 	base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);
 	sigbuffer_free (&buf);
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 	return result;
 fail:
 	sigbuffer_free (&buf);
@@ -1030,7 +1030,7 @@ reflection_sighelper_get_signature_field (MonoReflectionSigHelperHandle sig, Mon
 	base = MONO_ARRAY_HANDLE_PIN (result, char, 0, &gchandle);
 	memcpy (base, buf.buf, buflen);
 	sigbuffer_free (&buf);
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 
 	return result;
 fail:
@@ -1085,7 +1085,7 @@ mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflecti
 		break;
 	case MONO_NATIVE_CUSTOM:
 		if (minfo->guid) {
-			str = mono_string_to_utf8_checked (minfo->guid, error);
+			str = mono_string_to_utf8_checked_internal (minfo->guid, error);
 			if (!is_ok (error)) {
 				sigbuffer_free (&buf);
 				return 0;
@@ -1109,7 +1109,7 @@ mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflecti
 				}
 				str = type_get_fully_qualified_name (marshaltype);
 			} else {
-				str = mono_string_to_utf8_checked (minfo->marshaltype, error);
+				str = mono_string_to_utf8_checked_internal (minfo->marshaltype, error);
 				if (!is_ok (error)) {
 					sigbuffer_free (&buf);
 					return 0;
@@ -1124,7 +1124,7 @@ mono_dynimage_save_encode_marshal_blob (MonoDynamicImage *assembly, MonoReflecti
 			sigbuffer_add_value (&buf, 0);
 		}
 		if (minfo->mcookie) {
-			str = mono_string_to_utf8_checked (minfo->mcookie, error);
+			str = mono_string_to_utf8_checked_internal (minfo->mcookie, error);
 			if (!is_ok (error)) {
 				sigbuffer_free (&buf);
 				return 0;
@@ -1173,19 +1173,19 @@ mono_dynimage_save_encode_property_signature (MonoDynamicImage *assembly, MonoRe
 		if (!is_ok (error))
 			goto fail;
 		for (i = 0; i < nparams; ++i) {
-			MonoReflectionType *pt = mono_array_get (mb->parameters, MonoReflectionType*, i);
+			MonoReflectionType *pt = mono_array_get_internal (mb->parameters, MonoReflectionType*, i);
 			encode_reflection_type_raw (assembly, pt, &buf, error);
 			if (!is_ok (error))
 				goto fail;
 		}
 	} else if (smb && smb->parameters) {
 		/* the property type is the last param */
-		encode_reflection_type_raw (assembly, mono_array_get (smb->parameters, MonoReflectionType*, nparams), &buf, error);
+		encode_reflection_type_raw (assembly, mono_array_get_internal (smb->parameters, MonoReflectionType*, nparams), &buf, error);
 		if (!is_ok (error))
 			goto fail;
 
 		for (i = 0; i < nparams; ++i) {
-			MonoReflectionType *pt = mono_array_get (smb->parameters, MonoReflectionType*, i);
+			MonoReflectionType *pt = mono_array_get_internal (smb->parameters, MonoReflectionType*, i);
 			encode_reflection_type_raw (assembly, pt, &buf, error);
 			if (!is_ok (error))
 				goto fail;

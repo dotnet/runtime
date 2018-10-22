@@ -13,6 +13,7 @@
 #include "mono/metadata/metadata-internals.h"
 #include "mono/utils/checked-build.h"
 #include "mono/utils/mono-error-internals.h"
+#include "object-internals.h"
 
 void
 mono_dynstream_init (MonoDynamicStream *sh)
@@ -78,7 +79,7 @@ mono_dynstream_insert_mstring (MonoDynamicStream *sh, MonoString *str, MonoError
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
-	char *name = mono_string_to_utf8_checked (str, error);
+	char *name = mono_string_to_utf8_checked_internal (str, error);
 	return_val_if_nok (error, -1);
 	guint32 idx;
 	idx = mono_dynstream_insert_string (sh, name);

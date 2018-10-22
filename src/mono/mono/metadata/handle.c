@@ -495,13 +495,13 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 	HandleChunk *chunk = chunk_element_to_chunk_idx (stack, elem, &elem_idx);
 	/* gchandles cannot deal with interior pointers */
 	g_assert (chunk != NULL);
-	return mono_gchandle_new (MONO_HANDLE_RAW (handle), pinned);
+	return mono_gchandle_new_internal (MONO_HANDLE_RAW (handle), pinned);
 }
 
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle)
 {
-	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target (gchandle));
+	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target_internal (gchandle));
 }
 
 gpointer
@@ -510,7 +510,7 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST(MonoObject,handle), TRUE);
 	MonoArray *raw = MONO_HANDLE_RAW (handle);
-	return mono_array_addr_with_size (raw, size, idx);
+	return mono_array_addr_with_size_internal (raw, size, idx);
 }
 
 gunichar2*
@@ -519,7 +519,7 @@ mono_string_handle_pin_chars (MonoStringHandle handle, uint32_t *gchandle)
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, handle), TRUE);
 	MonoString *raw = MONO_HANDLE_RAW (handle);
-	return mono_string_chars (raw);
+	return mono_string_chars_internal (raw);
 }
 
 gpointer
@@ -529,13 +529,14 @@ mono_object_handle_pin_unbox (MonoObjectHandle obj, uint32_t *gchandle)
 	MonoClass *klass = mono_handle_class (obj);
 	g_assert (m_class_is_valuetype (klass));
 	*gchandle = mono_gchandle_from_handle (obj, TRUE);
-	return mono_object_unbox (MONO_HANDLE_RAW (obj));
+	return mono_object_unbox_internal (MONO_HANDLE_RAW (obj));
 }
 
+//FIXME inline
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
 {
-	mono_array_memcpy_refs (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
+	mono_array_memcpy_refs_internal (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
 }
 
 gboolean
@@ -544,8 +545,59 @@ mono_handle_stack_is_empty (HandleStack *stack)
 	return stack->top == stack->bottom && stack->top->size == 0;
 }
 
+//FIXME inline
+gboolean
+mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
+{
+	// This function serves to reduce coop handle creation.
+	MONO_HANDLE_SUPPRESS_SCOPE (1);
+	return mono_gchandle_get_target_internal (gchandle) == MONO_HANDLE_RAW (equal);
+}
+
+//FIXME inline
+void
+mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal, gboolean *is_null,
+	gboolean *is_equal)
+{
+	// This function serves to reduce coop handle creation.
+	MONO_HANDLE_SUPPRESS_SCOPE (1);
+	MonoObject *target = mono_gchandle_get_target_internal (gchandle);
+	*is_null = target == NULL;
+	*is_equal = target == MONO_HANDLE_RAW (equal);
+}
+
+//FIXME inline
 void
 mono_gchandle_set_target_handle (guint32 gchandle, MonoObjectHandle obj)
 {
 	mono_gchandle_set_target (gchandle, MONO_HANDLE_RAW (obj));
+}
+
+//FIXME inline
+guint32
+mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle)
+{
+	return mono_gchandle_new_weakref_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), FALSE);
+}
+
+//FIXME inline
+int
+mono_handle_hash (MonoObjectHandle object)
+{
+	return mono_object_hash_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (object)));
+}
+
+//FIXME inline
+guint32
+mono_gchandle_new_weakref_from_handle_track_resurrection (MonoObjectHandle handle)
+{
+	return mono_gchandle_new_weakref_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), TRUE);
+}
+
+//FIXME inline
+void
+mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index)
+{
+	MONO_HANDLE_SUPPRESS (g_assert (dest.__raw));
+	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)mono_array_get_internal (MONO_HANDLE_RAW (array), gpointer, index));
 }

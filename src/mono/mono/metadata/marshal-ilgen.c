@@ -3392,7 +3392,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 		if (!(vt->interface_bitmap [(uiid) >> 3] & (1 << ((uiid)&7))))
 			goto exception;
 		store:
-			mono_array_setref (array, index, value);
+			mono_array_setref_internal (array, index, value);
 			return;
 		exception:
 			mono_raise_exception (mono_get_exception_array_type_mismatch ());*/
@@ -5932,14 +5932,14 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (sig->hasthis) {
 		if (target_handle) {
 			mono_mb_emit_icon (mb, (gint32)target_handle);
-			mono_mb_emit_icall (mb, mono_gchandle_get_target);
+			mono_mb_emit_icall (mb, mono_gchandle_get_target_internal);
 		} else {
 			/* fixme: */
 			g_assert_not_reached ();
 		}
 	} else if (closed) {
 		mono_mb_emit_icon (mb, (gint32)target_handle);
-		mono_mb_emit_icall (mb, mono_gchandle_get_target);
+		mono_mb_emit_icall (mb, mono_gchandle_get_target_internal);
 	}
 
 	for (i = 0; i < sig->param_count; i++) {

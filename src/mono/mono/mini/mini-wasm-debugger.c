@@ -631,7 +631,7 @@ describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 			MonoString *str_obj = *(MonoString **)addr;
 			if (!str_obj)
 				mono_wasm_add_string_var (NULL);
-			char *str = mono_string_to_utf8_checked (str_obj, error);
+			char *str = mono_string_to_utf8_checked_internal (str_obj, error);
 			mono_error_assert_ok (error); /* FIXME report error */
 
 			mono_wasm_add_string_var (str);

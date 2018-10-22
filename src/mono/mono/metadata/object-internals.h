@@ -173,12 +173,12 @@ struct _MonoString {
 #define mono_array_length_internal(array) ((array)->max_length)
 
 // Equivalent to mono_array_addr_with_size, except:
-// 1. A macro instead of a function.
-// 2. No GC enter/exit unsafe transition.
+// 1. A macro instead of a function -- the types of size and index are open.
+// 2. mono_array_addr_with_size could, but does not, do GC mode transitions.
 #define mono_array_addr_with_size_fast(array,size,index) ( ((char*)(array)->vector) + (size) * (index) )
 
 #define mono_array_addr_fast(array,type,index) ((type*)(void*) mono_array_addr_with_size_fast (array, sizeof (type), index))
-#define mono_array_get_fast(array,type,index) ( *(type*)mono_array_addr_fast ((array), type, (index)) ) 
+#define mono_array_get_fast(array,type,index) ( *(type*)mono_array_addr_fast ((array), type, (index)) )
 #define mono_array_set_fast(array,type,index,value)	\
 	do {	\
 		type *__p = (type *) mono_array_addr_fast ((array), type, (index));	\
@@ -187,14 +187,45 @@ struct _MonoString {
 #define mono_array_setref_fast(array,index,value)	\
 	do {	\
 		void **__p = (void **) mono_array_addr_fast ((array), void*, (index));	\
-		mono_gc_wbarrier_set_arrayref ((array), __p, (MonoObject*)(value));	\
+		mono_gc_wbarrier_set_arrayref_internal ((array), __p, (MonoObject*)(value));	\
 		/* *__p = (value);*/	\
 	} while (0)
 #define mono_array_memcpy_refs_fast(dest,destidx,src,srcidx,count)	\
 	do {	\
 		void **__p = (void **) mono_array_addr_fast ((dest), void*, (destidx));	\
 		void **__s = mono_array_addr_fast ((src), void*, (srcidx));	\
-		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
+		mono_gc_wbarrier_arrayref_copy_internal (__p, __s, (count));	\
+	} while (0)
+
+// _internal is like _fast, but preserves the preexisting subtlety of the closed types of things:
+//  	int size
+//	uintptr_t idx
+// in order to mimic non-_internal but without the GC mode transitions, or at least,
+// to avoid the runtime using the embedding API, whether or not it has GC mode transitions.
+static inline char*
+mono_array_addr_with_size_internal (MonoArray *array, int size, uintptr_t idx)
+{
+	return mono_array_addr_with_size_fast (array, size, idx);
+}
+
+#define mono_array_addr_internal(array,type,index) ((type*)(void*) mono_array_addr_with_size_internal (array, sizeof (type), index))
+#define mono_array_get_internal(array,type,index) ( *(type*)mono_array_addr_internal ((array), type, (index)) )
+#define mono_array_set_internal(array,type,index,value)	\
+	do {	\
+		type *__p = (type *) mono_array_addr_internal ((array), type, (index));	\
+		*__p = (value);	\
+	} while (0)
+#define mono_array_setref_internal(array,index,value)	\
+	do {	\
+		void **__p = (void **) mono_array_addr_internal ((array), void*, (index));	\
+		mono_gc_wbarrier_set_arrayref_internal ((array), __p, (MonoObject*)(value));	\
+		/* *__p = (value);*/	\
+	} while (0)
+#define mono_array_memcpy_refs_internal(dest,destidx,src,srcidx,count)	\
+	do {	\
+		void **__p = (void **) mono_array_addr_internal ((dest), void*, (destidx));	\
+		void **__s = mono_array_addr_internal ((src), void*, (srcidx));	\
+		mono_gc_wbarrier_arrayref_copy_internal (__p, __s, (count));	\
 	} while (0)
 
 static inline gboolean
@@ -821,7 +852,7 @@ mono_domain_get_tls_offset (void);
 #define IS_MONOTYPE_HANDLE(obj) IS_MONOTYPE (MONO_HANDLE_RAW (obj))
 
 /* This should be used for accessing members of Type[] arrays */
-#define mono_type_array_get(arr,index) monotype_cast (mono_array_get ((arr), gpointer, (index)))
+#define mono_type_array_get(arr,index) monotype_cast (mono_array_get_internal ((arr), gpointer, (index)))
 
 /*
  * Cast an object to MonoReflectionType, making sure it is a System.MonoType or
@@ -1946,6 +1977,9 @@ MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
 
 MonoString*
+mono_string_new_internal (MonoDomain *domain, const char *text);
+
+MonoString*
 mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
 
 MonoStringHandle
@@ -2120,5 +2154,171 @@ mono_object_get_data (MonoObject *o);
 
 gpointer
 mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field);
+
+#define MONO_OBJECT_SETREF_INTERNAL(obj,fieldname,value) do {	\
+		mono_gc_wbarrier_set_field_internal ((MonoObject*)(obj), &((obj)->fieldname), (MonoObject*)value);	\
+		/*(obj)->fieldname = (value);*/	\
+	} while (0)
+
+/* This should be used if 's' can reside on the heap */
+#define MONO_STRUCT_SETREF_INTERNAL(s,field,value) do { \
+        mono_gc_wbarrier_generic_store_internal (&((s)->field), (MonoObject*)(value)); \
+    } while (0)
+
+mono_unichar2*
+mono_string_chars_internal (MonoString *s);
+
+int
+mono_string_length_internal (MonoString *s);
+
+MonoString*
+mono_string_empty_internal (MonoDomain *domain);
+
+MonoString*
+mono_string_is_interned_internal (MonoString *str);
+
+MonoString*
+mono_string_new_wrapper_internal (const char *text);
+
+char*
+mono_string_to_utf8_checked_internal (MonoString *string_obj, MonoError *error);
+
+mono_unichar2*
+mono_string_to_utf16_internal (MonoString *string_obj);
+
+mono_unichar4*
+mono_string_to_utf32_internal (MonoString *string_obj);
+
+mono_bool
+mono_string_equal_internal (MonoString *s1, MonoString *s2);
+
+unsigned
+mono_string_hash_internal (MonoString *s);
+
+int
+mono_object_hash_internal (MonoObject* obj);
+
+void
+mono_value_copy_internal (void* dest, /*const*/ void* src, MonoClass *klass);
+
+void
+mono_value_copy_array_internal (MonoArray *dest, int dest_idx, void* src, int count);
+
+MONO_PROFILER_API MonoVTable* mono_object_get_vtable_internal (MonoObject *obj);
+
+MonoDomain*
+mono_object_get_domain_internal (MonoObject *obj);
+
+void*
+mono_object_unbox_internal (MonoObject *obj);
+
+void
+mono_monitor_exit_internal (MonoObject *obj);
+
+MONO_PROFILER_API unsigned mono_object_get_size_internal (MonoObject *o);
+
+MONO_PROFILER_API MonoDomain* mono_vtable_domain_internal (MonoVTable *vtable);
+
+MONO_PROFILER_API MonoClass* mono_vtable_class_internal (MonoVTable *vtable);
+
+MonoMethod*
+mono_object_get_virtual_method_internal (MonoObject *obj, MonoMethod *method);
+
+MonoMethod*
+mono_get_delegate_invoke_internal (MonoClass *klass);
+
+MonoMethod*
+mono_get_delegate_begin_invoke_internal (MonoClass *klass);
+
+MonoMethod*
+mono_get_delegate_end_invoke_internal (MonoClass *klass);
+
+void
+mono_unhandled_exception_internal (MonoObject *exc);
+
+void
+mono_print_unhandled_exception_internal (MonoObject *exc);
+
+void
+mono_raise_exception_internal (MonoException *ex);
+
+void
+mono_field_set_value_internal (MonoObject *obj, MonoClassField *field, void *value);
+
+void
+mono_field_static_set_value_internal (MonoVTable *vt, MonoClassField *field, void *value);
+
+void
+mono_field_get_value_internal (MonoObject *obj, MonoClassField *field, void *value);
+
+/* GC handles support
+ *
+ * A handle can be created to refer to a managed object and either prevent it
+ * from being garbage collected or moved or to be able to know if it has been
+ * collected or not (weak references).
+ * mono_gchandle_new () is used to prevent an object from being garbage collected
+ * until mono_gchandle_free() is called. Use a TRUE value for the pinned argument to
+ * prevent the object from being moved (this should be avoided as much as possible
+ * and this should be used only for shorts periods of time or performance will suffer).
+ * To create a weakref use mono_gchandle_new_weakref (): track_resurrection should
+ * usually be false (see the GC docs for more details).
+ * mono_gchandle_get_target () can be used to get the object referenced by both kinds
+ * of handle: for a weakref handle, if an object has been collected, it will return NULL.
+ */
+uint32_t
+mono_gchandle_new_internal (MonoObject *obj, mono_bool pinned);
+
+uint32_t
+mono_gchandle_new_weakref_internal (MonoObject *obj, mono_bool track_resurrection);
+
+MonoObject*
+mono_gchandle_get_target_internal (uint32_t gchandle);
+
+void mono_gchandle_free_internal (uint32_t gchandle);
+
+/* Reference queue support
+ *
+ * A reference queue is used to get notifications of when objects are collected.
+ * Call mono_gc_reference_queue_new to create a new queue and pass the callback that
+ * will be invoked when registered objects are collected.
+ * Call mono_gc_reference_queue_add to register a pair of objects and data within a queue.
+ * The callback will be triggered once an object is both unreachable and finalized.
+ */
+MonoReferenceQueue*
+mono_gc_reference_queue_new_internal (mono_reference_queue_callback callback);
+
+void
+mono_gc_reference_queue_free_internal (MonoReferenceQueue *queue);
+
+mono_bool
+mono_gc_reference_queue_add_internal (MonoReferenceQueue *queue, MonoObject *obj, void *user_data);
+
+#define mono_gc_reference_queue_add_handle(queue, obj, user_data) \
+	(mono_gc_reference_queue_add_internal ((queue), MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, obj)), (user_data)))
+
+/* GC write barriers support */
+void
+mono_gc_wbarrier_set_field_internal (MonoObject *obj, void* field_ptr, MonoObject* value);
+
+void
+mono_gc_wbarrier_set_arrayref_internal  (MonoArray *arr, void* slot_ptr, MonoObject* value);
+
+void
+mono_gc_wbarrier_arrayref_copy_internal (void* dest_ptr, void* src_ptr, int count);
+
+void
+mono_gc_wbarrier_generic_store_internal (void* ptr, MonoObject* value);
+
+void
+mono_gc_wbarrier_generic_store_atomic_internal (void *ptr, MonoObject *value);
+
+void
+mono_gc_wbarrier_generic_nostore_internal (void* ptr);
+
+void
+mono_gc_wbarrier_value_copy_internal (void* dest, /*const*/ void* src, int count, MonoClass *klass);
+
+void
+mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src);
 
 #endif /* __MONO_OBJECT_INTERNALS_H__ */

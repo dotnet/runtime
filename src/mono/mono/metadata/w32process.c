@@ -145,7 +145,7 @@ process_set_field_object (MonoObject *obj, const gchar *fieldname, MonoObject *d
 	field = mono_class_get_field_from_name_full (klass, fieldname, NULL);
 	g_assert (field);
 
-	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, data);
+	mono_gc_wbarrier_generic_store_internal (((char *)obj) + field->offset, data);
 }
 
 static void
@@ -172,7 +172,7 @@ process_set_field_string (MonoObject *obj, const gchar *fieldname, const gunicha
 	string = mono_string_new_utf16_checked (domain, val, len, error);
 	return_if_nok (error);
 
-	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
+	mono_gc_wbarrier_generic_store_internal (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
 static void
@@ -198,7 +198,7 @@ process_set_field_string_char (MonoObject *obj, const gchar *fieldname, const gc
 	string = mono_string_new_checked (domain, val, error);
 	return_if_nok (error);
 
-	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
+	mono_gc_wbarrier_generic_store_internal (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
 static void
@@ -432,13 +432,13 @@ ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject
 
 	stash_system_image (m_class_get_image (mono_object_class (this_obj)));
 
-	mono_w32process_get_fileversion (this_obj, mono_string_chars (filename), error);
+	mono_w32process_get_fileversion (this_obj, mono_string_chars_internal (filename), error);
 	if (!mono_error_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return;
 	}
 
-	process_set_field_string (this_obj, "filename", mono_string_chars (filename), mono_string_length (filename), error);
+	process_set_field_string (this_obj, "filename", mono_string_chars_internal (filename), mono_string_length_internal (filename), error);
 	if (!mono_error_ok (error)) {
 		mono_error_set_pending_exception (error);
 	}
@@ -597,7 +597,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 				mono_error_set_pending_exception (error);
 				return NULL;
 			}
-			mono_array_setref (temp_arr, num_added++, module);
+			mono_array_setref_internal (temp_arr, num_added++, module);
 		}
 	}
 
@@ -609,7 +609,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 				mono_error_set_pending_exception (error);
 				return NULL;
 			}
-			mono_array_setref (temp_arr, num_added++, module);
+			mono_array_setref_internal (temp_arr, num_added++, module);
 		}
 		g_ptr_array_free (assemblies, TRUE);
 	}
@@ -623,7 +623,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 			return NULL;
 
 		for (i = 0; i < num_added; i++)
-			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
+			mono_array_setref_internal (arr, i, mono_array_get_internal (temp_arr, MonoObject*, i));
 	}
 
 	return arr;
@@ -706,7 +706,7 @@ static void
 mono_unpin_array (gchandle_t *gchandles, gsize count)
 {
 	for (gsize i = 0; i < count; ++i) {
-		mono_gchandle_free (gchandles [i]);
+		mono_gchandle_free_internal (gchandles [i]);
 		gchandles [i] = 0;
 	}
 }

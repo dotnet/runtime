@@ -183,7 +183,7 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token)
 						mono_error_set_pending_exception (error);
 						return NULL;
 					}
-					mono_array_setref (array, i, str);
+					mono_array_setref_internal (array, i, str);
 					g_free (uniname);
 				}
 			}

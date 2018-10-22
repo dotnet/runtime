@@ -555,8 +555,7 @@ ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter
 
 ICALL_TYPE(OBJ, "System.Object", OBJ_1)
 HANDLES(OBJ_1, "GetType", ves_icall_System_Object_GetType, MonoReflectionType, 1, (MonoObject))
-
-ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash)
+ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash_internal)
 ICALL(OBJ_3, "MemberwiseClone", ves_icall_System_Object_MemberwiseClone)
 
 ICALL_TYPE(ASSEM, "System.Reflection.Assembly", ASSEM_1a)
@@ -989,7 +988,7 @@ HANDLES(ITHREAD_1, "Thread_free_internal", ves_icall_System_Threading_InternalTh
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_8)
 ICALL(MONIT_8, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter)
-ICALL(MONIT_1, "Exit", mono_monitor_exit)
+ICALL(MONIT_1, "Exit", mono_monitor_exit_internal)
 ICALL(MONIT_2, "Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse)
 ICALL(MONIT_3, "Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all)
 ICALL(MONIT_4, "Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner)

@@ -4104,7 +4104,7 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 	guint8 **code_slot;
 
 	if (virtual_ && !cfg->llvm_only) {
-		MonoMethod *invoke = mono_get_delegate_invoke (klass);
+		MonoMethod *invoke = mono_get_delegate_invoke_internal (klass);
 		g_assert (invoke);
 
 		//FIXME verify & fix any issue with removing invoke_context_used restriction
@@ -9216,7 +9216,7 @@ calli_end:
 					EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
 				else
 					EMIT_NEW_PCONST (cfg, iargs [0], str);
-				*sp = mono_emit_jit_icall (cfg, mono_string_new_wrapper, iargs);
+				*sp = mono_emit_jit_icall (cfg, mono_string_new_wrapper_internal, iargs);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {
 					MonoInst *iargs [3];
@@ -11480,7 +11480,7 @@ mono_ldptr:
 					MonoMethod *invoke;
 					int invoke_context_used;
 
-					invoke = mono_get_delegate_invoke (ctor_method->klass);
+					invoke = mono_get_delegate_invoke_internal (ctor_method->klass);
 					if (!invoke || !mono_method_signature_internal (invoke))
 						LOAD_ERROR;
 
@@ -11549,7 +11549,7 @@ mono_ldptr:
 					int invoke_context_used;
 					gboolean is_virtual = cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL;
 
-					invoke = mono_get_delegate_invoke (ctor_method->klass);
+					invoke = mono_get_delegate_invoke_internal (ctor_method->klass);
 					if (!invoke || !mono_method_signature_internal (invoke))
 						LOAD_ERROR;
 

@@ -2746,7 +2746,7 @@ verify_delegate_compatibility (VerifyContext *ctx, MonoClass *delegate, ILStackD
 		return;
 	}
 	
-	invoke = mono_get_delegate_invoke (delegate);
+	invoke = mono_get_delegate_invoke_internal (delegate);
 	method = funptr->method;
 
 	if (!method || !mono_method_signature_internal (method)) {

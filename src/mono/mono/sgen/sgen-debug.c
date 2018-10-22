@@ -1014,7 +1014,7 @@ check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 
 	if (ref->vtable->klass == mono_defaults.string_class) {
 		ERROR_DECL (error);
-		str = mono_string_to_utf8_checked ((MonoString*)ref, error);
+		str = mono_string_to_utf8_checked_internal ((MonoString*)ref, error);
 		mono_error_cleanup (error);
 	} else
 		str = NULL;

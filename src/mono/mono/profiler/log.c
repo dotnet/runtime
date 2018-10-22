@@ -1197,7 +1197,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 
 	emit_event (logbuffer, TYPE_HEAP_OBJECT | TYPE_HEAP);
 	emit_obj (logbuffer, obj);
-	emit_ptr (logbuffer, mono_object_get_vtable (obj));
+	emit_ptr (logbuffer, mono_object_get_vtable_internal (obj));
 	emit_value (logbuffer, size);
 	emit_byte (logbuffer, mono_gc_get_generation (obj));
 	emit_value (logbuffer, num);
@@ -1503,7 +1503,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj)
 {
 	int do_bt = (!log_config.enter_leave && mono_atomic_load_i32 (&log_profiler.runtime_inited) && log_config.num_frames) ? TYPE_ALLOC_BT : 0;
 	FrameData data;
-	uintptr_t len = mono_object_get_size (obj);
+	uintptr_t len = mono_object_get_size_internal (obj);
 	/* account for object alignment in the heap */
 	len += 7;
 	len &= ~7;
@@ -1525,7 +1525,7 @@ gc_alloc (MonoProfiler *prof, MonoObject *obj)
 	);
 
 	emit_event (logbuffer, do_bt | TYPE_ALLOC);
-	emit_ptr (logbuffer, mono_object_get_vtable (obj));
+	emit_ptr (logbuffer, mono_object_get_vtable_internal (obj));
 	emit_obj (logbuffer, obj);
 	emit_value (logbuffer, len);
 
@@ -1851,8 +1851,8 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 static void
 vtable_loaded (MonoProfiler *prof, MonoVTable *vtable)
 {
-	MonoClass *klass = mono_vtable_class (vtable);
-	MonoDomain *domain = mono_vtable_domain (vtable);
+	MonoClass *klass = mono_vtable_class_internal (vtable);
+	MonoDomain *domain = mono_vtable_domain_internal (vtable);
 	uint32_t domain_id = domain ? mono_domain_get_id (domain) : 0;
 
 	ENTER_LOG (&vtable_loads_ctr, logbuffer,

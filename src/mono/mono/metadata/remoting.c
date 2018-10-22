@@ -427,7 +427,7 @@ mono_remoting_wrapper (MonoMethod *method, gpointer *params)
 			}
 		}
 
-		res = mono_runtime_invoke_checked (method, m_class_is_valuetype (method->klass)? mono_object_unbox ((MonoObject*)this_obj): this_obj, mparams, error);
+		res = mono_runtime_invoke_checked (method, m_class_is_valuetype (method->klass)? mono_object_unbox_internal ((MonoObject*)this_obj): this_obj, mparams, error);
 		goto_if_nok (error, fail);
 
 		return res;
@@ -583,11 +583,11 @@ mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst)
 		if (mt == MONO_MARSHAL_COPY) {
 			int i, len = mono_array_length_internal ((MonoArray *)dst);
 			for (i = 0; i < len; i++) {
-				MonoObject *item = (MonoObject *)mono_array_get ((MonoArray *)src, gpointer, i);
+				MonoObject *item = (MonoObject *)mono_array_get_internal ((MonoArray *)src, gpointer, i);
 				MonoObject *item_copy = mono_marshal_xdomain_copy_value (item, error);
 				if (mono_error_set_pending_exception (error))
 					return;
-				mono_array_setref ((MonoArray *)dst, i, item_copy);
+				mono_array_setref_internal ((MonoArray *)dst, i, item_copy);
 			}
 		} else {
 			mono_array_full_copy ((MonoArray *)src, (MonoArray *)dst);
@@ -2073,7 +2073,7 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 	case MONO_TYPE_R8: {
 		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
 		MonoObjectHandle res = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (domain, klass, ((char*)MONO_HANDLE_RAW (val)) + sizeof(MonoObject), error)); /* FIXME use handles in mono_value_box_checked */
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 		goto_if_nok (error, leave);
 		MONO_HANDLE_ASSIGN (result, res);
 		break;
@@ -2081,8 +2081,8 @@ mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)
 	case MONO_TYPE_STRING: {
 		MonoStringHandle str = MONO_HANDLE_CAST (MonoString, val);
 		uint32_t gchandle = mono_gchandle_from_handle (val, TRUE);
-		MonoStringHandle res = mono_string_new_utf16_handle (domain, mono_string_chars (MONO_HANDLE_RAW (str)), mono_string_handle_length (str), error);
-		mono_gchandle_free (gchandle);
+		MonoStringHandle res = mono_string_new_utf16_handle (domain, mono_string_chars_internal (MONO_HANDLE_RAW (str)), mono_string_handle_length (str), error);
+		mono_gchandle_free_internal (gchandle);
 		goto_if_nok (error, leave);
 		MONO_HANDLE_ASSIGN (result, res);
 		break;

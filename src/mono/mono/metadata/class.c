@@ -994,7 +994,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 		if (mono_class_is_gtd (iresult->declaring->klass))
 			iresult->context.class_inst = mono_class_get_generic_container (iresult->declaring->klass)->context.class_inst;
 	}
-	/* This can happen with some callers like mono_object_get_virtual_method () */
+	/* This can happen with some callers like mono_object_get_virtual_method_internal () */
 	if (!mono_class_is_gtd (iresult->declaring->klass) && !mono_class_is_ginst (iresult->declaring->klass))
 		iresult->context.class_inst = NULL;
 
@@ -3748,7 +3748,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 			int j;
 			if (tb && tb->interfaces) {
 				for (j = mono_array_length_internal (tb->interfaces) - 1; j >= 0; --j) {
-					MonoReflectionType *iface = mono_array_get (tb->interfaces, MonoReflectionType*, j);
+					MonoReflectionType *iface = mono_array_get_internal (tb->interfaces, MonoReflectionType*, j);
 					MonoClass *iface_class;
 
 					/* we can't realize the type here since it can do pretty much anything. */

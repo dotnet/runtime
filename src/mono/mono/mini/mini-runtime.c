@@ -4767,7 +4767,7 @@ register_icalls (void)
 	register_icall (mono_helper_ldstr, "mono_helper_ldstr", "object ptr int", FALSE);
 	register_icall (mono_helper_ldstr_mscorlib, "mono_helper_ldstr_mscorlib", "object int", FALSE);
 	register_icall (mono_helper_newobj_mscorlib, "mono_helper_newobj_mscorlib", "object int", FALSE);
-	register_icall (mono_value_copy, "mono_value_copy", "void ptr ptr ptr", FALSE);
+	register_icall (mono_value_copy_internal, "mono_value_copy_internal", "void ptr ptr ptr", FALSE);
 	register_icall (mono_object_castclass_unbox, "mono_object_castclass_unbox", "object object ptr", FALSE);
 	register_icall (mono_break, "mono_break", NULL, TRUE);
 	register_icall (mono_create_corlib_exception_0, "mono_create_corlib_exception_0", "object int", TRUE);

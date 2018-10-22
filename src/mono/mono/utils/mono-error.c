@@ -62,7 +62,7 @@ get_class (MonoErrorInternal *error)
 {
 	MonoClass *klass = NULL;
 	if (is_managed_exception (error))
-		klass = mono_object_class (mono_gchandle_get_target (error->exn.instance_handle));
+		klass = mono_object_class (mono_gchandle_get_target_internal (error->exn.instance_handle));
 	else
 		klass = error->exn.klass;
 	return klass;
@@ -134,7 +134,7 @@ mono_error_cleanup (MonoError *oerror)
 
 
 	if (has_instance_handle)
-		mono_gchandle_free (error->exn.instance_handle);
+		mono_gchandle_free_internal (error->exn.instance_handle);
 
 
 	g_free ((char*)error->full_message);
@@ -459,7 +459,7 @@ mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
 
 	mono_error_prepare (error);
 	error->error_code = MONO_ERROR_EXCEPTION_INSTANCE;
-	error->exn.instance_handle = mono_gchandle_new (exc ? &exc->object : NULL, FALSE);
+	error->exn.instance_handle = mono_gchandle_new_internal (exc ? &exc->object : NULL, FALSE);
 }
 
 void

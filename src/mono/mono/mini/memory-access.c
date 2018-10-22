@@ -416,7 +416,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 				if (size_ins)
 					mono_emit_jit_icall (cfg, mono_gsharedvt_value_copy, iargs);
 				else
-					mono_emit_jit_icall (cfg, mono_value_copy, iargs);
+					mono_emit_jit_icall (cfg, mono_value_copy_internal, iargs);
 			} else {
 				/* We don't unroll more than 5 stores to avoid code bloat. */
 				/*This is harmless and simplify mono_gc_get_range_copy_func */

@@ -1219,15 +1219,15 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 
 				switch (wrapper_type) {
 				case MONO_WRAPPER_DELEGATE_INVOKE:
-					invoke = mono_get_delegate_invoke (klass);
+					invoke = mono_get_delegate_invoke_internal (klass);
 					wrapper = mono_marshal_get_delegate_invoke (invoke, NULL);
 					break;
 				case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
-					invoke = mono_get_delegate_begin_invoke (klass);
+					invoke = mono_get_delegate_begin_invoke_internal (klass);
 					wrapper = mono_marshal_get_delegate_begin_invoke (invoke);
 					break;
 				case MONO_WRAPPER_DELEGATE_END_INVOKE:
-					invoke = mono_get_delegate_end_invoke (klass);
+					invoke = mono_get_delegate_end_invoke_internal (klass);
 					wrapper = mono_marshal_get_delegate_end_invoke (invoke);
 					break;
 				default:

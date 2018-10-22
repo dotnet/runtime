@@ -1150,7 +1150,7 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 	MONO_ENTER_GC_SAFE;
 	messages = backtrace_symbols (addr, len);
 	MONO_EXIT_GC_SAFE;
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 
 	for (i = 0; i < len; ++i) {
 		gpointer ip;
@@ -1253,7 +1253,7 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 		char *msg = NULL;
 		
 		if (str && is_ok (&inner_error)) {
-			msg = mono_string_to_utf8_checked (str, &inner_error);
+			msg = mono_string_to_utf8_checked_internal (str, &inner_error);
 			if (!is_ok (&inner_error)) {
 				msg = g_strdup_printf ("Nested exception while formatting original exception");
 				mono_error_cleanup (&inner_error);

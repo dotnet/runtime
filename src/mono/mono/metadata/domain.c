@@ -50,6 +50,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
 #include <mono/utils/mono-experiments.h>
+#include "external-only.h"
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 
@@ -63,7 +64,7 @@
 } while (FALSE)
 
 #define GET_APPCONTEXT() (mono_thread_internal_current ()->current_appcontext)
-#define SET_APPCONTEXT(x) MONO_OBJECT_SETREF (mono_thread_internal_current (), current_appcontext, (x))
+#define SET_APPCONTEXT(x) MONO_OBJECT_SETREF_INTERNAL (mono_thread_internal_current (), current_appcontext, (x))
 
 static guint16 appdomain_list_size = 0;
 static guint16 appdomain_next = 0;
@@ -226,6 +227,20 @@ mono_install_free_domain_hook (MonoFreeDomainFunc func)
 	free_domain_hook = func;
 }
 
+gboolean
+mono_string_equal_internal (MonoString *s1, MonoString *s2)
+{
+	int l1 = mono_string_length_internal (s1);
+	int l2 = mono_string_length_internal (s2);
+
+	if (s1 == s2)
+		return TRUE;
+	if (l1 != l2)
+		return FALSE;
+
+	return memcmp (mono_string_chars_internal (s1), mono_string_chars_internal (s2), l1 * 2) == 0;
+}
+
 /**
  * mono_string_equal:
  * \param s1 First string to compare
@@ -238,15 +253,22 @@ mono_install_free_domain_hook (MonoFreeDomainFunc func)
 gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)
 {
-	int l1 = mono_string_length (s1);
-	int l2 = mono_string_length (s2);
+	MONO_EXTERNAL_ONLY (gboolean, mono_string_equal_internal (s1, s2));
+}
 
-	if (s1 == s2)
-		return TRUE;
-	if (l1 != l2)
-		return FALSE;
+guint
+mono_string_hash_internal (MonoString *s)
+{
+	const gunichar2 *p = mono_string_chars_internal (s);
+	int i, len = mono_string_length_internal (s);
+	guint h = 0;
 
-	return memcmp (mono_string_chars (s1), mono_string_chars (s2), l1 * 2) == 0; 
+	for (i = 0; i < len; i++) {
+		h = (h << 5) - h + *p;
+		p++;
+	}
+
+	return h;	
 }
 
 /**
@@ -259,16 +281,7 @@ mono_string_equal (MonoString *s1, MonoString *s2)
 guint
 mono_string_hash (MonoString *s)
 {
-	const gunichar2 *p = mono_string_chars (s);
-	int i, len = mono_string_length (s);
-	guint h = 0;
-
-	for (i = 0; i < len; i++) {
-		h = (h << 5) - h + *p;
-		p++;
-	}
-
-	return h;	
+	MONO_EXTERNAL_ONLY (guint, mono_string_hash_internal (s));
 }
 
 static gboolean
@@ -423,14 +436,14 @@ mono_domain_create (void)
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
 	domain->lock_free_mp = lock_free_mempool_new ();
-	domain->env = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
+	domain->env = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Environment Variable Table");
 	domain->domain_assemblies = NULL;
 	domain->assembly_bindings = NULL;
 	domain->assembly_bindings_parsed = FALSE;
 	domain->class_vtable_array = g_ptr_array_new ();
 	domain->proxy_vtable_hash = g_hash_table_new ((GHashFunc)mono_ptrarray_hash, (GCompareFunc)mono_ptrarray_equal);
 	mono_jit_code_hash_init (&domain->jit_code_hash);
-	domain->ldstr_table = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash, (GCompareFunc)mono_string_equal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
+	domain->ldstr_table = mono_g_hash_table_new_type ((GHashFunc)mono_string_hash_internal, (GCompareFunc)mono_string_equal_internal, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain String Pool Table");
 	domain->num_jit_info_table_duplicates = 0;
 	domain->jit_info_table = mono_jit_info_table_new (domain);
 	domain->jit_info_free_queue = NULL;
@@ -923,7 +936,7 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 			return;
 
 		g_assert (thread->abort_exc->object.vtable->domain != domain);
-		MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
+		MONO_OBJECT_SETREF_INTERNAL (thread, abort_exc, mono_get_exception_thread_abort ());
 		g_assert (thread->abort_exc->object.vtable->domain == domain);
 	}
 }

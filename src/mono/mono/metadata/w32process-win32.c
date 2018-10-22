@@ -162,7 +162,7 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 					process_info);
 	}
 
-	mono_gchandle_free (cmd_gchandle);
+	mono_gchandle_free_internal (cmd_gchandle);
 
 	return result;
 }
@@ -322,7 +322,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 			MONO_HANDLE_ARRAY_GETREF (var, array, i);
 			gchandle_t gchandle = 0;
 			memcpy (ptr, mono_string_handle_pin_chars (var, &gchandle), mono_string_handle_length (var) * sizeof (gunichar2));
-			mono_gchandle_free (gchandle);
+			mono_gchandle_free_internal (gchandle);
 			ptr += mono_string_handle_length (var);
 			ptr += 1; // Skip over the null-separator
 		}
@@ -393,7 +393,7 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 		goto exit;
 	}
 
-	memcpy (mono_array_addr (procs, guint32, 0), pids, needed);
+	memcpy (mono_array_addr_internal (procs, guint32, 0), pids, needed);
 exit:
 	g_free (pids);
 	return procs;

@@ -48,7 +48,7 @@ ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoSt
 		if (GetLastError () == ERROR_ALREADY_EXISTS)
 			*created = FALSE;
 		MONO_EXIT_GC_SAFE;
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 	}
 
 	return mutex;
@@ -77,7 +77,7 @@ ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint
 		*err = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 	if (gchandle != 0)
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 
 	return ret;
 }

@@ -12,6 +12,7 @@
 
 #include <windows.h>
 #include <winbase.h>
+#include "object-internals.h"
 
 void
 mono_w32semaphore_init (void)
@@ -24,7 +25,7 @@ ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCou
 { 
 	HANDLE sem;
 
-	sem = CreateSemaphore (NULL, initialCount, maximumCount, name ? mono_string_chars (name) : NULL);
+	sem = CreateSemaphore (NULL, initialCount, maximumCount, name ? mono_string_chars_internal (name) : NULL);
 
 	*error = GetLastError ();
 
@@ -43,7 +44,7 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, g
 {
 	HANDLE sem;
 
-	sem = OpenSemaphore (rights, FALSE, mono_string_chars (name));
+	sem = OpenSemaphore (rights, FALSE, mono_string_chars_internal (name));
 
 	*error = GetLastError ();
 

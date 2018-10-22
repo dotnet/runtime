@@ -939,8 +939,8 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 		MONO_HANDLE_ARRAY_SETVAL (data, guint8, 6, (address>>8) & 0xff);
 		MONO_HANDLE_ARRAY_SETVAL (data, guint8, 7, (address) & 0xff);
 	
-		mono_field_set_value (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_field, MONO_HANDLE_RAW (data)); /* FIXME: use handles for mono_field_set_value */
-		mono_field_set_value (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_length_field, &buffer_size); /* FIXME: use handles for mono_field_set_value */
+		mono_field_set_value_internal (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_field, MONO_HANDLE_RAW (data)); /* FIXME: use handles for mono_field_set_value */
+		mono_field_set_value_internal (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_length_field, &buffer_size); /* FIXME: use handles for mono_field_set_value */
 
 		return sockaddr_obj;
 	}
@@ -979,8 +979,8 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 		MONO_HANDLE_ARRAY_SETVAL (data, guint8, 27,
 					  (sa_in->sin6_scope_id >> 24) & 0xff);
 
-		mono_field_set_value (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_field, MONO_HANDLE_RAW (data)); /* FIXME: use handles for mono_field_set_value */
-		mono_field_set_value (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_length_field, &buffer_size); /* FIXME: use handles for mono_field_set_value */
+		mono_field_set_value_internal (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_field, MONO_HANDLE_RAW (data)); /* FIXME: use handles for mono_field_set_value */
+		mono_field_set_value_internal (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_length_field, &buffer_size); /* FIXME: use handles for mono_field_set_value */
 
 		return sockaddr_obj;
 	}
@@ -993,8 +993,8 @@ create_object_handle_from_sockaddr (struct sockaddr *saddr, int sa_size, gint32 
 		for (i = 0; i < sa_size; i++)
 			MONO_HANDLE_ARRAY_SETVAL (data, guint8, i + 2, saddr->sa_data [i]);
 		
-		mono_field_set_value (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_field, MONO_HANDLE_RAW (data)); /* FIXME: use handles for mono_field_set_value */
-		mono_field_set_value (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_length_field, &buffer_size); /* FIXME: use handles for mono_field_set_value */
+		mono_field_set_value_internal (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_field, MONO_HANDLE_RAW (data)); /* FIXME: use handles for mono_field_set_value */
+		mono_field_set_value_internal (MONO_HANDLE_RAW (sockaddr_obj), domain->sockaddr_data_length_field, &buffer_size); /* FIXME: use handles for mono_field_set_value */
 
 		return sockaddr_obj;
 	}
@@ -1125,7 +1125,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		
 		if (len < 8) {
 			mono_error_set_generic_error (error, "System", "SystemException", "");
-			mono_gchandle_free (gchandle);
+			mono_gchandle_free_internal (gchandle);
 			return NULL;
 		}
 
@@ -1138,7 +1138,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		sa->sin_port = htons (port);
 
 		*sa_size = sizeof (struct sockaddr_in);
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 		return (struct sockaddr *)sa;
 	}
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
@@ -1150,7 +1150,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		
 		if (len < 28) {
 			mono_error_set_generic_error (error, "System", "SystemException", "");
-			mono_gchandle_free (gchandle);
+			mono_gchandle_free_internal (gchandle);
 			return NULL;
 		}
 
@@ -1166,7 +1166,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 			sa->sin6_addr.s6_addr [i] = buf[8 + i];
 
 		*sa_size = sizeof (struct sockaddr_in6);
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 		return (struct sockaddr *)sa;
 	}
 #endif
@@ -1180,7 +1180,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		 */
 		if (len - 2 >= sizeof (sock_un->sun_path)) {
 			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
-			mono_gchandle_free (gchandle);
+			mono_gchandle_free_internal (gchandle);
 			return NULL;
 		}
 		
@@ -1191,13 +1191,13 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 			sock_un->sun_path [i] = buf[i + 2];
 		
 		*sa_size = len;
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 		return (struct sockaddr *)sock_un;
 	}
 #endif
 	else {
 		*werror = WSAEAFNOSUPPORT;
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 		return 0;
 	}
 }
@@ -1901,7 +1901,7 @@ ves_icall_System_Net_Sockets_Socket_GetSocketOption_arr_internal (gsize sock, gi
 
 	ret = mono_w32socket_getsockopt (sock, system_level, system_name, buf, &valsize);
 
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();
@@ -2149,7 +2149,7 @@ ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal (gsize sock, gint32
 			ret = mono_w32socket_setsockopt (sock, system_level, system_name, buf, valsize);
 			break;
 		}
-		mono_gchandle_free (gchandle);
+		mono_gchandle_free_internal (gchandle);
 	} else {
 		/* ReceiveTimeout/SendTimeout get here */
 		switch (name) {
@@ -2281,8 +2281,8 @@ ves_icall_System_Net_Sockets_Socket_IOControl_internal (gsize sock, gint32 code,
 
 	ret = mono_w32socket_ioctl (sock, code, i_buffer, i_len, o_buffer, o_len, &output_bytes);
 
-	mono_gchandle_free (i_gchandle);
-	mono_gchandle_free (o_gchandle);
+	mono_gchandle_free_internal (i_gchandle);
+	mono_gchandle_free_internal (o_gchandle);
 
 	if (ret == SOCKET_ERROR) {
 		*werror = mono_w32socket_get_last_error ();
@@ -2576,7 +2576,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHan
 	uint32_t filename_gchandle;
 	gunichar2 *filename_chars = mono_string_handle_pin_chars (filename, &filename_gchandle);
 	file = mono_w32file_create (filename_chars, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, 0);
-	mono_gchandle_free (filename_gchandle);
+	mono_gchandle_free_internal (filename_gchandle);
 	if (file == INVALID_HANDLE_VALUE) {
 		*werror = mono_w32error_get_last ();
 		return FALSE;
@@ -2595,9 +2595,9 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHan
 	ret = mono_w32socket_transmit_file (sock, file, &buffers, flags, blocking);
 
 	if (pre_buffer_gchandle)
-		mono_gchandle_free (pre_buffer_gchandle);
+		mono_gchandle_free_internal (pre_buffer_gchandle);
 	if (post_buffer_gchandle)
-		mono_gchandle_free (post_buffer_gchandle);
+		mono_gchandle_free_internal (post_buffer_gchandle);
 
 	if (!ret)
 		*werror = mono_w32socket_get_last_error ();

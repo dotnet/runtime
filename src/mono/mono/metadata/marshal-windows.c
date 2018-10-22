@@ -111,7 +111,7 @@ mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
 
 	uint32_t gchandle = 0;
 	tmp = g_utf16_to_utf8 (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s), NULL, &len, &gerror);
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);

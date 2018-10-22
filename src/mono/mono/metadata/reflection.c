@@ -114,7 +114,7 @@ mono_class_get_ref_info_raw (MonoClass *klass)
 
 	if (ref_info_handle == 0)
 		return NULL;
-	return (MonoReflectionTypeBuilder*)mono_gchandle_get_target (ref_info_handle);
+	return (MonoReflectionTypeBuilder*)mono_gchandle_get_target_internal (ref_info_handle);
 }
 
 void
@@ -127,7 +127,7 @@ mono_class_set_ref_info (MonoClass *klass, MonoObjectHandle obj)
 	++class_ref_info_handle_count;
 
 	if (handle != candidate)
-		mono_gchandle_free (candidate);
+		mono_gchandle_free_internal (candidate);
 }
 
 void
@@ -137,7 +137,7 @@ mono_class_free_ref_info (MonoClass *klass)
 	guint32 handle = mono_class_get_ref_info_handle (klass);
 
 	if (handle) {
-		mono_gchandle_free (handle);
+		mono_gchandle_free_internal (handle);
 		mono_class_set_ref_info_handle (klass, 0);
 	}
 }
@@ -1263,7 +1263,7 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	guint8* il_data;
 	il_data = MONO_ARRAY_HANDLE_PIN (il_arr, guint8, 0, &il_gchandle);
 	memcpy (il_data, header->code, header->code_size);
-	mono_gchandle_free (il_gchandle);
+	mono_gchandle_free_internal (il_gchandle);
 
 	/* Locals */
 	MonoArrayHandle locals_arr;
@@ -3012,7 +3012,7 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 		mono_error_cleanup (&inner_error);
 		return FALSE;
 	} else
-		return *(MonoBoolean*)mono_object_unbox (res);
+		return *(MonoBoolean*)mono_object_unbox_internal (res);
 }
 
 /**

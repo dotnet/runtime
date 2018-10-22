@@ -76,6 +76,7 @@
 #ifdef HOST_WIN32
 #include <direct.h>
 #endif
+#include "object-internals.h"
 
 typedef struct
 {
@@ -206,7 +207,7 @@ create_domain_objects (MonoDomain *domain)
 	mono_error_assert_ok (error);
 	empty_str = mono_string_intern_checked (empty_str, error);
 	mono_error_assert_ok (error);
-	mono_field_static_set_value (string_vt, string_empty_fld, empty_str);
+	mono_field_static_set_value_internal (string_vt, string_empty_fld, empty_str);
 	domain->empty_string = empty_str;
 
 	/*
@@ -710,8 +711,8 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 		if (!MONO_HANDLE_IS_NULL (root_app_base)) {
 			/* N.B. new string is in the new domain */
 			uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, root_app_base), TRUE);
-			MonoStringHandle s = mono_string_new_utf16_handle (data, mono_string_chars (MONO_HANDLE_RAW (root_app_base)), mono_string_handle_length (root_app_base), error);
-			mono_gchandle_free (gchandle);
+			MonoStringHandle s = mono_string_new_utf16_handle (data, mono_string_chars_internal (MONO_HANDLE_RAW (root_app_base)), mono_string_handle_length (root_app_base), error);
+			mono_gchandle_free_internal (gchandle);
 			if (!is_ok (error)) {
 				g_free (data->friendly_name);
 				goto leave;
@@ -772,7 +773,7 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 	if (!domain->domain)
 		return FALSE;
 
-	mono_field_get_value ((MonoObject*)(domain->domain), field, &o);
+	mono_field_get_value_internal ((MonoObject*)(domain->domain), field, &o);
 	return o != NULL;
 }
 
@@ -1175,7 +1176,7 @@ mono_domain_set_options_from_config (MonoDomain *domain)
 	if (!domain || !domain->setup || !domain->setup->configuration_file)
 		return;
 
-	config_file_name = mono_string_to_utf8_checked (domain->setup->configuration_file, error);
+	config_file_name = mono_string_to_utf8_checked_internal (domain->setup->configuration_file, error);
 	if (!mono_error_ok (error)) {
 		mono_error_cleanup (error);
 		goto free_and_out;
@@ -1749,7 +1750,7 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 	
 	setup = domain->setup;
 	if (setup->cache_path != NULL && setup->application_name != NULL) {
-		cache_path = mono_string_to_utf8_checked (setup->cache_path, error);
+		cache_path = mono_string_to_utf8_checked_internal (setup->cache_path, error);
 		return_val_if_nok (error, NULL);
 
 #ifndef TARGET_WIN32
@@ -1761,7 +1762,7 @@ get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error)
 		}
 #endif
 
-		appname = mono_string_to_utf8_checked (setup->application_name, error);
+		appname = mono_string_to_utf8_checked_internal (setup->application_name, error);
 		if (!mono_error_ok (error)) {
 			g_free (cache_path);
 			return NULL;
@@ -1903,7 +1904,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (setup == NULL || setup->shadow_copy_files == NULL)
 		goto exit;
 
-	shadow_status_string = mono_string_to_utf8_checked (setup->shadow_copy_files, error);
+	shadow_status_string = mono_string_to_utf8_checked_internal (setup->shadow_copy_files, error);
 	if (!mono_error_ok (error))
 		goto exit;
 
@@ -1926,7 +1927,7 @@ mono_is_shadow_copy_enabled (MonoDomain *domain, const gchar *dir_name)
 	if (found)
 		goto exit;
 
-	all_dirs = mono_string_to_utf8_checked (setup->shadow_copy_directories, error);
+	all_dirs = mono_string_to_utf8_checked_internal (setup->shadow_copy_directories, error);
 	if (!mono_error_ok (error))
 		goto exit;
 
@@ -2409,7 +2410,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 	uint32_t gchandle;
 	mono_byte *raw_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_assembly, gchar, 0, &gchandle);
 	memcpy (assembly_data, raw_data, raw_assembly_len);
-	mono_gchandle_free (gchandle); /* unpin */
+	mono_gchandle_free_internal (gchandle); /* unpin */
 	MONO_HANDLE_ASSIGN (raw_assembly, NULL_HANDLE); /* don't reference the data anymore */
 	
 	MonoImage *image = mono_image_open_from_data_internal (assembly_data, raw_assembly_len, FALSE, NULL, refonly, FALSE, NULL);
@@ -2424,7 +2425,7 @@ ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomainHandle ad,
 		uint32_t symbol_gchandle;
 		mono_byte *raw_symbol_data = (mono_byte*) MONO_ARRAY_HANDLE_PIN (raw_symbol_store, mono_byte, 0, &symbol_gchandle);
 		mono_debug_open_image_from_memory (image, raw_symbol_data, symbol_len);
-		mono_gchandle_free (symbol_gchandle);
+		mono_gchandle_free_internal (symbol_gchandle);
 	}
 
 	MonoAssembly* redirected_asm = NULL;
@@ -2702,8 +2703,8 @@ ves_icall_System_AppDomain_InternalGetProcessGuid (MonoStringHandle newguid, Mon
 		return mono_string_new_utf16_handle (mono_domain_get (), process_guid, sizeof(process_guid)/2, error);
 	}
 	uint32_t gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, newguid), TRUE);
-	memcpy (process_guid, mono_string_chars(MONO_HANDLE_RAW (newguid)), sizeof(process_guid));
-	mono_gchandle_free (gchandle);
+	memcpy (process_guid, mono_string_chars_internal (MONO_HANDLE_RAW (newguid)), sizeof(process_guid));
+	mono_gchandle_free_internal (gchandle);
 	process_guid_set = TRUE;
 	mono_domain_unlock (mono_root_domain);
 	return newguid;

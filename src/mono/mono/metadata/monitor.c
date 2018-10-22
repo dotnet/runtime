@@ -33,6 +33,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
+#include "external-only.h"
 
 /*
  * Pull the list of opcodes
@@ -331,7 +332,7 @@ mono_locks_dump (gboolean include_untaken)
 					to_recycle++;
 			} else {
 				if (!monitor_is_on_freelist ((MonoThreadsSync *)mon->data)) {
-					MonoObject *holder = (MonoObject *)mono_gchandle_get_target ((guint32)(gsize)mon->data);
+					MonoObject *holder = (MonoObject *)mono_gchandle_get_target_internal ((guint32)(gsize)mon->data);
 					if (mon_status_get_owner (mon->status)) {
 						g_print ("Lock %p in object %p held by thread %d, nest level: %d\n",
 							mon, holder, mon_status_get_owner (mon->status), mon->nest);
@@ -393,7 +394,7 @@ mon_new (gsize id)
 		new_ = NULL;
 		for (marray = monitor_allocated; marray; marray = marray->next) {
 			for (i = 0; i < marray->num_monitors; ++i) {
-				if (mono_gchandle_get_target ((guint32)(gsize)marray->monitors [i].data) == NULL) {
+				if (mono_gchandle_get_target_internal ((guint32)(gsize)marray->monitors [i].data) == NULL) {
 					new_ = &marray->monitors [i];
 					if (new_->wait_list) {
 						/* Orphaned events left by aborted threads */
@@ -403,7 +404,7 @@ mon_new (gsize id)
 							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
 					}
-					mono_gchandle_free ((guint32)(gsize)new_->data);
+					mono_gchandle_free_internal ((guint32)(gsize)new_->data);
 					new_->data = monitor_freelist;
 					monitor_freelist = new_;
 				}
@@ -460,18 +461,17 @@ alloc_mon (MonoObject *obj, gint32 id)
 
 	mono_monitor_allocator_lock ();
 	mon = mon_new (id);
-	mon->data = (void *)(size_t)mono_gchandle_new_weakref (obj, TRUE);
+	mon->data = (void *)(size_t)mono_gchandle_new_weakref_internal (obj, TRUE);
 	mono_monitor_allocator_unlock ();
 
 	return mon;
 }
 
-
 static void
 discard_mon (MonoThreadsSync *mon)
 {
 	mono_monitor_allocator_lock ();
-	mono_gchandle_free ((guint32)(gsize)mon->data);
+	mono_gchandle_free_internal ((guint32)(gsize)mon->data);
 	mon_finalize (mon);
 	mono_monitor_allocator_unlock ();
 }
@@ -557,14 +557,8 @@ mono_monitor_inflate (MonoObject *obj)
 
 #define MONO_OBJECT_ALIGNMENT_SHIFT	3
 
-/*
- * mono_object_hash:
- * @obj: an object
- *
- * Calculate a hash code for @obj that is constant while @obj is alive.
- */
 int
-mono_object_hash (MonoObject* obj)
+mono_object_hash_internal (MonoObject* obj)
 {
 #ifdef HAVE_MOVING_COLLECTOR
 	LockWord lw;
@@ -632,6 +626,18 @@ mono_object_hash (MonoObject* obj)
  */
 	return (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
 #endif
+}
+
+/*
+ * mono_object_hash:
+ * @obj: an object
+ *
+ * Calculate a hash code for @obj that is constant while @obj is alive.
+ */
+int
+mono_object_hash (MonoObject* obj)
+{
+	MONO_EXTERNAL_ONLY (int, mono_object_hash_internal (obj));
 }
 
 static gboolean
@@ -773,7 +779,7 @@ signal_monitor (gpointer mon_untyped)
 	mono_coop_mutex_unlock (mon->entry_mutex);
 }
 
-/* If allow_interruption==TRUE, the method will be interrumped if abort or suspend
+/* If allow_interruption==TRUE, the method will be interrupted if abort or suspend
  * is requested. In this case it returns -1.
  */ 
 static inline gint32 
@@ -1056,7 +1062,7 @@ mono_monitor_enter_internal (MonoObject *obj)
 gboolean
 mono_monitor_enter (MonoObject *obj)
 {
-	return mono_monitor_enter_internal (obj);
+	MONO_EXTERNAL_ONLY (gboolean, mono_monitor_enter_internal (obj));
 }
 
 /* Called from JITted code so we return guint32 instead of gboolean */
@@ -1083,14 +1089,11 @@ mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 		mono_error_set_pending_exception (error);
 		return FALSE;
 	}
-	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
+	MONO_EXTERNAL_ONLY (gboolean, mono_monitor_try_enter_internal (obj, ms, FALSE) == 1);
 }
 
-/**
- * mono_monitor_exit:
- */
 void
-mono_monitor_exit (MonoObject *obj)
+mono_monitor_exit_internal (MonoObject *obj)
 {
 	LockWord lw;
 	
@@ -1112,6 +1115,15 @@ mono_monitor_exit (MonoObject *obj)
 		mono_monitor_exit_inflated (obj);
 	else
 		mono_monitor_exit_flat (obj, lw);
+}
+
+/**
+ * mono_monitor_exit:
+ */
+void
+mono_monitor_exit (MonoObject *obj)
+{
+	MONO_EXTERNAL_ONLY_VOID (mono_monitor_exit_internal (obj));
 }
 
 guint32
@@ -1182,17 +1194,8 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 void
 mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 {
-	if (*lock_taken == 1) {
-		ERROR_DECL (error);
-		mono_error_set_argument (error, "lockTaken", "lockTaken is already true");
-		mono_error_set_pending_exception (error);
-		return;
-	}
-
-	MonoBoolean taken;
-
-	ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (obj, MONO_INFINITE_WAIT, &taken);
-	*lock_taken = taken;
+	g_assert (sizeof (MonoBoolean) == 1); // FIXME static_assert
+	mono_monitor_enter_v4_internal  (obj, (MonoBoolean*)lock_taken);
 }
 
 /* Called from JITted code */

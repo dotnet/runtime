@@ -37,6 +37,8 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\environment.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\exception.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\exception-internals.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\external-only.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\external-only.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32file.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32file-internals.h" />
