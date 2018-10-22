@@ -17,11 +17,7 @@ namespace System.Net
         // Must call this from derived class' constructors.
         protected void BaseConstruction(Interop.HttpApi.HTTP_REQUEST* requestBlob)
         {
-            if (requestBlob == null)
-            {
-                GC.SuppressFinalize(this);
-            }
-            else
+            if (requestBlob != null)
             {
                 _memoryBlob = requestBlob;
             }
@@ -48,6 +44,7 @@ namespace System.Net
         {
             Debug.Assert(_memoryBlob == null, "RequestContextBase::Dispose()|Dispose() called before ReleasePins().");
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -107,19 +104,11 @@ namespace System.Net
                 return;
             }
 
-            if (_memoryBlob == null)
-            {
-                GC.ReRegisterForFinalize(this);
-            }
             _memoryBlob = requestBlob;
         }
 
         protected void UnsetBlob()
         {
-            if (_memoryBlob != null)
-            {
-                GC.SuppressFinalize(this);
-            }
             _memoryBlob = null;
         }
 
