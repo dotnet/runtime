@@ -49,8 +49,8 @@ namespace System.Threading
         private long _executingCallbackId;
         /// <summary>Partitions of callbacks.  Split into multiple partitions to help with scalability of registering/unregistering; each is protected by its own lock.</summary>
         private volatile CallbackPartition[] _callbackPartitions;
-        /// <summary>Timer used by CancelAfter and Timer-related ctors.</summary>
-        private volatile Timer _timer;
+        /// <summary>TimerQueueTimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
+        private volatile TimerQueueTimer _timer;
         /// <summary><see cref="System.Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
         private volatile ManualResetEvent _kernelEvent;
         /// <summary>Whether this <see cref="CancellationTokenSource"/> has been disposed.</summary>
@@ -205,7 +205,7 @@ namespace System.Threading
         private void InitializeWithTimer(int millisecondsDelay)
         {
             _state = NotCanceledState;
-            _timer = new Timer(s_timerCallback, this, millisecondsDelay, -1, flowExecutionContext: false);
+            _timer = new TimerQueueTimer(s_timerCallback, this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
 
             // The timer roots this CTS instance while it's scheduled.  That is by design, so
             // that code like:
@@ -344,19 +344,19 @@ namespace System.Threading
             // expired and Disposed itself).  But this would be considered bad behavior, as
             // Dispose() is not thread-safe and should not be called concurrently with CancelAfter().
 
-            Timer timer = _timer;
+            TimerQueueTimer timer = _timer;
             if (timer == null)
             {
                 // Lazily initialize the timer in a thread-safe fashion.
                 // Initially set to "never go off" because we don't want to take a
                 // chance on a timer "losing" the initialization and then
                 // cancelling the token before it (the timer) can be disposed.
-                timer = new Timer(s_timerCallback, this, -1, -1, flowExecutionContext: false);
-                Timer currentTimer = Interlocked.CompareExchange(ref _timer, timer, null);
+                timer = new TimerQueueTimer(s_timerCallback, this, Timeout.UnsignedInfinite, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                TimerQueueTimer currentTimer = Interlocked.CompareExchange(ref _timer, timer, null);
                 if (currentTimer != null)
                 {
                     // We did not initialize the timer.  Dispose the new timer.
-                    timer.Dispose();
+                    timer.Close();
                     timer = currentTimer;
                 }
             }
@@ -365,7 +365,7 @@ namespace System.Threading
             // the following in a try/catch block.
             try
             {
-                timer.Change(millisecondsDelay, -1);
+                timer.Change((uint)millisecondsDelay, Timeout.UnsignedInfinite);
             }
             catch (ObjectDisposedException)
             {
@@ -415,11 +415,11 @@ namespace System.Threading
                 // internal source of cancellation, then Disposes of that linked source, which could
                 // happen at the same time the external entity is requesting cancellation).
 
-                Timer timer = _timer;
+                TimerQueueTimer timer = _timer;
                 if (timer != null)
                 {
                     _timer = null;
-                    timer.Dispose(); // Timer.Dispose is thread-safe
+                    timer.Close(); // TimerQueueTimer.Close is thread-safe
                 }
 
                 _callbackPartitions = null; // free for GC; Cancel correctly handles a null field
@@ -564,12 +564,12 @@ namespace System.Threading
             // If we're the first to signal cancellation, do the main extra work.
             if (!IsCancellationRequested && Interlocked.CompareExchange(ref _state, NotifyingState, NotCanceledState) == NotCanceledState)
             {
-                // Dispose of the timer, if any.  Dispose may be running concurrently here, but Timer.Dispose is thread-safe.
-                Timer timer = _timer;
+                // Dispose of the timer, if any.  Dispose may be running concurrently here, but TimerQueueTimer.Close is thread-safe.
+                TimerQueueTimer timer = _timer;
                 if (timer != null)
                 {
                     _timer = null;
-                    timer.Dispose();
+                    timer.Close();
                 }
 
                 // Set the event if it's been lazily initialized and hasn't yet been disposed of.  Dispose may
