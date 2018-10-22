@@ -3315,6 +3315,12 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->prof_flags = mono_profiler_get_call_instrumentation_flags (cfg->method);
 	cfg->prof_coverage = mono_profiler_coverage_instrumentation_enabled (cfg->method);
 
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+	if (trace)
+		cfg->prof_flags = (MonoProfilerCallInstrumentationFlags)(
+			MONO_PROFILER_CALL_INSTRUMENTATION_ENTER | MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT |
+			MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE | MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT);
+
 	/* The debugger has no liveness information, so avoid sharing registers/stack slots */
 	if (mini_debug_options.mdb_optimizations || MONO_CFG_PROFILE_CALL_CONTEXT (cfg)) {
 		cfg->disable_reuse_registers = TRUE;

@@ -4590,8 +4590,8 @@ register_icalls (void)
 	register_icall (mono_profiler_raise_method_tail_call, "mono_profiler_raise_method_tail_call", "void ptr ptr", TRUE);
 	register_icall (mono_profiler_raise_exception_clause, "mono_profiler_raise_exception_clause", "void ptr int int object", TRUE);
 
-	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
-	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
+	register_icall (mono_trace_enter_method, "mono_trace_enter_method", "void ptr ptr", TRUE);
+	register_icall (mono_trace_leave_method, "mono_trace_leave_method", "void ptr ptr", TRUE);
 	register_icall (mono_get_lmf_addr, "mono_get_lmf_addr", "ptr", TRUE);
 	register_icall (mono_jit_set_domain, "mono_jit_set_domain", "void ptr", TRUE);
 	register_icall (mono_domain_get, "mono_domain_get", "ptr", TRUE);

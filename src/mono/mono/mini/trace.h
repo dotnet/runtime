@@ -10,10 +10,10 @@
 G_BEGIN_DECLS
 
 void
-mono_trace_enter_method (MonoMethod *method, char *ebp);
+mono_trace_enter_method (MonoMethod *method, MonoProfilerCallContext *ctx);
 
 void 
-mono_trace_leave_method (MonoMethod *method, ...);
+mono_trace_leave_method (MonoMethod *method, MonoProfilerCallContext *ctx);
 
 void mono_trace_enable (gboolean enable);
 gboolean mono_trace_is_enabled (void);

@@ -635,13 +635,6 @@ mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handl
  * introspection was enabled, or \c FALSE if the function was called too late for
  * this to be possible.
  *
- * Please note: Mono's LLVM backend does not support this feature. This means
- * that methods with call context instrumentation will be handled by Mono's
- * JIT even in LLVM mode. There is also a special case when Mono is compiling
- * in LLVM-only mode: Since LLVM does not provide a way to implement call
- * contexts, a \c NULL context will always be passed to enter/leave events even
- * though this method returns \c TRUE.
- *
  * This function is \b not async safe.
  *
  * This function may \b only be called from a profiler's init function or prior
