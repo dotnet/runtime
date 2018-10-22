@@ -139,10 +139,13 @@ namespace BasicEventSourceTests
                         Assert.Equal("Int12", evt.EventName);
 
                         var structValue = evt.PayloadValue(0, "nInteger");
-                        var structValueAsDictionary = structValue as IDictionary<string, object>;
-                        Assert.NotNull(structValueAsDictionary);
-                        Assert.Equal(structValueAsDictionary["HasValue"], true);
-                        Assert.Equal(structValueAsDictionary["Value"], nullableInt.Value);
+                        var typeName = structValue.GetType().Namespace + "." + structValue.GetType().Name;
+                        Assert.Equal(typeName, "WhatAmI");
+
+                        //var structValueAsDictionary = structValue as IDictionary<string, object>;
+                        //Assert.NotNull(structValueAsDictionary);
+                        //Assert.Equal(structValueAsDictionary["HasValue"], true);
+                        //Assert.Equal(structValueAsDictionary["Value"], nullableInt.Value);
                     }));
                 /*************************************************************************/
                 int? nullableInt2 = null;
