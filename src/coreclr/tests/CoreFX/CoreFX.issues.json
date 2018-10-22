@@ -551,5 +551,18 @@
                 }
             ]
         }
+    },
+    {
+        "name": "System.Diagnostics.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": [
+                {
+                    "name" : "System.Diagnostics.Tests.DebugTests",
+                    "reason" : "refactoring Debug"
+                }
+            ]
+        }
     }
 ]
