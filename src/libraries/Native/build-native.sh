@@ -112,6 +112,7 @@ prepare_native_build()
     __versionSourceFile=$__rootRepo/bin/obj/version.c
     if [ ! -e "${__versionSourceFile}" ]; then
         __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+        echo "${__versionSourceLine}" > ${__versionSourceFile}
     fi
 }
 
