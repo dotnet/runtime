@@ -486,6 +486,12 @@ namespace System
                     Unsafe.As<T, byte>(ref value0),
                     Unsafe.As<T, byte>(ref value1),
                     span.Length);
+            if (typeof(T) == typeof(char))
+                return SpanHelpers.IndexOfAny(
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                    Unsafe.As<T, char>(ref value0),
+                    Unsafe.As<T, char>(ref value1),
+                    span.Length);
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
         }
@@ -508,6 +514,13 @@ namespace System
                     Unsafe.As<T, byte>(ref value1),
                     Unsafe.As<T, byte>(ref value2),
                     span.Length);
+            if (typeof(T) == typeof(char))
+                return SpanHelpers.IndexOfAny(
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                    Unsafe.As<T, char>(ref value0),
+                    Unsafe.As<T, char>(ref value1),
+                    Unsafe.As<T, char>(ref value2),
+                    span.Length);
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
         }
@@ -522,11 +535,67 @@ namespace System
             where T : IEquatable<T>
         {
             if (typeof(T) == typeof(byte))
+            {
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)),
                     values.Length);
+            }
+            if (typeof(T) == typeof(char))
+            {
+                ref var valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
+                if (values.Length == 5)
+                {
+                    // Length 5 is a common length for FileSystemName expression (", <, >, *, ?) and in preference to 2 as it has an explicit overload
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        Unsafe.Add(ref valueRef, 3),
+                        Unsafe.Add(ref valueRef, 4),
+                        span.Length);
+                }
+                else if (values.Length == 2)
+                {
+                    // Length 2 is a common length for simple wildcards (*, ?),  directory separators (/, \), quotes (", '), brackets, etc
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        span.Length);
+                }
+                else if (values.Length == 4)
+                {
+                    // Length 4 before 3 as 3 has an explicit overload
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        Unsafe.Add(ref valueRef, 3),
+                        span.Length);
+                }
+                else if (values.Length == 3)
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        span.Length);
+                }
+                else if (values.Length == 1)
+                {
+                    // Length 1 last, as ctoring a ReadOnlySpan to call this overload for a single value
+                    // is already throwing away a bunch of performance vs just calling IndexOf
+                    return SpanHelpers.IndexOf(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        span.Length);
+                }
+            }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
         }
@@ -546,6 +615,12 @@ namespace System
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
                     Unsafe.As<T, byte>(ref value1),
+                    span.Length);
+            if (typeof(T) == typeof(char))
+                return SpanHelpers.IndexOfAny(
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                    Unsafe.As<T, char>(ref value0),
+                    Unsafe.As<T, char>(ref value1),
                     span.Length);
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, span.Length);
@@ -569,6 +644,13 @@ namespace System
                     Unsafe.As<T, byte>(ref value1),
                     Unsafe.As<T, byte>(ref value2),
                     span.Length);
+            if (typeof(T) == typeof(char))
+                return SpanHelpers.IndexOfAny(
+                    ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                    Unsafe.As<T, char>(ref value0),
+                    Unsafe.As<T, char>(ref value1),
+                    Unsafe.As<T, char>(ref value2),
+                    span.Length);
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), value0, value1, value2, span.Length);
         }
@@ -588,6 +670,61 @@ namespace System
                     span.Length,
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)),
                     values.Length);
+
+            if (typeof(T) == typeof(char))
+            {
+                ref var valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
+                if (values.Length == 5)
+                {
+                    // Length 5 is a common length for FileSystemName expression (", <, >, *, ?) and in preference to 2 as it has an explicit overload
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        Unsafe.Add(ref valueRef, 3),
+                        Unsafe.Add(ref valueRef, 4),
+                        span.Length);
+                }
+                else if (values.Length == 2)
+                {
+                    // Length 2 is a common length for simple wildcards (*, ?),  directory separators (/, \), quotes (", '), brackets, etc
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        span.Length);
+                }
+                else if (values.Length == 4)
+                {
+                    // Length 4 before 3 as 3 has an explicit overload
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        Unsafe.Add(ref valueRef, 3),
+                        span.Length);
+                }
+                else if (values.Length == 3)
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        span.Length);
+                }
+                else if (values.Length == 1)
+                {
+                    // Length 1 last, as ctoring a ReadOnlySpan to call this overload for a single value
+                    // is already throwing away a bunch of performance vs just calling IndexOf
+                    return SpanHelpers.IndexOf(
+                        ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        span.Length);
+                }
+            }
 
             return SpanHelpers.IndexOfAny(ref MemoryMarshal.GetReference(span), span.Length, ref MemoryMarshal.GetReference(values), values.Length);
         }
