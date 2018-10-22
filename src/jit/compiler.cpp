@@ -2428,25 +2428,11 @@ void Compiler::compSetProcessor()
         {
             opts.setSupportedISA(InstructionSet_SSE2);
         }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES))
-        {
-            if (configEnableISA(InstructionSet_AES))
-            {
-                opts.setSupportedISA(InstructionSet_AES);
-            }
-        }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
         {
             if (configEnableISA(InstructionSet_LZCNT))
             {
                 opts.setSupportedISA(InstructionSet_LZCNT);
-            }
-        }
-        if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ))
-        {
-            if (configEnableISA(InstructionSet_PCLMULQDQ))
-            {
-                opts.setSupportedISA(InstructionSet_PCLMULQDQ);
             }
         }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT))
@@ -2488,6 +2474,22 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_SSSE3))
                 {
                     opts.setSupportedISA(InstructionSet_SSSE3);
+                }
+            }
+            // AES and PCLMULQDQ requires 0x660F38/A encoding that is
+            // only used by SSSE3 and above ISAs
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AES))
+            {
+                if (configEnableISA(InstructionSet_AES))
+                {
+                    opts.setSupportedISA(InstructionSet_AES);
+                }
+            }
+            if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_PCLMULQDQ))
+            {
+                if (configEnableISA(InstructionSet_PCLMULQDQ))
+                {
+                    opts.setSupportedISA(InstructionSet_PCLMULQDQ);
                 }
             }
         }
@@ -2545,7 +2547,8 @@ void Compiler::compSetProcessor()
             codeGen->getEmitter()->SetContains256bitAVX(false);
         }
         else if (compSupports(InstructionSet_SSSE3) || compSupports(InstructionSet_SSE41) ||
-                 compSupports(InstructionSet_SSE42))
+                 compSupports(InstructionSet_SSE42) || compSupports(InstructionSet_AES) ||
+                 compSupports(InstructionSet_PCLMULQDQ))
         {
             // Emitter::UseSSE4 controls whether we support the 4-byte encoding for certain
             // instructions. We need to check if either is supported independently, since
