@@ -15,7 +15,7 @@ The general rule we follow is "use Visual Studio defaults".
    `private string _foo` not `string _foo`). Visibility should be the first modifier (e.g. 
    `public abstract` not `abstract public`).
 6. Namespace imports should be specified at the top of the file, *outside* of
-   `namespace` declarations, and should be sorted alphabetically.
+   `namespace` declarations, and should be sorted alphabetically, with the exception of `System.*` namespaces, which are to be placed on top of all others.
 7. Avoid more than one empty line at any time. For example, do not have two
    blank lines between members of a type.
 8. Avoid spurious free spaces.
@@ -31,7 +31,9 @@ The general rule we follow is "use Visual Studio defaults".
 15. When including non-ASCII characters in the source code use Unicode escape sequences (\uXXXX) instead of literal characters. Literal non-ASCII characters occasionally get garbled by a tool or editor.
 16. When using labels (for goto), indent the label one less than the current indentation.
 
-We have provided a Visual Studio 2013 vssettings file (`corefx.vssettings`) at the root of the corefx repository, enabling C# auto-formatting conforming to the above guidelines. Note that rules 7 and 8 are not covered by the vssettings, since these are not rules currently supported by VS formatting.
+We have provided a Visual Studio vssettings file (`corefx.vssettings`) at the root of the corefx repository, enabling C# auto-formatting conforming to the above guidelines. Note that rules 7 and 8 are not covered by the vssettings, since these are not rules currently supported by VS formatting.
+
+Additionally for auto-formatting in non-Visual Studio editors, an [EditorConfig](https://editorconfig.org "EditorConfig homepage") file (`.editorconfig`) has also been provided at the root of the corefx repository.
 
 We also use the [.NET Codeformatter Tool](https://github.com/dotnet/codeformatter) to ensure the code base maintains a consistent style over time, the tool automatically fixes the code base to conform to the guidelines outlined above.
 
