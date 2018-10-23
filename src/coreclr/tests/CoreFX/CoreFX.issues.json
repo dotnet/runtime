@@ -554,10 +554,15 @@
     },
     {
         "name": "System.Diagnostics.Debug.Tests",
-        "enabled": false,
+        "enabled": true,
         "exclusions": {
             "namespaces": null,
-            "classes": null,
+            "classes": [
+                {
+                    "name" : "System.Diagnostics.Tests.DebugTests",
+                    "reason" : "refactoring Debug"
+                }
+            ],
             "methods": null
         }
     }
