@@ -8,13 +8,19 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <TargetingPackExclusions Include="System.Diagnostics.Debug" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="System.Runtime" />
+    <ReferenceFromRuntime Include="System.Threading" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="DebuggerTypeProxyAttributeTests.cs" />
     <Compile Include="DebuggerDisplayAttributeTests.cs" />
     <Compile Include="DebuggerBrowsableAttributeTests.cs" />
     <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="DebuggerVisualizerAttributeTests.cs" />
-    <Compile Include="DebugTests.cs" />
+    <Compile Include="DebugTests.cs"  Condition="'$(TargetGroup)' == 'netcoreapp'"/>
     <Compile Include="EmptyAttributeTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>

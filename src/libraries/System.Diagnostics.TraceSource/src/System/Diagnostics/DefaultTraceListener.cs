@@ -19,7 +19,31 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private const int InternalWriteSize = 16384;
+        private class DefaultTraceDebugProvider : DebugProvider
+        {
+            private const int InternalWriteSize = 16384;
+            
+            public override void Write(string message)
+            {
+                // really huge messages mess up both VS and dbmon, so we chop it up into 
+                // reasonable chunks if it's too big
+                if (message == null || message.Length <= InternalWriteSize)
+                {
+                    base.Write(message);
+                }
+                else
+                {
+                    int offset;
+                    for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
+                    {
+                        base.Write(message.Substring(offset, InternalWriteSize));
+                    }
+                    base.Write(message.Substring(offset));
+                }
+            }
+        }
+
+        private static readonly DebugProvider s_provider = new DefaultTraceDebugProvider();
         private bool _assertUIEnabled; 
         private bool _settingsInitialized;
         private string _logFileName;
@@ -41,7 +65,7 @@ namespace System.Diagnostics
                 return _assertUIEnabled; 
             }
             set 
-            { 
+            {
                 if (!_settingsInitialized) InitializeSettings();
                 _assertUIEnabled = value; 
             }
@@ -81,12 +105,30 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void Fail(string message, string detailMessage)
         {
-            // UIAssert is not enabled.
+            string stackTrace;
+            try
+            {
+                stackTrace = new StackTrace(fNeedFileInfo:true).ToString();
+            }
+            catch
+            {
+                stackTrace = "";
+            }
+            // Tracked by #32955: WriteAssert should write "stackTrace" rather than string.Empty. 
             WriteAssert(string.Empty, message, detailMessage);
+            if (AssertUiEnabled)
+            {
+                // Tracked by #32955: Currently AssertUiEnabled is true by default but we are not calling Enviroment.FailFast as Debug.Fail does 
+                // s_provider.ShowDialog(stackTrace, message, detailMessage, "Assertion Failed");
+            }
+            if (Debugger.IsAttached)
+            {
+                Debugger.Break();
+            }
         }
 
-         private void InitializeSettings() 
-         {
+        private void InitializeSettings() 
+        {
             // don't use the property setters here to avoid infinite recursion.
             _assertUIEnabled = DiagnosticsConfiguration.AssertUIEnabled;
             _logFileName = DiagnosticsConfiguration.LogFileName;
@@ -95,6 +137,7 @@ namespace System.Diagnostics
 
         private void WriteAssert(string stackTrace, string message, string detailMessage)
         {
+            // Tracked by #32955: WriteAssert should indent "assertMessage" same way Debug.Fail does.
             string assertMessage = SR.DebugAssertBanner + Environment.NewLine
                                             + SR.DebugAssertShortMessage + Environment.NewLine
                                             + message + Environment.NewLine
@@ -102,10 +145,6 @@ namespace System.Diagnostics
                                             detailMessage + Environment.NewLine
                                             + stackTrace;
             WriteLine(assertMessage);
-
-            // In case the debugger is attached we break the debugger.
-            if (Debugger.IsAttached)
-                Debugger.Break();
         }
 
         /// <devdoc>
@@ -143,21 +182,7 @@ namespace System.Diagnostics
             if (NeedIndent) 
                 WriteIndent();
 
-            // really huge messages mess up both VS and dbmon, so we chop it up into 
-            // reasonable chunks if it's too big
-            if (message == null || message.Length <= InternalWriteSize)
-            {
-                Debug.Write(message);
-            }
-            else
-            {
-                int offset;
-                for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
-                {
-                    Debug.Write(message.Substring(offset, InternalWriteSize));
-                }
-                Debug.Write(message.Substring(offset));
-            }
+            s_provider.Write(message);
 
             if (useLogFile && !string.IsNullOrEmpty(LogFileName))
                 WriteToLogFile(message);
