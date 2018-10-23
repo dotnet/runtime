@@ -10,14 +10,14 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>6ede7dd5103464f0e7062f20428afd0eaaaabf24</CoreFxCurrentRef>
-    <CoreClrCurrentRef>58c7afe772b21f6452d23c1e892ab30660c54ef9</CoreClrCurrentRef>
+    <CoreClrCurrentRef>514edecbef647606c452e57ac888f174cb5970ca</CoreClrCurrentRef>
     <CoreSetupCurrentRef>58c7afe772b21f6452d23c1e892ab30660c54ef9</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>088d14b36b3b4ce902f540a5ffd1f7ff7d9315c9</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>088d14b36b3b4ce902f540a5ffd1f7ff7d9315c9</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>58c7afe772b21f6452d23c1e892ab30660c54ef9</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>514edecbef647606c452e57ac888f174cb5970ca</BuildToolsCurrentRef>
     <CoreFxOptimizationDataCurrentRef>088d14b36b3b4ce902f540a5ffd1f7ff7d9315c9</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
@@ -34,8 +34,8 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview1-27018-01</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-27018-01</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-27022-03</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-27022-03</MicrosoftNetCoreIlasmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-27023-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-27023-01</MicrosoftNetCoreIlasmPackageVersion>
     <ProjectNTfsExpectedPrerelease>beta-27022-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-27022-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27022-00</ProjectNTfsTestILCPackageVersion>
@@ -65,10 +65,10 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03322-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03322-02</FeedTasksPackageVersion>
 
     <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03322-01</BuildToolsPackageVersion>
+    <BuildToolsPackageVersion>3.0.0-preview1-03322-02</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
