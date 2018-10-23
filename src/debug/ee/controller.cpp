@@ -2725,7 +2725,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         }
     }
 
-#if !defined(FEATURE_PAL)
+#ifdef FEATURE_DATABREAKPOINT
     if (stWhat & ST_SINGLE_STEP &&
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
@@ -3027,7 +3027,6 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
         // If we need to to a re-abort (see below), then save the current IP in the thread's context before we block and
         // possibly let another func eval get setup.
         reabort = thread->m_StateNC & Thread::TSNC_DebuggerReAbort;
-
         SENDIPCEVENT_END;
 
         if (!atSafePlace)
@@ -8587,22 +8586,21 @@ TP_RESULT DebuggerFuncEvalComplete::TriggerPatch(DebuggerControllerPatch *patch,
 
     // Restore the thread's context to what it was before we hijacked it for this func eval.
     CONTEXT *pCtx = GetManagedLiveCtx(thread);
-    // TODO: Support other architectures
+#ifdef FEATURE_DATABREAKPOINT
+#ifdef FEATURE_PAL    
+        #error Not supported
+#endif // FEATURE_PAL
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     // If a data breakpoint is set while we hit a breakpoint inside a FuncEval, this will make sure the data breakpoint stays
-#ifdef _TARGET_X86_
     m_pDE->m_context.Dr0 = pCtx->Dr0;
     m_pDE->m_context.Dr1 = pCtx->Dr1;
     m_pDE->m_context.Dr2 = pCtx->Dr2;
     m_pDE->m_context.Dr3 = pCtx->Dr3;
     m_pDE->m_context.Dr6 = pCtx->Dr6;
     m_pDE->m_context.Dr7 = pCtx->Dr7;
-#elif defined(_TARGET_AMD64_)
-    m_pDE->m_context.Dr0 = pCtx->Dr0;
-    m_pDE->m_context.Dr1 = pCtx->Dr1;
-    m_pDE->m_context.Dr2 = pCtx->Dr2;
-    m_pDE->m_context.Dr3 = pCtx->Dr3;
-    m_pDE->m_context.Dr6 = pCtx->Dr6;
-    m_pDE->m_context.Dr7 = pCtx->Dr7;
+#else
+    #error Not supported
+#endif
 #endif
     CORDbgCopyThreadContext(reinterpret_cast<DT_CONTEXT *>(pCtx), 
                             reinterpret_cast<DT_CONTEXT *>(&(m_pDE->m_context)));

@@ -1771,6 +1771,8 @@ private:
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp);
 };
 
+#ifdef FEATURE_DATABREAKPOINT
+
 class DebuggerDataBreakpoint : public DebuggerController
 {
 private:
@@ -1791,26 +1793,20 @@ public:
                               Thread *thread, 
                               TRIGGER_WHY tyWhy)
     {
-#ifndef FEATURE_PAL    
+#ifdef FEATURE_PAL    
+        #error Not supported
+#endif // FEATURE_PAL
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         CONTEXT *context = g_pEEInterface->GetThreadFilterContext(thread);
-#ifdef _TARGET_X86_
         context->Dr0 = this->m_context.Dr0;
         context->Dr1 = this->m_context.Dr1;
         context->Dr2 = this->m_context.Dr2;
         context->Dr3 = this->m_context.Dr3;
         context->Dr6 = this->m_context.Dr6;
         context->Dr7 = this->m_context.Dr7;
-#elif defined(_TARGET_AMD64_)
-        context->Dr0 = this->m_context.Dr0;
-        context->Dr1 = this->m_context.Dr1;
-        context->Dr2 = this->m_context.Dr2;
-        context->Dr3 = this->m_context.Dr3;
-        context->Dr6 = this->m_context.Dr6;
-        context->Dr7 = this->m_context.Dr7;
-#endif
-#endif
-#endif
+#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        #error Not supported
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         return TPR_TRIGGER;
     }
 
@@ -1840,7 +1836,9 @@ public:
         LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
 
         bool hitDataBp = false;
-#ifndef FEATURE_PAL    
+#ifdef FEATURE_PAL    
+        #error Not supported
+#endif // FEATURE_PAL    
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         PDR6 pdr6 = (PDR6)&(pContext->Dr6);
 
@@ -1857,12 +1855,14 @@ public:
         {
             LOG((LF_CORDB, LL_INFO10000, "D::DDBP: DIDN'T TRIGGER DATA BREAKPOINT...\n"));
         }
-#endif
-#endif
+#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        #error Not supported
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
         return hitDataBp;
     }
-
 };
+
+#endif // FEATURE_DATABREAKPOINT
 
 
 /* ------------------------------------------------------------------------- *
