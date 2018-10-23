@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
 		}
 		
 		[Kept]
+		[RemovedPseudoAttribute (0x00001000u)]
 		[ComImport]
 		[Guid ("D7BB1889-3AB7-4681-A115-60CA9158FECA")]
 		[InterfaceType (ComInterfaceType.InterfaceIsIUnknown)]

@@ -191,7 +191,7 @@ namespace Mono.Linker {
 			if (preserved_types.TryGetValue (type, out preserve))
 				return preserve;
 
-			throw new NotSupportedException ();
+			throw new NotSupportedException ($"No type preserve information for `{type}`");
 		}
 
 		public HashSet<string> GetResourcesToRemove (AssemblyDefinition assembly)
