@@ -17,7 +17,11 @@ namespace Mono.Linker.Steps
 
 		void ProcessType (TypeDefinition type)
 		{
-			RemoveCustomAttributes (type);
+			if (RemoveCustomAttributes (type)) {
+				if (FeatureCOM && type.IsImport) {
+					type.IsImport = false;
+				}
+			}
 
 			foreach (var field in type.Fields)
 				RemoveCustomAttributes (field);
@@ -30,14 +34,16 @@ namespace Mono.Linker.Steps
 				ProcessType (nested);
 		}
 
-		void RemoveCustomAttributes (ICustomAttributeProvider provider)
+		bool RemoveCustomAttributes (ICustomAttributeProvider provider)
 		{
 			if (!provider.HasCustomAttributes)
-				return;
+				return false;
 
 			var attrsToRemove = provider.CustomAttributes.Where (IsCustomAttributeExcluded).ToArray ();
 			foreach (var remove in attrsToRemove)
 				provider.CustomAttributes.Remove (remove);
+			
+			return attrsToRemove.Length > 0;
 		}
 
 		bool IsCustomAttributeExcluded (CustomAttribute attr)
