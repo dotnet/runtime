@@ -2157,9 +2157,9 @@ public:
 
     void SendBreakpoint(Thread *thread, T_CONTEXT *context,
                         DebuggerBreakpoint *breakpoint);
-
+#ifdef FEATURE_DATABREAKPOINT
     void SendDataBreakpoint(Thread* thread, T_CONTEXT *context, DebuggerDataBreakpoint *breakpoint);
-
+#endif // FEATURE_DATABREAKPOINT
     void SendStep(Thread *thread, T_CONTEXT *context,
                   DebuggerStepper *stepper,
                   CorDebugStepReason reason);

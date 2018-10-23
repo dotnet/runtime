@@ -6078,6 +6078,7 @@ void Debugger::AfterGarbageCollection()
     this->m_isBlockedOnGarbageCollectionEvent = false;
 }
 
+#ifdef FEATURE_DATABREAKPOINT
 void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
     DebuggerDataBreakpoint *breakpoint)
 {
@@ -6119,6 +6120,7 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
 
     m_pRCThread->SendIPCEvent();
 }
+#endif
 
 //
 // SendBreakpoint is called by Runtime threads to send that they've
