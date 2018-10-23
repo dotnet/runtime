@@ -8361,16 +8361,13 @@ void CodeGen::genFnProlog()
                  (compiler->lvaTable[compiler->lvaSecurityObject].lvOnFrame &&
                   compiler->lvaTable[compiler->lvaSecurityObject].lvMustInit));
 
-    // Initialize any "hidden" slots/locals
-
+#ifdef JIT32_GCENCODER
+    // Initialize the LocalAllocSP slot if there is localloc in the function.
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
     {
-#ifdef _TARGET_ARM64_
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_FPBASE, compiler->lvaLocAllocSPvar, 0);
-#else
         getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
-#endif
     }
+#endif // JIT32_GCENCODER
 
     // Set up the GS security cookie
 
