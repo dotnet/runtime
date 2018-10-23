@@ -3871,7 +3871,15 @@ namespace System.Net.Sockets
                 e.StartOperationCommon(this, SocketAsyncOperation.Connect);
                 e.StartOperationConnect(multipleConnectAsync, userSocket: true);
 
-                pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
+                try
+                {
+                    pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
+                }
+                catch
+                {
+                    e.Complete(); // Clear in-use flag on event args object.
+                    throw;
+                }
             }
             else
             {
@@ -3972,7 +3980,15 @@ namespace System.Net.Sockets
                 e.StartOperationCommon(attemptSocket, SocketAsyncOperation.Connect);
                 e.StartOperationConnect(multipleConnectAsync, userSocket: false);
 
-                pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
+                try
+                {
+                    pending = multipleConnectAsync.StartConnectAsync(e, dnsEP);
+                }
+                catch
+                {
+                    e.Complete(); // Clear in-use flag on event args object.
+                    throw;
+                }
             }
             else
             {
