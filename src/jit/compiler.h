@@ -2873,7 +2873,11 @@ public:
     int lvaCachedGenericContextArgOffset(); // For CORINFO_CALLCONV_PARAMTYPE and if generic context is passed as
                                             // THIS pointer
 
-    unsigned lvaLocAllocSPvar; // variable which has the result of the last alloca/localloc
+#ifdef JIT32_GCENCODER
+
+    unsigned lvaLocAllocSPvar; // variable which stores the value of ESP after the the last alloca/localloc
+
+#endif // JIT32_GCENCODER
 
     unsigned lvaNewObjArrayArgs; // variable with arguments for new MD array helper
 

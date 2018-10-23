@@ -527,12 +527,6 @@ BAILOUT:
     if (endLabel != nullptr)
         genDefineTempLabel(endLabel);
 
-    // Write the lvaLocAllocSPvar stack frame slot
-    if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
-    {
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, regCnt, compiler->lvaLocAllocSPvar, 0);
-    }
-
 #if STACK_PROBES
     if (compiler->opts.compNeedStackProbes)
     {
