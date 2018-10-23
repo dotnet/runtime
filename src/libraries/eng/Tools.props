@@ -6,6 +6,10 @@
       $(RestoreSources)
     </RestoreSources>
     <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
+    <Language>C#</Language>
+
+    <!-- Need to keep in sync with CodeAnalysis.targets file. -->
+    <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)..\dependencies.props" />
   <ItemGroup>
@@ -16,6 +20,15 @@
     <PackageReference Include="$(MicrosoftDotNetGenApiPackage)" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetGenFacadesPackage)" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetBuildTasksPackagingPackage)" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+
+    <!-- Reference analyzers -->
+    <PackageReference Include="Desktop.Analyzers" Version="1.1.0" />
+    <PackageReference Include="$(MicrosoftDotNetCodeAnalysisPackage)" Version="$(MicrosoftDotNetCodeAnalysisPackageVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="2.9.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="1.1.0" />
+    <PackageReference Include="System.Runtime.Analyzers" Version="1.1.0" />
+    <PackageReference Include="System.Runtime.InteropServices.Analyzers" Version="1.1.0" />
+    <PackageReference Include="System.Security.Cryptography.Hashing.Algorithms.Analyzers" Version="1.1.0" />
   </ItemGroup>
 
   <Target Name="InitTools" AfterTargets="Restore">
@@ -39,4 +52,16 @@
 
     <Touch Files="$(BuildToolsSemaphore)" AlwaysCreate="true" />
   </Target>
+
+  <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
+
+  <Target Name="GenerateAnalyzersPropsFile"
+          AfterTargets="Restore"
+          DependsOnTargets="ResolveLockFileAnalyzers">
+    <SaveItems Condition="'@(Analyzer)' != ''"
+               ItemName="ResolvedAnalyzer"
+               Items="@(Analyzer)"
+               File="$(AnalyzerPropsFile)" />
+  </Target>
+  
 </Project>

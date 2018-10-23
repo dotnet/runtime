@@ -7,6 +7,7 @@
   <!-- Package names -->
   <PropertyGroup>
     <MicrosoftDotNetApiCompatPackage>Microsoft.DotNet.ApiCompat</MicrosoftDotNetApiCompatPackage>
+    <MicrosoftDotNetCodeAnalysisPackage>Microsoft.DotNet.CodeAnalysis</MicrosoftDotNetCodeAnalysisPackage>
     <MicrosoftDotNetGenApiPackage>Microsoft.DotNet.GenAPI</MicrosoftDotNetGenApiPackage>
     <MicrosoftDotNetGenFacadesPackage>Microsoft.DotNet.GenFacades</MicrosoftDotNetGenFacadesPackage>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
@@ -15,6 +16,7 @@
   <!-- Package versions -->
   <PropertyGroup>
     <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.18519.7</MicrosoftDotNetCodeAnalysisPackageVersion>
     <MicrosoftDotNetGenApiPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenApiPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenFacadesPackageVersion>
     <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.18506.1</MicrosoftDotNetXUnitExtensionsPackageVersion>
