@@ -59,18 +59,21 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="..\..\System.Collections.Specialized\src\System.Collections.Specialized.csproj " />
+    <ProjectReference Include="..\..\System.ComponentModel.Primitives\src\System.ComponentModel.Primitives.csproj " />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj " />
+    <ProjectReference Include="..\..\System.Diagnostics.Process\src\System.Diagnostics.Process.csproj " />
+    <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj " />
+    <ProjectReference Include="..\..\System.IO.FileSystem\src\System.IO.FileSystem.csproj " />
+    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj " />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices\src\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="..\..\System.Threading\src\System.Threading.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
 </Project>

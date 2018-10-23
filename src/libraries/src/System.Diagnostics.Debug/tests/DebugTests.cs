@@ -11,6 +11,148 @@ namespace System.Diagnostics.Tests
     [Collection("System.Diagnostics.Debug")]
     public class DebugTests
     {
+        [Fact] // for netcoreapp only uncomment when running this xunit method alone
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp,  "dotnet/corefx#32955")]
+        public void Bug_SkipsIndentationOnFirstWrite()
+        {
+            // This test shows an existing indentation bug in Debug class
+                // First Debug.Write call won't respect the indentation. Desktop does not have this bug.
+
+            Debug.Indent();
+            int expectedIndentation = Debug.IndentLevel * Debug.IndentSize;
+            
+            VerifyLogged(() => Debug.Write("pizza"),        new string(' ', expectedIndentation) +  "pizza"); // bug: netcoreapp does not indent
+            
+            // After first WriteLine invocation we get proper indentation
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', 0) +                    "pizza" + Environment.NewLine);
+
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expectedIndentation) +  "pizza" + Environment.NewLine);
+            VerifyLogged(() => Debug.Write("pizza"),        new string(' ', expectedIndentation) +  "pizza");
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', 0) +                    "pizza" + Environment.NewLine); 
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expectedIndentation) +  "pizza" + Environment.NewLine);
+            Debug.Unindent();
+        }
+
+        [Fact] // for netcoreapp only uncomment when running this xunit method alone
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp,  "dotnet/corefx#32955")]
+        public void Bug_SkipsIndentationOnFirstWriteLine()
+        {
+            // This test shows an existing indentation bug in Debug class
+                // First Debug.WriteLine call won't respect the indentation. Desktop does not have this bug.
+
+            Debug.Indent();
+            int expectedIndentation = Debug.IndentLevel * Debug.IndentSize;
+
+            // After first WriteLine invocation we get proper indentation
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expectedIndentation) +  "pizza" + Environment.NewLine); // bug: netcoreapp does not indent
+
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expectedIndentation) +  "pizza" + Environment.NewLine);
+            VerifyLogged(() => Debug.Write("pizza"),        new string(' ', expectedIndentation) +  "pizza");
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', 0) +                    "pizza" + Environment.NewLine); 
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expectedIndentation) +  "pizza" + Environment.NewLine);
+            Debug.Unindent();
+        }
+
+        [Fact] // for netcoreapp only uncomment when running this xunit method alone
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp,  "dotnet/corefx#32955")]
+        public void Bug_DebugSumsUpTraceAndDebugIndentation()
+        {
+            // In Core:
+               // - The existing indentation amount for Trace is currently: `Debug.IndentLevel * Debug.IndentSize + Trace.IndentLevel * Trace.IndentSize`. 
+               // The Trace indentation amount is just `Trace.IndentLevel * Trace.IndentSize`
+
+            // Set same values of IndentSize and IndentLevel for both Trace and Debug, to ignore bug in: DesktopDiscrepancy_DebugIndentationNotInSyncWithTrace
+            Debug.IndentSize = 4;
+            Trace.IndentSize = 4;
+            Debug.Indent();
+            Trace.Indent();
+
+            int expected = Debug.IndentSize * Debug.IndentLevel;
+
+            Debug.WriteLine("pizza"); // Skip first call, to ignore bug in: Bug_SkipsIndentationOnFirstWriteLine
+            VerifyLogged(() => Debug.WriteLine("pizza"),    new string(' ', expected) +  "pizza" + Environment.NewLine);
+            Trace.WriteLine("pizza"); // Wires up Debug with TraceListeners
+            VerifyLogged(() => Trace.WriteLine("pizza"),    new string(' ', expected) +  "pizza" + Environment.NewLine); // bug: actual netcoreapp indent size is (expected + Trace.IndentLevel * Trace.IndentSize)
+
+            // reset
+            Debug.Unindent();
+            Trace.Unindent();
+            Trace.Refresh();
+        }
+
+        [Fact] // for netcoreapp only uncomment when running this xunit method alone
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp,  "dotnet/corefx#32955")]
+        public void WriteNull()
+        {
+            Debug.IndentSize = 4;
+            Trace.IndentSize = 4;
+            Debug.Indent();
+            Trace.Indent();
+
+            int expected = Debug.IndentSize * Debug.IndentLevel;
+
+            Debug.WriteLine(null); // Skip first call, to ignore bug in: Bug_SkipsIndentationOnFirstWriteLine
+            VerifyLogged(() => Debug.WriteLine(null), new string(' ', expected) + Environment.NewLine);
+            Trace.WriteLine(null); // Wires up Debug with TraceListeners
+            VerifyLogged(() => Trace.WriteLine(null), new string(' ', expected) + Environment.NewLine); // bug: actual netcoreapp indent size is (expected + Trace.IndentLevel * Trace.IndentSize)
+
+            // reset
+            Debug.Unindent();
+            Trace.Unindent();
+            Trace.Refresh();
+        }
+        
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp,  "dotnet/corefx#32955")]
+        public void DesktopDiscrepancy_DebugIndentationNotInSyncWithTrace()
+        {
+            // This test shows an existing indentation bug in Debug class:
+                // In Desktop, Debug and Trace have the same values for IndentLevel and IndentSize.
+                // In Core, Updating Trace IndentLevel or IndentSize won't update that for Debug and vice versa.
+
+            int originalDebugIndentSize = Debug.IndentSize;
+            int originalTraceIndentSize = Trace.IndentSize;
+            Debug.IndentLevel = 0;
+            Trace.IndentLevel = 0;
+
+            // test if Debug gets changed when Trace changes
+            Trace.IndentSize = 7;
+            Assert.Equal(7, Trace.IndentSize);
+            Assert.Equal(7, Debug.IndentSize); // bug: in netcoreapp is not equal to 7
+            Trace.Indent();
+            Assert.Equal(1, Trace.IndentLevel);
+            Assert.Equal(1, Debug.IndentLevel); // bug: in netcoreapp is not equal to 1
+
+            // reset
+            Trace.Unindent();
+            Trace.IndentSize = originalTraceIndentSize;
+
+            // test if Trace gets changed when Debug changes
+            Debug.IndentSize = 7;
+            Assert.Equal(7, Debug.IndentSize);
+            Assert.Equal(7, Trace.IndentSize); // bug: in netcoreapp is not equal to 7
+            Debug.Indent();
+            Assert.Equal(1, Debug.IndentLevel);
+            Assert.Equal(1, Trace.IndentLevel); // bug: in netcoreapp is not equal to 1
+            
+            // reset
+            Debug.Unindent();
+            Debug.IndentSize = originalDebugIndentSize;
+            Trace.Refresh();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp,  "dotnet/corefx#32955")]
+        public void ClearTraceListeners_StopsWritingToDebugger()
+        {
+            VerifyLogged(() => Debug.Write("pizza"), "pizza");
+            VerifyLogged(() => Trace.Write("pizza"), "pizza"); // Wires up Debug with TraceListeners
+            Trace.Listeners.Clear();
+            VerifyLogged(() => Debug.Write("pizza"), string.Empty); 
+            VerifyLogged(() => Trace.Write("pizza"), string.Empty);
+            Trace.Refresh();
+        }
+
         [Fact]
         public void Asserts()
         {
@@ -160,13 +302,7 @@ namespace System.Diagnostics.Tests
 
         static void VerifyLogged(Action test, string expectedOutput)
         {
-            // .NET Core has an internal extensibility point for unit tests.
-            if (PlatformDetection.IsFullFramework || PlatformDetection.IsUap)
-            {
-                return;
-            }
-
-            FieldInfo writeCoreHook = typeof(Debug).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
+            FieldInfo writeCoreHook = typeof(DebugProvider).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
 
             // First use our test logger to verify the output
             var originalWriteCoreHook = writeCoreHook.GetValue(null);
@@ -194,20 +330,11 @@ namespace System.Diagnostics.Tests
 
         static void VerifyAssert(Action test, params string[] expectedOutputStrings)
         {
-            // .NET Core has an internal extensibility point for unit tests.
-            if (PlatformDetection.IsFullFramework || PlatformDetection.IsUap)
-            {
-                return;
-            }
-
-            FieldInfo writeCoreHook = typeof(Debug).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
-            FieldInfo showDialogHook = typeof(Debug).GetField("s_ShowDialog", BindingFlags.Static | BindingFlags.NonPublic);
+            FieldInfo writeCoreHook = typeof(DebugProvider).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
+            s_defaultProvider = Debug.SetProvider(WriteLogger.s_instance);
 
             var originalWriteCoreHook = writeCoreHook.GetValue(null);
             writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
-
-            var originalShowDialogHook = showDialogHook.GetValue(null);
-            showDialogHook.SetValue(null, new Action<string, string, string, string>(WriteLogger.s_instance.ShowDialog));
 
             try
             {
@@ -228,11 +355,12 @@ namespace System.Diagnostics.Tests
             finally
             {
                 writeCoreHook.SetValue(null, originalWriteCoreHook);
-                showDialogHook.SetValue(null, originalShowDialogHook);
+                Debug.SetProvider(s_defaultProvider);
             }
         }
 
-        private class WriteLogger
+        private static DebugProvider s_defaultProvider;
+        private class WriteLogger : DebugProvider
         {
             public static readonly WriteLogger s_instance = new WriteLogger();
 
@@ -248,7 +376,7 @@ namespace System.Diagnostics.Tests
                 AssertUIOutput = string.Empty;
             }
 
-            public void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
+            public override void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
             {
                 AssertUIOutput += stackTrace + message + detailMessage + errorSource;
             }
