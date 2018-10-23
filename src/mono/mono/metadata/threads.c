@@ -6218,7 +6218,7 @@ summary_timedwait (SummarizerGlobalState *state, int timeout_seconds)
 }
 
 static void
-summarizer_state_term (SummarizerGlobalState *state, gchar **out, gchar *mem, size_t provided_size)
+summarizer_state_term (SummarizerGlobalState *state, gchar **out, gchar *mem, size_t provided_size, MonoThreadSummary *controlling)
 {
 	// See the array writes
 	mono_memory_barrier ();
@@ -6246,7 +6246,7 @@ summarizer_state_term (SummarizerGlobalState *state, gchar **out, gchar *mem, si
 		// much more stable to do it all from the controlling thread.
 		mono_get_eh_callbacks ()->mono_summarize_managed_stack (thread);
 
-		mono_summarize_native_state_add_thread (thread, thread->ctx);
+		mono_summarize_native_state_add_thread (thread, thread->ctx, thread == controlling);
 
 		// Set non-shared state to notify the waiting thread to clean up
 		// without having to keep our shared state alive
@@ -6313,7 +6313,7 @@ mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *ha
 			MOSTLY_ASYNC_SAFE_PRINTF("Finished thread summarizer pause from 0x%zx.\n", current);
 
 		// Dump and cleanup all the stack memory
-		summarizer_state_term (&state, out, mem, provided_size);
+		summarizer_state_term (&state, out, mem, provided_size, &this_thread);
 	} else {
 		// Wait here, keeping our stack memory alive
 		// for the dumper

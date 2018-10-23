@@ -5803,7 +5803,7 @@ ves_icall_Mono_Runtime_ExceptionToState (MonoExceptionHandle exc_handle, guint64
 	mono_json_writer_init (&writer);
 	mono_native_state_init (&writer);
 	gboolean first_thread_added = TRUE;
-	mono_native_state_add_thread (&writer, &out, NULL, first_thread_added);
+	mono_native_state_add_thread (&writer, &out, NULL, first_thread_added, TRUE);
 	char *output = mono_native_state_free (&writer, FALSE);
 	result = mono_string_new_handle (mono_domain_get (), output, error);
 	g_free (output);
@@ -5875,7 +5875,7 @@ ves_icall_Mono_Runtime_DumpStateSingle (guint64 *portable_hash, guint64 *unporta
 	mono_json_writer_init (&writer);
 	mono_native_state_init (&writer);
 	gboolean first_thread_added = TRUE;
-	mono_native_state_add_thread (&writer, &this_thread, NULL, first_thread_added);
+	mono_native_state_add_thread (&writer, &this_thread, NULL, first_thread_added, TRUE);
 	char *output = mono_native_state_free (&writer, FALSE);
 	result = mono_string_new_handle (mono_domain_get (), output, error);
 	g_free (output);

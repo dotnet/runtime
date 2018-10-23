@@ -213,7 +213,7 @@ mono_native_state_add_frames (JsonWriter *writer, int num_frames, MonoFrameSumma
 }
 
 void
-mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread)
+mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread, gboolean crashing_thread)
 {
 	assert_has_space ();
 
@@ -230,6 +230,10 @@ mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, Mon
 	mono_json_writer_printf (writer, "%s,\n", thread->is_managed ? "true" : "false");
 
 	assert_has_space ();
+	mono_json_writer_indent (writer);
+	mono_json_writer_object_key(writer, "crashed");
+	mono_json_writer_printf (writer, "%s,\n", crashing_thread ? "true" : "false");
+
 	mono_json_writer_indent (writer);
 	mono_json_writer_object_key(writer, "managed_thread_ptr");
 	mono_json_writer_printf (writer, "\"0x%x\",\n", (gpointer) thread->managed_thread_ptr);
@@ -615,11 +619,10 @@ mono_summarize_native_state_end (void)
 }
 
 void
-mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx)
+mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx, gboolean crashing_thread)
 {
-	
 	static gboolean not_first_thread = FALSE;
-	mono_native_state_add_thread (&writer, thread, ctx, !not_first_thread);
+	mono_native_state_add_thread (&writer, thread, ctx, !not_first_thread, crashing_thread);
 	not_first_thread = TRUE;
 }
 

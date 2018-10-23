@@ -18,7 +18,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/utils/json.h>
 
-#define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.1"
+#define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.2"
 
 MONO_BEGIN_DECLS
 
@@ -33,7 +33,7 @@ char *
 mono_summarize_native_state_end (void);
 
 void
-mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx);
+mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx, gboolean crashing_thread);
 
 /*
  * These use memory from the caller
@@ -49,7 +49,7 @@ char *
 mono_native_state_free (JsonWriter *writer, gboolean free_data);
 
 void
-mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread);
+mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread, gboolean crashing_thread);
 
 void
 mono_crash_dump (const char *jsonFile, MonoStackHash *hashes);
