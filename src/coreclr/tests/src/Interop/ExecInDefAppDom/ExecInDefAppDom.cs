@@ -62,6 +62,7 @@ public class Program
     {
         int result = 100;
         String myPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        String injectedPath = System.IO.Path.GetDirectoryName(myPath) + "/InjectedCode.dll";
         String bogusPath = myPath + "random";
 
         const int S_OK = unchecked((int)0);
@@ -83,6 +84,7 @@ public class Program
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "0", S_OK, 0);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "200", S_OK, 200);
         result += TestExecuteInAppDomain(myPath, "FakeInjectedCode", "ParseArgument", "None", COR_E_FORMAT, 0);
+        result += TestExecuteInAppDomain(injectedPath, "InjectedCode", "ParseArgument", "300", S_OK, 300);
 
         return result;
     }
