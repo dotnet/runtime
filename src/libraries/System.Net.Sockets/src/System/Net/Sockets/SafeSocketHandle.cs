@@ -22,17 +22,7 @@ namespace System.Net.Sockets
     // to block the user thread in case a graceful close has been
     // requested.  (It's not legal to block any other thread - such closes
     // are always abortive.)
-#if SYSTEM_NET_SOCKETS_DLL
-    public sealed
-#else
-    internal
-#endif
-        partial class SafeSocketHandle :
-#if DEBUG && !SYSTEM_NET_SOCKETS_DLL
-        DebugSafeHandleMinusOneIsInvalid
-#else
-        SafeHandleMinusOneIsInvalid
-#endif
+    public sealed partial class SafeSocketHandle : SafeHandleMinusOneIsInvalid
     {
         public SafeSocketHandle(IntPtr preexistingHandle, bool ownsHandle)
             : base(ownsHandle)
@@ -40,11 +30,7 @@ namespace System.Net.Sockets
             handle = preexistingHandle;
         }
 
-        private
-#if !SYSTEM_NET_SOCKETS_DLL
-            protected 
-#endif
-            SafeSocketHandle() : base(true) { }
+        private SafeSocketHandle() : base(true) { }
 
         private InnerSafeCloseSocket _innerSocket;
         private volatile bool _released;
@@ -115,11 +101,7 @@ namespace System.Net.Sockets
             return ret;
         }
 
-        private
-#if !SYSTEM_NET_SOCKETS_DLL
-            protected
-#endif
-            static void CreateSocket(InnerSafeCloseSocket socket, SafeSocketHandle target)
+        private static void CreateSocket(InnerSafeCloseSocket socket, SafeSocketHandle target)
         {
             if (socket != null && socket.IsInvalid)
             {
