@@ -7946,7 +7946,7 @@ type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoE
 	res = mono_array_new_handle (domain, mono_defaults.systemtype_class, count, error);
 	goto_if_nok (error, fail);
 	count = 0;
-	for (i = 0; i < cmods->count; ++i) {
+	for (i = cmods->count - 1; i >= 0; --i) {
 		if ((optional && !cmods->modifiers [i].required) || (!optional && cmods->modifiers [i].required)) {
 			if (!add_modifier_to_array (domain, image, &cmods->modifiers [i], res, count , error))
 				goto fail;
