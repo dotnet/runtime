@@ -35,6 +35,20 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        [Theory]
+        [InlineData("1.3.132.0.35", 521)] //secp521r1
+        [InlineData("1.3.132.0.34", 384)] //secp384r1
+        [InlineData("1.2.840.10045.3.1.7", 256)] //secp256v1
+        public static void ECCurve_ctor_SEC2_OID_From_Value(string oidValue, int expectedKeySize)
+        {
+            ECCurve ecCurve = ECCurve.CreateFromValue(oidValue);
+            using (ECDiffieHellman ecdh = ECDiffieHellmanFactory.Create(ecCurve))
+            {
+                Assert.Equal(expectedKeySize, ecdh.KeySize);
+                ecdh.Exercise();
+            }
+        }
+
         [Fact]
         public static void Equivalence_Hash()
         {
