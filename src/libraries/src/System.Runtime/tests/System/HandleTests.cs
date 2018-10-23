@@ -16,33 +16,48 @@ public static class HandleTests
         Type t = typeof(Derived);
         FieldInfo f = t.GetField(nameof(Base.MyField));
         RuntimeFieldHandle h = f.FieldHandle;
+
         Assert.True(h.Value != IntPtr.Zero);
-    }
 
-    [Fact]
-    public static void DefaultRuntimeFieldHandleHashCodeTest()
-    {
-        RuntimeFieldHandle rfh1 = new RuntimeFieldHandle();
-        RuntimeFieldHandle rfh2 = new RuntimeFieldHandle();
+        Assert.Equal(h.GetHashCode(), h.GetHashCode());
+        Assert.Equal(default(RuntimeFieldHandle).GetHashCode(), default(RuntimeFieldHandle).GetHashCode());
 
-        Assert.Equal(rfh1.GetHashCode(), rfh2.GetHashCode());
+        Assert.True(h.Equals(h));
+        Assert.False(h.Equals(default(RuntimeFieldHandle)));
+        Assert.False(default(RuntimeFieldHandle).Equals(h));
+        Assert.True(default(RuntimeFieldHandle).Equals(default(RuntimeFieldHandle)));
+
+        Assert.True(h.Equals((object)h));
+        Assert.False(h.Equals(new object()));
+        Assert.False(h.Equals(null));
+
+        Assert.False(h == default(RuntimeFieldHandle));
+        Assert.True(h != default(RuntimeFieldHandle));
     }
 
     [Fact]
     public static void  RuntimeMethodHandleTest()
     {
-        MethodInfo mi1 = typeof(Base).GetMethod(nameof(Base.MyMethod));
-        MethodInfo mi2 = (MethodInfo)MethodBase.GetMethodFromHandle(mi1.MethodHandle);
-        Assert.Equal(mi1, mi2);
-    }
+        MethodInfo mi = typeof(Base).GetMethod(nameof(Base.MyMethod));
+        RuntimeMethodHandle h = mi.MethodHandle;
+        Assert.Equal(mi, MethodBase.GetMethodFromHandle(h));
 
-    [Fact]
-    public static void DefaultRuntimeMethodHandleHashCodeTest()
-    {
-        RuntimeMethodHandle rmh1 = new RuntimeMethodHandle();
-        RuntimeMethodHandle rmh2 = new RuntimeMethodHandle();
+        Assert.True(h.Value != IntPtr.Zero);
 
-        Assert.Equal(rmh1.GetHashCode(), rmh2.GetHashCode());
+        Assert.Equal(h.GetHashCode(), h.GetHashCode());
+        Assert.Equal(default(RuntimeMethodHandle).GetHashCode(), default(RuntimeMethodHandle).GetHashCode());
+
+        Assert.True(h.Equals(h));
+        Assert.False(h.Equals(default(RuntimeMethodHandle)));
+        Assert.False(default(RuntimeMethodHandle).Equals(h));
+        Assert.True(default(RuntimeMethodHandle).Equals(default(RuntimeMethodHandle)));
+
+        Assert.True(h.Equals((object)h));
+        Assert.False(h.Equals(new object()));
+        Assert.False(h.Equals(null));
+
+        Assert.False(h == default(RuntimeMethodHandle));
+        Assert.True(h != default(RuntimeMethodHandle));
     }
 
     [Fact]
@@ -57,11 +72,30 @@ public static class HandleTests
     [Fact]
     public static void  RuntimeTypeHandleTest()
     {
-        RuntimeTypeHandle r1 = typeof(int).TypeHandle;
-        RuntimeTypeHandle r2 = typeof(uint).TypeHandle;
-        Assert.NotEqual(r1, r2);
+        RuntimeTypeHandle h = typeof(int).TypeHandle;
+        Assert.NotEqual(h, typeof(uint).TypeHandle);
+
+        Assert.True(h.Value != IntPtr.Zero);
+
+        Assert.Equal(h.GetHashCode(), h.GetHashCode());
+        Assert.Equal(default(RuntimeTypeHandle).GetHashCode(), default(RuntimeTypeHandle).GetHashCode());
+
+        Assert.True(h.Equals(h));
+        Assert.False(h.Equals(default(RuntimeTypeHandle)));
+        Assert.False(default(RuntimeTypeHandle).Equals(h));
+        Assert.True(default(RuntimeTypeHandle).Equals(default(RuntimeTypeHandle)));
+
+        Assert.True(h.Equals((object)h));
+        Assert.False(h.Equals(typeof(int)));
+        Assert.False(h.Equals(new object()));
+        Assert.False(h.Equals(null));
+
+        Assert.False(h == null);
+        Assert.False(null == h);
+        Assert.True(h != null);
+        Assert.True(null != h);
     }
-    
+
     private class Base
     {
         public event Action MyEvent { add { } remove { } }

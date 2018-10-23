@@ -66,6 +66,7 @@
     <Compile Include="System\ApplicationExceptionTests.cs" />
     <Compile Include="System\AttributeTests.cs" />
     <Compile Include="System\Attributes.cs" />
+    <Compile Include="System\AttributeUsageAttributeTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
     <Compile Include="System\BooleanTests.cs" />
     <Compile Include="System\BufferTests.cs" />
@@ -85,6 +86,7 @@
     <Compile Include="System\Exceptions.Utility.cs" />
     <Compile Include="System\ExecutionEngineExceptionTests.cs" />
     <Compile Include="System\ExternalExceptionTests.cs" />
+    <Compile Include="System\EventArgsTests.cs" />
     <Compile Include="System\FieldAccessExceptionTests.cs" />
     <Compile Include="System\FormattableStringTests.cs" />
     <Compile Include="System\FormatExceptionTests.cs" />
@@ -115,11 +117,13 @@
     <Compile Include="System\NullReferenceExceptionTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\ObjectDisposedExceptionTests.cs" />
+    <Compile Include="System\ObsoleteAttributeTests.cs" />
     <Compile Include="System\OutOfMemoryExceptionTests.cs" />
     <Compile Include="System\OverflowExceptionTests.cs" />
-    <Compile Include="System\RankExceptionTests.cs" />
+    <Compile Include="System\ParamArrayAttributeTests.cs" />
     <Compile Include="System\PlatformNotSupportedExceptionTests.cs" />
     <Compile Include="System\PseudoCustomAttributeTests.cs" />
+    <Compile Include="System\RankExceptionTests.cs" />
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
@@ -132,6 +136,7 @@
     <Compile Include="System\TimeZoneInfoTests.cs" />
     <Compile Include="System\TimeZoneTests.cs" />
     <Compile Include="System\TimeZoneNotFoundExceptionTests.cs" />
+    <Compile Include="System\TypeLoadExceptionTests.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
     <Compile Include="System\TupleTests.cs" />
     <Compile Include="System\UInt16Tests.cs" />
