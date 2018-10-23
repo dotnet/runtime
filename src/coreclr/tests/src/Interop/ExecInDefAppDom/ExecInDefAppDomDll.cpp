@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #include <xplatform.h>
+
+#ifdef WINDOWS
 #include "mscoree.h"
 
 typedef HRESULT  (STDAPICALLTYPE *FnGetCLRRuntimeHost)(REFIID riid, IUnknown **pUnk);
@@ -60,3 +62,23 @@ CallExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
 
     return result;
 }
+
+#else // WINDOWS
+
+#include <cstdint>
+
+typedef uint32_t DWORD;
+
+extern "C" DLL_EXPORT int STDMETHODCALLTYPE
+CallExecuteInDefaultAppDomain(LPCWSTR pwzAssemblyPath,
+                        LPCWSTR pwzTypeName,
+                        LPCWSTR pwzMethodName,
+                        LPCWSTR pwzArgument,
+                        DWORD   *pReturnValue)
+{
+    const int E_FAIL = 0x80004005;
+
+    return E_FAIL;
+}
+
+#endif // WINDOWS
