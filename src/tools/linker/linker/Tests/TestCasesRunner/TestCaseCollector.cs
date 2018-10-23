@@ -60,15 +60,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				foreach (var file in subDir.Files ("*.cs", true)) {
 
+					var relativeParents = file.RelativeTo(_rootDirectory);
 					// Magic : Anything in a directory named Dependnecies is assumed to be a dependency to a test case
 					// and never a test itself
 					// This makes life a little easier when writing these supporting files as it removes some contraints you would previously have
 					// had to follow such as ensuring a class exists that matches the file name and putting [NotATestCase] on that class
-					if (file.Parent.FileName == "Dependencies")
+					if (relativeParents.RecursiveParents.Any(p => p.Elements.Any() && p.FileName == "Dependencies"))
 						continue;
 
 					// Magic: Anything in a directory named Individual is expected to be ran by it's own [Test] rather than as part of [TestCaseSource]
-					if (file.Parent.FileName == "Individual")
+					if (relativeParents.RecursiveParents.Any(p => p.Elements.Any() && p.FileName == "Individual"))
 						continue;
 
 					yield return file;
