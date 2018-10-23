@@ -580,5 +580,42 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => server.AcceptAsync(acceptArgs));
             }
         }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SAEA left in unusable state after failed BeginGetHostAddresses on netfx")]
+        [Fact]
+        public async Task SocketConnectAsync_IPAddressAny_SocketAsyncEventArgsReusableAfterFailure()
+        {
+            var e = new SocketAsyncEventArgs();
+
+            foreach (DnsEndPoint dns in new[] { new DnsEndPoint("::0", 80), new DnsEndPoint("0.0.0.0", 80) })
+            {
+                e.RemoteEndPoint = dns;
+
+                AssertExtensions.Throws<ArgumentException>("hostName", () => Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, e));
+                using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    AssertExtensions.Throws<ArgumentException>("hostName", () => client.ConnectAsync(e));
+                }
+            }
+
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+                e.RemoteEndPoint = listener.LocalEndPoint;
+
+                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                e.Completed += delegate { tcs.SetResult(true); };
+
+                Task<Socket> acceptTask = listener.AcceptAsync();
+                if (Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, e))
+                {
+                    await new Task[] { tcs.Task, acceptTask }.WhenAllOrAnyFailed();
+                }
+
+                e.ConnectSocket.Dispose();
+                (await acceptTask).Dispose();
+            }
+        }
     }
 }
