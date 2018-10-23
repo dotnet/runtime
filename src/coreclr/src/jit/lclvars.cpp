@@ -57,7 +57,9 @@ void Compiler::lvaInit()
 #ifdef _TARGET_ARM_
     lvaPromotedStructAssemblyScratchVar = BAD_VAR_NUM;
 #endif // _TARGET_ARM_
-    lvaLocAllocSPvar    = BAD_VAR_NUM;
+#ifdef JIT32_GCENCODER
+    lvaLocAllocSPvar = BAD_VAR_NUM;
+#endif // JIT32_GCENCODER
     lvaNewObjArrayArgs  = BAD_VAR_NUM;
     lvaGSSecurityCookie = BAD_VAR_NUM;
 #ifdef _TARGET_X86_
@@ -3951,14 +3953,27 @@ void Compiler::lvaMarkLocalVars()
         }
 #endif // FEATURE_EH_FUNCLETS
 
-        // TODO: LocAllocSPvar should be only required by the implicit frame layout expected by the VM on x86.
-        // It should be removed on other platforms once we check there are no other implicit dependencies.
+#ifdef JIT32_GCENCODER
+        // LocAllocSPvar is only required by the implicit frame layout expected by the VM on x86. Whether
+        // a function contains a Localloc is conveyed in the GC information, in the InfoHdrSmall.localloc
+        // field. The function must have an EBP frame. Then, the VM finds the LocAllocSP slot by assuming
+        // the following stack layout:
+        //
+        //      -- higher addresses --
+        //      saved EBP                       <-- EBP points here
+        //      other callee-saved registers    // InfoHdrSmall.savedRegsCountExclFP specifies this size
+        //      optional GS cookie              // InfoHdrSmall.security is 1 if this exists
+        //      LocAllocSP slot
+        //      -- lower addresses --
+        //
+        // See also eetwain.cpp::GetLocallocSPOffset() and its callers.
         if (compLocallocUsed)
         {
             lvaLocAllocSPvar         = lvaGrabTempWithImplicitUse(false DEBUGARG("LocAllocSPvar"));
             LclVarDsc* locAllocSPvar = &lvaTable[lvaLocAllocSPvar];
             locAllocSPvar->lvType    = TYP_I_IMPL;
         }
+#endif // JIT32_GCENCODER
     }
 
     // Ref counting is now enabled normally.
@@ -5688,13 +5703,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaSecurityObject, TARGET_POINTER_SIZE, stkOffs);
     }
 
+#ifdef JIT32_GCENCODER
     if (lvaLocAllocSPvar != BAD_VAR_NUM)
     {
-#ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed()); // else offsets of locals of frameless methods will be incorrect
-#endif
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaLocAllocSPvar, TARGET_POINTER_SIZE, stkOffs);
     }
+#endif // JIT32_GCENCODER
 
     if (lvaReportParamTypeArg())
     {
@@ -5886,7 +5901,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #else
                 lclNum == lvaShadowSPslotsVar ||
 #endif // FEATURE_EH_FUNCLETS
-                lclNum == lvaLocAllocSPvar || lclNum == lvaSecurityObject)
+#ifdef JIT32_GCENCODER
+                lclNum == lvaLocAllocSPvar ||
+#endif // JIT32_GCENCODER
+                lclNum == lvaSecurityObject)
             {
                 assert(varDsc->lvStkOffs != BAD_STK_OFFS);
                 continue;
@@ -6658,8 +6676,7 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
 /*****************************************************************************
  *
  *  Dump the frame location assigned to a local.
- *  For non-LSRA, this will only be valid if there is no assigned register.
- *  For LSRA, it's the home location, even though the variable doesn't always live
+ *  It's the home location, even though the variable doesn't always live
  *  in its home location.
  */
 
