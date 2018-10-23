@@ -2130,7 +2130,9 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
 //      The ESP tracking is used to report stack pointer-relative GC info, which is not
 //      interesting while doing the localloc construction. Also, for functions with localloc,
 //      we have EBP frames, and EBP-relative locals, and ESP-relative accesses only for function
-//      call arguments. We store the ESP after the localloc is complete in the LocAllocSP
+//      call arguments.
+//
+//      For x86, we store the ESP after the localloc is complete in the LocAllocSP
 //      variable. This variable is implicitly reported to the VM in the GC info (its position
 //      is defined by convention relative to other items), and is used by the GC to find the
 //      "base" stack pointer in functions with localloc.
@@ -2456,11 +2458,12 @@ ALLOC_DONE:
 
 BAILOUT:
 
-    // Write the lvaLocAllocSPvar stack frame slot
+#ifdef JIT32_GCENCODER
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
     {
         getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
     }
+#endif // JIT32_GCENCODER
 
 #if STACK_PROBES
     if (compiler->opts.compNeedStackProbes)
