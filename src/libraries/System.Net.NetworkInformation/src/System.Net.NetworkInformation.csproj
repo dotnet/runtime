@@ -5,9 +5,6 @@
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <!-- System.Net.Sockets.SafeSocketHandle is defined both in System.Net.Sockets (public)
-         and System.Net.NetworkInformation (internal). -->
-    <NoWarn>$(NoWarn);CS0436</NoWarn>
     <Configurations>netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -59,14 +56,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- Logging -->
-    <Compile Include="$(CommonPath)\System\Net\Logging\DebugThreadTracking.cs">
-      <Link>Common\System\Net\Logging\DebugThreadTracking.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
-      <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs">
@@ -98,18 +89,6 @@
     <Compile Include="System\Net\NetworkInformation\SystemUdpStatistics.cs" />
     <Compile Include="System\Net\NetworkInformation\SystemUnicastIPAddressInformation.cs" />
     <Compile Include="System\Net\NetworkInformation\TeredoHelper.cs" />
-    <!-- Windows Common -->
-    <!-- Debug only -->
-    <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
-      <Link>Common\System\Net\DebugSafeHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\DebugSafeHandleMinusOneIsInvalid.cs">
-      <Link>Common\System\Net\DebugSafeHandleMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <!-- System.Net.Internals common -->
-    <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
-      <Link>Common\System\Net\Sockets\SocketType.cs</Link>
-    </Compile>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
       <Link>Common\System\Net\ContextAwareResult.cs</Link>
@@ -117,29 +96,14 @@
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
       <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\CompletionPortHelper.Windows.cs">
-      <Link>Common\System\Net\CompletionPortHelper.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
       <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>Common\System\Net\ByteOrder.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
-      <Link>Common\System\Net\ExceptionCheck.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
       <Link>Common\System\Net\IPAddressParserStatics.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.cs">
-      <Link>Common\System\Net\SafeSocketHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeSocketHandle.Windows.cs">
-      <Link>Common\System\Net\SafeSocketHandle.Windows.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SafeCloseSocketAndEvent.cs">
-      <Link>Common\System\Net\SafeCloseSocketAndEvent.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
       <Link>Common\System\Net\SocketAddress.cs</Link>
@@ -176,44 +140,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
       <Link>Interop\Windows\kernel32\Interop.LocalFree.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs">
-      <Link>Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.accept.cs">
-      <Link>Interop\Windows\Winsock\Interop.accept.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.closesocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.closesocket.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.ioctlsocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.ioctlsocket.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.setsockopt.cs">
-      <Link>Interop\Windows\Winsock\Interop.setsockopt.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockBSD.cs">
       <Link>Interop\Windows\Winsock\Interop.WinsockBSD.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WinsockAsync.cs">
-      <Link>Interop\Windows\Winsock\Interop.WinsockAsync.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAEventSelect.cs">
       <Link>Interop\Windows\Winsock\Interop.WSAEventSelect.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAIoctl.cs">
       <Link>Interop\Windows\Winsock\Interop.WSAIoctl.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASocketW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs">
-      <Link>Interop\Windows\Winsock\Interop.SocketConstructorFlags.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\WSABuffer.cs">
-      <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
