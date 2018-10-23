@@ -12,6 +12,8 @@ list(APPEND LINK_LIBRARIES_ADDITIONAL platformdefines)
 SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(common)
+add_subdirectory(PInvoke/Delegate/MarshalDelegateAsField)
+add_subdirectory(PInvoke/Delegate/MarshalDelegateAsParam)
 add_subdirectory(PInvoke/Primitives/Int)
 add_subdirectory(PInvoke/ExactSpelling)
 add_subdirectory(NativeCallable)
