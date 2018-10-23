@@ -123,6 +123,7 @@ CoreMangLib/cti/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubT
 CoreMangLib/system/collections/generic/hashset/Regression_Dev10_609271/Regression_Dev10_609271.sh
 CoreMangLib/system/collections/generic/hashset/Regression_Dev10_624201/Regression_Dev10_624201.sh
 GC/Coverage/smalloom/smalloom.sh
+Interop/ExecInDefAppDom/ExecInDefAppDom.sh
 Interop/COM/NETClients/Primitives/NETClientPrimitives/NETClientPrimitives.sh
 Interop/MarshalAPI/IUnknown/IUnknownTest/IUnknownTest.sh
 Interop/SizeConst/SizeConstTest/SizeConstTest.sh
