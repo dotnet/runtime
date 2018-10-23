@@ -10113,10 +10113,12 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
                 ilName = "EHSlots";
             }
 #endif // !FEATURE_EH_FUNCLETS
+#ifdef JIT32_GCENCODER
             else if (lclNum == lvaLocAllocSPvar)
             {
                 ilName = "LocAllocSP";
             }
+#endif // JIT32_GCENCODER
 #if FEATURE_EH_FUNCLETS
             else if (lclNum == lvaPSPSym)
             {
