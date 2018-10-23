@@ -15,6 +15,7 @@
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/icall-internals.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/metadata-internals.h>
@@ -3967,7 +3968,7 @@ runtime_initialized (MonoProfiler *profiler)
 	mono_coop_mutex_init (&log_profiler.api_mutex);
 
 #define ADD_ICALL(NAME) \
-	mono_add_internal_call ("Mono.Profiler.Log.LogProfiler::" EGLIB_STRINGIFY (NAME), proflog_icall_ ## NAME);
+	mono_add_internal_call_internal ("Mono.Profiler.Log.LogProfiler::" EGLIB_STRINGIFY (NAME), proflog_icall_ ## NAME);
 
 	ADD_ICALL (GetMaxStackTraceFrames);
 	ADD_ICALL (GetStackTraceFrames);

@@ -2756,6 +2756,8 @@ mono_w32file_get_std_handle (gint stdhandle)
 static gboolean
 mono_w32file_read_or_write (gboolean read, gpointer handle, gpointer buffer, guint32 numbytes, guint32 *bytesread, gint32 *win32error)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
+
 	FileHandle *filehandle;
 	gboolean ret = FALSE;
 

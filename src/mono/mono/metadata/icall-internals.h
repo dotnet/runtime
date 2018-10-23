@@ -66,6 +66,35 @@ mono_icall_drive_info_get_drive_type (MonoString *root_path_name);
 #endif  /* !G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 void*
-mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles);
+mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles, mono_bool *foreign);
+
+
+MONO_PAL_API void
+mono_add_internal_call_with_flags (const char *name, const void* method, gboolean cooperative);
+
+MONO_PROFILER_API void
+mono_add_internal_call_internal (const char *name, gconstpointer method);
+
+#ifdef __cplusplus
+
+#include <type_traits>
+
+template <typename T>
+inline typename std::enable_if<std::is_function<T>::value ||
+			       std::is_function<typename std::remove_pointer<T>::type>::value >::type
+mono_add_internal_call_with_flags (const char *name, T method, gboolean cooperative)
+{
+	return mono_add_internal_call_with_flags (name, (const void*)method, cooperative);
+}
+
+template <typename T>
+inline typename std::enable_if<std::is_function<T>::value ||
+			       std::is_function<typename std::remove_pointer<T>::type>::value >::type
+mono_add_internal_call_internal (const char *name, T method)
+{
+	return mono_add_internal_call_internal (name, (const void*)method);
+}
+
+#endif // __cplusplus
 
 #endif /* __MONO_METADATA_ICALL_INTERNALS_H__ */

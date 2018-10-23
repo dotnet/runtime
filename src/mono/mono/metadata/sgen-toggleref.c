@@ -169,6 +169,8 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	if (!toggleref_callback)
 		return;
 
+	MONO_ENTER_GC_UNSAFE;
+
 	SGEN_LOG (4, "Adding toggleref %p %d", object, strong_ref);
 
 	sgen_gc_lock ();
@@ -179,6 +181,8 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	++toggleref_array_size;
 
 	sgen_gc_unlock ();
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**

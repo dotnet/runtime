@@ -32,7 +32,6 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/loader.h>
-#include <mono/metadata/loader-internals.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
 #include <mono/metadata/object.h>
@@ -52,6 +51,7 @@
 #include <mono/metadata/runtime.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/icall-internals.h>
 #define MONO_MATH_DECLARE_ALL 1
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-compiler.h>
@@ -4564,17 +4564,17 @@ mono_fmod (double a, double b)
 static void
 register_icalls (void)
 {
-	mono_add_internal_call ("System.Diagnostics.StackFrame::get_frame_info",
+	mono_add_internal_call_internal ("System.Diagnostics.StackFrame::get_frame_info",
 				ves_icall_get_frame_info);
-	mono_add_internal_call ("System.Diagnostics.StackTrace::get_trace",
+	mono_add_internal_call_internal ("System.Diagnostics.StackTrace::get_trace",
 				ves_icall_get_trace);
-	mono_add_internal_call ("Mono.Runtime::mono_runtime_install_handlers",
+	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_install_handlers",
 				mono_runtime_install_handlers);
-	mono_add_internal_call ("Mono.Runtime::mono_runtime_cleanup_handlers",
+	mono_add_internal_call_internal ("Mono.Runtime::mono_runtime_cleanup_handlers",
 				mono_runtime_cleanup_handlers);
 
 #if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
-	mono_add_internal_call ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
+	mono_add_internal_call_internal ("System.Diagnostics.Debugger::Mono_UnhandledException_internal",
 							mini_get_dbg_callbacks ()->unhandled_exception);
 #endif
 

@@ -26,7 +26,7 @@ typedef enum {
 } MonoToggleRefStatus;
 
 MONO_API void mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj));
-MONO_API void mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref);
 
 MONO_END_DECLS
 
