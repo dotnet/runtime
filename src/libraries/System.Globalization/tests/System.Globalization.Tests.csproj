@@ -134,6 +134,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.11.0.txt">
+      <Link>CharUnicodeInfo\UnicodeData.11.0.txt</Link>
+      <LogicalName>UnicodeData.11.0.txt</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
       <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
       <LogicalName>UnicodeData.8.0.txt</LogicalName>
