@@ -273,6 +273,8 @@
 
   <PropertyGroup>
     <DisableCrossgen>false</DisableCrossgen>
+    <!-- Disable cross-gen on FreeBSD for now. This can be revisited when we have full support. -->
+    <DisableCrossgen Condition="'$(OSGroup)'=='FreeBSD'">true</DisableCrossgen>
     <OutputVersionBadge>$(BaseOutputRootPath)sharedfx_$(OutputRid)_$(ConfigurationGroup)_version_badge.svg</OutputVersionBadge>
   </PropertyGroup>
 
