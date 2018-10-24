@@ -23,7 +23,7 @@ namespace System
         private bool _allowMultiple = false; // Defaults to false
         private bool _inherited = true; // Defaults to true
 
-        internal static AttributeUsageAttribute Default = new AttributeUsageAttribute(AttributeTargets.All);
+        internal static readonly AttributeUsageAttribute Default = new AttributeUsageAttribute(AttributeTargets.All);
 
         //Constructors 
         public AttributeUsageAttribute(AttributeTargets validOn)
