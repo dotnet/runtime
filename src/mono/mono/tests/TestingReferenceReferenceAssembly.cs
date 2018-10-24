@@ -5,3 +5,7 @@ class Z : X {
 		Y = 1;
 	}
 }
+
+class HasFieldFromReferenceAssembly {
+	public X Fld;
+}
