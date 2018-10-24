@@ -10098,7 +10098,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark2"));
     impAssignTempGen(tmp, qmarkNull, (unsigned)CHECK_SPILL_NONE);
 
-    // TODO: Is it possible op1 has a better type?
+    // TODO-CQ: Is it possible op1 has a better type?
+    //
+    // See also gtGetHelperCallClassHandle where we make the same
+    // determination for the helper call variants.
     lvaSetClass(tmp, pResolvedToken->hClass);
     return gtNewLclvNode(tmp, TYP_REF);
 #endif

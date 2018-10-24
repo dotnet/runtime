@@ -2602,12 +2602,16 @@ public:
     CORINFO_CLASS_HANDLE gtGetStructHandle(GenTree* tree);
     // Get the handle for a ref type.
     CORINFO_CLASS_HANDLE gtGetClassHandle(GenTree* tree, bool* isExact, bool* isNonNull);
+    // Get the class handle for an helper call
+    CORINFO_CLASS_HANDLE gtGetHelperCallClassHandle(GenTreeCall* call, bool* isExact, bool* isNonNull);
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree*  array,
                                                    unsigned* runtimeLookupCount = nullptr,
                                                    GenTree** handleTree         = nullptr);
+    // Check if this tree is a gc static base helper call
+    bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
