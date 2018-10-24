@@ -140,7 +140,7 @@ namespace BasicEventSourceTests
                         Assert.Equal("Int12", evt.EventName);
 
                         var payload = evt.PayloadValue(0, "nInteger");
-                        Assert.Equal(nullableInt, UnwrapNullable<int>(payload));
+                        Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
                     }));
                 /*************************************************************************/
                 int? nullableInt2 = null;
@@ -155,7 +155,7 @@ namespace BasicEventSourceTests
                         Assert.Equal("IntNull", evt.EventName);
 
                         var payload = evt.PayloadValue(0, "nInteger");
-                        Assert.Equal(nullableInt2, UnwrapNullable<int>(payload));
+                        Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
                     }));
                 ///*************************************************************************/
                 DateTime? nullableDate = DateTime.Now;
@@ -170,7 +170,7 @@ namespace BasicEventSourceTests
                         Assert.Equal("DateTimeNow", evt.EventName);
 
                         var payload = evt.PayloadValue(0, "nowTime");
-                        Assert.Equal(nullableDate, UnwrapNullable<DateTime>(payload));
+                        Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
                     }));
                 /*************************************************************************/
                 DateTime? nullableDate2 = null;
@@ -185,7 +185,7 @@ namespace BasicEventSourceTests
                         Assert.Equal("DateTimeNull", evt.EventName);
 
                         var payload = evt.PayloadValue(0, "nowTime");
-                        Assert.Equal(nullableDate2, UnwrapNullable<DateTime>(payload));
+                        Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(payload));
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
@@ -573,36 +573,6 @@ namespace BasicEventSourceTests
                 ret.Add((string)keyValue["Key"], keyValue["Value"]);
             }
             return ret;
-        }
-
-        /// <summary>
-        /// Unwraps a nullable returned from either ETW or EventListener
-        /// </summary>
-        /// <typeparam name="T">The type to unwrap</typeparam>
-        /// <param name="wrappedValue">Value returned from event payload</param>
-        /// <returns></returns>
-        private static T? UnwrapNullable<T>(object wrappedValue) where T : struct
-        {
-            // ETW will return a collection of key/value pairs
-            if (wrappedValue is IDictionary<string, object> dict)
-            {
-                Assert.True(dict.ContainsKey("HasValue"));
-                Assert.True(dict.ContainsKey("Value"));
-
-                if ((bool)dict["HasValue"])
-                {
-                    return (T)dict["Value"];
-                }
-            }
-            // EventListener will return the boxed value of the nullable, which will either be a value or null object reference
-            else if (wrappedValue != null)
-            {
-                Assert.IsType(typeof(T), wrappedValue);
-                return (T?)wrappedValue;
-            }
-
-            // wrappedValue is null or wrappedValue is IDictionary, but HasValue is false
-            return null;
         }
     }
 }
