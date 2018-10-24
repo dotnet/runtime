@@ -10,15 +10,15 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>6ede7dd5103464f0e7062f20428afd0eaaaabf24</CoreFxCurrentRef>
-    <CoreClrCurrentRef>514edecbef647606c452e57ac888f174cb5970ca</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>58c7afe772b21f6452d23c1e892ab30660c54ef9</CoreSetupCurrentRef>
+    <CoreClrCurrentRef>ed30f34d9ec1e1e9c326b06adb07ef109a722b4b</CoreClrCurrentRef>
+    <CoreSetupCurrentRef>ed30f34d9ec1e1e9c326b06adb07ef109a722b4b</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>088d14b36b3b4ce902f540a5ffd1f7ff7d9315c9</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>088d14b36b3b4ce902f540a5ffd1f7ff7d9315c9</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>ed30f34d9ec1e1e9c326b06adb07ef109a722b4b</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>ed30f34d9ec1e1e9c326b06adb07ef109a722b4b</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>514edecbef647606c452e57ac888f174cb5970ca</BuildToolsCurrentRef>
-    <CoreFxOptimizationDataCurrentRef>088d14b36b3b4ce902f540a5ffd1f7ff7d9315c9</CoreFxOptimizationDataCurrentRef>
+    <CoreFxOptimizationDataCurrentRef>ed30f34d9ec1e1e9c326b06adb07ef109a722b4b</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -34,14 +34,14 @@
   <PropertyGroup>
     <CoreFxExpectedPrerelease>preview1-27018-01</CoreFxExpectedPrerelease>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview1-27018-01</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-27023-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-27023-01</MicrosoftNetCoreIlasmPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-27022-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27022-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27022-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-27022-03</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-27022-03</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-27022-03</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview1-27024-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview1-27024-01</MicrosoftNetCoreIlasmPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27023-01</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27023-01</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27023-01</ProjectNTfsTestILCPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview1-27023-03</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview1-27023-03</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview1-27023-03</MicrosoftNETCoreAppPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -59,7 +59,7 @@
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
     <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
-    <CoreFxOptimizationDataVersion>99.99.99-master-20181022-0042</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>99.99.99-master-20181023-0040</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
