@@ -398,19 +398,10 @@ namespace BasicEventSourceTests
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
 
-                var userData = new UserData()
-                {
-                    x = 3,
-                    y = 8,
-                    NullInt1 = null,
-                    NullInt2 = 12,
-                    NullDate1 = null,
-                    NullDate2 = DateTime.Now
-                };
                 tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/UserData",
                     delegate ()
                     {
-                        logger.EventUserDataInt(userData, 5);
+                        logger.EventUserDataInt(new UserData() { x = 3, y = 8 }, 5);
                     },
                     delegate (Event evt)
                     {
@@ -418,17 +409,14 @@ namespace BasicEventSourceTests
                         Assert.Equal("EventUserDataInt", evt.EventName);
 
                         var aClass = (IDictionary<string, object>)evt.PayloadValue(0, "aClass");
-                        Assert.Equal(userData.x, (int)aClass["x"]);
-                        Assert.Equal(userData.y, (int)aClass["y"]);
-                        Assert.Equal(userData.NullInt1, (int?)aClass["NullInt1"]);
-                        Assert.Equal(userData.NullInt2, (int?)aClass["NullInt2"]);
-                        Assert.Equal(userData.NullDate1, (DateTime?)aClass["NullDate1"]);
-                        Assert.Equal(userData.NullDate2, (DateTime?)aClass["NullDate2"]);
+                        Assert.Equal(3, (int)aClass["x"]);
+                        Assert.Equal(8, (int)aClass["y"]);
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
+
 
                 int? nullableInt = 12;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Int?-12",
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Int12",
                     delegate ()
                     {
                         logger.EventNullableIntInt(nullableInt, 5);
@@ -438,29 +426,29 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventNullableIntInt", evt.EventName);
 
-                        var eventInteger = evt.PayloadValue(0, "nullableInt");
-                        Assert.Equal(eventInteger, nullableInt);
+                        var payload = evt.PayloadValue(0, "nullableInt");
+                        Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
 
-                nullableInt = null;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Int?-Null",
+                int? nullableInt2 = null;
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/IntNull",
                     delegate ()
                     {
-                        logger.EventNullableIntInt(nullableInt, 5);
+                        logger.EventNullableIntInt(nullableInt2, 5);
                     },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventNullableIntInt", evt.EventName);
 
-                        var eventInteger = evt.PayloadValue(0, "nullableInt");
-                        Assert.Equal(eventInteger, nullableInt);
+                        var payload = evt.PayloadValue(0, "nullableInt");
+                        Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
 
                 DateTime? nullableDate = DateTime.Now;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTime?-Now",
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNow",
                     delegate ()
                     {
                         logger.EventNullableDateTimeInt(nullableDate, 5);
@@ -470,27 +458,27 @@ namespace BasicEventSourceTests
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventNullableDateTimeInt", evt.EventName);
 
-                        var eventDateTime = evt.PayloadValue(0, "nullableDate");
-                        Assert.Equal(eventDateTime, nullableDate);
+                        var payload = evt.PayloadValue(0, "nullableDate");
+                        Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
 
-                nullableDate = null;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTime?-Null",
+                DateTime? nullableDate2 = null;
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNull",
                     delegate ()
                     {
-                        logger.EventNullableDateTimeInt(nullableDate, 5);
+                        logger.EventNullableDateTimeInt(nullableDate2, 5);
                     },
                     delegate (Event evt)
                     {
                         Assert.Equal(logger.Name, evt.ProviderName);
                         Assert.Equal("EventNullableDateTimeInt", evt.EventName);
 
-                        var eventDateTime = evt.PayloadValue(0, "nullableDate");
-                        Assert.Equal(eventDateTime, nullableDate);
+                        var payload = evt.PayloadValue(0, "nullableDate");
+                        Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(nullableDate2));
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
-
+                
                 // If you only wish to run one or several of the tests you can filter them here by 
                 // Uncommenting the following line.  
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "ventWithByteArray"));
@@ -688,10 +676,6 @@ namespace BasicEventSourceTests
     {
         public int x { get; set; }
         public int y { get; set; }
-        public int? NullInt1 { get; set; }
-        public int? NullInt2 { get; set; }
-        public DateTime? NullDate1 { get; set; }
-        public DateTime? NullDate2 { get; set; }
     }
 
     /// <summary>
