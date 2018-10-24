@@ -24,7 +24,7 @@ namespace
         for (int i = 0; i < ARRAYSIZE(hrs); ++i)
         {
             HRESULT hr = hrs[i];
-            HRESULT hrMaybe = et->raw_Throw_HResult(hr);
+            HRESULT hrMaybe = et->Throw_HResult(hr);
             THROW_FAIL_IF_FALSE(hr == hrMaybe);
         }
     }

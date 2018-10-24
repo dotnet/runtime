@@ -22,7 +22,7 @@
     <Compile Include="ArrayTesting.cs" />
     <Compile Include="StringTesting.cs" />
     <Compile Include="ErrorMarshalTesting.cs" />
-    <Compile Include="../ServerContracts/Primitives.cs" />
+    <Compile Include="../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

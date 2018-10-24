@@ -9,7 +9,7 @@
 class ErrorMarshalTesting : public UnknownImpl, public IErrorMarshalTesting
 {
 public: // IErrorMarshalTesting
-    DEF_RAWFUNC(Throw_HResult)(
+    DEF_FUNC(Throw_HResult)(
         /*[in]*/ int hresultToReturn)
     {
         return HRESULT{ hresultToReturn };

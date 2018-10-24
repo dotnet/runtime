@@ -167,3 +167,62 @@ public: // IUnknown
 
     DEFINE_REF_COUNTING();
 };
+
+// Templated class factory for aggregation
+template<typename T>
+class ClassFactoryAggregate : public UnknownImpl, public IClassFactory
+{
+public: // static
+    static HRESULT Create(_In_ REFIID riid, _Outptr_ LPVOID FAR* ppv)
+    {
+        try
+        {
+            auto cf = new ClassFactoryAggregate();
+            HRESULT hr = cf->QueryInterface(riid, ppv);
+            cf->Release();
+            return hr;
+        }
+        catch (const std::bad_alloc&)
+        {
+            return E_OUTOFMEMORY;
+        }
+    }
+
+public: // IClassFactory
+    STDMETHOD(CreateInstance)(
+        _In_opt_  IUnknown *pUnkOuter,
+        _In_  REFIID riid,
+        _COM_Outptr_  void **ppvObject)
+    {
+        if (pUnkOuter != nullptr && riid != IID_IUnknown)
+            return CLASS_E_NOAGGREGATION;
+
+        try
+        {
+            auto ti = new T(pUnkOuter);
+            HRESULT hr = ti->QueryInterface(riid, ppvObject);
+            ti->Release();
+            return hr;
+        }
+        catch (const std::bad_alloc&)
+        {
+            return E_OUTOFMEMORY;
+        }
+    }
+
+    STDMETHOD(LockServer)(/* [in] */ BOOL fLock)
+    {
+        assert(false && "Not impl");
+        return E_NOTIMPL;
+    }
+
+public: // IUnknown
+    STDMETHOD(QueryInterface)(
+        /* [in] */ REFIID riid,
+        /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject)
+    {
+        return DoQueryInterface<ClassFactoryAggregate, IClassFactory>(this, riid, ppvObject);
+    }
+
+    DEFINE_REF_COUNTING();
+};

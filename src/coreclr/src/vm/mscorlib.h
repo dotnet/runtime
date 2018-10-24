@@ -191,10 +191,6 @@ DEFINE_METHOD(BINDER,               CHANGE_TYPE,            ChangeType,         
 
 DEFINE_CLASS(BINDING_FLAGS,         Reflection,             BindingFlags)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(BSTR_WRAPPER,          Interop,                BStrWrapper)
-#endif // FEATURE_COMINTEROP
-
 DEFINE_CLASS_U(System,                 RuntimeType,            ReflectClassBaseObject)
 DEFINE_FIELD_U(m_cache,                ReflectClassBaseObject,        m_cache)
 DEFINE_FIELD_U(m_handle,               ReflectClassBaseObject,        m_typeHandle)
@@ -208,6 +204,19 @@ DEFINE_METHOD(CLASS,                INVOKE_MEMBER,          InvokeMember,       
 DEFINE_METHOD(CLASS,                GET_METHOD_BASE,        GetMethodBase,              SM_RuntimeType_RuntimeMethodHandleInternal_RetMethodBase)
 DEFINE_METHOD(CLASS,                GET_FIELD_INFO,         GetFieldInfo,               SM_RuntimeType_IRuntimeFieldInfo_RetFieldInfo)
 DEFINE_METHOD(CLASS,                GET_PROPERTY_INFO,      GetPropertyInfo,            SM_RuntimeType_Int_RetPropertyInfo)
+
+#ifdef FEATURE_COMINTEROP
+DEFINE_METHOD(CLASS,                FORWARD_CALL_TO_INVOKE, ForwardCallToInvokeMember,  IM_Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj)
+#endif // FEATURE_COMINTEROP
+
+#ifdef FEATURE_COMINTEROP
+DEFINE_CLASS(BSTR_WRAPPER,          Interop,                BStrWrapper)
+DEFINE_CLASS(CURRENCY_WRAPPER,      Interop,                CurrencyWrapper)
+DEFINE_CLASS(DISPATCH_WRAPPER,      Interop,                DispatchWrapper)
+DEFINE_CLASS(ERROR_WRAPPER,         Interop,                ErrorWrapper)
+DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
+DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS_U(System,                 __ComObject,            ComObject)
@@ -296,10 +305,6 @@ DEFINE_PROPERTY(CULTURE_INFO,       PARENT,                 Parent,             
 DEFINE_CLASS(CURRENCY,              System,                 Currency)
 DEFINE_METHOD(CURRENCY,             DECIMAL_CTOR,           .ctor,                      IM_Dec_RetVoid)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(CURRENCY_WRAPPER,      Interop,                CurrencyWrapper)
-#endif
-
 DEFINE_CLASS(DATE_TIME,             System,                 DateTime)
 DEFINE_METHOD(DATE_TIME,            LONG_CTOR,              .ctor,                      IM_Long_RetVoid)
 
@@ -322,10 +327,6 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(DISPATCH_WRAPPER,      Interop,                DispatchWrapper)
-#endif // FEATURE_COMINTEROP
-
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
@@ -343,10 +344,6 @@ DEFINE_CLASS(ENUM,                  System,                 Enum)
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
 DEFINE_METHOD(ENVIRONMENT,       GET_RESOURCE_STRING_LOCAL, GetResourceStringLocal,     SM_Str_RetStr)
 DEFINE_METHOD(ENVIRONMENT,       SET_COMMAND_LINE_ARGS,     SetCommandLineArgs,         SM_ArrStr_RetVoid)
-
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(ERROR_WRAPPER,         Interop,                ErrorWrapper)
-#endif
 
 DEFINE_CLASS(EVENT,                 Reflection,             RuntimeEventInfo)
 
@@ -960,17 +957,9 @@ DEFINE_CLASS(LAZY,              System,     Lazy`1)
 
 DEFINE_CLASS(LAZY_INITIALIZER,  Threading,  LazyInitializer)
 
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
-#endif
-
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
 DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
-
-#ifdef FEATURE_COMINTEROP
-DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
-#endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(GC,                    System,                 GC)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)

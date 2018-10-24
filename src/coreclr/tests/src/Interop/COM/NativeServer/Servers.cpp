@@ -164,6 +164,8 @@ STDAPI DllRegisterServer(void)
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ArrayTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(StringTesting), L"Both"));
     RETURN_IF_FAILED(RegisterClsid(__uuidof(ErrorMarshalTesting), L"Both"));
+    RETURN_IF_FAILED(RegisterClsid(__uuidof(DispatchTesting), L"Both"));
+    RETURN_IF_FAILED(RegisterClsid(__uuidof(AggregationTesting), L"Both"));
 
     return S_OK;
 }
@@ -176,6 +178,8 @@ STDAPI DllUnregisterServer(void)
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ArrayTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(StringTesting)));
     RETURN_IF_FAILED(RemoveClsid(__uuidof(ErrorMarshalTesting)));
+    RETURN_IF_FAILED(RemoveClsid(__uuidof(DispatchTesting)));
+    RETURN_IF_FAILED(RemoveClsid(__uuidof(AggregationTesting)));
 
     return S_OK;
 }
@@ -193,6 +197,12 @@ STDAPI DllGetClassObject(_In_ REFCLSID rclsid, _In_ REFIID riid, _Out_ LPVOID FA
 
     if (rclsid == __uuidof(ErrorMarshalTesting))
         return ClassFactoryBasic<ErrorMarshalTesting>::Create(riid, ppv);
+
+    if (rclsid == __uuidof(DispatchTesting))
+        return ClassFactoryBasic<DispatchTesting>::Create(riid, ppv);
+
+    if (rclsid == __uuidof(AggregationTesting))
+        return ClassFactoryAggregate<AggregationTesting>::Create(riid, ppv);
 
     return CLASS_E_CLASSNOTAVAILABLE;
 }
