@@ -80,7 +80,7 @@ struct g_cast
 private:
 	void * const x;
 public:
-	explicit g_cast (void *y) : x(y) { }
+	explicit g_cast (void volatile *y) : x((void*)y) { }
 	// Lack of rvalue constructor inhibits ternary operator.
 	// Either don't use ternary, or cast each side.
 	// sa = (salen <= 128) ? g_alloca (salen) : g_malloc (salen);

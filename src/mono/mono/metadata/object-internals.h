@@ -1936,7 +1936,13 @@ void
 mono_error_raise_exception_deprecated (MonoError *target_error);
 
 gboolean
-mono_error_set_pending_exception (MonoError *error);
+mono_error_set_pending_exception_slow (MonoError *error);
+
+static inline gboolean
+mono_error_set_pending_exception (MonoError *error)
+{
+	return is_ok (error) ? FALSE : mono_error_set_pending_exception_slow (error);
+}
 
 MonoArray *
 mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);

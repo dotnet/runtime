@@ -611,6 +611,8 @@ struct _MonoMethodHeader {
 	unsigned int init_locals : 1;
 	guint16      num_locals;
 	MonoExceptionClause *clauses;
+	MonoBitSet  *volatile_args;
+	MonoBitSet  *volatile_locals;
 	MonoType    *locals [MONO_ZERO_LEN_ARRAY];
 };
 

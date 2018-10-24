@@ -68,14 +68,14 @@ Handle macros/functions
 			MONO_ALWAYS_INLINE					\
 			TYPE * GetRaw () { return __raw ? *__raw : NULL; }	\
 		)								\
-		TYPE **__raw;							\
+		TYPE * volatile *__raw;						\
 	} TYPED_HANDLE_NAME (TYPE),						\
 	  TYPED_OUT_HANDLE_NAME (TYPE),						\
 	  TYPED_IN_OUT_HANDLE_NAME (TYPE);					\
 /* Do not call these functions directly. Use MONO_HANDLE_NEW and MONO_HANDLE_CAST. */ \
 /* Another way to do this involved casting mono_handle_new function to a different type. */ \
 static inline MONO_ALWAYS_INLINE TYPED_HANDLE_NAME (TYPE) 	\
-MONO_HANDLE_CAST_FOR (TYPE) (gpointer a)			\
+MONO_HANDLE_CAST_FOR (TYPE) (MonoRawHandle a)			\
 {								\
 	TYPED_HANDLE_NAME (TYPE) b = { (TYPE**)a };		\
 	return b;						\

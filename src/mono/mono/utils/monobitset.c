@@ -73,7 +73,7 @@ mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
  */
 void
 mono_bitset_free (MonoBitSet *set) {
-	if (!(set->flags & MONO_BITSET_DONT_FREE))
+	if (set && !(set->flags & MONO_BITSET_DONT_FREE))
 		g_free (set);
 }
 
@@ -642,6 +642,37 @@ mono_bitset_foreach (MonoBitSet *set, MonoBitSetFunc func, gpointer data)
 					func (j + i * BITS_PER_CHUNK, data);
 		}
 	}
+}
+
+static void
+mono_bitset_resize (MonoBitSet **set, guint32 max_size)
+{
+	if (max_size == 0)
+		return;
+	if (!*set) {
+		*set = mono_bitset_new (max_size, 0);
+		return;
+	}
+	if ((*set)->size >= max_size)
+		return;
+	MonoBitSet *new_set = mono_bitset_new (max_size, (*set)->flags);
+	// mono_bitset_copyto uses the wrong size.
+	memcpy (&new_set->data, &(*set)->data, (*set)->size / 8);
+	mono_bitset_free (*set);
+	*set = new_set;
+}
+
+void
+mono_bitset_set_safe (MonoBitSet **set, guint32 pos)
+{
+	mono_bitset_resize (set, pos + 1);
+	mono_bitset_set (*set, pos);
+}
+
+gboolean
+mono_bitset_test_safe (const MonoBitSet *set, guint32 pos)
+{
+	return set && set->size > pos && mono_bitset_test (set, pos);
 }
 
 #ifdef TEST_BITSET

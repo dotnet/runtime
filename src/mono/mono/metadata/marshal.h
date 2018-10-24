@@ -640,18 +640,6 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo);
 gboolean
 mono_marshal_need_free (MonoType *t, MonoMethodPInvoke *piinfo, MonoMarshalSpec *spec);
 
-MonoThreadInfo*
-mono_icall_start (HandleStackMark *stackmark, MonoError *error);
-
-void
-mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *error);
-
-MonoRawHandle
-mono_icall_handle_new (gpointer rawobj);
-
-gpointer
-mono_icall_handle_new_interior (gpointer rawobj);
-
 MonoObject* mono_marshal_get_type_object (MonoClass *klass);
 
 ICALL_EXPORT

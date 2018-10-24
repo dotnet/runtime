@@ -229,15 +229,15 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_DO2(macro_prefix, type) MONO_HANDLE_DO3 (macro_prefix, type)
 #define MONO_HANDLE_DO(macro_prefix, type)  MONO_HANDLE_DO2 (macro_prefix, MONO_HANDLE_TYPE_WRAP_ ## type)
 
-#define MONO_HANDLE_RETURN_BEGIN(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_BEGIN_, type)
-#define MONO_HANDLE_RETURN_BEGIN_Void				/* nothing */
-#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_NONE   	return
-#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_OBJ		return
+#define MONO_HANDLE_RETURN_BEGIN(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_BEGIN_, type) (type)
+#define MONO_HANDLE_RETURN_BEGIN_Void(type)			/* nothing */
+#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_NONE(type)  type icall_result =
+#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_OBJ(type)   type ## Handle icall_result =
 
 #define MONO_HANDLE_RETURN_END(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_END_, type);
-#define MONO_HANDLE_RETURN_END_Void				/* nothing */
-#define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_NONE   	/* nothing */
-#define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_OBJ		.__raw
+#define MONO_HANDLE_RETURN_END_Void				HANDLE_FUNCTION_RETURN ()
+#define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_NONE   	HANDLE_FUNCTION_RETURN_VAL (icall_result)
+#define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_OBJ		HANDLE_FUNCTION_RETURN_OBJ (icall_result)
 
 #define MONO_HANDLE_MARSHAL(type, n)					MONO_HANDLE_DO (MONO_HANDLE_MARSHAL_, type) (type, n)
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_NONE(type, n)     	a ## n
@@ -254,21 +254,30 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_TYPED_ICALL_HANDLES_WRAP_OBJ_INOUT(type)	type ## Handle
 #define MONO_HANDLE_TYPE_TYPED_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
 
-#define MONO_HANDLE_TYPE_RAW(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_RAW_, type) (type)
-#define MONO_HANDLE_TYPE_RAW_Void(type)					type
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_NONE(type)		type
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ(type)		MonoRawHandle
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ_OUT(type)		MonoRawHandle
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ_INOUT(type)		MonoRawHandle
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
+#define MONO_HANDLE_TYPE_RAWHANDLE(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_RAWHANDLE_, type) (type)
+#define MONO_HANDLE_TYPE_RAWHANDLE_Void(type)					type
+#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_NONE(type)		type
+#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ(type)		MonoRawHandle
+#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_OUT(type)		MonoRawHandle
+#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_INOUT(type)		MonoRawHandle
+#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
+
+#define MONO_HANDLE_TYPE_RAWPOINTER(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_RAWPOINTER_, type) (type)
+#define MONO_HANDLE_TYPE_RAWPOINTER_Void(type)					type
+#define MONO_HANDLE_TYPE_RAWPOINTER_ICALL_HANDLES_WRAP_NONE(type)		type
+#define MONO_HANDLE_TYPE_RAWPOINTER_ICALL_HANDLES_WRAP_OBJ(type)		type*
+// Only used for return types.
+//#define MONO_HANDLE_TYPE_RAWPOINTER_ICALL_HANDLES_WRAP_OBJ_OUT(type)		type*
+//#define MONO_HANDLE_TYPE_RAWPOINTER_ICALL_HANDLES_WRAP_OBJ_INOUT(type)	type*
+#define MONO_HANDLE_TYPE_RAWPOINTER_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
 
 // Type/name in raw handle prototype and implementation.
-#define MONO_HANDLE_ARG_RAW(type, n)					MONO_HANDLE_DO (MONO_HANDLE_ARG_RAW_, type) (type, n)
-#define MONO_HANDLE_ARG_RAW_ICALL_HANDLES_WRAP_NONE(type, n)		MONO_HANDLE_TYPE_RAW (type) a ## n
-#define MONO_HANDLE_ARG_RAW_ICALL_HANDLES_WRAP_OBJ(type, n)		MONO_HANDLE_TYPE_RAW (type) a ## n
-#define MONO_HANDLE_ARG_RAW_ICALL_HANDLES_WRAP_OBJ_OUT(type, n)		MONO_HANDLE_TYPE_RAW (type) a ## n
-#define MONO_HANDLE_ARG_RAW_ICALL_HANDLES_WRAP_OBJ_INOUT(type, n)	MONO_HANDLE_TYPE_RAW (type) a ## n
-#define MONO_HANDLE_ARG_RAW_ICALL_HANDLES_WRAP_VALUETYPE_REF(type, n)	MONO_HANDLE_TYPE_RAW (type) a ## n
+#define MONO_HANDLE_ARG_RAWHANDLE(type, n)					MONO_HANDLE_DO (MONO_HANDLE_ARG_RAWHANDLE_, type) (type, n)
+#define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_NONE(type, n)		MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
+#define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ(type, n)		MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
+#define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_OUT(type, n)		MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
+#define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_INOUT(type, n)	MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
+#define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_VALUETYPE_REF(type, n)	MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
 
 // Generate a parameter list, types only, for a function accepting/returning typed handles.
 #define MONO_HANDLE_FOREACH_TYPE_TYPED_0()	   			     /* nothing */
@@ -282,17 +291,18 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_FOREACH_TYPE_TYPED_8(t0, t1, t2, t3, t4, t5, t6, t7)     MONO_HANDLE_FOREACH_TYPE_TYPED_7 (t0, t1, t2, t3, t4, t5, t6)	,MONO_HANDLE_TYPE_TYPED (t7)
 #define MONO_HANDLE_FOREACH_TYPE_TYPED_9(t0, t1, t2, t3, t4, t5, t6, t7, t8) MONO_HANDLE_FOREACH_TYPE_TYPED_8 (t0, t1, t2, t3, t4, t5, t6, t7)	,MONO_HANDLE_TYPE_TYPED (t8)
 
-// Generate a parameter list, types and names, for a function accepting/returning raw handles.
+// Generate a parameter list, types and names, for a function accepting raw handles and a MonoError,
+// and returning a raw pointer.
 #define MONO_HANDLE_FOREACH_ARG_RAW_0()		  				/* nothing */
-#define MONO_HANDLE_FOREACH_ARG_RAW_1(t0) 	   	  			MONO_HANDLE_ARG_RAW (t0, 0)
-#define MONO_HANDLE_FOREACH_ARG_RAW_2(t0, t1)	  				MONO_HANDLE_FOREACH_ARG_RAW_1 (t0),             		MONO_HANDLE_ARG_RAW (t1, 1)
-#define MONO_HANDLE_FOREACH_ARG_RAW_3(t0, t1, t2)	  			MONO_HANDLE_FOREACH_ARG_RAW_2 (t0, t1),         		MONO_HANDLE_ARG_RAW (t2, 2)
-#define MONO_HANDLE_FOREACH_ARG_RAW_4(t0, t1, t2, t3)				MONO_HANDLE_FOREACH_ARG_RAW_3 (t0, t1, t2),     		MONO_HANDLE_ARG_RAW (t3, 3)
-#define MONO_HANDLE_FOREACH_ARG_RAW_5(t0, t1, t2, t3, t4)			MONO_HANDLE_FOREACH_ARG_RAW_4 (t0, t1, t2, t3), 		MONO_HANDLE_ARG_RAW (t4, 4)
-#define MONO_HANDLE_FOREACH_ARG_RAW_6(t0, t1, t2, t3, t4, t5)			MONO_HANDLE_FOREACH_ARG_RAW_5 (t0, t1, t2, t3, t4), 		MONO_HANDLE_ARG_RAW (t5, 5)
-#define MONO_HANDLE_FOREACH_ARG_RAW_7(t0, t1, t2, t3, t4, t5, t6)		MONO_HANDLE_FOREACH_ARG_RAW_6 (t0, t1, t2, t3, t4, t5), 	MONO_HANDLE_ARG_RAW (t6, 6)
-#define MONO_HANDLE_FOREACH_ARG_RAW_8(t0, t1, t2, t3, t4, t5, t6, t7)		MONO_HANDLE_FOREACH_ARG_RAW_7 (t0, t1, t2, t3, t4, t5, t6),	MONO_HANDLE_ARG_RAW (t7, 7)
-#define MONO_HANDLE_FOREACH_ARG_RAW_9(t0, t1, t2, t3, t4, t5, t6, t7, t8)  	MONO_HANDLE_FOREACH_ARG_RAW_8 (t0, t1, t2, t3, t4, t5, t6, t7),	MONO_HANDLE_ARG_RAW (t8, 8)
+#define MONO_HANDLE_FOREACH_ARG_RAW_1(t0) 	   	  			MONO_HANDLE_ARG_RAWHANDLE (t0, 0)
+#define MONO_HANDLE_FOREACH_ARG_RAW_2(t0, t1)	  				MONO_HANDLE_FOREACH_ARG_RAW_1 (t0),             		MONO_HANDLE_ARG_RAWHANDLE (t1, 1)
+#define MONO_HANDLE_FOREACH_ARG_RAW_3(t0, t1, t2)	  			MONO_HANDLE_FOREACH_ARG_RAW_2 (t0, t1),         		MONO_HANDLE_ARG_RAWHANDLE (t2, 2)
+#define MONO_HANDLE_FOREACH_ARG_RAW_4(t0, t1, t2, t3)				MONO_HANDLE_FOREACH_ARG_RAW_3 (t0, t1, t2),     		MONO_HANDLE_ARG_RAWHANDLE (t3, 3)
+#define MONO_HANDLE_FOREACH_ARG_RAW_5(t0, t1, t2, t3, t4)			MONO_HANDLE_FOREACH_ARG_RAW_4 (t0, t1, t2, t3), 		MONO_HANDLE_ARG_RAWHANDLE (t4, 4)
+#define MONO_HANDLE_FOREACH_ARG_RAW_6(t0, t1, t2, t3, t4, t5)			MONO_HANDLE_FOREACH_ARG_RAW_5 (t0, t1, t2, t3, t4), 		MONO_HANDLE_ARG_RAWHANDLE (t5, 5)
+#define MONO_HANDLE_FOREACH_ARG_RAW_7(t0, t1, t2, t3, t4, t5, t6)		MONO_HANDLE_FOREACH_ARG_RAW_6 (t0, t1, t2, t3, t4, t5), 	MONO_HANDLE_ARG_RAWHANDLE (t6, 6)
+#define MONO_HANDLE_FOREACH_ARG_RAW_8(t0, t1, t2, t3, t4, t5, t6, t7)		MONO_HANDLE_FOREACH_ARG_RAW_7 (t0, t1, t2, t3, t4, t5, t6),	MONO_HANDLE_ARG_RAWHANDLE (t7, 7)
+#define MONO_HANDLE_FOREACH_ARG_RAW_9(t0, t1, t2, t3, t4, t5, t6, t7, t8)  	MONO_HANDLE_FOREACH_ARG_RAW_8 (t0, t1, t2, t3, t4, t5, t6, t7),	MONO_HANDLE_ARG_RAWHANDLE (t8, 8)
 
 // Call from the wrapper to the actual icall, passing on the
 // WRAP_NONE parameters directly, casting handles from raw to typed.
@@ -322,12 +332,17 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 // Declare the function that takes/returns typed handles.
 #define MONO_HANDLE_DECLARE(id, name, func, rettype, n, argtypes)	\
 MONO_HANDLE_TYPE_TYPED (rettype)					\
-func (MONO_HANDLE_FOREACH_TYPE_TYPED_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *error)	\
+func (MONO_HANDLE_FOREACH_TYPE_TYPED_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *error)
 
-// Declare the function wrapper that takes/returns raw handles.
+// Declare the function wrapper that takes raw handles and a MonoError and returns a raw pointer.
+//
+// FIXME The error variable is on the managed side instead of native
+// only to satisfy fragile test external/coreclr/tests/src/CoreMangLib/cti/system/weakreference/weakreferenceisaliveb.exe.
+// I.e. We should have ERROR_DECL instead of error_init and MonoError parameter
+// should be a local instead of a parameter. The different is minor.
 #define MONO_HANDLE_DECLARE_RAW(id, name, func, rettype, n, argtypes)	\
-ICALL_EXPORT MONO_HANDLE_TYPE_RAW (rettype)				\
-func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *error) \
+ICALL_EXPORT MONO_HANDLE_TYPE_RAWPOINTER (rettype)				\
+func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *error)
 
 // Implement ves_icall_foo_raw over ves_icall_foo.
 // Raw handles are converted to/from typed handles and the rest is passed through.
@@ -338,9 +353,16 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 {										\
 	g_assert (cond);							\
 										\
+	HANDLE_FUNCTION_ENTER ();						\
+										\
+	/* FIXME Should be ERROR_DECL but for fragile test. */			\
+	error_init (error);							\
+										\
 	MONO_HANDLE_RETURN_BEGIN (rettype)					\
 										\
-	func (MONO_HANDLE_CALL_ ## n argtypes MONO_HANDLE_COMMA_ ## n error)	\
+	func (MONO_HANDLE_CALL_ ## n argtypes MONO_HANDLE_COMMA_ ## n error);	\
+										\
+	mono_error_set_pending_exception (error);				\
 										\
 	MONO_HANDLE_RETURN_END (rettype)					\
 }										\

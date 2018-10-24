@@ -121,4 +121,10 @@ MONO_API void        mono_bitset_foreach      (MonoBitSet *set, MonoBitSetFunc f
 
 MONO_API void        mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const MonoBitSet *src2);
 
+void
+mono_bitset_set_safe (MonoBitSet **set, guint32 pos);
+
+gboolean
+mono_bitset_test_safe (const MonoBitSet *set, guint32 pos);
+
 #endif /* __MONO_BITSET_H__ */

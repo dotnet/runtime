@@ -104,36 +104,6 @@ chunk_element (HandleChunk *chunk, int idx)
 	return &chunk->elems[idx];
 }
 
-static HandleChunkElem*
-handle_to_chunk_element (MonoObjectHandle o)
-{
-	return (HandleChunkElem*)o.__raw;
-}
-
-/* Given a HandleChunkElem* search through the current handle stack to find its chunk and offset. */
-static HandleChunk*
-chunk_element_to_chunk_idx (HandleStack *stack, HandleChunkElem *elem, int *out_idx)
-{
-	HandleChunk *top = stack->top;
-	HandleChunk *cur = stack->bottom;
-
-	*out_idx = 0;
-
-	while (cur != NULL) {
-		HandleChunkElem *front = &cur->elems [0];
-		HandleChunkElem *back = &cur->elems [cur->size];
-
-		if (front <= elem && elem < back) {
-			*out_idx = (int)(elem - front);
-			return cur;
-		}
-
-		if (cur == top)
-			break; /* didn't find it. */
-		cur = cur->next;
-	}
-	return NULL;
-}
 
 #ifdef MONO_HANDLE_TRACK_OWNER
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -240,54 +210,16 @@ retry:
 	goto retry;
 }
 
-gpointer
-#ifndef MONO_HANDLE_TRACK_OWNER
-mono_handle_new_interior (gpointer rawptr)
-#else
-mono_handle_new_interior (gpointer rawptr, const char *owner)
-#endif
-{
-	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *handles = info->handle_stack;
-	HandleChunk *top = handles->interior;
-#ifdef MONO_HANDLE_TRACK_SP
-	mono_handle_chunk_leak_check (handles);
-#endif
-
-	g_assert (top);
-
-	/*
-	 * Don't extend the chunk now, interior handles are
-	 * only used for icall arguments, they shouldn't
-	 * overflow.
-	 */
-	g_assert (top->size < OBJECTS_PER_HANDLES_CHUNK);
-	int idx = top->size;
-	gpointer *objslot = &top->elems [idx].o;
-	*objslot = NULL;
-	mono_memory_write_barrier ();
-	top->size++;
-	mono_memory_write_barrier ();
-	*objslot = rawptr;
-	SET_OWNER (top,idx);
-	SET_SP (handles, top, idx);
-	return objslot;
-}
-
 HandleStack*
 mono_handle_stack_alloc (void)
 {
 	HandleStack *stack = new_handle_stack ();
 	HandleChunk *chunk = new_handle_chunk ();
-	HandleChunk *interior = new_handle_chunk ();
 
 	chunk->prev = chunk->next = NULL;
 	chunk->size = 0;
-	interior->prev = interior->next = NULL;
-	interior->size = 0;
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
-	stack->interior = interior;
 #ifdef MONO_HANDLE_TRACK_SP
 	stack->stackmark_sp = NULL;
 #endif
@@ -308,7 +240,6 @@ mono_handle_stack_free (HandleStack *stack)
 		c = next;
 	}
 	free_handle_chunk (c);
-	free_handle_chunk (stack->interior);
 	free_handle_stack (stack);
 }
 
@@ -340,10 +271,6 @@ mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
 			break;
 		cur = cur->next;
 	}
-	/* We don't examine the interior pointers here because the GC treats
-	 * them conservatively and anyway we don't have enough information here to
-	 * find the object's vtable.
-	 */
 }
 
 static void
@@ -385,39 +312,29 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, g
 		check_handle_stack_monotonic (stack);
 
 	/*
-	  We're called twice - on the imprecise pass we call func to pin the
-	  objects where the handle points to its interior.  On the precise
-	  pass, we scan all the objects where the handles point to the start of
+	  We're called twice - on the imprecise pass we do nothing.
+	  Interior pointers are retained in managed frames.
+	  On the precise pass, we scan all the objects where the handles point to the start of
 	  the object.
 
 	  Note that if we're running, we know the world is stopped.
 	*/
-	if (precise) {
-		HandleChunk *cur = stack->bottom;
-		HandleChunk *last = stack->top;
+	if (!precise)
+		return;
 
-		while (cur) {
-			for (int i = 0; i < cur->size; ++i) {
-				HandleChunkElem* elem = chunk_element (cur, i);
-				gpointer* obj_slot = &elem->o;
-				if (*obj_slot != NULL)
-					func (obj_slot, gc_data);
-			}
-			if (cur == last)
-				break;
-			cur = cur->next;
-		}
-	} else {
-		HandleChunk *cur = stack->interior;
+	HandleChunk *cur = stack->bottom;
+	HandleChunk *last = stack->top;
 
-		if (!cur)
-			return;
+	while (cur) {
 		for (int i = 0; i < cur->size; ++i) {
 			HandleChunkElem* elem = chunk_element (cur, i);
-			gpointer* ptr_slot = &elem->o;
-			if (*ptr_slot != NULL)
-				func (ptr_slot, gc_data);
+			gpointer* obj_slot = &elem->o;
+			if (*obj_slot != NULL)
+				func (obj_slot, gc_data);
 		}
+		if (cur == last)
+			break;
+		cur = cur->next;
 	}
 }
 
@@ -486,15 +403,12 @@ mono_array_handle_length (MonoArrayHandle arr)
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
-	/* FIXME: chunk_element_to_chunk_idx does a linear search through the
-	 * chunks and we only need it for the assert */
-	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *stack = info->handle_stack;
-	HandleChunkElem* elem = handle_to_chunk_element (handle);
-	int elem_idx = 0;
-	HandleChunk *chunk = chunk_element_to_chunk_idx (stack, elem, &elem_idx);
-	/* gchandles cannot deal with interior pointers */
-	g_assert (chunk != NULL);
+	// FIXME This used to check for out of scope handles.
+	// Stack-based handles coming from icall wrappers do not
+	// work with that. This functionality can be largely restored
+	// by introducing a tag bit in handles -- 0 for managed stack-based,
+	// 1 for native TLS-based, having MONO_HANDLE_RAW clear it, and only
+	// doing the former checking for native TLS-based handles.
 	return mono_gchandle_new_internal (MONO_HANDLE_RAW (handle), pinned);
 }
 

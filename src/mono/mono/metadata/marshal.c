@@ -286,10 +286,6 @@ mono_marshal_init (void)
 		register_icall (mono_threads_exit_gc_unsafe_region_unbalanced, "mono_threads_exit_gc_unsafe_region_unbalanced", "void ptr ptr", TRUE);
 		register_icall (mono_threads_attach_coop, "mono_threads_attach_coop", "ptr ptr ptr", TRUE);
 		register_icall (mono_threads_detach_coop, "mono_threads_detach_coop", "void ptr ptr", TRUE);
-		register_icall (mono_icall_start, "mono_icall_start", "ptr ptr ptr", TRUE);
-		register_icall (mono_icall_end, "mono_icall_end", "void ptr ptr ptr", TRUE);
-		register_icall (mono_icall_handle_new, "mono_icall_handle_new", "ptr ptr", TRUE);
-		register_icall (mono_icall_handle_new_interior, "mono_icall_handle_new_interior", "ptr ptr", TRUE);
 		register_icall (mono_marshal_get_type_object, "mono_marshal_get_type_object", "object ptr", TRUE);
 
 		mono_cominterop_init ();
@@ -6197,40 +6193,6 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 
 	if (marshal_mutex_initialized)
 		mono_marshal_unlock ();
-}
-
-MonoThreadInfo*
-mono_icall_start (HandleStackMark *stackmark, MonoError *error)
-{
-	MonoThreadInfo *info = mono_thread_info_current ();
-
-	mono_stack_mark_init (info, stackmark);
-	error_init (error);
-	return info;
-}
-
-void
-mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *error)
-{
-	mono_stack_mark_pop (info, stackmark);
-	if (G_UNLIKELY (!is_ok (error)))
-		mono_error_set_pending_exception (error);
-}
-
-MonoRawHandle
-mono_icall_handle_new (gpointer rawobj)
-{
-	return mono_handle_new ((MonoObject*)rawobj);
-}
-
-gpointer
-mono_icall_handle_new_interior (gpointer rawobj)
-{
-#ifdef MONO_HANDLE_TRACK_OWNER
-	return mono_handle_new_interior ((MonoObject*)rawobj, "<marshal args>");
-#else
-	return mono_handle_new_interior ((MonoObject*)rawobj);
-#endif
 }
 
 MonoObject*

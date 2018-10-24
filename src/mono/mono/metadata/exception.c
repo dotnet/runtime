@@ -1209,7 +1209,7 @@ mono_error_raise_exception_deprecated (MonoError *target_error)
 }
 
 /**
- * mono_error_set_pending_exception:
+ * mono_error_set_pending_exception_slow:
  * \param error The error
  * If \p error is set, convert it to an exception and set the pending exception for the current icall.
  * \returns TRUE if \p error was set, or FALSE otherwise, so that you can write:
@@ -1218,8 +1218,9 @@ mono_error_raise_exception_deprecated (MonoError *target_error)
  *      return;
  *    }
  */
+// For efficiency, call mono_error_set_pending_exception instead of mono_error_set_pending_exception_slow.
 gboolean
-mono_error_set_pending_exception (MonoError *error)
+mono_error_set_pending_exception_slow (MonoError *error)
 {
 	if (is_ok (error))
 		return FALSE;
