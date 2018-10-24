@@ -58,7 +58,8 @@ typedef enum {
 	MONO_AOT_TRAMP_IMT = 2,
 	MONO_AOT_TRAMP_GSHAREDVT_ARG = 3,
 	MONO_AOT_TRAMP_FTNPTR_ARG = 4,
-	MONO_AOT_TRAMP_NUM = 5
+	MONO_AOT_TRAMP_UNBOX_ARBITRARY = 5,
+	MONO_AOT_TRAMP_NUM = 6
 } MonoAotTrampoline;
 
 typedef enum {
@@ -145,6 +146,7 @@ typedef struct MonoAotFileInfo
 	gpointer imt_trampolines;
 	gpointer gsharedvt_arg_trampolines;
 	gpointer ftnptr_arg_trampolines;
+	gpointer unbox_arbitrary_trampolines;
 	/* In static mode, points to a table of global symbols for trampolines etc */
 	gpointer globals;
 	/* Points to a string containing the assembly name*/
@@ -230,12 +232,13 @@ gpointer mono_aot_get_method_from_vt_slot   (MonoDomain *domain, MonoVTable *vta
 gpointer mono_aot_create_specific_trampoline   (MonoImage *image, gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len);
 gpointer mono_aot_get_trampoline            (const char *name);
 gpointer mono_aot_get_trampoline_full       (const char *name, MonoTrampInfo **out_tinfo);
-gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method);
+gpointer mono_aot_get_unbox_trampoline      (MonoMethod *method, gpointer addr);
 gpointer mono_aot_get_lazy_fetch_trampoline (guint32 slot);
 gpointer mono_aot_get_static_rgctx_trampoline (gpointer ctx, gpointer addr);
 gpointer mono_aot_get_imt_trampoline        (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count, gpointer fail_tramp);
 gpointer mono_aot_get_gsharedvt_arg_trampoline(gpointer arg, gpointer addr);
 gpointer mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr);
+gpointer mono_aot_get_unbox_arbitrary_trampoline (gpointer addr);
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len);
 guint32  mono_aot_method_hash               (MonoMethod *method);
 gboolean mono_aot_can_dedup                 (MonoMethod *method);

@@ -1885,7 +1885,7 @@ mono_llvmonly_init_delegate (MonoDelegate *del)
 			return;
 
 		if (m_class_is_valuetype (m->klass) && mono_method_signature_internal (m)->hasthis)
-		    addr = mono_aot_get_unbox_trampoline (m);
+		    addr = mono_aot_get_unbox_trampoline (m, NULL);
 
 		gpointer arg = mini_get_delegate_arg (del->method, addr);
 
@@ -1914,7 +1914,7 @@ mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, Mono
 	if (mono_error_set_pending_exception (error))
 		return;
 	if (m_class_is_valuetype (method->klass))
-		del->method_ptr = mono_aot_get_unbox_trampoline (method);
+		del->method_ptr = mono_aot_get_unbox_trampoline (method, NULL);
 	del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
 
