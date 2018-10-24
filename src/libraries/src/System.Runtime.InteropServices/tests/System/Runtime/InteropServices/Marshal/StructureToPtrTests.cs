@@ -190,6 +190,73 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public unsafe void StructureToPtr_StructWithBlittableFixedBuffer_In_NonBlittable_Success()
+        {
+            var str = default(NonBlittableContainingBuffer);
+
+            // Assign values to the bytes.
+            byte* ptr = (byte*)&str.bufferStruct;
+            for (int i = 0; i < sizeof(HasFixedBuffer); i++)
+                ptr[i] = (byte)(0x11 * (i + 1));
+
+            HasFixedBuffer* original = (HasFixedBuffer*)ptr;
+            
+            // Marshal the parent struct.
+            var parentStructIntPtr = Marshal.AllocHGlobal(Marshal.SizeOf<NonBlittableContainingBuffer>());
+            Marshal.StructureToPtr(str, parentStructIntPtr, false);
+            try
+            {
+                HasFixedBuffer* bufferStructPtr = (HasFixedBuffer*)parentStructIntPtr.ToPointer();
+                Assert.Equal(original->buffer[0], bufferStructPtr->buffer[0]);
+                Assert.Equal(original->buffer[1], bufferStructPtr->buffer[1]);
+            }
+            finally
+            {
+                Marshal.DestroyStructure<NonBlittableContainingBuffer>(parentStructIntPtr);
+                Marshal.FreeHGlobal(parentStructIntPtr);
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public unsafe void StructureToPtr_NonBlittableStruct_WithBlittableFixedBuffer_Success()
+        {
+            NonBlittableWithBlittableBuffer x = new NonBlittableWithBlittableBuffer();
+            x.f[0] = 1;
+            x.f[1] = 2;
+            x.f[2] = 3;
+            x.s = null;
+
+            int size = Marshal.SizeOf(typeof(NonBlittableWithBlittableBuffer));
+            byte* p = stackalloc byte[size];
+            Marshal.StructureToPtr(x, (IntPtr)p, false);
+            NonBlittableWithBlittableBuffer y = Marshal.PtrToStructure<NonBlittableWithBlittableBuffer>((IntPtr)p);
+
+            Assert.Equal(x.f[0], y.f[0]);
+            Assert.Equal(x.f[1], y.f[1]);
+            Assert.Equal(x.f[2], y.f[2]);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public unsafe void StructureToPtr_OpaqueStruct_In_NonBlittableStructure_Success()
+        {
+            NonBlittableWithOpaque x = new NonBlittableWithOpaque();
+            byte* opaqueData = (byte*)&x.opaque;
+            *opaqueData = 1;
+
+            int size = Marshal.SizeOf(typeof(NonBlittableWithOpaque));
+            byte* p = stackalloc byte[size];
+            Marshal.StructureToPtr(x, (IntPtr)p, false);
+            NonBlittableWithOpaque y = Marshal.PtrToStructure<NonBlittableWithOpaque>((IntPtr)p);
+
+            byte* marshaledOpaqueData = (byte*)&y.opaque;
+
+            Assert.Equal(*opaqueData, *marshaledOpaqueData);
+        }
+
         public struct StructWithIntField
         {
             public int value;
@@ -217,6 +284,40 @@ namespace System.Runtime.InteropServices.Tests
         public struct SomeTestStruct_Auto
         {
             public int i;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public unsafe struct HasFixedBuffer
+        {
+            public short member;
+            public fixed byte buffer[2];
+            public short member2;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        public struct NonBlittableContainingBuffer
+        {
+            public HasFixedBuffer bufferStruct;
+            public string str;
+            public IntPtr intPtr;
+        }
+
+        unsafe struct NonBlittableWithBlittableBuffer
+        {
+            public fixed int f[100];
+            public string s;
+        }
+        
+        [StructLayout(LayoutKind.Explicit, Size = 1)]
+        public struct OpaqueStruct
+        {
+
+        }
+
+        public struct NonBlittableWithOpaque
+        {
+            public OpaqueStruct opaque;
+            public string str;
         }
     }
 }
