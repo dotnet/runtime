@@ -29,6 +29,22 @@ namespace JIT.HardwareIntrinsics.X86
                 ["MaskStore.Int64"] = MaskStoreInt64,
                 ["MaskStore.UInt64"] = MaskStoreUInt64,
                 ["ShiftRightArithmeticVariable.Int32"] = ShiftRightArithmeticVariableInt32,
+                ["BroadcastScalarToVector128.Byte"] = BroadcastScalarToVector128Byte,
+                ["BroadcastScalarToVector128.SByte"] = BroadcastScalarToVector128SByte,
+                ["BroadcastScalarToVector128.Int16"] = BroadcastScalarToVector128Int16,
+                ["BroadcastScalarToVector128.UInt16"] = BroadcastScalarToVector128UInt16,
+                ["BroadcastScalarToVector128.Int32"] = BroadcastScalarToVector128Int32,
+                ["BroadcastScalarToVector128.UInt32"] = BroadcastScalarToVector128UInt32,
+                ["BroadcastScalarToVector128.Int64"] = BroadcastScalarToVector128Int64,
+                ["BroadcastScalarToVector128.UInt64"] = BroadcastScalarToVector128UInt64,
+                ["BroadcastScalarToVector256.Byte"] = BroadcastScalarToVector256Byte,
+                ["BroadcastScalarToVector256.SByte"] = BroadcastScalarToVector256SByte,
+                ["BroadcastScalarToVector256.Int16"] = BroadcastScalarToVector256Int16,
+                ["BroadcastScalarToVector256.UInt16"] = BroadcastScalarToVector256UInt16,
+                ["BroadcastScalarToVector256.Int32"] = BroadcastScalarToVector256Int32,
+                ["BroadcastScalarToVector256.UInt32"] = BroadcastScalarToVector256UInt32,
+                ["BroadcastScalarToVector256.Int64"] = BroadcastScalarToVector256Int64,
+                ["BroadcastScalarToVector256.UInt64"] = BroadcastScalarToVector256UInt64,
             };
         }
     }
