@@ -112,7 +112,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 genConsumeOperands(node);
                 op1Reg = op1->gtRegNum;
 
-                if (category == HW_Category_MemoryLoad)
+                if (node->OperIsMemoryLoad())
                 {
                     emit->emitIns_R_AR(ins, simdSize, targetReg, op1Reg, 0);
                 }
