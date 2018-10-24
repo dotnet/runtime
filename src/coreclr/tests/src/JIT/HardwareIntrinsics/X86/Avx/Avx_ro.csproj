@@ -35,6 +35,11 @@
     <Compile Include="And.Single.cs" />
     <Compile Include="AndNot.Double.cs" />
     <Compile Include="AndNot.Single.cs" />
+    <Compile Include="BroadcastScalarToVector128.Single.cs" />
+    <Compile Include="BroadcastScalarToVector256.Single.cs" />
+    <Compile Include="BroadcastScalarToVector256.Double.cs" />
+    <Compile Include="BroadcastVector128ToVector256.Single.cs" />
+    <Compile Include="BroadcastVector128ToVector256.Double.cs" />
     <Compile Include="BlendVariable.Double.cs" />
     <Compile Include="BlendVariable.Single.cs" />
     <Compile Include="Ceiling.Double.cs" />
