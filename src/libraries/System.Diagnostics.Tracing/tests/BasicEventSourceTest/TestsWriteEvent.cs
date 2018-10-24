@@ -414,6 +414,71 @@ namespace BasicEventSourceTests
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
 
+
+                int? nullableInt = 12;
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Int12",
+                    delegate ()
+                    {
+                        logger.EventNullableIntInt(nullableInt, 5);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("EventNullableIntInt", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nullableInt");
+                        Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
+                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                    }));
+
+                int? nullableInt2 = null;
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/IntNull",
+                    delegate ()
+                    {
+                        logger.EventNullableIntInt(nullableInt2, 5);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("EventNullableIntInt", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nullableInt");
+                        Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
+                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                    }));
+
+                DateTime? nullableDate = DateTime.Now;
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNow",
+                    delegate ()
+                    {
+                        logger.EventNullableDateTimeInt(nullableDate, 5);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("EventNullableDateTimeInt", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nullableDate");
+                        Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
+                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                    }));
+
+                DateTime? nullableDate2 = null;
+                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNull",
+                    delegate ()
+                    {
+                        logger.EventNullableDateTimeInt(nullableDate2, 5);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("EventNullableDateTimeInt", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nullableDate");
+                        Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(nullableDate2));
+                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                    }));
+                
                 // If you only wish to run one or several of the tests you can filter them here by 
                 // Uncommenting the following line.  
                 // tests = tests.FindAll(test => Regex.IsMatch(test.Name, "ventWithByteArray"));
@@ -621,6 +686,8 @@ namespace BasicEventSourceTests
         public EventSourceTestSelfDescribingOnly() : base(EventSourceSettings.EtwSelfDescribingEventFormat) { }
         public void EventByteArrayInt(byte[] array, int anInt) { WriteEvent(1, array, anInt); }
         public void EventUserDataInt(UserData aClass, int anInt) { WriteEvent(2, aClass, anInt); }
+        public void EventNullableIntInt(int? nullableInt, int anInt) { WriteEvent(3, nullableInt, anInt); }
+        public void EventNullableDateTimeInt(DateTime? nullableDate, int anInt) { WriteEvent(4, nullableDate, anInt); }
     }
 
     public sealed class EventSourceTestByteArray : EventSource

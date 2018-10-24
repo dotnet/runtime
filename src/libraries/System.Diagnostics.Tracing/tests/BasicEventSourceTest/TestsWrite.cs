@@ -25,6 +25,7 @@ namespace BasicEventSourceTests
 
     public partial class TestsWrite
     {
+
         [EventData]
         private struct PartB_UserInfo
         {
@@ -125,6 +126,66 @@ namespace BasicEventSourceTests
 
                         var eventArray = evt.PayloadValue(0, "bytes");
                         Array.Equals(eventArray, byteArray);
+                    }));
+                /*************************************************************************/
+                int? nullableInt = 12;
+                tests.Add(new SubTest("Write/Basic/int?/12",
+                    delegate ()
+                    {
+                        logger.Write("Int12", new { nInteger = nullableInt });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("Int12", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nInteger");
+                        Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
+                    }));
+                /*************************************************************************/
+                int? nullableInt2 = null;
+                tests.Add(new SubTest("Write/Basic/int?/null",
+                    delegate ()
+                    {
+                        logger.Write("IntNull", new { nInteger = nullableInt2 });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("IntNull", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nInteger");
+                        Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
+                    }));
+                ///*************************************************************************/
+                DateTime? nullableDate = DateTime.Now;
+                tests.Add(new SubTest("Write/Basic/DateTime?/Now",
+                    delegate ()
+                    {
+                        logger.Write("DateTimeNow", new { nowTime = nullableDate });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("DateTimeNow", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nowTime");
+                        Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
+                    }));
+                /*************************************************************************/
+                DateTime? nullableDate2 = null;
+                tests.Add(new SubTest("Write/Basic/DateTime?/Null",
+                    delegate ()
+                    {
+                        logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("DateTimeNull", evt.EventName);
+
+                        var payload = evt.PayloadValue(0, "nowTime");
+                        Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(payload));
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
