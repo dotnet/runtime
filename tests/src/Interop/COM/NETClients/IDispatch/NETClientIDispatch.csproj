@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>NETClientPrimitives</AssemblyName>
+    <AssemblyName>NETClientIDispatch</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{85C57688-DA98-4DE3-AC9B-526E4747434C}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -22,10 +22,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="ArrayTests.cs" />
-    <Compile Include="ErrorTests.cs" />
-    <Compile Include="NumericTests.cs" />
-    <Compile Include="StringTests.cs" />
     <Compile Include="../../ServerContracts/NativeServers.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
