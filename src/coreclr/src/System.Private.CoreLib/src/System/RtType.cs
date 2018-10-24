@@ -4532,6 +4532,10 @@ namespace System
             }
         }
 
+        // This method looks like an attractive inline but expands to two calls,
+        // neither of which can be inlined or optimized further. So block it
+        // from inlining.
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private string GetCachedName(TypeNameKind kind)
         {
             return Cache.GetName(kind);
