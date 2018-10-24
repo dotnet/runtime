@@ -25,8 +25,6 @@ namespace BasicEventSourceTests
 
     public partial class TestsWrite
     {
-        private readonly Xunit.Abstractions.ITestOutputHelper output;
-        public TestsWrite(Xunit.Abstractions.ITestOutputHelper output) => this.output = output;
 
         [EventData]
         private struct PartB_UserInfo
@@ -142,134 +140,53 @@ namespace BasicEventSourceTests
                         Assert.Equal("Int12", evt.EventName);
 
                         var payload = evt.PayloadValue(0, "nInteger");
-
-                        // Payload type is different locally than on CI. We're going to try several methods to parse it.
-                        output.WriteLine($"!!!!!!!!!!! payload type is {payload.GetType().Namespace}.{payload.GetType().Name} !!!!!!!!!!!!!");
-                        if (payload is int)
-                        {
-                            Assert.Equal(payload, 12);
-                        }
-                        else if ((payload as object[]) != null)
-                        {
-                            output.WriteLine("Handling payload as object array...");
-
-                            var keyValueDict = GetDictionaryFromKeyValueArray(payload);
-                            Assert.Equal(keyValueDict["HasValue"], true);
-                            Assert.Equal(keyValueDict["Value"], 12);
-                        }
-                        else if (payload is IDictionary<string, object> payloadDict)
-                        {
-                            output.WriteLine("Handling payload as IDictionary...");
-
-                            Assert.Equal(true, payloadDict["HasValue"]);
-                            Assert.Equal(12, payloadDict["Value"]);
-                        }
-                        else
-                        {
-                            // StructValue should override ToString and return the payload as JSON
-                            var sval = payload.ToString();
-                            output.WriteLine($"Handling payload through ToString with value of:\r\n{sval}");
-
-                            var bytes = System.Text.Encoding.ASCII.GetBytes(sval);
-                            using (var memStream = new System.IO.MemoryStream(bytes))
-                            {
-                                memStream.Seek(0, System.IO.SeekOrigin.Begin);
-                                var obj = System.Json.JsonValue.Load(memStream);
-
-                                Assert.Equal("True", obj["HasValue"]);
-                                Assert.Equal("12", obj["Value"]);
-                            }
-                        }
+                        Assert.Equal(nullableInt, UnwrapNullable<int>(payload));
                     }));
                 /*************************************************************************/
-                //int? nullableInt2 = null;
-                //tests.Add(new SubTest("Write/Basic/int?/null",
-                //    delegate ()
-                //    {
-                //        logger.Write("IntNull", new { nInteger = nullableInt2 });
-                //    },
-                //    delegate (Event evt)
-                //    {
-                //        Assert.Equal(logger.Name, evt.ProviderName);
-                //        Assert.Equal("IntNull", evt.EventName);
+                int? nullableInt2 = null;
+                tests.Add(new SubTest("Write/Basic/int?/null",
+                    delegate ()
+                    {
+                        logger.Write("IntNull", new { nInteger = nullableInt2 });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("IntNull", evt.EventName);
 
-                //        var payload = evt.PayloadValue(0, "nInteger");
+                        var payload = evt.PayloadValue(0, "nInteger");
+                        Assert.Equal(nullableInt2, UnwrapNullable<int>(payload));
+                    }));
+                ///*************************************************************************/
+                DateTime? nullableDate = DateTime.Now;
+                tests.Add(new SubTest("Write/Basic/DateTime?/Now",
+                    delegate ()
+                    {
+                        logger.Write("DateTimeNow", new { nowTime = nullableDate });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("DateTimeNow", evt.EventName);
 
-                //        // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
-                //        // However, casting to IDictionary<string, object> fails
-                //        if ((payload as object[]) != null)
-                //        {
-                //            var keyValueDict = GetDictionaryFromKeyValueArray(payload);
-                //            Assert.Equal(false, keyValueDict["HasValue"]);
-                //        }
-                //        else
-                //        {
-                //            // Payload is a null object reference locally
-                //            if (payload != null)
-                //                Assert.Equal(payload.GetType().Name, "~WhatAmI~");  // We don't know what it is. Assert it's type name to find out
-                //        }
-                //    }));
-                /////*************************************************************************/
-                //DateTime? nullableDate = DateTime.Now;
-                //tests.Add(new SubTest("Write/Basic/DateTime?/Now",
-                //    delegate ()
-                //    {
-                //        logger.Write("DateTimeNow", new { nowTime = nullableDate });
-                //    },
-                //    delegate (Event evt)
-                //    {
-                //        Assert.Equal(logger.Name, evt.ProviderName);
-                //        Assert.Equal("DateTimeNow", evt.EventName);
+                        var payload = evt.PayloadValue(0, "nowTime");
+                        Assert.Equal(nullableDate, UnwrapNullable<DateTime>(payload));
+                    }));
+                /*************************************************************************/
+                DateTime? nullableDate2 = null;
+                tests.Add(new SubTest("Write/Basic/DateTime?/Null",
+                    delegate ()
+                    {
+                        logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+                        Assert.Equal("DateTimeNull", evt.EventName);
 
-                //        var payload = evt.PayloadValue(0, "nowTime");
-                //        if (payload is DateTime)                     // Payload is DateTime when testing locally
-                //        {
-                //            Assert.Equal(payload, nullableDate.Value);
-                //        }
-                //        else
-                //        {
-                //            // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
-                //            // However, casting to IDictionary<string, object> fails
-                //            if ((payload as object[]) != null)
-                //            {
-                //                var keyValueDict = GetDictionaryFromKeyValueArray(payload);
-                //                Assert.Equal(true, keyValueDict["HasValue"]);
-                //                Assert.Equal(nullableDate.Value, keyValueDict["Value"]);
-                //            }
-                //            else
-                //            {
-                //                // We don't know what it is. Assert it's type name to find out
-                //                Assert.Equal(payload.GetType().Name, "~WhatAmI~");
-                //            }
-                //        }
-                //    }));
-                /////*************************************************************************/
-                //DateTime? nullableDate2 = null;
-                //tests.Add(new SubTest("Write/Basic/DateTime?/Null",
-                //    delegate ()
-                //    {
-                //        logger.Write("DateTimeNull", new { nowTime = nullableDate2 });
-                //    },
-                //    delegate (Event evt)
-                //    {
-                //        Assert.Equal(logger.Name, evt.ProviderName);
-                //        Assert.Equal("DateTimeNull", evt.EventName);
-
-                //        var payload = evt.PayloadValue(0, "nowTime");
-                //        // Payload is Microsoft.Diagnostics.Tracing.Parsers.StructValue when testing on CI
-                //        // However, casting to IDictionary<string, object> fails
-                //        if ((payload as object[]) != null)
-                //        {
-                //            var keyValueDict = GetDictionaryFromKeyValueArray(payload);
-                //            Assert.Equal(false, keyValueDict["HasValue"]);
-                //        }
-                //        else
-                //        {
-                //            // Payload is a null object reference locally
-                //            if (payload != null)
-                //                Assert.Equal(payload.GetType().Name, "~WhatAmI~");  // We don't know what it is. Assert it's type name to find out
-                //        }
-                //    }));
+                        var payload = evt.PayloadValue(0, "nowTime");
+                        Assert.Equal(nullableDate2, UnwrapNullable<DateTime>(payload));
+                    }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Write/Basic/PartBOnly",
                     delegate ()
@@ -538,7 +455,7 @@ namespace BasicEventSourceTests
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
-        
+
         static partial void Test_Write_T_AddEtwTests(Listener listener, List<SubTest> tests, EventSource logger);
 
         [Fact]
@@ -656,6 +573,36 @@ namespace BasicEventSourceTests
                 ret.Add((string)keyValue["Key"], keyValue["Value"]);
             }
             return ret;
+        }
+
+        /// <summary>
+        /// Unwraps a nullable returned from either ETW or EventListener
+        /// </summary>
+        /// <typeparam name="T">The type to unwrap</typeparam>
+        /// <param name="wrappedValue">Value returned from event payload</param>
+        /// <returns></returns>
+        private static T? UnwrapNullable<T>(object wrappedValue) where T : struct
+        {
+            // ETW will return a collection of key/value pairs
+            if (wrappedValue is IDictionary<string, object> dict)
+            {
+                Assert.True(dict.ContainsKey("HasValue"));
+                Assert.True(dict.ContainsKey("Value"));
+
+                if ((bool)dict["HasValue"])
+                {
+                    return (T)dict["Value"];
+                }
+            }
+            // EventListener will return the boxed value of the nullable, which will either be a value or null object reference
+            else if (wrappedValue != null)
+            {
+                Assert.IsType(typeof(T), wrappedValue);
+                return (T?)wrappedValue;
+            }
+
+            // wrappedValue is null or wrappedValue is IDictionary, but HasValue is false
+            return null;
         }
     }
 }
