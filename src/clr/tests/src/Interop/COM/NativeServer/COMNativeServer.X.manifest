@@ -26,6 +26,16 @@
   <comClass
     clsid="{71CF5C45-106C-4B32-B418-43A463C6041F}"
     threadingModel="Both" />
+
+  <!-- DispatchTesting -->
+  <comClass
+    clsid="{0F8ACD0C-ECE0-4F2A-BD1B-6BFCA93A0726}"
+    threadingModel="Both" />
+
+  <!-- AggregationTesting -->
+  <comClass
+    clsid="{4CEFE36D-F377-4B6E-8C34-819A8BB9CB04}"
+    threadingModel="Both" />
 </file>
 
 </assembly>

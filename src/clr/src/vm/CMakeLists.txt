@@ -287,6 +287,7 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callcounter.cpp
     callhelpers.cpp
+    callsiteinspect.cpp
     ceemain.cpp
     clrconfignative.cpp
     clrex.cpp
@@ -402,6 +403,7 @@ set(VM_HEADERS_WKS
     cachelinealloc.h
     callcounter.h
     callhelpers.h
+    callsiteinspect.h
     ceemain.h
     clrconfignative.h
     clrex.h
