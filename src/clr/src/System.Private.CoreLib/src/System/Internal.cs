@@ -202,6 +202,7 @@ namespace System
         // typed as matching instantiations of mscorlib copies of WinRT interfaces (IIterable<T>, IVector<T>,
         // IMap<K, V>, ...) which is necessary to generate all required IL stubs.
 
+        [MethodImplAttribute(MethodImplOptions.NoOptimization)]
         private static void CommonlyUsedWinRTRedirectedInterfaceStubs()
         {
             WinRT_IEnumerable<byte>(null, null, null);
