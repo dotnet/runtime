@@ -2254,8 +2254,6 @@ void      mono_arch_finish_init                 (void);
 void      mono_arch_cleanup                     (void);
 void      mono_arch_cpu_init                    (void);
 guint32   mono_arch_cpu_optimizations           (guint32 *exclude_mask);
-void     *mono_arch_instrument_prolog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
-void     *mono_arch_instrument_epilog           (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments);
 const char *mono_arch_regname                   (int reg);
 const char *mono_arch_fregname                  (int reg);
 void      mono_arch_exceptions_init             (void);

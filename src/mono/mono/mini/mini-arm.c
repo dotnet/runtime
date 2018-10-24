@@ -28,7 +28,6 @@
 
 #include "mini-arm.h"
 #include "cpu-arm.h"
-#include "trace.h"
 #include "ir-emit.h"
 #include "debugger-agent.h"
 #include "mini-gc.h"
@@ -3170,149 +3169,6 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 #ifndef DISABLE_JIT
 
 /*
- * Allow tracing to work with this interface (with an optional argument)
- */
-
-void*
-mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = (guchar*)p;
-
-	code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)(gsize)cfg->method);
-	ARM_MOV_REG_IMM8 (code, ARMREG_R1, 0); /* NULL ebp for now */
-	code = mono_arm_emit_load_imm (code, ARMREG_R2, (guint32)(gsize)func);
-	code = emit_call_reg (code, ARMREG_R2);
-	return code;
-}
-
-enum {
-	SAVE_NONE,
-	SAVE_STRUCT,
-	SAVE_ONE,
-	SAVE_TWO,
-	SAVE_ONE_FP,
-	SAVE_TWO_FP
-};
-
-void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = (guchar*)p;
-	int save_mode = SAVE_NONE;
-	MonoMethod *method = cfg->method;
-	MonoType *ret_type = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
-	int rtype = ret_type->type;
-	int save_offset = cfg->param_area;
-	save_offset += 7;
-	save_offset &= ~7;
-	
-	set_code_cursor (cfg, code);
-	/* we need about 16 instructions */
-	code = realloc_code (cfg, 16 * 4);
-
-	switch (rtype) {
-	case MONO_TYPE_VOID:
-		/* special case string .ctor icall */
-		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
-			save_mode = SAVE_ONE;
-		else
-			save_mode = SAVE_NONE;
-		break;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		save_mode = SAVE_TWO;
-		break;
-	case MONO_TYPE_R4:
-		if (IS_HARD_FLOAT)
-			save_mode = SAVE_ONE_FP;
-		else
-			save_mode = SAVE_ONE;
-		break;
-	case MONO_TYPE_R8:
-		if (IS_HARD_FLOAT)
-			save_mode = SAVE_TWO_FP;
-		else
-			save_mode = SAVE_TWO;
-		break;
-	case MONO_TYPE_GENERICINST:
-		if (!mono_type_generic_inst_is_valuetype (ret_type)) {
-			save_mode = SAVE_ONE;
-			break;
-		}
-		/* Fall through */
-	case MONO_TYPE_VALUETYPE:
-		save_mode = SAVE_STRUCT;
-		break;
-	default:
-		save_mode = SAVE_ONE;
-		break;
-	}
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		ARM_STR_IMM (code, ARMREG_R0, cfg->frame_reg, save_offset);
-		ARM_STR_IMM (code, ARMREG_R1, cfg->frame_reg, save_offset + 4);
-		if (enable_arguments) {
-			ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_R1);
-			ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
-		}
-		break;
-	case SAVE_ONE:
-		ARM_STR_IMM (code, ARMREG_R0, cfg->frame_reg, save_offset);
-		if (enable_arguments) {
-			ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
-		}
-		break;
-	case SAVE_ONE_FP:
-		ARM_FSTS (code, ARM_VFP_F0, cfg->frame_reg, save_offset);
-		if (enable_arguments) {
-			ARM_FMRS (code, ARMREG_R1, ARM_VFP_F0);
-		}
-		break;
-	case SAVE_TWO_FP:
-		ARM_FSTD (code, ARM_VFP_D0, cfg->frame_reg, save_offset);
-		if (enable_arguments) {
-			ARM_FMDRR (code, ARMREG_R1, ARMREG_R2, ARM_VFP_D0);
-		}
-		break;
-	case SAVE_STRUCT:
-		if (enable_arguments) {
-			/* FIXME: get the actual address  */
-			ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
-		}
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	code = mono_arm_emit_load_imm (code, ARMREG_R0, (guint32)(gsize)cfg->method);
-	code = mono_arm_emit_load_imm (code, ARMREG_IP, (guint32)(gsize)func);
-	code = emit_call_reg (code, ARMREG_IP);
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		ARM_LDR_IMM (code, ARMREG_R0, cfg->frame_reg, save_offset);
-		ARM_LDR_IMM (code, ARMREG_R1, cfg->frame_reg, save_offset + 4);
-		break;
-	case SAVE_ONE:
-		ARM_LDR_IMM (code, ARMREG_R0, cfg->frame_reg, save_offset);
-		break;
-	case SAVE_ONE_FP:
-		ARM_FLDS (code, ARM_VFP_F0, cfg->frame_reg, save_offset);
-		break;
-	case SAVE_TWO_FP:
-		ARM_FLDD (code, ARM_VFP_D0, cfg->frame_reg, save_offset);
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	return code;
-}
-
-/*
  * The immediate field for cond branches is big enough for all reasonable methods
  */
 #define EMIT_COND_BRANCH_FLAGS(ins,condcode) \
@@ -6280,8 +6136,6 @@ mono_arm_unaligned_stack (MonoMethod *method)
  *   -------------------
  *   	spilled regs
  *   -------------------
- *   	optional 8 bytes for tracing
- *   -------------------
  *   	param area             size is cfg->param_area
  *   ------------------- sp
  */
@@ -6295,12 +6149,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc_size, orig_alloc_size, pos, max_offset, i, rot_amount, part;
 	guint8 *code;
 	CallInfo *cinfo;
-	int tracing = 0;
 	int lmf_offset = 0;
 	int prev_sp_offset, reg_offset;
-
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		tracing = 1;
 
 	sig = mono_method_signature_internal (method);
 	cfg->code_size = 256 + sig->param_count * 64;
@@ -6675,9 +6525,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (method->save_lmf)
 		code = emit_save_lmf (cfg, code, alloc_size - lmf_offset);
 
-	if (tracing)
-		code = (guint8*)mono_arch_instrument_prolog (cfg, (void*)mono_trace_enter_method, code, TRUE);
-
 	if (cfg->arch.seq_point_info_var) {
 		MonoInst *ins = cfg->arch.seq_point_info_var;
 
@@ -6767,18 +6614,12 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
 
 	code = realloc_code (cfg, max_epilog_size);
 
 	/* Save the uwind state which is needed by the out-of-line code */
 	mono_emit_unwind_op_remember_state (cfg, code);
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = (guint8*)mono_arch_instrument_epilog (cfg, (void*)mono_trace_leave_method, code, TRUE);
-	}
 	pos = 0;
 
 	/* Load returned vtypes into registers if needed */

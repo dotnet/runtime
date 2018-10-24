@@ -27,7 +27,6 @@
 
 #include "mini-mips.h"
 #include "cpu-mips.h"
-#include "trace.h"
 #include "ir-emit.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
@@ -1355,8 +1354,6 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		cfg->arch.omit_fp = FALSE;
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		cfg->arch.omit_fp = FALSE;
-	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)))
-		cfg->arch.omit_fp = FALSE;
 	/*
 	 * On MIPS, fp points to the bottom of the frame, so it can be eliminated even if
 	 * there are stack arguments.
@@ -1406,10 +1403,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	/* spill down, we'll fix it in a separate pass */
 	// cfg->flags |= MONO_CFG_HAS_SPILLUP;
 
-	/* allow room for the vararg method args: void* and long/double */
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
-		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
-
 	/* this is bug #60332: remove when #59509 is fixed, so no weird vararg 
 	 * call convs needs to be handled this way.
 	 */
@@ -1457,10 +1450,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 	/* Space for outgoing parameters, including a0-a3 */
 	offset += cfg->param_area;
-
-	/* allow room to save the return value (if it's a struct) */
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method))
-		offset += 8;
 
 	/* Now handle the local variables */
 
@@ -4563,63 +4552,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, 
 	}
 }
 
-/*
- * Allow tracing to work with this interface (with an optional argument)
- *
- * This code is expected to be inserted just after the 'real' prolog code,
- * and before the first basic block.  We need to allocate a 2nd, temporary
- * stack frame so that we can preserve f12-f15 as well as a0-a3.
- */
-
-void*
-mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = p;
-	int offset = cfg->arch.tracing_offset;
-
-	mips_nop (code);
-	mips_nop (code);
-	mips_nop (code);
-
-	MIPS_SW (code, mips_a0, mips_sp, offset + 0*SIZEOF_REGISTER);
-	MIPS_SW (code, mips_a1, mips_sp, offset + 1*SIZEOF_REGISTER);
-	MIPS_SW (code, mips_a2, mips_sp, offset + 2*SIZEOF_REGISTER);
-	MIPS_SW (code, mips_a3, mips_sp, offset + 3*SIZEOF_REGISTER);
-#if _MIPS_SIM == _ABIN32
-	NOT_IMPLEMENTED;
-	/* FIXME: Need a separate region for these */
-	MIPS_SW (code, mips_a4, mips_sp, offset + 4*SIZEOF_REGISTER);
-	MIPS_SW (code, mips_a5, mips_sp, offset + 5*SIZEOF_REGISTER);
-	MIPS_SW (code, mips_a6, mips_sp, offset + 6*SIZEOF_REGISTER);
-	MIPS_SW (code, mips_a7, mips_sp, offset + 7*SIZEOF_REGISTER);
-	*/
-#endif
-
-	mips_load_const (code, mips_a0, cfg->method);
-	mips_addiu (code, mips_a1, mips_sp, offset);
-	mips_call (code, mips_t9, func);
-	mips_nop (code);
-
-	MIPS_LW (code, mips_a0, mips_sp, offset + 0*SIZEOF_REGISTER);
-	MIPS_LW (code, mips_a1, mips_sp, offset + 1*SIZEOF_REGISTER);
-	MIPS_LW (code, mips_a2, mips_sp, offset + 2*SIZEOF_REGISTER);
-	MIPS_LW (code, mips_a3, mips_sp, offset + 3*SIZEOF_REGISTER);
-#if _MIPS_SIM == _ABIN32
-	NOT_IMPLEMENTED;
-	/*
-	MIPS_LW (code, mips_a4, mips_sp, offset + 4*SIZEOF_REGISTER);
-	MIPS_LW (code, mips_a5, mips_sp, offset + 5*SIZEOF_REGISTER);
-	MIPS_LW (code, mips_a6, mips_sp, offset + 6*SIZEOF_REGISTER);
-	MIPS_LW (code, mips_a7, mips_sp, offset + 7*SIZEOF_REGISTER);
-	*/
-#endif
-
-	mips_nop (code);
-	mips_nop (code);
-	mips_nop (code);
-	return code;
-}
-
 void
 mips_adjust_stackframe(MonoCompile *cfg)
 {
@@ -4782,7 +4714,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int alloc2_size = 0;
 	guint8 *code;
 	CallInfo *cinfo;
-	int tracing = 0;
 	guint32 iregs_to_save = 0;
 #if SAVE_FP_REGS
 	guint32 fregs_to_save = 0;
@@ -4791,12 +4722,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint32 lmf_offset = cfg->arch.lmf_offset;
 	int cfa_offset = 0;
 	MonoBasicBlock *bb;
-
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		tracing = 1;
-
-	if (tracing)
-		cfg->flags |= MONO_CFG_HAS_CALLS;
 	
 	sig = mono_method_signature_internal (method);
 	cfg->code_size = 768 + sig->param_count * 20;
@@ -5138,126 +5063,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 	}
 
-	if (tracing) {
-#if _MIPS_SIM == _ABIO32
-		cfg->arch.tracing_offset = cfg->stack_offset;
-#elif _MIPS_SIM == _ABIN32
-		/* no stack slots by default for argument regs, reserve a special block */
-		g_assert_not_reached ();
-#endif
-		code = (guint8*)mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
-	}
-
 	set_code_cursor (cfg, code);
 
-	return code;
-}
-
-enum {
-	SAVE_NONE,
-	SAVE_STRUCT,
-	SAVE_ONE,
-	SAVE_TWO,
-	SAVE_FP
-};
-
-void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = p;
-	int save_mode = SAVE_NONE;
-	MonoMethod *method = cfg->method;
-	int rtype = mini_get_underlying_type (mono_method_signature_internal (method)->ret)->type;
-	int save_offset = MIPS_STACK_PARAM_OFFSET;
-
-	g_assert ((save_offset & (MIPS_STACK_ALIGNMENT-1)) == 0);
-	
-	set_code_cursor (cfg, code);
-	/* we need about 16 instructions */
-	code = realloc_code (cfg, 16 * 4);
-	mips_nop (code);
-	mips_nop (code);
-	switch (rtype) {
-	case MONO_TYPE_VOID:
-		/* special case string .ctor icall */
-		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
-			save_mode = SAVE_ONE;
-		else
-			save_mode = SAVE_NONE;
-		break;
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		save_mode = SAVE_FP;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		save_mode = SAVE_STRUCT;
-		break;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-#if SIZEOF_REGISTER == 4
-		save_mode = SAVE_TWO;
-#elif SIZEOF_REGISTER == 8
-		save_mode = SAVE_ONE;
-#endif
-		break;
-	default:
-		save_mode = SAVE_ONE;
-		break;
-	}
-
-	mips_addiu (code, mips_sp, mips_sp, -32);
-	g_assert (mips_is_imm16(save_offset));
-	switch (save_mode) {
-	case SAVE_TWO:
-		mips_sw (code, mips_v0, mips_sp, save_offset);
-		g_assert (mips_is_imm16(save_offset + SIZEOF_REGISTER));
-		mips_sw (code, mips_v1, mips_sp, save_offset + SIZEOF_REGISTER);
-		if (enable_arguments) {
-			MIPS_MOVE (code, mips_a1, mips_v0);
-			MIPS_MOVE (code, mips_a2, mips_v1);
-		}
-		break;
-	case SAVE_ONE:
-		MIPS_SW (code, mips_v0, mips_sp, save_offset);
-		if (enable_arguments) {
-			MIPS_MOVE (code, mips_a1, mips_v0);
-		}
-		break;
-	case SAVE_FP:
-		mips_sdc1 (code, mips_f0, mips_sp, save_offset);
-		mips_ldc1 (code, mips_f12, mips_sp, save_offset);
-		mips_lw (code, mips_a0, mips_sp, save_offset);
-		g_assert (mips_is_imm16(save_offset + SIZEOF_REGISTER));
-		mips_lw (code, mips_a1, mips_sp, save_offset + SIZEOF_REGISTER);
-		break;
-	case SAVE_STRUCT:
-	case SAVE_NONE:
-	default:
-		break;
-	}
-	mips_load_const (code, mips_a0, cfg->method);
-	mips_call (code, mips_t9, func);
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		mips_lw (code, mips_v0, mips_sp, save_offset);
-		g_assert (mips_is_imm16(save_offset + SIZEOF_REGISTER));
-		mips_lw (code, mips_v1, mips_sp, save_offset + SIZEOF_REGISTER);
-		break;
-	case SAVE_ONE:
-		MIPS_LW (code, mips_v0, mips_sp, save_offset);
-		break;
-	case SAVE_FP:
-		mips_ldc1 (code, mips_f0, mips_sp, save_offset);
-		break;
-	case SAVE_STRUCT:
-	case SAVE_NONE:
-	default:
-		break;
-	}
-	mips_addiu (code, mips_sp, mips_sp, 32);
-	mips_nop (code);
-	mips_nop (code);
 	return code;
 }
 
@@ -5276,17 +5083,11 @@ mono_arch_emit_epilog_sub (MonoCompile *cfg)
 
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
-	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
 
 	realloc_code (cfg, max_epilog_size);
 
 	code = cfg->native_code + cfg->code_len;
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = (guint8*)mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
-	}
 	if (cfg->frame_reg != mips_sp) {
 		MIPS_MOVE (code, mips_sp, cfg->frame_reg);
 	}
