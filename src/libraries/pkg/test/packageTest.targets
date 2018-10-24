@@ -88,18 +88,18 @@
   </Target>
 
   <PropertyGroup>
-    <TestDependsOn>
+    <_testDependsOn>
       LogBeginTest;
       VerifyReferenceClosure;
       VerifyReferenceTypes;
       VerifyRuntimeClosure;
       VerifyRuntimeTypes;
-    </TestDependsOn>
+    </_testDependsOn>
   </PropertyGroup>
   
   <!-- inner target to be called by outer Test Target -->
   <Target Name="_test"
-          DependsOnTargets="$(TestDependsOn)">
+          DependsOnTargets="$(_testDependsOn)">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <Touch AlwaysCreate="true" Files="$(IntermediateOutputPath)\$(RuntimeIdentifier).testComplete" />
   </Target>
