@@ -5274,7 +5274,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
             assert(hwIntrinsicNode != nullptr);
-            if (hwIntrinsicNode->OperIsMemoryStore() || hwIntrinsicNode->OperIsMemoryLoad())
+            if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
             {
                 // This operation contains an implicit indirection
                 //   it could throw a null reference exception.
@@ -17355,29 +17355,47 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad()
     {
         return true;
     }
-    else if (category == HW_Category_IMM)
+    else if (HWIntrinsicInfo::MaybeMemoryLoad(gtHWIntrinsicId))
     {
-        // Some AVX instructions here also have MemoryLoad sematics
-
-        // Do we have less than 3 operands?
-        if (HWIntrinsicInfo::lookupNumArgs(this) < 3)
+        // Some AVX intrinsic (without HW_Category_MemoryLoad) also have MemoryLoad semantics
+        if (category == HW_Category_SIMDScalar)
         {
-            return false;
+            // Avx2.BroadcastScalarToVector128/256 have vector and pointer overloads both, e.g.,
+            // Vector128<byte> BroadcastScalarToVector128(Vector128<byte> value)
+            // Vector128<byte> BroadcastScalarToVector128(byte* source)
+            // So, we need to check the argument's type is memory-reference (TYP_I_IMPL) or not
+            assert(HWIntrinsicInfo::lookupNumArgs(this) == 1);
+            return (gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector128 ||
+                    gtHWIntrinsicId == NI_AVX2_BroadcastScalarToVector256) &&
+                   gtOp.gtOp1->TypeGet() == TYP_I_IMPL;
         }
-        else // We have 3 or more operands/args
+        else if (category == HW_Category_IMM)
         {
-            if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
+            // Do we have less than 3 operands?
+            if (HWIntrinsicInfo::lookupNumArgs(this) < 3)
             {
-                return true;
+                return false;
             }
-
-            GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
-
-            if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
-                (argList->Rest()->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the second arg TYP_I_IMPL?
+            else // We have 3 or more operands/args
             {
-                // This is Avx/Avx2.InsertVector128
-                return true;
+                // All the Avx2.Gather* are "load" instructions
+                if (HWIntrinsicInfo::isAVX2GatherIntrinsic(gtHWIntrinsicId))
+                {
+                    return true;
+                }
+
+                GenTreeArgList* argList = gtOp.gtOp1->AsArgList();
+
+                // Avx/Avx2.InsertVector128 have vector and pointer overloads both, e.g.,
+                // Vector256<sbyte> InsertVector128(Vector256<sbyte> value, Vector128<sbyte> data, byte index)
+                // Vector256<sbyte> InsertVector128(Vector256<sbyte> value, sbyte* address, byte index)
+                // So, we need to check the second argument's type is memory-reference (TYP_I_IMPL) or not
+                if ((gtHWIntrinsicId == NI_AVX_InsertVector128 || gtHWIntrinsicId == NI_AVX2_InsertVector128) &&
+                    (argList->Rest()->Current()->TypeGet() == TYP_I_IMPL)) // Is the type of the second arg TYP_I_IMPL?
+                {
+                    // This is Avx/Avx2.InsertVector128
+                    return true;
+                }
             }
         }
     }
@@ -17395,22 +17413,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
     {
         return true;
     }
-    else if (category == HW_Category_IMM)
+    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) && category == HW_Category_IMM)
     {
-        // Some AVX instructions here also have MemoryStore sematics
+        // Some AVX intrinsic (without HW_Category_MemoryStore) also have MemoryStore semantics
 
-        // Do we have 3 operands?
-        if (HWIntrinsicInfo::lookupNumArgs(this) != 3)
+        // Avx/Avx2.InsertVector128 have vector and pointer overloads both, e.g.,
+        // Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index)
+        // void ExtractVector128(sbyte* address, Vector256<sbyte> value, byte index)
+        // So, the 3-argument form is MemoryStore
+        if ((HWIntrinsicInfo::lookupNumArgs(this) == 3) &&
+            (gtHWIntrinsicId == NI_AVX_ExtractVector128 || gtHWIntrinsicId == NI_AVX2_ExtractVector128))
         {
-            return false;
-        }
-        else // We have 3 operands/args
-        {
-            if ((gtHWIntrinsicId == NI_AVX_ExtractVector128 || gtHWIntrinsicId == NI_AVX2_ExtractVector128))
-            {
-                // This is Avx/Avx2.ExtractVector128
-                return true;
-            }
+            return true;
         }
     }
 #endif // _TARGET_XARCH_
