@@ -625,7 +625,6 @@
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
-    <Reference Include="System.Security.Cryptography.OpenSsl" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Security.Principal.Windows" />
@@ -645,6 +644,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Encoding" />
+    <Reference Include="System.Security.Cryptography.OpenSsl" />
     <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
 </Project>
