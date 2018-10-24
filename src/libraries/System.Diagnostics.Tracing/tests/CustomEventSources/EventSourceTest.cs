@@ -19,7 +19,10 @@ namespace SdtEventSources
     /// <summary>
     /// A sample Event source. The Guid and Name attributes are "idempotent", i.e. they 
     /// don't change the default computed by EventSource; they're specified here just to 
-    /// increase the code coverage.
+    /// increase the code coverage. 
+    /// 
+    /// Also, this EventSource uses manifest-based ETW and is not self-describing. That means
+    /// it does not support complex data types, including nullables, as event arguments.
     /// </summary>
     [EventSource(Guid = "69e2aa3e-083b-5014-cad4-3e511a0b94cf", Name = "EventSourceTest")]
     public sealed class EventSourceTest : EventSource
