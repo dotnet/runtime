@@ -4,7 +4,7 @@ usage()
 {
     echo "Usage: $0 [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
-    echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial, zesty, alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
+    echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial, zesty, bionic, alpine. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, lldb3.9, lldb4.0, no-lldb. Ignored for alpine"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
     exit 1
@@ -116,6 +116,11 @@ for i in "$@" ; do
         zesty)
             if [ "$__LinuxCodeName" != "jessie" ]; then
                 __LinuxCodeName=zesty
+            fi
+            ;;
+        bionic)
+            if [ "$__LinuxCodeName" != "jessie" ]; then
+                __LinuxCodeName=bionic
             fi
             ;;
         jessie)
