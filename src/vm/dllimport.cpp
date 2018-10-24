@@ -2789,7 +2789,6 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
             MDA_BestFitMapping,
             MDA_ThrowOnUnmappableChar,
             MDA_SetLastError,
-            MDA_PreserveSig,
             MDA_Last,
         };
 
@@ -2798,7 +2797,6 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
         namedArgs[MDA_BestFitMapping].InitBoolField("BestFitMapping", (ULONG)GetBestFitMapping());
         namedArgs[MDA_ThrowOnUnmappableChar].InitBoolField("ThrowOnUnmappableChar", (ULONG)GetThrowOnUnmappableChar());
         namedArgs[MDA_SetLastError].InitBoolField("SetLastError", 0);
-        namedArgs[MDA_PreserveSig].InitBoolField("PreserveSig", 0);
 
         IfFailGo(ParseKnownCaNamedArgs(ca, namedArgs, lengthof(namedArgs)));
 
@@ -2824,8 +2822,6 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(MethodDesc* pMD, ThrowOnError throwOn
         SetThrowOnUnmappableChar (namedArgs[MDA_ThrowOnUnmappableChar].val.u1);
         if (namedArgs[MDA_SetLastError].val.u1) 
             SetLinkFlags ((CorNativeLinkFlags)(nlfLastError | GetLinkFlags()));
-        if (namedArgs[MDA_PreserveSig].val.u1)
-            SetLinkFlags ((CorNativeLinkFlags)(nlfNoMangle | GetLinkFlags()));
     }
 
             
