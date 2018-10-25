@@ -7839,7 +7839,7 @@ EXTERN_C const IID IID_ICorDebugProcess10;
     {
     public:
         virtual HRESULT STDMETHODCALLTYPE GetContainingObject( 
-            /* [in] */ CORDB_ADDRESS interiorPointer,
+            /* [in] */ ICorDebugValue *pValue,
             /* [out] */ ICorDebugObjectValue **ppContainingObject) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE EnableGCNotificationEvents( 
@@ -7868,7 +7868,7 @@ EXTERN_C const IID IID_ICorDebugProcess10;
         
         HRESULT ( STDMETHODCALLTYPE *GetContainingObject )( 
             ICorDebugProcess10 * This,
-            /* [in] */ CORDB_ADDRESS interiorPointer,
+            /* [in] */ ICorDebugValue *pValue,
             /* [out] */ ICorDebugObjectValue **ppContainingObject);
         
         HRESULT ( STDMETHODCALLTYPE *EnableGCNotificationEvents )( 
@@ -7898,8 +7898,8 @@ EXTERN_C const IID IID_ICorDebugProcess10;
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorDebugProcess10_GetContainingObject(This,interiorPointer,ppContainingObject)	\
-    ( (This)->lpVtbl -> GetContainingObject(This,interiorPointer,ppContainingObject) ) 
+#define ICorDebugProcess10_GetContainingObject(This,pValue,ppContainingObject)	\
+    ( (This)->lpVtbl -> GetContainingObject(This,pValue,ppContainingObject) ) 
 
 #define ICorDebugProcess10_EnableGCNotificationEvents(This,fEnable)	\
     ( (This)->lpVtbl -> EnableGCNotificationEvents(This,fEnable) ) 
