@@ -2644,7 +2644,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                         {
                             if (!ProcessTerminalState(dps, ref str, ref result, ref styles, ref raw, dtfi))
                             {
-                                TPTraceExit("0060 (ProcessTerminaltState)", dps);
+                                TPTraceExit("0060 (ProcessTerminalState)", dps);
                                 return false;
                             }
                         }
@@ -2695,9 +2695,15 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 TPTraceExit("0100 (result.calendar.TryToDateTime)", dps);
                 return false;
             }
+
             if (raw.fraction > 0)
             {
-                time = time.AddTicks((long)Math.Round(raw.fraction * Calendar.TicksPerSecond));
+                if (!time.TryAddTicks((long)Math.Round(raw.fraction * Calendar.TicksPerSecond), out time))
+                {
+                    result.SetBadDateTimeFailure();
+                    TPTraceExit("0100 (time.TryAddTicks)", dps);
+                    return false;
+                }
             }
 
             //
@@ -3059,7 +3065,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 return false;
             }
 
-            time = time.AddTicks((long)Math.Round(partSecond * Calendar.TicksPerSecond));
+            if (!time.TryAddTicks((long)Math.Round(partSecond * Calendar.TicksPerSecond), out time))
+            {
+                result.SetBadDateTimeFailure();
+                return false;
+            }
+
             result.parsedDate = time;
             if (!DetermineTimeZoneAdjustments(ref result, styles, false))
             {
@@ -4638,7 +4649,11 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             }
             if (result.fraction > 0)
             {
-                result.parsedDate = result.parsedDate.AddTicks((long)Math.Round(result.fraction * Calendar.TicksPerSecond));
+                if (!result.parsedDate.TryAddTicks((long)Math.Round(result.fraction * Calendar.TicksPerSecond), out result.parsedDate))
+                {
+                    result.SetBadDateTimeFailure();
+                    return false;
+                }
             }
 
             //
@@ -4983,7 +4998,12 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 result.SetBadDateTimeFailure();
                 return false;
             }
-            result.parsedDate = dateTime.AddTicks((long)Math.Round(fraction * Calendar.TicksPerSecond));
+
+            if (!dateTime.TryAddTicks((long)Math.Round(fraction * Calendar.TicksPerSecond), out result.parsedDate))
+            {
+                result.SetBadDateTimeFailure();
+                return false;
+            }
 
             if ((uint)source.Length > 27)
             {

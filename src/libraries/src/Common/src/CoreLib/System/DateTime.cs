@@ -17,19 +17,19 @@ using Calendar = System.Globalization.Calendar;
 
 namespace System
 {
-    // This value type represents a date and time.  Every DateTime 
-    // object has a private field (Ticks) of type Int64 that stores the 
-    // date and time as the number of 100 nanosecond intervals since 
+    // This value type represents a date and time.  Every DateTime
+    // object has a private field (Ticks) of type Int64 that stores the
+    // date and time as the number of 100 nanosecond intervals since
     // 12:00 AM January 1, year 1 A.D. in the proleptic Gregorian Calendar.
     //
     // Starting from V2.0, DateTime also stored some context about its time
     // zone in the form of a 3-state value representing Unspecified, Utc or
     // Local. This is stored in the two top bits of the 64-bit numeric value
-    // with the remainder of the bits storing the tick count. This information 
-    // is only used during time zone conversions and is not part of the 
+    // with the remainder of the bits storing the tick count. This information
+    // is only used during time zone conversions and is not part of the
     // identity of the DateTime. Thus, operations like Compare and Equals
     // ignore this state. This is to stay compatible with earlier behavior
-    // and performance characteristics and to avoid forcing  people into dealing 
+    // and performance characteristics and to avoid forcing  people into dealing
     // with the effects of daylight savings. Note, that this has little effect
     // on how the DateTime works except in a context where its specific time
     // zone is needed, such as during conversions and some parsing and formatting
@@ -37,22 +37,19 @@ namespace System
     //
     // There is also 4th state stored that is a special type of Local value that
     // is used to avoid data loss when round-tripping between local and UTC time.
-    // See below for more information on this 4th state, although it is 
+    // See below for more information on this 4th state, although it is
     // effectively hidden from most users, who just see the 3-state DateTimeKind
     // enumeration.
     //
     // For compatibility, DateTime does not serialize the Kind data when used in
     // binary serialization.
-    // 
+    //
     // For a description of various calendar issues, look at
-    // 
-    // Calendar Studies web site, at 
-    // http://serendipity.nofadz.com/hermetic/cal_stud.htm.
-    // 
-    // 
+    //
+    //
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct DateTime : IComparable, IFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable, ISpanFormattable
     {
         // Number of 100ns ticks per time unit
@@ -487,6 +484,19 @@ namespace System
             return new DateTime((ulong)(ticks + value) | InternalKind);
         }
 
+        // TryAddTicks is exact as AddTicks except it doesn't throw
+        internal bool TryAddTicks(long value, out DateTime result)
+        {
+            long ticks = InternalTicks;
+            if (value > MaxTicks - ticks || value < MinTicks - ticks)
+            {
+                result = default(DateTime);
+                return false;
+            }
+            result = new DateTime((ulong)(ticks + value) | InternalKind);
+            return true;
+        }
+
         // Returns the DateTime resulting from adding the given number of
         // years to this DateTime. The result is computed by incrementing
         // (or decrementing) the year part of this DateTime by value
@@ -637,9 +647,9 @@ namespace System
         {
             if ((dateData & (unchecked((long)LocalMask))) != 0)
             {
-                // Local times need to be adjusted as you move from one time zone to another, 
+                // Local times need to be adjusted as you move from one time zone to another,
                 // just as they are when serializing in text. As such the format for local times
-                // changes to store the ticks of the UTC time, but with flags that look like a 
+                // changes to store the ticks of the UTC time, but with flags that look like a
                 // local date.
                 long ticks = dateData & (unchecked((long)TicksMask));
                 // Negative ticks are stored in the top part of the range and should be converted back into a negative number
@@ -648,7 +658,7 @@ namespace System
                     ticks = ticks - TicksCeiling;
                 }
                 // Convert the ticks back to local. If the UTC ticks are out of range, we need to default to
-                // the UTC offset from MinValue and MaxValue to be consistent with Parse. 
+                // the UTC offset from MinValue and MaxValue to be consistent with Parse.
                 bool isAmbiguousLocalDst = false;
                 long offsetTicks;
                 if (ticks < MinTicks)
@@ -661,7 +671,7 @@ namespace System
                 }
                 else
                 {
-                    // Because the ticks conversion between UTC and local is lossy, we need to capture whether the 
+                    // Because the ticks conversion between UTC and local is lossy, we need to capture whether the
                     // time is in a repeated hour so that it can be passed to the DateTime constructor.
                     DateTime utcDt = new DateTime(ticks, DateTimeKind.Utc);
                     bool isDaylightSavings = false;
@@ -754,9 +764,9 @@ namespace System
         {
             if (Kind == DateTimeKind.Local)
             {
-                // Local times need to be adjusted as you move from one time zone to another, 
+                // Local times need to be adjusted as you move from one time zone to another,
                 // just as they are when serializing in text. As such the format for local times
-                // changes to store the ticks of the UTC time, but with flags that look like a 
+                // changes to store the ticks of the UTC time, but with flags that look like a
                 // local date.
 
                 // To match serialization in text we need to be able to handle cases where
@@ -1088,7 +1098,7 @@ namespace System
         // Constructs a DateTime from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTime Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -1098,7 +1108,7 @@ namespace System
         // Constructs a DateTime from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTime Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -1121,7 +1131,7 @@ namespace System
         // Constructs a DateTime from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTime ParseExact(string s, string format, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -1132,7 +1142,7 @@ namespace System
         // Constructs a DateTime from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTime ParseExact(string s, string format, IFormatProvider provider, DateTimeStyles style)
         {
             DateTimeFormatInfo.ValidateStyles(style, nameof(style));
@@ -1185,7 +1195,7 @@ namespace System
                 value += DoubleDateOffset; // We could have moved this fix down but we would like to keep the bounds check.
             if (value < OADateMinAsTicks)
                 throw new OverflowException(SR.Arg_OleAutDateInvalid);
-            // Currently, our max date == OA's max date (12/31/9999), so we don't 
+            // Currently, our max date == OA's max date (12/31/9999), so we don't
             // need an overflow check in that direction.
             long millis = (value - DoubleDateOffset) / TicksPerMillisecond;
             if (millis < 0)
@@ -1431,16 +1441,16 @@ namespace System
         }
 
 
-        // Returns a string array containing all of the known date and time options for the 
-        // current culture.  The strings returned are properly formatted date and 
+        // Returns a string array containing all of the known date and time options for the
+        // current culture.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
         public string[] GetDateTimeFormats()
         {
             return (GetDateTimeFormats(CultureInfo.CurrentCulture));
         }
 
-        // Returns a string array containing all of the known date and time options for the 
-        // using the information provided by IFormatProvider.  The strings returned are properly formatted date and 
+        // Returns a string array containing all of the known date and time options for the
+        // using the information provided by IFormatProvider.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
         public string[] GetDateTimeFormats(IFormatProvider provider)
         {
@@ -1448,16 +1458,16 @@ namespace System
         }
 
 
-        // Returns a string array containing all of the date and time options for the 
-        // given format format and current culture.  The strings returned are properly formatted date and 
+        // Returns a string array containing all of the date and time options for the
+        // given format format and current culture.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
         public string[] GetDateTimeFormats(char format)
         {
             return (GetDateTimeFormats(format, CultureInfo.CurrentCulture));
         }
 
-        // Returns a string array containing all of the date and time options for the 
-        // given format format and given culture.  The strings returned are properly formatted date and 
+        // Returns a string array containing all of the date and time options for the
+        // given format format and given culture.  The strings returned are properly formatted date and
         // time strings for the current instance of DateTime.
         public string[] GetDateTimeFormats(char format, IFormatProvider provider)
         {
@@ -1466,7 +1476,7 @@ namespace System
 
         //
         // IConvertible implementation
-        // 
+        //
 
         public TypeCode GetTypeCode()
         {
