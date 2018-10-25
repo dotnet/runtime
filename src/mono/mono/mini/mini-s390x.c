@@ -1672,7 +1672,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
-			size = mono_class_native_size (mono_class_from_mono_type(inst->inst_vtype), 
+			size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), 
 						       (guint32 *) &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -5575,7 +5575,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 
 				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE  
-					? mono_class_native_size(mono_class_from_mono_type(inst->inst_vtype), NULL)
+					? mono_class_native_size(mono_class_from_mono_type_internal (inst->inst_vtype), NULL)
 					: ainfo->size);
 
 				switch (size) {
