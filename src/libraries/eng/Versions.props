@@ -14,7 +14,7 @@
     <!-- Always use shipping version insted of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
   </PropertyGroup>
-  
+
   <!-- Package names if they are used in more then one location in the repo -->
   <PropertyGroup>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
@@ -28,12 +28,12 @@
     see issue https://github.com/dotnet/arcade/issues/1114
   -->
   <PropertyGroup>
-    <MicrosoftDotNetApiCompatVersion>1.0.0-beta.18522.6</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>1.0.0-beta.18522.6</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenApiVersion>1.0.0-beta.18522.6</MicrosoftDotNetGenApiVersion>
-    <MicrosoftDotNetGenFacadesVersion>1.0.0-beta.18522.6</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18522.6</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.18522.6</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetApiCompatVersion>1.0.0-beta.18524.7</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>1.0.0-beta.18524.7</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenApiVersion>1.0.0-beta.18524.7</MicrosoftDotNetGenApiVersion>
+    <MicrosoftDotNetGenFacadesVersion>1.0.0-beta.18524.7</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18524.7</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.18524.7</MicrosoftDotNetBuildTasksPackagingVersion>
   </PropertyGroup>
 
   <PropertyGroup>

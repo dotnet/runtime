@@ -20,6 +20,11 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
+  <PropertyGroup>
+    <!-- PackageOutputPath gets unconditionally in arcade sdk targets we need to reset it here until we reconcile the paths -->
+    <PackageOutputPath>$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
+  </PropertyGroup>
+
   <Import Project="eng\versioning.targets" />
 
   <Target Name="CheckForBuildTools">

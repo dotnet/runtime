@@ -5,6 +5,8 @@
   </ItemGroup>
 
   <Target Name="ValidateSignFileListIsNotEmpty" BeforeTargets="Sign">
-    <Error Condition="'@(ItemsToSign)' == ''" Text="List of files to sign is empty" />
+    <!-- we don't sign any files during our netfx build because we don't have any packages we produce there -->
+    <Error Condition="'@(ItemsToSign)' == '' and '$(TargetGroup)' != 'netfx'" Text="List of files to sign is empty. Ensure '$(RepoRoot)bin\packages\$(Configuration)' contains nupkg files to sign." />
+    <Message Importance="High" Text="Attempting to sign %(ItemsToSign.Identity)" />
   </Target>
 </Project>
