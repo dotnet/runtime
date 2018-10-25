@@ -7744,7 +7744,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    nrgctx-trampolines=\n");
 			printf ("    nrgctx-fetch-trampolines=\n");
 			printf ("    ngsharedvt-trampolines=\n");
-			printf ("    nftnptr-arg-trampolines=\n");-
+			printf ("    nftnptr-arg-trampolines=\n");
 			printf ("    nunbox-arbitrary-trampolines=\n");
 			printf ("    ntrampolines=\n");
 			printf ("    outfile=\n");
