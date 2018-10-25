@@ -209,10 +209,6 @@ mono_rand_open (void)
 		return TRUE;
 	}
 
-#ifdef MONO_DEV_RANDOM
-	file = open (MONO_DEV_RANDOM, O_RDONLY);
-	printf ("B: %d\n", file);
-#endif
 #ifdef NAME_DEV_URANDOM
 	if (file < 0)
 		file = open (NAME_DEV_URANDOM, O_RDONLY);
