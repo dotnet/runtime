@@ -129,6 +129,7 @@ sosCommandInitialize(lldb::SBDebugger debugger)
     interpreter.AddCommand("clru", new sosCommand("u"), "Displays an annotated disassembly of a managed method.");
     interpreter.AddCommand("dumpasync", new sosCommand("DumpAsync"), "Displays info about async state machines on the garbage-collected heap.");
     interpreter.AddCommand("dumpclass", new sosCommand("DumpClass"), "Displays information about a EE class structure at the specified address.");
+    interpreter.AddCommand("dumpdelegate", new sosCommand("DumpDelegate"), "Displays information about a delegate.");
     interpreter.AddCommand("dumpheap", new sosCommand("DumpHeap"), "Displays info about the garbage-collected heap and collection statistics about objects.");
     interpreter.AddCommand("dumpil", new sosCommand("DumpIL"), "Displays the Microsoft intermediate language (MSIL) that is associated with a managed method.");
     interpreter.AddCommand("dumplog", new sosCommand("DumpLog"), "Writes the contents of an in-memory stress log to the specified file.");
