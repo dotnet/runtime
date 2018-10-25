@@ -549,9 +549,9 @@ namespace System.Reflection.Emit
             CreateCustomAttribute(mod, tkOwner, mod.GetConstructorToken(m_con).Token, false);
         }
 
-        //*************************************************
-        // Call this function with toDisk=1, after on disk module has been snapped.
-        //*************************************************
+        /// <summary>
+        /// Call this function with toDisk=1, after on disk module has been snapped.
+        /// </summary>
         internal void CreateCustomAttribute(ModuleBuilder mod, int tkOwner, int tkAttrib, bool toDisk)
         {
             TypeBuilder.DefineCustomAttribute(mod, tkOwner, tkAttrib, m_blob, toDisk,
