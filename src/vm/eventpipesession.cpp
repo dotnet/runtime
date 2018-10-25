@@ -13,7 +13,8 @@ EventPipeSession::EventPipeSession(
     EventPipeSessionType sessionType,
     unsigned int circularBufferSizeInMB,
     EventPipeProviderConfiguration *pProviders,
-    unsigned int numProviders)
+    unsigned int numProviders,
+    UINT64 multiFileTraceLengthInSeconds)
 {
     CONTRACTL
     {
@@ -29,6 +30,7 @@ EventPipeSession::EventPipeSession(
     m_pProviderList = new EventPipeSessionProviderList(
         pProviders,
         numProviders);
+    m_multiFileTraceLengthInSeconds = multiFileTraceLengthInSeconds;
     GetSystemTimeAsFileTime(&m_sessionStartTime);
     QueryPerformanceCounter(&m_sessionStartTimeStamp);
 }

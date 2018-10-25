@@ -54,7 +54,7 @@ public:
     EventPipeProvider* GetProvider(const SString &providerID);
 
     // Create a new session.
-    EventPipeSession* CreateSession(EventPipeSessionType sessionType, unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders);
+    EventPipeSession* CreateSession(EventPipeSessionType sessionType, unsigned int circularBufferSizeInMB, EventPipeProviderConfiguration *pProviders, unsigned int numProviders, UINT64 multiFileTraceLengthInSeconds = 0);
 
     // Delete a session.
     void DeleteSession(EventPipeSession *pSession);
