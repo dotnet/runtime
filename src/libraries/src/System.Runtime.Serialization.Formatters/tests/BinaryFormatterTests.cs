@@ -49,7 +49,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             object clone = BinaryFormatterHelpers.Clone(obj, null, assemblyFormat, filterLevel, typeFormat);
             // string.Empty and DBNull are both singletons
-            if (!ReferenceEquals(obj, string.Empty) && !(obj is DBNull)) 
+            if (!ReferenceEquals(obj, string.Empty) && !(obj is DBNull))
             {
                 Assert.NotSame(obj, clone);
             }
@@ -75,7 +75,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(SerializableObjects_MemberData))]
-        public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs) 
+        public void ValidateAgainstBlobs(object obj, TypeSerializableValue[] blobs)
             => ValidateAndRoundtrip(obj, blobs, false);
 
         [Theory]
@@ -639,6 +639,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
             base64Blob = Encoding.UTF8.GetString(data);
 
             return Regex.Replace(base64Blob, @"Version=\d.\d.\d.\d.", "Version=0.0.0.0", RegexOptions.Multiline)
+                // Ignore the old Test key and Open public keys.
+                .Replace("PublicKeyToken=cc7b13ffcd2ddd51", "PublicKeyToken=null")
+                .Replace("PublicKeyToken=9d77cc7ad39b68eb", "PublicKeyToken=null")
                 .Replace("\r\n", string.Empty)
                 .Replace("\n", string.Empty)
                 .Replace("\r", string.Empty)

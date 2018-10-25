@@ -13,7 +13,7 @@
   <PropertyGroup>
     <StrongNameKeyId Condition="'$(AssemblyKey)' == 'MSFT'">Microsoft</StrongNameKeyId>
     <StrongNameKeyId Condition="'$(AssemblyKey)' == 'ECMA'">ECMA</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'Open'">Open</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'Open' or '$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
     <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightPlatform'">SilverlightPlatform</StrongNameKeyId>
     <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightExtension'">MicrosoftShared</StrongNameKeyId>
   </PropertyGroup>

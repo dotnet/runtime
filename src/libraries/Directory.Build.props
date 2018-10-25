@@ -35,6 +35,7 @@
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
+  <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
   <PropertyGroup>
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">dummy</ProjectAssetsFile>
   </PropertyGroup>
@@ -238,7 +239,17 @@
     <ImportNetSdkFromRepoToolset>false</ImportNetSdkFromRepoToolset>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <_IsTestProjectBefore>$(IsTestProject)</_IsTestProjectBefore>
+    <IsPerformanceTestProject Condition="'$(IsPerformanceTestProject)' == '' AND '$(IsTestProject)' == 'true' AND $(MSBuildProjectName.EndsWith('Performance.Tests'))">true</IsPerformanceTestProject>
+  </PropertyGroup>
+
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+    <!-- Need to reset our definition of IsTestProject after arcade sdk import -->
+  <PropertyGroup>
+    <IsTestProject>$(_IsTestProjectBefore)</IsTestProject>
+  </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable and turn on SourceLink (fetching source from GitHub) -->
   <PropertyGroup>
@@ -305,6 +316,7 @@
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>false</Deterministic>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <!-- Set up some common paths -->

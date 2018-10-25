@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{396D6EBF-60BD-4DAF-8783-FB403E070A57}</ProjectGuid>
     <!-- Test expects an un-signed assembly -->
-    <SkipSigning>true</SkipSigning>
+    <SignAssembly>false</SignAssembly>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
