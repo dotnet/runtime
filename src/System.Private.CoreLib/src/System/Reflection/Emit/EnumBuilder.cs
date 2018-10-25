@@ -71,11 +71,9 @@ namespace System.Reflection.Emit
             get { return m_typeBuilder.Name; }
         }
 
-        /****************************************************
-         * 
-         * abstract methods defined in the base class
-         * 
-         */
+        /// <summary>
+        /// abstract methods defined in the base class
+        /// </summary>
         public override Guid GUID
         {
             get

@@ -148,12 +148,10 @@ namespace System.Reflection.Emit
     }
 
 
-    /**********************************************
-    *
-    * Internal structure to track the list of ResourceWriter for
-    * AssemblyBuilder & ModuleBuilder.
-    *
-    **********************************************/
+    /// <summary>
+    /// Internal structure to track the list of ResourceWriter for
+    /// AssemblyBuilder & ModuleBuilder.
+    /// </summary>
     internal class ResWriterData
     {
         internal string m_strName;
