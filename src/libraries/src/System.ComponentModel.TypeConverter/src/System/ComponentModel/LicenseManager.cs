@@ -13,7 +13,7 @@ namespace System.ComponentModel
     /// Provides properties and methods to add a license
     /// to a component and to manage a <see cref='System.ComponentModel.LicenseProvider'/>. This class cannot be inherited.
     /// </summary>
-    public sealed class LicenseManager
+    public sealed partial class LicenseManager
     {
         private static readonly object s_selfLock = new object();
 
@@ -356,6 +356,14 @@ namespace System.ComponentModel
             }
 
             return lic;
+        }
+
+        /// <summary>
+        /// Retrieves the typehandle of the interop helper
+        /// </summary>
+        private static IntPtr GetLicenseInteropHelperType()
+        {
+            return typeof(LicenseInteropHelper).TypeHandle.Value;
         }
     }
 }
