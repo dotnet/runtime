@@ -429,6 +429,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/mcc/interop/mcc_i73/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/IDispatch/NETClientIDispatch/*">
+            <Issue>20580</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- arm32 All OS specific excludes -->
