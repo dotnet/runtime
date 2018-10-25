@@ -69,6 +69,7 @@ namespace System.Reflection
         public virtual bool IsDynamic => false;
         public virtual string Location { get { throw NotImplemented.ByDesign; } }
         public virtual bool ReflectionOnly { get { throw NotImplemented.ByDesign; } }
+        public virtual bool IsCollectible => true;
 
         public virtual ManifestResourceInfo GetManifestResourceInfo(string resourceName) { throw NotImplemented.ByDesign; }
         public virtual string[] GetManifestResourceNames() { throw NotImplemented.ByDesign; }

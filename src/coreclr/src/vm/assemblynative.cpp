@@ -730,6 +730,21 @@ BOOL QCALLTYPE AssemblyNative::GetNeutralResourcesLanguageAttribute(QCall::Assem
     return retVal;
 }
 
+BOOL QCALLTYPE AssemblyNative::GetIsCollectible(QCall::AssemblyHandle pAssembly)
+{
+    QCALL_CONTRACT;
+
+    BOOL retVal = FALSE;
+
+    BEGIN_QCALL;
+
+    retVal = pAssembly->IsCollectible();
+
+    END_QCALL;
+
+    return retVal;
+}
+
 void QCALLTYPE AssemblyNative::GetModule(QCall::AssemblyHandle pAssembly, LPCWSTR wszFileName, QCall::ObjectHandleOnStack retModule)
 {
     QCALL_CONTRACT;
