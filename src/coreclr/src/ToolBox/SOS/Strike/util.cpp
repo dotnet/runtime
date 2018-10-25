@@ -2468,6 +2468,62 @@ BOOL IsStringObject (size_t obj)
     return FALSE;
 }
 
+BOOL IsDerivedFrom(CLRDATA_ADDRESS mtObj, __in_z LPCWSTR baseString)
+{
+    DacpMethodTableData dmtd;
+    CLRDATA_ADDRESS walkMT = mtObj;
+    while (walkMT != NULL)
+    {
+        if (dmtd.Request(g_sos, walkMT) != S_OK)
+        {
+            break;
+        }
+
+        NameForMT_s(TO_TADDR(walkMT), g_mdName, mdNameLen);
+        if (_wcscmp(baseString, g_mdName) == 0)
+        {
+            return TRUE;
+        }
+
+        walkMT = dmtd.ParentMethodTable;
+    }
+
+    return FALSE;
+}
+
+BOOL TryGetMethodDescriptorForDelegate(CLRDATA_ADDRESS delegateAddr, CLRDATA_ADDRESS* pMD)
+{
+    if (!sos::IsObject(delegateAddr, false))
+    {
+        return FALSE;
+    }
+
+    sos::Object delegateObj = TO_TADDR(delegateAddr);
+    int offset;
+
+    if ((offset = GetObjFieldOffset(delegateObj.GetAddress(), delegateObj.GetMT(), W("_methodPtrAux"))) != 0)
+    {
+        CLRDATA_ADDRESS methodPtrAux;
+        MOVE(methodPtrAux, delegateObj.GetAddress() + offset);
+        if (methodPtrAux != NULL && g_sos->GetMethodDescPtrFromIP(methodPtrAux, pMD) == S_OK)
+        {
+            return TRUE;
+        }
+    }
+
+    if ((offset = GetObjFieldOffset(delegateObj.GetAddress(), delegateObj.GetMT(), W("_methodPtr"))) != 0)
+    {
+        CLRDATA_ADDRESS methodPtr;
+        MOVE(methodPtr, delegateObj.GetAddress() + offset);
+        if (methodPtr != NULL && g_sos->GetMethodDescPtrFromIP(methodPtr, pMD) == S_OK)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 void DumpStackObjectsOutput(const char *location, DWORD_PTR objAddr, BOOL verifyFields)
 {
     // rule out pointers that are outside of the gc heap.
