@@ -109,7 +109,7 @@ namespace System.IO
             try
             {
                 int numRead = Read(array, 0, buffer.Length);
-                if ((uint)numRead > buffer.Length)
+                if ((uint)numRead > (uint)buffer.Length)
                 {
                     throw new IOException(SR.IO_InvalidReadLength);
                 }
@@ -159,7 +159,7 @@ namespace System.IO
             try
             {
                 int numRead = ReadBlock(array, 0, buffer.Length);
-                if ((uint)numRead > buffer.Length)
+                if ((uint)numRead > (uint)buffer.Length)
                 {
                     throw new IOException(SR.IO_InvalidReadLength);
                 }
