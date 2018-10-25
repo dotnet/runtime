@@ -8,19 +8,18 @@ using System.Runtime.InteropServices;
 
 namespace System.Threading
 {
-    // After much discussion, we decided the Interlocked class doesn't need 
-    // any HPA's for synchronization or external threading.  They hurt C#'s 
-    // codegen for the yield keyword, and arguably they didn't protect much.  
-    // Instead, they penalized people (and compilers) for writing threadsafe 
-    // code.
+    /// <summary>
+    /// After much discussion, we decided the Interlocked class doesn't need 
+    /// any HPA's for synchronization or external threading.  They hurt C#'s 
+    /// codegen for the yield keyword, and arguably they didn't protect much.  
+    /// Instead, they penalized people (and compilers) for writing threadsafe 
+    /// code.
+    /// </summary>
     public static class Interlocked
     {
-        /******************************
-         * Increment
-         *   Implemented: int
-         *                        long
-         *****************************/
-
+        /// <summary>
+        /// Implemented: int, long
+        /// </summary>
         public static int Increment(ref int location)
         {
             return Add(ref location, 1);
@@ -31,12 +30,9 @@ namespace System.Threading
             return Add(ref location, 1);
         }
 
-        /******************************
-         * Decrement
-         *   Implemented: int
-         *                        long
-         *****************************/
-
+        /// <summary>
+        /// Implemented: int, long
+        /// </summary>
         public static int Decrement(ref int location)
         {
             return Add(ref location, -1);
@@ -47,16 +43,9 @@ namespace System.Threading
             return Add(ref location, -1);
         }
 
-        /******************************
-         * Exchange
-         *   Implemented: int
-         *                        long
-         *                        float
-         *                        double
-         *                        Object
-         *                        IntPtr
-         *****************************/
-
+        /// <summary>
+        /// Implemented: int, long, float, double, Object, IntPtr
+        /// </summary>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int Exchange(ref int location1, int value);
 
@@ -83,16 +72,9 @@ namespace System.Threading
             return Unsafe.As<T>(Exchange(ref Unsafe.As<T, object>(ref location1), value));
         }
 
-        /******************************
-         * CompareExchange
-         *    Implemented: int
-         *                         long
-         *                         float
-         *                         double
-         *                         Object
-         *                         IntPtr
-         *****************************/
-
+        /// <summary>
+        /// Implemented: int, long, float, double, Object, IntPtr
+        /// </summary>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern int CompareExchange(ref int location1, int value, int comparand);
 
@@ -129,12 +111,9 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int CompareExchange(ref int location1, int value, int comparand, ref bool succeeded);
 
-        /******************************
-         * Add
-         *    Implemented: int
-         *                         long
-         *****************************/
-
+        /// <summary>
+        /// Implemented: int, long
+        /// </summary>
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int ExchangeAdd(ref int location1, int value);
 
@@ -151,9 +130,6 @@ namespace System.Threading
             return ExchangeAdd(ref location1, value) + value;
         }
 
-        /******************************
-         * Read
-         *****************************/
         public static long Read(ref long location)
         {
             return Interlocked.CompareExchange(ref location, 0, 0);

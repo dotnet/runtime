@@ -272,11 +272,11 @@ namespace System.Reflection.Emit
 
         #region DefineDynamicAssembly
 
-        /**********************************************
-        * If an AssemblyName has a public key specified, the assembly is assumed
-        * to have a strong name and a hash will be computed when the assembly
-        * is saved.
-        **********************************************/
+        /// <summary>
+        /// If an AssemblyName has a public key specified, the assembly is assumed
+        /// to have a strong name and a hash will be computed when the assembly
+        /// is saved.
+        /// </summary>
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
@@ -328,13 +328,11 @@ namespace System.Reflection.Emit
         #endregion
 
         #region DefineDynamicModule
-        /**********************************************
-        *
-        * Defines a named dynamic module. It is an error to define multiple 
-        * modules within an Assembly with the same name. This dynamic module is
-        * a transient module.
-        * 
-        **********************************************/
+        /// <summary>
+        /// Defines a named dynamic module. It is an error to define multiple 
+        /// modules within an Assembly with the same name. This dynamic module is
+        /// a transient module.
+        /// </summary>
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public ModuleBuilder DefineDynamicModule(
             string name)
@@ -644,11 +642,9 @@ namespace System.Reflection.Emit
         #endregion
 
 
-        /**********************************************
-        *
-        * return a dynamic module with the specified name.
-        *
-        **********************************************/
+        /// <summary>
+        /// return a dynamic module with the specified name.
+        /// </summary>
         public ModuleBuilder GetDynamicModule(
             string name)                   // the name of module for the look up
         {
@@ -679,9 +675,9 @@ namespace System.Reflection.Emit
         }
 
 
-        /**********************************************
-        * Use this function if client decides to form the custom attribute blob themselves
-        **********************************************/
+        /// <summary>
+        /// Use this function if client decides to form the custom attribute blob themselves
+        /// </summary>
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
@@ -713,9 +709,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        /**********************************************
-        * Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        **********************************************/
+        /// <summary>
+        /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
+        /// </summary>
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             if (customBuilder == null)

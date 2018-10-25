@@ -1610,14 +1610,12 @@ namespace System.Reflection.Emit
     }
 
 
-    /***************************
-    *
-    * Scope Tree is a class that track the scope structure within a method body
-    * It keeps track two parallel array. m_ScopeAction keeps track the action. It can be
-    * OpenScope or CloseScope. m_iOffset records the offset where the action
-    * takes place.
-    *
-    ***************************/
+    /// <summary>
+    /// Scope Tree is a class that track the scope structure within a method body
+    /// It keeps track two parallel array. m_ScopeAction keeps track the action. It can be
+    /// OpenScope or CloseScope. m_iOffset records the offset where the action
+    /// takes place.
+    /// </summary>
     internal enum ScopeAction
     {
         Open = 0x0,
@@ -1633,13 +1631,11 @@ namespace System.Reflection.Emit
             m_iCount = 0;
         }
 
-        /***************************
-        *
-        * Find the current active lexical scope. For example, if we have
-        * "Open Open Open Close",
-        * we will return 1 as the second BeginScope is currently active.
-        *
-        ***************************/
+        /// <summary>
+        /// Find the current active lexical scope. For example, if we have
+        /// "Open Open Open Close",
+        /// we will return 1 as the second BeginScope is currently active.
+        /// </summary>
         internal int GetCurrentActiveScopeIndex()
         {
             int cClose = 0;
@@ -1711,11 +1707,9 @@ namespace System.Reflection.Emit
                 m_iOpenScopeCount--;
         }
 
-        /**************************
-        *
-        * Helper to ensure arrays are large enough
-        *
-        **************************/
+        /// <summary>
+        /// Helper to ensure arrays are large enough
+        /// </summary>
         internal void EnsureCapacity()
         {
             if (m_iCount == 0)
@@ -1773,11 +1767,9 @@ namespace System.Reflection.Emit
     }
 
 
-    /***************************
-    *
-    * This class tracks the line number info
-    *
-    ***************************/
+    /// <summary>
+    /// This class tracks the line number info
+    /// </summary>
     internal sealed class LineNumberInfo
     {
         internal LineNumberInfo()
@@ -1832,11 +1824,9 @@ namespace System.Reflection.Emit
             return m_iLastFound;
         }
 
-        /**************************
-        *
-        * Helper to ensure arrays are large enough
-        *
-        **************************/
+        /// <summary>
+        /// Helper to ensure arrays are large enough
+        /// </summary>
         private void EnsureCapacity()
         {
             if (m_DocumentCount == 0)
@@ -1866,11 +1856,9 @@ namespace System.Reflection.Emit
     }
 
 
-    /***************************
-    *
-    * This class tracks the line number info
-    *
-    ***************************/
+    /// <summary>
+    /// This class tracks the line number info
+    /// </summary>
     internal sealed class REDocument
     {
         internal REDocument(ISymbolDocumentWriter document)
@@ -1901,11 +1889,9 @@ namespace System.Reflection.Emit
             checked { m_iLineNumberCount++; }
         }
 
-        /**************************
-        *
-        * Helper to ensure arrays are large enough
-        *
-        **************************/
+        /// <summary>
+        /// Helper to ensure arrays are large enough
+        /// </summary>
         private void EnsureCapacity()
         {
             if (m_iLineNumberCount == 0)
