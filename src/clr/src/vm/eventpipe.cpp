@@ -33,10 +33,6 @@ LPCWSTR EventPipe::s_pOutputPath = NULL;
 EventPipeFile* EventPipe::s_pFile = NULL;
 EventPipeEventSource* EventPipe::s_pEventSource = NULL;
 LPCWSTR EventPipe::s_pCommandLine = NULL;
-#ifdef _DEBUG
-EventPipeFile* EventPipe::s_pSyncFile = NULL;
-EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
-#endif // _DEBUG
 unsigned long EventPipe::s_nextFileIndex;
 HANDLE EventPipe::s_fileSwitchTimerHandle = NULL;
 ULONGLONG EventPipe::s_lastFileSwitchTime = 0;
@@ -336,21 +332,6 @@ EventPipeSessionID EventPipe::Enable(LPCWSTR strOutputPath, EventPipeSession *pS
         s_pFile = new EventPipeFile(nextTraceFilePath);
     }
 
-#ifdef _DEBUG
-    if((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableEventPipe) & 2) == 2)
-    {
-        // Create a synchronous file.
-        SString eventPipeSyncFileOutputPath;
-        eventPipeSyncFileOutputPath.Printf("Process-%d.sync.netperf", GetCurrentProcessId());
-        s_pSyncFile = new EventPipeFile(eventPipeSyncFileOutputPath);
-
-        // Create a JSON file.
-        SString outputFilePath;
-        outputFilePath.Printf("Process-%d.PerfView.json", GetCurrentProcessId());
-        s_pJsonFile = new EventPipeJsonFile(outputFilePath);
-    }
-#endif // _DEBUG
-
     // Save the session.
     s_pSession = pSession;
 
@@ -454,18 +435,6 @@ void EventPipe::Disable(EventPipeSessionID id)
             delete(s_pFile);
             s_pFile = NULL;
         }
-#ifdef _DEBUG
-        if(s_pSyncFile != NULL)
-        {
-            delete(s_pSyncFile);
-            s_pSyncFile = NULL;
-        }
-        if(s_pJsonFile != NULL)
-        {
-            delete(s_pJsonFile);
-            s_pJsonFile = NULL;
-        }
-#endif // _DEBUG
 
         // De-allocate buffers.
         s_pBufferManager->DeAllocateBuffers();
@@ -803,11 +772,7 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
 
     if(!s_pConfig->RundownEnabled() && s_pBufferManager != NULL)
     {
-        if(!s_pBufferManager->WriteEvent(pThread, *s_pSession, event, payload, pActivityId, pRelatedActivityId))
-        {
-            // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
-            return;
-        }
+        s_pBufferManager->WriteEvent(pThread, *s_pSession, event, payload, pActivityId, pRelatedActivityId);
     }
     else if(s_pConfig->RundownEnabled())
     {
@@ -852,39 +817,6 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
             }
         }
     }
-
-// This section requires a call to GCX_PREEMP which violates the GC_NOTRIGGER contract
-// It should only be enabled when debugging this specific component and contracts are off
-#ifdef DEBUG_JSON_EVENT_FILE
-    {
-        GCX_PREEMP();
-
-        BYTE *pData = payload.GetFlatData();
-        if (pData != NULL)
-        {
-            // Create an instance of the event for the synchronous path.
-            EventPipeEventInstance instance(
-                event,
-                pThread->GetOSThreadId(),
-                pData,
-                payload.GetSize(),
-                pActivityId,
-                pRelatedActivityId);
-
-            // Write to the EventPipeFile if it exists.
-            if(s_pSyncFile != NULL)
-            {
-                s_pSyncFile->WriteEvent(instance);
-            }
-
-            // Write to the EventPipeJsonFile if it exists.
-            if(s_pJsonFile != NULL)
-            {
-                s_pJsonFile->WriteEvent(instance);
-            }
-        }
-    }
-#endif // DEBUG_JSON_EVENT_FILE
 }
 
 void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent *pEvent, Thread *pTargetThread, StackContents &stackContents, BYTE *pData, unsigned int length)
@@ -904,34 +836,8 @@ void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent 
     {
         // Specify the sampling thread as the "current thread", so that we select the right buffer.
         // Specify the target thread so that the event gets properly attributed.
-        if(!s_pBufferManager->WriteEvent(pSamplingThread, *s_pSession, *pEvent, payload, NULL /* pActivityId */, NULL /* pRelatedActivityId */, pTargetThread, &stackContents))
-        {
-            // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
-            return;
-        }
+        s_pBufferManager->WriteEvent(pSamplingThread, *s_pSession, *pEvent, payload, NULL /* pActivityId */, NULL /* pRelatedActivityId */, pTargetThread, &stackContents);
     }
-
-#ifdef _DEBUG
-    {
-        GCX_PREEMP();
-
-        // Create an instance for the synchronous path.
-        SampleProfilerEventInstance instance(*s_pSession, *pEvent, pTargetThread, pData, length);
-        stackContents.CopyTo(instance.GetStack());
-
-        // Write to the EventPipeFile.
-        if(s_pSyncFile != NULL)
-        {
-            s_pSyncFile->WriteEvent(instance);
-        }
-
-        // Write to the EventPipeJsonFile if it exists.
-        if(s_pJsonFile != NULL)
-        {
-            s_pJsonFile->WriteEvent(instance);
-        }
-    }
-#endif // _DEBUG
 }
 
 bool EventPipe::WalkManagedStackForCurrentThread(StackContents &stackContents)
