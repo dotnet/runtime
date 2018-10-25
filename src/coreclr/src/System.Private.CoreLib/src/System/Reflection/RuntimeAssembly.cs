@@ -201,6 +201,12 @@ namespace System.Reflection
             }
         }
 
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetIsCollectible(RuntimeAssembly assembly);
+
+        public override bool IsCollectible => GetIsCollectible(GetNativeHandle());
+
         // Load a resource based on the NameSpace of the type.
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public override Stream GetManifestResourceStream(Type type, string name)
