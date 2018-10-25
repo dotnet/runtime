@@ -18,12 +18,7 @@ class EventPipeFile : public FastSerializableObject
 {
     public:
 
-        EventPipeFile(SString &outputFilePath
-#ifdef _DEBUG
-            ,
-            bool lockOnWrite = false
-#endif // _DEBUG
-        );
+        EventPipeFile(SString &outputFilePath);
         ~EventPipeFile();
 
         void WriteEvent(EventPipeEventInstance &instance);
@@ -98,10 +93,6 @@ class EventPipeFile : public FastSerializableObject
         MapSHashWithRemove<EventPipeEvent*, unsigned int> *m_pMetadataIds;
 
         Volatile<LONG> m_metadataIdCounter;
-
-#ifdef _DEBUG
-        bool m_lockOnWrite;
-#endif // _DEBUG
 };
 
 #endif // FEATURE_PERFTRACING

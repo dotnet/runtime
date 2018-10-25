@@ -12,12 +12,7 @@
 #ifdef FEATURE_PERFTRACING
 
 EventPipeFile::EventPipeFile(
-    SString &outputFilePath
-#ifdef _DEBUG
-    ,
-    bool lockOnWrite
-#endif // _DEBUG
-)
+    SString &outputFilePath)
 {
     CONTRACTL
     {
@@ -31,10 +26,6 @@ EventPipeFile::EventPipeFile(
     SetMinReaderVersion(0);
 
     m_pBlock = new EventPipeBlock(100 * 1024);
-
-#ifdef _DEBUG
-    m_lockOnWrite = lockOnWrite;
-#endif // _DEBUG
 
     // File start time information.
     GetSystemTime(&m_fileOpenSystemTime);
@@ -157,16 +148,6 @@ void EventPipeFile::WriteToBlock(EventPipeEventInstance &instance, unsigned int 
     {
         return; // the block is not full, we added the event and continue
     }
-
-#ifdef _DEBUG
-    if (m_lockOnWrite)
-    {
-        // Take the serialization lock.
-        // This is used for synchronous file writes.
-        // The circular buffer path only writes from one thread.
-        SpinLockHolder _slh(&m_serializationLock);
-    }
-#endif // _DEBUG
 
     // we can't write this event to the current block (it's full)
     // so we write what we have in the block to the serializer
