@@ -249,6 +249,7 @@
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerArgumentExpressionAttributeTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
+    <Compile Include="System\Runtime\CompilerServices\MethodImplAttributeTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeatureTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
