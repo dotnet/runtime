@@ -14082,7 +14082,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     i1 = (d1 > d2);
                     goto FOLD_COND;
 
-                // non-x86 arch: floating point arithmetic should be done in declared
+                // Floating point arithmetic should be done in declared
                 // precision while doing constant folding. For this reason though TYP_FLOAT
                 // constants are stored as double constants, while performing float arithmetic,
                 // double constants should be converted to float.  Here is an example case
@@ -14099,7 +14099,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     {
                         f1 = forceCastToFloat(d1);
                         f2 = forceCastToFloat(d2);
-                        d1 = f1 + f2;
+                        d1 = forceCastToFloat(f1 + f2);
                     }
                     else
                     {
@@ -14112,7 +14112,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     {
                         f1 = forceCastToFloat(d1);
                         f2 = forceCastToFloat(d2);
-                        d1 = f1 - f2;
+                        d1 = forceCastToFloat(f1 - f2);
                     }
                     else
                     {
@@ -14125,7 +14125,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     {
                         f1 = forceCastToFloat(d1);
                         f2 = forceCastToFloat(d2);
-                        d1 = f1 * f2;
+                        d1 = forceCastToFloat(f1 * f2);
                     }
                     else
                     {
@@ -14142,7 +14142,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
                     {
                         f1 = forceCastToFloat(d1);
                         f2 = forceCastToFloat(d2);
-                        d1 = f1 / f2;
+                        d1 = forceCastToFloat(f1 / f2);
                     }
                     else
                     {
