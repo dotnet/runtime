@@ -26,14 +26,15 @@ Object Inspection                  Examining code and stacks
 DumpObj (do)                       Threads
 DumpArray (da)                     ThreadState
 DumpAsync                          IP2MD
-DumpStackObjects (dso)             U
-DumpHeap                           DumpStack
-DumpVC                             EEStack
-GCRoot                             CLRStack
-ObjSize                            GCInfo
-FinalizeQueue                      EHInfo
-PrintException (pe)                BPMD
-TraverseHeap                       COMState
+DumpDelegate                       U
+DumpStackObjects (dso)             DumpStack
+DumpHeap                           EEStack
+DumpVC                             CLRStack
+GCRoot                             GCInfo
+ObjSize                            EHInfo
+FinalizeQueue                      BPMD
+PrintException (pe)                COMState
+TraverseHeap                       
 
 Examining CLR data structures      Diagnostic Utilities
 -----------------------------      -----------------------------
@@ -415,6 +416,19 @@ on by default because very often in a debugging scenario, you are
 interested in objects with invalid fields.
 
 The abbreviation !dso can be used for brevity.
+\\
+
+COMMAND: dumpdelegate.
+!DumpDelegate <delegate address>
+
+!DumpDelegate finds and outputs the one or more method descriptors associated with a delegate object.
+
+For example:
+
+	0:000> !dumpdelegate
+    Target           Method           Name
+    000001461bacb0d8 00007ffc5c894b80 ConsoleApp16.Program.InstanceMethod()
+    000001461bacb098 00007ffc5c894b68 ConsoleApp16.Program.StaticMethod()
 \\
 
 COMMAND: dumpheap.

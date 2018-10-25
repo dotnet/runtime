@@ -9,6 +9,7 @@ DumpArray
 DumpAssembly
 DumpAsync
 DumpClass
+DumpDelegate
 DumpDomain
 DumpGCData
 DumpHeap

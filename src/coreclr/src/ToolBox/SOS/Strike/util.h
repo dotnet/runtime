@@ -1846,6 +1846,8 @@ BOOL IsMethodTable (DWORD_PTR value);
 BOOL IsStringObject (size_t obj);
 BOOL IsObjectArray (DWORD_PTR objPointer);
 BOOL IsObjectArray (DacpObjectData *pData);
+BOOL IsDerivedFrom(CLRDATA_ADDRESS mtObj, __in_z LPCWSTR baseString);
+BOOL TryGetMethodDescriptorForDelegate(CLRDATA_ADDRESS delegateAddr, CLRDATA_ADDRESS* pMD);
 
 /* Returns a list of all modules in the process.
  * Params:

@@ -19,6 +19,8 @@ EXPORTS
     dumpasync=DumpAsync
     DumpClass
     dumpclass=DumpClass
+    DumpDelegate
+    dumpdelegate=DumpDelegate
     DumpDomain
     dumpdomain=DumpDomain
 #ifdef TRACE_GC
