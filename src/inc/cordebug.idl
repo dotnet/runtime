@@ -3298,19 +3298,19 @@ interface ICorDebugProcess8 : IUnknown
 interface ICorDebugProcess10 : IUnknown
 {
     //
-    // Given a pointer that is pointing to the interior of an object (for example, a field on an object), 
+    // Given a value inside an object (for example, a field on an object), 
     // returns the containing object. 
     // 
     // Parameters
-    //   interiorPointer - the pointer pointing to the interior of an object.
+    //   pValue - the value in the interior of an object.
     //   ppContainingObject - [out] An ICorDebugObjectValue that represents the containing object.
     //   
     // Returns
     //   S_OK - on success
-    //   S_FALSE   - if the given interior pointer is not inside an object
+    //   S_FALSE   - if the given value is not inside an object
     //   E_POINTER - ppContainingObject is NULL
     // 
-    HRESULT GetContainingObject([in] CORDB_ADDRESS interiorPointer, [out] ICorDebugObjectValue** ppContainingObject);
+    HRESULT GetContainingObject([in] ICorDebugValue* pValue, [out] ICorDebugObjectValue** ppContainingObject);
 
     //
     // Enable or disable the GC notification events. The GC notification events are turned off by default

@@ -3138,7 +3138,7 @@ public:
     //-----------------------------------------------------------
     // ICorDebugProcess10
     //-----------------------------------------------------------
-    COM_METHOD GetContainingObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainingObject);
+    COM_METHOD GetContainingObject(ICorDebugValue* pValue, ICorDebugObjectValue** ppContainingObject);
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
 
 #ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
@@ -3653,7 +3653,7 @@ public:
     // the jit attach.
     HRESULT GetAttachStateFlags(CLR_DEBUGGING_PROCESS_FLAGS *pFlags);
 
-    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
+    HRESULT GetTypeForObject(CORDB_ADDRESS obj, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain = NULL);
 
     WriteableMetadataUpdateMode GetWriteableMetadataUpdateMode() { return m_writableMetadataUpdateMode; }
 private:
@@ -4114,6 +4114,8 @@ private:
 
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
+
+    COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject);
 };
 
 // Some IMDArocess APIs are supported as interop-only.
@@ -8770,6 +8772,8 @@ public:
     HRESULT InternalCreateHandle(
         CorDebugHandleType handleType,
         ICorDebugHandleValue ** ppHandle);
+
+    static CordbValue* GetCordbValue(ICorDebugValue* pValue);
 
     //-----------------------------------------------------------
     // Data members
