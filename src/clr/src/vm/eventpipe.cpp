@@ -16,6 +16,7 @@
 #include "eventpipejsonfile.h"
 #include "eventtracebase.h"
 #include "sampleprofiler.h"
+#include "win32threadpool.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -28,6 +29,7 @@ bool EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration* EventPipe::s_pConfig = NULL;
 EventPipeSession* EventPipe::s_pSession = NULL;
 EventPipeBufferManager* EventPipe::s_pBufferManager = NULL;
+LPCWSTR EventPipe::s_pOutputPath = NULL;
 EventPipeFile* EventPipe::s_pFile = NULL;
 EventPipeEventSource* EventPipe::s_pEventSource = NULL;
 LPCWSTR EventPipe::s_pCommandLine = NULL;
@@ -35,6 +37,9 @@ LPCWSTR EventPipe::s_pCommandLine = NULL;
 EventPipeFile* EventPipe::s_pSyncFile = NULL;
 EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
 #endif // _DEBUG
+unsigned long EventPipe::s_nextFileIndex;
+HANDLE EventPipe::s_fileSwitchTimerHandle = NULL;
+ULONGLONG EventPipe::s_lastFileSwitchTime = 0;
 
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -239,6 +244,8 @@ void EventPipe::Shutdown()
     delete(pBufferManager);
     delete(s_pEventSource);
     s_pEventSource = NULL;
+    delete(s_pOutputPath);
+    s_pOutputPath = NULL;
 
     // On Windows, this is just a pointer to the return value from
     // GetCommandLineW(), so don't attempt to free it.
@@ -252,7 +259,8 @@ EventPipeSessionID EventPipe::Enable(
     LPCWSTR strOutputPath,
     unsigned int circularBufferSizeInMB,
     EventPipeProviderConfiguration *pProviders,
-    int numProviders)
+    int numProviders,
+    UINT64 multiFileTraceLengthInSeconds)
 {
     CONTRACTL
     {
@@ -267,7 +275,8 @@ EventPipeSessionID EventPipe::Enable(
         (strOutputPath != NULL) ? EventPipeSessionType::File : EventPipeSessionType::Streaming,
         circularBufferSizeInMB,
         pProviders,
-        static_cast<unsigned int>(numProviders));
+        static_cast<unsigned int>(numProviders),
+        multiFileTraceLengthInSeconds);
 
     // Enable the session.
     return Enable(strOutputPath, pSession);
@@ -302,13 +311,29 @@ EventPipeSessionID EventPipe::Enable(LPCWSTR strOutputPath, EventPipeSession *pS
     // Take the lock before enabling tracing.
     CrstHolder _crst(GetLock());
 
+    // Initialize the next file index.
+    s_nextFileIndex = 1;
+
+    // Initialize the last file switch time.
+    s_lastFileSwitchTime = CLRGetTickCount64();
+
     // Create the event pipe file.
     // A NULL output path means that we should not write the results to a file.
     // This is used in the EventListener streaming case.
     if (strOutputPath != NULL)
     {
-        SString eventPipeFileOutputPath(strOutputPath);
-        s_pFile = new EventPipeFile(eventPipeFileOutputPath);
+        // Save the output file path.
+        SString outputPath(strOutputPath);
+        SIZE_T outputPathLen = outputPath.GetCount();
+        WCHAR *pOutputPath = new WCHAR[outputPathLen + 1];
+        wcsncpy(pOutputPath, outputPath.GetUnicode(), outputPathLen);
+        pOutputPath[outputPathLen] = '\0';
+        s_pOutputPath = pOutputPath;
+
+        SString nextTraceFilePath;
+        GetNextFilePath(pSession, nextTraceFilePath);
+
+        s_pFile = new EventPipeFile(nextTraceFilePath);
     }
 
 #ifdef _DEBUG
@@ -334,6 +359,12 @@ EventPipeSessionID EventPipe::Enable(LPCWSTR strOutputPath, EventPipeSession *pS
 
     // Enable the sample profiler
     SampleProfiler::Enable();
+
+    // Enable the file switch timer if needed.
+    if(s_pSession->GetMultiFileTraceLengthInSeconds() > 0)
+    {
+        CreateFileSwitchTimer();
+    }
 
     // Return the session ID.
     return (EventPipeSessionID)s_pSession;
@@ -379,6 +410,9 @@ void EventPipe::Disable(EventPipeSessionID id)
         // Delete the session.
         s_pConfig->DeleteSession(s_pSession);
         s_pSession = NULL;
+
+        // Delete the file switch timer.
+        DeleteFileSwitchTimer();
 
         // Flush all write buffers to make sure that all threads see the change.
         FlushProcessWriteBuffers();
@@ -439,6 +473,169 @@ void EventPipe::Disable(EventPipeSessionID id)
         // Delete deferred providers.
         // Providers can't be deleted during tracing because they may be needed when serializing the file.
         s_pConfig->DeleteDeferredProviders();
+    }
+}
+
+void EventPipe::CreateFileSwitchTimer()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END
+
+    NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder = new(nothrow) ThreadpoolMgr::TimerInfoContext();
+    if (timerContextHolder == NULL)
+    {
+        return;
+    }
+    timerContextHolder->TimerId = 0;
+
+    bool success = false;
+    _ASSERTE(s_fileSwitchTimerHandle == NULL);
+    EX_TRY
+    {
+        if (ThreadpoolMgr::CreateTimerQueueTimer(
+                &s_fileSwitchTimerHandle,
+                SwitchToNextFileTimerCallback,
+                timerContextHolder,
+                FileSwitchTimerPeriodMS,
+                FileSwitchTimerPeriodMS,
+                0 /* flags */))
+        {
+            _ASSERTE(s_fileSwitchTimerHandle != NULL);
+            success = true;
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(RethrowTerminalExceptions);
+    if (!success)
+    {
+        _ASSERTE(s_fileSwitchTimerHandle == NULL);
+        return;
+    }
+
+    timerContextHolder.SuppressRelease(); // the timer context is automatically deleted by the timer infrastructure
+}
+
+void EventPipe::DeleteFileSwitchTimer()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END
+
+    if((s_fileSwitchTimerHandle != NULL) && (ThreadpoolMgr::DeleteTimerQueueTimer(s_fileSwitchTimerHandle, NULL)))
+    {
+        s_fileSwitchTimerHandle = NULL;
+    }
+}
+
+void WINAPI EventPipe::SwitchToNextFileTimerCallback(PVOID parameter, BOOLEAN timerFired)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(timerFired);
+    }
+    CONTRACTL_END;
+
+    
+    // Take the lock control lock to make sure that tracing isn't disabled during this operation.
+    CrstHolder _crst(GetLock());
+
+    // Make sure that we should actually switch files.
+    UINT64 multiFileTraceLengthInSeconds = s_pSession->GetMultiFileTraceLengthInSeconds();
+    if(!Enabled() || s_pSession->GetSessionType() != EventPipeSessionType::File || multiFileTraceLengthInSeconds == 0)
+    {
+        return;
+    }
+
+    GCX_PREEMP();
+
+    if(CLRGetTickCount64() > (s_lastFileSwitchTime + (multiFileTraceLengthInSeconds * 1000)))
+    {
+        SwitchToNextFile();
+        s_lastFileSwitchTime = CLRGetTickCount64();
+    }
+
+}
+
+void EventPipe::SwitchToNextFile()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(s_pSession != NULL);
+        PRECONDITION(GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END
+
+    // Get the current time stamp.
+    // WriteAllBuffersToFile will use this to ensure that no events after the current timestamp are written into the file.
+    LARGE_INTEGER stopTimeStamp;
+    QueryPerformanceCounter(&stopTimeStamp);
+    s_pBufferManager->WriteAllBuffersToFile(s_pFile, stopTimeStamp);
+
+    // Open the new file.
+    SString nextTraceFilePath;
+    GetNextFilePath(s_pSession, nextTraceFilePath);
+    EventPipeFile* pFile = new (nothrow) EventPipeFile(nextTraceFilePath);
+    if(pFile == NULL)
+    {
+        return;
+    }
+
+    // Close the previous file.
+    delete(s_pFile);
+
+    // Swap in the new file.
+    s_pFile = pFile;
+}
+
+void EventPipe::GetNextFilePath(EventPipeSession *pSession, SString &nextTraceFilePath)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pSession != NULL);
+        PRECONDITION(GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    // Set the full path to the requested trace file as the next file path.
+    nextTraceFilePath.Set(s_pOutputPath);
+
+    // If multiple files have been requested, then add a sequence number to the trace file name.
+    UINT64 multiFileTraceLengthInSeconds = pSession->GetMultiFileTraceLengthInSeconds();
+    if(multiFileTraceLengthInSeconds > 0)
+    {
+        // Remove the ".netperf" file extension if it exists.
+        SString::Iterator netPerfExtension = nextTraceFilePath.End();
+        if(nextTraceFilePath.FindBack(netPerfExtension, W(".netperf")))
+        {
+            nextTraceFilePath.Truncate(netPerfExtension);
+        }
+
+        // Add the sequence number and the ".netperf" file extension.
+        WCHAR strNextIndex[21];
+        swprintf_s(strNextIndex, 21, W(".%u.netperf"), s_nextFileIndex++);
+        nextTraceFilePath.Append(strNextIndex);
     }
 }
 
@@ -898,7 +1095,8 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
         UINT32 circularBufferSizeInMB,
         INT64 profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
-        INT32 numProviders)
+        INT32 numProviders,
+        UINT64 multiFileTraceLengthInSeconds)
 {
     QCALL_CONTRACT;
 
@@ -906,7 +1104,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
 
     BEGIN_QCALL;
     SampleProfiler::SetSamplingRate((unsigned long)profilerSamplingRateInNanoseconds);
-    sessionID = EventPipe::Enable(outputFile, circularBufferSizeInMB, pProviders, numProviders);
+    sessionID = EventPipe::Enable(outputFile, circularBufferSizeInMB, pProviders, numProviders, multiFileTraceLengthInSeconds);
     END_QCALL;
 
     return sessionID;
