@@ -10,7 +10,7 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>41e11a55a031927df1c919dee2e57f1fb0f521ab</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenApi" Version="1.0.0-beta.18478.5">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="1.0.0-beta.18524.7">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>55c0d49b9bec66981f7dd6d8f51a8dad43e8fbe0</Sha>
     </Dependency>

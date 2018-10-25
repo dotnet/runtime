@@ -1,25 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0">
   <PropertyGroup>
     <VersionPrefix>1.0.0</VersionPrefix>
     <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
   </PropertyGroup>
-  <!-- Package names -->
+  
+  <!-- Package names if they are used in more then one location in the repo -->
   <PropertyGroup>
-    <MicrosoftDotNetApiCompatPackage>Microsoft.DotNet.ApiCompat</MicrosoftDotNetApiCompatPackage>
-    <MicrosoftDotNetCodeAnalysisPackage>Microsoft.DotNet.CodeAnalysis</MicrosoftDotNetCodeAnalysisPackage>
-    <MicrosoftDotNetGenApiPackage>Microsoft.DotNet.GenAPI</MicrosoftDotNetGenApiPackage>
-    <MicrosoftDotNetGenFacadesPackage>Microsoft.DotNet.GenFacades</MicrosoftDotNetGenFacadesPackage>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
-    <MicrosoftDotNetBuildTasksPackagingPackage>Microsoft.DotNet.Build.Tasks.Packaging</MicrosoftDotNetBuildTasksPackagingPackage>
   </PropertyGroup>
-  <!-- Package versions -->
+
+  <!--
+    DARC doesn't currently update properties that end in PackageVersion yet but that is the convention
+    we want to use for our properties so for now we will define both and set the PackageVersion properties
+    to the set that DARC updates automatically.
+
+    see issue https://github.com/dotnet/arcade/issues/1114
+  -->
   <PropertyGroup>
-    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetApiCompatPackageVersion>
-    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.18519.7</MicrosoftDotNetCodeAnalysisPackageVersion>
-    <MicrosoftDotNetGenApiPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenApiPackageVersion>
-    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.18478.5</MicrosoftDotNetGenFacadesPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.18506.1</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.18518.2</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetApiCompatVersion>1.0.0-beta.18522.6</MicrosoftDotNetApiCompatVersion>
+    <MicrosoftDotNetCodeAnalysisVersion>1.0.0-beta.18522.6</MicrosoftDotNetCodeAnalysisVersion>
+    <MicrosoftDotNetGenApiVersion>1.0.0-beta.18522.6</MicrosoftDotNetGenApiVersion>
+    <MicrosoftDotNetGenFacadesVersion>1.0.0-beta.18522.6</MicrosoftDotNetGenFacadesVersion>
+    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18522.6</MicrosoftDotNetXUnitExtensionsVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.18522.6</MicrosoftDotNetBuildTasksPackagingVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MicrosoftDotNetApiCompatPackageVersion>$(MicrosoftDotNetApiCompatVersion)</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>$(MicrosoftDotNetCodeAnalysisVersion)</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenApiPackageVersion>$(MicrosoftDotNetGenApiVersion)</MicrosoftDotNetGenApiPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>$(MicrosoftDotNetGenFacadesVersion)</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>$(MicrosoftDotNetXUnitExtensionsVersion)</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>$(MicrosoftDotNetBuildTasksPackagingVersion)</MicrosoftDotNetBuildTasksPackagingPackageVersion>
   </PropertyGroup>
 </Project>

@@ -12,18 +12,19 @@
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)..\dependencies.props" />
+
   <ItemGroup>
     <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" />
     <PackageReference Include="$(FeedTasksPackage)" Version="$(FeedTasksPackageVersion)" />
     <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
-    <PackageReference Include="$(MicrosoftDotNetApiCompatPackage)" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
-    <PackageReference Include="$(MicrosoftDotNetGenApiPackage)" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
-    <PackageReference Include="$(MicrosoftDotNetGenFacadesPackage)" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
-    <PackageReference Include="$(MicrosoftDotNetBuildTasksPackagingPackage)" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
 
     <!-- Reference analyzers -->
     <PackageReference Include="Desktop.Analyzers" Version="1.1.0" />
-    <PackageReference Include="$(MicrosoftDotNetCodeAnalysisPackage)" Version="$(MicrosoftDotNetCodeAnalysisPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisPackageVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="2.9.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="1.1.0" />
     <PackageReference Include="System.Runtime.Analyzers" Version="1.1.0" />
@@ -63,5 +64,5 @@
                Items="@(Analyzer)"
                File="$(AnalyzerPropsFile)" />
   </Target>
-  
+
 </Project>
