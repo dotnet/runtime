@@ -2307,7 +2307,12 @@ HRESULT CordbProcess::EnumerateHeapRegions(ICorDebugHeapSegmentEnum **ppRegions)
     return hr;
 }
 
-HRESULT CordbProcess::GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject)
+HRESULT CordbProcess::GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue **ppObject)
+{
+    return this->GetObjectInternal(addr, nullptr, ppObject);
+}
+
+HRESULT CordbProcess::GetObjectInternal(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, ICorDebugObjectValue **pObject)
 {
     HRESULT hr = S_OK;
 
@@ -2331,7 +2336,7 @@ HRESULT CordbProcess::GetObject(CORDB_ADDRESS addr, ICorDebugObjectValue **pObje
 
             CordbAppDomain *cdbAppDomain = NULL;
             CordbType *pType = NULL;
-            hr = GetTypeForObject(addr, &pType, &cdbAppDomain);
+            hr = GetTypeForObject(addr, pAppDomainOverride, &pType, &cdbAppDomain);
 
             if (SUCCEEDED(hr))
             {
@@ -2527,7 +2532,7 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     return hr;
 }
 
-COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICorDebugObjectValue** ppContainingObject)
+COM_METHOD CordbProcess::GetContainingObject(ICorDebugValue* pValue, ICorDebugObjectValue** ppContainingObject)
 {
     if (!ppContainingObject)
         return E_POINTER;
@@ -2537,6 +2542,9 @@ COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICor
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(this);
+
+    CORDB_ADDRESS interiorPointer;
+    IfFailRet(pValue->GetAddress(&interiorPointer));
 
     *ppContainingObject = nullptr;
 
@@ -2561,7 +2569,11 @@ COM_METHOD CordbProcess::GetContainingObject(CORDB_ADDRESS interiorPointer, ICor
         }
         else
         {
-            hr = this->GetObject(containerAddress, ppContainingObject);
+            if (SUCCEEDED(hr))
+            {
+                CordbAppDomain* pAppDomain = (CordbValue::GetCordbValue(pValue))->GetAppDomain();
+                hr = this->GetObjectInternal(containerAddress, pAppDomain, ppContainingObject);
+            }
         }
     }
 
@@ -2593,7 +2605,7 @@ COM_METHOD CordbProcess::InvokeResumeCallback()
 
 #endif
 
-HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, CordbAppDomain **pAppDomain)
+HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbAppDomain* pAppDomainOverride, CordbType **ppType, CordbAppDomain **pAppDomain)
 {
     VMPTR_AppDomain appDomain;
     VMPTR_Module mod;
@@ -2602,6 +2614,10 @@ HRESULT CordbProcess::GetTypeForObject(CORDB_ADDRESS addr, CordbType **ppType, C
     HRESULT hr = E_FAIL;
     if (GetDAC()->GetAppDomainForObject(addr, &appDomain, &mod, &domainFile))
     {
+        if (pAppDomainOverride)
+        {
+            appDomain = pAppDomainOverride->GetADToken();
+        }
         CordbAppDomain *cdbAppDomain = appDomain.IsNull() ? GetSharedAppDomain() : LookupOrCreateAppDomain(appDomain);
 
         _ASSERTE(cdbAppDomain);
