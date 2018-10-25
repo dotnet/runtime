@@ -1777,7 +1777,7 @@ namespace System.Text
         {
             if (sb == null)
                 return false;
-            if (Capacity != sb.Capacity || MaxCapacity != sb.MaxCapacity || Length != sb.Length)
+            if (Length != sb.Length)
                 return false;
             if (sb == this)
                 return true;

@@ -579,5 +579,19 @@
             ],
             "methods": null
         }
+    },
+    {
+        "name": "System.Runtime.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Text.Tests.StringBuilderTests.Equals",
+                    "reason": "Because of a change in StringBuilder, this test is outdated."
+                }
+            ]
+        }
     }
 ]
