@@ -54,9 +54,9 @@ namespace System.Reflection.Emit
             m_containingType = containingType;
         }
 
-        //************************************************
-        // Set the default value of the Property
-        //************************************************
+        /// <summary>
+        /// Set the default value of the Property
+        /// </summary>
         public void SetConstant(object defaultValue)
         {
             m_containingType.ThrowIfCreated();

@@ -207,24 +207,12 @@ namespace System
                 pdecOut.High = (uint)high;
             }
 
-            /***
-             * Div96By32
-             *
-             * Entry:
-             *   bufNum - 96-bit dividend as array of ULONGs, least-sig first
-             *   ulDen   - 32-bit divisor.
-             *
-             * Purpose:
-             *   Do full divide, yielding 96-bit result and 32-bit remainder.
-             *
-             * Exit:
-             *   Quotient overwrites dividend.
-             *   Returns remainder.
-             *
-             * Exceptions:
-             *   None.
-             *
-             ***********************************************************************/
+            /// <summary>
+            /// Do full divide, yielding 96-bit result and 32-bit remainder.
+            /// </summary>
+            /// <param name="bufNum">96-bit dividend as array of ULONGs, least-sig first</param>
+            /// <param name="ulDen">32-bit divisor</param>
+            /// <returns>remainder</returns>
             private static uint Div96By32(ref Buf12 bufNum, uint ulDen)
             {
                 // TODO: https://github.com/dotnet/coreclr/issues/3439
@@ -344,25 +332,13 @@ namespace System
                     scale--;
             }
 
-            /***
-             * Div96By64
-             *
-             * Entry:
-             *   bufNum - 96-bit dividend as array of ULONGs, least-sig first
-             *   sdlDen  - 64-bit divisor.
-             *
-             * Purpose:
-             *   Do partial divide, yielding 32-bit result and 64-bit remainder.
-             *   Divisor must be larger than upper 64 bits of dividend.
-             *
-             * Exit:
-             *   Remainder overwrites lower 64-bits of dividend.
-             *   Returns quotient.
-             *
-             * Exceptions:
-             *   None.
-             *
-             ***********************************************************************/
+            /// <summary>
+            /// Do partial divide, yielding 32-bit result and 64-bit remainder.
+            /// Divisor must be larger than upper 64 bits of dividend.
+            /// </summary>
+            /// <param name="bufNum">96-bit dividend as array of ULONGs, least-sig first</param>
+            /// <param name="sdlDen">64-bit divisor</param>
+            /// <returns>quotient</returns>
             private static uint Div96By64(ref Buf12 bufNum, ulong den)
             {
                 uint quo;
@@ -438,29 +414,17 @@ namespace System
                 return quo;
             }
 
-            /***
-             * Div128By96
-             *
-             * Entry:
-             *   bufNum - 128-bit dividend as array of ULONGs, least-sig first
-             *   bufDen - 96-bit divisor.
-             *
-             * Purpose:
-             *   Do partial divide, yielding 32-bit result and 96-bit remainder.
-             *   Top divisor ULONG must be larger than top dividend ULONG.  This is
-             *   assured in the initial call because the divisor is normalized
-             *   and the dividend can't be.  In subsequent calls, the remainder
-             *   is multiplied by 10^9 (max), so it can be no more than 1/4 of
-             *   the divisor which is effectively multiplied by 2^32 (4 * 10^9).
-             *
-             * Exit:
-             *   Remainder overwrites lower 96-bits of dividend.
-             *   Returns quotient.
-             *
-             * Exceptions:
-             *   None.
-             *
-             ***********************************************************************/
+            /// <summary>
+            /// Do partial divide, yielding 32-bit result and 96-bit remainder.
+            /// Top divisor ULONG must be larger than top dividend ULONG. This is
+            /// assured in the initial call because the divisor is normalized
+            /// and the dividend can't be. In subsequent calls, the remainder
+            /// is multiplied by 10^9 (max), so it can be no more than 1/4 of
+            /// the divisor which is effectively multiplied by 2^32 (4 * 10^9).
+            /// </summary>
+            /// <param name="bufNum">128-bit dividend as array of ULONGs, least-sig first</param>
+            /// <param name="bufDen">96-bit divisor</param>
+            /// <returns>quotient</returns>
             private static uint Div128By96(ref Buf16 bufNum, ref Buf12 bufDen)
             {
                 ulong dividend = bufNum.High64;
@@ -527,24 +491,13 @@ PosRem:
                 return quo;
             }
 
-            /***
-             * IncreaseScale
-             *
-             * Entry:
-             *   bufNum - 96-bit number as array of ULONGs, least-sig first
-             *   ulPwr   - Scale factor to multiply by
-             *
-             * Purpose:
-             *   Multiply the two numbers.  The low 96 bits of the result overwrite
-             *   the input.  The last 32 bits of the product are the return value.
-             *
-             * Exit:
-             *   Returns highest 32 bits of product.
-             *
-             * Exceptions:
-             *   None.
-             *
-             ***********************************************************************/
+            /// <summary>
+            /// Multiply the two numbers. The low 96 bits of the result overwrite
+            /// the input. The last 32 bits of the product are the return value.
+            /// </summary>
+            /// <param name="bufNum">96-bit number as array of ULONGs, least-sig first</param>
+            /// <param name="ulPwr">Scale factor to multiply by</param>
+            /// <returns>Returns highest 32 bits of product</returns>
             private static uint IncreaseScale(ref Buf12 bufNum, uint ulPwr)
             {
                 ulong tmp = UInt32x32To64(bufNum.U0, ulPwr);
@@ -567,23 +520,14 @@ PosRem:
                 bufNum.High64 = tmp;
             }
 
-            /***
-            * ScaleResult
-            *
-            * Entry:
-            *   bufRes - Array of ULONGs with value, least-significant first.
-            *   iHiRes  - Index of last non-zero value in bufRes.
-            *   iScale  - Scale factor for this value, range 0 - 2 * DEC_SCALE_MAX
-            *
-            * Purpose:
-            *   See if we need to scale the result to fit it in 96 bits.
-            *   Perform needed scaling.  Adjust scale factor accordingly.
-            *
-            * Exit:
-            *   bufRes updated in place, always 3 ULONGs.
-            *   New scale factor returned.
-            *
-            ***********************************************************************/
+            /// <summary>
+            /// See if we need to scale the result to fit it in 96 bits.
+            /// Perform needed scaling. Adjust scale factor accordingly.
+            /// </summary>
+            /// <param name="bufRes">Array of ULONGs with value, least-significant first</param>
+            /// <param name="iHiRes">Index of last non-zero value in bufRes
+            /// <param name="iScale">Scale factor for this value, range 0 - 2 * DEC_SCALE_MAX</param>
+            /// <returns>New scale factor</returns>
             private static unsafe int ScaleResult(Buf24* bufRes, uint iHiRes, int iScale)
             {
                 Debug.Assert(iHiRes < bufRes->Length);
@@ -829,21 +773,13 @@ ThrowOverflow:
                 return iScale;
             }
 
-            /***
-            * SearchScale
-            *
-            * Entry:
-            *   bufQuo - 96-bit quotient
-            *   iScale  - Scale factor of quotient, range -DEC_SCALE_MAX to DEC_SCALE_MAX-1
-            *
-            * Purpose:
-            *   Determine the max power of 10, <= 9, that the quotient can be scaled
-            *   up by and still fit in 96 bits.
-            *
-            * Exit:
-            *   Returns power of 10 to scale by.
-            *
-            ***********************************************************************/
+            /// <summary>
+            /// Determine the max power of 10, <= 9, that the quotient can be scaled
+            /// up by and still fit in 96 bits.
+            /// </summary>
+            /// <param name="bufQuo">96-bit quotient</param>
+            /// <param name="iScale ">Scale factor of quotient, range -DEC_SCALE_MAX to DEC_SCALE_MAX-1</param>
+            /// <returns>power of 10 to scale by</returns>
             private static int SearchScale(ref Buf12 bufQuo, int iScale)
             {
                 const uint OVFL_MAX_9_HI = 4;
@@ -1270,9 +1206,9 @@ ReturnResult:
 
 #endregion
 
-            //**********************************************************************
-            // VarCyFromDec - Convert Currency to Decimal (similar to OleAut32 api.)
-            //**********************************************************************
+            /// <summary>
+            /// Convert Currency to Decimal (similar to OleAut32 api.)
+            /// </summary>
             internal static long VarCyFromDec(ref DecCalc pdecIn)
             {
                 long value;
@@ -1315,9 +1251,9 @@ ThrowOverflow:
                 throw new OverflowException(SR.Overflow_Currency);
             }
 
-            //**********************************************************************
-            // VarDecCmp - Decimal Compare updated to return values similar to ICompareTo
-            //**********************************************************************
+            /// <summary>
+            /// Decimal Compare updated to return values similar to ICompareTo
+            /// </summary>
             internal static int VarDecCmp(in decimal pdecL, in decimal pdecR)
             {
                 if ((pdecR.Low | pdecR.Mid | pdecR.High) == 0)
@@ -1403,9 +1339,9 @@ ThrowOverflow:
                 return sign;
             }
 
-            //**********************************************************************
-            // VarDecMul - Decimal Multiply
-            //**********************************************************************
+            /// <summary>
+            /// Decimal Multiply
+            /// </summary>
             internal static unsafe void VarDecMul(ref DecCalc pdecL, ref DecCalc pdecR)
             {
                 int iScale = (byte)(pdecL.uflags + pdecR.uflags >> ScaleShift);
@@ -1616,9 +1552,9 @@ ReturnZero:
                 pdecL = default;
             }
 
-            //**********************************************************************
-            // VarDecFromR4 - Convert float to Decimal
-            //**********************************************************************
+            /// <summary>
+            /// Convert float to Decimal
+            /// </summary>
             internal static void VarDecFromR4(float input, out DecCalc pdecOut)
             {
                 pdecOut = default;
@@ -1783,9 +1719,9 @@ ReturnZero:
                 pdecOut.uflags = flags;
             }
 
-            //**********************************************************************
-            // VarDecFromR8 - Convert double to Decimal
-            //**********************************************************************
+            /// <summary>
+            /// Convert double to Decimal
+            /// </summary>
             internal static void VarDecFromR8(double input, out DecCalc pdecOut)
             {
                 pdecOut = default;
@@ -1955,17 +1891,17 @@ ReturnZero:
                 pdecOut.uflags = flags;
             }
 
-            //**********************************************************************
-            // VarR4ToDec - Convert Decimal to float
-            //**********************************************************************
+            /// <summary>
+            /// Convert Decimal to float
+            /// </summary>
             internal static float VarR4FromDec(ref decimal pdecIn)
             {
                 return (float)VarR8FromDec(ref pdecIn);
             }
 
-            //**********************************************************************
-            // VarR8ToDec - Convert Decimal to double
-            //**********************************************************************
+            /// <summary>
+            /// Convert Decimal to double
+            /// </summary>
             internal static double VarR8FromDec(ref decimal pdecIn)
             {
                 // Value taken via reverse engineering the double that corresponds to 2^64. (oleaut32 has ds2to64 = DEFDS(0, 0, DBLBIAS + 65, 0))
@@ -2272,9 +2208,9 @@ ThrowOverflow:
                 throw new OverflowException(SR.Overflow_Decimal);
             }
 
-            //**********************************************************************
-            // VarDecMod - Computes the remainder between two decimals
-            //**********************************************************************
+            /// <summary>
+            /// Computes the remainder between two decimals
+            /// </summary>
             internal static void VarDecMod(ref DecCalc d1, ref DecCalc d2)
             {
                 if ((d2.ulo | d2.umid | d2.uhi) == 0)
