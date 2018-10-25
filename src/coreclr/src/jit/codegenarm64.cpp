@@ -1831,6 +1831,7 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
 void CodeGen::genLclHeap(GenTree* tree)
 {
     assert(tree->OperGet() == GT_LCLHEAP);
+    assert(compiler->compLocallocUsed);
 
     GenTree* size = tree->gtOp.gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
@@ -1864,14 +1865,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
-    // Whether method has PSPSym.
-    bool hasPspSym;
-#if FEATURE_EH_FUNCLETS
-    hasPspSym = (compiler->lvaPSPSym != BAD_VAR_NUM);
-#else
-    hasPspSym = false;
-#endif
-
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
     if (size->IsCnsIntOrI())
@@ -1900,9 +1893,9 @@ void CodeGen::genLclHeap(GenTree* tree)
         inst_JMP(jmpEqual, endLabel);
 
         // Compute the size of the block to allocate and perform alignment.
-        // If the method has no PSPSym and compInitMem=true, we can reuse targetReg as regcnt,
+        // If compInitMem=true, we can reuse targetReg as regcnt,
         // since we don't need any internal registers.
-        if (!hasPspSym && compiler->info.compInitMem)
+        if (compiler->info.compInitMem)
         {
             assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
@@ -1923,34 +1916,18 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
     stackAdjustment = 0;
-#if FEATURE_EH_FUNCLETS
-    // If we have PSPsym, then need to re-locate it after localloc.
-    if (hasPspSym)
-    {
-        stackAdjustment += STACK_ALIGN;
 
-        // Save a copy of PSPSym
-        pspSymReg = tree->ExtractTempReg();
-        getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, pspSymReg, compiler->lvaPSPSym, 0);
-    }
-#endif
-
-#if FEATURE_FIXED_OUT_ARGS
     // If we have an outgoing arg area then we must adjust the SP by popping off the
     // outgoing arg area. We will restore it right before we return from this method.
     //
-    // Localloc is supposed to return stack space that is STACK_ALIGN'ed.  The following
-    // are the cases that needs to be handled:
-    //   i) Method has PSPSym + out-going arg area.
-    //      It is guaranteed that size of out-going arg area is STACK_ALIGNED (see fgMorphArgs).
-    //      Therefore, we will pop-off RSP upto out-going arg area before locallocating.
-    //      We need to add padding to ensure RSP is STACK_ALIGN'ed while re-locating PSPSym + arg area.
-    //  ii) Method has no PSPSym but out-going arg area.
-    //      Almost same case as above without the requirement to pad for the final RSP to be STACK_ALIGN'ed.
-    // iii) Method has PSPSym but no out-going arg area.
-    //      Nothing to pop-off from the stack but needs to relocate PSPSym with SP padded.
-    //  iv) Method has neither PSPSym nor out-going arg area.
-    //      Nothing needs to popped off from stack nor relocated.
+    // Localloc returns stack space that aligned to STACK_ALIGN bytes. The following
+    // are the cases that need to be handled:
+    //   i) Method has out-going arg area.
+    //      It is guaranteed that size of out-going arg area is STACK_ALIGN'ed (see fgMorphArgs).
+    //      Therefore, we will pop off the out-going arg area from the stack pointer before allocating the localloc
+    //      space.
+    //  ii) Method has no out-going arg area.
+    //      Nothing to pop off from the stack.
     if (compiler->lvaOutgoingArgSpaceSize > 0)
     {
         assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
@@ -1958,7 +1935,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
         stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
     }
-#endif
 
     if (size->IsCnsIntOrI())
     {
@@ -1983,9 +1959,10 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
         else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize())) // must be < not <=
         {
-            // Since the size is a page or less, simply adjust the SP value
-            // The SP might already be in the guard page, must touch it BEFORE
+            // Since the size is less than a page, simply adjust the SP value.
+            // The SP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
+
             // ldr wz, [SP, #0]
             getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SP, 0);
 
@@ -1995,10 +1972,10 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // else, "mov regCnt, amount"
-        // If the method has no PSPSym and compInitMem=true, we can reuse targetReg as regcnt.
+        // If compInitMem=true, we can reuse targetReg as regcnt.
         // Since size is a constant, regCnt is not yet initialized.
         assert(regCnt == REG_NA);
-        if (!hasPspSym && compiler->info.compInitMem)
+        if (compiler->info.compInitMem)
         {
             assert(tree->AvailableTempRegCount() == 0);
             regCnt = targetReg;
@@ -2015,7 +1992,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         BasicBlock* loop = genCreateTempLabel();
 
         // At this point 'regCnt' is set to the total number of bytes to locAlloc.
-        // Since we have to zero out the allocated memory AND ensure that RSP is always valid
+        // Since we have to zero out the allocated memory AND ensure that the stack pointer is always valid
         // by tickling the pages, we will just push 0's on the stack.
         //
         // Note: regCnt is guaranteed to be even on Amd64 since STACK_ALIGN/TARGET_POINTER_SIZE = 2
@@ -2038,7 +2015,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
     else
     {
-        // At this point 'regCnt' is set to the total number of bytes to locAlloc.
+        // At this point 'regCnt' is set to the total number of bytes to localloc.
         //
         // We don't need to zero out the allocated memory. However, we do have
         // to tickle the pages to ensure that SP is always valid and is
@@ -2109,23 +2086,15 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 
 ALLOC_DONE:
-    // Re-adjust SP to allocate PSPSym and out-going arg area
+    // Re-adjust SP to allocate out-going arg area
     if (stackAdjustment != 0)
     {
         assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
         assert(stackAdjustment > 0);
         getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, (int)stackAdjustment);
 
-#if FEATURE_EH_FUNCLETS
-        // Write PSPSym to its new location.
-        if (hasPspSym)
-        {
-            assert(genIsValidIntReg(pspSymReg));
-            getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, pspSymReg, compiler->lvaPSPSym, 0);
-        }
-#endif
         // Return the stackalloc'ed address in result register.
-        // TargetReg = RSP + stackAdjustment.
+        // TargetReg = SP + stackAdjustment.
         //
         getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, targetReg, REG_SPBASE, (int)stackAdjustment);
     }
@@ -2248,7 +2217,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 {
                     GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();
                     ssize_t              intConstValue = intConstTree->IconValue();
-                    assert(intConstValue != 0); // already checked above by IsIntegralConst(0))
+                    assert(intConstValue != 0); // already checked above by IsIntegralConst(0)
                     if (intConstValue != -1)
                     {
                         checkDividend = false; // We statically know that the dividend is not -1
