@@ -2201,6 +2201,7 @@ mono_string_equal_internal (MonoString *s1, MonoString *s2);
 unsigned
 mono_string_hash_internal (MonoString *s);
 
+ICALL_EXPORT
 int
 mono_object_hash_internal (MonoObject* obj);
 
@@ -2218,6 +2219,7 @@ mono_object_get_domain_internal (MonoObject *obj);
 void*
 mono_object_unbox_internal (MonoObject *obj);
 
+ICALL_EXPORT
 void
 mono_monitor_exit_internal (MonoObject *obj);
 

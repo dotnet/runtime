@@ -93,8 +93,6 @@ ICALL_EXPORT MonoObject* ves_icall_System_Runtime_CompilerServices_RuntimeHelper
 ICALL_EXPORT MonoObject* ves_icall_property_info_get_default_value (MonoReflectionProperty*);
 ICALL_EXPORT MonoReflectionType* ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxy*);
 ICALL_EXPORT MonoString* ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString*);
-ICALL_EXPORT MonoStringHandle ves_icall_System_Environment_GetMachineConfigPath (MonoError *error); // FIXME Use HANDLES_REUSE_WRAPPER.
-ICALL_EXPORT MonoStringHandle ves_icall_System_Web_Util_ICalls_GetMachineConfigPath (MonoError *error); // FIXME Use HANDLES_REUSE_WRAPPER.
 ICALL_EXPORT MonoType* mono_ArgIterator_IntGetNextArgType (MonoArgIterator*);
 ICALL_EXPORT MonoTypedRef mono_ArgIterator_IntGetNextArg (MonoArgIterator*);
 ICALL_EXPORT MonoTypedRef mono_ArgIterator_IntGetNextArgT (MonoArgIterator*, MonoType*);
@@ -179,6 +177,5 @@ ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove (guint8*, guin
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8*, guint8*, guint, MonoType*);
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, guint);
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ecvt_s(char*, size_t, double, int, int*, int*);
-ICALL_EXPORT void ves_icall_get_method_info (MonoMethod*, MonoMethodInfo*, MonoError*);
 
 #endif // __MONO_METADATA_ICALL_H__

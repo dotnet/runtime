@@ -2625,7 +2625,7 @@ mono_network_cleanup (void)
 	mono_networking_shutdown ();
 }
 
-ICALL_EXPORT void
+void
 ves_icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoError *error)
 {
 	error_init (error);

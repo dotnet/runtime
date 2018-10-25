@@ -1866,7 +1866,6 @@ ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj
  * Gets the priority of the given thread.
  * @return: The priority of the given thread.
  */
-ICALL_EXPORT
 int
 ves_icall_System_Threading_Thread_GetPriority (MonoThreadObjectHandle this_obj, MonoError *error)
 {
@@ -1888,7 +1887,6 @@ ves_icall_System_Threading_Thread_GetPriority (MonoThreadObjectHandle this_obj, 
  *
  * Sets the priority of the given thread.
  */
-ICALL_EXPORT
 void
 ves_icall_System_Threading_Thread_SetPriority (MonoThreadObjectHandle this_obj, int priority, MonoError *error)
 {

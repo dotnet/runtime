@@ -3851,7 +3851,7 @@ reflection_setup_internal_class (MonoReflectionTypeBuilderHandle ref_tb, MonoErr
 	}
 }
 
-ICALL_EXPORT MonoReflectionTypeHandle
+MonoReflectionTypeHandle
 ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_tb, MonoError *error)
 {
 	error_init (error);
