@@ -2193,6 +2193,7 @@ copy_varargs_vtstack (MonoMethodSignature *csig, stackval *sp, unsigned char **v
 	*(char**)vt_sp = vt;
 }
 
+#ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 /*
  * These functions are the entry points into the interpreter from compiled code.
  * They are called by the interp_in wrappers. They have the following signature:
@@ -2348,7 +2349,7 @@ interp_entry_general (gpointer this_arg, gpointer res, gpointer *args, gpointer 
 	interp_entry (&data);
 }
 
-#ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
+#else /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
 
 // inline so we can alloc on stack
 #define alloc_storage_for_stackval(s, t, p) do {							\
@@ -2416,7 +2417,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	/* Write back the return value */
 	mono_arch_set_native_call_context_ret (ccontext, &frame, sig);
 }
-#endif
+#endif /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
 
 static InterpMethod*
 lookup_method_pointer (gpointer addr)
