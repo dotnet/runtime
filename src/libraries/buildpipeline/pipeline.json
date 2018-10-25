@@ -139,7 +139,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "/p:ArchGroup=arm -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "/p:ArchGroup=arm -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "/p:ArchGroup=arm -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
@@ -155,7 +155,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm64",
-            "PB_BuildArguments": "/p:ArchGroup=arm64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "/p:ArchGroup=arm64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "/p:ArchGroup=arm64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
@@ -171,7 +171,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4+Windows.10.Nano.Amd64+Windows.10.Amd64.Core+Windows.7.Amd64+Windows.81.Amd64",
@@ -188,7 +188,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "/p:ArchGroup=x86 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "/p:ArchGroup=x86 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "/p:ArchGroup=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4+Windows.10.Amd64.Core+Windows.7.Amd64+Windows.81.Amd64",
@@ -205,7 +205,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework uap /p:ArchGroup=arm -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework uap /p:ArchGroup=arm -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework uap /p:ArchGroup=arm -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Arm64",
@@ -222,7 +222,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework uap /p:ArchGroup=x64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework uap /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework uap /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4",
@@ -239,7 +239,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework uap /p:ArchGroup=x86 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
+            "PB_BuildArguments": "-framework uap /p:ArchGroup=x86 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework uap /p:ArchGroup=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4",
@@ -256,7 +256,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "arm",
-            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=arm -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=arm -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_BuildTestsArguments": "-framework uapaot /p:ArchGroup=arm -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64",
@@ -273,7 +273,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows-NoTest",
           "Parameters": {
             "PB_Platform": "arm64",
-            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=arm64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=arm64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)"
           },
           "ReportingParameters": {
@@ -287,7 +287,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=x64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_BuildTestsArguments": "-framework uapaot /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4",
@@ -304,7 +304,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=x86 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+            "PB_BuildArguments": "-framework uapaot /p:ArchGroup=x86 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_BuildTestsArguments": "-framework uapaot /p:ArchGroup=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4",
@@ -321,7 +321,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows-NoTest",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-allConfigurations /p:ArchGroup=x64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "-allConfigurations /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)"
           },
           "ReportingParameters": {
@@ -335,7 +335,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x64",
-            "PB_BuildArguments": "-framework netfx /p:ArchGroup=x64 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "-framework netfx /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "-framework netfx /p:ArchGroup=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4",
@@ -352,7 +352,7 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_BuildArguments": "-framework netfx /p:ArchGroup=x86 -$(PB_ConfigurationGroup) /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_BuildArguments": "-framework netfx /p:ArchGroup=x86 -$(PB_ConfigurationGroup) -sign /p:SignType=$(PB_SignType) /p:RuntimeOS=win10 /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_BuildTestsArguments": "-framework netfx /p:ArchGroup=x86 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
             "PB_TargetQueue": "Windows.10.Amd64.ClientRS4",
