@@ -601,7 +601,7 @@ namespace System
             }
 
             // Check for '{'
-            if ((uint)guidString.Length <= numStart + numLen + 1 || guidString[numStart + numLen + 1] != '{')
+            if ((uint)guidString.Length <= (uint)(numStart + numLen + 1) || guidString[numStart + numLen + 1] != '{')
             {
                 result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
                 return false;
