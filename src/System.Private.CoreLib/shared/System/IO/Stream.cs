@@ -727,7 +727,7 @@ namespace System.IO
             try
             {
                 int numRead = Read(sharedBuffer, 0, buffer.Length);
-                if ((uint)numRead > buffer.Length)
+                if ((uint)numRead > (uint)buffer.Length)
                 {
                     throw new IOException(SR.IO_StreamTooLong);
                 }
