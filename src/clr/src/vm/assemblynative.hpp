@@ -113,6 +113,8 @@ public:
     static 
     void QCALLTYPE GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
 
+    static BOOL QCALLTYPE GetIsCollectible(QCall::AssemblyHandle pAssembly);
+
     //
     // PEFile QCalls
     // 
