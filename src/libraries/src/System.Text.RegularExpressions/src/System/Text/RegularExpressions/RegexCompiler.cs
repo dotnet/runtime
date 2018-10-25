@@ -72,6 +72,7 @@ namespace System.Text.RegularExpressions
         private LocalBuilder _tempV;
         private LocalBuilder _temp2V;
         private LocalBuilder _temp3V;
+        private LocalBuilder _cultureV;      // current culture is cached in local variable to prevent many thread local storage accesses for CultureInfo.CurrentCulture
 
         protected RegexCode _code;              // the RegexCode object (used for debugging only)
         protected int[] _codes;             // the RegexCodes being translated
@@ -961,14 +962,20 @@ namespace System.Text.RegularExpressions
             _ilg.Emit(OpCodes.Br, AdvanceLabel());
         }
 
-        private void CallToLower()
+        private void InitLocalCultureInfo()
         {
             if ((_options & RegexOptions.CultureInvariant) != 0)
                 Call(s_getInvariantCulture);
             else
                 Call(s_getCurrentCulture);
 
-            Call(s_chartolowerM);
+            Stloc(_cultureV);
+        }
+
+        private void CallToLower()
+        {
+             Ldloc(_cultureV);
+             Call(s_chartolowerM);
         }
 
         /*
@@ -1089,6 +1096,9 @@ namespace System.Text.RegularExpressions
             _textV = DeclareString();
             _tempV = DeclareInt();
             _temp2V = DeclareInt();
+            _cultureV = DeclareCultureInfo();
+
+            InitLocalCultureInfo();
 
             if (0 != (_anchors & (RegexFCD.Beginning | RegexFCD.Start | RegexFCD.EndZ | RegexFCD.End)))
             {
@@ -1553,6 +1563,14 @@ namespace System.Text.RegularExpressions
         }
 
         /*
+         * Declares a local CultureInfo 
+         */
+        private LocalBuilder DeclareCultureInfo()
+        {
+            return _ilg.DeclareLocal(typeof(CultureInfo));
+        }
+
+        /*
          * Declares a local int array
          */
         private LocalBuilder DeclareIntArray()
@@ -1587,6 +1605,7 @@ namespace System.Text.RegularExpressions
             _textbegV = DeclareInt();
             _textendV = DeclareInt();
             _textstartV = DeclareInt();
+            _cultureV = DeclareCultureInfo();
 
             // clear some tables
 
@@ -1599,6 +1618,9 @@ namespace System.Text.RegularExpressions
             _backtrack = DefineLabel();
 
             // emit the code!
+
+            // cache CultureInfo in local variable which saves excessive thread local storage accesses
+            InitLocalCultureInfo();  
 
             GenerateForwardSection();
             GenerateMiddleSection();
