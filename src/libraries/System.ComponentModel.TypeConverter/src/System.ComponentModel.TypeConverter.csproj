@@ -154,6 +154,7 @@
     <Compile Include="System\ComponentModel\LicenseUsageMode.cs" />
     <Compile Include="System\ComponentModel\LicenseException.cs" />
     <Compile Include="System\ComponentModel\LicenseManager.cs" />
+    <Compile Include="System\ComponentModel\LicenseManager.LicenseInteropHelper.cs" />
     <Compile Include="System\ComponentModel\LicenseProvider.cs" />
     <Compile Include="System\ComponentModel\Design\DesigntimeLicenseContext.cs" />
     <Compile Include="System\ComponentModel\LicenseProviderAttribute.cs" />
