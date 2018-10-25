@@ -54,6 +54,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/Primitives.cmd">
             <Issue>19164</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/IDispatch/NETClientIDispatch/NETClientIDispatch.cmd">
+            <Issue>19164</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
             <Issue>20322</Issue>
         </ExcludeList>
@@ -892,12 +895,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/*">
             <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/NETClientPrimitives.*">
-            <Issue>by design Windows only</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/Primitives.*">
-            <Issue>by design Windows only</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/IL/PInvokeTail/PInvokeTail/*">
             <Issue>needs triage</Issue>
