@@ -153,6 +153,12 @@ namespace NetClient
 
         static int Main(string[] doNotUse)
         {
+            // RegFree COM is not supported on Windows Nano
+            if (Utilities.IsWindowsNanoServer)
+            {
+                return 100;
+            }
+
             try
             {
                 Validate_Numeric_In_ReturnByRef();
