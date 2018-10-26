@@ -8,6 +8,7 @@
 
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+    <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />
@@ -15,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="Primitives/CMakeLists.txt"/>
     <ProjectReference Include="../NetServer/NetServer.csproj" />
+    <ProjectReference Include="../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
