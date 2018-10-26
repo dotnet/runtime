@@ -60,7 +60,7 @@ phases:
   - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
     # Internal only resource, and Microbuild signing shouldn't be applied to PRs.
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: MicroBuildSigningPlugin@1
+      - task: MicroBuildSigningPlugin@2
         displayName: Install MicroBuild plugin
         inputs:
           signType: $(_SignType)
