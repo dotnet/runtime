@@ -19461,13 +19461,8 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // See if we have special knowlege that can get us a type or a better type.
     if ((objClass == nullptr) || !isExact)
     {
-        actualThisObj = thisObj;
-
         // Walk back through any return expression placeholders
-        while (actualThisObj->OperGet() == GT_RET_EXPR)
-        {
-            actualThisObj = actualThisObj->gtRetExpr.gtInlineCandidate;
-        }
+        actualThisObj = thisObj->gtRetExprVal();
 
         // See if we landed on a call to a special intrinsic method
         if (actualThisObj->IsCall())

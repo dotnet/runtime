@@ -3833,6 +3833,11 @@ struct GenTreeCmpXchg : public GenTree
         // There's no reason to do a compare-exchange on a local location, so we'll assume that all of these
         // have global effects.
         gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+
+        // Merge in flags from operands
+        gtFlags |= gtOpLocation->gtFlags & GTF_ALL_EFFECT;
+        gtFlags |= gtOpValue->gtFlags & GTF_ALL_EFFECT;
+        gtFlags |= gtOpComparand->gtFlags & GTF_ALL_EFFECT;
     }
 #if DEBUGGABLE_GENTREE
     GenTreeCmpXchg() : GenTree()
@@ -4367,6 +4372,7 @@ struct GenTreeArrElem : public GenTree
         for (unsigned char i = 0; i < rank; i++)
         {
             gtArrInds[i] = inds[i];
+            gtFlags |= (inds[i]->gtFlags & GTF_ALL_EFFECT);
         }
         gtFlags |= GTF_EXCEPT;
     }
