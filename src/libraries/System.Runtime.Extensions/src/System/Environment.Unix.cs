@@ -122,9 +122,12 @@ namespace System
                 Debug.Fail($"Unable to get home directory: {exc}");
             }
 
+            // Fall back to '/' when we can't determine the home directory.
+            // This location isn't writable by non-root users which provides some safeguard
+            // that the application doesn't write data which is meant to be private.
             if (string.IsNullOrEmpty(home))
             {
-                home = Path.GetTempPath();
+                home = "/";
             }
 
             // TODO: Consider caching (or precomputing and caching) all subsequent results.
