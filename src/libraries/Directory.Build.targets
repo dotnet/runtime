@@ -206,6 +206,8 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
+  <Import Project="eng/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+
   <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
   <Target Name="CreateVersionFileDuringBuild" />
 

@@ -258,7 +258,9 @@
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
     <DebugType Condition="'$(TargetsNetFx)' == 'true' AND '$(RunningOnUnix)' != 'true'"></DebugType>
-    <UseSourceLink>true</UseSourceLink>
+
+    <!-- Rhel 6 doesn't support the source control git package so disable SourceLink -->
+    <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6'))">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
