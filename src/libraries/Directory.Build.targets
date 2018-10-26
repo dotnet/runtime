@@ -133,15 +133,6 @@
     </BinPlaceConfiguration>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(BlockStable)' == 'true'">
-    <!--
-      If BlockStable is set to true then always include the label and build number in the package version.
-      This needs to be set before we import packaging.targets which comes in the Build.Common.targets.
-    -->
-    <IncludePreReleaseLabelInPackageVersion>true</IncludePreReleaseLabelInPackageVersion>
-    <IncludeBuildNumberInPackageVersion>true</IncludeBuildNumberInPackageVersion>
-  </PropertyGroup>
-
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)eng/Resources.targets" />
 

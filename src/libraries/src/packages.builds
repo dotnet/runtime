@@ -29,7 +29,7 @@
   -->
   <Target Name="UpdatePackageIndexWithStableVersions"
           BeforeTargets="BuildAllProjects"
-          Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">
+          Condition="'$(DotNetFinalVersionKind)' == 'release'">
     <ItemGroup>
       <!--
       The private packages don't get stabilized so they don't need to be included
