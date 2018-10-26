@@ -51,6 +51,7 @@
 #include <pthread.h>
 #endif
 #include "external-only.h"
+#include "icall-decl.h"
 
 typedef struct DomainFinalizationReq {
 	gint32 ref;

@@ -44,9 +44,6 @@ mono_icall_set_environment_variable (MonoString *name, MonoString *value);
 MonoStringHandle
 mono_icall_get_windows_folder_path (int folder, MonoError *error);
 
-MonoBoolean
-mono_icall_broadcast_setting_change (MonoError *error);
-
 void
 mono_icall_write_windows_debug_string (const gunichar2 *message);
 

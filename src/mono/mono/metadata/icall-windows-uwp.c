@@ -50,18 +50,14 @@ mono_icall_get_logical_drives (void)
 #endif
 
 #if !HAVE_API_SUPPORT_WIN32_SEND_MESSAGE_TIMEOUT
-MonoBoolean
-mono_icall_broadcast_setting_change (MonoError *error)
+ICALL_EXPORT void
+ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 {
-	error_init (error);
-
 	g_unsupported_api ("SendMessageTimeout");
 
 	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SendMessageTimeout");
 
 	SetLastError (ERROR_NOT_SUPPORTED);
-
-	return is_ok (error);
 }
 #endif
 

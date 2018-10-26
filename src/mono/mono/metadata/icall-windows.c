@@ -192,12 +192,10 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_SEND_MESSAGE_TIMEOUT
-MonoBoolean
-mono_icall_broadcast_setting_change (MonoError *error)
+ICALL_EXPORT void
+ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 {
-	error_init (error);
 	SendMessageTimeout (HWND_BROADCAST, WM_SETTINGCHANGE, (WPARAM)NULL, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 2000, 0);
-	return TRUE;
 }
 #endif
 
