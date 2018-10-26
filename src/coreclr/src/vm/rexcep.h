@@ -300,8 +300,6 @@ DEFINE_EXCEPTION(g_SystemNS,           NotImplementedException,        false,  E
 
 DEFINE_EXCEPTION(g_SystemNS,           OutOfMemoryException,           false,  E_OUTOFMEMORY, CTL_E_OUTOFMEMORY, STD_CTL_SCODE(31001))
 
-DEFINE_EXCEPTION(g_SystemNS,           CrossAppDomainMarshaledException, false, E_FAIL)
-
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentNullException,          false,  E_POINTER)
 

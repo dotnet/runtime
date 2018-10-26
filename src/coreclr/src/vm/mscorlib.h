@@ -385,11 +385,6 @@ DEFINE_METHOD(EXCEPTION,            TRY_GET_RESTRICTED_LANGUAGE_ERROR_OBJECT,   
 #endif // FEATURE_COMINTEROP
 
 
-DEFINE_CLASS(CROSSAPPDOMAINMARSHALEDEXCEPTION,  System,      CrossAppDomainMarshaledException)
-DEFINE_METHOD(CROSSAPPDOMAINMARSHALEDEXCEPTION, STR_INT_CTOR, .ctor, IM_Str_Int_RetVoid)
-
-
-
 DEFINE_CLASS(SYSTEM_EXCEPTION,      System,                 SystemException)
 DEFINE_METHOD(SYSTEM_EXCEPTION,     STR_EX_CTOR,            .ctor,                      IM_Str_Exception_RetVoid)
 
@@ -902,8 +897,6 @@ DEFINE_CLASS(CONTEXTCALLBACK,       Threading,       ContextCallback)
 #ifdef _DEBUG
 DEFINE_CLASS(STACKCRAWMARK,         Threading,       StackCrawlMark)
 #endif
-
-DEFINE_CLASS(CROSS_CONTEXT_DELEGATE, Threading, InternalCrossContextDelegate)
 
 DEFINE_CLASS_U(Threading,              Thread,                     ThreadBaseObject)
 DEFINE_FIELD_U(m_Name,                     ThreadBaseObject,   m_Name)
