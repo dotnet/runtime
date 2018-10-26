@@ -59,6 +59,9 @@
     IMPORT JIT_GetSharedNonGCStaticBase_Helper
     IMPORT JIT_GetSharedGCStaticBase_Helper
 
+#ifdef FEATURE_COMINTEROP
+    IMPORT CLRToCOMWorker
+#endif // FEATURE_COMINTEROP
     TEXTAREA
 
 ;; LPVOID __stdcall GetCurrentIP(void);
@@ -512,6 +515,89 @@ LNullThis
     LEAF_END
 
 #ifdef FEATURE_COMINTEROP
+
+; ------------------------------------------------------------------
+; setStubReturnValue
+; w0 - size of floating point return value (MetaSig::GetFPReturnSize())
+; x1 - pointer to the return buffer in the stub frame
+    LEAF_ENTRY setStubReturnValue
+
+        cbz     w0, NoFloatingPointRetVal
+
+        ;; Float return case
+        cmp     x0, #4
+        bne     LNoFloatRetVal
+        ldr     s0, [x1]
+        ret
+LNoFloatRetVal
+
+        ;; Double return case
+        cmp     w0, #8
+        bne     LNoDoubleRetVal
+        ldr     d0, [x1]
+        ret
+LNoDoubleRetVal
+
+        cmp     w0, #16
+        bne     LNoFloatHFARetVal
+        ldp     s0, s1, [x1]
+        ldp     s2, s3, [x1, #8]
+        ret
+LNoFloatHFARetVal
+
+        cmp     w0, #32
+        bne     LNoDoubleHFARetVal
+        ldp     d0, d1, [x1]
+        ldp     d2, d3, [x1, #16]
+        ret
+LNoDoubleHFARetVal
+
+        EMIT_BREAKPOINT ; Unreachable
+
+NoFloatingPointRetVal
+
+        ;; Restore the return value from retbuf
+        ldr     x0, [x1]
+        ldr     x1, [x1, #8]
+        ret
+
+    LEAF_END
+
+; ------------------------------------------------------------------
+; GenericComPlusCallStub that erects a ComPlusMethodFrame and calls into the runtime
+; (CLRToCOMWorker) to dispatch rare cases of the interface call.
+;
+; On entry:
+;   x0          : 'this' object
+;   x12         : Interface MethodDesc*
+;   plus user arguments in registers and on the stack
+;
+; On exit:
+;   x0/x1/s0-s3/d0-d3 set to return value of the call as appropriate
+;
+    NESTED_ENTRY GenericComPlusCallStub
+
+        PROLOG_WITH_TRANSITION_BLOCK 0x20
+
+        add         x0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
+        mov         x1, x12                         ; pMethodDesc
+
+        ; Call CLRToCOMWorker(TransitionBlock *, ComPlusCallMethodDesc *). 
+        ; This call will set up the rest of the frame (including the vfptr, the GS cookie and
+        ; linking to the thread), make the client call and return with correct registers set 
+        ; (x0/x1/s0-s3/d0-d3 as appropriate).
+
+        bl          CLRToCOMWorker
+
+        ; x0 = fpRetSize
+
+        ; return value is stored before float argument registers
+        add         x1, sp, #(__PWTB_FloatArgumentRegisters - 0x20)
+        bl          setStubReturnValue
+
+        EPILOG_WITH_TRANSITION_BLOCK_RETURN
+
+    NESTED_END
 
 ; ------------------------------------------------------------------
 ; COM to CLR stub called the first time a particular method is invoked.
