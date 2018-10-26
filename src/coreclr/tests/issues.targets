@@ -47,16 +47,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_11408/GitHub_11408/*">
             <Issue>11408</Issue>
         </ExcludeList>
-        <!-- Disable COM tests since they don't properly run on Windows.Nano and at present there is no way to special case that OS flavor. -->
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/NETClientPrimitives.cmd">
-            <Issue>19164</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NativeClients/Primitives/Primitives.cmd">
-            <Issue>19164</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/IDispatch/NETClientIDispatch/NETClientIDispatch.cmd">
-            <Issue>19164</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
             <Issue>20322</Issue>
         </ExcludeList>
