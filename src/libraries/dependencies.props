@@ -18,7 +18,7 @@
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>514edecbef647606c452e57ac888f174cb5970ca</BuildToolsCurrentRef>
-    <CoreFxOptimizationDataCurrentRef>05e573309abd7d698803ff46ed5a1ac7c1642016</CoreFxOptimizationDataCurrentRef>
+    <CoreFxOptimizationDataCurrentRef>d82b9c4c451d41884a8b0ba8f440a0edc213ae68</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -59,7 +59,7 @@
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
     <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
-    <CoreFxOptimizationDataVersion>99.99.99-master-20181025-1134</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>99.99.99-master-20181025-1539</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
