@@ -49,7 +49,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
+      "displayName": "Run script scripts/DotNet-Trusted-Publish/setup-vs-tools.cmd",
       "timeoutInMinutes": 0,
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
@@ -57,7 +57,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(VS140COMNTOOLS)\\VsDevCmd.bat",
+        "filename": "scripts/DotNet-Trusted-Publish/setup-vs-tools.cmd",
         "arguments": "",
         "modifyEnvironment": "true",
         "workingFolder": "",
@@ -536,11 +536,17 @@
   "quality": "definition",
   "drafts": [],
   "queue": {
-    "id": 36,
-    "name": "DotNet-Build",
+    "_links": {
+      "self": {
+        "href": "https://devdiv.visualstudio.com/_apis/build/Queues/330"
+      }
+    },
+    "id": 330,
+    "name": "DotNetCore-Build",
+    "url": "https://devdiv.visualstudio.com/_apis/build/Queues/330",
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 97,
+      "name": "DotNetCore-Build"
     }
   },
   "id": 2943,
