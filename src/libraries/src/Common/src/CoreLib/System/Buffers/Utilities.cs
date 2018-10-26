@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Buffers
 {
@@ -13,6 +14,11 @@ namespace System.Buffers
         internal static int SelectBucketIndex(int bufferSize)
         {
             Debug.Assert(bufferSize >= 0);
+            if (Lzcnt.IsSupported)
+            {
+                uint bits = ((uint)bufferSize - 1) >> 4;
+                return 32 - (int)Lzcnt.LeadingZeroCount(bits);
+            }
 
             // bufferSize of 0 will underflow here, causing a huge
             // index which the caller will discard because it is not
