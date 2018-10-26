@@ -764,7 +764,7 @@ namespace System.Tests
             Assert.Equal(dt.ToString("r"), DateTime.ParseExact(Whitespace + input, "r", null, DateTimeStyles.AllowLeadingWhite).ToString("r"));
             Assert.Equal(dt.ToString("r"), DateTime.ParseExact(input + Whitespace, "r", null, DateTimeStyles.AllowTrailingWhite).ToString("r"));
             Assert.Equal(dt.ToString("r"), DateTime.ParseExact(
-                Whitespace + 
+                Whitespace +
                 input +
                 Whitespace, "r", null, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite).ToString("r"));
             Assert.Equal(dt.ToString("r"), DateTime.ParseExact(
@@ -1122,7 +1122,7 @@ namespace System.Tests
             }
             else
             {
-                // When the date separator and time separator are the same, DateTime.TryParse cannot 
+                // When the date separator and time separator are the same, DateTime.TryParse cannot
                 // tell the difference between a short date like dd.MM.yy and a short time
                 // like HH.mm.ss. So it assumes that if it gets 03.04.11, that must be a time
                 // and uses the current date to construct the date time.
@@ -1229,7 +1229,25 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("style", () => DateTime.ParseExact(strDateTime, formats, provider, style));
         }
 
-        public static IEnumerable<object[]> Parse_ValidInput_Suceeds_MemberData()
+        [Fact]
+        public static void TestTryParseAtBoundaries()
+        {
+            Assert.True(DateTime.TryParse("9999-12-31T23:59:59.9999999", out var maxDateTime),
+                        "DateTime parsing expected to succeed at the boundary DateTime.MaxValue");
+            Assert.Equal(DateTime.MaxValue, maxDateTime);
+
+            if (PlatformDetection.IsFullFramework)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.TryParse("9999-12-31T23:59:59.999999999Z", out var dateTime)); // exceeded DateTime.MaxValue
+            }
+            else
+            {
+                Assert.False(DateTime.TryParse("9999-12-31T23:59:59.999999999Z", out var dateTime),
+                         "DateTime parsing expected to throw with any dates greater than DateTime.MaxValue");
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_ValidInput_Succeeds_MemberData()
         {
             yield return new object[] { "1234 12", CultureInfo.InvariantCulture, new DateTime(1234, 12, 1, 0, 0, 0) };
             yield return new object[] { "12 1234", CultureInfo.InvariantCulture, new DateTime(1234, 12, 1, 0, 0, 0) };
@@ -1250,8 +1268,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Parse_ValidInput_Suceeds_MemberData))]
-        public static void Parse_ValidInput_Suceeds(string input, CultureInfo culture, DateTime? expected)
+        [MemberData(nameof(Parse_ValidInput_Succeeds_MemberData))]
+        public static void Parse_ValidInput_Succeeds(string input, CultureInfo culture, DateTime? expected)
         {
             Assert.Equal(expected, DateTime.Parse(input, culture));
         }
@@ -1478,7 +1496,7 @@ namespace System.Tests
             //                     case 2: format = "r"; break;
             //                     default: format = "R"; break;
             //                 }
-            //     
+            //
             //                 try
             //                 {
             //                     rand.NextBytes(bytes);
