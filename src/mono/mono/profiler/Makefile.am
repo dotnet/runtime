@@ -36,9 +36,7 @@ suppression_DATA = mono-profiler-coverage.suppression
 #
 # See: https://bugzilla.xamarin.com/show_bug.cgi?id=57011
 if !ENABLE_COOP_SUSPEND
-if !ENABLE_HYBRID_SUSPEND
 check_targets = testlog
-endif
 endif
 
 endif
