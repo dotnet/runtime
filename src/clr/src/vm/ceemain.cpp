@@ -849,9 +849,6 @@ void EEStartupHelper(COINITIEE fFlags)
             IfFailGo(E_OUTOFMEMORY);
         }
 
-        // Initialize contexts
-        Context::Initialize();
-
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
 

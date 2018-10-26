@@ -1814,14 +1814,6 @@ BOOL Thread::InitThread(BOOL fInternal)
         {
             ThrowOutOfMemory();
         }
-
-        // We commit the thread's entire stack when it enters the runtime to allow us to be reliable in low me
-        // situtations. See the comments in front of Thread::CommitThreadStack() for mor information.
-        ret = Thread::CommitThreadStack(this);
-        if (ret == FALSE)
-        {
-            ThrowOutOfMemory();
-        }
     }
 
     ret = Thread::AllocateIOCompletionContext();
@@ -1906,15 +1898,6 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
     BOOL    res = TRUE;
 
     res = SetStackLimits(fAll);
-    if (res == FALSE)
-    {
-        m_pExceptionDuringStartup = Exception::GetOOMException();
-        goto FAILURE;
-    }
-
-    // We commit the thread's entire stack when it enters the runtime to allow us to be reliable in low memory
-    // situtations. See the comments in front of Thread::CommitThreadStack() for mor information.
-    res = Thread::CommitThreadStack(this);
     if (res == FALSE)
     {
         m_pExceptionDuringStartup = Exception::GetOOMException();
@@ -7013,28 +6996,6 @@ __declspec(noinline) void AllocateSomeStack(){
     // optimize it away completely.
     // NOTE: this assumes the stack grows down (towards 0).
     VolatileStore<INT8>(mem, 0);
-}
-
-
-/*
- * CommitThreadStack
- *
- * Commit the thread's entire stack. A thread's stack is usually only reserved memory, not committed. The OS will
- * commit more pages as the thread's stack grows. But, if the system is low on memory and disk space, its possible
- * that the OS will not have enough memory to grow the stack. That causes a stack overflow exception at very random
- * times, and the CLR can't handle that.
- *
- * Parameters:
- *  The Thread object for this thread, if there is one.  NULL otherwise.
- *
- * Returns:
- *  TRUE if the function succeeded, FALSE otherwise.
- */
-/*static*/
-BOOL Thread::CommitThreadStack(Thread* pThreadOptional)
-{
-
-    return TRUE;
 }
 
 #ifndef FEATURE_PAL

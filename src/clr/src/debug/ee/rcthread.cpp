@@ -1570,17 +1570,6 @@ LExit:
     dbgOnly_IdentifySpecialEEThread();
 #endif
 
-    // We commit the thread's entire stack to ensure we're robust in low memory conditions. If we can't commit the
-    // stack, then we can't let the CLR continue to function.
-    BOOL fSuccess = Thread::CommitThreadStack(NULL);
-
-    if (!fSuccess)
-    {
-        STRESS_LOG0(LF_GC, LL_ALWAYS, "Thread::CommitThreadStack failed.\n");
-        _ASSERTE(!"Thread::CommitThreadStack failed.");
-        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_STACKOVERFLOW);
-    }
-
     DebuggerRCThread* t = (DebuggerRCThread*)g_pRCThread;
 
     t->ThreadProc(); // this thread is local, go and become the helper
