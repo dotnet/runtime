@@ -5901,7 +5901,7 @@ static void
 emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
 	MonoMethodSignature *sig, *csig;
-	int i, *tmp_locals, ex_local, e_local, orig_domain, attach_cookie;
+	int i, *tmp_locals, orig_domain, attach_cookie;
 	gboolean closed = FALSE;
 
 	sig = m->sig;
@@ -5934,14 +5934,10 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		m->vtaddr_var = mono_mb_add_local (mb, int_type);
 
-	ex_local = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.uint32_class));
-	e_local = mono_mb_add_local (mb, m_class_get_byval_arg (mono_defaults.exception_class));
-
 	orig_domain = mono_mb_add_local (mb, int_type);
 	attach_cookie = mono_mb_add_local (mb, int_type);
 
 	/*
-	 * guint32 ex = -1;
 	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
 	 * intptr_t attach_cookie;
 	 * intptr_t orig_domain = mono_threads_attach_coop (domain, &attach_cookie);
@@ -5956,10 +5952,6 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
-
-	mono_mb_emit_icon (mb, -1);
-	mono_mb_emit_byte (mb, CEE_CONV_U4);
-	mono_mb_emit_stloc (mb, ex_local);
 
 	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
