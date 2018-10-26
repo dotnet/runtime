@@ -694,9 +694,8 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
-        // InternalToString is called by the runtime to get the exception text 
-        // and create a corresponding CrossAppDomainMarshaledException
-        internal virtual string InternalToString()
+        // InternalToString is called by the runtime to get the exception text.
+        internal string InternalToString()
         {
             // Get the current stack trace string. 
             return ToString(true, true);
@@ -746,30 +745,6 @@ namespace System
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
-    }
-
-    //--------------------------------------------------------------------------
-    // Telesto: Telesto doesn't support appdomain marshaling of objects so
-    // managed exceptions that leak across appdomain boundaries are flatted to
-    // its ToString() output and rethrown as an CrossAppDomainMarshaledException.
-    // The Message field is set to the ToString() output of the original exception.
-    //--------------------------------------------------------------------------
-
-    internal sealed class CrossAppDomainMarshaledException : SystemException
-    {
-        public CrossAppDomainMarshaledException(string message, int errorCode)
-            : base(message)
-        {
-            HResult = errorCode;
-        }
-
-        // Normally, only Telesto's UEF will see these exceptions.
-        // This override prints out the original Exception's ToString()
-        // output and hides the fact that it is wrapped inside another excepton.
-        internal override string InternalToString()
-        {
-            return Message;
-        }
     }
 }
 

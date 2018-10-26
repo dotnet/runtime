@@ -2434,30 +2434,9 @@ public:
     void EnterContextRestricted(Context* c, ContextTransitionFrame* pFrame);
     void ReturnToContext(ContextTransitionFrame *pFrame);
 
-private:
-    typedef enum {
-        RaiseCrossContextSuccess,
-        RaiseCrossContextRetry,
-        RaiseCrossContextClassInit
-    } RaiseCrossContextResult;
-
-
-    // The "orBlob" stores the serialized image of a managed Exception object as it gets marshaled
-    // across AD boundaries.
-    //
-    // In Telesto, we don't support true appdomain marshaling so the "orBlob" is in fact an
-    // agile wrapper object whose ToString() echoes the original exception's ToString().
-    typedef OBJECTREF  ORBLOBREF;
-
-    RaiseCrossContextResult TryRaiseCrossContextException(Exception **ppExOrig,
-                                                          Exception *pException,
-                                                          RuntimeExceptionKind *pKind,
-                                                          OBJECTREF *ppThrowable,
-                                                          ORBLOBREF *pOrBlob);
 public:
 
     void DECLSPEC_NORETURN RaiseCrossContextException(Exception* pEx, ContextTransitionFrame* pFrame);
-    void RaiseCrossContextExceptionHelper(Exception* pEx,ContextTransitionFrame* pFrame);
 
     // ClearContext are to be called only during shutdown
     void ClearContext();
@@ -3625,10 +3604,6 @@ public:
     // by the OS due to a stack overflow exception. This function requires that you know that you have enough stack
     // space to restore the guard page, so make sure you know what you're doing when you decide to call this.
     VOID RestoreGuardPage();
-
-    // Commit the thread's entire stack. Note: this works on managed or unmanaged threads, and pLowerBoundMemInfo
-    // is optional.
-    static BOOL CommitThreadStack(Thread* pThreadOptional);
 
 #if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
 private:
