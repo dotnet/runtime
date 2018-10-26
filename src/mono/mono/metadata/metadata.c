@@ -5523,10 +5523,13 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 	if (t1->type != t2->type || t1->byref != t2->byref)
 		return FALSE;
 
-	if (t1->has_cmods != t2->has_cmods)
-		return FALSE;
+	gboolean cmod_reject = FALSE;
 
-	if (t1->has_cmods) {
+	gboolean is_pointer = (t1->type == MONO_TYPE_PTR);
+
+	if (t1->has_cmods != t2->has_cmods)
+		cmod_reject = TRUE;
+	else if (t1->has_cmods && t2->has_cmods) {
 		MonoCustomModContainer *cm1 = mono_type_get_cmods (t1);
 		MonoCustomModContainer *cm2 = mono_type_get_cmods (t2);
 
@@ -5537,12 +5540,13 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 		// The CLI itself shall treat required and optional modifiers in the same manner.
 		// Two signatures that differ only by the addition of a custom modifier 
 		// (required or optional) shall not be considered to match.
-		if (cm1->count != cm2->count)
-			return FALSE;
-
-		for (int i=0; i < cm1->count; i++) {
-			if (cm1->modifiers[i].required != cm2->modifiers[i].required)
-				return FALSE;
+		if (cm1->count != cm2->count) {
+			cmod_reject = TRUE;
+		} else for (int i=0; i < cm1->count; i++) {
+			if (cm1->modifiers[i].required != cm2->modifiers[i].required) {
+				cmod_reject = TRUE;
+				break;
+			}
 
 			// FIXME: propagate error to caller
 			ERROR_DECL (error);
@@ -5551,10 +5555,14 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 			MonoClass *c2 = mono_class_get_checked (cm2->image, cm2->modifiers [i].token, error);
 			mono_error_assert_ok (error);
 
-			if (c1 != c2)
-				return FALSE;
+			if (c1 != c2) {
+				cmod_reject = TRUE;
+				break;
+			}
 		}
 	}
+
+	gboolean result = FALSE;
 
 	switch (t1->type) {
 	case MONO_TYPE_VOID:
@@ -5575,34 +5583,46 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 	case MONO_TYPE_U:
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_TYPEDBYREF:
-		return TRUE;
+		result = TRUE;
+		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
-		return mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
+		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
+		break;
 	case MONO_TYPE_PTR:
-		return do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
+		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
+		break;
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
-			return FALSE;
-		return mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass, signature_only);
+			result = FALSE;
+		else
+			result = mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass, signature_only);
+		break;
 	case MONO_TYPE_GENERICINST:
-		return _mono_metadata_generic_class_equal (
+		result = _mono_metadata_generic_class_equal (
 			t1->data.generic_class, t2->data.generic_class, signature_only);
+		break;
 	case MONO_TYPE_VAR:
-		return mono_metadata_generic_param_equal_internal (
+		result = mono_metadata_generic_param_equal_internal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);
+		break;
 	case MONO_TYPE_MVAR:
-		return mono_metadata_generic_param_equal_internal (
+		result = mono_metadata_generic_param_equal_internal (
 			t1->data.generic_param, t2->data.generic_param, signature_only);
+		break;
 	case MONO_TYPE_FNPTR:
-		return mono_metadata_fnptr_equal (t1->data.method, t2->data.method, signature_only);
+		result = mono_metadata_fnptr_equal (t1->data.method, t2->data.method, signature_only);
+		break;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
 		return FALSE;
 	}
 
-	return FALSE;
+	if (cmod_reject && is_pointer)
+		return FALSE;
+
+	return result;
 }
 
 /**
