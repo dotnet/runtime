@@ -181,7 +181,7 @@ You also have the alternative of modifying the Nuget.Config
 at `%HOMEPATH%\AppData\Roaming\Nuget\Nuget.Config` (Windows) or `~/.nuget/NuGet/NuGet.Config` (Linux) with the new location.
 This will allow your new runtime to be used on any 'dotnet restore' run by the current user.
 Alternatively you can skip creating this file and pass the path to your package directory using
-the -s SOURCE qualifer on the dotnet restore command below. The important part is that somehow
+the -s SOURCE qualifier on the dotnet restore command below. The important part is that somehow
 you have told the tools where to find your new package.
 
 Once have made these modifications you will need to rerun the restore and publish as such.

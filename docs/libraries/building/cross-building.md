@@ -123,4 +123,4 @@ The reason you need to build the managed portion for x64 is because it depends o
 
 Similar if you want to try and run tests you will have to copy the managed assemblies from the proxy directory (i.e. `netcoreapp-Linux-Debug-x64`) to the new architecture directory (i.e `netcoreapp-Linux-Debug-armel`) and run code via another host such as corerun because dotnet is at a higher level and most likely doesn't exist for the new architecture yet.
 
-Once all the necessary builds are setup and packages are published the spliting of the build and manual creation of the runtime should no longer be necessary.
+Once all the necessary builds are setup and packages are published the splitting of the build and manual creation of the runtime should no longer be necessary.
