@@ -2018,23 +2018,34 @@ public:
         //  to the CSE temp to all defs and changing all refs to
         //  a simple use of the CSE temp.
         //
-        //  We also unmark nested CSE's for all uses.
+        //  Later we will unmark any nested CSE's for the CSE uses.
         //
+        Compiler::CSEdsc*      dsc = successfulCandidate->CseDsc();
         Compiler::treeStmtLst* lst;
-        lst = successfulCandidate->CseDsc()->csdTreeList;
-        noway_assert(lst);
 
-#define QQQ_CHECK_CSE_VNS 0
-#if QQQ_CHECK_CSE_VNS
-        assert(lst != NULL);
-        ValueNum firstVN = lst->tslTree->gtVN;
-        lst              = lst->tslNext;
-        bool allSame     = true;
-        while (lst != NULL)
+#ifdef DEBUG
+        // Verify that all of the ValueNumbers in this list are correct as
+        // Morph will change them when it performs a mutating operation.
+        //
+        ValueNum firstVN = ValueNumStore::NoVN;
+        ValueNum currVN;
+        bool     allSame = true;
+
+        lst = dsc->csdTreeList;
+        while (lst != nullptr)
         {
+            // Ignore this node if the gtCSEnum value has been cleared
             if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
             {
-                if (lst->tslTree->gtVN != firstVN)
+                // We used the liberal Value numbers when building the set of CSE
+                currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+                assert(currVN != ValueNumStore::NoVN);
+
+                if (firstVN == ValueNumStore::NoVN)
+                {
+                    firstVN = currVN;
+                }
+                else if (currVN != firstVN)
                 {
                     allSame = false;
                     break;
@@ -2046,21 +2057,25 @@ public:
         {
             lst                = dsc->csdTreeList;
             GenTree* firstTree = lst->tslTree;
-            printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", info.compFullName,
+            printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", m_pCompiler->info.compFullName,
                    GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
-            while (lst != NULL)
+            while (lst != nullptr)
             {
                 if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
                 {
-                    printf("0x%x(%s,%d)    ", lst->tslTree, IS_CSE_USE(lst->tslTree->gtCSEnum) ? "u" : "d",
-                           lst->tslTree->gtVN);
+                    currVN = m_pCompiler->vnStore->VNLiberalNormalValue(lst->tslTree->gtVNPair);
+                    printf("0x%x(%s " FMT_VN ") ", lst->tslTree, IS_CSE_USE(lst->tslTree->gtCSEnum) ? "use" : "def",
+                           currVN);
                 }
                 lst = lst->tslNext;
             }
             printf("\n");
         }
+#endif // DEBUG
+
+        // Setup 'lst' to point at the start of this candidate list
         lst = dsc->csdTreeList;
-#endif
+        noway_assert(lst);
 
         do
         {
@@ -2073,14 +2088,17 @@ public:
             /* Advance to the next node in the list */
             lst = lst->tslNext;
 
-            // Assert if we used DEBUG_DESTROY_NODE on this CSE exp
-            assert(exp->gtOper != GT_COUNT);
-
-            /* Ignore the node if it's not been marked as a CSE */
+            // We may have cleared this CSE in optValuenumCSE_Availablity
+            // due to different exception sets.
+            //
+            // Ignore this node if the gtCSEnum value has been cleared
             if (!IS_CSE_INDEX(exp->gtCSEnum))
             {
                 continue;
             }
+
+            // Assert if we used DEBUG_DESTROY_NODE on this CSE exp
+            assert(exp->gtOper != GT_COUNT);
 
             /* Make sure we update the weighted ref count correctly */
             m_pCompiler->optCSEweight = blk->getBBWeight(m_pCompiler);
