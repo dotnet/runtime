@@ -5323,7 +5323,8 @@ private:
     void fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO_CLASS_HANDLE retClsHnd);
 #endif // FEATURE_MULTIREG_RET
 
-    static fgWalkPreFn fgUpdateInlineReturnExpressionPlaceHolder;
+    static fgWalkPreFn  fgUpdateInlineReturnExpressionPlaceHolder;
+    static fgWalkPostFn fgLateDevirtualization;
 
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;
