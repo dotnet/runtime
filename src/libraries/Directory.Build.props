@@ -37,11 +37,11 @@
 
   <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
   <PropertyGroup>
-    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">dummy</ProjectAssetsFile>
+    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
   </PropertyGroup>
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.props" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.props')" />
   <PropertyGroup>
-    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'dummy'"></ProjectAssetsFile>
+    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'unused'"></ProjectAssetsFile>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -317,7 +317,11 @@
     <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- We cannot enable deterministic builds yet but we would like to in the future see https://github.com/dotnet/corefx/issues/2003 -->
     <Deterministic>false</Deterministic>
+
+    <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
   </PropertyGroup>
 

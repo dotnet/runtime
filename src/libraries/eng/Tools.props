@@ -22,7 +22,7 @@
     <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
-    
+
     <!-- Include the SourceLink packages -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.SourceLink.Vsts.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -63,7 +63,7 @@
 
   <Target Name="DumpInitToolsLog">
     <Message Text="Init-tools failed dumping log file $(RepoRoot)init-tools.log" />
-    <Exec Condition="Exists('$(RepoRoot)init-tools.log')" Command="type $(RepoRoot)init-tools.log" />
+    <Message Condition="Exists('$(RepoRoot)init-tools.log')" Text="$([System.IO.File]::ReadAllText('$(RepoRoot)init-tools.log'))" />
   </Target>
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
