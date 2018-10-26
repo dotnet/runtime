@@ -72,16 +72,13 @@ enum HWIntrinsicFlag : unsigned int
     // - overloaded on multiple vector sizes (SIMD size in the table is unreliable)
     HW_Flag_UnfixedSIMDSize = 0x20,
 
-    // Complex overload
-    // - the codegen of overloads cannot be determined by intrinsicID and base type
-    HW_Flag_ComplexOverloads = 0x40,
-
     // Multi-instruction
     // - that one intrinsic can generate multiple instructions
     HW_Flag_MultiIns = 0x80,
 
     // NoContainment
-    // the intrinsic cannot be contained
+    // the intrinsic cannot be handled by comtainment,
+    // all the intrinsic that have explicit memory load/store semantics should have this flag
     HW_Flag_NoContainment = 0x100,
 
     // Copy Upper bits
@@ -123,6 +120,11 @@ enum HWIntrinsicFlag : unsigned int
     // the intrinsics need special rules in importer,
     // but may be table-driven in the back-end
     HW_Flag_SpecialImport = 0x80000,
+
+    // Maybe Memory Load/Store
+    // - some intrinsics may have pointer overloads but without HW_Category_MemoryLoad/HW_Category_MemoryStore
+    HW_Flag_MaybeMemoryLoad  = 0x100000,
+    HW_Flag_MaybeMemoryStore = 0x200000,
 };
 
 struct HWIntrinsicInfo
@@ -241,12 +243,6 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_UnfixedSIMDSize) == 0;
     }
 
-    static const bool HasComplexOverloads(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_ComplexOverloads) != 0;
-    }
-
     static const bool GeneratesMultipleIns(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -281,6 +277,18 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeIMM) != 0;
+    }
+
+    static const bool MaybeMemoryLoad(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaybeMemoryLoad) != 0;
+    }
+
+    static const bool MaybeMemoryStore(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_MaybeMemoryStore) != 0;
     }
 
     static const bool NoJmpTableImm(NamedIntrinsic id)
