@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-// 
-
 namespace System.Reflection.Emit
 {
     using System;
@@ -19,9 +15,11 @@ namespace System.Reflection.Emit
     using System.Runtime.Versioning;
     using System.Diagnostics.SymbolStore;
 
-    // This is a package private class. This class hold all of the managed
-    // data member for AssemblyBuilder. Note that what ever data members added to
-    // this class cannot be accessed from the EE.
+    /// <summary>
+    /// This is a package private class. This class hold all of the managed
+    /// data member for AssemblyBuilder. Note that what ever data members added to
+    /// this class cannot be accessed from the EE.
+    /// </summary>
     internal class AssemblyBuilderData
     {
         internal AssemblyBuilderData(
@@ -37,15 +35,18 @@ namespace System.Reflection.Emit
 
             m_peFileKind = PEFileKinds.Dll;
         }
-
-        // Helper to add a dynamic module into the tracking list
+        
+        /// <summary>
+        /// Helper to add a dynamic module into the tracking list.
+        /// </summary>
         internal void AddModule(ModuleBuilder dynModule)
         {
             m_moduleBuilderList.Add(dynModule);
         }
 
-
-        // Helper to track CAs to persist onto disk
+        /// <summary>
+        /// Helper to track CAs to persist onto disk.
+        /// </summary>
         internal void AddCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             // make sure we have room for this CA
@@ -63,8 +64,10 @@ namespace System.Reflection.Emit
 
             m_iCABuilder++;
         }
-
-        // Helper to track CAs to persist onto disk
+        
+        /// <summary>
+        /// Helper to track CAs to persist onto disk.
+        /// </summary>
         internal void AddCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             // make sure we have room for this CA
@@ -93,8 +96,10 @@ namespace System.Reflection.Emit
             m_CACons[m_iCAs] = con;
             m_iCAs++;
         }
-
-        // Helper to ensure the type name is unique underneath assemblyBuilder
+        
+        /// <summary>
+        /// Helper to ensure the type name is unique underneath assemblyBuilder.
+        /// </summary>
         internal void CheckTypeNameConflict(string strTypeName, TypeBuilder enclosingType)
         {
             for (int i = 0; i < m_moduleBuilderList.Count; i++)
@@ -146,7 +151,6 @@ namespace System.Reflection.Emit
         internal bool m_hasUnmanagedVersionInfo;
         internal bool m_OverrideUnmanagedVersionInfo;
     }
-
 
     /// <summary>
     /// Internal structure to track the list of ResourceWriter for
