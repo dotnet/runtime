@@ -78,7 +78,7 @@ the implementation without compat concerns in future releases.
       concrete of platforms you expect your library to support. (see [Specific platform mappings](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/net-platform-standard.md#nuget)). Generally
       will be a combination of netcoreapp1.x, netfx46x, uap10.x, and/or `$(AllXamarinFrameworks)`.
     - If package is not split (i.e. only one pkgproj, ex [pkg\System.Diagnostics.Process.pkgproj](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Process/pkg/System.Diagnostics.Process.pkgproj)) then it should already have a `ProjectReference` the `<Library>\src\<Library>.builds` file and so there is no additional changes needed in the pkgproj.
-    - If package is RID split (i.e. has multple pkgprojs, ex: [pkg\any\System.Runtime.pkgproj](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/pkg/any/System.Runtime.pkgproj) and [pkg\aot\System.Runtime](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/pkg/aot/System.Runtime.pkgproj))
+    - If package is RID split (i.e. has multiple pkgprojs, ex: [pkg\any\System.Runtime.pkgproj](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/pkg/any/System.Runtime.pkgproj) and [pkg\aot\System.Runtime](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/pkg/aot/System.Runtime.pkgproj))
       - Update the ProjectReferences in the respective pkgproj's to align with the build configurations in the
       `<Library>\src\<Library>.builds` file. This may entail adding new references or removing references according to whatever changes were made to the .builds file.
   - If assembly or package version is updated the package index needs to be updated by running

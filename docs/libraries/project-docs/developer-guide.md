@@ -42,7 +42,7 @@ For more details on the build configurations see [project-guidelines](../coding-
 
 **Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
-The most common workflow for developers is to call `build` from the root once (preceeded by a `clean -all` if you have built previously) and then go and work on the individual library that you are trying to make changes for. On windows folks will usually open up the solution file in the root of that library directory and work in VS.
+The most common workflow for developers is to call `build` from the root once (preceded by a `clean -all` if you have built previously) and then go and work on the individual library that you are trying to make changes for. On windows folks will usually open up the solution file in the root of that library directory and work in VS.
 
 By default build only builds the product libraries and none of the tests if you want to build and run all the tests you can call `build -test` to build and run only the tests or `build -includetests` to build the project as well as the tests
 
@@ -165,7 +165,7 @@ You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 
 Some libraries might also have a ref and/or a pkg directory and you can build them in a similar way by typing `dotnet msbuild` in that directory.
 
-For libraries that have multiple build configurations the configurations will be listed in the `<BuildConfigurations>` property group, commonly found in a configurations.props file next to the csproj. When building the csproj for a configuration the most compatible one in the list will be choosen and set for the build. For more information about `BuildConfigurations` see [project-guidelines](../coding-guidelines/project-guidelines.md).
+For libraries that have multiple build configurations the configurations will be listed in the `<BuildConfigurations>` property group, commonly found in a configurations.props file next to the csproj. When building the csproj for a configuration the most compatible one in the list will be chosen and set for the build. For more information about `BuildConfigurations` see [project-guidelines](../coding-guidelines/project-guidelines.md).
 
 **Examples**
 
