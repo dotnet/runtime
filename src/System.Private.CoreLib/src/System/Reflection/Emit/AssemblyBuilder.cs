@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-//*************************************************************************************************************
+//
 // For each dynamic assembly there will be two AssemblyBuilder objects: the "internal" 
 // AssemblyBuilder object and the "external" AssemblyBuilder object.
 //  1.  The "internal" object is the real assembly object that the VM creates and knows about. However, 
@@ -20,7 +19,7 @@
 //      "internal" object.
 //
 // "internal" and "external" ModuleBuilders are similar
-//*************************************************************************************************************
+//
 
 namespace System.Reflection.Emit
 {
@@ -136,9 +135,7 @@ namespace System.Reflection.Emit
         }
         #endregion
     }
-
-    // AssemblyBuilder class.
-    // deliberately not [serializable]
+    
     public sealed class AssemblyBuilder : Assembly
     {
         #region FCALL
@@ -277,7 +274,7 @@ namespace System.Reflection.Emit
         /// to have a strong name and a hash will be computed when the assembly
         /// is saved.
         /// </summary>
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access)
@@ -286,8 +283,8 @@ namespace System.Reflection.Emit
             return InternalDefineDynamicAssembly(name, access,
                                                  ref stackMark, null);
         }
-
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
@@ -333,18 +330,20 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(
             string name)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return DefineDynamicModuleInternal(name, false, ref stackMark);
         }
-
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        
+        /// <param name = "name" ></ param >
+        /// <param name = "emitSymbolInfo" >Specify if emit symbol info or not.</ param >
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(
             string name,
-            bool emitSymbolInfo)         // specify if emit symbol info or not
+            bool emitSymbolInfo)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return DefineDynamicModuleInternal(name, emitSymbolInfo, ref stackMark);
@@ -474,7 +473,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Assembly overrides
-        // Returns the names of all the resources
+        /// <returns>The names of all the resources.</returns>
         public override string[] GetManifestResourceNames()
         {
             return InternalAssembly.GetManifestResourceNames();
@@ -529,8 +528,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        // Override the EntryPoint method on Assembly.
-        // This doesn't need to be synchronized because it is simple enough
+        /// <sumary>
+        /// Override the EntryPoint method on Assembly.
+        /// This doesn't need to be synchronized because it is simple enough.
+        /// </sumary>
         public override MethodInfo EntryPoint
         {
             get
@@ -539,7 +540,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        // Get an array of all the public types defined in this assembly
+        /// <sumary>
+        /// Get an array of all the public types defined in this assembly.
+        /// </sumary>
         public override Type[] GetExportedTypes()
         {
             return InternalAssembly.GetExportedTypes();
@@ -614,16 +617,18 @@ namespace System.Reflection.Emit
         {
             return InternalAssembly.GetLoadedModules(getResourceModules);
         }
-
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public override Assembly GetSatelliteAssembly(CultureInfo culture)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalAssembly.InternalGetSatelliteAssembly(culture, null, ref stackMark);
         }
 
-        // Useful for binding to a very specific version of a satellite assembly
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
+        /// <sumary> 
+        /// Useful for binding to a very specific version of a satellite assembly
+        /// </sumary>
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version version)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -640,13 +645,11 @@ namespace System.Reflection.Emit
 
         public override bool IsCollectible => InternalAssembly.IsCollectible;
         #endregion
-
-
-        /// <summary>
-        /// return a dynamic module with the specified name.
-        /// </summary>
+        
+        /// <param name="name">The name of module for the look up.</param>
+        /// <returns>Dynamic module with the specified name.</returns>
         public ModuleBuilder GetDynamicModule(
-            string name)                   // the name of module for the look up
+            string name)
         {
             lock (SyncRoot)
             {
@@ -654,8 +657,9 @@ namespace System.Reflection.Emit
             }
         }
 
+        /// <param name="name">The name of module for the look up.</param>
         private ModuleBuilder GetDynamicModuleNoLock(
-            string name)                   // the name of module for the look up
+            string name)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
@@ -674,9 +678,8 @@ namespace System.Reflection.Emit
             return null;
         }
 
-
         /// <summary>
-        /// Use this function if client decides to form the custom attribute blob themselves
+        /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
@@ -708,9 +711,9 @@ namespace System.Reflection.Emit
                 m_assemblyData.AddCustomAttribute(con, binaryAttribute);
             }
         }
-
+        
         /// <summary>
-        /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
+        /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
