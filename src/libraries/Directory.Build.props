@@ -86,6 +86,7 @@
     <ExcludePackagingImport>true</ExcludePackagingImport>
     <ExcludePackageLibsImport>true</ExcludePackageLibsImport>
     <ExcludeCodeAnalysisImport>true</ExcludeCodeAnalysisImport>
+    <ExcludeResourcesImport>true</ExcludeResourcesImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->

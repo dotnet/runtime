@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.csproj'">.cs</ResourcesSourceFileExtension>
+    <ResourcesSourceFileExtension Condition="'$(MSBuildProjectExtension)' == '.vbproj'">.vb</ResourcesSourceFileExtension>
+
+    <StringResourcesPath Condition="'$(StringResourcesPath)'=='' And Exists('$(MSBuildProjectDirectory)/Resources/Strings.resx')">$(MSBuildProjectDirectory)/Resources/Strings.resx</StringResourcesPath>
+    <StringResourcesNamespace Condition="'$(StringResourcesNamespace)' == ''">System</StringResourcesNamespace>
+    <StringResourcesClassName Condition="'$(StringResourcesClassName)' == ''">SR</StringResourcesClassName>
+    <StringResourcesName Condition="'$(StringResourcesName)' == ''">FxResources.$(AssemblyName).$(StringResourcesClassName)</StringResourcesName>
+
+    <!-- We define our own implementation of GetResourceString -->
+    <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
+    <!-- For debug builds we include the full value string so that we get actual resources, even in the case the toolchain strips the resources file -->
+    <GenerateResxSourceIncludeDefaultValues Condition="'$(ConfigurationGroup)' == 'Debug'">true</GenerateResxSourceIncludeDefaultValues>
+  </PropertyGroup>
+
+  <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->
+  <ItemGroup Condition="'$(StringResourcesPath)'!='' AND '$(OmitResources)'!='true'">
+    <EmbeddedResource Include="$(StringResourcesPath)">
+      <Visible>true</Visible>
+      <ManifestResourceName>$(StringResourcesName)</ManifestResourceName>
+      <GenerateSource>true</GenerateSource>
+      <ClassName>$(StringResourcesNamespace).$(StringResourcesClassName)</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Choose>
+    <!-- Include common SR helper when resources are included unless SkipCommonResourcesIncludes is set. -->
+    <When Condition="Exists('$(StringResourcesPath)') AND '$(OmitResources)'!='true' AND '$(SkipCommonResourcesIncludes)'==''">
+      <ItemGroup>
+        <Compile Include="$(CommonPath)/System/SR$(ResourcesSourceFileExtension)">
+          <Visible>true</Visible>
+          <Link>Resources/Common/SR$(ResourcesSourceFileExtension)</Link>
+        </Compile>
+      </ItemGroup>
+    </When>
+  </Choose>
+
+  <PropertyGroup Condition="'$(BuildingUAPVertical)' == 'true'">
+    <CompileDependsOn>
+      CopyResxFilesToReswFiles;
+      $(CompileDependsOn);
+    </CompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="CalculateResourcesFileNames" Condition="'$(BuildingUAPVertical)' == 'true'">
+    <ItemGroup>
+      <_AllResxFiles Include="@(EmbeddedResource->'%(FullPath)')" Condition="'%(Extension)' == '.resx'">
+        <ReswName Condition="'%(EmbeddedResource.ReswName)' == ''">%(EmbeddedResource.ManifestResourceName)</ReswName>
+      </_AllResxFiles>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <ProjectHasResources Condition="'@(_AllResxFiles)' != ''">true</ProjectHasResources>
+      <TestProjectNeedsModifiedPriFile Condition="'$(IsTestProject)' == 'true' AND '$(ProjectHasResources)' == 'true'">true</TestProjectNeedsModifiedPriFile>
+      <TestResourcesFolderPath Condition="'$(TestProjectNeedsModifiedPriFile)' == 'true'">$(RuntimePath)$(AssemblyName).Resw</TestResourcesFolderPath>
+      <_ResWDestinationPath Condition="'$(TestResourcesFolderPath)' != ''">$(TestResourcesFolderPath)</_ResWDestinationPath>
+      <_ResWDestinationPath Condition="'$(TestResourcesFolderPath)' == ''">$(ResourcesFolderPath)</_ResWDestinationPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ReswOutputFiles Include="@(_AllResxFiles->'$(_ResWDestinationPath)/%(ReswName).resw')" />
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="CopyResxFilesToReswFiles"
+          Condition="'$(BuildingUAPVertical)' == 'true'"
+          DependsOnTargets="CalculateResourcesFileNames"
+          Inputs="@(_AllResxFiles)"
+          Outputs="@(_ReswOutputFiles)" >
+
+    <Copy SourceFiles="@(_AllResxFiles)"
+          DestinationFiles="@(_ReswOutputFiles)"
+          SkipUnchangedFiles="true">
+          <Output TaskParameter="CopiedFiles" ItemName="FilesCreated" />
+    </Copy>
+
+    <!-- We need to touch the copied files so that the target that uses them can track the inputs and outputs with the copied timestamp -->
+    <Touch Files="@(FilesCreated)" />
+  </Target>
+</Project>

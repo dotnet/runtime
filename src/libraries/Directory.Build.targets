@@ -125,6 +125,11 @@
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
+  <Import Project="$(MSBuildThisFileDirectory)eng/Resources.targets" />
+  
+  <!-- Temporarily bring in parts of Arcade SDK, remove once we import SDK.Props/targets -->
+  <Import Project="../tools/BuildTasks.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <Import Project="../tools/GenerateResxSource.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
 
