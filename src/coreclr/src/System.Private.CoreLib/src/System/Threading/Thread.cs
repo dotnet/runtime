@@ -29,8 +29,6 @@ namespace System.Threading
     using System.Runtime.Versioning;
     using System.Diagnostics;
 
-    internal delegate object InternalCrossContextDelegate(object[] args);
-
     internal class ThreadHelper
     {
         private Delegate _start;

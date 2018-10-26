@@ -37,10 +37,6 @@ public:
         return m_pDomain;
     }
 
-    static void Initialize()
-    {
-    }
-
     typedef void (*ADCallBackFcnType)(LPVOID);
 
 #ifdef DACCESS_COMPILE
