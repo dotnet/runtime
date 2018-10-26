@@ -277,23 +277,6 @@ void CodeGen::genLclHeap(GenTree* tree)
     BasicBlock* endLabel        = nullptr;
     unsigned    stackAdjustment = 0;
 
-#ifdef DEBUG
-    // Verify ESP
-    if (compiler->opts.compStackCheckOnRet)
-    {
-        noway_assert(compiler->lvaReturnEspCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnEspCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnEspCheck].lvOnFrame);
-        getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnEspCheck, 0);
-
-        BasicBlock*  esp_check = genCreateTempLabel();
-        emitJumpKind jmpEqual  = genJumpKindForOper(GT_EQ, CK_SIGNED);
-        inst_JMP(jmpEqual, esp_check);
-        getEmitter()->emitIns(INS_BREAKPOINT);
-        genDefineTempLabel(esp_check);
-    }
-#endif
-
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
@@ -501,17 +484,6 @@ BAILOUT:
     if (compiler->opts.compNeedStackProbes)
     {
         genGenerateStackProbe();
-    }
-#endif
-
-#ifdef DEBUG
-    // Update new ESP
-    if (compiler->opts.compStackCheckOnRet)
-    {
-        noway_assert(compiler->lvaReturnEspCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnEspCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnEspCheck].lvOnFrame);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnEspCheck, 0);
     }
 #endif
 

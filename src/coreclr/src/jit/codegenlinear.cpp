@@ -41,19 +41,31 @@ void CodeGen::genCodeForBBlist()
 
     // You have to be careful if you create basic blocks from now on
     compiler->fgSafeBasicBlockCreation = false;
+#endif // DEBUG
 
-    // This stress mode is not compatible with fully interruptible GC
+#if defined(DEBUG) && defined(_TARGET_X86_)
+
+    // Check stack pointer on call stress mode is not compatible with fully interruptible GC. REVIEW: why?
+    //
     if (genInterruptible && compiler->opts.compStackCheckOnCall)
     {
         compiler->opts.compStackCheckOnCall = false;
     }
 
-    // This stress mode is not compatible with fully interruptible GC
-    if (genInterruptible && compiler->opts.compStackCheckOnRet)
+#endif // defined(DEBUG) && defined(_TARGET_X86_)
+
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
+
+    // Check stack pointer on return stress mode is not compatible with fully interruptible GC. REVIEW: why?
+    // It is also not compatible with any function that makes a tailcall: we aren't smart enough to only
+    // insert the SP check in the non-tailcall returns.
+    //
+    if ((genInterruptible || compiler->compTailCallUsed) && compiler->opts.compStackCheckOnRet)
     {
         compiler->opts.compStackCheckOnRet = false;
     }
-#endif // DEBUG
+
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
 
     // Prepare the blocks for exception handling codegen: mark the blocks that needs labels.
     genPrepForEHCodegen();
