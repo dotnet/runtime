@@ -341,6 +341,7 @@ namespace System
             /// <returns>quotient</returns>
             private static uint Div96By64(ref Buf12 bufNum, ulong den)
             {
+                Debug.Assert(den > bufNum.High64);
                 uint quo;
                 ulong num;
                 uint num2 = bufNum.U2;
@@ -427,6 +428,7 @@ namespace System
             /// <returns>quotient</returns>
             private static uint Div128By96(ref Buf16 bufNum, ref Buf12 bufDen)
             {
+                Debug.Assert(bufDen.U2 > bufNum.U3);
                 ulong dividend = bufNum.High64;
                 uint den = bufDen.U2;
                 if (dividend < den)
@@ -1949,7 +1951,7 @@ ReturnZero:
                 bool fUnscale = false;
                 uint ulTmp;
 
-                if (d2.High == 0 && d2.Mid == 0)
+                if ((d2.High | d2.Mid) == 0)
                 {
                     // Divisor is only 32 bits.  Easy divide.
                     //
@@ -2032,9 +2034,7 @@ ReturnZero:
                     // normalize by.  The dividend will be shifted by the same amount so
                     // the quotient is not changed.
                     //
-                    bufDivisor.Low64 = d2.Low64;
                     ulTmp = d2.High;
-                    bufDivisor.U2 = ulTmp;
                     if (ulTmp == 0)
                         ulTmp = d2.Mid;
 
@@ -2045,11 +2045,11 @@ ReturnZero:
                     Buf16 bufRem;
                     _ = &bufRem; // workaround for CS0165
                     bufRem.Low64 = d1.Low64 << iCurScale;
-                    bufRem.High64 = (d1.Mid + ((ulong)d1.High << 32)) >> (31 - iCurScale) >> 1;
+                    bufRem.High64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - iCurScale);
 
-                    ulong divisor = bufDivisor.Low64 << iCurScale;
+                    ulong divisor = d2.Low64 << iCurScale;
 
-                    if (bufDivisor.U2 == 0)
+                    if (d2.High == 0)
                     {
                         // Have a 64-bit divisor in sdlDivisor.  The remainder
                         // (currently 96 bits spread over 4 ULONGs) will be < divisor.
@@ -2110,7 +2110,7 @@ ReturnZero:
                         //
                         // Start by finishing the shift left by iCurScale.
                         //
-                        uint tmp = (uint)(bufDivisor.High64 >> (31 - iCurScale) >> 1);
+                        uint tmp = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - iCurScale));
                         bufDivisor.Low64 = divisor;
                         bufDivisor.U2 = tmp;
 
@@ -2209,7 +2209,8 @@ ThrowOverflow:
             }
 
             /// <summary>
-            /// Computes the remainder between two decimals
+            /// Computes the remainder between two decimals.
+            /// On return, d1 contains the result of the operation and d2 is trashed.
             /// </summary>
             internal static void VarDecMod(ref DecCalc d1, ref DecCalc d2)
             {
@@ -2235,35 +2236,166 @@ ThrowOverflow:
                 if ((cmp ^ (int)(d1.uflags & SignMask)) < 0)
                     return;
 
-                // This piece of code is to work around the fact that Dividing a decimal with 28 digits number by decimal which causes
-                // causes the result to be 28 digits, can cause to be incorrectly rounded up.
-                // eg. Decimal.MaxValue / 2 * Decimal.MaxValue will overflow since the division by 2 was rounded instead of being truncked.
-                DecCalc tmp = d2;
-                DecAddSub(ref d1, ref tmp, true);
+                // The divisor is smaller than the dividend and both are non-zero. Calculate the integer remainder using the larger scaling factor. 
 
-                // Formula:  d1 - (RoundTowardsZero(d1 / d2) * d2)
-                tmp = d1;
-                VarDecDiv(ref tmp, ref d2);
-                Truncate(ref Unsafe.As<DecCalc, decimal>(ref tmp));
-                VarDecMul(ref tmp, ref d2);
-                uint flags = d1.uflags;
-                DecAddSub(ref d1, ref tmp, true);
-                // See if the result has crossed 0
-                if (((flags ^ d1.uflags) & SignMask) != 0)
+                int scale = (sbyte)(d1.uflags - d2.uflags >> ScaleShift);
+                if (scale > 0)
                 {
-                    if ((d1.Low | d1.Mid | d1.High) == 0 || d1.Scale == DEC_SCALE_MAX && d1.Low64 == 1 && d1.High == 0)
+                    // Divisor scale can always be increased to dividend scale for remainder calculation.
+                    do
                     {
-                        // Certain Remainder operations on decimals with 28 significant digits round
-                        // to [+-]0.0000000000000000000000000001m instead of [+-]0m during the intermediate calculations.
-                        // 'zero' results just need their sign corrected.
-                        d1.uflags ^= SignMask;
+                        uint power = scale >= MaxInt32Scale ? TenToPowerNine : s_powers10[scale];
+                        ulong tmp = UInt32x32To64(d2.Low, power);
+                        d2.Low = (uint)tmp;
+                        tmp >>= 32;
+                        tmp += (d2.Mid + ((ulong)d2.High << 32)) * power;
+                        d2.Mid = (uint)tmp;
+                        d2.High = (uint)(tmp >> 32);
+                    } while ((scale -= MaxInt32Scale) > 0);
+                    scale = 0;
+                }
+
+                do
+                {
+                    if (scale < 0)
+                    {
+                        d1.uflags = d2.uflags;
+                        // Try to scale up dividend to match divisor.
+                        Buf12 bufQuo;
+                        unsafe
+                        { _ = &bufQuo; } // workaround for CS0165
+                        bufQuo.Low64 = d1.Low64;
+                        bufQuo.U2 = d1.High;
+                        do
+                        {
+                            int iCurScale = SearchScale(ref bufQuo, DEC_SCALE_MAX + scale);
+                            if (iCurScale == 0)
+                                break;
+                            uint power = iCurScale >= MaxInt32Scale ? TenToPowerNine : s_powers10[iCurScale];
+                            scale += iCurScale;
+                            ulong tmp = UInt32x32To64(bufQuo.U0, power);
+                            bufQuo.U0 = (uint)tmp;
+                            tmp >>= 32;
+                            bufQuo.High64 = tmp + bufQuo.High64 * power;
+                            if (power != TenToPowerNine)
+                                break;
+                        }
+                        while (scale < 0);
+                        d1.Low64 = bufQuo.Low64;
+                        d1.High = bufQuo.U2;
+                    }
+
+                    if (d1.High == 0)
+                    {
+                        Debug.Assert(d2.High == 0);
+                        Debug.Assert(scale == 0);
+                        d1.Low64 %= d2.Low64;
+                        return;
+                    }
+                    else if ((d2.High | d2.Mid) == 0)
+                    {
+                        uint den = d2.Low;
+                        ulong tmp = ((ulong)d1.High << 32) | d1.Mid;
+                        tmp = ((tmp % den) << 32) | d1.Low;
+                        d1.Low64 = tmp % den;
+                        d1.High = 0;
                     }
                     else
                     {
-                        // If the division rounds up because it runs out of digits, the multiplied result can end up with a larger
-                        // absolute value and the result of the formula crosses 0. To correct it can add the divisor back.
-                        DecAddSub(ref d1, ref d2, false);
+                        VarDecModFull(ref d1, ref d2, scale);
+                        return;
                     }
+                } while (scale < 0);
+            }
+
+            private static unsafe void VarDecModFull(ref DecCalc d1, ref DecCalc d2, int scale)
+            {
+                // Divisor has bits set in the upper 64 bits.
+                //
+                // Divisor must be fully normalized (shifted so bit 31 of the most significant uint is 1). 
+                // Locate the MSB so we know how much to normalize by. 
+                // The dividend will be shifted by the same amount so the quotient is not changed.
+                //
+                uint tmp = d2.High;
+                if (tmp == 0)
+                    tmp = d2.Mid;
+                int shift = X86.Lzcnt.IsSupported ? (int)X86.Lzcnt.LeadingZeroCount(tmp) : LeadingZeroCount(tmp);
+
+                Buf28 b;
+                _ = &b; // workaround for CS0165
+                b.Buf24.Low64 = d1.Low64 << shift;
+                b.Buf24.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
+
+                // The dividend might need to be scaled up to 221 significant bits.
+                // Maximum scaling is required when the divisor is 2^64 with scale 28 and is left shifted 31 bits
+                // and the dividend is decimal.MaxValue: (2^96 - 1) * 10^28 << 31 = 221 bits.
+                uint high = 3;
+                while (scale < 0)
+                {
+                    uint power = scale <= -MaxInt32Scale ? TenToPowerNine : s_powers10[-scale];
+                    uint* buf = (uint*)&b;
+                    ulong tmp64 = UInt32x32To64(b.Buf24.U0, power);
+                    b.Buf24.U0 = (uint)tmp64;
+                    for (int i = 1; i <= high; i++)
+                    {
+                        tmp64 >>= 32;
+                        tmp64 += UInt32x32To64(buf[i], power);
+                        buf[i] = (uint)tmp64;
+                    }
+                    // The high bit of the dividend must not be set.
+                    if (tmp64 > int.MaxValue)
+                    {
+                        Debug.Assert(high + 1 < b.Length);
+                        buf[++high] = (uint)(tmp64 >> 32);
+                    }
+
+                    scale += MaxInt32Scale;
+                }
+
+                if (d2.High == 0)
+                {
+                    ulong divisor = d2.Low64 << shift;
+                    switch (high)
+                    {
+                        case 6:
+                            Div96By64(ref *(Buf12*)&b.Buf24.U4, divisor);
+                            goto case 5;
+                        case 5:
+                            Div96By64(ref *(Buf12*)&b.Buf24.U3, divisor);
+                            goto case 4;
+                        case 4:
+                            Div96By64(ref *(Buf12*)&b.Buf24.U2, divisor);
+                            break;
+                    }
+                    Div96By64(ref *(Buf12*)&b.Buf24.U1, divisor);
+                    Div96By64(ref *(Buf12*)&b, divisor);
+
+                    d1.Low64 = b.Buf24.Low64 >> shift;
+                    d1.High = 0;
+                }
+                else
+                {
+                    Buf12 bufDivisor;
+                    _ = &bufDivisor; // workaround for CS0165
+                    bufDivisor.Low64 = d2.Low64 << shift;
+                    bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - shift));
+
+                    switch (high)
+                    {
+                        case 6:
+                            Div128By96(ref *(Buf16*)&b.Buf24.U3, ref bufDivisor);
+                            goto case 5;
+                        case 5:
+                            Div128By96(ref *(Buf16*)&b.Buf24.U2, ref bufDivisor);
+                            goto case 4;
+                        case 4:
+                            Div128By96(ref *(Buf16*)&b.Buf24.U1, ref bufDivisor);
+                            break;
+                    }
+                    Div128By96(ref *(Buf16*)&b, ref bufDivisor);
+
+                    d1.Low64 = (b.Buf24.Low64 >> shift) + ((ulong)b.Buf24.U2 << (32 - shift) << 32);
+                    d1.High = b.Buf24.U2 >> shift;
                 }
             }
 
@@ -2578,6 +2710,14 @@ done:
                 }
 
                 public int Length => 6;
+            }
+
+            private struct Buf28
+            {
+                public Buf24 Buf24;
+                public uint U6;
+
+                public int Length => 7;
             }
         }
     }
