@@ -69,6 +69,8 @@
     <Compile Include="CompareUnorderedScalar.Single.cs" />
     <Compile Include="Divide.Single.cs" />
     <Compile Include="DivideScalar.Single.cs" />
+    <Compile Include="LoadVector128.Single.cs" />
+    <Compile Include="LoadScalarVector128.Single.cs" />
     <Compile Include="Max.Single.cs" />
     <Compile Include="MaxScalar.Single.cs" />
     <Compile Include="Min.Single.cs" />
@@ -81,6 +83,7 @@
     <Compile Include="Xor.Single.cs" />
     <Compile Include="Program.Sse.cs" />
     <Compile Include="..\Shared\BooleanCmpOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
   </ItemGroup>
