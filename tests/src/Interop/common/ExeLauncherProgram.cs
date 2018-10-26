@@ -22,6 +22,14 @@ public class Program
             return 100;
         }
 
+#if BLOCK_WINDOWS_NANO
+        // Not supported on Windows Nano
+        if (TestLibrary.Utilities.IsWindowsNanoServer)
+        {
+            return 100;
+        }
+#endif
+
         string workingDir = Environment.CurrentDirectory;
         Console.WriteLine($"Searching for exe to launch in {workingDir}...");
 
