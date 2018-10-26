@@ -421,6 +421,8 @@ isMSBuildOnNETCoreSupported()
             done
         elif [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
+        elif [ "$__HostOS" == "FreeBSD" ]; then
+            __isMSBuildOnNETCoreSupported=1
         fi
     fi
 }
@@ -1062,7 +1064,7 @@ fi
 
 build_CoreLib
 
-if [ $__CrossgenOnly ==1 ]; then
+if [ $__CrossgenOnly == 1 ]; then
     build_CoreLib_ni "$__BinDir/crossgen"
 fi
 
