@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
 namespace System.Threading.Tasks
 {
     /// <summary>Provides a set of static methods for working with specific kinds of <see cref="Task"/> instances.</summary>
@@ -44,5 +47,14 @@ namespace System.Threading.Tasks
                 task.Result ??
                 Task.FromCanceled<TResult>(new CancellationToken(true));
         }
+
+        /// <summary>Configures how awaits on the tasks returned from an async iteration will be performed.</summary>
+        /// <typeparam name="T">The type of the objects being iterated.</typeparam>
+        /// <param name="source">The source enumerable being iterated.</param>
+        /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
+        /// <returns>The configured enumerable.</returns>
+        public static ConfiguredAsyncEnumerable<T> ConfigureAwait<T>(
+            this IAsyncEnumerable<T> source, bool continueOnCapturedContext) =>
+            new ConfiguredAsyncEnumerable<T>(source, continueOnCapturedContext);
     }
 }
