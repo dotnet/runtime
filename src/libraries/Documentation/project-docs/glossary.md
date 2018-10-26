@@ -70,7 +70,7 @@ UWP was the first application model that was supported by .NET Native. We now al
 
 Pretty much at the same time the .NET Framework was released, Microsoft also published Rotor, which is the source code for an implementation of ECMA 335 (Common Language Infrastructure), which is the specification behind .NET.
 
-While parts of the source were identical with the .NET Framework, many pieces had prototypic implementations instead: the purpose of Rotor wasn't to provide a production ready .NET implementation but to provide a platform for research, academia, and validation that the ECMA 335 specification itself can be implemented.
+While parts of the source were identical with the .NET Framework, many pieces had prototypical implementations instead: the purpose of Rotor wasn't to provide a production ready .NET implementation but to provide a platform for research, academia, and validation that the ECMA 335 specification itself can be implemented.
 
 It's also worth pointing out that the source code of Rotor was not released under an open source license (i.e. not approved by OSI) and has not been officially updated since .NET Framework 2.0.
 
@@ -95,7 +95,7 @@ Xamarin is a commercial offering for building mobile applications targeting Andr
 
 **Also referred to as**: LINQ
 
-Introduced in .NET Framework 3.5, Language-Integrated Query's (LINQ) goal to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods and Lambda functions (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programing.
+Introduced in .NET Framework 3.5, Language-Integrated Query's (LINQ) goal to make data processing easier. LINQ is primarily a collection of methods that extend `IEnumerable` and `IEnumerable<T>`. LINQ is intended to be used with extension methods and Lambda functions (added in C# 3.0 and VB 9.0 at the same time as .NET Framework 3.5 was released) allowing for a function style of programming.
 
 A simple example of LINQ is
 
