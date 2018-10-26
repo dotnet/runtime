@@ -19,6 +19,10 @@ namespace System.Buffers
     /// </remarks>
     public abstract class ArrayPool<T>
     {
+        // Store the shared ArrayPool in a field of its derived sealed type so the Jit can "see" the exact type
+        // when the Shared property is inlined which will allow it to devirtualize calls made on it.
+        private readonly static TlsOverPerCoreLockedStacksArrayPool<T> s_shared = new TlsOverPerCoreLockedStacksArrayPool<T>();
+
         /// <summary>
         /// Retrieves a shared <see cref="ArrayPool{T}"/> instance.
         /// </summary>
@@ -33,7 +37,7 @@ namespace System.Buffers
         /// optimized for very fast access speeds, at the expense of more memory consumption.
         /// The shared pool instance is created lazily on first access.
         /// </remarks>
-        public static ArrayPool<T> Shared { get; } = new TlsOverPerCoreLockedStacksArrayPool<T>();
+        public static ArrayPool<T> Shared => s_shared;
 
         /// <summary>
         /// Creates a new <see cref="ArrayPool{T}"/> instance using default configuration options.
