@@ -6,7 +6,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">true</IsPartialFacadeAssembly>
     <!-- this library depends on Ref.Emit which is not available for netstandard -->
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_ReflectionDispatchProxy</GeneratePlatformNotSupportedAssemblyMessage>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">None</ResourcesSourceOutputDirectory>
+    <OmitResources Condition="'$(TargetGroup)' == 'uapaot' OR '$(TargetGroup)' == 'uap10.0.16299aot'">true</OmitResources>
     <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp2.0-Debug;netcoreapp2.0-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uap10.0.16299-Windows_NT-Debug;uap10.0.16299-Windows_NT-Release;uap10.0.16299aot-Windows_NT-Debug;uap10.0.16299aot-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard'">

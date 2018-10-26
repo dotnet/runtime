@@ -3,7 +3,6 @@
     <ProjectGuid>{783F801D-50DE-45B1-B8BE-C36A1F5049F1}</ProjectGuid>
     <AssemblyName>System.Xml.XPath</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory>None</ResourcesSourceOutputDirectory>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
