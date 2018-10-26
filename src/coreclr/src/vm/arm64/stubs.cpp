@@ -1219,14 +1219,6 @@ AdjustContextForVirtualStub(
 }
 #endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
 
-#ifdef FEATURE_COMINTEROP
-extern "C" void GenericComPlusCallStub(void)
-{
-    // This is not required for coreclr scenarios
-    throw "GenericComPlusCallStub is not implemented yet.";    
-}
-#endif // FEATURE_COMINTEROP
-
 UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
     _ASSERTE(offsetof(UMEntryThunkCode, m_code) == 0);
