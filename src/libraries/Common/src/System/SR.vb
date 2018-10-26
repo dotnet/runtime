@@ -14,23 +14,6 @@ Imports System.Text
 Namespace System
 
     Friend Class SR
-
-        Private Shared s_resourceManager As ResourceManager
-        Private Sub New()
-        End Sub
-        Private Shared ReadOnly Property ResourceManager As ResourceManager
-            Get
-
-                If SR.s_resourceManager Is Nothing Then
-
-                    ' The following constructor ResourceManager(Type) is going to be replaced by the private constructor ResourceManager(String)
-                    ' we'll pass s_resourcesName to this constructor
-                    SR.s_resourceManager = New ResourceManager(SR.ResourceType)
-                End If
-                Return SR.s_resourceManager
-            End Get
-        End Property
-
         ' This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format. 
         ' by default it returns false.
         ' Native code generators can replace the value this returns based on user input at the time of native code generation.
@@ -42,7 +25,7 @@ Namespace System
             Return False
         End Function
 
-        Friend Shared Function GetResourceString(ByVal resourceKey As String, ByVal defaultString As String) As String
+        Friend Shared Function GetResourceString(ByVal resourceKey As String, Optional ByVal defaultString As String = Nothing) As String
             If (UsingResourceKeys()) Then
                 Return If(defaultString, resourceKey)
             End If

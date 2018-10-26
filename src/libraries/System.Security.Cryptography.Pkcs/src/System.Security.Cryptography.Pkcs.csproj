@@ -4,7 +4,7 @@
     <AssemblyName>System.Security.Cryptography.Pkcs</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
+    <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <NoWarn>CS3016</NoWarn>

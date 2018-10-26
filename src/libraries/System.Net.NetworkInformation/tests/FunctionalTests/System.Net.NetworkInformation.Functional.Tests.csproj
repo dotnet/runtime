@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{DCBB8805-4658-44BF-B5E8-B6714EC8936B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ResourcesSourceOutputDirectory>../../src/Resources/</ResourcesSourceOutputDirectory>
+    <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
