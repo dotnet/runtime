@@ -2620,6 +2620,9 @@
   <data name="InvalidOperation_TimeoutsNotSupported" xml:space="preserve">
     <value>Timeouts are not supported on this stream.</value>
   </data>
+  <data name="InvalidOperation_TimerAlreadyClosed" xml:space="preserve">
+    <value>The Timer was already closed using an incompatible Dispose method.</value>
+  </data>
   <data name="InvalidOperation_TypeCannotBeBoxed" xml:space="preserve">
     <value>The given type cannot be boxed.</value>
   </data>
