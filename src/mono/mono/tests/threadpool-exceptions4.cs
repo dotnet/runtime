@@ -2,21 +2,18 @@ using System;
 using System.Threading;
 
 class Test {
-	static object monitor;
-
 	static int Main ()
 	{
-		monitor = new object ();
 		AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 		WaitCallback wcb = new WaitCallback ((a) => {
 			throw new Exception ("From the threadpoool");
 		});
 		wcb.BeginInvoke (wcb, OnCBFinished, null);
-		lock (monitor) {
-			Monitor.Wait (monitor);
-		}
-		Thread.Sleep (1000);
-		return 1;
+
+		// Should not finish, OnUnhandledException exit path is expected to be executed
+		Thread.Sleep (10000);
+
+		return 2;
 	}
 
 	static void OnCBFinished (object arg)
@@ -26,9 +23,6 @@ class Test {
 
 	static void OnUnhandledException (object sender, UnhandledExceptionEventArgs e)
 	{
-		lock (monitor) {
-			Monitor.Pulse (monitor);
-		}
 		Environment.Exit (0);
 	}
 }
