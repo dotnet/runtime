@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace System.IO.Tests
 {
-    public class File_Move : FileSystemTest
+    public partial class File_Move : FileSystemTest
     {
         #region Utilities
 

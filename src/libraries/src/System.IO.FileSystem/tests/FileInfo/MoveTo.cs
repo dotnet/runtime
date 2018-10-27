@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class FileInfo_MoveTo : File_Move
+    public partial class FileInfo_MoveTo : File_Move
     {
         public override void Move(string sourceFile, string destFile)
         {
