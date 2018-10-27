@@ -12,9 +12,12 @@ namespace System.Threading.Channels
     internal abstract class AsyncOperation
     {
         /// <summary>Sentinel object used in a field to indicate the operation is available for use.</summary>
-        protected static readonly Action<object> s_availableSentinel = new Action<object>(s => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(s_availableSentinel)} invoked with {s}."));
+        protected static readonly Action<object> s_availableSentinel = AvailableSentinel; // named method to help with debugging
+        private static void AvailableSentinel(object s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(AvailableSentinel)} invoked with {s}");
+        
         /// <summary>Sentinel object used in a field to indicate the operation has completed.</summary>
-        protected static readonly Action<object> s_completedSentinel = new Action<object>(s => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(s_completedSentinel)} invoked with {s}"));
+        protected static readonly Action<object> s_completedSentinel = CompletedSentinel; // named method to help with debugging
+        private static void CompletedSentinel(object s) => Debug.Fail($"{nameof(AsyncOperation)}.{nameof(CompletedSentinel)} invoked with {s}");
 
         /// <summary>Throws an exception indicating that the operation's result was accessed before the operation completed.</summary>
         protected static void ThrowIncompleteOperationException() =>
@@ -31,7 +34,7 @@ namespace System.Threading.Channels
 
     /// <summary>The representation of an asynchronous operation that has a result value.</summary>
     /// <typeparam name="TResult">Specifies the type of the result.  May be <see cref="VoidResult"/>.</typeparam>
-    internal class AsyncOperation<TResult> : AsyncOperation, IValueTaskSource, IValueTaskSource<TResult>
+    internal partial class AsyncOperation<TResult> : AsyncOperation, IValueTaskSource, IValueTaskSource<TResult>
     {
         /// <summary>Registration with a provided cancellation token.</summary>
         private readonly CancellationTokenRegistration _registration;
@@ -85,7 +88,7 @@ namespace System.Threading.Channels
             {
                 Debug.Assert(!_pooled, "Cancelable operations can't be pooled");
                 CancellationToken = cancellationToken;
-                _registration = cancellationToken.Register(s =>
+                _registration = UnsafeRegister(cancellationToken, s =>
                 {
                     var thisRef = (AsyncOperation<TResult>)s;
                     thisRef.TrySetCanceled(thisRef.CancellationToken);
@@ -106,17 +109,16 @@ namespace System.Threading.Channels
         /// <param name="token">The token that must match <see cref="_currentId"/>.</param>
         public ValueTaskSourceStatus GetStatus(short token)
         {
-            if (_currentId == token)
+            if (_currentId != token)
             {
-                return
-                    !IsCompleted ? ValueTaskSourceStatus.Pending :
-                    _error == null ? ValueTaskSourceStatus.Succeeded :
-                    _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
-                    ValueTaskSourceStatus.Faulted;
+                ThrowIncorrectCurrentIdException();
             }
 
-            ThrowIncorrectCurrentIdException();
-            return default; // just to satisfy compiler
+            return
+                !IsCompleted ? ValueTaskSourceStatus.Pending :
+                _error == null ? ValueTaskSourceStatus.Succeeded :
+                _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
+                ValueTaskSourceStatus.Faulted;
         }
 
         /// <summary>Gets whether the operation has completed.</summary>
@@ -274,8 +276,14 @@ namespace System.Threading.Channels
                     ThrowMultipleContinuations();
                 }
 
-                // Queue the continuation.
-                if (sc != null)
+                // Queue the continuation.  We always queue here, even if !RunContinuationsAsynchronously, in order
+                // to avoid stack diving; this path happens in the rare race when we're setting up to await and the
+                // object is completed after the awaiter.IsCompleted but before the awaiter.OnCompleted.
+                if (_schedulingContext == null)
+                {
+                    QueueUserWorkItem(continuation, state);
+                }
+                else if (sc != null)
                 {
                     sc.Post(s =>
                     {
@@ -285,7 +293,8 @@ namespace System.Threading.Channels
                 }
                 else
                 {
-                    Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts ?? TaskScheduler.Default);
+                    Debug.Assert(ts != null);
+                    Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
                 }
             }
         }
@@ -364,70 +373,68 @@ namespace System.Threading.Channels
         {
             if (_continuation != null || Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null) != null)
             {
-                ExecutionContext ec = _executionContext;
-                if (ec != null)
+                Debug.Assert(_continuation != s_completedSentinel, $"The continuation was the completion sentinel.");
+                Debug.Assert(_continuation != s_availableSentinel, $"The continuation was the available sentinel.");
+
+                if (_schedulingContext == null)
                 {
-                    ExecutionContext.Run(ec, s => ((AsyncOperation<TResult>)s).SignalCompletionCore(), this);
+                    // There's no captured scheduling context.  If we're forced to run continuations asynchronously, queue it.
+                    // Otherwise fall through to invoke it synchronously.
+                    if (_runContinuationsAsynchronously)
+                    {
+                        UnsafeQueueSetCompletionAndInvokeContinuation();
+                        return;
+                    }
+                }
+                else if (_schedulingContext is SynchronizationContext sc)
+                {
+                    // There's a captured synchronization context.  If we're forced to run continuations asynchronously,
+                    // or if there's a current synchronization context that's not the one we're targeting, queue it.
+                    // Otherwise fall through to invoke it synchronously.
+                    if (_runContinuationsAsynchronously || sc != SynchronizationContext.Current)
+                    {
+                        sc.Post(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this);
+                        return;
+                    }
                 }
                 else
                 {
-                    SignalCompletionCore();
+                    // There's a captured TaskScheduler.  If we're forced to run continuations asynchronously,
+                    // or if there's a current scheduler that's not the one we're targeting, queue it.
+                    // Otherwise fall through to invoke it synchronously.
+                    TaskScheduler ts = (TaskScheduler)_schedulingContext;
+                    Debug.Assert(ts != null, "Expected a TaskScheduler");
+                    if (_runContinuationsAsynchronously || ts != TaskScheduler.Current)
+                    {
+                        Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this,
+                            CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
+                        return;
+                    }
                 }
-            }
-        }
 
-        /// <summary>Invokes the registered continuation; separated out of SignalCompletion for convenience so that it may be invoked on multiple code paths.</summary>
-        private void SignalCompletionCore()
-        {
-            Debug.Assert(_continuation != s_completedSentinel, $"The continuation was the completion sentinel.");
-            Debug.Assert(_continuation != s_availableSentinel, $"The continuation was the available sentinel.");
-
-            if (_schedulingContext == null)
-            {
-                // There's no captured scheduling context.  If we're forced to run continuations asynchronously, queue it.
-                // Otherwise fall through to invoke it synchronously.
-                if (_runContinuationsAsynchronously)
-                {
-                    Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this,
-                        CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
-                    return;
-                }
+                // Invoke the continuation synchronously.
+                SetCompletionAndInvokeContinuation();
             }
-            else if (_schedulingContext is SynchronizationContext sc)
-            {
-                // There's a captured synchronization context.  If we're forced to run continuations asynchronously,
-                // or if there's a current synchronization context that's not the one we're targeting, queue it.
-                // Otherwise fall through to invoke it synchronously.
-                if (_runContinuationsAsynchronously || sc != SynchronizationContext.Current)
-                {
-                    sc.Post(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this);
-                    return;
-                }
-            }
-            else
-            {
-                // There's a captured TaskScheduler.  If we're forced to run continuations asynchronously,
-                // or if there's a current scheduler that's not the one we're targeting, queue it.
-                // Otherwise fall through to invoke it synchronously.
-                TaskScheduler ts = (TaskScheduler)_schedulingContext;
-                Debug.Assert(ts != null, "Expected a TaskScheduler");
-                if (_runContinuationsAsynchronously || ts != TaskScheduler.Current)
-                {
-                    Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this,
-                        CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
-                    return;
-                }
-            }
-
-            // Invoke the continuation synchronously.
-            SetCompletionAndInvokeContinuation();
         }
 
         private void SetCompletionAndInvokeContinuation()
         {
-            Action<object> c = _continuation;
-            _continuation = s_completedSentinel;
-            c(_continuationState);
+            if (_executionContext == null)
+            {
+                Action<object> c = _continuation;
+                _continuation = s_completedSentinel;
+                c(_continuationState);
+            }
+            else
+            {
+                ExecutionContext.Run(_executionContext, s =>
+                {
+                    var thisRef = (AsyncOperation<TResult>)s;
+                    Action<object> c = thisRef._continuation;
+                    thisRef._continuation = s_completedSentinel;
+                    c(thisRef._continuationState);
+                }, this);
+            }
         }
     }
 
