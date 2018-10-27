@@ -1086,26 +1086,19 @@ namespace System.Text.Tests
 
             var sb4 = new StringBuilder(10, 20);
             var sb5 = new StringBuilder(10, 20);
-            var sb6 = new StringBuilder(10, 21);
-            var sb7 = new StringBuilder(11, 20);
 
-            var sb8 = new StringBuilder(10, 20);
-            sb8.Append("Hello");
-            var sb9 = new StringBuilder(10, 20);
-            sb9.Append("Hello");
-            var sb10 = new StringBuilder(10, 20);
-            sb10.Append("HelloX");
+            var sb6 = new StringBuilder(10, 20).Append("Hello");
+            var sb7 = new StringBuilder(10, 20).Append("Hello");
+            var sb8 = new StringBuilder(10, 20).Append("HelloX");
 
             yield return new object[] { sb1, sb1, true };
             yield return new object[] { sb1, sb2, true };
             yield return new object[] { sb1, sb3, false };
 
             yield return new object[] { sb4, sb5, true };
-            yield return new object[] { sb4, sb6, false };
-            yield return new object[] { sb4, sb7, false };
 
-            yield return new object[] { sb8, sb9, true };
-            yield return new object[] { sb8, sb10, false };
+            yield return new object[] { sb6, sb7, true };
+            yield return new object[] { sb6, sb8, false };
 
             yield return new object[] { sb1, null, false };
 
