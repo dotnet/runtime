@@ -9,7 +9,13 @@ namespace System.Buffers
     /// </summary>
     public abstract class MemoryPool<T> : IDisposable
     {
-        private static readonly MemoryPool<T> s_shared = new ArrayMemoryPool<T>();
+        // Store the shared ArrayMemoryPool in a field of its derived sealed type so the Jit can "see" the exact type
+        // when the Shared property is inlined which will allow it to devirtualize calls made on it.
+        //
+        // Roslyn proposal https://github.com/dotnet/roslyn/issues/30797 where field initalizer, 
+        // backing field and property could be combined via `{ get } = ` to support devirtualization 
+        // by having the auto-backing field be created as the derived type rather than the exposed type.
+        private static readonly ArrayMemoryPool<T> s_shared = new ArrayMemoryPool<T>();
 
         /// <summary>
         /// Returns a singleton instance of a MemoryPool based on arrays.
