@@ -122,6 +122,14 @@ namespace System.IO
         // This method does work across volumes.
         public void MoveTo(string destFileName)
         {
+            MoveTo(destFileName, false);
+        }
+
+        // Moves a given file to a new location and potentially a new file name.
+        // Optionally overwrites existing file.
+        // This method does work across volumes.
+        public void MoveTo(string destFileName, bool overwrite)
+        {
             if (destFileName == null)
                 throw new ArgumentNullException(nameof(destFileName));
             if (destFileName.Length == 0)
@@ -138,7 +146,7 @@ namespace System.IO
             if (!Exists)
                 throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, FullName), FullName);
 
-            FileSystem.MoveFile(FullPath, fullDestFileName);
+            FileSystem.MoveFile(FullPath, fullDestFileName, overwrite);
 
             FullPath = fullDestFileName;
             OriginalPath = destFileName;
