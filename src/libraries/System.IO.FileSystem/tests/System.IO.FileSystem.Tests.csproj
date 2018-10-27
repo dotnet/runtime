@@ -15,7 +15,7 @@
     <Compile Include="Base\StaticGetSetTimes.cs" />
     <Compile Include="Directory\EnumerableTests.cs" />
     <Compile Include="FileInfo\GetSetAttributesCommon.cs" />
-    <Compile Include="FileInfo\IsReadOnly.cs" />
+    <Compile Include="FileInfo\IsReadOnly.cs" />    
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
@@ -35,9 +35,11 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="File\AppendAsync.cs" />
+	<Compile Include="File\Move.netcoreapp.cs" />
     <Compile Include="File\ReadWriteAllLinesAsync.cs" />
     <Compile Include="File\ReadWriteAllBytesAsync.cs" />
     <Compile Include="File\ReadWriteAllTextAsync.cs" />
+	<Compile Include="FileInfo\MoveTo.netcoreapp.cs" />
     <Compile Include="FileStream\ReadWriteSpan.netcoreapp.cs" />
     <Compile Include="Enumeration\ConstructionTests.netcoreapp.cs" />
     <Compile Include="Enumeration\SpecialDirectoryTests.netcoreapp.cs" />
