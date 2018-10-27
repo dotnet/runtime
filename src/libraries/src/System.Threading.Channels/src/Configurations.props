@@ -4,7 +4,7 @@
     <PackageConfigurations>
       netstandard1.3;
       netstandard;
-      netcoreapp2.1;
+      netcoreapp;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
