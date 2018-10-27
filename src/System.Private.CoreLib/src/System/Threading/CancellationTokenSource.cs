@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace System.Threading
 {
@@ -784,6 +785,33 @@ namespace System.Threading
             {
                 sw.SpinOnce();  // spin, as we assume callback execution is fast and that this situation is rare.
             }
+        }
+
+        /// <summary>
+        /// Asynchronously wait for a single callback to complete (or, more specifically, to not be running).
+        /// It is ok to call this method if the callback has already finished.
+        /// Calling this method before the target callback has been selected for execution would be an error.
+        /// </summary>
+        internal ValueTask WaitForCallbackToCompleteAsync(long id)
+        {
+            // If the currently executing callback is not the target one, then the target one has already
+            // completed and we can simply return.  This should be the most common case, as the caller
+            // calls if we're currently canceling but doesn't know what callback is running, if any.
+            if (ExecutingCallback != id)
+            {
+                return default;
+            }
+
+            // The specified callback is actually running: queue a task that'll poll for the currently
+            // executing callback to complete. In general scheduling such a work item that polls is a really
+            // unfortunate thing to do.  However, we expect this to be a rare case (disposing while the associated
+            // callback is running), and brief when it happens (so the polling will be minimal), and making
+            // this work with a callback mechanism will add additional cost to other more common cases.
+            return new ValueTask(Task.Factory.StartNew(s =>
+            {
+                var state = (Tuple<CancellationTokenSource, long>)s;
+                state.Item1.WaitForCallbackToComplete(state.Item2);
+            }, Tuple.Create(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));
         }
 
         private sealed class Linked1CancellationTokenSource : CancellationTokenSource

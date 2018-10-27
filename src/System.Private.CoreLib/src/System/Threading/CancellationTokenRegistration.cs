@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading.Tasks;
+
 namespace System.Threading
 {
     /// <summary>
@@ -10,7 +12,7 @@ namespace System.Threading
     /// <remarks>
     /// To unregister a callback, dispose the corresponding Registration instance.
     /// </remarks>
-    public readonly struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable
+    public readonly struct CancellationTokenRegistration : IEquatable<CancellationTokenRegistration>, IDisposable, IAsyncDisposable
     {
         private readonly long _id;
         private readonly CancellationTokenSource.CallbackNode _node;
@@ -34,6 +36,21 @@ namespace System.Threading
             {
                 WaitForCallbackIfNecessary();
             }
+        }
+
+        /// <summary>
+        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
+        /// The returned <see cref="ValueTask"/> will complete once the associated callback
+        /// is unregistered without having executed or once it's finished executing, except
+        /// in the degenerate case where the callback itself is unregistering itself.
+        /// </summary>
+        public ValueTask DisposeAsync()
+        {
+            CancellationTokenSource.CallbackNode node = _node;
+            return node != null && !node.Partition.Unregister(_id, node) ?
+                WaitForCallbackIfNecessaryAsync() :
+                default;
         }
 
         /// <summary>
@@ -69,10 +86,28 @@ namespace System.Threading
                 !source.IsCancellationCompleted && // Running callbacks hasn't finished.
                 source.ThreadIDExecutingCallbacks != Thread.CurrentThread.ManagedThreadId) // The executing thread ID is not this thread's ID.
             {
-                // Callback execution is in progress, the executing thread is different to us and has taken the callback for execution
+                // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
                 // so observe and wait until this target callback is no longer the executing callback.
                 source.WaitForCallbackToComplete(_id);
             }
+        }
+
+        private ValueTask WaitForCallbackIfNecessaryAsync()
+        {
+            // Same as WaitForCallbackIfNecessary, except returning a task that'll be completed when callbacks complete.
+
+            CancellationTokenSource source = _node.Partition.Source;
+            if (source.IsCancellationRequested && // Running callbacks has commenced.
+                !source.IsCancellationCompleted && // Running callbacks hasn't finished.
+                source.ThreadIDExecutingCallbacks != Thread.CurrentThread.ManagedThreadId) // The executing thread ID is not this thread's ID.
+            {
+                // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
+                // so get a task that'll complete when this target callback is no longer the executing callback.
+                return source.WaitForCallbackToCompleteAsync(_id);
+            }
+
+            // Callback is either already completed, won't execute, or the callback itself is calling this.
+            return default;
         }
 
         /// <summary>
