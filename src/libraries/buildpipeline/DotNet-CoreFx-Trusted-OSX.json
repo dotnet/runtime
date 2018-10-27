@@ -90,7 +90,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build.sh",
-        "arguments": "/p:OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) $(PB_SyncArguments)",
+        "arguments": "--ci /p:OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) $(PB_SyncArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
@@ -110,7 +110,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build.sh",
-        "arguments": "-test $(PB_BuildTestsArguments)",
+        "arguments": "--ci -test $(PB_BuildTestsArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }

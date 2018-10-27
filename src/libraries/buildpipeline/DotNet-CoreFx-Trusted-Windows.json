@@ -136,7 +136,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "/p:OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) $(PB_SyncArguments) $(PB_OptionalToolingSyncArguments) $(PB_PipelineBuildMSBuildArguments)",
+        "arguments": "-ci /p:OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) $(PB_SyncArguments) $(PB_OptionalToolingSyncArguments) $(PB_PipelineBuildMSBuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -156,7 +156,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "-test $(PB_BuildTestsArguments)",
+        "arguments": "-ci -test $(PB_BuildTestsArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
