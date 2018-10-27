@@ -1455,6 +1455,8 @@ typedef struct {
 	MonoArray *data;
 } MonoReflectionCustomAttr;
 
+TYPED_HANDLE_DECL (MonoReflectionCustomAttr);
+
 typedef struct {
 	MonoObject object;
 	MonoString *marshal_cookie;
