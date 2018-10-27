@@ -51948,14 +51948,6 @@ MaxAllowedDurationSeconds=600
 Categories=EXPECTED_PASS;Pri1
 HostStyle=0
 
-[DecimalRemainder.cmd_7533]
-RelativePath=CoreMangLib\cti\system\decimal\DecimalRemainder\DecimalRemainder.cmd
-WorkingDir=CoreMangLib\cti\system\decimal\DecimalRemainder
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
-HostStyle=0
-
 [Generated28.cmd_7534]
 RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest28\Generated28\Generated28.cmd
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest28\Generated28
