@@ -141,13 +141,6 @@ namespace System.Resources
 
         private bool UseManifest;  // Use Assembly manifest, or grovel disk.
 
-#if RESOURCE_SATELLITE_CONFIG
-        private static volatile Hashtable _installedSatelliteInfo;  // Give the user the option  
-                                                                    // to prevent certain satellite assembly probes via a config file.
-                                                                    // Note that config files are per-appdomain, not per-assembly nor process
-        private static volatile bool _checkedConfigFile;  // Did we read the app's config file?
-#endif
-
         // Whether to fall back to the main assembly or a particular 
         // satellite for the neutral resources.
         private UltimateResourceFallbackLocation _fallbackLoc;
@@ -1137,45 +1130,6 @@ namespace System.Resources
             return ums;
         }
 
-#if RESOURCE_SATELLITE_CONFIG
-        // Internal helper method - gives an end user the ability to prevent
-        // satellite assembly probes for certain cultures via a config file.
-        private bool TryLookingForSatellite(CultureInfo lookForCulture)
-        {
-            if (!_checkedConfigFile)
-            {
-                lock (this)
-                {
-                    if (!_checkedConfigFile)
-                    {
-                        _checkedConfigFile = true;
-                        _installedSatelliteInfo = GetSatelliteAssembliesFromConfig();
-                    }
-                }
-            }
-
-            if (_installedSatelliteInfo == null)
-                return true;
-
-            string[] installedSatellites = (string[])_installedSatelliteInfo[MainAssembly.FullName];
-
-            if (installedSatellites == null)
-                return true;
-
-            // The config file told us what satellites might be installed.
-            int pos = Array.IndexOf(installedSatellites, lookForCulture.Name);
-
-            return pos >= 0;
-        }
-
-        // Note: There is one config file per appdomain.  This is not 
-        // per-process nor per-assembly.
-        private Hashtable GetSatelliteAssembliesFromConfig()
-        {
-            return null;
-        }
-#endif  // RESOURCE_SATELLITE_CONFIG
-
         internal class ResourceManagerMediator
         {
             private ResourceManager _rm;
@@ -1262,15 +1216,6 @@ namespace System.Resources
             {
                 get { return _rm.BaseName; }
             }
-
-
-#if RESOURCE_SATELLITE_CONFIG
-            internal bool TryLookingForSatellite(CultureInfo lookForCulture)
-            {
-                return _rm.TryLookingForSatellite(lookForCulture);
-            }
-#endif
-
         }
     }
 }

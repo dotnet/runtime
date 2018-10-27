@@ -69,13 +69,6 @@ namespace System.Resources
                 // don't bother looking in satellites in this case
                 satellite = _mediator.MainAssembly;
             }
-#if RESOURCE_SATELLITE_CONFIG
-            // If our config file says the satellite isn't here, don't ask for it.
-            else if (!lookForCulture.HasInvariantCultureName && !_mediator.TryLookingForSatellite(lookForCulture))
-            {
-                satellite = null;
-            }
-#endif
             else
             {
                 satellite = GetSatelliteAssembly(lookForCulture, ref stackMark);
