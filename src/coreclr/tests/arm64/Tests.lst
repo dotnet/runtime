@@ -5556,14 +5556,6 @@ MaxAllowedDurationSeconds=600
 Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
-[DecimalRemainder.cmd_1319]
-RelativePath=CoreMangLib\cti\system\decimal\DecimalRemainder\DecimalRemainder.cmd
-WorkingDir=CoreMangLib\cti\system\decimal\DecimalRemainder
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS;UNWIND
-HostStyle=0
-
 [DecimalSubtract.cmd_1320]
 RelativePath=CoreMangLib\cti\system\decimal\DecimalSubtract\DecimalSubtract.cmd
 WorkingDir=CoreMangLib\cti\system\decimal\DecimalSubtract
