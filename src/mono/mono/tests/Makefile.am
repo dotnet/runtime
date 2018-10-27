@@ -1527,6 +1527,15 @@ CI_PR_DISABLED_TESTS += finalizer-thread.exe
 # https://github.com/mono/mono/issues/11392
 CI_PR_DISABLED_TESTS += appdomain-threadpool-unload.exe
 
+# https://github.com/mono/mono/issues/11415
+CI_PR_DISABLED_TESTS += finalizer-abort.exe
+
+# https://github.com/mono/mono/issues/11420
+CI_PR_DISABLED_TESTS += process-stress-2.exe
+
+# https://github.com/mono/mono/issues/11417
+CI_PR_DISABLED_TESTS += process-stress-3.exe
+
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
 LLVM_DISABLED_TESTS = \
 	finally_block_ending_in_dead_bb.exe \
