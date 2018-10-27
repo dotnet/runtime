@@ -207,13 +207,13 @@ namespace System.Text.RegularExpressions
 
         private bool MatchPattern(string text, int index)
         {
+            if (text.Length - index < Pattern.Length)
+            {
+                return false;
+            }
+
             if (CaseInsensitive)
             {
-                if (text.Length - index < Pattern.Length)
-                {
-                    return false;
-                }
-
                 return (0 == string.Compare(Pattern, 0, text, index, Pattern.Length, CaseInsensitive, _culture));
             }
             else
