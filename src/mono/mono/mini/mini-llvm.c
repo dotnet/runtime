@@ -6004,8 +6004,15 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 					addresses [ins->sreg1] = build_alloca (ctx, t);
 					g_assert (values [ins->sreg1]);
 					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, t)), addresses [ins->sreg1]);
+					addresses [ins->dreg] = addresses [ins->sreg1];
+				} else if (values [ins->sreg1] == addresses [ins->sreg1]) {
+					/* LLVMArgVtypeByRef, have to make a copy */
+					addresses [ins->dreg] = build_alloca (ctx, t);
+					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "");
+					LLVMBuildStore (builder, convert (ctx, v, type_to_llvm_type (ctx, t)), addresses [ins->dreg]);
+				} else {
+					addresses [ins->dreg] = addresses [ins->sreg1];
 				}
-				addresses [ins->dreg] = addresses [ins->sreg1];
 			}
 			break;
 		}
@@ -7313,7 +7320,7 @@ emit_method_inner (EmitContext *ctx)
 			else
 				name = g_strdup_printf ("arg_%d", i);
 		}
-		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
+		LLVMSetValueName (LLVMGetParam (method, pindex), name);
 		g_free (name);
 		if (ainfo->storage == LLVMArgVtypeByVal)
 			mono_llvm_add_param_attr (LLVMGetParam (method, pindex), LLVM_ATTR_BY_VAL);
