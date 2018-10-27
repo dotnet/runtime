@@ -4067,6 +4067,8 @@ mono_nullable_box (gpointer vbuf, MonoClass *klass, MonoError *error)
 	gpointer has_value_field_addr = nullable_get_has_value_field_addr (buf, klass);
 	gpointer value_field_addr = nullable_get_value_field_addr (buf, klass);
 
+	g_assertf (!m_class_is_byreflike (param_class), "Unexpected Nullable<%s> - generic type instantiated with IsByRefLike type", mono_type_get_full_name (param_class));
+
 	if (*(guint8*)(has_value_field_addr)) {
 		MonoObject *o = mono_object_new_checked (mono_domain_get (), param_class, error);
 		return_val_if_nok (error, NULL);
@@ -6833,6 +6835,12 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 	error_init (error);
 
 	g_assert (m_class_is_valuetype (klass));
+	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
+		char *full_name = mono_type_get_full_name (klass);
+		mono_error_set_execution_engine (error, "Cannot box IsByRefLike type %s", full_name);
+		g_free (full_name);
+		return NULL_HANDLE;
+	}
 	if (mono_class_is_nullable (klass))
 		return mono_nullable_box_handle (value, klass, error);
 
@@ -6900,6 +6908,12 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 	error_init (error);
 
 	g_assert (m_class_is_valuetype (klass));
+	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
+		char *full_name = mono_type_get_full_name (klass);
+		mono_error_set_execution_engine (error, "Cannot box IsByRefLike type %s", full_name);
+		g_free (full_name);
+		return NULL;
+	}
 	if (mono_class_is_nullable (klass))
 		return mono_nullable_box ((guint8 *)value, klass, error);
 

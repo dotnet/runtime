@@ -52,6 +52,7 @@ static void mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd);
 static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
+static gboolean class_has_isbyreflike_attribute (MonoClass *klass);
 
 /* This TLS variable points to a GSList of classes which have setup_fields () executing */
 static MonoNativeTlsKey setup_fields_tls_id;
@@ -658,6 +659,20 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 			klass->simd_type = 1;
 	}
 
+	// compute is_byreflike
+	if (m_class_is_valuetype (klass)) {
+		/* TypedReference and RuntimeArgumentHandle are byreflike by
+		 * definition. Otherwise, look for IsByRefLikeAttribute.
+		 */
+		if (mono_is_corlib_image (image) &&
+		    ((m_class_get_byval_arg (klass)->type == MONO_TYPE_TYPEDBYREF) ||
+		     (!strcmp (m_class_get_name_space (klass), "System") &&
+		      !strcmp (m_class_get_name (klass), "RuntimeArgumentHandle"))))
+			klass->is_byreflike = 1; 
+		else if (class_has_isbyreflike_attribute (klass))
+			klass->is_byreflike = 1;
+	}
+
 	mono_loader_unlock ();
 
 	MONO_PROFILER_RAISE (class_loaded, (klass));
@@ -699,6 +714,45 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 		klass->element_class = gtd->element_class;
 	}
 	mono_loader_unlock ();
+}
+
+struct HasIsByrefLikeUD {
+	gboolean has_isbyreflike;
+};
+
+static gboolean
+has_isbyreflike_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
+{
+	struct HasIsByrefLikeUD *has_isbyreflike = (struct HasIsByrefLikeUD *)user_data;
+	if (!strcmp (name, "IsByRefLikeAttribute") && !strcmp (nspace, "System.Runtime.CompilerServices")) {
+		has_isbyreflike->has_isbyreflike = TRUE;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+class_has_isbyreflike_attribute (MonoClass *klass)
+{
+	struct HasIsByrefLikeUD has_isbyreflike;
+	has_isbyreflike.has_isbyreflike = FALSE;
+	mono_class_metadata_foreach_custom_attr (klass, has_isbyreflike_attribute_func, &has_isbyreflike);
+	return has_isbyreflike.has_isbyreflike;
+}
+
+
+static gboolean
+check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
+{
+	for (int i = 0; i < inst->type_argc; i++) {
+		if (!mono_type_is_valid_generic_argument (inst->type_argv [i])) {
+			char *type_name = mono_type_full_name (inst->type_argv [i]);
+			mono_error_set_invalid_program (error, "generic type cannot be instantiated with type '%s'", type_name);
+			g_free (type_name);
+			return FALSE;
+		}
+	}
+	return TRUE;
 }
 
 /*
@@ -750,6 +804,10 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 
 	klass->cast_class = klass->element_class = klass;
 
+	if (m_class_is_valuetype (klass)) {
+		klass->is_byreflike = gklass->is_byreflike;
+	}
+
 	if (gclass->is_dynamic) {
 		/*
 		 * We don't need to do any init workf with unbaked typebuilders. Generic instances created at this point will be later unregistered and/or fixed.
@@ -768,6 +826,16 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 			klass->instance_size = gklass->instance_size;
 			klass->sizes.class_size = gklass->sizes.class_size;
 			klass->size_inited = 1;
+		}
+	}
+
+	{
+		ERROR_DECL (error_inst);
+		if (!check_valid_generic_inst_arguments (gclass->context.class_inst, error_inst)) {
+			char *gklass_name = mono_type_get_full_name (gklass);
+			mono_class_set_type_load_failure (klass, "Could not instantiate %s due to %s", gklass_name, mono_error_get_message (error_inst));
+			g_free (gklass_name);
+			mono_error_cleanup (error_inst);
 		}
 	}
 
@@ -923,6 +991,11 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		mono_error_set_invalid_program (&prepared_error, "Arrays of System.TypedReference types are invalid.");
 		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
 		mono_error_cleanup (&prepared_error);
+	} else if (m_class_is_byreflike (eclass)) {
+		/* .NET Core throws a type load exception: "Could not create array type 'fullname[]'" */
+		char *full_name = mono_type_get_full_name (eclass);
+		mono_class_set_type_load_failure (klass, "Could not create array type '%s[]'", full_name);
+		g_free (full_name);
 	} else if (eclass->enumtype && !mono_class_enum_basetype_internal (eclass)) {
 		guint32 ref_info_handle = mono_class_get_ref_info_handle (eclass);
 		if (!ref_info_handle || eclass->wastypebuilder) {
@@ -3841,6 +3914,49 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		}
 	}
 
+	/*
+	 * Check that any fields of IsByRefLike type are instance
+	 * fields and only inside other IsByRefLike structs.
+	 *
+	 * (Has to be done late because we call
+	 * mono_class_from_mono_type_internal which may recursively
+	 * refer to the current class)
+	 */
+	gboolean allow_isbyreflike_fields = m_class_is_byreflike (klass);
+	for (i = 0; i < top; i++) {
+		field = &klass->fields [i];
+
+		if (mono_field_is_deleted (field))
+			continue;
+		if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
+			continue;
+		MonoClass *field_class = NULL;
+		/* have to be careful not to recursively invoke mono_class_init on a static field.
+		 * for example - if the field is an array of a subclass of klass, we can loop.
+		 */
+		switch (field->type->type) {
+		case MONO_TYPE_TYPEDBYREF:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_GENERICINST:
+			field_class = mono_class_from_mono_type_internal (field->type);
+			break;
+		default:
+			break;
+		}
+		if (!field_class || !m_class_is_byreflike (field_class))
+			continue;
+		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
+			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' is not allowed", field->name);
+			return;
+		} else {
+			/* instance field */
+			if (allow_isbyreflike_fields)
+				continue;
+			mono_class_set_type_load_failure (klass, "Instance ByRefLike field '%s' not in a ref struct", field->name);
+			return;
+		}
+	}
+
 	/* Publish the data */
 	mono_loader_lock ();
 	if (!klass->rank)
@@ -4139,7 +4255,7 @@ mono_class_init (MonoClass *klass)
 	 */
 	GSList *init_list = (GSList *)mono_native_tls_get_value (init_pending_tls_id);
 	if (g_slist_find (init_list, klass)) {
-		mono_class_set_type_load_failure (klass, "Recursive type definition detected");
+		mono_class_set_type_load_failure (klass, "Recursive type definition detected %s.%s", klass->name_space, klass->name);
 		goto leave_no_init_pending;
 	}
 	init_list = g_slist_prepend (init_list, klass);

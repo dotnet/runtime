@@ -12,6 +12,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
+#include <mono/metadata/exception-internals.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/profiler-private.h>
@@ -3796,6 +3797,10 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 				/* already boxed, do nothing. */
 				td->ip += 5;
 			} else {
+				if (G_UNLIKELY (m_class_is_byreflike (klass))) {
+					mono_error_set_bad_image (error, image, "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+					goto exit;
+				}
 				if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT && !m_class_is_enumtype (klass)) {
 					size = mono_class_value_size (klass, NULL);
 					size = ALIGN_TO (size, MINT_VT_ALIGNMENT);

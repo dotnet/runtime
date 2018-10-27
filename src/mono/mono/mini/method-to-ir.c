@@ -3893,6 +3893,12 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 {
 	MonoInst *alloc, *ins;
 
+	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
+		mono_error_set_bad_image (&cfg->error, m_class_get_image (cfg->method->klass), "Cannot box IsByRefLike type '%s.%s'", m_class_get_name_space (klass), m_class_get_name (klass));
+		mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
+		return NULL;
+	}
+
 	if (mono_class_is_nullable (klass)) {
 		MonoMethod* method = get_method_nofail (klass, "Box", 1, 0);
 
@@ -7897,6 +7903,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, m_class_get_byval_arg (constrained_class), sp [0]->dreg, 0);
 						ins->klass = constrained_class;
 						sp [0] = mini_emit_box (cfg, ins, constrained_class, mono_class_check_context_used (constrained_class));
+						CHECK_CFG_EXCEPTION;
 						if (cfg->llvm_only)
 							ins = emit_llvmonly_calli (cfg, fsig, sp, addr);
 						else

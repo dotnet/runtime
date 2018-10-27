@@ -45,6 +45,7 @@ struct _MonoClass {
 	guint unicode         : 1; /* class uses unicode char when marshalled */
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
+	guint is_byreflike    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.IsByRefLikeAttribute */
 
 	/* next byte */
 	guint8 min_align;

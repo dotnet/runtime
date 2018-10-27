@@ -59,6 +59,13 @@ bcheck_blob (const char *ptr, int bump, const char *endp, MonoError *error);
 static gboolean
 decode_blob_value_checked (const char *ptr, const char *endp, guint32 *size_out, const char **retp, MonoError *error);
 
+static guint32
+custom_attrs_idx_from_class (MonoClass *klass);
+
+static void
+metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data);
+
+
 /*
  * LOCKING: Acquires the loader lock. 
  */
@@ -1697,6 +1704,23 @@ mono_custom_attrs_from_class (MonoClass *klass)
 	return result;
 }
 
+guint32
+custom_attrs_idx_from_class (MonoClass *klass)
+{
+	guint32 idx;
+	g_assert (!image_is_dynamic (m_class_get_image (klass)));
+	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR || m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) {
+		idx = mono_metadata_token_index (m_class_get_sizes (klass).generic_param_token);
+		idx <<= MONO_CUSTOM_ATTR_BITS;
+		idx |= MONO_CUSTOM_ATTR_GENERICPAR;
+	} else {
+		idx = mono_metadata_token_index (m_class_get_type_token (klass));
+		idx <<= MONO_CUSTOM_ATTR_BITS;
+		idx |= MONO_CUSTOM_ATTR_TYPEDEF;
+	}
+	return idx;
+}
+
 MonoCustomAttrInfo*
 mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
 {
@@ -1710,15 +1734,8 @@ mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
 	if (image_is_dynamic (m_class_get_image (klass)))
 		return lookup_custom_attr (m_class_get_image (klass), klass);
 
-	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_VAR || m_class_get_byval_arg (klass)->type == MONO_TYPE_MVAR) {
-		idx = mono_metadata_token_index (m_class_get_sizes (klass).generic_param_token);
-		idx <<= MONO_CUSTOM_ATTR_BITS;
-		idx |= MONO_CUSTOM_ATTR_GENERICPAR;
-	} else {
-		idx = mono_metadata_token_index (m_class_get_type_token (klass));
-		idx <<= MONO_CUSTOM_ATTR_BITS;
-		idx |= MONO_CUSTOM_ATTR_TYPEDEF;
-	}
+	idx = custom_attrs_idx_from_class (klass);
+
 	return mono_custom_attrs_from_index_checked (m_class_get_image (klass), idx, FALSE, error);
 }
 
@@ -2389,9 +2406,6 @@ void
 mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data)
 {
 	MonoImage *image;
-	guint32 mtoken, i;
-	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
-	MonoTableInfo *ca;
 	guint32 idx;
 
 	/*
@@ -2407,6 +2421,23 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;
 	idx |= MONO_CUSTOM_ATTR_ASSEMBLY;
+
+	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
+}
+
+/**
+ * iterate over the custom attributes that belong to the given index and call func, passing the 
+ *  assembly ref (if any) and the namespace and name of the custom attribute.
+ *
+ * Everything is done using low-level metadata APIs, so it is safe to use
+ * during assembly loading and class initialization.
+ */
+void
+metadata_foreach_custom_attr_from_index (MonoImage *image, guint32 idx, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data)
+{
+	guint32 mtoken, i;
+	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
+	MonoTableInfo *ca;
 
 	/* Inlined from mono_custom_attrs_from_index_checked () */
 	ca = &image->tables [MONO_TABLE_CUSTOMATTRIBUTE];
@@ -2442,6 +2473,38 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 
 		stop_iterating = func (image, assembly_token, nspace, name, mtoken, user_data);
 	}
+}
+
+/**
+ * mono_class_metadata_foreach_custom_attr:
+ * \param klass - the class to iterate over
+ * \param func the funciton to call for each custom attribute
+ * \param user_data passed to \p func
+ *
+ * Calls \p func for each custom attribute type on the given class until \p func returns TRUE.
+ *
+ * Everything is done using low-level metadata APIs, so it is fafe to use
+ * during assembly loading and class initialization.
+ *
+ * The MonoClass \p klass should have the following fields initialized:
+ *
+ * \c MonoClass:kind, \c MonoClass:image, \c MonoClassGenericInst:generic_class,
+ * \c MonoClass:type_token, \c MonoClass:sizes.generic_param_token, MonoClass:byval_arg
+ */
+void
+mono_class_metadata_foreach_custom_attr (MonoClass *klass, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data)
+{
+	MonoImage *image = m_class_get_image (klass);
+
+	/* dynamic images don't store custom attributes in tables */
+	g_assert (!image_is_dynamic (image));
+
+	if (mono_class_is_ginst (klass))
+		klass = mono_class_get_generic_class (klass)->container_class;
+
+	guint32 idx = custom_attrs_idx_from_class (klass);
+
+	return metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
 
 static void

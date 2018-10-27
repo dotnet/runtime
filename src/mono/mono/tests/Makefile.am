@@ -986,7 +986,8 @@ TESTS_IL_SRC=			\
 	tailcall-return-valuetype.il \
 	tailcall-valuetype-parameter.il \
 	ldfldvt.il \
-	newobj-abstract.il
+	newobj-abstract.il \
+	invalid-isbyreflike.il
 
 # This test crashes the runtime, even with recent fixes.
 #	incorrect-ldvirtftn-read-behind-for-dup.il
@@ -1265,7 +1266,8 @@ PROFILE_DISABLED_TESTS += \
 	resolve_type_bug.2.exe \
 	bug-81691.exe \
 	bug-327438.2.exe \
-	newobj-abstract.exe
+	newobj-abstract.exe \
+	invalid-isbyreflike.exe
 
 # Tests which rely on remoting
 PROFILE_DISABLED_TESTS += \
