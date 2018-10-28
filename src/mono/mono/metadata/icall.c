@@ -7097,7 +7097,7 @@ ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
 	ERROR_DECL (error);
 	gunichar2 volume_name [MAX_PATH + 1];
 	
-	if (mono_w32file_get_volume_information (mono_string_chars_internal (path), NULL, 0, NULL, NULL, NULL, volume_name, MAX_PATH + 1) == FALSE)
+	if (mono_w32file_get_file_system_type (mono_string_chars_internal (path), volume_name, MAX_PATH + 1) == FALSE)
 		return NULL;
 	MonoString *result = mono_string_from_utf16_checked (volume_name, error);
 	mono_error_set_pending_exception (error);

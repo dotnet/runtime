@@ -371,11 +371,11 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 }
 
 gboolean
-mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumename, gint volumesize, gint *outserial, gint *maxcomp, gint *fsflags, gunichar2 *fsbuffer, gint fsbuffersize)
+mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = GetVolumeInformation (path, volumename, volumesize, (PDWORD)outserial, (PDWORD)maxcomp, (PDWORD)fsflags, fsbuffer, fsbuffersize);
+	res = GetVolumeInformationW (path, NULL, NULL, NULL, NULL, NULL, fsbuffer, fsbuffersize);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
