@@ -5314,7 +5314,37 @@ AC_DEFINE(MONO_INSIDE_RUNTIME,1, [Disable banned functions from being used by th
 mono_build_root=`pwd`
 AC_SUBST(mono_build_root)
 
-mono_runtime=mono/mini/mono
+AC_ARG_ENABLE(msvc,[  --enable-msvc    Build with Visual Studio (msvc) (defaults to no)], enable_msvc=$enableval, enable_msvc=no)
+if test x$host_win32 = xno; then
+	if test x$enable_msvc = xyes; then
+		echo "Error, --enable-msvc only supported for Windows builds."
+		exit 1
+	fi
+fi
+AM_CONDITIONAL(ENABLE_MSVC, test x$enable_msvc = xyes)
+
+if test "x$enable_msvc" = "xyes"; then
+	if test "x$support_boehm" = "xyes"; then
+		echo "Error, Boehm GC is not supported when using --enable-msvc."
+		exit 1
+	fi
+	mono_msvc_build_dir='$(top_srcdir)'/msvc/build/sgen
+	if test "x$host_cpu" = "xi686"; then
+		mono_msvc_build_lib_dir='$(mono_msvc_build_dir)'/Win32/lib/Release
+		mono_msvc_build_bin_dir='$(mono_msvc_build_dir)'/Win32/bin/Release
+		mono_runtime=msvc/build/sgen/Win32/bin/Release/mono-sgen.exe
+	else
+		mono_msvc_build_lib_dir='$(mono_msvc_build_dir)'/x64/lib/Release
+		mono_msvc_build_bin_dir='$(mono_msvc_build_dir)'/x64/bin/Release
+		mono_runtime=msvc/build/sgen/x64/bin/Release/mono-sgen.exe
+	fi
+	AC_SUBST(mono_msvc_build_dir)
+	AC_SUBST(mono_msvc_build_lib_dir)
+	AC_SUBST(mono_msvc_build_bin_dir)
+else
+	mono_runtime=mono/mini/mono
+fi
+
 AC_SUBST(mono_runtime)
 
 CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/Microsoft.Net.Compilers.2.8.2/tools/csc.exe
