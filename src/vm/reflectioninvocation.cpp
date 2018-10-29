@@ -372,18 +372,21 @@ FCIMPL1(Object*, RuntimeTypeHandle::Allocate, ReflectClassBaseObject* pTypeUNSAF
 }//Allocate
 FCIMPLEND
 
-FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
+FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
                                                     CLR_BOOL publicOnly,
                                                     CLR_BOOL wrapExceptions,
                                                     CLR_BOOL* pbCanBeCached,
-                                                    MethodDesc** pConstructor) {
+                                                    MethodDesc** pConstructor,
+                                                    CLR_BOOL* pbHasNoDefaultCtor) {
     CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(refThisUNSAFE));
         PRECONDITION(CheckPointer(pbCanBeCached));
         PRECONDITION(CheckPointer(pConstructor));
+        PRECONDITION(CheckPointer(pbHasNoDefaultCtor));
         PRECONDITION(*pbCanBeCached == false);
         PRECONDITION(*pConstructor == NULL);
+        PRECONDITION(*pbHasNoDefaultCtor == false);
     }
     CONTRACTL_END;
 
@@ -406,8 +409,10 @@ FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
     MethodTable* pVMT;
 
     // Get the type information associated with refThis
-    if (thisTH.IsNull() || thisTH.IsTypeDesc())
-        COMPlusThrow(kMissingMethodException,W("Arg_NoDefCTor"));
+    if (thisTH.IsNull() || thisTH.IsTypeDesc()) {
+        *pbHasNoDefaultCtor = true;
+        goto DoneCreateInstance;
+    }
         
     pVMT = thisTH.AsMethodTable();
 
@@ -458,7 +463,8 @@ FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             //  if this is a Value class we can simply allocate one and return it
 
             if (!pVMT->IsValueType()) {
-                COMPlusThrow(kMissingMethodException,W("Arg_NoDefCTor"));
+                *pbHasNoDefaultCtor = true;
+                goto DoneCreateInstance;
             }
 
             // Handle the nullable<T> special case
@@ -480,8 +486,10 @@ FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             // Validate the method can be called by this caller
             DWORD attr = pMeth->GetAttrs();
 
-            if (!IsMdPublic(attr) && publicOnly)
-                COMPlusThrow(kMissingMethodException, W("Arg_NoDefCTor"));
+            if (!IsMdPublic(attr) && publicOnly) {
+                *pbHasNoDefaultCtor = true;
+                goto DoneCreateInstance;
+            }
 
             // We've got the class, lets allocate it and call the constructor
             OBJECTREF o;
@@ -515,7 +523,7 @@ FCIMPL5(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             }
         }
     }
-
+DoneCreateInstance:
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(rv);
 }

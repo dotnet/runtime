@@ -584,7 +584,7 @@
     <value>Must specify binding flags describing the invoke operation required (BindingFlags.InvokeMethod CreateInstance GetField SetField GetProperty SetProperty).</value>
   </data>
   <data name="Arg_NoDefCTor" xml:space="preserve">
-    <value>No parameterless constructor defined for this object.</value>
+    <value>No parameterless constructor defined for type '{0}'.</value>
   </data>
   <data name="Arg_NoITypeInfo" xml:space="preserve">
     <value>Specified TypeInfo was invalid because it did not support the ITypeInfo interface.</value>
