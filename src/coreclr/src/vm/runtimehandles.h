@@ -126,11 +126,12 @@ public:
 
     // Static method on RuntimeTypeHandle
     static FCDECL1(Object*, Allocate, ReflectClassBaseObject *refType) ; //A.CI work	
-    static FCDECL5(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
+    static FCDECL6(Object*, CreateInstance, ReflectClassBaseObject* refThisUNSAFE,
                                             CLR_BOOL publicOnly,
                                             CLR_BOOL wrapExceptions,
                                             CLR_BOOL *pbCanBeCached,
-                                            MethodDesc** pConstructor);
+                                            MethodDesc** pConstructor,
+                                            CLR_BOOL *pbHasNoDefaultCtor);
 
     static FCDECL2(Object*, CreateCaInstance, ReflectClassBaseObject* refCaType, ReflectMethodObject* pCtorUNSAFE);
 

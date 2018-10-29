@@ -4768,11 +4768,16 @@ namespace System
         {
             RuntimeMethodHandleInternal runtime_ctor = default;
             bool bCanBeCached = false;
+            bool bHasNoDefaultCtor = false;
 
             if (!skipCheckThis)
                 CreateInstanceCheckThis();
 
-            object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref bCanBeCached, ref runtime_ctor);
+            object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref bCanBeCached, ref runtime_ctor, ref bHasNoDefaultCtor);
+            if (bHasNoDefaultCtor)
+            {
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
+            }
 
             if (bCanBeCached && fillCache)
             {
@@ -4809,7 +4814,7 @@ namespace System
                         if (ace.m_ctor != null &&
                             (ace.m_ctorAttributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
                         {
-                            throw new MissingMethodException(SR.Arg_NoDefCTor);
+                            throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
                         }
                     }
 
