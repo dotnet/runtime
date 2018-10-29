@@ -46,7 +46,7 @@
       <BaselineApiCompatArgs Condition="Exists($(ApiCompatBaselineIgnoreFile))">-baseline:"$(ApiCompatBaselineIgnoreFile)"</BaselineApiCompatArgs>
       <ApiCompatExitCode>0</ApiCompatExitCode>
 
-      <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
+      <ApiCompatCmd>$(_ApiCompatCommand)</ApiCompatCmd>
     </PropertyGroup>
 
     <MakeDir Directories="$(IntermediateOutputPath)" />

@@ -19,7 +19,7 @@
                            OriginalPackages="@(_BaseLinedStaticDependencies)" 
                            StablePackages="@(StablePackage)"
                            PackageIndexes="@(PackageIndex)"
-                           PreReleaseSuffix="$(VersionSuffix)">
+                           PreReleaseSuffix="-$(VersionSuffix)">
       <Output TaskParameter="UpdatedPackages" ItemName="_SuffixedStaticDependencies"/>
     </ApplyPreReleaseSuffix>
     

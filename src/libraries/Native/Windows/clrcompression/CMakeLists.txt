@@ -19,7 +19,7 @@ if($ENV{__BuildArch} STREQUAL x86 OR $ENV{__BuildArch} STREQUAL x64)
         zlib-intel/trees.c
         zlib-intel/x86.c
         zlib-intel/zutil.c
-        zlib/compress.c 
+        zlib/compress.c
         zlib/inffast.c
         zlib/inflate.c
         zlib/inftrees.c
@@ -80,8 +80,8 @@ if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
 
-# Include 'bin/obj' dir since it contains _version.h
-include_directories("${CMAKE_BINARY_DIR}/../../")
+# Include the dir that contains the generated _version.h
+include_directories("${CMAKE_BINARY_DIR}/../../../../artifacts/obj")
 
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
@@ -90,7 +90,7 @@ add_library(clrcompression
     SHARED
     ${NATIVECOMPRESSION_SOURCES}
     # This will add versioning to the library
-    ${CMAKE_SOURCE_DIR}/../../../Tools/NativeVersion.rc
+    ${CMAKE_SOURCE_DIR}/../../../artifacts/obj/NativeVersion.rc
 )
 
 # Allow specification of arguments that should be passed to the linker
