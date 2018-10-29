@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Sources;
+using System.Threading.Tasks.Sources.Tests;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
