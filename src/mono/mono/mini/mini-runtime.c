@@ -607,21 +607,12 @@ mono_debug_count (void)
 	return TRUE;
 }
 
-gconstpointer
-mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
+MonoMethod*
+mono_icall_get_wrapper_method (MonoJitICallInfo* callinfo)
 {
-	ERROR_DECL (error);
-	char *name;
 	MonoMethod *wrapper;
-	gconstpointer trampoline;
-	MonoDomain *domain = mono_get_root_domain ();
 	gboolean check_exc = TRUE;
-
-	if (callinfo->wrapper)
-		return callinfo->wrapper;
-
-	if (callinfo->trampoline)
-		return callinfo->trampoline;
+	char *name;
 
 	if (!strcmp (callinfo->name, "mono_thread_interruption_checkpoint"))
 		/* This icall is used to check for exceptions, so don't check in the wrapper */
@@ -631,11 +622,29 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_exc);
 	g_free (name);
 
+	return wrapper;
+}
+
+gconstpointer
+mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
+{
+	ERROR_DECL (error);
+	MonoMethod *wrapper;
+	gconstpointer trampoline;
+	MonoDomain *domain = mono_get_root_domain ();
+
+	if (callinfo->wrapper)
+		return callinfo->wrapper;
+
+	if (callinfo->trampoline)
+		return callinfo->trampoline;
+
+	wrapper = mono_icall_get_wrapper_method (callinfo);
+
 	if (do_compile) {
 		trampoline = mono_compile_method_checked (wrapper, error);
 		mono_error_assert_ok (error);
 	} else {
-
 		trampoline = mono_create_jit_trampoline (domain, wrapper, error);
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr (domain, (gpointer)trampoline);

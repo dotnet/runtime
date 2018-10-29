@@ -1129,13 +1129,11 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			char *name;
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				if (!target)
-					return FALSE;
-
 				name = (char*)p;
-				if (strcmp (target->name, name) != 0)
-					return FALSE;
-				ref->method = target;
+
+				MonoJitICallInfo *info = mono_find_jit_icall_by_name (name);
+				g_assert (info);
+				ref->method = mono_icall_get_wrapper_method (info);
 			} else {
 				m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)
@@ -4548,9 +4546,10 @@ static void
 init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context)
 {
 	ERROR_DECL (error);
+	gboolean res;
 
-	init_method (amodule, method_index, method, init_class, context, error);
-	if (!is_ok (error)) {
+	res = init_method (amodule, method_index, method, init_class, context, error);
+	if (!res || !is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
 		/* Its okay to raise in llvmonly mode */
 		if (ex)

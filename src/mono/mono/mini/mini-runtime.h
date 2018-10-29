@@ -439,6 +439,7 @@ MONO_API void      mono_jit_set_domain      (MonoDomain *domain);
 
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 gpointer  mono_create_ftnptr                (MonoDomain *domain, gpointer addr);
+MonoMethod* mono_icall_get_wrapper_method    (MonoJitICallInfo* callinfo) MONO_LLVM_INTERNAL;
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO_LLVM_INTERNAL;
 gconstpointer     mono_icall_get_wrapper_full  (MonoJitICallInfo* callinfo, gboolean do_compile);
 

@@ -102,6 +102,8 @@ typedef struct {
 #define MONO_ARCH_HAS_REGISTER_ICALL 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
+#define MONO_ARCH_LLVM_TARGET_LAYOUT "e-p:32:32-i64:64-v128:32:128-n32-S128"
+#define MONO_ARCH_LLVM_TARGET_TRIPLE "wasm32-unknown-unknown-wasm"
 
 void mono_wasm_debugger_init (void);
 

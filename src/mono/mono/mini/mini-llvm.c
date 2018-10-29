@@ -1701,6 +1701,7 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 {
 	LLVMValueRef callee;
 	char *callee_name;
+
 	if (ctx->llvm_only) {
 		callee_name = mono_aot_get_direct_call_symbol (type, data);
 		if (callee_name) {
@@ -1724,9 +1725,38 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 		}
 
 		/*
+		 * Change references to jit icalls to the icall wrappers when in corlib, so
+		 * they can be called directly.
+		 */
+		if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_INTERNAL_METHOD) {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+			g_assert (info);
+
+			if (info->func != info->wrapper) {
+				type = MONO_PATCH_INFO_METHOD;
+				data = mono_icall_get_wrapper_method (info);
+			}
+		}
+
+		/*
 		 * Calls are made through the GOT.
 		 */
-		return get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
+		LLVMValueRef callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
+
+		if (type == MONO_PATCH_INFO_METHOD) {
+			MonoMethod *method = (MonoMethod*)data;
+			if (m_class_get_image (method->klass)->assembly == ctx->module->assembly) {
+				/*
+				 * Collect instructions representing the callee into a hash so they can be replaced
+				 * by the llvm method for the callee if the callee turns out to be direct
+				 * callable. Currently this only requires it to not fail llvm compilation.
+				 */
+				GSList *l = (GSList*)g_hash_table_lookup (ctx->method_to_callers, method);
+				l = g_slist_prepend (l, callee);
+				g_hash_table_insert (ctx->method_to_callers, method, l);
+			}
+		}
+		return callee;
 	} else {
 		MonoJumpInfo *ji = NULL;
 
@@ -2477,17 +2507,49 @@ emit_get_method (MonoLLVMModule *module)
 	LLVMModuleRef lmodule = module->lmodule;
 	LLVMValueRef func, switch_ins, m;
 	LLVMBasicBlockRef entry_bb, fail_bb, bb, code_start_bb, code_end_bb;
-	LLVMBasicBlockRef *bbs;
+	LLVMBasicBlockRef *bbs = NULL;
 	LLVMTypeRef rtype;
 	LLVMBuilderRef builder = LLVMCreateBuilder ();
+	LLVMValueRef table = NULL;
 	char *name;
 	int i;
+	gboolean emit_table = FALSE;
+
+#ifdef TARGET_WASM
+	/*
+	 * Emit a table of functions instead of a switch statement,
+	 * its very efficient on wasm. This might be usable on
+	 * other platforms too.
+	 */
+	emit_table = TRUE;
+#endif
+
+	rtype = LLVMPointerType (LLVMInt8Type (), 0);
+
+	if (emit_table) {
+		LLVMTypeRef table_type;
+		LLVMValueRef *table_elems;
+		char *table_name;
+
+		int table_len = module->max_method_idx + 1;
+		table_type = LLVMArrayType (rtype, table_len);
+		table_name = g_strdup_printf ("%s_method_table", module->assembly->aname.name);
+		table = LLVMAddGlobal (lmodule, table_type, table_name);
+		table_elems = g_new0 (LLVMValueRef, table_len);
+		for (i = 0; i < table_len; ++i) {
+			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
+			if (m)
+				table_elems [i] = LLVMBuildBitCast (builder, m, rtype, "");
+			else
+				table_elems [i] = LLVMConstNull (rtype);
+		}
+		LLVMSetInitializer (table, LLVMConstArray (LLVMPointerType (LLVMInt8Type (), 0), table_elems, table_len));
+	}
 
 	/*
 	 * Emit a switch statement. Emitting a table of function addresses is smaller/faster,
 	 * but generating code seems safer.
 	 */
-	rtype = LLVMPointerType (LLVMInt8Type (), 0);
 	func = LLVMAddFunction (lmodule, module->get_method_symbol, LLVMFunctionType1 (rtype, LLVMInt32Type (), FALSE));
 	LLVMSetLinkage (func, LLVMExternalLinkage);
 	LLVMSetVisibility (func, LLVMHiddenVisibility);
@@ -2514,33 +2576,57 @@ emit_get_method (MonoLLVMModule *module)
 	LLVMPositionBuilderAtEnd (builder, code_end_bb);
 	LLVMBuildRet (builder, LLVMBuildBitCast (builder, module->code_end, rtype, ""));
 
-	bbs = g_new0 (LLVMBasicBlockRef, module->max_method_idx + 1);
-	for (i = 0; i < module->max_method_idx + 1; ++i) {
-		name = g_strdup_printf ("BB_%d", i);
-		bb = LLVMAppendBasicBlock (func, name);
-		g_free (name);
-		bbs [i] = bb;
+	if (emit_table) {
+		/*
+		 * switch (index) {
+		 * case -1: return code_start;
+		 * case -2: return code_end;
+		 * default: return method_table [index];
+		 */
+		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
+		LLVMPositionBuilderAtEnd (builder, default_bb);
+		LLVMValueRef base = table;
+		LLVMValueRef indexes [2];
+		indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+		indexes [1] = LLVMGetParam (func, 0);
+		LLVMValueRef addr = LLVMBuildGEP (builder, base, indexes, 2, "");
+		LLVMValueRef res = mono_llvm_build_load (builder, addr, "", FALSE);
+		LLVMBuildRet (builder, res);
 
-		LLVMPositionBuilderAtEnd (builder, bb);
+		LLVMPositionBuilderAtEnd (builder, entry_bb);
 
-		m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
-		if (m)
-			LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
-		else
-			LLVMBuildRet (builder, LLVMConstNull (rtype));
-	}
+		switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), default_bb, 0);
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), -1, FALSE), code_start_bb);
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), -2, FALSE), code_end_bb);
+	} else {
+		bbs = g_new0 (LLVMBasicBlockRef, module->max_method_idx + 1);
+		for (i = 0; i < module->max_method_idx + 1; ++i) {
+			name = g_strdup_printf ("BB_%d", i);
+			bb = LLVMAppendBasicBlock (func, name);
+			g_free (name);
+			bbs [i] = bb;
 
-	fail_bb = LLVMAppendBasicBlock (func, "FAIL");
-	LLVMPositionBuilderAtEnd (builder, fail_bb);
-	LLVMBuildRet (builder, LLVMConstNull (rtype));
+			LLVMPositionBuilderAtEnd (builder, bb);
 
-	LLVMPositionBuilderAtEnd (builder, entry_bb);
+			m = (LLVMValueRef)g_hash_table_lookup (module->idx_to_lmethod, GINT_TO_POINTER (i));
+			if (m)
+				LLVMBuildRet (builder, LLVMBuildBitCast (builder, m, rtype, ""));
+			else
+				LLVMBuildRet (builder, LLVMConstNull (rtype));
+		}
 
-	switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
-	LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), -1, FALSE), code_start_bb);
-	LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), -2, FALSE), code_end_bb);
-	for (i = 0; i < module->max_method_idx + 1; ++i) {
-		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+		fail_bb = LLVMAppendBasicBlock (func, "FAIL");
+		LLVMPositionBuilderAtEnd (builder, fail_bb);
+		LLVMBuildRet (builder, LLVMConstNull (rtype));
+
+		LLVMPositionBuilderAtEnd (builder, entry_bb);
+
+		switch_ins = LLVMBuildSwitch (builder, LLVMGetParam (func, 0), fail_bb, 0);
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), -1, FALSE), code_start_bb);
+		LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), -2, FALSE), code_end_bb);
+		for (i = 0; i < module->max_method_idx + 1; ++i) {
+			LLVMAddCase (switch_ins, LLVMConstInt (LLVMInt32Type (), i, FALSE), bbs [i]);
+		}
 	}
 
 	mark_as_used (module, func);
@@ -3308,16 +3394,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 				if (!callee) {
 					set_failure (ctx, "can't encode patch");
 					return;
-				}
-				if (cfg->llvm_only && m_class_get_image (call->method->klass)->assembly == ctx->module->assembly) {
-					/*
-					 * Collect instructions representing the callee into a hash so they can be replaced
-					 * by the llvm method for the callee if the callee turns out to be direct
-					 * callable. Currently this only requires it to not fail llvm compilation.
-					 */
-					GSList *l = (GSList*)g_hash_table_lookup (ctx->method_to_callers, call->method);
-					l = g_slist_prepend (l, callee);
-					g_hash_table_insert (ctx->method_to_callers, call->method, l);
 				}
 			} else {
 				ERROR_DECL (error);
@@ -7576,7 +7652,15 @@ emit_method_inner (EmitContext *ctx)
 		 * NATIVE_TO_MANAGED methods might be called on a thread not attached to the runtime, so they are initialized when loaded
 		 * in load_method ().
 		 */
-		if ((ctx->has_got_access || mono_class_get_cctor (cfg->method->klass)) && !(cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)) {
+		gboolean needs_init = ctx->has_got_access;
+		if (!needs_init && mono_class_get_cctor (cfg->method->klass)) {
+			/* Needs init to run the cctor */
+			if (cfg->method->flags & METHOD_ATTRIBUTE_STATIC)
+				needs_init = TRUE;
+		}
+		if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)
+			needs_init = FALSE;
+		if (needs_init) {
 			/*
 			 * linkonce methods shouldn't have initialization,
 			 * because they might belong to assemblies which
@@ -8741,6 +8825,14 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 
 	add_intrinsics (module->lmodule);
 	add_types (module);
+
+#ifdef MONO_ARCH_LLVM_TARGET_LAYOUT
+	LLVMSetDataLayout (module->lmodule, MONO_ARCH_LLVM_TARGET_LAYOUT);
+#endif
+
+#ifdef MONO_ARCH_LLVM_TARGET_TRIPLE
+	LLVMSetTarget (module->lmodule, MONO_ARCH_LLVM_TARGET_TRIPLE);
+#endif
 
 #if LLVM_API_VERSION > 100
 	if (module->emit_dwarf) {

@@ -293,18 +293,6 @@ mono_arch_flush_icache (guint8 *code, gint size)
 {
 }
 
-const char*
-mono_arch_fregname (int reg)
-{
-	return "freg0";
-}
-
-const char*
-mono_arch_regname (int reg)
-{
-	return "r0";
-}
-
 LLVMCallInfo*
 mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 {
@@ -355,6 +343,18 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 }
 
 #endif // DISABLE_JIT
+
+const char*
+mono_arch_fregname (int reg)
+{
+	return "freg0";
+}
+
+const char*
+mono_arch_regname (int reg)
+{
+	return "r0";
+}
 
 int
 mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info)
