@@ -160,7 +160,7 @@ namespace System
         {
             result = 0;
             int i;
-            if (!Number.TryParseInt32(s, style, info, out i))
+            if (!Number.TryParseInt32(s, style, info, out i, out _))
             {
                 return false;
             }

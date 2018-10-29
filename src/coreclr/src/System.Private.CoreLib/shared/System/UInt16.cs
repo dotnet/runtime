@@ -190,7 +190,7 @@ namespace System
         {
             result = 0;
             uint i;
-            if (!Number.TryParseUInt32(s, style, info, out i))
+            if (!Number.TryParseUInt32(s, style, info, out i, out _))
             {
                 return false;
             }
