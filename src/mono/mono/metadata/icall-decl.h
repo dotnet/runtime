@@ -169,7 +169,6 @@ ICALL_EXPORT void ves_icall_System_Array_GetGenericValueImpl (MonoArray*, guint3
 ICALL_EXPORT void ves_icall_System_Array_SetGenericValueImpl (MonoArray*, guint32, gpointer);
 ICALL_EXPORT void ves_icall_System_Buffer_SetByteInternal (MonoArray*, gint32, gint8);
 ICALL_EXPORT void ves_icall_System_Environment_Exit (int);
-ICALL_EXPORT void ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString*, MonoString*);
 ICALL_EXPORT void ves_icall_System_GCHandle_FreeHandle (guint32 handle);
 ICALL_EXPORT void ves_icall_System_GC_InternalCollect (int generation);
 ICALL_EXPORT void ves_icall_System_GC_RecordPressure (gint64);

@@ -6948,40 +6948,35 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (void)
 	return result;
 }
 
-#ifndef HOST_WIN32
-static void
-mono_icall_set_environment_variable (MonoString *name, MonoString *value)
+void
+ves_icall_System_Environment_InternalSetEnvironmentVariable (const gunichar2 *name, gint32 name_length,
+		const gunichar2 *value, gint32 value_length, MonoError *error)
 {
-	gchar *utf8_name, *utf8_value;
-	ERROR_DECL (error);
+#ifdef HOST_WIN32
+	if (!value || !value_length || !value [0])
+		value = NULL;
 
-	utf8_name = mono_string_to_utf8_checked_internal (name, error);	/* FIXME: this should be ascii */
-	if (mono_error_set_pending_exception (error))
-		return;
+	SetEnvironmentVariableW (name, value);
+#else
+	char *utf8_name = NULL;
+	char *utf8_value = NULL;
 
-	if ((value == NULL) || (mono_string_length_internal (value) == 0) || (mono_string_chars_internal (value)[0] == 0)) {
+	utf8_name = mono_utf16_to_utf8 (name, name_length, error); // FIXME: this should be ascii
+	goto_if_nok (error, exit);
+
+	if (!value || !value_length || !value [0]) {
 		g_unsetenv (utf8_name);
-		g_free (utf8_name);
-		return;
+		goto exit;
 	}
 
-	utf8_value = mono_string_to_utf8_checked_internal (value, error);
-	if (!is_ok (error)) {
-		g_free (utf8_name);
-		mono_error_set_pending_exception (error);
-		return;
-	}
+	utf8_value = mono_utf16_to_utf8 (value, value_length, error);
+	goto_if_nok (error, exit);
+
 	g_setenv (utf8_name, utf8_value, TRUE);
-
+exit:
 	g_free (utf8_name);
 	g_free (utf8_value);
-}
-#endif /* !HOST_WIN32 */
-
-void
-ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, MonoString *value)
-{
-	mono_icall_set_environment_variable (name, value);
+#endif
 }
 
 void

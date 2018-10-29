@@ -154,22 +154,6 @@ cleanup:
 	return names;
 }
 
-void
-mono_icall_set_environment_variable (MonoString *name, MonoString *value)
-{
-	gunichar2 *utf16_name, *utf16_value;
-
-	utf16_name = name ? mono_string_chars_internal (name) : NULL;
-	if ((value == NULL) || (mono_string_length_internal (value) == 0) || (mono_string_chars_internal (value)[0] == 0)) {
-		SetEnvironmentVariable (utf16_name, NULL);
-		return;
-	}
-
-	utf16_value = mono_string_chars_internal (value);
-
-	SetEnvironmentVariable (utf16_name, utf16_value);
-}
-
 #if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
 MonoStringHandle
 mono_icall_get_windows_folder_path (int folder, MonoError *error)

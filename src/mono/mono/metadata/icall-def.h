@@ -311,7 +311,7 @@ HANDLES(ENV_51, "GetNewLine", ves_icall_System_Environment_get_NewLine, MonoStri
 HANDLES(ENV_6, "GetOSVersionString", ves_icall_System_Environment_GetOSVersionString, MonoString, 0, ())
 NOHANDLES(ICALL(ENV_6a, "GetPageSize", mono_pagesize))
 HANDLES(ENV_7, "GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath, MonoString, 1, (int))
-ICALL(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable)
+HANDLES(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable, void, 4, (const_gunichar2_ptr, gint32, const_gunichar2_ptr, gint32))
 NOHANDLES(ICALL(ENV_9, "get_ExitCode", mono_environment_exitcode_get))
 NOHANDLES(ICALL(ENV_10, "get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted))
 HANDLES(ENV_11, "get_MachineName", ves_icall_System_Environment_get_MachineName, MonoString, 0, ())
