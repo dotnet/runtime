@@ -18,7 +18,6 @@ namespace System
         private const int UInt32NumberBufferLength = 10 + 1;   // 10 for the longest input: 4,294,967,295
         private const int UInt64NumberBufferLength = 20 + 1;   // 20 for the longest input: 18,446,744,073,709,551,615
 
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         internal unsafe ref struct NumberBuffer
         {
             public int Precision;
