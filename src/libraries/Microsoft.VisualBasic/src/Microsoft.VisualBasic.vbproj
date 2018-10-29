@@ -12,6 +12,7 @@
     <DefineConstants>$(DefineConstants),LATEBINDING=True</DefineConstants>
     <AssemblyName>Microsoft.VisualBasic</AssemblyName>
     <NoStdLib>true</NoStdLib>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
