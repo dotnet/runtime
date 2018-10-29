@@ -5853,19 +5853,34 @@ void Compiler::fgFindBasicBlocks()
         // or if the inlinee has GC ref locals.
         if ((info.compRetNativeType != TYP_VOID) && ((retBlocks > 1) || impInlineInfo->HasGcRefLocals()))
         {
-            // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
-            lvaInlineeReturnSpillTemp                  = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
-            lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
+            // If we've spilled the ret expr to a temp we can reuse the temp
+            // as the inlinee return spill temp.
+            //
+            // Todo: see if it is even better to always use this existing temp
+            // for return values, even if we otherwise wouldn't need a return spill temp...
+            lvaInlineeReturnSpillTemp = impInlineInfo->inlineCandidateInfo->preexistingSpillTemp;
 
-            // If the method returns a ref class, set the class of the spill temp
-            // to the method's return value. We may update this later if it turns
-            // out we can prove the method returns a more specific type.
-            if (info.compRetType == TYP_REF)
+            if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
             {
-                CORINFO_CLASS_HANDLE retClassHnd = impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass;
-                if (retClassHnd != nullptr)
+                // This temp should already have the type of the return value.
+                JITDUMP("\nInliner: re-using pre-existing spill temp V%02u\n", lvaInlineeReturnSpillTemp);
+            }
+            else
+            {
+                // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
+                lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
+                lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetNativeType;
+
+                // If the method returns a ref class, set the class of the spill temp
+                // to the method's return value. We may update this later if it turns
+                // out we can prove the method returns a more specific type.
+                if (info.compRetType == TYP_REF)
                 {
-                    lvaSetClass(lvaInlineeReturnSpillTemp, retClassHnd);
+                    CORINFO_CLASS_HANDLE retClassHnd = impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass;
+                    if (retClassHnd != nullptr)
+                    {
+                        lvaSetClass(lvaInlineeReturnSpillTemp, retClassHnd);
+                    }
                 }
             }
         }
