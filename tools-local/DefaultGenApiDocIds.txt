@@ -5,6 +5,7 @@ T:System.ComponentModel.Design.Serialization.DesignerSerializerAttribute
 T:System.ComponentModel.Design.Serialization.RootDesignerSerializerAttribute
 T:System.ComponentModel.EditorAttribute
 T:System.ComponentModel.ToolboxItemAttribute
+T:System.ComponentModel.TypeDescriptionProviderAttribute
 T:System.Configuration.ConfigurationPropertyAttribute
 T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
 T:System.Diagnostics.CodeAnalysis.SuppressMessageAttribute

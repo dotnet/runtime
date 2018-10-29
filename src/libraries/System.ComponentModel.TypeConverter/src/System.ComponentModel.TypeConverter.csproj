@@ -10,6 +10,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="MS\Internal\Xml\Linq\ComponentModel\XComponentModel.cs" />
     <Compile Include="System\ComponentModelSwitches.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
     <Compile Include="System\ComponentModel\BaseNumberConverter.cs" />
@@ -80,7 +81,6 @@
     <Compile Include="System\ComponentModel\RefreshEventHandler.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptor.cs" />
     <Compile Include="System\ComponentModel\TypeDescriptionProvider.cs" />
-    <Compile Include="System\ComponentModel\TypeDescriptionProviderAttribute.cs" />
     <Compile Include="System\ComponentModel\WeakHashtable.cs" />
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
@@ -273,5 +273,6 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Timer" />
+    <Reference Include="System.Xml.XDocument" />
   </ItemGroup>
 </Project>
