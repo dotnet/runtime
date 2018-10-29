@@ -509,6 +509,7 @@ struct InlineCandidateInfo
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     bool                   exactContextNeedsRuntimeLookup;
     CorInfoInitClassResult initClassResult;
+    unsigned               preexistingSpillTemp;
 };
 
 // InlArgInfo describes inline candidate argument properties.
