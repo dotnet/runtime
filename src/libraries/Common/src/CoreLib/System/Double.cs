@@ -341,7 +341,7 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out double result)
         {
-            bool success = Number.TryParseDouble(s, style, info, out result);
+            bool success = Number.TryParseDouble(s, style, info, out result, out _);
             if (!success)
             {
                 ReadOnlySpan<char> sTrim = s.Trim();
