@@ -126,6 +126,16 @@
     </RestoreSources>
   </PropertyGroup>
 
+  <!--
+    Add all the RestoreSources to the OptionalRestoreSource items as well so any
+    common package references can correctly be resolved as well.
+  -->
+  <ItemGroup>
+    <OptionalRestoreSource Include="$(RestoreSources)">
+      <Uri>%(Identity)</Uri>
+    </OptionalRestoreSource>
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
     <Platform>AnyCPU</Platform>
