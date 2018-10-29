@@ -152,12 +152,12 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out int result)
         {
-            return Number.TryParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
         }
 
         // Parses an integer from a String in the given style. Returns false rather
@@ -173,13 +173,13 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out int result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         //
