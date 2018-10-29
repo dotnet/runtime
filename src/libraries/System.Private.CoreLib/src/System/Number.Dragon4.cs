@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
-
 namespace System
 {
     internal static partial class Number
     {
         private static unsafe void Dragon4(double value, int precision, ref NumberBuffer number)
         {
+            const double Log10V2 = 0.30102999566398119521373889472449;
+
+            // DriftFactor = 1 - Log10V2 - epsilon (a small number account for drift of floating point multiplication)
+            const double DriftFactor = 0.69;
+
             // ========================================================================================================================================
             // This implementation is based on the paper: https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
             // Besides the paper, some of the code and ideas are modified from http://www.ryanjuckett.com/programming/printing-floating-point-numbers/
@@ -149,7 +150,7 @@ namespace System
                 r.Multiply10();
             }
 
-            number.scale = (k - 1);
+            number.Scale = (k - 1);
 
             // This the prerequisite of calling BigInteger.HeuristicDivide().
             BigInteger.PrepareHeuristicDivide(ref r, ref s);
@@ -171,7 +172,7 @@ namespace System
                     break;
                 }
 
-                number.digits[digitsNum] = (char)('0' + currentDigit);
+                number.Digits[digitsNum] = (char)('0' + currentDigit);
                 digitsNum++;
 
                 r.Multiply10();
@@ -199,7 +200,7 @@ namespace System
 
             if (isRoundDown)
             {
-                number.digits[digitsNum] = (char)('0' + currentDigit);
+                number.Digits[digitsNum] = (char)('0' + currentDigit);
                 digitsNum++;
             }
             else
@@ -218,7 +219,7 @@ namespace System
                             // Output 1 at the next highest exponent
                             *pCurrentDigit = '1';
                             digitsNum++;
-                            number.scale += 1;
+                            number.Scale += 1;
                             break;
                         }
 
@@ -244,14 +245,14 @@ namespace System
 
             while (digitsNum < precision)
             {
-                number.digits[digitsNum] = '0';
+                number.Digits[digitsNum] = '0';
                 digitsNum++;
             }
 
-            number.digits[precision] = '\0';
+            number.Digits[precision] = '\0';
 
-            number.scale++;
-            number.sign = double.IsNegative(value);
+            number.Scale++;
+            number.Sign = double.IsNegative(value);
         }
     }
 }
