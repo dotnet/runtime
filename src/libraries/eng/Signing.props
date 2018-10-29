@@ -1,5 +1,8 @@
 <Project>
   <ItemGroup>
+    <StrongNameSignInfo Include="StrongName" PublicKeyToken="b77a5c561934e089" CertificateName="Microsoft400" />
+    <StrongNameSignInfo Include="StrongName" PublicKeyToken="b03f5f7f11d50a3a" CertificateName="Microsoft400" />
+
     <!-- List of container files that will be opened and checked for files that need to be signed. -->
     <ItemsToSign Include="$(RepoRoot)bin\packages\$(Configuration)\**\*.nupkg" />
   </ItemGroup>
