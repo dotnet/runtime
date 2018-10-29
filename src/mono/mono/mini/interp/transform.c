@@ -3310,6 +3310,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 						MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 						goto_if_nok (error, exit);
 						ADD_CODE(td, get_data_item_index (td, vtable));
+					} else if (mint_type (m_class_get_byval_arg (klass)) == MINT_TYPE_VT) {
+						ADD_CODE(td, mono_class_value_size (klass, NULL));
 					}
 				} else {
 					ADD_CODE(td, MINT_NEWOBJ);

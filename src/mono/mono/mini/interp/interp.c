@@ -4038,12 +4038,15 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 
 			if (vt) {
 				gboolean vtst = *ip == MINT_NEWOBJ_VTST_FAST;
-				memset (&valuetype_this, 0, sizeof (stackval));
 				if (vtst) {
+					memset (vt_sp, 0, *(guint16*)(ip + 3));
 					sp->data.p = vt_sp;
 					valuetype_this.data.p = vt_sp;
+					ip += 4;
 				} else {
+					memset (&valuetype_this, 0, sizeof (stackval));
 					sp->data.p = &valuetype_this;
+					ip += 3;
 				}
 			} else {
 				MonoVTable *vtable = (MonoVTable*) rtm->data_items [*(guint16*)(ip + 3)];
@@ -4058,6 +4061,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 					THROW_EX (mono_error_convert_to_exception (error), ip);
 				}
 				sp->data.p = o;
+				ip += 4;
 			}
 
 			interp_exec_method (&child_frame, context);
@@ -4075,7 +4079,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 				*sp = valuetype_this;
 			else
 				sp->data.p = o;
-			ip += 4 - vt;
 			++sp;
 			MINT_IN_BREAK;
 		}
