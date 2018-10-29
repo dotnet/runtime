@@ -5,15 +5,12 @@
     <MajorVersion>4</MajorVersion>
     <MinorVersion>7</MinorVersion>
 
-    <!-- Always use shipping version insted of dummy version -->
+    <!-- Always use shipping version instead of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
     <PreReleaseVersionLabel>preview1</PreReleaseVersionLabel>
 
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
-
-    <!-- Always use shipping version instead of dummy version -->
-    <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
   </PropertyGroup>
 
   <!-- Package names if they are used in more then one location in the repo -->
