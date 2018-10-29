@@ -108,7 +108,7 @@ check_symbol_exists(
     unistd.h
     HAVE_FTRUNCATE64)
 
-check_symbol_Exists(
+check_symbol_exists(
     posix_fadvise64
     fnctl.h
     HAVE_POSIX_FADVISE64)
