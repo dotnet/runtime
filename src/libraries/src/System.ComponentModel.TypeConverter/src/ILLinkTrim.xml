@@ -1,5 +1,6 @@
 <linker>
   <assembly fullname="System.ComponentModel.TypeConverter">
+    <type fullname="MS.Internal.Xml.Linq.ComponentModel.*" />
     <type fullname="System.ComponentModel.TypeDescriptor">
       <!-- called through reflection by System.ComponentModel.DefaultValueAttribute -->
       <method name="ConvertFromInvariantString" />
