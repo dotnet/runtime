@@ -330,28 +330,7 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out float result)
         {
-            bool success = Number.TryParseSingle(s, style, info, out result);
-            if (!success)
-            {
-                ReadOnlySpan<char> sTrim = s.Trim();
-                if (sTrim.EqualsOrdinal(info.PositiveInfinitySymbol))
-                {
-                    result = PositiveInfinity;
-                }
-                else if (sTrim.EqualsOrdinal(info.NegativeInfinitySymbol))
-                {
-                    result = NegativeInfinity;
-                }
-                else if (sTrim.EqualsOrdinal(info.NaNSymbol))
-                {
-                    result = NaN;
-                }
-                else
-                {
-                    return false; // We really failed
-                }
-            }
-            return true;
+            return Number.TryParseSingle(s, style, info, out result, out _);
         }
 
         //

@@ -145,13 +145,13 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, out ulong result)
         {
-            return Number.TryParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
         }
 
         [CLSCompliant(false)]
@@ -165,14 +165,14 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseUInt64(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out ulong result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseUInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseUInt64(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         //
