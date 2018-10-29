@@ -21,7 +21,7 @@
   </Target>
 
   <PropertyGroup>
-    <!-- corefx has never genreated these attributes so don't let the SDK generate them -->
+    <!-- corefx has never generated these attributes so don't let the SDK generate them -->
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
 

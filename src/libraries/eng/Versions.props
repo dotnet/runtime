@@ -8,10 +8,11 @@
     <!-- Always use shipping version insted of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
     <PreReleaseVersionLabel>preview1</PreReleaseVersionLabel>
+
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
 
-    <!-- Always use shipping version insted of dummy version -->
+    <!-- Always use shipping version instead of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
   </PropertyGroup>
 
