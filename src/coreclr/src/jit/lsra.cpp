@@ -7420,7 +7420,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         regNumber fromReg = getVarReg(outVarToRegMap, liveOutVarIndex);
         if (fromReg != REG_STK)
         {
-            liveOutRegs |= genRegMask(fromReg);
+            regMaskTP fromRegMask = genRegMask(fromReg, getIntervalForLocalVar(liveOutVarIndex)->registerType);
+            liveOutRegs |= fromRegMask;
         }
     }
 
@@ -7439,6 +7440,9 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         GenTree* op2 = switchTable->gtGetOp2();
         noway_assert(op1 != nullptr && op2 != nullptr);
         assert(op1->gtRegNum != REG_NA && op2->gtRegNum != REG_NA);
+        // No floating point values, so no need to worry about the register type
+        // (i.e. for ARM32, where we used the genRegMask overload with a type).
+        assert(varTypeIsIntegralOrI(op1) && varTypeIsIntegralOrI(op2));
         switchRegs |= genRegMask(op1->gtRegNum);
         switchRegs |= genRegMask(op2->gtRegNum);
     }
@@ -7525,7 +7529,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // In this case, sameToReg will be in the liveOutRegs of this block.
             // Similarly, if sameToReg is in sameWriteRegs, it has already been used (i.e. for a lclVar that's
             // live only at another target), and we can't copy another lclVar into that reg in this block.
-            regMaskTP sameToRegMask = genRegMask(sameToReg);
+            regMaskTP sameToRegMask =
+                genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             if (maybeSameLivePaths &&
                 (((sameToRegMask & liveOutRegs) != RBM_NONE) || ((sameToRegMask & sameWriteRegs) != RBM_NONE)))
             {
@@ -7563,7 +7568,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             VarSetOps::AddElemD(compiler, diffResolutionSet, outResolutionSetVarIndex);
             if (fromReg != REG_STK)
             {
-                diffReadRegs |= genRegMask(fromReg);
+                diffReadRegs |= genRegMask(fromReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             }
         }
         else if (sameToReg != fromReg)
@@ -7572,7 +7577,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             setVarReg(sameVarToRegMap, outResolutionSetVarIndex, sameToReg);
             if (sameToReg != REG_STK)
             {
-                sameWriteRegs |= genRegMask(sameToReg);
+                sameWriteRegs |= genRegMask(sameToReg, getIntervalForLocalVar(outResolutionSetVarIndex)->registerType);
             }
         }
     }
