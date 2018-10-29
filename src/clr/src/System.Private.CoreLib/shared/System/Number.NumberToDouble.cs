@@ -327,7 +327,7 @@ namespace System
 
             if (remaining == 0)
             {
-                return number.sign ? -0.0 : 0.0;
+                return number.Sign ? -0.0 : 0.0;
             }
 
             int count = Math.Min(remaining, 9);
@@ -344,18 +344,18 @@ namespace System
                 val = Mul32x32To64((uint)(val), mult) + DigitsToInt(src + 9, count);
             }
 
-            int scale = number.scale - (total - remaining);
+            int scale = number.Scale - (total - remaining);
             int absscale = Math.Abs(scale);
             if (absscale >= 22 * 16)
             {
                 // overflow / underflow
                 if (scale > 0)
                 {
-                    return number.sign ? double.NegativeInfinity : double.PositiveInfinity;
+                    return number.Sign ? double.NegativeInfinity : double.PositiveInfinity;
                 }
                 else
                 {
-                    return number.sign ? -0.0 : 0.0;
+                    return number.Sign ? -0.0 : 0.0;
                 }
             }
 
@@ -438,7 +438,7 @@ namespace System
                 val = ((ulong)(exp) << 52) + ((val >> 11) & 0x000FFFFFFFFFFFFF);
             }
 
-            if (number.sign)
+            if (number.Sign)
             {
                 val |= 0x8000000000000000;
             }

@@ -341,11 +341,11 @@ namespace System
                 if (double.IsNegative(value))
                 {
                     value = -value;
-                    number.sign = true;
+                    number.Sign = true;
                 }
                 else
                 {
-                    number.sign = false;
+                    number.Sign = false;
                 }
 
                 // Step 1: Determine the normalized DiyFp w.
@@ -370,8 +370,8 @@ namespace System
 
                 if (isSuccess)
                 {
-                    number.digits[precision] = '\0';
-                    number.scale = (length - decimalExponent + kappa);
+                    number.Digits[precision] = '\0';
+                    number.Scale = (length - decimalExponent + kappa);
                 }
 
                 return isSuccess;
