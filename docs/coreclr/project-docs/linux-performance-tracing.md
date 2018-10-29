@@ -125,7 +125,7 @@ VERSION is 2.1.0 the commands to update crossgen would be
 Once you have done this, perfcollect will use crossgen to include framework symbols.  The warning that perfcollect used to
 issue should go away.   This only has to be one once per machine (until you update your runtime). 
 
-### Alternative: Turn off use of precomppiled code
+### Alternative: Turn off use of precompiled code
 
 If you don't have the abiltiy to update the .NET Rutnime (to add crossgen), or if the above procedure did not work
 for some reasion, there is another approach to getting framework symbols.   You can tell the runtime to simply 
