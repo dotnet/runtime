@@ -43,6 +43,15 @@ namespace System
 }
 namespace System.Runtime.CompilerServices
 {
+    public struct AsyncIteratorMethodBuilder
+    {
+        private object _dummy;
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : INotifyCompletion where TStateMachine : IAsyncStateMachine { throw null; }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : ICriticalNotifyCompletion where TStateMachine : IAsyncStateMachine { throw null; }
+        public void Complete() { throw null; }
+        public static AsyncIteratorMethodBuilder Create() { throw null; }
+        public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine { throw null; }
+    }
     public partial struct AsyncTaskMethodBuilder
     {
         private object _dummy;
