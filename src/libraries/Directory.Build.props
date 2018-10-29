@@ -359,7 +359,7 @@
     <!-- Constructed shared fx path for testing -->
     <UseDotNetNativeToolchain Condition="$(_bc_TargetGroup.EndsWith('aot'))">true</UseDotNetNativeToolchain>
     <!-- System.Private.* comes from test ilc, so the symbol packages for those versions will no exist, this is to avoid warnings -->
-    <DownloadCoreCLRSymbols Condition="'$(UseDotNetNativeToolchain)'=='true'">false</DownloadCoreCLRSymbols>
+    <DownloadCoreCLRSymbols Condition="'$(UseDotNetNativeToolchain)' == 'true' OR '$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">false</DownloadCoreCLRSymbols>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
