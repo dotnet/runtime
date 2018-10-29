@@ -24,7 +24,7 @@
 
   <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
-  <Target Name="Restore" DependsOnTargets="RestoreOptionalToolingPackages;CreateOrUpdateCurrentVersionFile">
+  <Target Name="Restore" DependsOnTargets="RestoreOptionalToolingPackages">
     <ItemGroup>
       <_RestoreProjects Include="external\dir.proj" />
     </ItemGroup>
@@ -61,8 +61,6 @@
 
   <Target Name="Pack">
     <ItemGroup>
-      <!-- signing needs to happen before packaging -->
-      <_PackProjects Include="src\sign.proj" />
       <_PackProjects Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
     </ItemGroup>
 

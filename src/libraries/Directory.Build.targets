@@ -9,6 +9,24 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <!-- temporarily remap AssemblyKey to StrongNameKeyId -->
+  <PropertyGroup>
+    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'MSFT'">Microsoft</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'ECMA'">ECMA</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'Open' or '$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightPlatform'">SilverlightPlatform</StrongNameKeyId>
+    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightExtension'">MicrosoftShared</StrongNameKeyId>
+  </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup>
+    <!-- PackageOutputPath gets unconditionally in arcade sdk targets we need to reset it here until we reconcile the paths -->
+    <PackageOutputPath>$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
+  </PropertyGroup>
+
+  <Import Project="eng\versioning.targets" />
+
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
            Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your repo to ensure the tools are installed before attempting to build an individual project." />
@@ -115,21 +133,8 @@
     </BinPlaceConfiguration>
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(BlockStable)' == 'true'">
-    <!--
-      If BlockStable is set to true then always include the label and build number in the package version.
-      This needs to be set before we import packaging.targets which comes in the Build.Common.targets.
-    -->
-    <IncludePreReleaseLabelInPackageVersion>true</IncludePreReleaseLabelInPackageVersion>
-    <IncludeBuildNumberInPackageVersion>true</IncludeBuildNumberInPackageVersion>
-  </PropertyGroup>
-
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)eng/Resources.targets" />
-  
-  <!-- Temporarily bring in parts of Arcade SDK, remove once we import SDK.Props/targets -->
-  <Import Project="../tools/BuildTasks.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-  <Import Project="../tools/GenerateResxSource.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
 
@@ -187,5 +192,13 @@
     <Exec Command="$(_GenAPICmd)" />
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
+
+  <Import Project="eng/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+
+  <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
+  <Target Name="CreateVersionFileDuringBuild" />
+
+  <!-- Define this target to override the workaround in arcade as we don't need it for our pkgprojs -->
+  <Target Name="InitializeStandardNuspecProperties" />
 
 </Project>

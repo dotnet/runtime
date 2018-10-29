@@ -1,12 +1,5 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <PreReleaseLabel Condition="'$(PackageVersionStamp)' != ''">$(PackageVersionStamp)</PreReleaseLabel>
-    <PreReleaseLabel Condition="'$(PreReleaseLabel)' == ''">preview1</PreReleaseLabel>
-    <IncludePreReleaseLabelInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true' or '$(PackageVersionStamp)' != ''">true</IncludePreReleaseLabelInPackageVersion>
-    <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">false</IncludeBuildNumberInPackageVersion>
-    <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
-
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
@@ -61,8 +54,8 @@
     </File>
 
     <!-- Add version file to packages -->
-    <File Condition="Exists('$(SyncInfoFile)')"
-          Include="$(SyncInfoFile)" >
+    <File Condition="Exists('$(VersionFileForPackages)')"
+          Include="$(VersionFileForPackages)">
         <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
 

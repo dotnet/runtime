@@ -3,6 +3,7 @@
   <PropertyGroup>
     <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
       https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
+      https://dotnet.myget.org/F/sourcelink/api/v3/index.json;
       $(RestoreSources)
     </RestoreSources>
     <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
@@ -22,6 +23,10 @@
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
 
+    <!-- Include the SourceLink packages -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.SourceLink.Vsts.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+
     <!-- Reference analyzers -->
     <PackageReference Include="Desktop.Analyzers" Version="1.1.0" />
     <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisPackageVersion)" />
@@ -37,14 +42,15 @@
     <PropertyGroup>
       <ToolsDir>$(RepoRoot)Tools</ToolsDir>
       <BuildToolsSemaphore>$(ToolsDir)/$(BuildToolsPackageVersion).init-tools.completed</BuildToolsSemaphore>
-      <BuildToolsPackageDir>$(NuGetPackageRoot)/$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
+      <PackagesDir>$(NuGetPackageRoot)/</PackagesDir>
+      <BuildToolsPackageDir>$(PackagesDir)$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
       <CmdExt>cmd</CmdExt>
       <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
       <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
       <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
       <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
 
-      <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(NuGetPackageRoot)\</InitToolsCmdLine>
+      <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(PackagesDir)</InitToolsCmdLine>
     </PropertyGroup>
 
     <Exec
@@ -52,6 +58,12 @@
         Command="$(InitToolsCmdLine) &gt; $(RepoRoot)init-tools.log" />
 
     <Touch Files="$(BuildToolsSemaphore)" AlwaysCreate="true" />
+    <OnError ExecuteTargets="DumpInitToolsLog" />
+  </Target>
+
+  <Target Name="DumpInitToolsLog">
+    <Message Text="Init-tools failed dumping log file $(RepoRoot)init-tools.log" />
+    <Message Condition="Exists('$(RepoRoot)init-tools.log')" Text="$([System.IO.File]::ReadAllText('$(RepoRoot)init-tools.log'))" />
   </Target>
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
@@ -64,5 +76,4 @@
                Items="@(Analyzer)"
                File="$(AnalyzerPropsFile)" />
   </Target>
-
 </Project>

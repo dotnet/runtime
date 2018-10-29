@@ -49,7 +49,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
+      "displayName": "Run script scripts/DotNet-Trusted-Publish/setup-vs-tools.cmd",
       "timeoutInMinutes": 0,
       "task": {
         "id": "bfc8bf76-e7ac-4a8c-9a55-a944a9f632fd",
@@ -57,7 +57,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(VS140COMNTOOLS)\\VsDevCmd.bat",
+        "filename": "scripts/DotNet-Trusted-Publish/setup-vs-tools.cmd",
         "arguments": "",
         "modifyEnvironment": "true",
         "workingFolder": "",
@@ -124,27 +124,6 @@
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "inlineScript": "param($account, $token, $container, $downloadDir)\n ./build.cmd -inittools; msbuild src/syncAzure.proj /v:D /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container /p:DownloadDirectory=$downloadDir",
         "failOnStandardError": "false"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Generate Version Assets",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "-OfficialBuildId $(OfficialBuildId)",
-        "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($OfficialBuildId)\n  msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$OfficialBuildId.props",
-        "failOnStandardError": "true"
       }
     },
     {
@@ -234,27 +213,6 @@
     {
       "environment": {},
       "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Get Build Number",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptType": "inlineScript",
-        "scriptName": "",
-        "arguments": "$(OfficialBuildId) $(Pipeline.SourcesDirectory)",
-        "workingFolder": "",
-        "inlineScript": "param(\n  [string]$OfficialBuildId,\n  [string]$SourcesDir\n)\n$VersionPropsFile=$SourcesDir + \"\\bin\\obj\\BuildVersion-\" + $OfficialBuildId + \".props\"\n[xml]$versionXml=Get-Content $VersionPropsFile\n$env:BuildNumber=$versionXml.Project.PropertyGroup.BuildNumberMajor.InnerText + \".\" + $versionXml.Project.PropertyGroup.BuildNumberMinor.InnerText\nWrite-Host (\"##vso[task.setvariable variable=BuildNumber;]$env:BuildNumber\")",
-        "failOnStandardError": "true"
-      }
-    },
-    {
-      "environment": {},
-      "enabled": true,
       "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Publish to Artifact Services Drop",
@@ -266,7 +224,7 @@
       },
       "inputs": {
         "dropServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
-        "buildNumber": "dotnet/$(PB_GitHubRepositoryName)/$(SourceBranch)/$(BuildNumber)/packages/$(PB_ConfigurationGroup)",
+        "buildNumber": "dotnet/$(PB_GitHubRepositoryName)/$(SourceBranch)/$(OfficialBuildId)/packages/$(PB_ConfigurationGroup)",
         "sourcePath": "$(AzureContainerPackageDirectory)",
         "dropExePath": "",
         "toLowerCase": "true",
@@ -536,11 +494,17 @@
   "quality": "definition",
   "drafts": [],
   "queue": {
-    "id": 36,
-    "name": "DotNet-Build",
+    "_links": {
+      "self": {
+        "href": "https://devdiv.visualstudio.com/_apis/build/Queues/330"
+      }
+    },
+    "id": 330,
+    "name": "DotNetCore-Build",
+    "url": "https://devdiv.visualstudio.com/_apis/build/Queues/330",
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 97,
+      "name": "DotNetCore-Build"
     }
   },
   "id": 2943,

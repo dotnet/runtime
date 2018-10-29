@@ -29,7 +29,7 @@
   -->
   <Target Name="UpdatePackageIndexWithStableVersions"
           BeforeTargets="BuildAllProjects"
-          Condition="'$(IncludePreReleaseLabelInPackageVersion)' != 'true'">
+          Condition="'$(DotNetFinalVersionKind)' == 'release'">
     <ItemGroup>
       <!--
       The private packages don't get stabilized so they don't need to be included
@@ -67,7 +67,21 @@
     <GenerateNetStandardSupportTable Reports="@(Reports)" DocFilePath="$(ProjectDir)Documentation\architecture\net-platform-standard.md" InsertIntoFile="True" />
   </Target>
 
-  <!-- Importing versioning.targets adds the hooks so that a traversal build will generate the "SyncInfoFile" (version.txt) which we package. -->
-  <Import Project="$(ToolsDir)versioning.targets" Condition="Exists('$(ToolsDir)versioning.targets')" />
+  <!-- Generate a version text file we include in our packages -->
+  <Target Name="GenerateVersionFileForPackages"
+          BeforeTargets="BuildAllProjects"
+          DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager">
+
+    <Error Condition="'$(SourceRevisionId)' == ''" Text="SourceRevisionId is not set, which means the SourceLink targets are not included in the build. Those are needed to produce a correct sha for our build outputs." />
+
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(VersionFileForPackages)))" />
+
+    <WriteLinesToFile
+      File="$(VersionFileForPackages)"
+      Lines="$(SourceRevisionId)"
+      Overwrite="true" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

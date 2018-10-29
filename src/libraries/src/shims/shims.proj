@@ -66,18 +66,6 @@
       BuildPartialReferenceFacade="$(GenFacadesBuildPartialReferenceFacade)"
     />
 
-    <WriteSigningRequired
-        Condition="'@(NetFxContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
-        AuthenticodeSig="Microsoft"
-        StrongNameSig="%(NetFxContracts.StrongNameSig)"
-        MarkerFile="$(GenFacadesOutputPath)%(NetFxContracts.Filename)%(NetFxContracts.Extension).requires_signing" />
-
-    <WriteSigningRequired
-        Condition="'@(NETStandardContracts)' != '' and '$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
-        AuthenticodeSig="Microsoft"
-        StrongNameSig="Open"
-        MarkerFile="$(GenFacadesOutputPath)%(NETStandardContracts.Filename)%(NETStandardContracts.Extension).requires_signing" />
-
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>

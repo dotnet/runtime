@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0">
+  <PropertyGroup>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+  </PropertyGroup>
+
+  <!--
+    Override this target to disable calling the source control commands on some
+    platforms that don't support the targets like RHEL 6.
+  -->
+  <Target Name="InitializeSourceControlInformationFromSourceControlManager">
+    <PropertyGroup>
+      <SourceRevisionId>unknown</SourceRevisionId>
+    </PropertyGroup>
+  </Target>
+</Project>

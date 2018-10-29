@@ -12,13 +12,6 @@
     <IsSourceProject Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</IsSourceProject>
   </PropertyGroup>
 
-  <!-- We shipped assembly file version 4.6.x up until the end of rc3.  Version assembly as
-        4.6.x to ensure compatability in Visual Studio for an in-place update. -->
-  <PropertyGroup>
-    <MajorVersion>4</MajorVersion>
-    <MinorVersion>6</MinorVersion>
-  </PropertyGroup>
-
   <!-- Define vNext UAP Moniker -->
   <PropertyGroup>
     <UAPvNextVersion>10.0.16300</UAPvNextVersion>
@@ -42,7 +35,14 @@
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
+  <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
+  <PropertyGroup>
+    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
+  </PropertyGroup>
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.props" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.props')" />
+  <PropertyGroup>
+    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'unused'"></ProjectAssetsFile>
+  </PropertyGroup>
 
   <!-- Common repo directories -->
   <PropertyGroup>
@@ -87,6 +87,8 @@
     <ExcludePackageLibsImport>true</ExcludePackageLibsImport>
     <ExcludeCodeAnalysisImport>true</ExcludeCodeAnalysisImport>
     <ExcludeResourcesImport>true</ExcludeResourcesImport>
+    <ExcludeVersioningImport>true</ExcludeVersioningImport>
+    <ExcludeSigningImport>true</ExcludeSigningImport>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->
@@ -123,6 +125,16 @@
       $(RestoreSources)
     </RestoreSources>
   </PropertyGroup>
+
+  <!--
+    Add all the RestoreSources to the OptionalRestoreSource items as well so any
+    common package references can correctly be resolved as well.
+  -->
+  <ItemGroup>
+    <OptionalRestoreSource Include="$(RestoreSources)">
+      <Uri>%(Identity)</Uri>
+    </OptionalRestoreSource>
+  </ItemGroup>
 
   <PropertyGroup>
     <!-- By default make all libraries to be AnyCPU but individual projects can override it if they need to -->
@@ -224,12 +236,41 @@
     <BuildingUAPAOTVertical Condition="'$(BuildingUAPAOTVertical)' == '' AND ('$(_bc_TargetGroup)'=='uapaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPAOTVertical>
   </PropertyGroup>
 
+  <!--
+    Import the arcade sdk with these requirements.
+    After:
+      Configuration setup
+
+    Before:
+      DebugType needs to be not be set to embedded at least for facades
+      OutputPath setup
+  -->
+  <PropertyGroup>
+    <ImportNetSdkFromRepoToolset>false</ImportNetSdkFromRepoToolset>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_IsTestProjectBefore>$(IsTestProject)</_IsTestProjectBefore>
+    <IsPerformanceTestProject Condition="'$(IsPerformanceTestProject)' == '' AND '$(IsTestProject)' == 'true' AND $(MSBuildProjectName.EndsWith('Performance.Tests'))">true</IsPerformanceTestProject>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+    <!-- Need to reset our definition of IsTestProject after arcade sdk import -->
+  <PropertyGroup>
+    <IsTestProject>$(_IsTestProjectBefore)</IsTestProject>
+  </PropertyGroup>
+
   <!-- Set the kind of PDB to Portable and turn on SourceLink (fetching source from GitHub) -->
   <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
+    <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
+    <DebugType>portable</DebugType>
+
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
     <DebugType Condition="'$(TargetsNetFx)' == 'true' AND '$(RunningOnUnix)' != 'true'"></DebugType>
-    <UseSourceLink>true</UseSourceLink>
+
+    <!-- Rhel 6 doesn't support the source control git package so disable SourceLink -->
+    <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6'))">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
@@ -286,7 +327,12 @@
     <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- We cannot enable deterministic builds yet but we would like to in the future see https://github.com/dotnet/corefx/issues/2003 -->
     <Deterministic>false</Deterministic>
+
+    <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -309,12 +355,12 @@
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
+    <BaseOutputPath>$(BinDir)</BaseOutputPath>
 
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)$(OutputPathSubfolder)</OutputPath>
+    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)$(OutputPathSubfolder)</OutputPath>
 
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(RootIntermediateOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)$(TargetOutputRelPath)</IntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(RootIntermediateOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetOutputRelPath)</IntermediateOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <ShimsTargetRuntimeRoot>$(BinDir)shimsTargetRuntime/</ShimsTargetRuntimeRoot>
@@ -367,6 +413,8 @@
 
     <!-- interop is not available on NETStandard1.0 -->
     <IncludeDllSafeSearchPathAttribute Condition="'$(TargetGroup)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
+
+    <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
   </PropertyGroup>
 
   <!-- Properties related to multi-file mode for ILC tests -->
