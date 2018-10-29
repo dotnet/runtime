@@ -221,7 +221,7 @@ namespace System
             // This is a workaround to maintain compatibility with V2. Without this we would throw a NotSupportedException for void[].
             // Array, Ref, and Pointer types don't have default constructors.
             if (rt.HasElementType)
-                throw new MissingMethodException(SR.Arg_NoDefCTor);
+                throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, rt));
 
             // Skip the CreateInstanceCheckThis call to avoid perf cost and to maintain compatibility with V2 (throwing the same exceptions).
             return (T)rt.CreateInstanceDefaultCtor(publicOnly: true, skipCheckThis: true, fillCache: true, wrapExceptions: true);
