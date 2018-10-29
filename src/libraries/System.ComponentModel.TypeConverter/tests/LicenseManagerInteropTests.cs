@@ -24,7 +24,8 @@ namespace System.ComponentModel.Tests
         }
 
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsWindows))]
+        // HasWindowsShell test eliminates IoT, Server Core, and Nano Server
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell), nameof(PlatformDetection.IsWindows))]
         public void CanCreateSpellChecker_Regression_core_1994()
         {
             // regression test for https://github.com/dotnet/core/issues/1994
