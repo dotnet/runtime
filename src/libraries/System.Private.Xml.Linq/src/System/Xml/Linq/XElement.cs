@@ -32,6 +32,7 @@ namespace System.Xml.Linq
     ///   </list>
     /// </remarks>
     [XmlSchemaProvider(null, IsAny = true)]
+    [System.ComponentModel.TypeDescriptionProvider("MS.Internal.Xml.Linq.ComponentModel.XTypeDescriptionProvider`1[[System.Xml.Linq.XElement, System.Xml.Linq, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]],System.ComponentModel.TypeConverter")]
     public class XElement : XContainer, IXmlSerializable
     {
         /// <summary>

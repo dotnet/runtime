@@ -206,6 +206,13 @@ namespace System.ComponentModel
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(4), Inherited = true)]
+    public sealed partial class TypeDescriptionProviderAttribute : System.Attribute
+    {
+        public TypeDescriptionProviderAttribute(string typeName) { }
+        public TypeDescriptionProviderAttribute(System.Type type) { }
+        public string TypeName { get { throw null; } }
+    }
 }
 namespace System.Reflection
 {
