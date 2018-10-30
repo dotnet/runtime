@@ -2730,19 +2730,8 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         tpr != TPR_TRIGGER_ONLY_THIS && 
         DebuggerDataBreakpoint::TriggerDataBreakpoint(thread, context))
     {
-        CONTEXT contextToAdjust;
-        bool adjustedContext = false;
-        memcpy(&contextToAdjust, context, sizeof(CONTEXT));
-        adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);
         DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-        if (adjustedContext)
-        {
-            pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
-        }
-        else
-        {
-            pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
-        }
+        pDcq->dcqEnqueue(pDataBreakpoint, FALSE);
     }
 #endif
 
@@ -8993,4 +8982,55 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 
     return true;
 }
+
+#ifdef FEATURE_DATABREAKPOINT
+
+/* static */ bool DebuggerDataBreakpoint::TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
+{
+    LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
+
+    bool hitDataBp = false;
+    bool result = false;
+#ifdef FEATURE_PAL    
+    #error Not supported
+#endif // FEATURE_PAL    
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    PDR6 pdr6 = (PDR6)&(pContext->Dr6);
+
+    if (pdr6->B0 || pdr6->B1 || pdr6->B2 || pdr6->B3)
+    {
+        hitDataBp = true;
+    }
+#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    #error Not supported
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    if (hitDataBp)
+    {
+        CONTEXT contextToAdjust;
+        bool adjustedContext = false;
+        memcpy(&contextToAdjust, pContext, sizeof(CONTEXT));
+        adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);        
+        if (adjustedContext)
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));
+            DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+            pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
+            result = false;
+        }
+        else
+        {
+            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT...\n"));
+            result = true;
+        }
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "D::DDBP: DIDN'T TRIGGER DATA BREAKPOINT...\n"));
+        result = false;
+    }
+    return result;
+}
+
+#endif // FEATURE_DATABREAKPOINT
+
 #endif // !DACCESS_COMPILE
