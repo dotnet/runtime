@@ -618,7 +618,7 @@ OPDEF(MINT_REFANYTYPE, "refanytype", 1, MintOpNoArgs)
 OPDEF(MINT_REFANYVAL, "refanyval", 2, MintOpNoArgs)
 
 OPDEF(MINT_CKNULL, "cknull", 1, MintOpNoArgs)
-OPDEF(MINT_CKNULL_N, "cknull_n", 2, MintOpInt)
+OPDEF(MINT_CKNULL_N, "cknull_n", 2, MintOpUShortInt)
 
 OPDEF(MINT_GETCHR, "getchr", 1, MintOpNoArgs)
 OPDEF(MINT_STRLEN, "strlen", 1, MintOpNoArgs)
