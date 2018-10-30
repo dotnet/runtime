@@ -4,7 +4,7 @@ parameters:
   buildConfig: ''
 
 steps:
-- ${{ if not(eq(variables['System.TeamProject'], 'public')) }}:
+- ${{ if and(not(eq(variables['System.TeamProject'], 'public')), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
   - task: AzureKeyVault@1
     inputs:
       azureSubscription: 'HelixProd_KeyVault'
