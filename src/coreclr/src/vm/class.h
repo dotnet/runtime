@@ -516,6 +516,11 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             return (m_bFlags & e_NATIVE_PASS_IN_REGISTERS) != 0;
         }
+#else
+        bool IsNativeStructPassedInRegisters()
+        {
+            return false;
+        }
 #endif // UNIX_AMD64_ABI
 
         CorElementType GetNativeHFATypeRaw();
