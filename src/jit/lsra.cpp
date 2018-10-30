@@ -5557,6 +5557,7 @@ void LinearScan::allocateRegisters()
                 if (refType == RefTypeUpperVectorSaveDef)
                 {
                     // TODO-CQ: Determine whether copying to two integer callee-save registers would be profitable.
+                    // TODO CQ: Save the value directly to memory, #18144.
                     // TODO-ARM64-CQ: Determine whether copying to one integer callee-save registers would be
                     // profitable.
 
