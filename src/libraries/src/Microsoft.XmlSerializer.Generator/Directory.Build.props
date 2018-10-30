@@ -6,6 +6,6 @@
     <SkipValidatePackage>true</SkipValidatePackage>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <AssemblyFileVersion>$(AssemblyVersion)</AssemblyFileVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 </Project>

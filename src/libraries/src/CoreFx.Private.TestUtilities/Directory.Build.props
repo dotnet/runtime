@@ -3,7 +3,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <AssemblyKey>Test</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
     <!-- DO NOT ship this as stable for .NET Core 2.0. -->
     <BlockStable>true</BlockStable>
   </PropertyGroup>

@@ -9,13 +9,9 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
-  <!-- temporarily remap AssemblyKey to StrongNameKeyId -->
   <PropertyGroup>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'MSFT'">Microsoft</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'ECMA'">ECMA</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'Open' or '$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightPlatform'">SilverlightPlatform</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightExtension'">MicrosoftShared</StrongNameKeyId>
+    <!-- Override strong name key to always be Open for test projects -->
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
   </PropertyGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />

@@ -3,6 +3,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 </Project>

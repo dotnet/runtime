@@ -4,7 +4,7 @@
   <PropertyGroup>
     <PackageVersion>4.10.0</PackageVersion>
     <AssemblyVersion>4.6.4.0</AssemblyVersion>
-    <AssemblyKey>MSFT</AssemblyKey>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
   </PropertyGroup>

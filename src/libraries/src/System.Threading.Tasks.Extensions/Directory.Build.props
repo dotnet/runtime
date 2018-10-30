@@ -6,7 +6,7 @@
     <!-- System.Threading.Tasks.Extensions has forwarded types into the runtime on netcoreapp/uap
          It must win over assemblies versioned at 4.2.* -->
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netcoreappaot'">4.3.0.0</AssemblyVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
   </PropertyGroup>

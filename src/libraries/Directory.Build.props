@@ -141,7 +141,7 @@
     <Platform>AnyCPU</Platform>
     <OutputType>Library</OutputType>
     <!-- Default any assembly not specifying a key to use the Open Key -->
-    <AssemblyKey>Open</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
     <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreappaot'">true</RunApiCompat>
     <ApiCompatExcludeAttributeList>$(MSBuildThisFileDirectory)tools-local/DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
     <!-- Build as portable by default -->
