@@ -98,11 +98,22 @@ namespace System.Tests
         [Fact]
         public static void MemberwiseCloneTest()
         {
+            var emptyClass = new EmptyClass();
+            Assert.IsType<EmptyClass>(emptyClass.CallMemberwiseClone());
+
             var c1 = new C("Hello", 7, 8);
             var c2 = c1.CallMemberwiseClone();
             Assert.Equal("Hello", c2.s);
             Assert.Equal(7, c2.x);
             Assert.Equal(8, c2.y);
+
+            var s = new S(0x123456789);
+            Assert.Equal(0x123456789, s.CallMemberwiseClone().a);
+        }
+
+        private class EmptyClass
+        {
+            public object CallMemberwiseClone() => MemberwiseClone();
         }
 
         private class C
@@ -119,6 +130,18 @@ namespace System.Tests
             public int y;
 
             public C CallMemberwiseClone() => (C)MemberwiseClone();
+        }
+
+        private struct S
+        {
+            public S(long a)
+            {
+                this.a = a;
+            }
+
+            public long a;
+
+            public S CallMemberwiseClone() => (S)MemberwiseClone();
         }
 
         private class Generic<T> { }

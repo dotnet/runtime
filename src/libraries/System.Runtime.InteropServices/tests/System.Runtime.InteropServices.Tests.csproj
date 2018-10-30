@@ -6,6 +6,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\DllNotFoundExceptionTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ArrayWithOffsetTests.cs" />
@@ -33,6 +34,7 @@
     <Compile Include="System\Runtime\InteropServices\DispatchWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DispIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\FieldOffsetAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ErrorWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\GCHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\GuidAttributeTests.cs" />
@@ -122,6 +124,7 @@
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\StructLayoutAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttributeTests.cs" />

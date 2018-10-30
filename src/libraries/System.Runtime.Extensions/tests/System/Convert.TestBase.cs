@@ -19,6 +19,60 @@ namespace System.Tests
             {
                 TOutput result = convert(testValues[i]);
                 Assert.Equal(expectedValues[i], result);
+
+                if (testValues[i] is IConvertible convertible)
+                {
+                    Assert.Equal(expectedValues[i], convertible.ToType(typeof(TOutput), null));
+
+                    switch (expectedValues[i])
+                    {
+                        case bool expected:
+                            Assert.Equal(expected, convertible.ToBoolean(null));
+                            break;
+                        case char expected:
+                            Assert.Equal(expected, convertible.ToChar(null));
+                            break;
+                        case sbyte expected:
+                            Assert.Equal(expected, convertible.ToSByte(null));
+                            break;
+                        case byte expected:
+                            Assert.Equal(expected, convertible.ToByte(null));
+                            break;
+                        case short expected:
+                            Assert.Equal(expected, convertible.ToInt16(null));
+                            break;
+                        case ushort expected:
+                            Assert.Equal(expected, convertible.ToUInt16(null));
+                            break;
+                        case int expected:
+                            Assert.Equal(expected, convertible.ToInt32(null));
+                            break;
+                        case uint expected:
+                            Assert.Equal(expected, convertible.ToUInt32(null));
+                            break;
+                        case long expected:
+                            Assert.Equal(expected, convertible.ToInt64(null));
+                            break;
+                        case ulong expected:
+                            Assert.Equal(expected, convertible.ToUInt64(null));
+                            break;
+                        case float expected:
+                            Assert.Equal(expected, convertible.ToSingle(null));
+                            break;
+                        case double expected:
+                            Assert.Equal(expected, convertible.ToDouble(null));
+                            break;
+                        case decimal expected:
+                            Assert.Equal(expected, convertible.ToDecimal(null));
+                            break;
+                        case DateTime expected:
+                            Assert.Equal(expected, convertible.ToDateTime(null));
+                            break;
+                        case string expected:
+                            Assert.Equal(expected, convertible.ToString(null));
+                            break;
+                    }
+                }
             }
         }
 
@@ -86,6 +140,60 @@ namespace System.Tests
                 try
                 {
                     Assert.Throws<TException>(() => convert(testValues[i]));
+
+                    if (testValues[i] is IConvertible convertible)
+                    {
+                        Assert.Throws<TException>(() => convertible.ToType(typeof(TOutput), null));
+
+                        switch (default(TOutput))
+                        {
+                            case bool _:
+                                Assert.Throws<TException>(() => convertible.ToBoolean(null));
+                                break;
+                            case char _:
+                                Assert.Throws<TException>(() => convertible.ToChar(null));
+                                break;
+                            case sbyte _:
+                                Assert.Throws<TException>(() => convertible.ToSByte(null));
+                                break;
+                            case byte _:
+                                Assert.Throws<TException>(() => convertible.ToByte(null));
+                                break;
+                            case short _:
+                                Assert.Throws<TException>(() => convertible.ToInt16(null));
+                                break;
+                            case ushort _:
+                                Assert.Throws<TException>(() => convertible.ToUInt16(null));
+                                break;
+                            case int _:
+                                Assert.Throws<TException>(() => convertible.ToInt32(null));
+                                break;
+                            case uint _:
+                                Assert.Throws<TException>(() => convertible.ToUInt32(null));
+                                break;
+                            case long _:
+                                Assert.Throws<TException>(() => convertible.ToInt64(null));
+                                break;
+                            case ulong _:
+                                Assert.Throws<TException>(() => convertible.ToUInt64(null));
+                                break;
+                            case float _:
+                                Assert.Throws<TException>(() => convertible.ToSingle(null));
+                                break;
+                            case double _:
+                                Assert.Throws<TException>(() => convertible.ToDouble(null));
+                                break;
+                            case decimal _:
+                                Assert.Throws<TException>(() => convertible.ToDecimal(null));
+                                break;
+                            case DateTime _:
+                                Assert.Throws<TException>(() => convertible.ToDateTime(null));
+                                break;
+                            case string _:
+                                Assert.Throws<TException>(() => convertible.ToString(null));
+                                break;
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
