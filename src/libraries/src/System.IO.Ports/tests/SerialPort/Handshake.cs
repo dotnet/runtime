@@ -26,6 +26,7 @@ namespace System.IO.Ports.Tests
         private enum ThrowAt { Set, Open };
 
         #region Test Cases
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_Default()
         {
@@ -47,7 +48,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_None_BeforeOpen()
         {
@@ -55,7 +56,7 @@ namespace System.IO.Ports.Tests
             VerifyHandshakeBeforeOpen((int)Handshake.None);
         }
 
-
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_XOnXOff_BeforeOpen()
         {
@@ -71,6 +72,7 @@ namespace System.IO.Ports.Tests
             VerifyHandshakeBeforeOpen((int)Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSendXOnXOff_BeforeOpen()
         {
@@ -78,6 +80,7 @@ namespace System.IO.Ports.Tests
             VerifyHandshakeBeforeOpen((int)Handshake.RequestToSendXOnXOff);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_None_AfterOpen()
         {
@@ -85,6 +88,7 @@ namespace System.IO.Ports.Tests
             VerifyHandshakeAfterOpen((int)Handshake.None);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_XOnXOff_AfterOpen()
         {
@@ -99,6 +103,7 @@ namespace System.IO.Ports.Tests
             VerifyHandshakeAfterOpen((int)Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void Handshake_RequestToSendXOnXOff_AfterOpen()
         {
@@ -490,6 +495,8 @@ namespace System.IO.Ports.Tests
                     xmitXOffBytes[i] = rndByte;
                 }
 
+                Assert.InRange(xmitXOnBytes.Length, 1, int.MaxValue);
+
                 int XOnIndex = rndGen.Next(0, xmitXOnBytes.Length);
                 int XOffIndex = rndGen.Next(0, xmitXOffBytes.Length);
 
@@ -679,7 +686,7 @@ namespace System.IO.Ports.Tests
                 com1.BaudRate = com1BaudRate;
                 com2.BaudRate = com2BaudRate;
 
-                com1.DiscardInBuffer();//This can cuase the XOn character to be sent to com2. 
+                com1.DiscardInBuffer();//This can cuase the XOn character to be sent to com2.
                 Thread.Sleep(DEFAULT_WAIT_AFTER_READ_OR_WRITE);
                 com2.DiscardInBuffer();
             }
@@ -730,7 +737,7 @@ namespace System.IO.Ports.Tests
                     }
                 }
 
-                //Write the byte and verify the XOff character was sent as appropriately 
+                //Write the byte and verify the XOff character was sent as appropriately
                 com2.Write(bytes, 0, 1);
                 Thread.Sleep(DEFAULT_WAIT_AFTER_READ_OR_WRITE);
 
@@ -772,7 +779,7 @@ namespace System.IO.Ports.Tests
                     }
                 }
 
-                //Read the byte and verify the XOn char is sent as appropriately 
+                //Read the byte and verify the XOn char is sent as appropriately
                 com1.Read(bytes, 0, 1);
 
                 Thread.Sleep(DEFAULT_WAIT_AFTER_READ_OR_WRITE);

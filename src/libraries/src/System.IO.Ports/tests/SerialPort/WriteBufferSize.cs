@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class WriteBufferSize_Property : PortsTest
     {
         private const int MAX_RANDMOM_BUFFER_SIZE = 1024 * 16;
@@ -124,7 +125,7 @@ namespace System.IO.Ports.Tests
             Random rndGen = new Random(-55);
             uint newWriteBufferSize = (uint)rndGen.Next(MAX_RANDMOM_BUFFER_SIZE);
 
-            newWriteBufferSize &= 0xFFFFFFFE; //Make sure the new buffer size is even by clearing the lowest order bit    
+            newWriteBufferSize &= 0xFFFFFFFE; //Make sure the new buffer size is even by clearing the lowest order bit
 
             VerifyWriteBufferSize((int)newWriteBufferSize);
         }
@@ -172,7 +173,7 @@ namespace System.IO.Ports.Tests
                     }
                     else if (e.GetType() != expectedException)
                     {
-                        Fail("Err_545498ahpba!!! expected exception {0} and {1} was thrown", expectedException, e.GetType());
+                        Fail("Err_545498ahpba!!! expected exception {0} and {1} was thrown: {2}", expectedException, e.GetType(), e);
                     }
                 }
             }

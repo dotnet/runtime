@@ -78,49 +78,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
-        public void AsyncResult_WriteResult()
-        {
-            using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-            {
-                Debug.WriteLine("Verifying EndRead with asyncResult returned from write");
-                com.Open();
-
-                com.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
-
-                IAsyncResult writeAsyncResult = com.BaseStream.BeginWrite(new byte[8], 0, 8, null, null);
-                VerifyEndReadException(com.BaseStream, writeAsyncResult, typeof(ArgumentException));
-            }
-            // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
-            Thread.Sleep(200);
-        }
-
-
-        [ConditionalFact(nameof(HasNullModem))]
-        public void AsyncResult_MultipleSameResult()
-        {
-            using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-            using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
-            {
-                var numBytesToRead = 8;
-
-                Debug.WriteLine("Verifying calling EndRead twice with the same asyncResult");
-
-                com1.Open();
-                com2.Open();
-
-                com2.Write(new byte[numBytesToRead], 0, numBytesToRead);
-
-                IAsyncResult readAsyncResult = com1.BaseStream.BeginRead(new byte[numBytesToRead], 0, numBytesToRead, null, null);
-                com1.BaseStream.EndRead(readAsyncResult);
-
-                VerifyEndReadException(com1.BaseStream, readAsyncResult, typeof(ArgumentException));
-            }
-            // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
-            Thread.Sleep(200);
-        }
-
-
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleInOrder()
         {
@@ -165,7 +122,6 @@ namespace System.IO.Ports.Tests
             // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
             Thread.Sleep(200);
         }
-
 
         [ConditionalFact(nameof(HasNullModem))]
         public void AsyncResult_MultipleOutOfOrder()

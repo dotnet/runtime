@@ -27,7 +27,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                Debug.WriteLine("Verifying Discard method after input buffer has been filled");
                 com1.Open();
                 com2.Open();
                 com2.Write(DEFAULT_STRING);
@@ -53,11 +52,6 @@ namespace System.IO.Ports.Tests
                 VerifyDiscard(com1);
                 VerifyDiscard(com1);
                 VerifyDiscard(com1);
-                /*if (!retValue)
-            {
-                Debug.WriteLine(
-                    "Err_002!!! Verifying call Discard method several times after input buffer has been filled FAILED");
-            }*/
             }
         }
 

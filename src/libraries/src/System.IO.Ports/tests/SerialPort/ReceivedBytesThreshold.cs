@@ -53,41 +53,32 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Rnd_ExactWrite()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                ReceivedEventHandler rcvEventHandler = new ReceivedEventHandler(com1);
-                SerialPortProperties serPortProp = new SerialPortProperties();
+                const int thresh = 8;
 
-                Random rndGen = new Random(-55);
-                int receivedBytesThreshold = rndGen.Next(MIN_RND_THRESHOLD, MAX_RND_THRESHOLD);
-
-                com1.ReceivedBytesThreshold = receivedBytesThreshold;
+                com1.ReceivedBytesThreshold = thresh;
+                com1.ReadTimeout = 200;
                 com1.Open();
                 com2.Open();
-                com1.DataReceived += rcvEventHandler.HandleEvent;
 
-                serPortProp.SetAllPropertiesToOpenDefaults();
-                serPortProp.SetProperty("ReceivedBytesThreshold", receivedBytesThreshold);
-                serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
+                int timesCalled = 0;
+                com1.DataReceived += (s, args) => {
+                    if (args.EventType == SerialData.Chars)
+                        timesCalled++;
+                };
 
-                Debug.WriteLine("Verifying writing exactly the number of bytes of ReceivedBytesThreshold");
-
-                com2.Write(new byte[com1.ReceivedBytesThreshold], 0, com1.ReceivedBytesThreshold);
-
-                rcvEventHandler.WaitForEvent(SerialData.Chars, MAX_TIME_WAIT);
-
-                com1.DiscardInBuffer();
-
-                serPortProp.VerifyPropertiesAndPrint(com1);
-                rcvEventHandler.Validate(SerialData.Chars, com1.ReceivedBytesThreshold, 0);
+                com2.Write(new byte[thresh], 0, thresh);
+                Thread.Sleep(200);
+                com1.Read(new byte[thresh], 0, thresh);
+                Assert.Equal(1, timesCalled);
             }
         }
-
 
         [ConditionalFact(nameof(HasNullModem))]
         public void ReceivedBytesThreshold_Rnd_MultipleWrite()

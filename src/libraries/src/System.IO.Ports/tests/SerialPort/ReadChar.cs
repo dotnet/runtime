@@ -16,7 +16,7 @@ namespace System.IO.Ports.Tests
     {
         //The number of random bytes to receive for large input buffer testing
         // This was 4096, but the largest buffer setting on FTDI USB-Serial devices is "4096", which actually only allows a read of 4094 or 4095 bytes
-        // The test code assumes that we will be able to do this transfer as a single read, so 4000 is safer and would seem to be about 
+        // The test code assumes that we will be able to do this transfer as a single read, so 4000 is safer and would seem to be about
         // as rigourous a test
         private const int largeNumRndBytesToRead = 4000;
 
@@ -104,7 +104,7 @@ namespace System.IO.Ports.Tests
                 TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so
                 //the other 3 bytes of the ut32 encoded char can be in the buffer
                 com1.Read(new char[1023], 0, 1023);
 
@@ -158,7 +158,7 @@ namespace System.IO.Ports.Tests
                 TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so
                 //the other 3 bytes of the ut32 encoded char can be in the buffer
                 com1.Read(new char[1023], 0, 1023);
 
@@ -209,7 +209,7 @@ namespace System.IO.Ports.Tests
                 TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so
                 //the other 3 bytes of the ut32 encoded char can be in the buffer
                 com1.Read(new char[1023], 0, 1023);
 
@@ -438,7 +438,8 @@ namespace System.IO.Ports.Tests
                     5000, "Err_91818aheid BytesToRead");
 
                 // We expect this to fail, because it can't read a surrogate
-                AssertExtensions.Throws<ArgumentException>(null, () => com1.ReadChar());
+                // parameter name can be different on different platforms
+                Assert.Throws<ArgumentException>(() => com1.ReadChar());
 
                 int result = com1.Read(charRcvBuffer, 0, 2);
 

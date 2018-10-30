@@ -107,6 +107,7 @@
     <Compile Include="Support\PortHelper.cs" />
     <Compile Include="Support\SerialPortConnection.cs" />
     <Compile Include="Support\SerialPortProperties.cs" />
+    <Compile Include="Support\KnownFailureAttribute.cs" />
     <Compile Include="Support\TCSupport.cs" />
     <Compile Include="Support\PortsTest.cs" />
     <Compile Include="Support\TestEventHandler.cs" />

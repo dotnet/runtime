@@ -50,57 +50,28 @@ namespace System.IO.Ports.Tests
 
                 int bufferSize = numRndByte;
                 var byteXmitBuffer = new byte[bufferSize];
-                var byteRcvBuffer = new byte[bufferSize];
-                int i;
 
                 // Generate random bytes
-                for (i = 0; i < byteXmitBuffer.Length; i++)
+                for (int i = 0; i < byteXmitBuffer.Length; i++)
                 {
                     byteXmitBuffer[i] = (byte)rndGen.Next(0, 256);
                 }
 
-                com1.ReadTimeout = 500;
+                com1.ReadTimeout = 100;
                 com1.Encoding = encoding;
 
                 com1.Open();
                 com2.Open();
 
-                com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
-                Thread.Sleep((int)(((byteXmitBuffer.Length * 10.0) / com1.BaudRate) * 1000));
+                com2.Write(byteXmitBuffer, 0, bufferSize);
 
-                i = 0;
-
-                while (true)
+                for (int i = 0; i < bufferSize; i++)
                 {
-                    int readInt;
-                    try
-                    {
-                        readInt = com1.BaseStream.ReadByte();
-                    }
-                    catch (TimeoutException)
-                    {
-                        break;
-                    }
-
-                    // While their are more bytes to be read
-                    if (byteXmitBuffer.Length <= i)
-                    {
-                        // If we have read in more bytes then were actually sent
-                        Fail("ERROR!!!: We have received more bytes then were sent");
-                        break;
-                    }
-
-                    byteRcvBuffer[i] = (byte)readInt;
-                    if (readInt != byteXmitBuffer[i])
-                    {
-                        // If the byte read is not the expected byte
-                        Fail("ERROR!!!: Expected to read {0}  actual read byte {1}", (int)byteXmitBuffer[i], readInt);
-                    }
-
-                    i++;
-
-                    Assert.Equal(byteXmitBuffer.Length - i, com1.BytesToRead);
+                    Assert.Equal(byteXmitBuffer[i], com1.BaseStream.ReadByte());
                 }
+
+                // did we receive more bytes than sent?
+                Assert.Throws<TimeoutException>(() => com1.BaseStream.ReadByte());
             }
         }
         #endregion

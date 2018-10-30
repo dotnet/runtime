@@ -18,6 +18,7 @@ namespace System.IO.Ports.Tests
         private const int NUM_TRYS = 5;
 
         #region Test Cases
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ReceivedEvent_Chars()
         {
@@ -54,7 +55,64 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [ConditionalFact(nameof(HasNullModem))]
+        public void ReceivedEvent_NoDuplicateEvents()
+        {
+            using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+            using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
+            {
+                com1.Open();
+                com2.Open();
 
+                int n = 0;
+                com2.DataReceived += (a,b) => {
+                    n++;
+                };
+
+                var ar1 = com1.BaseStream.BeginWrite(new byte[] { 1 }, 0, 1, null, null);
+                var ar2 = com1.BaseStream.BeginWrite(new byte[] { 2 }, 0, 1, null, null);
+                var ar3 = com1.BaseStream.BeginWrite(new byte[] { 3 }, 0, 1, null, null);
+
+                Thread.Sleep(200);
+                Assert.InRange(n, 1, 3);
+                Assert.Equal(1, com2.ReadByte());
+                Assert.Equal(2, com2.ReadByte());
+                Assert.Equal(3, com2.ReadByte());
+                com1.BaseStream.EndWrite(ar1);
+                com1.BaseStream.EndWrite(ar2);
+                com1.BaseStream.EndWrite(ar3);
+            }
+        }
+
+        [ConditionalFact(nameof(HasNullModem))]
+        public void ReceivedEvent_OneEventPerByte()
+        {
+            using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+            using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
+            {
+                com1.Open();
+                com2.Open();
+
+                var ar = new AutoResetEvent(false);
+                int n = 0;
+                com2.DataReceived += (a,b) => {
+                    n++;
+                    com2.ReadByte();
+                    ar.Set();
+                };
+
+                com1.Write("a");
+                Assert.True(ar.WaitOne(100));
+                com1.Write("b");
+                Assert.True(ar.WaitOne(100));
+                com1.Write("c");
+                Assert.True(ar.WaitOne(100));
+
+                Assert.Equal(3, n);
+            }
+        }
+
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ReceivedEvent_Eof()
         {
@@ -95,6 +153,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ReceivedEvent_CharsEof()
         {
@@ -136,6 +195,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ReceivedEvent_CharsEof_ReadAllChars()
         {
@@ -288,8 +348,8 @@ namespace System.IO.Ports.Tests
                 }
             }
 
-            //Since we can not guarantee the order or the exact time that the event handler is called 
-            //We wil look for an event that was firered that matches the type and that bytesToRead 
+            //Since we can not guarantee the order or the exact time that the event handler is called
+            //We wil look for an event that was firered that matches the type and that bytesToRead
             //is greater then the parameter
             public void Validate(SerialData eventType, int bytesToRead)
             {

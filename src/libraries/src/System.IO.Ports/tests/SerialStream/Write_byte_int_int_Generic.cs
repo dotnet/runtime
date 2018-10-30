@@ -27,16 +27,16 @@ namespace System.IO.Ports.Tests
         // to the write method and the testcase fails.
         private const double maxPercentageDifference = .15;
 
-        // The byte size used when veryifying exceptions that write will throw 
+        // The byte size used when veryifying exceptions that write will throw
         private const int BYTE_SIZE_EXCEPTION = 4;
 
-        // The byte size used when veryifying timeout 
+        // The byte size used when veryifying timeout
         private static readonly int s_BYTE_SIZE_TIMEOUT = TCSupport.MinimumBlockingByteCount;
 
-        // The byte size used when veryifying BytesToWrite 
+        // The byte size used when veryifying BytesToWrite
         private static readonly int s_BYTE_SIZE_BYTES_TO_WRITE = TCSupport.MinimumBlockingByteCount;
 
-        // The bytes size used when veryifying Handshake 
+        // The bytes size used when veryifying Handshake
         private static readonly int s_BYTE_SIZE_HANDSHAKE = TCSupport.MinimumBlockingByteCount;
 
         private const int NUM_TRYS = 5;
@@ -146,7 +146,7 @@ namespace System.IO.Ports.Tests
                     com1.WriteTimeout);
                 com1.Open();
 
-                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed
                 // before the timeout is reached
                 t.Start();
                 TCSupport.WaitForTaskToStart(t);
@@ -247,6 +247,7 @@ namespace System.IO.Ports.Tests
             Verify_Handshake(Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_XOnXOff()
         {

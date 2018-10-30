@@ -124,7 +124,14 @@ namespace Legacy.Support
             if (portName1 != null)
             {
                 // Measure how big a packet we need to write to be sure to see blocking behaviour at a port
-                s_flowControlCapabilities = SerialPortConnection.MeasureFlowControlCapabilities(portName1);
+                try
+                {
+                    s_flowControlCapabilities = SerialPortConnection.MeasureFlowControlCapabilities(portName1);
+                }
+                catch (Exception e)
+                {
+                    PrintInfo(e.ToString());
+                }
 
                 PrintInfo("{0}: Flow capabilities {1}", portName1, s_flowControlCapabilities);
             }
@@ -651,7 +658,6 @@ namespace Legacy.Support
                 Assert.True(sw.ElapsedMilliseconds < 3000, $"Timeout while waiting for data to be arrive at port (expected {bufferLength}, available {com.BytesToRead})");
             }
         }
-
 
         public static void WaitForTaskToStart(Task task)
         {

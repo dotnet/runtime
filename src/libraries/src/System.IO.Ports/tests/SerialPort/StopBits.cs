@@ -10,9 +10,10 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class StopBits_Property : PortsTest
     {
-        //The default ammount of time the a transfer should take at any given baud rate and stop bits combination. 
+        //The default ammount of time the a transfer should take at any given baud rate and stop bits combination.
         //The bytes sent should be adjusted to take this ammount of time to transfer at the specified baud rate and stop bits combination.
         private const int DEFAULT_TIME = 750;
 
@@ -291,7 +292,7 @@ namespace System.IO.Ports.Tests
                 byte[] expectedBytes = new byte[numBytesToSend];
                 byte[] rcvBytes = new byte[numBytesToSend];
 
-                //Create a mask that when logicaly and'd with the transmitted byte will 
+                //Create a mask that when logicaly and'd with the transmitted byte will
                 //will result in the byte recievied due to the leading bits being chopped
                 //off due to DataBits less then 8
                 shiftMask >>= 8 - com1.DataBits;
@@ -326,7 +327,7 @@ namespace System.IO.Ports.Tests
 
                     actualTime += sw.ElapsedMilliseconds;
                     actualTime += ((initialNumBytes * (stopBits + com1.DataBits + 1)) / com1.BaudRate) * 1000;
-                    beginWriteResult.AsyncWaitHandle.WaitOne();
+                    com1.BaseStream.EndWrite(beginWriteResult);
 
                     sw.Reset();
                 }

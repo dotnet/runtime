@@ -276,7 +276,7 @@ namespace System.IO.Ports.Tests
                 TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
-                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
+                //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so
                 //the other 3 bytes of the ut32 encoded char can be in the buffer
                 com1.Read(new char[1023], 0, 1023);
 
@@ -485,31 +485,15 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
-                char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
-
-                bool continueRunning = true;
-                int numberOfIterations = 0;
-                var writeToCom2Task = new Task(delegate ()
+                const int bufferSize = 2048;
+                char[] buffer = new char[bufferSize];
+                for (int i = 0; i < bufferSize; i++)
                 {
-                    while (continueRunning)
-                    {
-                        com1.Write(charXmitBuffer, 0, charXmitBuffer.Length);
-                        ++numberOfIterations;
-                    }
-                });
-
-                char endChar = TCSupport.GenerateRandomCharNonSurrogate();
-                char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
-
-                //Ensure the new line is not in charXmitBuffer
-                for (int i = 0; i < charXmitBuffer.Length; ++i)
-                {
-                    //Se any appearances of a character in the new line string to some other char
-                    if (endChar == charXmitBuffer[i])
-                    {
-                        charXmitBuffer[i] = notEndChar;
-                    }
+                    buffer[i] = (char)('A' + (i % 5));
                 }
+
+                const char endChar = 'Z';
+                string endString = new string(endChar, 1);
 
                 com1.BaudRate = 115200;
                 com2.BaudRate = 115200;
@@ -524,33 +508,17 @@ namespace System.IO.Ports.Tests
                 if (!com2.IsOpen) //This is necessary since com1 and com2 might be the same port if we are using a loopback
                     com2.Open();
 
-                writeToCom2Task.Start();
+                Task writeToCom2Task = Task.Run(() => {
+                        com1.Write(buffer, 0, bufferSize);
+                    });
 
-                Assert.Throws<TimeoutException>(() => com2.ReadTo(new string(endChar, 1)));
-
-                continueRunning = false;
+                Assert.Throws<TimeoutException>(() => com2.ReadTo(endString));
                 writeToCom2Task.Wait();
 
-                com1.Write(new string(endChar, 1));
+                com1.Write(endString);
 
-                string stringRcvBuffer = com2.ReadTo(new string(endChar, 1));
-
-                if (charXmitBuffer.Length * numberOfIterations == stringRcvBuffer.Length)
-                {
-                    for (int i = 0; i < charXmitBuffer.Length * numberOfIterations; ++i)
-                    {
-                        if (stringRcvBuffer[i] != charXmitBuffer[i % charXmitBuffer.Length])
-                        {
-                            Fail("Err_292aneid Expected to read {0} actually read {1}",
-                                charXmitBuffer[i % charXmitBuffer.Length], stringRcvBuffer[i]);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    Fail("Err_292haie Expected to read {0} characters actually read {1}", charXmitBuffer.Length * numberOfIterations, stringRcvBuffer.Length);
-                }
+                string received = com2.ReadTo(endString);
+                Assert.Equal(buffer, received);
             }
         }
 
@@ -683,7 +651,7 @@ namespace System.IO.Ports.Tests
             char[] charsToWrite = strToWrite.ToCharArray();
             byte[] bytesToWrite = com1.Encoding.GetBytes(charsToWrite);
 
-            com2.Write(bytesToWrite, 0, 1); // Write one byte at the beginning because we are going to read this to buffer the rest of the data    
+            com2.Write(bytesToWrite, 0, 1); // Write one byte at the beginning because we are going to read this to buffer the rest of the data
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
             while (com1.BytesToRead < bytesToWrite.Length + 1)
