@@ -5409,7 +5409,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	CallInfo *cinfo;
 	int argsClobbered = 0,
 	    lmfOffset,
-	    fpOffset = 0,
+	    fpOffset = 0;
 
 	cfg->code_size   = 512;
 
