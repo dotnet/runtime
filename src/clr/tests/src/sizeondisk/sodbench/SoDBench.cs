@@ -431,7 +431,7 @@ namespace SoDBench
             var psi = new ProcessStartInfo() {
                 WorkingDirectory = s_sandboxDir.FullName,
                 FileName = @"powershell.exe",
-                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -Runtime dotnet -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File .\\Dotnet-Install.ps1 -Runtime dotnet -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
         }
@@ -441,7 +441,7 @@ namespace SoDBench
             var psi = new ProcessStartInfo() {
                 WorkingDirectory = s_sandboxDir.FullName,
                 FileName = @"powershell.exe",
-                Arguments = $"-NoProfile .\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File .\\Dotnet-Install.ps1 -InstallDir .dotnet -Channel {s_dotnetChannel} -Architecture {s_targetArchitecture}"
             };
             LaunchProcess(psi, 180000);
         }
