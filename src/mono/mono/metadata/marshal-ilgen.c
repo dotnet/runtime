@@ -80,7 +80,7 @@ get_method_nofail (MonoClass *klass, const char *method_name, int num_params, in
 }
 
 static void
-init_safe_handle ()
+init_safe_handle (void)
 {
 	sh_dangerous_add_ref = get_method_nofail (
 		mono_class_try_get_safehandle_class (), "DangerousAddRef", 1, 0);
@@ -4153,7 +4153,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoImage *image = get_method_image (method);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	int param_count = sig->param_count + sig->hasthis + 1;
-	int pos_leave, coop_gc_var, coop_gc_stack_dummy;
+	int pos_leave, coop_gc_var = 0, coop_gc_stack_dummy = 0;
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 
@@ -4296,7 +4296,6 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	static MonoMethod *cleanup_native, *cleanup_managed;
 	static MonoMethod *marshal_managed_to_native, *marshal_native_to_managed;
 	MonoMethodBuilder *mb = m->mb;
-	char *exception_msg = NULL;
 	guint32 loc1;
 	int pos2;
 
@@ -4306,8 +4305,25 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	if (!ICustomMarshaler) {
 		MonoClass *klass = mono_class_try_get_icustom_marshaler_class ();
 		if (!klass) {
-			exception_msg = g_strdup ("Current profile doesn't support ICustomMarshaler");
-			goto handle_exception;
+			char *exception_msg = g_strdup ("Current profile doesn't support ICustomMarshaler");
+			/* Throw exception and emit compensation code if neccesary */
+			switch (action) {
+			case MARSHAL_ACTION_CONV_IN:
+			case MARSHAL_ACTION_CONV_RESULT:
+			case MARSHAL_ACTION_MANAGED_CONV_RESULT:
+				if ((action == MARSHAL_ACTION_CONV_RESULT) || (action == MARSHAL_ACTION_MANAGED_CONV_RESULT))
+					mono_mb_emit_byte (mb, CEE_POP);
+
+				mono_mb_emit_exception_full (mb, "System", "ApplicationException", exception_msg);
+
+				break;
+			case MARSHAL_ACTION_PUSH:
+				mono_mb_emit_byte (mb, CEE_LDNULL);
+				break;
+			default:
+				break;
+			}
+			return 0;
 		}
 
 		cleanup_native = get_method_nofail (klass, "CleanUpNativeData", 1, 0);
@@ -4331,28 +4347,6 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	mono_error_assert_ok (error);
 	mklass = mono_class_from_mono_type_internal (mtype);
 	g_assert (mklass != NULL);
-
-handle_exception:
-	/* Throw exception and emit compensation code if neccesary */
-	if (exception_msg) {
-		switch (action) {
-		case MARSHAL_ACTION_CONV_IN:
-		case MARSHAL_ACTION_CONV_RESULT:
-		case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-			if ((action == MARSHAL_ACTION_CONV_RESULT) || (action == MARSHAL_ACTION_MANAGED_CONV_RESULT))
-				mono_mb_emit_byte (mb, CEE_POP);
-
-			mono_mb_emit_exception_full (mb, "System", "ApplicationException", exception_msg);
-
-			break;
-		case MARSHAL_ACTION_PUSH:
-			mono_mb_emit_byte (mb, CEE_LDNULL);
-			break;
-		default:
-			break;
-		}
-		return 0;
-	}
 
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
