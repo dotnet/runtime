@@ -1701,6 +1701,8 @@ inline unsigned Compiler::lvaGrabTemp(bool shortLifetime DEBUGARG(const char* re
     }
 
 #ifdef DEBUG
+    lvaTable[tempNum].lvReason = reason;
+
     if (verbose)
     {
         printf("\nlvaGrabTemp returning %d (", tempNum);
