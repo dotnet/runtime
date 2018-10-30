@@ -231,6 +231,9 @@ public:
                                      regPtrDsc*     genStackPtrFirst,
                                      regPtrDsc*     genStackPtrLast);
 
+    // Update the flags for a stack allocated object
+    void gcUpdateFlagForStackAllocatedObjects(GcSlotFlags& flags);
+
 #endif
 
 #if MEASURE_PTRTAB_SIZE
