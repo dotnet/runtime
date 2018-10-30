@@ -112,4 +112,7 @@
   <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
     <value>Enumeration has either not started or has already finished.</value>
   </data>
+  <data name="bad_endpoint_string" xml:space="preserve">
+    <value>An invalid IPEndPoint was specified.</value>
+  </data>
 </root>

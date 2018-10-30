@@ -263,6 +263,10 @@ namespace System.Net
         public override int GetHashCode() { throw null; }
         public override System.Net.SocketAddress Serialize() { throw null; }
         public override string ToString() { throw null; }
+        public static bool TryParse(string s, out IPEndPoint result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out IPEndPoint result) { throw null; }
+        public static IPEndPoint Parse(string s) { throw null; }
+        public static IPEndPoint Parse(ReadOnlySpan<char> s) { throw null; }
     }
     public partial interface IWebProxy
     {
