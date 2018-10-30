@@ -7,7 +7,7 @@
 
     <!-- Always use shipping version instead of dummy version -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
-    <PreReleaseVersionLabel>preview1</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
 
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
