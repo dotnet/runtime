@@ -71,6 +71,19 @@
           }
         },
         {
+          "Name": "DotNet-CoreClr-Trusted-FreeBSD",
+          "Parameters": {
+            "Rid": "freebsd"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "FreeBSD",
+            "Type": "build/product/",
+            "SubType": "PortableBuild",
+            "Architecture": "x64",
+            "PB_BuildType": null
+          }
+        },        
+        {
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
             "Architecture": "x64"
