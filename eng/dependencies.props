@@ -152,7 +152,7 @@
     </XmlUpdateStep>
     <UpdateStep Include="CoreCLR">
       <UpdaterType>MSBuildSdk</UpdaterType>
-      <Path>$(MSBuildThisFileDirectory)global.json</Path>
+      <Path>$(MSBuildThisFileDirectory)../global.json</Path>
       <PackageId>Microsoft.NET.Sdk.IL</PackageId>
       <MSBuildSdkName>Microsoft.NET.Sdk.IL</MSBuildSdkName>
     </UpdateStep>
