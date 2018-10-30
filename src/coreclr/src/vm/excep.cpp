@@ -6966,6 +6966,14 @@ AdjustContextForWriteBarrier(
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_DATABREAKPOINT
+
+    // If pExceptionRecord is null, it means it is called from EEDbgInterfaceImpl::AdjustContextForWriteBarrierForDebugger()
+    // This is called only when a data breakpoint is hitm which could be inside a JIT write barrier helper and required
+    // this logic to help unwind out of it. For the x86, not patched case, we assume the IP lies within the region where we 
+    // have already saved the registers on the stack, and therefore the code unwind those registers as well. This is not true 
+    // for the usual AV case where the registers are not saved yet.
+
     if (pExceptionRecord == nullptr)
     {
         PCODE ip = GetIP(pContext);
@@ -6992,10 +7000,12 @@ AdjustContextForWriteBarrier(
             return TRUE;
         }
 #else
-        // TODO - ARM/ARM64
+        #error Not supported
 #endif
         return FALSE;
     }
+
+#endif // FEATURE_DATABREAKPOINT
 
 #if defined(_TARGET_X86_) && !defined(PLATFORM_UNIX)
     void* f_IP = (void *)GetIP(pContext);
