@@ -6303,7 +6303,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 }
 
 static void
-encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, gboolean llvm, int first_got_offset, guint8 *buf, guint8 **endbuf)
+encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, gboolean llvm, guint8 *buf, guint8 **endbuf)
 {
 	guint8 *p = buf;
 	guint32 pindex, offset;
@@ -6334,7 +6334,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoJumpInfo *patch_info;
 	guint32 method_index;
 	guint8 *p, *buf;
-	guint32 first_got_offset;
 
 	method = cfg->orig_method;
 
@@ -6345,8 +6344,6 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
 		g_ptr_array_add (patches, patch_info);
 	g_ptr_array_sort (patches, compare_patches);
-
-	first_got_offset = acfg->cfgs [method_index]->got_offset;
 
 	/**********************/
 	/* Encode method info */
@@ -6403,7 +6400,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	if (n_patches)
 		g_assert (cfg->has_got_slots);
 
-	encode_patch_list (acfg, patches, n_patches, cfg->compile_llvm, first_got_offset, p, &p);
+	encode_patch_list (acfg, patches, n_patches, cfg->compile_llvm, p, &p);
 
 	g_ptr_array_free (patches, TRUE);
 
@@ -6992,7 +6989,7 @@ emit_plt (MonoAotCompile *acfg)
  * create_jit_info_for_trampoline ().
  */
 static G_GNUC_UNUSED void
-emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info, gboolean emit_tinfo)
+emit_trampoline_full (MonoAotCompile *acfg, MonoTrampInfo *info, gboolean emit_tinfo)
 {
 	char start_symbol [MAX_SYMBOL_SIZE];
 	char end_symbol [MAX_SYMBOL_SIZE];
@@ -7053,7 +7050,7 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 	buf = (guint8 *)g_malloc (buf_size);
 	p = buf;
 
-	encode_patch_list (acfg, patches, patches->len, FALSE, got_offset, p, &p);
+	encode_patch_list (acfg, patches, patches->len, FALSE, p, &p);
 	g_assert (p - buf < buf_size);
 	g_ptr_array_free (patches, TRUE);
 
@@ -7100,9 +7097,9 @@ emit_trampoline_full (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info,
 }
 
 static G_GNUC_UNUSED void
-emit_trampoline (MonoAotCompile *acfg, int got_offset, MonoTrampInfo *info)
+emit_trampoline (MonoAotCompile *acfg, MonoTrampInfo *info)
 {
-	emit_trampoline_full (acfg, got_offset, info, TRUE);
+	emit_trampoline_full (acfg, info, TRUE);
 }
 
 static void
@@ -7140,53 +7137,53 @@ emit_trampolines (MonoAotCompile *acfg)
 				continue;
 #endif
 			mono_arch_create_generic_trampoline ((MonoTrampolineType)tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
-			emit_trampoline (acfg, acfg->got_offset, info);
+			emit_trampoline (acfg, info);
 			mono_tramp_info_free (info);
 		}
 
 		/* Emit the exception related code pieces */
 		mono_arch_get_restore_context (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 		mono_arch_get_call_filter (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 		mono_arch_get_throw_exception (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 		mono_arch_get_rethrow_exception (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 		mono_arch_get_rethrow_preserve_exception (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 		mono_arch_get_throw_corlib_exception (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 #ifdef MONO_ARCH_HAVE_SDB_TRAMPOLINES
 		mono_arch_create_sdb_trampoline (TRUE, &info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 
 		mono_arch_create_sdb_trampoline (FALSE, &info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 #endif
 
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 		mono_arch_get_gsharedvt_trampoline (&info, TRUE);
 		if (info) {
-			emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
+			emit_trampoline_full (acfg, info, TRUE);
 
 			/* Create a separate out trampoline for more information in stack traces */
 			info->name = g_strdup ("gsharedvt_out_trampoline");
-			emit_trampoline_full (acfg, acfg->got_offset, info, TRUE);
+			emit_trampoline_full (acfg, info, TRUE);
 			mono_tramp_info_free (info);
 		}
 #endif
@@ -7198,7 +7195,7 @@ emit_trampolines (MonoAotCompile *acfg)
 			while (l) {
 				MonoTrampInfo *info = (MonoTrampInfo *)l->data;
 
-				emit_trampoline (acfg, acfg->got_offset, info);
+				emit_trampoline (acfg, info);
 				l = l->next;
 			}
 		}
@@ -7209,18 +7206,18 @@ emit_trampolines (MonoAotCompile *acfg)
 
 			offset = MONO_RGCTX_SLOT_MAKE_RGCTX (i);
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
-			emit_trampoline (acfg, acfg->got_offset, info);
+			emit_trampoline (acfg, info);
 			mono_tramp_info_free (info);
 
 			offset = MONO_RGCTX_SLOT_MAKE_MRGCTX (i);
 			mono_arch_create_rgctx_lazy_fetch_trampoline (offset, &info, TRUE);
-			emit_trampoline (acfg, acfg->got_offset, info);
+			emit_trampoline (acfg, info);
 			mono_tramp_info_free (info);
 		}
 
 #ifdef MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE
 		mono_arch_create_general_rgctx_lazy_fetch_trampoline (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
+		emit_trampoline (acfg, info);
 		mono_tramp_info_free (info);
 #endif
 
@@ -7232,17 +7229,17 @@ emit_trampolines (MonoAotCompile *acfg)
 			while (l) {
 				MonoTrampInfo *info = (MonoTrampInfo *)l->data;
 
-				emit_trampoline (acfg, acfg->got_offset, info);
+				emit_trampoline (acfg, info);
 				l = l->next;
 			}
 		}
 
 		if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
 			mono_arch_get_interp_to_native_trampoline (&info);
-			emit_trampoline (acfg, acfg->got_offset, info);
+			emit_trampoline (acfg, info);
 #ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 			mono_arch_get_native_to_interp_trampoline (&info);
-			emit_trampoline (acfg, acfg->got_offset, info);
+			emit_trampoline (acfg, info);
 #endif
 		}
 
@@ -12695,6 +12692,7 @@ mono_compile_deferred_assemblies (guint32 opts, const char *aot_options, gpointe
 	return res;
 }
 
+#ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
 static const char* interp_in_static_sigs[] = {
 	"bool ptr int32 ptr&",
 	"bool ptr ptr&",
@@ -12726,6 +12724,7 @@ static const char* interp_in_static_sigs[] = {
 	"void uint32 ptr&",
 	"void"
 };
+#endif
 
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options, gpointer **global_aot_state)
