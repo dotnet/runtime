@@ -24,7 +24,7 @@ Through cross compilation, on Linux it is possible to build CoreCLR for arm or a
 Requirements for targetting Debian based distros
 ------------------------------------------------
 
-You need a Debian based host and the following packages needs to be installed:
+You need a Debian based host and the following packages need to be installed:
 
     ben@ubuntu ~/git/coreclr/ $ sudo apt-get install qemu qemu-user-static binfmt-support debootstrap
 
@@ -55,7 +55,7 @@ To build them, use the following steps:
 
 Generating the rootfs
 ---------------------
-The `cross\build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate an rootfs as this is what CoreCLR targets.
+The `cross\build-rootfs.sh` script can be used to download the files needed for cross compilation. It will generate a rootfs as this is what CoreCLR targets.
 
     Usage: ./cross/build-rootfs.sh [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]
     BuildArch can be: arm(default), armel, arm64, x86
@@ -68,7 +68,7 @@ For example, to generate an arm rootfs:
 
     ben@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh arm
 
-You can choose Linux code name to match your target, give `vivid` for `Ubuntu 15.04`, `wily` for `Ubuntu 15.10`. Default is `trusty`, version `Ubuntu 14.04`.
+You can choose Linux code name to match your target, give `vivid` for `Ubuntu 15.04`, `wily` for `Ubuntu 15.10`. The default is `trusty`, version `Ubuntu 14.04`.
 
     ben@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh arm wily
 
@@ -80,7 +80,7 @@ For example, to generate an armel rootfs:
 
     hqu@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh armel
 
-You can choose code name to match your target, give `jessie` for `Debian`, `tizen` for `Tizen`. Default is `jessie`.
+You can choose code name to match your target, give `jessie` for `Debian`, `tizen` for `Tizen`. The default is `jessie`.
 
     hque@ubuntu ~/git/coreclr/ $ sudo ./cross/build-rootfs.sh armel tizen
 
@@ -101,7 +101,7 @@ And with:
 
     ben@ubuntu ~/git/coreclr/ $ ROOTFS_DIR=/home/ben/coreclr-cross/arm ./build.sh arm debug verbose cross
 
-As usual the resulting binaries will be found in `bin/Product/BuildOS.BuildArch.BuildType/`
+As usual, the resulting binaries will be found in `bin/Product/BuildOS.BuildArch.BuildType/`
 
 
 Compiling System.Private.CoreLib for ARM Linux

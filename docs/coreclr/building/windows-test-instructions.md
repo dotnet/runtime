@@ -35,7 +35,7 @@ To run a clean, priority 1, crossgen test pass:
 
 ### Building Individual Tests
 
-Note: build-test.cmd or build.cmd skipnative needs to be run atleast once
+Note: build-test.cmd or build.cmd skipnative needs to be run at least once
 
 * Native Test: Build the generated Visual Studio solution or make file corresponding to Test cmake file.
   
