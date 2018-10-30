@@ -2532,7 +2532,7 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     return hr;
 }
 
-COM_METHOD CordbProcess::GetContainingObject(ICorDebugValue* pValue, ICorDebugObjectValue** ppContainingObject)
+COM_METHOD CordbProcess::GetContainingObject(CordbValue* pValue, ICorDebugObjectValue** ppContainingObject)
 {
     if (!ppContainingObject)
         return E_POINTER;
@@ -2571,7 +2571,7 @@ COM_METHOD CordbProcess::GetContainingObject(ICorDebugValue* pValue, ICorDebugOb
         {
             if (SUCCEEDED(hr))
             {
-                CordbAppDomain* pAppDomain = (CordbValue::GetCordbValue(pValue))->GetAppDomain();
+                CordbAppDomain* pAppDomain = pValue->GetAppDomain();
                 hr = this->GetObjectInternal(containerAddress, pAppDomain, ppContainingObject);
             }
         }
