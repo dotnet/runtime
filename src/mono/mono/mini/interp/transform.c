@@ -2226,13 +2226,8 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 
 	body_start_offset = td->new_ip - td->new_code;
 
-	for (i = 0; i < header->num_locals; i++) {
-		int mt = mint_type(header->locals [i]);
-		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O || mt == MINT_TYPE_P) {
-			ADD_CODE(td, MINT_INITLOCALS);
-			break;
-		}
-	}
+	if (header->num_locals && header->init_locals)
+		ADD_CODE(td, MINT_INITLOCALS);
 
 	if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
 		ADD_CODE (td, MINT_PROF_ENTER);

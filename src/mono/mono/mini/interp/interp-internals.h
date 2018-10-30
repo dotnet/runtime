@@ -135,12 +135,9 @@ struct _InterpFrame {
 	unsigned char  invoke_trap;
 	const unsigned short  *ip;
 	MonoException     *ex;
-	MonoExceptionClause *ex_handler;
-	MonoDomain *domain;
 };
 
 typedef struct {
-	InterpFrame *current_frame;
 	/* Resume state for resuming execution in mixed mode */
 	gboolean       has_resume_state;
 	/* Frame to resume execution at */
