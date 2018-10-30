@@ -759,6 +759,11 @@ protected:
     {
         LIMITED_METHOD_CONTRACT;
     }
+    
+    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    {
+        return pMT->IsRegPassedStruct();
+    }
 
 public:
     BOOL HasThis()
