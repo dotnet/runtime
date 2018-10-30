@@ -16,9 +16,12 @@
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 void*
-mono_marshal_alloc_hglobal (size_t size)
+mono_marshal_alloc_hglobal (size_t size, MonoError *error)
 {
-	return GlobalAlloc (GMEM_FIXED, size);
+	void* p = GlobalAlloc (GMEM_FIXED, size);
+	if (!p)
+		mono_error_set_out_of_memory (error, "");
+	return p;
 }
 
 gpointer
@@ -73,21 +76,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const guni
 		memcpy (ret, tres, len);
 	g_free (tres);
 	return ret;
-}
-
-gunichar2*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error)
-{
-	if (!s)
-		return NULL;
-
-	gsize const len = ((gsize)length + 1) * 2;
-	gunichar2 *res = (gunichar2*)ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
-	if (res) {
-		memcpy (res, s, length * 2);
-		res [length] = 0;
-	}
-	return res;
 }
 
 gpointer

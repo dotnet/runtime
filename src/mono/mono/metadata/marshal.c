@@ -5244,18 +5244,30 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const guni
 	return mono_utf16_to_utf8 (s, length, error);
 }
 
+static void *
+mono_marshal_alloc_hglobal (size_t size, MonoError *error)
+{
+	void* p = g_try_malloc (size);
+	if (!p)
+		mono_error_set_out_of_memory (error, "");
+	return p;
+}
+#endif /* !HOST_WIN32 */
+
 gunichar2*
 ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error)
 {
 	if (!s)
 		return NULL;
 
-	gunichar2 *res = g_new (gunichar2, length + 1);
-	memcpy (res, s, length * sizeof (*res));
-	res [length] = 0;
+	gsize const len = ((gsize)length + 1) * 2;
+	gunichar2 *res = (gunichar2*)mono_marshal_alloc_hglobal (len, error);
+	if (res) {
+		memcpy (res, s, length * 2);
+		res [length] = 0;
+	}
 	return res;
 }
-#endif /* !HOST_WIN32 */
 
 void
 mono_struct_delete_old (MonoClass *klass, char *ptr)
@@ -5322,29 +5334,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 	mono_struct_delete_old (klass, (char *)src);
 }
 
-#ifndef HOST_WIN32
-static inline void *
-mono_marshal_alloc_hglobal (size_t size)
-{
-	return g_try_malloc (size);
-}
-#endif
-
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (gsize size, MonoError *error)
 {
-	gpointer res;
-
 	if (size == 0)
 		/* This returns a valid pointer for size 0 on MS.NET */
 		size = 4;
 
-	res = mono_marshal_alloc_hglobal (size);
-
-	if (!res)
-		mono_error_set_out_of_memory (error, "");
-
-	return res;
+	return mono_marshal_alloc_hglobal (size, error);
 }
 
 #ifndef HOST_WIN32

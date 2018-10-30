@@ -27,7 +27,7 @@ gpointer
 mono_marshal_realloc_co_task_mem (gpointer ptr, size_t size);
 
 void*
-mono_marshal_alloc_hglobal (size_t size);
+mono_marshal_alloc_hglobal (size_t size, MonoError *error);
 
 gpointer
 mono_marshal_realloc_hglobal (gpointer ptr, size_t size);
