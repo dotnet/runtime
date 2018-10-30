@@ -8722,10 +8722,7 @@ public:
     //-----------------------------------------------------------
     // ICorDebugValue4
     //-----------------------------------------------------------
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-    	return GetProcess()->GetContainingObject(this, ppContainingObject);
-    }
+    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject);
     virtual HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS *pAddress) = 0;
 
     //-----------------------------------------------------------

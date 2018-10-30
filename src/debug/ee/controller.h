@@ -1831,35 +1831,7 @@ public:
         return true;
     }
 
-    static bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "D::DDBP: Doing TriggerDataBreakpoint...\n"));
-
-        bool hitDataBp = false;
-#ifdef FEATURE_PAL    
-        #error Not supported
-#endif // FEATURE_PAL    
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-        PDR6 pdr6 = (PDR6)&(pContext->Dr6);
-
-        if (pdr6->B0 || pdr6->B1 || pdr6->B2 || pdr6->B3)
-        {
-            hitDataBp = true;
-        }
-
-        if (hitDataBp)
-        {
-            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT...\n"));
-        }
-        else
-        {
-            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: DIDN'T TRIGGER DATA BREAKPOINT...\n"));
-        }
-#else // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-        #error Not supported
-#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-        return hitDataBp;
-    }
+    static bool TriggerDataBreakpoint(Thread *thread, CONTEXT * pContext);
 };
 
 #endif // FEATURE_DATABREAKPOINT

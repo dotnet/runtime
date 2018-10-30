@@ -2539,7 +2539,6 @@ COM_METHOD CordbProcess::GetContainingObject(CordbValue* pValue, ICorDebugObject
 
     HRESULT hr = S_OK;
 
-    PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
     ATT_REQUIRE_STOPPED_MAY_FAIL(this);
 
@@ -2547,6 +2546,11 @@ COM_METHOD CordbProcess::GetContainingObject(CordbValue* pValue, ICorDebugObject
     IfFailRet(pValue->GetAddress(&interiorPointer));
 
     *ppContainingObject = nullptr;
+
+    if (interiorPointer == 0)
+    {
+        return S_FALSE;
+    }
 
     DebuggerIPCEvent      event;
     this->InitIPCEvent(&event,
