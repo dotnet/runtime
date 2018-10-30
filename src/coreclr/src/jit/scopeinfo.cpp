@@ -259,12 +259,12 @@ void CodeGen::siEndScope(unsigned varNum)
         }
     }
 
-    JITDUMP("siEndScope: Failed to end scope for V%02u\n");
+    JITDUMP("siEndScope: Failed to end scope for V%02u\n", varNum);
 
     // At this point, we probably have a bad LocalVarTab
     if (compiler->opts.compDbgCode)
     {
-        JITDUMP("...checking var tab validity\n", varNum);
+        JITDUMP("...checking var tab validity\n");
 
         // Note the following assert is saying that we expect
         // the VM supplied info to be invalid...
