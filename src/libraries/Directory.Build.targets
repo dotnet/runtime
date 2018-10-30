@@ -133,6 +133,7 @@
     </BinPlaceConfiguration>
   </ItemGroup>
 
+  <Import Project="$(MSBuildThisFileDirectory)eng/depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
   <Import Project="$(MSBuildThisFileDirectory)eng/Resources.targets" />
 
