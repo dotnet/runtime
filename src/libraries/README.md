@@ -8,13 +8,13 @@ Runtime-specific library code ([mscorlib](https://github.com/dotnet/coreclr/tree
 
 ## .NET Core
 
-Official Starting Page: http://dotnet.github.io
+Official Starting Page: https://dotnet.github.io
 
 * [How to use .NET Core](https://github.com/dotnet/core/#get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://www.microsoft.com/net/core)
   * [Documentation](https://docs.microsoft.com/en-us/dotnet) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
-    * [Deploying apps](https://docs.microsoft.com/en-us/dotnet/articles/core/preview3/deploying)
-  * [Supported OS versions](https://github.com/dotnet/core/blob/master/roadmap.md#technology-roadmaps)
+    * [Deploying apps](https://docs.microsoft.com/en-us/dotnet/core/deploying)
+  * [Supported OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md)
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
 * [Bringing more APIs to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md) (and why some APIs will be left out)
@@ -38,7 +38,7 @@ Each issue area has one or more Microsoft owners, who are [listed here](https://
 
 ### Contributing Guide
 
-This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#contributing-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!) 
+This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#contributing-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
 
 ### Useful Links
 
@@ -48,17 +48,17 @@ This section is **in progress** here: [New contributor Docs - Contributing](http
 
 ### Community
 
-* General .NET OSS discussions: [.NET Foundation forums](http://forums.dotnetfoundation.org)
+* General .NET OSS discussions: [.NET Foundation forums](https://forums.dotnetfoundation.org)
 * Chat with other community members [![Join the chat at https://gitter.im/dotnet/corefx](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/corefx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/)
-to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+This project has adopted the code of conduct defined by the [Contributor Covenant](https://contributor-covenant.org/)
+to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](https://www.dotnetfoundation.org/code-of-conduct).
 
 ### Reporting security issues and security bugs
 
-Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the MSRC PGP key, can be found in the [Security TechCenter](https://technet.microsoft.com/en-us/security/ff852094.aspx).
+Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the MSRC PGP key, can be found in the [Security TechCenter](https://www.microsoft.com/msrc/faqs-report-an-issue).
 
-Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Program](https://technet.microsoft.com/en-us/mt764065.aspx).
+Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Program](https://www.microsoft.com/msrc/bounty-dot-net-core).
 
 ## License
 
@@ -68,7 +68,7 @@ Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Pro
 
 ## .NET Foundation
 
-.NET Core is a [.NET Foundation](http://www.dotnetfoundation.org/projects) project.
+.NET Core is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
 
 There are many .NET related projects on GitHub.
 
@@ -84,7 +84,7 @@ There are many .NET related projects on GitHub.
 Daily builds of .NET Core components are published to [dotnet-core MyGet gallery](https://dotnet.myget.org/gallery/dotnet-core).
 The latest version number of each library can be seen in that gallery.
 
-Note: See officially supported [OS versions](https://github.com/dotnet/core/blob/master/roadmap.md#technology-roadmaps).
+Note: See officially supported [OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md).
 
 ### Code Coverage Status
 Click to see most recent result.
