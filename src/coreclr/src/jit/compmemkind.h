@@ -53,6 +53,7 @@ CompMemKindMacro(Unknown)
 CompMemKindMacro(RangeCheck)
 CompMemKindMacro(CopyProp)
 CompMemKindMacro(SideEffects)
+CompMemKindMacro(ObjectAllocator)
 //clang-format on
 
 #undef CompMemKindMacro
