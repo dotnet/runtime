@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class BreakState_Property : PortsTest
     {
         //The maximum time we will wait for the pin changed event to get firered for the break state
@@ -72,7 +73,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
- 
+
         [ConditionalFact(nameof(HasNullModem))]
         public void BreakState_false()
         {
@@ -232,4 +233,3 @@ namespace System.IO.Ports.Tests
         #endregion
     }
 }
-

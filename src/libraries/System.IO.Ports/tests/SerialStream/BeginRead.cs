@@ -20,7 +20,7 @@ namespace System.IO.Ports.Tests
         private const int largeNumRndBytesToRead = 2048;
 
         // When we test Read and do not care about actually reading anything we must still
-        // create an byte array to pass into the method the following is the size of the 
+        // create an byte array to pass into the method the following is the size of the
         // byte array used in this situation
         private const int defaultByteArraySize = 1;
         private const int defaultByteOffset = 0;
@@ -40,45 +40,45 @@ namespace System.IO.Ports.Tests
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Buffer_Null()
         {
-            VerifyReadException(null, 0, 1, typeof(ArgumentNullException));
+            VerifyReadException<ArgumentNullException>(null, 0, 1);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Offset_NEG1()
         {
-            VerifyReadException(new byte[defaultByteArraySize], -1, defaultByteCount, typeof(ArgumentOutOfRangeException));
+            VerifyReadException<ArgumentOutOfRangeException>(new byte[defaultByteArraySize], -1, defaultByteCount);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Offset_NEGRND()
         {
             var rndGen = new Random(-55);
-            VerifyReadException(new byte[defaultByteArraySize], rndGen.Next(int.MinValue, 0), defaultByteCount, typeof(ArgumentOutOfRangeException));
+            VerifyReadException<ArgumentOutOfRangeException>(new byte[defaultByteArraySize], rndGen.Next(int.MinValue, 0), defaultByteCount);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Offset_MinInt()
         {
-            VerifyReadException(new byte[defaultByteArraySize], int.MinValue, defaultByteCount, typeof(ArgumentOutOfRangeException));
+            VerifyReadException<ArgumentOutOfRangeException>(new byte[defaultByteArraySize], int.MinValue, defaultByteCount);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Count_NEG1()
         {
-            VerifyReadException(new byte[defaultByteArraySize], defaultByteOffset, -1, typeof(ArgumentOutOfRangeException));
+            VerifyReadException<ArgumentOutOfRangeException>(new byte[defaultByteArraySize], defaultByteOffset, -1);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Count_NEGRND()
         {
             var rndGen = new Random(-55);
-            VerifyReadException(new byte[defaultByteArraySize], defaultByteOffset, rndGen.Next(int.MinValue, 0), typeof(ArgumentOutOfRangeException));
+            VerifyReadException<ArgumentOutOfRangeException>(new byte[defaultByteArraySize], defaultByteOffset, rndGen.Next(int.MinValue, 0));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Count_MinInt()
         {
-            VerifyReadException(new byte[defaultByteArraySize], defaultByteOffset, int.MinValue, typeof(ArgumentOutOfRangeException));
+            VerifyReadException<ArgumentOutOfRangeException>(new byte[defaultByteArraySize], defaultByteOffset, int.MinValue);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -88,11 +88,9 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, maxBufferSizeForException);
             int offset = rndGen.Next(0, bufferLength);
             int count = bufferLength + 1 - offset;
-            Type expectedException = typeof(ArgumentException);
 
-            VerifyReadException(new byte[bufferLength], offset, count, expectedException);
+            VerifyReadException<ArgumentException>(new byte[bufferLength], offset, count);
         }
-
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OffsetCount_GT_Length()
@@ -101,11 +99,8 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, maxBufferSizeForException);
             int offset = rndGen.Next(0, bufferLength);
             int count = rndGen.Next(bufferLength + 1 - offset, int.MaxValue);
-            Type expectedException = typeof(ArgumentException);
-
-            VerifyReadException(new byte[bufferLength], offset, count, expectedException);
+            VerifyReadException<ArgumentException>(new byte[bufferLength], offset, count);
         }
-
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Offset_GT_Length()
@@ -114,11 +109,9 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, maxBufferSizeForException);
             int offset = rndGen.Next(bufferLength, int.MaxValue);
             int count = defaultByteCount;
-            Type expectedException = typeof(ArgumentException);
 
-            VerifyReadException(new byte[bufferLength], offset, count, expectedException);
+            VerifyReadException<ArgumentException>(new byte[bufferLength], offset, count);
         }
-
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Count_GT_Length()
@@ -127,9 +120,8 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, maxBufferSizeForException);
             int offset = defaultByteOffset;
             int count = rndGen.Next(bufferLength + 1, int.MaxValue);
-            Type expectedException = typeof(ArgumentException);
 
-            VerifyReadException(new byte[bufferLength], offset, count, expectedException);
+            VerifyReadException<ArgumentException>(new byte[bufferLength], offset, count);
         }
 
         [ConditionalFact(nameof(HasNullModem))]
@@ -200,7 +192,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
-                // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
+                // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that
                 // the code calling the callback has finished it's processing
                 IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
 
@@ -246,7 +238,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
-                // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
+                // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that
                 // the code calling the callback has finished it's processing
                 IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
 
@@ -292,7 +284,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
-                // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
+                // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that
                 // the code calling the callback has finished it's processing
                 IAsyncResult callbackReadAsyncResult = callbackHandler.ReadAysncResult;
 
@@ -316,18 +308,19 @@ namespace System.IO.Ports.Tests
 
         #region Verification for Test Cases
 
-        private void VerifyReadException(byte[] buffer, int offset, int count, Type expectedException)
+        private void VerifyReadException<T>(byte[] buffer, int offset, int count) where T : Exception
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 int bufferLength = null == buffer ? 0 : buffer.Length;
 
                 Debug.WriteLine("Verifying read method throws {0} buffer.Lenght={1}, offset={2}, count={3}",
-                    expectedException, bufferLength, offset, count);
+                                typeof(T), bufferLength, offset, count);
 
                 com.Open();
 
-                Assert.Throws(expectedException, () => com.BaseStream.BeginRead(buffer, offset, count, null, null));
+                Action a = () => com.BaseStream.BeginRead(buffer, offset, count, null, null);
+                Assert.Throws<T>(a);
             }
         }
 

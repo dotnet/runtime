@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class ParityReplace_Property : PortsTest
     {
         //The default number of chars to write with when testing timeout with Read(char[], int, int)
@@ -446,4 +447,3 @@ namespace System.IO.Ports.Tests
         #endregion
     }
 }
-

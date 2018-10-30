@@ -62,6 +62,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Timeout()
         {
@@ -134,7 +135,7 @@ namespace System.IO.Ports.Tests
                     com1.WriteTimeout);
                 com1.Open();
 
-                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed
                 // before the timeout is reached
                 t.Start();
                 TCSupport.WaitForTaskToStart(t);
@@ -235,6 +236,7 @@ namespace System.IO.Ports.Tests
             Verify_Handshake(Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_XOnXOff()
         {
@@ -285,7 +287,6 @@ namespace System.IO.Ports.Tests
                 }
             }
         }
-
 
         #endregion
 
@@ -343,60 +344,53 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                Debug.WriteLine("Verifying Handshake={0}", handshake);
+                bool rts = Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake;
+                bool xonxoff = Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake;
+                Assert.True(rts || xonxoff);
+
                 com1.Handshake = handshake;
+                com2.ReadTimeout = 200;
                 com1.Open();
                 com2.Open();
-
-                // Setup to ensure write will bock with type of handshake method being used
-                if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                // Setup to ensure write will block with type of handshake method being used
+                if (rts)
                 {
                     com2.RtsEnable = false;
                 }
 
-                if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                if (xonxoff)
                 {
                     com2.BaseStream.WriteByte(XOnOff.XOFF);
                     Thread.Sleep(250);
                 }
 
-                // Write a block of random data asynchronously so we can verify some things while the write call is blocking
-                Task task = Task.Run(() => WriteRandomDataBlock(com1, TCSupport.MinimumBlockingByteCount));
+                com1.BaseStream.BeginWrite(new byte[] { (byte)'A' }, 0, 1, null, null);
+                Thread.Sleep(250);
 
-                TCSupport.WaitForTaskToStart(task);
-
-                TCSupport.WaitForWriteBufferToLoad(com1, TCSupport.MinimumBlockingByteCount);
-
-                // Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
-                if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
-                    com1.CtsHolding)
-                {
-                    Fail("ERROR!!! Expected CtsHolding={0} actual {1}", false, com1.CtsHolding);
-                }
+                Assert.Throws<TimeoutException>(
+                    () => Console.WriteLine($"Read unexpected byte: {com2.ReadByte()}"));
 
                 // Setup to ensure write will succeed
-                if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                if (rts)
                 {
+                    Assert.False(com1.CtsHolding);
                     com2.RtsEnable = true;
                 }
 
-                if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                if (xonxoff)
                 {
                     com2.BaseStream.WriteByte(XOnOff.XON);
                 }
 
-                // Wait till write finishes
-                TCSupport.WaitForTaskCompletion(task);
-
-                // Verify that the correct number of bytes are in the buffer
-                // (There should be nothing because it's all been transmitted after the flow control was released)
+                Assert.Equal((byte)'A', com2.ReadByte());
+                Assert.Throws<TimeoutException>(
+                    () => Console.WriteLine($"Read unexpected byte: {com2.ReadByte()}"));
                 Assert.Equal(0, com1.BytesToWrite);
 
                 // Verify that CtsHolding is true if the RequestToSend or RequestToSendXOnXOff handshake method is used
-                if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
-                    !com1.CtsHolding)
+                if (rts)
                 {
-                    Fail("ERROR!!! Expected CtsHolding={0} actual {1}", true, com1.CtsHolding);
+                    Assert.True(com1.CtsHolding);
                 }
             }
         }

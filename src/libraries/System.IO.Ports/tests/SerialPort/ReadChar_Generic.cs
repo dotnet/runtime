@@ -125,7 +125,7 @@ namespace System.IO.Ports.Tests
                     com1.ReadTimeout);
                 com1.Open();
 
-                //Call WriteToCom1 asynchronously this will write to com1 some time before the following call 
+                //Call WriteToCom1 asynchronously this will write to com1 some time before the following call
                 //to a read method times out
                 t.Start();
                 try
@@ -160,12 +160,14 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void DefaultParityReplaceByte()
         {
             VerifyParityReplaceByte(-1, numRndChar - 2);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void NoParityReplaceByte()
         {
@@ -174,6 +176,7 @@ namespace System.IO.Ports.Tests
             VerifyParityReplaceByte((int)'\0', rndGen.Next(0, numRndChar - 1));
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void RNDParityReplaceByte()
         {
@@ -182,6 +185,7 @@ namespace System.IO.Ports.Tests
             VerifyParityReplaceByte(rndGen.Next(0, 128), 0);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ParityErrorOnLastByte()
         {

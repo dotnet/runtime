@@ -21,6 +21,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void EventHandlers_CalledSerially()
         {
@@ -35,7 +36,7 @@ namespace System.IO.Ports.Tests
 
                 /***************************************************************
             Scenario Description: All of the event handlers should be called sequentially never
-            at the same time on multiple thread. Basically we will block each event handler caller thread and verify 
+            at the same time on multiple thread. Basically we will block each event handler caller thread and verify
             that no other thread is in another event handler
 
             ***************************************************************/
@@ -53,8 +54,8 @@ namespace System.IO.Ports.Tests
                 com1.DataReceived += receivedEventHandler.HandleEvent;
                 com1.ErrorReceived += errorEventHandler.HandleEvent;
 
-                //This should cause ErrorEvent to be fired with a parity error since the 
-                //8th bit on com1 is the parity bit, com1 one expest this bit to be 1(Mark), 
+                //This should cause ErrorEvent to be fired with a parity error since the
+                //8th bit on com1 is the parity bit, com1 one expest this bit to be 1(Mark),
                 //and com2 is writing 0 for this bit
                 com1.DataBits = 7;
                 com1.Parity = Parity.Mark;
@@ -91,8 +92,8 @@ namespace System.IO.Ports.Tests
                 Debug.WriteLine("PinChange Triggered");
                 Thread.Sleep(TRIGERING_EVENTS_WAIT_TIME);
 
-                //This should cause ReceivedEvent to be fired with EofReceived 
-                //since we are writing the EOF char		
+                //This should cause ReceivedEvent to be fired with EofReceived
+                //since we are writing the EOF char
                 com1.DataBits = 8;
                 com1.Parity = Parity.None;
                 com2.BaseStream.Write(new byte[] { 26 }, 0, 1);
@@ -215,13 +216,14 @@ namespace System.IO.Ports.Tests
                 errorEventHandler.Validate(SerialError.Frame, 0);
 
                 // It's important that we close com1 BEFORE com2 (the using() block would do this the other way around normally)
-                // This is because we have our special blocking event handlers hooked onto com1, and closing com2 is likely to 
+                // This is because we have our special blocking event handlers hooked onto com1, and closing com2 is likely to
                 // cause a pin-change event which then hangs and prevents com1 from closing.
                 // An alternative approach would be to unhook all the event-handlers before leaving the using() block.
                 com1.Close();
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Thread_In_PinChangedEvent()
         {
@@ -297,6 +299,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Thread_In_ErrorEvent()
         {
@@ -313,8 +316,8 @@ namespace System.IO.Ports.Tests
                 Thread.Sleep(TRIGERING_EVENTS_WAIT_TIME);
                 com1.ErrorReceived += errorEventHandler.HandleEvent;
 
-                //This should cause ErrorEvent to be fired with a parity error since the 
-                //8th bit on com1 is the parity bit, com1 one expest this bit to be 1(Mark), 
+                //This should cause ErrorEvent to be fired with a parity error since the
+                //8th bit on com1 is the parity bit, com1 one expest this bit to be 1(Mark),
                 //and com2 is writing 0 for this bit
                 com1.DataBits = 7;
                 com1.Parity = Parity.Mark;
@@ -376,4 +379,3 @@ namespace System.IO.Ports.Tests
         #endregion
     }
 }
-

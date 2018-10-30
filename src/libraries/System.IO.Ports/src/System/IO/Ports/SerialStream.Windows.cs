@@ -32,15 +32,13 @@ namespace System.IO.Ports
                                       SerialPinChange.Ring | SerialPinChange.DsrChanged);
 
         private const int infiniteTimeoutConst = -2;
-        private const int MaxDataBits = 8;
-        private const int MinDataBits = 5;
+
+        // called when one character is received.
+        internal event SerialDataReceivedEventHandler DataReceived;
 
         // members supporting properties exposed to SerialPort
-        private string _portName;
         private byte _parityReplace = (byte)'?';
-        private bool _inBreak = false;               // port is initially in non-break state
         private bool _isAsync = true;
-        private Handshake _handshake;
         private bool _rtsEnable = false;
 
         // The internal C# representations of Win32 structures necessary for communication
@@ -50,7 +48,6 @@ namespace System.IO.Ports
         private Interop.Kernel32.COMSTAT _comStat;
         private Interop.Kernel32.COMMPROP _commProp;
 
-        private SafeFileHandle _handle = null;
         private ThreadPoolBoundHandle _threadPoolBinding = null;
         private EventLoopRunner _eventRunner;
         private Task _waitForComEventTask = null;
@@ -59,48 +56,6 @@ namespace System.IO.Ports
 
         // called whenever any async i/o operation completes.
         private unsafe static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(AsyncFSCallback);
-
-        // three different events, also wrapped by SerialPort.
-        internal event SerialDataReceivedEventHandler DataReceived;      // called when one character is received.
-        internal event SerialPinChangedEventHandler PinChanged;    // called when any of the pin/ring-related triggers occurs
-        internal event SerialErrorReceivedEventHandler ErrorReceived;         // called when any runtime error occurs on the port (frame, overrun, parity, etc.)
-
-
-        // ----SECTION: inherited properties from Stream class ------------*
-
-        // These six properites are required for SerialStream to inherit from the abstract Stream class.
-        // Note four of them are always true or false, and two of them throw exceptions, so these
-        // are not usefully queried by applications which know they have a SerialStream, etc...
-        public override bool CanRead
-        {
-            get { return (_handle != null); }
-        }
-
-        public override bool CanSeek
-        {
-            get { return false; }
-        }
-
-        public override bool CanTimeout
-        {
-            get { return (_handle != null); }
-        }
-
-        public override bool CanWrite
-        {
-            get { return (_handle != null); }
-        }
-
-        public override long Length
-        {
-            get { throw new NotSupportedException(SR.NotSupported_UnseekableStream); }
-        }
-
-        public override long Position
-        {
-            get { throw new NotSupportedException(SR.NotSupported_UnseekableStream); }
-            set { throw new NotSupportedException(SR.NotSupported_UnseekableStream); }
-        }
 
         // ----- new get-set properties -----------------*
 
@@ -135,7 +90,7 @@ namespace System.IO.Ports
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.BaudRate = (uint)baudRateOld;
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
             }
@@ -149,13 +104,13 @@ namespace System.IO.Ports
                 if (value)
                 {
                     if (Interop.Kernel32.SetCommBreak(_handle) == false)
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = true;
                 }
                 else
                 {
                     if (Interop.Kernel32.ClearCommBreak(_handle) == false)
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     _inBreak = false;
                 }
             }
@@ -174,7 +129,7 @@ namespace System.IO.Ports
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.ByteSize = byteSizeOld;
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
             }
@@ -193,7 +148,7 @@ namespace System.IO.Ports
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         SetDcbFlag(NativeMethods.FNULL, fNullOld);
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
             }
@@ -216,12 +171,12 @@ namespace System.IO.Ports
                 if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                 {
                     SetDcbFlag(NativeMethods.FDTRCONTROL, fDtrControlOld);
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
-                // then set the actual pin 
+                // then set the actual pin
                 if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? NativeMethods.SETDTR : NativeMethods.CLRDTR))
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
             }
         }
 
@@ -270,7 +225,7 @@ namespace System.IO.Ports
                         SetDcbFlag(NativeMethods.FOUTX, fInOutXOld);
                         SetDcbFlag(NativeMethods.FOUTXCTSFLOW, fOutxCtsFlowOld);
                         SetDcbFlag(NativeMethods.FRTSCONTROL, fRtsControlOld);
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
 
                 }
@@ -317,7 +272,7 @@ namespace System.IO.Ports
                         _dcb.ErrorChar = ErrorCharOld;
                         SetDcbFlag(NativeMethods.FERRORCHAR, fErrorCharOld);
 
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
             }
@@ -353,7 +308,7 @@ namespace System.IO.Ports
                         _parityReplace = parityReplaceOld;
                         SetDcbFlag(NativeMethods.FERRORCHAR, fErrorCharOld);
                         _dcb.ErrorChar = errorCharOld;
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
             }
@@ -402,7 +357,7 @@ namespace System.IO.Ports
                 else if (value == SerialPort.InfiniteTimeout)
                 {
                     // SetCommTimeouts doesn't like a value of -1 for some reason, so
-                    // we'll use -2(infiniteTimeoutConst) to represent infinite. 
+                    // we'll use -2(infiniteTimeoutConst) to represent infinite.
                     _commTimeouts.ReadTotalTimeoutConstant = infiniteTimeoutConst;
                     _commTimeouts.ReadTotalTimeoutMultiplier = NativeMethods.MAXDWORD;
                     _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
@@ -419,7 +374,7 @@ namespace System.IO.Ports
                     _commTimeouts.ReadTotalTimeoutConstant = oldReadConstant;
                     _commTimeouts.ReadTotalTimeoutMultiplier = oldReadMultipler;
                     _commTimeouts.ReadIntervalTimeout = oldReadInterval;
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
         }
@@ -454,11 +409,11 @@ namespace System.IO.Ports
                         SetDcbFlag(NativeMethods.FRTSCONTROL, fRtsControlOld);
                         // set it back to the old value on a failure
                         _rtsEnable = !_rtsEnable;
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
 
                     if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? NativeMethods.SETRTS : NativeMethods.CLRRTS))
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
         }
@@ -483,7 +438,7 @@ namespace System.IO.Ports
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.StopBits = stopBitsOld;
-                        InternalResources.WinIOError();
+                        throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
             }
@@ -510,7 +465,7 @@ namespace System.IO.Ports
                 if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
                 {
                     _commTimeouts.WriteTotalTimeoutConstant = oldWriteConstant;
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
         }
@@ -524,7 +479,7 @@ namespace System.IO.Ports
             {
                 int pinStatus = 0;
                 if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (NativeMethods.MS_RLSD_ON & pinStatus) != 0;
             }
@@ -536,7 +491,7 @@ namespace System.IO.Ports
             {
                 int pinStatus = 0;
                 if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (NativeMethods.MS_CTS_ON & pinStatus) != 0;
             }
 
@@ -548,7 +503,7 @@ namespace System.IO.Ports
             {
                 int pinStatus = 0;
                 if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 return (NativeMethods.MS_DSR_ON & pinStatus) != 0;
             }
@@ -564,7 +519,7 @@ namespace System.IO.Ports
                 int errorCode = 0; // "ref" arguments need to have values, as opposed to "out" arguments
                 if (Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat) == false)
                 {
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
                 return (int)_comStat.cbInQue;
             }
@@ -578,7 +533,7 @@ namespace System.IO.Ports
             {
                 int errorCode = 0; // "ref" arguments need to be set before method invocation, as opposed to "out" arguments
                 if (Interop.Kernel32.ClearCommError(_handle, ref errorCode, ref _comStat) == false)
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 return (int)_comStat.cbOutQue;
 
             }
@@ -594,7 +549,7 @@ namespace System.IO.Ports
             {
                  throw new ArgumentNullException(nameof(portName));
             }
-            
+
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(portName.Substring(3), out uint portNumber))
             {
@@ -607,14 +562,14 @@ namespace System.IO.Ports
 
             if (tempHandle.IsInvalid)
             {
-                InternalResources.WinIOError(portName);
+                throw Win32Marshal.GetExceptionForLastWin32Error(portName);
             }
 
             try
             {
                 int fileType = Interop.Kernel32.GetFileType(tempHandle);
 
-                // Allowing FILE_TYPE_UNKNOWN for legitimate serial device such as USB to serial adapter device 
+                // Allowing FILE_TYPE_UNKNOWN for legitimate serial device such as USB to serial adapter device
                 if ((fileType != Interop.Kernel32.FileTypes.FILE_TYPE_CHAR) && (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_UNKNOWN))
                     throw new ArgumentException(SR.Format(SR.Arg_InvalidSerialPort, portName), nameof(portName));
 
@@ -629,8 +584,8 @@ namespace System.IO.Ports
 
                 // Fill COMMPROPERTIES struct, which has our maximum allowed baud rate.
                 // Call a serial specific API such as GetCommModemStatus which would fail
-                // in case the device is not a legitimate serial device. For instance, 
-                // some illegal FILE_TYPE_UNKNOWN device (or) "LPT1" on Win9x 
+                // in case the device is not a legitimate serial device. For instance,
+                // some illegal FILE_TYPE_UNKNOWN device (or) "LPT1" on Win9x
                 // trying to pass for serial will be caught here. GetCommProperties works
                 // fine for "LPT1" on Win9x, so that alone can't be relied here to
                 // detect non serial devices.
@@ -642,12 +597,12 @@ namespace System.IO.Ports
                     || !Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus))
                 {
                     // If the portName they have passed in is a FILE_TYPE_CHAR but not a serial port,
-                    // for example "LPT1", this API will fail.  For this reason we handle the error message specially. 
+                    // for example "LPT1", this API will fail.  For this reason we handle the error message specially.
                     int errorCode = Marshal.GetLastWin32Error();
                     if ((errorCode == Interop.Errors.ERROR_INVALID_PARAMETER) || (errorCode == Interop.Errors.ERROR_INVALID_HANDLE))
                         throw new ArgumentException(SR.Arg_InvalidSerialPortExtended, nameof(portName));
                     else
-                        InternalResources.WinIOError(errorCode, string.Empty);
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, string.Empty);
                 }
 
                 if (_commProp.dwMaxBaud != 0 && baudRate > _commProp.dwMaxBaud)
@@ -663,13 +618,13 @@ namespace System.IO.Ports
 
                 DtrEnable = dtrEnable;
 
-                // query and cache the initial RtsEnable value 
+                // query and cache the initial RtsEnable value
                 // so that set_RtsEnable can do the (value != rtsEnable) optimization
                 _rtsEnable = (GetDcbFlag(NativeMethods.FRTSCONTROL) == NativeMethods.RTS_CONTROL_ENABLE);
 
                 // now set this.RtsEnable to the specified value.
-                // Handshake takes precedence, this will be a nop if 
-                // handshake is either RequestToSend or RequestToSendXOnXOff 
+                // Handshake takes precedence, this will be a nop if
+                // handshake is either RequestToSend or RequestToSendXOnXOff
                 if ((handshake != Handshake.RequestToSend && handshake != Handshake.RequestToSendXOnXOff))
                     RtsEnable = rtsEnable;
 
@@ -683,7 +638,7 @@ namespace System.IO.Ports
                 else if (readTimeout == SerialPort.InfiniteTimeout)
                 {
                     // SetCommTimeouts doesn't like a value of -1 for some reason, so
-                    // we'll use -2(infiniteTimeoutConst) to represent infinite. 
+                    // we'll use -2(infiniteTimeoutConst) to represent infinite.
                     _commTimeouts.ReadTotalTimeoutConstant = infiniteTimeoutConst;
                     _commTimeouts.ReadTotalTimeoutMultiplier = NativeMethods.MAXDWORD;
                     _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
@@ -701,7 +656,7 @@ namespace System.IO.Ports
                 // set unmanaged timeout structure
                 if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
                 {
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
                 if (_isAsync)
@@ -728,15 +683,10 @@ namespace System.IO.Ports
             }
         }
 
-        ~SerialStream()
-        {
-            Dispose(false);
-        }
-
         protected override void Dispose(bool disposing)
         {
             // Signal the other side that we're closing.  Should do regardless of whether we've called
-            // Close() or not Dispose() 
+            // Close() or not Dispose()
             if (_handle != null && !_handle.IsInvalid)
             {
                 try
@@ -754,7 +704,7 @@ namespace System.IO.Ports
                         int hr = Marshal.GetLastWin32Error();
 
                         // access denied can happen if USB is yanked out. If that happens, we
-                        // want to at least allow finalize to succeed and clean up everything 
+                        // want to at least allow finalize to succeed and clean up everything
                         // we can. To achieve this, we need to avoid further attempts to access
                         // the SerialPort.  A customer also reported seeing ERROR_BAD_COMMAND here.
                         // Do not throw an exception on the finalizer thread - that's just rude,
@@ -771,7 +721,7 @@ namespace System.IO.Ports
 
                             // Do not throw an exception from the finalizer here.
                             if (disposing)
-                                InternalResources.WinIOError();
+                                throw Win32Marshal.GetExceptionForLastWin32Error();
                         }
                     }
 
@@ -816,7 +766,6 @@ namespace System.IO.Ports
                     }
                     base.Dispose(disposing);
                 }
-
             }
         }
 
@@ -825,15 +774,7 @@ namespace System.IO.Ports
         // User-accessible async read method.  Returns SerialStreamAsyncResult : IAsyncResult
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            if (array.Length - offset < numBytes)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (_handle == null) InternalResources.FileNotOpen();
+            CheckReadWriteArguments(array, offset, numBytes);
 
             int oldtimeout = ReadTimeout;
             ReadTimeout = SerialPort.InfiniteTimeout;
@@ -849,6 +790,7 @@ namespace System.IO.Ports
             {
                 ReadTimeout = oldtimeout;
             }
+
             return result;
         }
 
@@ -857,17 +799,7 @@ namespace System.IO.Ports
         public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes,
             AsyncCallback userCallback, object stateObject)
         {
-            if (_inBreak)
-                throw new InvalidOperationException(SR.In_Break_State);
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            if (array.Length - offset < numBytes)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (_handle == null) InternalResources.FileNotOpen();
+            CheckWriteArguments(array, offset, numBytes);
 
             int oldtimeout = WriteTimeout;
             WriteTimeout = SerialPort.InfiniteTimeout;
@@ -883,6 +815,7 @@ namespace System.IO.Ports
             {
                 WriteTimeout = oldtimeout;
             }
+
             return result;
         }
 
@@ -891,14 +824,14 @@ namespace System.IO.Ports
         {
 
             if (Interop.Kernel32.PurgeComm(_handle, NativeMethods.PURGE_RXCLEAR | NativeMethods.PURGE_RXABORT) == false)
-                InternalResources.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         // Uses Win32 method to dump out the xmit buffer; analagous to MSComm's "OutBufferCount = 0"
         internal void DiscardOutBuffer()
         {
             if (Interop.Kernel32.PurgeComm(_handle, NativeMethods.PURGE_TXCLEAR | NativeMethods.PURGE_TXABORT) == false)
-                InternalResources.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         // Async companion to BeginRead.
@@ -929,21 +862,21 @@ namespace System.IO.Ports
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
-                // and we should close the WaitHandle in here.  
+                // and we should close the WaitHandle in here.
                 try
                 {
                     wh.WaitOne();
                     Debug.Assert(afsar._isComplete == true, "SerialStream::EndRead - AsyncFSCallback didn't set _isComplete to true!");
 
-                    // InfiniteTimeout is not something native to the underlying serial device, 
-                    // we specify the timeout to be a very large value (MAXWORD-1) to achieve 
-                    // an infinite timeout illusion. 
+                    // InfiniteTimeout is not something native to the underlying serial device,
+                    // we specify the timeout to be a very large value (MAXWORD-1) to achieve
+                    // an infinite timeout illusion.
 
-                    // I'm not sure what we can do here after an asyn operation with infinite 
-                    // timeout returns with no data. From a purist point of view we should 
+                    // I'm not sure what we can do here after an asyn operation with infinite
+                    // timeout returns with no data. From a purist point of view we should
                     // somehow restart the read operation but we are not in a position to do so
-                    // (and frankly that may not necessarily be the right thing to do here) 
-                    // I think the best option in this (almost impossible to run into) situation 
+                    // (and frankly that may not necessarily be the right thing to do here)
+                    // I think the best option in this (almost impossible to run into) situation
                     // is to throw some sort of IOException.
 
                     if ((afsar._numBytes == 0) && (ReadTimeout == SerialPort.InfiniteTimeout) && (afsar._errorCode == 0))
@@ -967,7 +900,7 @@ namespace System.IO.Ports
 
             // Check for non-timeout errors during the read.
             if (afsar._errorCode != 0)
-                InternalResources.WinIOError(afsar._errorCode, _portName);
+                throw Win32Marshal.GetExceptionForWin32Error(afsar._errorCode, _portName);
 
             if (failed)
                 throw new IOException(SR.IO_OperationAborted);
@@ -1007,7 +940,7 @@ namespace System.IO.Ports
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
-                // and we should close the WaitHandle in here.  
+                // and we should close the WaitHandle in here.
                 try
                 {
                     wh.WaitOne();
@@ -1031,7 +964,7 @@ namespace System.IO.Ports
 
             // Now check for any error during the write.
             if (afsar._errorCode != 0)
-                InternalResources.WinIOError(afsar._errorCode, _portName);
+                throw Win32Marshal.GetExceptionForWin32Error(afsar._errorCode, _portName);
 
             // Number of bytes written is afsar._numBytes.
         }
@@ -1055,20 +988,11 @@ namespace System.IO.Ports
 
         internal unsafe int Read(byte[] array, int offset, int count, int timeout)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+            CheckReadWriteArguments(array, offset, count);
+
             if (count == 0) return 0; // return immediately if no bytes requested; no need for overhead.
 
             Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, "Serial Stream Read - called with timeout " + timeout);
-
-            // Check to see we have no handle-related error, since the port's always supposed to be open.
-            if (_handle == null) InternalResources.FileNotOpen();
 
             int numBytes = 0;
             if (_isAsync)
@@ -1082,7 +1006,7 @@ namespace System.IO.Ports
                 numBytes = ReadFileNative(array, offset, count, null, out hr);
                 if (numBytes == -1)
                 {
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
 
@@ -1090,11 +1014,6 @@ namespace System.IO.Ports
                 throw new TimeoutException();
 
             return numBytes;
-        }
-
-        public override int ReadByte()
-        {
-            return ReadByte(ReadTimeout);
         }
 
         internal unsafe int ReadByte(int timeout)
@@ -1113,7 +1032,7 @@ namespace System.IO.Ports
                 numBytes = ReadFileNative(_tempBuf, 0, 1, null, out hr);
                 if (numBytes == -1)
                 {
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
 
@@ -1123,47 +1042,21 @@ namespace System.IO.Ports
                 return _tempBuf[0];
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException(SR.NotSupported_UnseekableStream);
-        }
-
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException(SR.NotSupported_UnseekableStream);
-        }
-
         internal void SetBufferSizes(int readBufferSize, int writeBufferSize)
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
             if (!Interop.Kernel32.SetupComm(_handle, readBufferSize, writeBufferSize))
-                InternalResources.WinIOError();
-        }
-
-        public override void Write(byte[] array, int offset, int count)
-        {
-            Write(array, offset, count, WriteTimeout);
+                throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         internal unsafe void Write(byte[] array, int offset, int count, int timeout)
         {
+            CheckWriteArguments(array, offset, count);
 
-            if (_inBreak)
-                throw new InvalidOperationException(SR.In_Break_State);
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedPosNum);
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedPosNum);
             if (count == 0) return; // no need to expend overhead in creating asyncResult, etc.
-            if (array.Length - offset < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, "Serial Stream Write - write timeout is " + timeout);
 
-            // check for open handle, though the port is always supposed to be open
-            if (_handle == null) InternalResources.FileNotOpen();
+            Debug.Assert(timeout == SerialPort.InfiniteTimeout || timeout >= 0, "Serial Stream Write - write timeout is " + timeout);
 
             int numBytes;
             if (_isAsync)
@@ -1181,12 +1074,11 @@ namespace System.IO.Ports
                 numBytes = WriteFileNative(array, offset, count, null, out hr);
                 if (numBytes == -1)
                 {
-
-                    // This is how writes timeout on Win9x. 
+                    // This is how writes timeout on Win9x.
                     if (hr == Interop.Errors.ERROR_COUNTER_TIMEOUT)
                         throw new TimeoutException(SR.Write_timed_out);
 
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
 
@@ -1225,11 +1117,11 @@ namespace System.IO.Ports
                 numBytes = WriteFileNative(_tempBuf, 0, 1, null, out hr);
                 if (numBytes == -1)
                 {
-                    // This is how writes timeout on Win9x. 
+                    // This is how writes timeout on Win9x.
                     if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_COUNTER_TIMEOUT)
                         throw new TimeoutException(SR.Write_timed_out);
 
-                    InternalResources.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
 
@@ -1250,7 +1142,7 @@ namespace System.IO.Ports
             // first get the current dcb structure setup
             if (Interop.Kernel32.GetCommState(_handle, ref _dcb) == false)
             {
-                InternalResources.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             }
             _dcb.DCBlength = (uint)sizeof(Interop.Kernel32.DCB);
 
@@ -1343,7 +1235,7 @@ namespace System.IO.Ports
             // set DCB structure
             if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
             {
-                InternalResources.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             }
         }
 
@@ -1445,7 +1337,7 @@ namespace System.IO.Ports
                     if (hr == Interop.Errors.ERROR_HANDLE_EOF)
                         InternalResources.EndOfFile();
                     else
-                        InternalResources.WinIOError(hr, string.Empty);
+                        throw Win32Marshal.GetExceptionForWin32Error(hr, string.Empty);
                 }
             }
 
@@ -1492,7 +1384,7 @@ namespace System.IO.Ports
                     if (hr == Interop.Errors.ERROR_HANDLE_EOF)
                         InternalResources.EndOfFile();
                     else
-                        InternalResources.WinIOError(hr, string.Empty);
+                        throw Win32Marshal.GetExceptionForWin32Error(hr, string.Empty);
                 }
             }
             return asyncResult;
@@ -1618,13 +1510,13 @@ namespace System.IO.Ports
             asyncResult._isComplete = true;
 
             // The OS does not signal this event.  We must do it ourselves.
-            // But don't close it if the user callback called EndXxx, 
+            // But don't close it if the user callback called EndXxx,
             // which then closed the manual reset event already.
             ManualResetEvent wh = asyncResult._waitHandle;
             if (wh != null)
             {
                 bool r = wh.Set();
-                if (!r) InternalResources.WinIOError();
+                if (!r) throw Win32Marshal.GetExceptionForLastWin32Error();
             }
 
             asyncResult._userCallback?.Invoke(asyncResult);
@@ -1648,7 +1540,7 @@ namespace System.IO.Ports
             WaitCallback callPinEvents;
             IOCompletionCallback freeNativeOverlappedCallback;
 
-#if DEBUG 
+#if DEBUG
             private readonly string portName;
 #endif
 
@@ -1663,7 +1555,7 @@ namespace System.IO.Ports
                 callPinEvents = new WaitCallback(CallPinEvents);
                 freeNativeOverlappedCallback = new IOCompletionCallback(FreeNativeOverlappedCallback);
                 isAsync = stream._isAsync;
-#if DEBUG 
+#if DEBUG
                 portName = stream._portName;
 #endif
             }
@@ -1693,10 +1585,10 @@ namespace System.IO.Ports
                         asyncResult._userStateObject = null;
                         asyncResult._isWrite = false;
 
-                        // we're going to use _numBytes for something different in this loop.  In this case, both 
+                        // we're going to use _numBytes for something different in this loop.  In this case, both
                         // freeNativeOverlappedCallback and this thread will decrement that value.  Whichever one decrements it
                         // to zero will be the one to free the native overlapped.  This guarantees the overlapped gets freed
-                        // after both the callback and GetOverlappedResult have had a chance to use it. 
+                        // after both the callback and GetOverlappedResult have had a chance to use it.
                         asyncResult._numBytes = 2;
                         asyncResult._waitHandle = waitCommEventWaitHandle;
 
@@ -1725,7 +1617,7 @@ namespace System.IO.Ports
                                 int error;
 
                                 // if we get IO pending, MSDN says we should wait on the WaitHandle, then call GetOverlappedResult
-                                // to get the results of WaitCommEvent. 
+                                // to get the results of WaitCommEvent.
                                 bool success = waitCommEventWaitHandle.WaitOne();
                                 Debug.Assert(success, "waitCommEventWaitHandle.WaitOne() returned error " + Marshal.GetLastWin32Error());
 
@@ -1740,7 +1632,7 @@ namespace System.IO.Ports
                                 if (!success)
                                 {
                                     // Ignore ERROR_IO_INCOMPLETE and ERROR_INVALID_PARAMETER, because there's a chance we'll get
-                                    // one of those while shutting down 
+                                    // one of those while shutting down
                                     if (!((error == Interop.Errors.ERROR_IO_INCOMPLETE || error == Interop.Errors.ERROR_INVALID_PARAMETER) && ShutdownLoop))
                                         Debug.Assert(false, "GetOverlappedResult returned error, we might leak intOverlapped memory" + error.ToString(CultureInfo.InvariantCulture));
                                 }
@@ -1775,7 +1667,7 @@ namespace System.IO.Ports
             private unsafe void FreeNativeOverlappedCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 // Extract the async result from overlapped structure
-                SerialStreamAsyncResult asyncResult = 
+                SerialStreamAsyncResult asyncResult =
                     (SerialStreamAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
 
                 if (Interlocked.Decrement(ref asyncResult._numBytes) == 0)
@@ -1785,7 +1677,7 @@ namespace System.IO.Ports
             private void CallEvents(int nativeEvents)
             {
                 // EV_ERR includes only CE_FRAME, CE_OVERRUN, and CE_RXPARITY
-                // To catch errors such as CE_RXOVER, we need to call CleanCommErrors bit more regularly. 
+                // To catch errors such as CE_RXOVER, we need to call CleanCommErrors bit more regularly.
                 // EV_RXCHAR is perhaps too loose an event to look for overflow errors but a safe side to err...
                 if ((nativeEvents & (NativeMethods.EV_ERR | NativeMethods.EV_RXCHAR)) != 0)
                 {
@@ -1793,17 +1685,17 @@ namespace System.IO.Ports
                     if (Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero) == false)
                     {
 
-                        //InternalResources.WinIOError();
+                        //throw Win32Marshal.GetExceptionForLastWin32Error();
 
                         // We don't want to throw an exception from the background thread which is un-catchable and hence tear down the process.
-                        // At present we don't have a first class event that we can raise for this class of fatal errors. One possibility is 
-                        // to overload SeralErrors event to include another enum (perhaps CE_IOE) that we can use for this purpose. 
-                        // In the absence of that, it is better to eat this error silently than tearing down the process (lesser of the evil). 
-                        // This uncleared comm error will most likely blow up when the device is accessed by other APIs (such as Read) on the 
-                        // main thread and hence become known. It is bit roundabout but acceptable.  
-                        //  
-                        // Shutdown the event runner loop (probably bit drastic but we did come across a fatal error). 
-                        // Defer actual dispose chores until finalization though. 
+                        // At present we don't have a first class event that we can raise for this class of fatal errors. One possibility is
+                        // to overload SeralErrors event to include another enum (perhaps CE_IOE) that we can use for this purpose.
+                        // In the absence of that, it is better to eat this error silently than tearing down the process (lesser of the evil).
+                        // This uncleared comm error will most likely blow up when the device is accessed by other APIs (such as Read) on the
+                        // main thread and hence become known. It is bit roundabout but acceptable.
+                        //
+                        // Shutdown the event runner loop (probably bit drastic but we did come across a fatal error).
+                        // Defer actual dispose chores until finalization though.
                         endEventLoop = true;
                         Thread.MemoryBarrier();
                         return;
@@ -1831,7 +1723,6 @@ namespace System.IO.Ports
                     ThreadPool.QueueUserWorkItem(callReceiveEvents, nativeEvents);
                 }
             }
-
 
             private void CallErrorEvents(object state)
             {
@@ -1946,13 +1837,13 @@ namespace System.IO.Ports
                 get
                 {
                     /*
-                      // Consider uncommenting this someday soon - the EventHandle 
-                      // in the Overlapped struct is really useless half of the 
+                      // Consider uncommenting this someday soon - the EventHandle
+                      // in the Overlapped struct is really useless half of the
                       // time today since the OS doesn't signal it.  If users call
                       // EndXxx after the OS call happened to complete, there's no
                       // reason to create a synchronization primitive here.  Fixing
                       // this will save us some perf, assuming we can correctly
-                      // initialize the ManualResetEvent. 
+                      // initialize the ManualResetEvent.
                     if (_waitHandle == null) {
                         ManualResetEvent mre = new ManualResetEvent(false);
                         if (_overlapped != null && _overlapped->EventHandle != IntPtr.Zero)

@@ -348,7 +348,7 @@ namespace System.IO.Ports.Tests
             {
                 byte shiftMask = 0xFF;
 
-                //Create a mask that when logicaly and'd with the transmitted byte will 
+                //Create a mask that when logicaly and'd with the transmitted byte will
                 //will result in the byte recievied due to the leading bits being chopped
                 //off due to Parity less then 8
                 if (8 > dataBits)
@@ -394,7 +394,7 @@ namespace System.IO.Ports.Tests
                 com1.StopBits = StopBits.One;
                 com2.StopBits = StopBits.One;
 
-                //Create a mask that when logicaly and'd with the transmitted byte will 
+                //Create a mask that when logicaly and'd with the transmitted byte will
                 //will result in the byte recievied due to the leading bits being chopped
                 //off due to Parity less then 8
                 shiftMask >>= 8 - dataBits;
@@ -436,7 +436,7 @@ namespace System.IO.Ports.Tests
                     xmitBytes[i] = (byte)rndGen.Next(0, 256);
                     isParityError = !VerifyParityByte(xmitBytes[i], com1.DataBits, (Parity)parity);
                   }while(parityErrorOnLastByte && isParityError); //Prevent adacent parity errors see VSWhidbey 103979
-    
+
                   expectedBytes[i] =  isParityError ? com2.ParityReplace :(byte)(xmitBytes[i] & shiftMask);
                   parityErrorOnLastByte = isParityError;
                 }
@@ -487,7 +487,7 @@ namespace System.IO.Ports.Tests
             int length = xmitBytes.Length;
             int rcvLength;
 
-            // TODO: Consider removing all of the code to check the time it takes to transfer the bytes. 
+            // TODO: Consider removing all of the code to check the time it takes to transfer the bytes.
             // This was likely just a copy and paste from another test case
             actualTime = 0;
             Thread.CurrentThread.Priority = ThreadPriority.Highest;
@@ -506,7 +506,7 @@ namespace System.IO.Ports.Tests
 
                 sw.Stop();
                 actualTime += sw.ElapsedMilliseconds;
-                beginWriteResult.AsyncWaitHandle.WaitOne();
+                com1.BaseStream.EndWrite(beginWriteResult);
                 sw.Reset();
             }
 
@@ -537,7 +537,7 @@ namespace System.IO.Ports.Tests
                 {
                     if (actualIndex != rcvBytes.Length - 1 && expectedBytes[expectedIndex] == rcvBytes[actualIndex + 1])
                     {
-                        //Sometimes if there is a parity error an extra byte gets added to the input stream so 
+                        //Sometimes if there is a parity error an extra byte gets added to the input stream so
                         //look ahead at the next byte
                         actualIndex++;
                     }

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class PinChangedEvent : PortsTest
     {
         // Maximum time to wait for all of the expected events to be fired
@@ -180,4 +181,3 @@ namespace System.IO.Ports.Tests
         #endregion
     }
 }
-

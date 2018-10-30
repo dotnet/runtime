@@ -36,7 +36,7 @@ namespace System.IO.Ports.Tests
         private const int numRndBytesToRead = 16;
 
         // When we test Read and do not care about actually reading anything we must still
-        // create an byte array to pass into the method the following is the size of the 
+        // create an byte array to pass into the method the following is the size of the
         // byte array used in this situation
         private const int defaultByteArraySize = 1;
 
@@ -75,16 +75,32 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
         [ConditionalFact(nameof(HasNullModem))]
-        public void Timeout()
+        public void TimeoutIsIgnoredForBeginRead()
         {
-            var rndGen = new Random(-55);
-            int readTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
+            using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+            using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
+            {
+                com1.Open();
+                com2.Open();
+                com1.ReadTimeout = 100;
 
-            Debug.WriteLine("Verifying ReadTimeout={0}", readTimeout);
+                var mre = new ManualResetEvent(false);
+                IAsyncResult ar = com1.BaseStream.BeginRead(
+                    new byte[8], 0, 8,
+                    (r) => {
+                        mre.Set();
+                    },
+                    null);
 
-            VerifyTimeout(readTimeout);
+                Thread.Sleep(200);
+                Assert.False(ar.IsCompleted, "Expected read to not have timed out");
+
+                com2.Write(new byte[8], 0, 8);
+                com1.BaseStream.EndRead(ar);
+
+                Assert.True(mre.WaitOne(200));
+            }
         }
 
         private void WriteToCom1()
@@ -106,7 +122,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void DefaultParityReplaceByte()
         {
@@ -132,7 +148,7 @@ namespace System.IO.Ports.Tests
             VerifyParityReplaceByte(rndGen.Next(0, 128), 0, new UTF8Encoding());
         }
 
-
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ParityErrorOnLastByte()
         {
@@ -172,9 +188,7 @@ namespace System.IO.Ports.Tests
                 com2.Open();
 
                 readAsyncResult = com2.BaseStream.BeginWrite(bytesToWrite, 0, bytesToWrite.Length, null, null);
-                readAsyncResult.AsyncWaitHandle.WaitOne();
-
-                TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length + 1);
+                com2.BaseStream.EndWrite(readAsyncResult);
 
                 com1.Read(actualBytes, 0, actualBytes.Length);
 
@@ -230,63 +244,6 @@ namespace System.IO.Ports.Tests
         #endregion
 
         #region Verification for Test Cases
-        private void VerifyTimeout(int readTimeout)
-        {
-            using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-            using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
-            {
-                IAsyncResult readAsyncResult;
-
-                var asyncRead = new AsyncRead(com1);
-                var asyncEndRead = new Task(asyncRead.EndRead);
-                var asyncCallbackCalled = false;
-
-                com1.Open();
-                com2.Open();
-                com1.ReadTimeout = readTimeout;
-
-                readAsyncResult = com1.BaseStream.BeginRead(new byte[8], 0, 8,
-                    delegate (IAsyncResult ar) { asyncCallbackCalled = true; }, null);
-                asyncRead.ReadAsyncResult = readAsyncResult;
-
-                Thread.Sleep(100 > com1.ReadTimeout ? 2 * com1.ReadTimeout : 200);
-                // Sleep for 200ms or 2 times the ReadTimeout
-
-                if (readAsyncResult.IsCompleted)
-                {
-                    // Verify the IAsyncResult has not completed
-                    Fail("Err_565088aueiud!!!: Expected read to not have completed");
-                }
-
-                asyncEndRead.Start();
-                TCSupport.WaitForTaskToStart(asyncEndRead);
-                Thread.Sleep(100 < com1.ReadTimeout ? 2 * com1.ReadTimeout : 200);
-                // Sleep for 200ms or 2 times the ReadTimeout
-
-                if (!asyncEndRead.IsCompleted)
-                {
-                    // Verify EndRead is blocking and is still alive
-                    Fail("Err_4085858aiehe!!!: Expected read to not have completed");
-                }
-
-                if (asyncCallbackCalled)
-                {
-                    Fail("Err_750551aiuehd!!!: Expected AsyncCallback not to be called");
-                }
-
-                com2.Write(new byte[8], 0, 8);
-
-                TCSupport.WaitForTaskCompletion(asyncEndRead);
-                var waitTime = 0;
-                while (!asyncCallbackCalled && waitTime < 5000)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
-                Assert.True(asyncCallbackCalled, "Err_21208aheide!!!: Expected AsyncCallback to be called after some data was written to the port");
-            }
-        }
 
         private void VerifyReadException(Stream serialStream, Type expectedException)
         {
@@ -358,7 +315,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
         public void VerifyBytesToRead(int numBytesRead)
         {
             VerifyBytesToRead(numBytesRead, new ASCIIEncoding());
@@ -373,7 +329,7 @@ namespace System.IO.Ports.Tests
                 var rndGen = new Random(-55);
                 var bytesToWrite = new byte[numRndBytesToRead];
 
-                // Generate random characters 
+                // Generate random characters
                 for (var i = 0; i < bytesToWrite.Length; i++)
                 {
                     var randByte = (byte)rndGen.Next(0, 256);
@@ -443,39 +399,6 @@ namespace System.IO.Ports.Tests
                 {
                     Fail("ERROR!!!: Expected to read {0}  actual read  {1}", expectedBytes[i], buffer[i]);
                 }
-            }
-        }
-
-        private class AsyncRead
-        {
-            private readonly SerialPort _com;
-            private IAsyncResult _readAsyncResult;
-
-            public AsyncRead(SerialPort com)
-            {
-                _com = com;
-            }
-
-            public void BeginRead()
-            {
-                _readAsyncResult = _com.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
-            }
-
-            public IAsyncResult ReadAsyncResult
-            {
-                get
-                {
-                    return _readAsyncResult;
-                }
-                set
-                {
-                    _readAsyncResult = value;
-                }
-            }
-
-            public void EndRead()
-            {
-                _com.BaseStream.EndRead(_readAsyncResult);
             }
         }
         #endregion

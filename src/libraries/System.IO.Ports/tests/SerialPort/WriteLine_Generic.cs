@@ -31,10 +31,10 @@ namespace System.IO.Ports.Tests
         //then the contents of the string itself
         private const string DEFAULT_STRING = "DEFAULT_STRING";
 
-        //The string size used when veryifying BytesToWrite 
+        //The string size used when veryifying BytesToWrite
         private static readonly int s_STRING_SIZE_BYTES_TO_WRITE = TCSupport.MinimumBlockingByteCount;
 
-        //The string size used when veryifying Handshake 
+        //The string size used when veryifying Handshake
         private static readonly int s_STRING_SIZE_HANDSHAKE = TCSupport.MinimumBlockingByteCount;
         private const int NUM_TRYS = 5;
 
@@ -78,6 +78,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void SimpleTimeout()
         {
@@ -148,7 +149,7 @@ namespace System.IO.Ports.Tests
                 Debug.WriteLine("Case SuccessiveReadTimeoutWithWriteSucceeding : Verifying WriteTimeout={0} with successive call to write method with the write succeeding sometime before its timeout", com1.WriteTimeout);
                 com1.Open();
 
-                //Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+                //Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed
                 //before the timeout is reached
                 t.Start();
                 TCSupport.WaitForTaskToStart(t);
@@ -256,6 +257,7 @@ namespace System.IO.Ports.Tests
             Verify_Handshake(Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_XOnXOff()
         {

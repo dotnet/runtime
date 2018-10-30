@@ -11,12 +11,13 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class DiscardNull_Property : PortsTest
     {
         //The default number of bytes to read/write to verify the DiscardNull
         private const int DEFAULT_NUM_CHARS_TO_WRITE = 8;
 
-        //The default number of null characters to be inserted into the characters written  
+        //The default number of null characters to be inserted into the characters written
         private const int DEFUALT_NUM_NULL_CHAR = 1;
 
         //The default number of chars to write with when testing timeout with Read(char[], int, int)
@@ -322,7 +323,7 @@ namespace System.IO.Ports.Tests
                     xmitChars[i] = (char)rndGen.Next(60, 80);
                 }
 
-                //Inject the null char randomly 
+                //Inject the null char randomly
                 for (int i = 0; i < DEFUALT_NUM_NULL_CHAR; i++)
                 {
                     int nullIndex = rndGen.Next(0, xmitChars.Length);

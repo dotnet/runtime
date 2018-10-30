@@ -52,6 +52,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void InBufferFilled_Flush_Once()
         {
@@ -74,6 +75,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void InBufferFilled_Flush_Multiple()
         {
@@ -98,6 +100,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void InBufferFilled_Flush_Cycle()
         {

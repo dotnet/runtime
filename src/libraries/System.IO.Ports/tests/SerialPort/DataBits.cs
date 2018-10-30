@@ -14,7 +14,7 @@ namespace System.IO.Ports.Tests
     {
         //The default number of bytes to read/write to verify the speed of the port
         //and that the bytes were transfered successfully
-        private const int DEFAULT_BYTE_SIZE = 256;
+        private const int DEFAULT_BYTE_SIZE = 512;
 
         //If the percentage difference between the expected time to transfer with the specified dataBits
         //and the actual time found through Stopwatch is greater then 5% then the DataBits value was not correctly
@@ -270,7 +270,7 @@ namespace System.IO.Ports.Tests
                 int numBytes = 0;
                 byte shiftMask = 0xFF;
 
-                //Create a mask that when logicaly and'd with the transmitted byte will 
+                //Create a mask that when logicaly and'd with the transmitted byte will
                 //will result in the byte recievied due to the leading bits being chopped
                 //off due to DataBits less then 8
                 shiftMask >>= 8 - com1.DataBits;
@@ -303,13 +303,13 @@ namespace System.IO.Ports.Tests
                     sw.Start();
                     while (numBytesToSend > com2.BytesToRead)
                     {
-                        //Wait for all of the bytes to reach the input buffer of com2   
+                        //Wait for all of the bytes to reach the input buffer of com2
                     }
 
                     sw.Stop();
                     actualTime += sw.ElapsedMilliseconds;
                     actualTime += ((bytesToRead * (2.0 + com1.DataBits)) / com1.BaudRate) * 1000;
-                    beginWriteResult.AsyncWaitHandle.WaitOne();
+                    com1.BaseStream.EndWrite(beginWriteResult);
                     sw.Reset();
                 }
 

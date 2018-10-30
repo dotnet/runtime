@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // Notes on test capabilities:
-// 
+//
 // A single port just means there's at least one port, which can be opened by the test application
 // A loopback port is a port where the DATA is looped back, but the HANDSHAKE is not.   Several tests
 // rely on enabling RTS/CTS handshake to block transmissions from the port, but if RTS/CTS is looped-back
@@ -98,13 +98,13 @@ namespace Legacy.Support
 
         /// <summary>
         /// Not all types of serial ports block transmission completely when they're trying to transmit
-        /// with flow-control set against them.  Some ports transmit a certain amount of data onward to 
-        /// the hardware before stopping, so if you want them to block, you need to send more than 
+        /// with flow-control set against them.  Some ports transmit a certain amount of data onward to
+        /// the hardware before stopping, so if you want them to block, you need to send more than
         /// this minimum of data
-        /// 
-        /// This routine performs a series of probes of the behaviour of a port, to establish how much 
+        ///
+        /// This routine performs a series of probes of the behaviour of a port, to establish how much
         /// data is needed - the length of the probe packet is doubled on each probe up to a maximum of 8192 bytes
-        /// 
+        ///
         /// A traditional 16550 UART port will block on the first byte.  Some FTDI USB-Serial devices need more than 4096 bytes before
         /// they block
         /// </summary>
@@ -129,7 +129,7 @@ namespace Legacy.Support
         }
 
         /// <summary>
-        /// Measure the amount of data which can be written to a blocked serial port before it 
+        /// Measure the amount of data which can be written to a blocked serial port before it
         /// starts to queue-up
         /// </summary>
         private static int MeasureTransmitBufferSize(string portName, int probeLength)
@@ -169,6 +169,9 @@ namespace Legacy.Support
                 try
                 {
                     com.Write(testBlock, 0, testBlock.Length);
+                }
+                catch (TimeoutException)
+                {
                 }
                 catch (IOException)
                 {

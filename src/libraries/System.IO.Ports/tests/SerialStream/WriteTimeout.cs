@@ -21,7 +21,7 @@ namespace System.IO.Ports.Tests
         // This needs to be large enough for Write timeout
         private const int DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE = 1024 * 100;
 
-        // The BaudRate to use to make Write timeout when writing DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE bytes 
+        // The BaudRate to use to make Write timeout when writing DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE bytes
         private const int LARGEWRITE_BAUDRATE = 1200;
 
         // The timeout to use to make Write timeout when writing DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE
@@ -50,8 +50,6 @@ namespace System.IO.Ports.Tests
         private const int NUM_TRYS = 5;
 
         private delegate void WriteMethodDelegate(Stream stream);
-
-        #region Test Cases
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void WriteTimeout_DefaultValue()
@@ -94,6 +92,7 @@ namespace System.IO.Ports.Tests
             VerifyException(-2, typeof(ArgumentOutOfRangeException));
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void WriteTimeout_ZERO()
         {
@@ -204,7 +203,7 @@ namespace System.IO.Ports.Tests
                     "Verifying WriteTimeout={0} with successive call to Write(byte[], int, int) and some data being received in the first call",
                     stream.WriteTimeout);
 
-                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed
                 // before the timeout is reached
                 t.Start();
                 TCSupport.WaitForTaskToStart(t);
@@ -264,7 +263,7 @@ namespace System.IO.Ports.Tests
                     "Verifying WriteTimeout={0} with successive call to WriteByte() and some data being received in the first call",
                     stream.WriteTimeout);
 
-                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+                // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed
                 // before the timeout is reached
                 t.Start();
                 TCSupport.WaitForTaskToStart(t);
@@ -353,9 +352,6 @@ namespace System.IO.Ports.Tests
                 }
             }
         }
-        #endregion
-
-        #region Verification for Test Cases
 
         private void VerifyDefaultTimeout(WriteMethodDelegate writeMethod)
         {
@@ -381,10 +377,8 @@ namespace System.IO.Ports.Tests
                 com1.Open();
                 com1.Handshake = Handshake.RequestToSend;
                 com1.BaseStream.ReadTimeout = 1;
-                com1.BaseStream.WriteTimeout = 1;
 
                 com1.BaseStream.WriteTimeout = writeTimeout;
-
                 Assert.Equal(writeTimeout, com1.BaseStream.WriteTimeout);
 
                 VerifyLongTimeout(writeMethod, com1);
@@ -393,8 +387,7 @@ namespace System.IO.Ports.Tests
 
         private void VerifyLongTimeout(WriteMethodDelegate writeMethod, SerialPort com1)
         {
-            var writeThread = new WriteDelegateThread(com1.BaseStream, writeMethod);
-            var t = new Task(writeThread.CallWrite);
+            var t = new Task(() => { writeMethod(com1.BaseStream); });
 
             t.Start();
             Thread.Sleep(DEFAULT_WAIT_LONG_TIMEOUT);
@@ -586,24 +579,5 @@ namespace System.IO.Ports.Tests
         {
             stream.WriteByte(DEFAULT_WRITE_BYTE);
         }
-
-        private class WriteDelegateThread
-        {
-            public WriteDelegateThread(Stream stream, WriteMethodDelegate writeMethod)
-            {
-                _stream = stream;
-                _writeMethod = writeMethod;
-            }
-
-            public void CallWrite()
-            {
-                _writeMethod(_stream);
-            }
-
-            private readonly WriteMethodDelegate _writeMethod;
-            private readonly Stream _stream;
-        }
-
-        #endregion
     }
 }

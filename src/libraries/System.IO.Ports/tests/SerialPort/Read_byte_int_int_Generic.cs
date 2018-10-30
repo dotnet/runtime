@@ -38,7 +38,7 @@ namespace System.IO.Ports.Tests
         private const int numRndBytesToRead = 16;
 
         //When we test Read and do not care about actually reading anything we must still
-        //create an byte array to pass into the method the following is the size of the 
+        //create an byte array to pass into the method the following is the size of the
         //byte array used in this situation
         private const int defaultByteArraySize = 1;
         private const int NUM_TRYS = 5;
@@ -133,7 +133,7 @@ namespace System.IO.Ports.Tests
                 Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and some data being received in the first call", com1.ReadTimeout);
                 com1.Open();
 
-                //Call WriteToCom1 asynchronously this will write to com1 some time before the following call 
+                //Call WriteToCom1 asynchronously this will write to com1 some time before the following call
                 //to a read method times out
                 t.Start();
 
@@ -172,12 +172,14 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void DefaultParityReplaceByte()
         {
             VerifyParityReplaceByte(-1, numRndBytesPairty - 2);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void NoParityReplaceByte()
         {
@@ -186,6 +188,7 @@ namespace System.IO.Ports.Tests
         }
 
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void RNDParityReplaceByte()
         {
@@ -194,6 +197,7 @@ namespace System.IO.Ports.Tests
             VerifyParityReplaceByte(rndGen.Next(0, 128), 0, new UTF8Encoding());
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ParityErrorOnLastByte()
         {
@@ -391,7 +395,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
                 byte[] bytesToWrite = new byte[numRndBytesToRead];
 
-                // Generate random characters 
+                // Generate random characters
                 for (int i = 0; i < bytesToWrite.Length; i++)
                 {
                     bytesToWrite[i] = (byte)rndGen.Next(0, 256);
