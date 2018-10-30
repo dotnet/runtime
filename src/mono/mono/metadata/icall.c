@@ -5884,11 +5884,7 @@ ves_icall_Mono_Runtime_DumpStateTotal (guint64 *portable_hash, guint64 *unportab
 
 	mono_get_runtime_callbacks ()->install_state_summarizer ();
 
-	// if this works
-	// - give back loader lock during stop
-	mono_thread_info_set_is_async_context (TRUE);
 	gboolean success = mono_threads_summarize (ctx, &out, &hashes, TRUE, FALSE, scratch, MONO_MAX_SUMMARY_LEN_ICALL);
-	mono_thread_info_set_is_async_context (FALSE);
 
 	if (!success)
 		return mono_string_new_handle (mono_domain_get (), "", error);

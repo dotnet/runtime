@@ -6355,7 +6355,14 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gb
 		gint64 next_request_id = mono_atomic_load_i64 ((volatile gint64 *) &request_available_to_run);
 
 		if (next_request_id == this_request_id) {
+			gboolean already_async = mono_thread_info_is_async_context ();
+			if (!already_async)
+				mono_thread_info_set_is_async_context (TRUE);
+
 			success = mono_threads_summarize_execute (ctx, out, hashes, silent, mem, provided_size);
+
+			if (!already_async)
+				mono_thread_info_set_is_async_context (FALSE);
 
 			// Only the thread that gets the ticket can unblock future dumpers.
 			mono_atomic_inc_i64 ((volatile gint64 *) &request_available_to_run);
