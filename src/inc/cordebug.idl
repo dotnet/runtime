@@ -3298,21 +3298,6 @@ interface ICorDebugProcess8 : IUnknown
 interface ICorDebugProcess10 : IUnknown
 {
     //
-    // Given a value inside an object (for example, a field on an object), 
-    // returns the containing object. 
-    // 
-    // Parameters
-    //   pValue - the value in the interior of an object.
-    //   ppContainingObject - [out] An ICorDebugObjectValue that represents the containing object.
-    //   
-    // Returns
-    //   S_OK - on success
-    //   S_FALSE   - if the given value is not inside an object
-    //   E_POINTER - ppContainingObject is NULL
-    // 
-    HRESULT GetContainingObject([in] ICorDebugValue* pValue, [out] ICorDebugObjectValue** ppContainingObject);
-
-    //
     // Enable or disable the GC notification events. The GC notification events are turned off by default
     // They will be delivered through ICorDebugManagedCallback4
     // 
@@ -6250,6 +6235,28 @@ interface ICorDebugValue3 : IUnknown
 
     HRESULT GetSize64([out] ULONG64 *pSize);
 
+};
+
+[
+    object,
+    local,
+    uuid(C54C6A4A-ADC4-4969-AEF4-BDC548720018),
+    pointer_default(unique)
+]
+interface ICorDebugValue4 : IUnknown
+{
+    //
+    // Given a value, returns the containing object. 
+    // 
+    // Parameters
+    //   ppContainingObject - [out] An ICorDebugObjectValue that represents the containing object.
+    //   
+    // Returns
+    //   S_OK - on success
+    //   S_FALSE   - if the value is not inside an object
+    //   E_POINTER - ppContainingObject is NULL
+    // 
+    HRESULT GetContainingObject([out] ICorDebugObjectValue** ppContainingObject);
 };
 
 /*
