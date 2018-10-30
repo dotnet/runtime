@@ -34,8 +34,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Agent.BuildDirectory)/s/sync.sh",
-        "arguments": " -- /p:BuildType=$(PB_BuildType)",
+        "filename": "bash ",
+        "arguments": "-c \"export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar && $(Agent.BuildDirectory)/s/sync.sh -- /p:BuildType=$(PB_BuildType)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -220,10 +220,6 @@
     }
   ],
   "variables": {
-    "DotNetBootstrapCliTarPath": {
-      "value": "/dotnet-sdk-freebsd-x64.tar",
-      "allowOverride": true
-    },    
     "system.debug": {
       "value": "false",
       "allowOverride": true
