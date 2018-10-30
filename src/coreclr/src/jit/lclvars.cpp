@@ -1590,7 +1590,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 {
     if (!compiler->eeIsValueClass(typeHnd))
     {
-        // TODO: Enable promotion of fields of stack-allocated objects.
+        // TODO-ObjectStackAllocation: Enable promotion of fields of stack-allocated objects.
         return false;
     }
 
