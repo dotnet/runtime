@@ -4,7 +4,7 @@ Building CoreFX on Windows
 ## Required Software
 
 1. **[Visual Studio 2017](https://www.visualstudio.com/downloads/)** (Community, Professional, Enterprise) with the latest update must be installed. The Community version is completely free.
-2. **[.NET Core SDK](https://www.microsoft.com/net/download/windows)** >= v2.1.401 must be installed which will add the `dotnet` to your path.
+2. **[.NET Core SDK](https://www.microsoft.com/net/download/windows)** >= v2.1.401 must be installed which will add the `dotnet` toolchain to your path.
 3. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path.
 
 ### Visual Studio 2017
@@ -14,7 +14,7 @@ Building CoreFX on Windows
 The following are the minimum requirements:
   * .NET desktop development
     * All Required Components
-    * .NET Framework 4-4.6 Development Tools
+    * .NET Framework 4.7.2 Development Tools
   * Desktop development with C++
     * All Required Components
     * VC++ 2017 v141 Toolset (x86, x64)
@@ -35,7 +35,7 @@ The following are the minimum requirements:
   * Visual Studio C++ Core Features
   * VC++ 2017 v141 Toolset (x86, x64)
   * MSBuild
-  * .NET Framework 4.6 Targeting Pack
+  * .NET Framework 4.7.2 Targeting Pack
   * Windows Universal CRT SDK
   * VC++ 2015.3 v140 Toolset (x86, x64)
 
