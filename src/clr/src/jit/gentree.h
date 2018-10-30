@@ -2937,9 +2937,17 @@ struct GenTreeField : public GenTree
     CORINFO_CONST_LOOKUP gtFieldLookup;
 #endif
 
-    GenTreeField(var_types type) : GenTree(GT_FIELD, type)
+    GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
+        : GenTree(GT_FIELD, type), gtFldObj(obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
-        gtFldMayOverlap = false;
+        if (obj != nullptr)
+        {
+            gtFlags |= (obj->gtFlags & GTF_ALL_EFFECT);
+        }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+        gtFieldLookup.addr = nullptr;
+#endif
     }
 #if DEBUGGABLE_GENTREE
     GenTreeField() : GenTree()
@@ -4323,6 +4331,7 @@ struct GenTreeBoundsChk : public GenTree
         : GenTree(oper, type), gtIndex(index), gtArrLen(arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
     {
         // Effects flags propagate upwards.
+        gtFlags |= (index->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= (arrLen->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= GTF_EXCEPT;
     }
@@ -4369,6 +4378,7 @@ struct GenTreeArrElem : public GenTree
         var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
         : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
     {
+        gtFlags |= (arr->gtFlags & GTF_ALL_EFFECT);
         for (unsigned char i = 0; i < rank; i++)
         {
             gtArrInds[i] = inds[i];

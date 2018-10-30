@@ -6768,6 +6768,9 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 
                 copy = gtNewFieldRef(tree->TypeGet(), tree->gtField.gtFldHnd, objp, tree->gtField.gtFldOffset);
                 copy->gtField.gtFldMayOverlap = tree->gtField.gtFldMayOverlap;
+#ifdef FEATURE_READYTORUN_COMPILER
+                copy->gtField.gtFieldLookup = tree->gtField.gtFieldLookup;
+#endif
             }
             else if (tree->OperIs(GT_ADD, GT_SUB))
             {
