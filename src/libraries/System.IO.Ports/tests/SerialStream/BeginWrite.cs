@@ -17,7 +17,7 @@ namespace System.IO.Ports.Tests
         private const int LARGE_BUFFER_SIZE = 2048;
 
         // When we test Write and do not care about actually writing anything we must still
-        // create an byte array to pass into the method the following is the size of the 
+        // create an byte array to pass into the method the following is the size of the
         // byte array used in this situation
         private const int DEFAULT_BUFFER_SIZE = 1;
         private const int DEFAULT_BUFFER_OFFSET = 0;
@@ -230,20 +230,30 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying BeginWrite with a callback specified");
 
+                com1.Handshake = Handshake.RequestToSend;
+                com2.ReadTimeout = 300;
                 com1.Open();
                 com2.Open();
+
+                // RTS allows us to control when driver sends the data but does not
+                // guarantee that data will not be consumed by driver
+                // we can check if data was received on the other side though
+                Action read = () => {
+                    com2.BaseStream.Read(new byte[DEFAULT_NUM_BYTES_TO_WRITE], 0, DEFAULT_NUM_BYTES_TO_WRITE);
+                };
 
                 IAsyncResult writeAsyncResult = com1.BaseStream.BeginWrite(new byte[DEFAULT_NUM_BYTES_TO_WRITE], 0,
                     DEFAULT_NUM_BYTES_TO_WRITE, callbackHandler.Callback, this);
                 callbackHandler.BeginWriteAysncResult = writeAsyncResult;
 
                 Assert.Equal(this, writeAsyncResult.AsyncState);
-                Assert.False(writeAsyncResult.CompletedSynchronously, "Should not have completed sync");
-                Assert.False(writeAsyncResult.IsCompleted, "Should not have completed yet");
 
+                Thread.Sleep(100);
+                Assert.Throws<TimeoutException>(read);
                 com2.RtsEnable = true;
+                read();
 
-                // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that 
+                // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that
                 // the code calling the callback has finished it's processing
                 IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
 
@@ -273,20 +283,21 @@ namespace System.IO.Ports.Tests
                 CallbackHandler callbackHandler = new CallbackHandler();
 
                 Debug.WriteLine("Verifying BeginWrite with a callback and state specified");
-                com1.Handshake = Handshake.RequestToSend;
                 com1.Open();
                 com2.Open();
+
+                Action read = () => {
+                    com2.BaseStream.Read(new byte[DEFAULT_NUM_BYTES_TO_WRITE], 0, DEFAULT_NUM_BYTES_TO_WRITE);
+                };
 
                 IAsyncResult writeAsyncResult = com1.BaseStream.BeginWrite(new byte[DEFAULT_NUM_BYTES_TO_WRITE], 0, DEFAULT_NUM_BYTES_TO_WRITE, callbackHandler.Callback, this);
                 callbackHandler.BeginWriteAysncResult = writeAsyncResult;
 
-                Assert.Equal(this, writeAsyncResult.AsyncState);
-                Assert.False(writeAsyncResult.CompletedSynchronously, "Should not have completed sync");
-                Assert.False(writeAsyncResult.IsCompleted, "Should not have completed yet");
-
+                Assert.Throws<TimeoutException>(read);
                 com2.RtsEnable = true;
+                read();
 
-                // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that 
+                // callbackHandler.WriteAysncResult guarantees that the callback has been called however it does not gauarentee that
                 // the code calling the callback has finished it's processing
                 IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
 
@@ -394,10 +405,8 @@ namespace System.IO.Ports.Tests
             for (int i = 0; i < numWrites; i++)
             {
                 IAsyncResult writeAsyncResult = com1.BaseStream.BeginWrite(buffer, offset, count, callbackHandler.Callback, this);
-                writeAsyncResult.AsyncWaitHandle.WaitOne();
-                callbackHandler.BeginWriteAysncResult = writeAsyncResult;
-
                 com1.BaseStream.EndWrite(writeAsyncResult);
+                callbackHandler.BeginWriteAysncResult = writeAsyncResult;
 
                 IAsyncResult callbackWriteAsyncResult = callbackHandler.WriteAysncResult;
                 Assert.Equal(this, callbackWriteAsyncResult.AsyncState);

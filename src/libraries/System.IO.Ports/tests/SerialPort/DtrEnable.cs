@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [KnownFailure]
     public class DtrEnable_Property : PortsTest
     {
         #region Test Cases

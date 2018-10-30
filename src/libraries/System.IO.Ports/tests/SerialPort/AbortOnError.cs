@@ -15,23 +15,24 @@ namespace System.IO.Ports.Tests
     {
         /// <summary>
         /// This is a test for GH issue 17396, Connect issue 584116
-        /// 
+        ///
         /// The situation is as follows:
         /// * Some user of the port causes DCB.fAbortOnError to be set at some point
         /// * The port is later opened by SerialPort - which doesn't clear fAbortOnError
         ///   when it's initialising the port
         /// * Subsequent errors on the port are mishandled, because fAbortOnError causes
         ///   the error behaviour to be different, and SerialPort isn't prepared for this
-        /// 
+        ///
         /// To test this, we need to do the following
         /// 1. Open the port, then use a private SerialStream method to set fAbortOnError to TRUE and then close the port
         /// 2. Reopen the port
         /// 3. Verify that the fAbortOnError flag is clear
-        /// 
+        ///
         /// </summary>
         // This test requires access, via reflection, to internal type SerialStream and respective methods GetDcbFlag and
         // SetDcbFlag, however, that requires either changes to the public type (increasing its size) or to the test itself.
         [ActiveIssue("https://github.com/dotnet/corefx/issues/23234", TargetFrameworkMonikers.Uap)]
+        [PlatformSpecific(TestPlatforms.Windows)] // depends on Windows implementation detail
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AbortOnErrorShouldBeClearedOnOpen()
         {

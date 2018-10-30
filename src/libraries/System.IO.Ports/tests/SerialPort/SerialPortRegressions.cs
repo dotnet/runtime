@@ -19,14 +19,10 @@ namespace System.IO.Ports.Tests
 
         private void VerifyReadExisting(Encoding encoding)
         {
-            // TODO - this test text did not come across from legacy properly.
-            string text = "????????????4??????????????????,?11????????????????????????????????????????????????,????????????,??????????";
-            string receivedstr = "";
-            SerialPort com1;
-            SerialPort com2;
+            string text = "Za\u017C\u00F3\u0142\u0107 g\u0119\u015Bl\u0105 ja\u017A\u0144";
 
-            using (com1 = TCSupport.InitFirstSerialPort())
-            using (com2 = TCSupport.InitSecondSerialPort(com1))
+            using (SerialPort com1 = TCSupport.InitFirstSerialPort())
+            using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
                 com1.ReadTimeout = 500;
                 com1.Encoding = encoding;
@@ -40,6 +36,7 @@ namespace System.IO.Ports.Tests
                     //This is necessary since com1 and com2 might be the same port if we are using a loopback
                     com2.Open();
 
+                string receivedstr = "";
                 com2.DataReceived += (sender, args) =>
                 {
                     receivedstr += com2.ReadExisting();
@@ -47,7 +44,7 @@ namespace System.IO.Ports.Tests
 
                 com1.Write(text);
 
-                //3 seconds is more than enough time to write a few bytes to the other port	
+                //3 seconds is more than enough time to write a few bytes to the other port
                 TCSupport.WaitForPredicate(() => receivedstr.Length >= text.Length, 3000,
                     "Data was not returned in a timely fashion.  Timeout");
 

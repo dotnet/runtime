@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
 {
     public class BaudRate_Property : PortsTest
     {
-        //The default ammount of time the a transfer should take at any given baud rate. 
+        //The default ammount of time the a transfer should take at any given baud rate.
         //The bytes sent should be adjusted to take this ammount of time to transfer at the specified baud rate.
         private const int DEFAULT_TIME = 750;
 
@@ -26,6 +26,7 @@ namespace System.IO.Ports.Tests
         private enum ThrowAt { Set, Open };
 
         #region Test Cases
+        [KnownFailure] // either hanging or really slow
         [ConditionalFact(nameof(HasNullModem))]
         public void BaudRate_Default()
         {
@@ -47,6 +48,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure] // currently not supported on linux (can be emulated)
         [ConditionalFact(nameof(HasNullModem))]
         public void BaudRate_14400()
         {
@@ -54,6 +56,7 @@ namespace System.IO.Ports.Tests
             VerifyBaudRate(14400);
         }
 
+        [KnownFailure] // currently not supported on linux (can be emulated)
         [ConditionalFact(nameof(HasNullModem))]
         public void BaudRate_28800()
         {
@@ -68,6 +71,7 @@ namespace System.IO.Ports.Tests
             VerifyBaudRate(1200);
         }
 
+        [KnownFailure] // either hanging or really slow
         [ConditionalFact(nameof(HasNullModem))]
         public void BaudRate_115200()
         {
@@ -102,7 +106,6 @@ namespace System.IO.Ports.Tests
             Debug.WriteLine("Verifying Int32.MaxValue BaudRate");
             VerifyException(int.MaxValue, ThrowAt.Open, typeof(ArgumentOutOfRangeException));
         }
-
         #endregion
 
         #region Verification for Test Cases
@@ -159,7 +162,7 @@ namespace System.IO.Ports.Tests
                 }
                 else if (e.GetType() != expectedException)
                 {
-                    Assert.True(false, $"ERROR!!! Expected Open() throw {expectedException} and {e.GetType()} was thrown");
+                    Assert.True(false, $"ERROR!!! Expected Open() throw {expectedException} and {e.GetType()} was thrown: {e}");
                 }
             }
 
@@ -299,7 +302,7 @@ namespace System.IO.Ports.Tests
 
                     actualTime += sw.ElapsedMilliseconds;
                     actualTime += ((bytesToRead * 10.0) / com1.BaudRate) * 1000;
-                    beginWriteResult.AsyncWaitHandle.WaitOne();
+                    com1.BaseStream.EndWrite(beginWriteResult);
                     sw.Reset();
                 }
 
@@ -326,4 +329,3 @@ namespace System.IO.Ports.Tests
         #endregion
     }
 }
-

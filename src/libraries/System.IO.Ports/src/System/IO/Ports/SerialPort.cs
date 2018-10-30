@@ -68,7 +68,39 @@ namespace System.IO.Ports
 
         public event SerialErrorReceivedEventHandler ErrorReceived;
         public event SerialPinChangedEventHandler PinChanged;
-        public event SerialDataReceivedEventHandler DataReceived;
+
+        // handler for the underlying stream
+        private SerialDataReceivedEventHandler _dataReceivedHandler;
+
+        private SerialDataReceivedEventHandler _dataReceived;
+        public event SerialDataReceivedEventHandler DataReceived
+        {
+            add
+            {
+                bool wasNull = _dataReceived == null;
+                _dataReceived += value;
+
+                if (wasNull)
+                {
+                    if (_internalSerialStream != null)
+                    {
+                        _internalSerialStream.DataReceived += _dataReceivedHandler;
+                    }
+                }
+            }
+            remove
+            {
+                _dataReceived -= value;
+
+                if (_dataReceived == null)
+                {
+                    if (_internalSerialStream != null)
+                    {
+                        _internalSerialStream.DataReceived -= _dataReceivedHandler;
+                    }
+                }
+            }
+        }
 
         //--- component properties---------------*
 
@@ -479,14 +511,15 @@ namespace System.IO.Ports
         }
 
         // -------- SECTION: constructors -----------------*
-        public SerialPort(IContainer container)
+        public SerialPort()
+        {
+            _dataReceivedHandler = new SerialDataReceivedEventHandler(CatchReceivedEvents);
+        }
+
+        public SerialPort(IContainer container) : this()
         {
             // Required for Windows.Forms Class Composition Designer support
             container.Add(this);
-        }
-
-        public SerialPort()
-        {
         }
 
         // Non-design SerialPort constructors here chain, using default values for members left unspecified by parameters
@@ -511,7 +544,7 @@ namespace System.IO.Ports
         // all the magic happens in the call to the instance's .Open() method.
         // Internally, the SerialStream constructor opens the file handle, sets the device
         // control block and associated Win32 structures, and begins the event-watching cycle.
-        public SerialPort(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
+        public SerialPort(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits) : this()
         {
             PortName = portName;
             BaudRate = baudRate;
@@ -532,6 +565,7 @@ namespace System.IO.Ports
             {
                 if (IsOpen)
                 {
+                    _internalSerialStream.DataReceived -= _dataReceivedHandler;
                     _internalSerialStream.Flush();
                     _internalSerialStream.Close();
                     _internalSerialStream = null;
@@ -571,7 +605,11 @@ namespace System.IO.Ports
 
             _internalSerialStream.ErrorReceived += new SerialErrorReceivedEventHandler(CatchErrorEvents);
             _internalSerialStream.PinChanged += new SerialPinChangedEventHandler(CatchPinChangedEvents);
-            _internalSerialStream.DataReceived += new SerialDataReceivedEventHandler(CatchReceivedEvents);
+
+            if (_dataReceived != null)
+            {
+                _internalSerialStream.DataReceived += _dataReceivedHandler;
+            }
         }
 
         // Read Design pattern:
@@ -686,7 +724,7 @@ namespace System.IO.Ports
                     _readLen += _internalSerialStream.Read(_inBuffer, _readLen, bytesInStream); // read all immediately avail.
 
                     // If what we have in the buffer is not enough, throw TimeoutExc
-                    // if we are reading surrogate char then ReadBufferIntoChars 
+                    // if we are reading surrogate char then ReadBufferIntoChars
                     // will throw argexc and that is okay as readPos is not altered
                     if (ReadBufferIntoChars(_oneChar, 0, 1, false) == 0)
                         throw new TimeoutException();
@@ -714,11 +752,11 @@ namespace System.IO.Ports
                 } while (_decoder.GetCharCount(_inBuffer, _readPos, _readLen - _readPos) < 1);
             }
 
-            // If we are reading surrogate char then this will throw argexc 
+            // If we are reading surrogate char then this will throw argexc
             // we need not deal with that exc because we have not altered readPos yet.
             _decoder.GetChars(_inBuffer, _readPos, _readLen - _readPos, _oneChar, 0);
 
-            // Everything should be out of inBuffer now.  We'll just reset the pointers. 
+            // Everything should be out of inBuffer now.  We'll just reset the pointers.
             _readLen = _readPos = 0;
             return _oneChar[0];
         }
@@ -762,7 +800,7 @@ namespace System.IO.Ports
             if (charsWeAlreadyHave > 0)
             {
                 // we found some chars after reading everything the SerialStream had to offer.  We'll return what we have
-                // rather than wait for more. 
+                // rather than wait for more.
                 return ReadBufferIntoChars(buffer, offset, count, countMultiByteCharsAsOne);
             }
 
@@ -811,7 +849,7 @@ namespace System.IO.Ports
         // places them in *buffer* starting at *offset*.
         // This does not call any stream Reads, and so takes "no time".
         // If the buffer specified is insufficient to accommodate surrogate characters
-        // the call to underlying Decoder.GetChars will throw argexc. 
+        // the call to underlying Decoder.GetChars will throw argexc.
         private int ReadBufferIntoChars(char[] buffer, int offset, int count, bool countMultiByteCharsAsOne)
         {
             Debug.Assert(count != 0, "Count should never be zero.  We will probably see bugs further down if count is 0.");
@@ -854,10 +892,10 @@ namespace System.IO.Ports
 
                     totalBytesExamined += currentBytesToExamine;
 
-                    // recalculate currentBytesToExamine so that it includes leftover bytes from the last iteration. 
+                    // recalculate currentBytesToExamine so that it includes leftover bytes from the last iteration.
                     currentBytesToExamine = _readPos + totalBytesExamined - lastFullCharPos;
 
-                    // make sure we don't go beyond the end of the valid data that we have. 
+                    // make sure we don't go beyond the end of the valid data that we have.
                     Debug.Assert((lastFullCharPos + currentBytesToExamine) <= _readLen, "We should never be attempting to read more bytes than we have");
 
                     currentCharsFound = _decoder.GetCharCount(_inBuffer, lastFullCharPos, currentBytesToExamine);
@@ -866,15 +904,15 @@ namespace System.IO.Ports
                     {
                         if ((totalCharsFound + currentCharsFound) > count)
                         {
-                            // Multibyte unicode sequence (possibly surrogate chars) 
-                            // at the end of the buffer. We should not split the sequence, 
-                            // instead return with less chars now and defer reading them 
+                            // Multibyte unicode sequence (possibly surrogate chars)
+                            // at the end of the buffer. We should not split the sequence,
+                            // instead return with less chars now and defer reading them
                             // until next time
                             if (!countMultiByteCharsAsOne)
                                 break;
 
-                            // If we are here it is from ReadTo which attempts to read one logical character 
-                            // at a time. The supplied singleCharBuffer should be large enough to accommodate 
+                            // If we are here it is from ReadTo which attempts to read one logical character
+                            // at a time. The supplied singleCharBuffer should be large enough to accommodate
                             // this multi-byte char
                             Debug.Assert((buffer.Length - offset - totalCharsFound) >= currentCharsFound, "internal buffer to read one full unicode char sequence is not sufficient!");
                         }
@@ -888,7 +926,7 @@ namespace System.IO.Ports
 
                         // Fill into destination buffer all the COMPLETE characters we've read.
                         // If the buffer specified is insufficient to accommodate surrogate character
-                        // the call to underlying Decoder.GetChars will throw argexc. We need not 
+                        // the call to underlying Decoder.GetChars will throw argexc. We need not
                         // deal with this exc because we have not altered readPos yet.
                         _decoder.GetChars(_inBuffer, lastFullCharPos, foundCharsByteLength + 1, buffer, offset + totalCharsFound);
                         lastFullCharPos = lastFullCharPos + foundCharsByteLength + 1; // update the end position of last known char.
@@ -929,12 +967,12 @@ namespace System.IO.Ports
             }
 
             _internalSerialStream.Read(bytesReceived, CachedBytesToRead, bytesReceived.Length - (CachedBytesToRead));    // get everything
-            
+
             // Read full characters and leave partial input in the buffer. Encoding.GetCharCount doesn't work because
-            // it returns fallback characters on partial input, meaning that it overcounts. Instead, we use 
-            // GetCharCount from the decoder and tell it to preserve state, so that it returns the count of full 
-            // characters. Note that we don't actually want it to preserve state, so we call the decoder as if it's 
-            // preserving state and then call Reset in between calls. This uses a local decoder instead of the class 
+            // it returns fallback characters on partial input, meaning that it overcounts. Instead, we use
+            // GetCharCount from the decoder and tell it to preserve state, so that it returns the count of full
+            // characters. Note that we don't actually want it to preserve state, so we call the decoder as if it's
+            // preserving state and then call Reset in between calls. This uses a local decoder instead of the class
             // member decoder because that one may preserve state across SerialPort method calls.
             Decoder localDecoder = Encoding.GetDecoder();
             int numCharsReceived = localDecoder.GetCharCount(bytesReceived, 0, bytesReceived.Length);
@@ -1050,14 +1088,14 @@ namespace System.IO.Ports
             }
             catch
             {
-                // We probably got here due to timeout. 
+                // We probably got here due to timeout.
                 // We will try our best to restore the internal states, it's tricky!
 
                 // 0) Save any existing data
-                // 1) Restore readPos to the original position upon entering ReadTo 
+                // 1) Restore readPos to the original position upon entering ReadTo
                 // 2) Set readLen to the number of bytes read since entering ReadTo
                 // 3) Restore inBuffer so that it contains the bytes from currentLine, resizing if necessary.
-                // 4) Append the buffer with any saved data from 0) 
+                // 4) Append the buffer with any saved data from 0)
 
                 byte[] readBuffer = _encoding.GetBytes(currentLine.ToString());
 
@@ -1185,7 +1223,7 @@ namespace System.IO.Ports
 
         private void CatchReceivedEvents(object src, SerialDataReceivedEventArgs e)
         {
-            SerialDataReceivedEventHandler eventHandler = DataReceived;
+            SerialDataReceivedEventHandler eventHandler = _dataReceived;
             SerialStream stream = _internalSerialStream;
 
             if ((eventHandler != null) && (stream != null))
@@ -1193,8 +1231,8 @@ namespace System.IO.Ports
                 lock (stream)
                 {
                     // SerialStream might be closed between the time the event runner
-                    // pumped this event and the time the threadpool thread end up 
-                    // invoking this event handler. The above lock and IsOpen check 
+                    // pumped this event and the time the threadpool thread end up
+                    // invoking this event handler. The above lock and IsOpen check
                     // ensures that we raise the event only when the port is open
 
                     bool raiseEvent = false;
@@ -1204,12 +1242,18 @@ namespace System.IO.Ports
                     }
                     catch
                     {
-                        // Ignore and continue. SerialPort might have been closed already! 
+                        // Ignore and continue. SerialPort might have been closed already!
                     }
                     finally
                     {
+                        // ISSUE: This should be fired only when it wasn't already fired for the total number of bytes available
+                        //        Similarly as done in SerialStream.Linux (IOLoop)
+                        //        I.e: Let _receivedBytesThreshold be 8 - when we get an event when 7 bytes are available
+                        //        BytesToRead can change while we run this event and thus
+                        //        we virtually can get 2 events when 8th byte arrives
+                        //        I.e. we might want to add total bytes available as internal field in the args event
                         if (raiseEvent)
-                            eventHandler(this, e);  // here, do your reading, etc. 
+                            eventHandler(this, e);  // here, do your reading, etc.
                     }
                 }
             }
@@ -1224,11 +1268,11 @@ namespace System.IO.Ports
         }
 
         // This method guarantees that our inBuffer is big enough.  The parameter passed in is
-        // the number of bytes that our code is going to add to inBuffer.  MaybeResizeBuffer will 
-        // do one of three things depending on how much data is already in the buffer and how 
+        // the number of bytes that our code is going to add to inBuffer.  MaybeResizeBuffer will
+        // do one of three things depending on how much data is already in the buffer and how
         // much will be added:
         // 1) Nothing.  The current buffer is big enough to hold it all
-        // 2) Compact the existing data and keep the current buffer. 
+        // 2) Compact the existing data and keep the current buffer.
         // 3) Create a new, larger buffer and compact the existing data into it.
         private void MaybeResizeBuffer(int additionalByteLength)
         {

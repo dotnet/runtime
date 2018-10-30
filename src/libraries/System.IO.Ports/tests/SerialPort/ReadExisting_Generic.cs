@@ -113,12 +113,14 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void DefaultParityReplaceByte()
         {
             VerifyParityReplaceByte(-1, numRndChar - 2);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void NoParityReplaceByte()
         {
@@ -126,6 +128,7 @@ namespace System.IO.Ports.Tests
             VerifyParityReplaceByte('\0', rndGen.Next(0, numRndChar - 1));
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void RNDParityReplaceByte()
         {
@@ -133,6 +136,7 @@ namespace System.IO.Ports.Tests
             VerifyParityReplaceByte(rndGen.Next(0, 128), 0);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ParityErrorOnLastByte()
         {

@@ -31,10 +31,10 @@ namespace System.IO.Ports.Tests
         //then the contents of the string itself
         private const string DEFAULT_STRING = "DEFAULT_STRING";
 
-        //The string size used when verifying BytesToWrite 
+        //The string size used when verifying BytesToWrite
         private static readonly int s_STRING_SIZE_BYTES_TO_WRITE = 2 * TCSupport.MinimumBlockingByteCount;
 
-        //The string size used when verifying Handshake 
+        //The string size used when verifying Handshake
         private const int STRING_SIZE_HANDSHAKE = 8;
         private const int NUM_TRYS = 5;
 
@@ -79,6 +79,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Timeout()
         {
@@ -153,7 +154,7 @@ namespace System.IO.Ports.Tests
                     com1.WriteTimeout);
                 com1.Open();
 
-                //Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
+                //Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed
                 //before the timeout is reached
                 t.Start();
                 TCSupport.WaitForTaskToStart(t);
@@ -250,12 +251,14 @@ namespace System.IO.Ports.Tests
             Verify_Handshake(Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_XOnXOff()
         {
             Verify_Handshake(Handshake.XOnXOff);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void Handshake_RequestToSendXOnXOff()
         {
@@ -384,8 +387,8 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com1, STRING_SIZE_HANDSHAKE);
-                var t = new Task(asyncWriteRndStr.WriteRndStr);
+                bool rts = Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake;
+                bool xonxoff = Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake;
 
                 byte[] XOffBuffer = new byte[1];
                 byte[] XOnBuffer = new byte[1];
@@ -399,54 +402,47 @@ namespace System.IO.Ports.Tests
                 com1.Open();
                 com2.Open();
 
-                //Setup to ensure write will bock with type of handshake method being used
-                if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                //Setup to ensure write will block with type of handshake method being used
+                if (rts)
                 {
                     com2.RtsEnable = false;
                 }
 
-                if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                if (xonxoff)
                 {
                     com2.Write(XOffBuffer, 0, 1);
                     Thread.Sleep(250);
                 }
 
-                //Write a random string asynchronously so we can verify some things while the write call is blocking
-                t.Start();
-                TCSupport.WaitForTaskToStart(t);
-                TCSupport.WaitForExactWriteBufferLoad(com1, STRING_SIZE_HANDSHAKE);
+                Task writeTask = Task.Run(() => com1.Write("ABC"));
 
-                //Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
-                if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) && com1.CtsHolding)
-                {
-                    Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", false, com1.CtsHolding);
-                }
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task<int> readTask = com2.BaseStream.ReadAsync(new byte[3], 0, 3, cts.Token);
 
-                //Setup to ensure write will succeed
-                if (Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                // Give it some time to make sure transmission doesn't happen
+                Thread.Sleep(200);
+                Assert.False(readTask.IsCompleted);
+
+                cts.CancelAfter(500);
+
+                if (rts)
                 {
+                    Assert.False(com1.CtsHolding);
                     com2.RtsEnable = true;
                 }
 
-                if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
+                if (xonxoff)
                 {
                     com2.Write(XOnBuffer, 0, 1);
                 }
 
-                //Wait till write finishes
-                TCSupport.WaitForTaskCompletion(t);
-
-                //Verify that the correct number of bytes are in the buffer
-                if (0 != com1.BytesToWrite)
-                {
-                    Fail("ERROR!!! Expcted BytesToWrite=0 actual {0}", com1.BytesToWrite);
-                }
+                writeTask.Wait();
+                Assert.True(readTask.Result > 0);
 
                 //Verify that CtsHolding is true if the RequestToSend or RequestToSendXOnXOff handshake method is used
-                if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
-                    !com1.CtsHolding)
+                if (rts)
                 {
-                    Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", true, com1.CtsHolding);
+                    Assert.True(com1.CtsHolding);
                 }
             }
         }

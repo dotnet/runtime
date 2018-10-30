@@ -82,6 +82,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void ErrorReceived_Close_Stress()
         {
@@ -97,7 +98,7 @@ namespace System.IO.Ports.Tests
                 com1.ErrorReceived += (sender, e) => { ++errorReceivedCount; };
                 com2.Open();
 
-                //This should cause a fame error since the 8th bit is not set 
+                //This should cause a fame error since the 8th bit is not set
                 //and com1 is set to 7 data bits ao the 8th bit will +12v where
                 //com1 expects the stop bit at the 8th bit to be -12v
                 frameErrorBytes[0] = 0x01;
@@ -129,4 +130,3 @@ namespace System.IO.Ports.Tests
         #endregion
     }
 }
-

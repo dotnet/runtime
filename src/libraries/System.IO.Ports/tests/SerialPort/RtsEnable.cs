@@ -31,7 +31,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
         [ConditionalFact(nameof(HasNullModem))]
         public void RtsEnable_true_BeforeOpen()
         {
@@ -72,14 +71,12 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
         [ConditionalFact(nameof(HasNullModem))]
         public void RtsEnable_true_AfterOpen()
         {
             Debug.WriteLine("Verifying true RtsEnable after open");
             VerifyRtsEnableAfterOpen(true);
         }
-
 
         [ConditionalFact(nameof(HasNullModem))]
         public void RtsEnable_false_AfterOpen()
@@ -88,6 +85,7 @@ namespace System.IO.Ports.Tests
             VerifyRtsEnableAfterOpen(false);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void RtsEnable_true_Handshake_XOnXOff()
         {
@@ -97,6 +95,7 @@ namespace System.IO.Ports.Tests
             VerifyRtsEnableWithHandshake(true, Handshake.XOnXOff);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem))]
         public void RtsEnable_false_Handshake_XOnXOff()
         {
@@ -120,6 +119,7 @@ namespace System.IO.Ports.Tests
             VerifyRtsEnableWithHandshake(false, Handshake.RequestToSend);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void RtsEnable_true_Handshake_RequestToSendXOnXOff()
         {
@@ -127,6 +127,7 @@ namespace System.IO.Ports.Tests
             VerifyRtsEnableWithHandshake(true, Handshake.RequestToSendXOnXOff);
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void RtsEnable_false_Handshake_RequestToSendXOnXOff()
         {
@@ -195,8 +196,8 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasOneSerialPort))]
-        [PlatformSpecific(~TestPlatforms.AnyUnix)]
         public void RtsEnable_Get_Handshake_RequestToSendXOnXOff()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -213,6 +214,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [KnownFailure]
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void RtsEnable_Get_Handshake_XOnXOff()
         {
@@ -334,7 +336,10 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 com2.Open();
-                Assert.True((expectedRtsEnable && com2.CtsHolding) || (!expectedRtsEnable && !com2.CtsHolding));
+
+                // Allow tiny bit of time for state of the line to change in case Rts was just set
+                System.Threading.Thread.Sleep(30);
+                Assert.Equal(expectedRtsEnable, com2.CtsHolding);
             }
         }
 
