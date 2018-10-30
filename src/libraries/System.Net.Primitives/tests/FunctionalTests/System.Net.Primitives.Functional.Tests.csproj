@@ -29,6 +29,7 @@
     <Compile Include="CookieCollectionTest.netcoreapp.cs" />
     <Compile Include="IPAddressSpanTest.cs" />
     <Compile Include="IPAddressParsingSpan.cs" />
+    <Compile Include="IPEndPointParsing.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
