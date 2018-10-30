@@ -17,8 +17,8 @@
     <ProjectNTfsTestILCCurrentRef>49fdd3c017cc8168c200760cbf973598e954c811</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
-    <BuildToolsCurrentRef>0d2d082330d215cb5d0e9c8998df8a2c4cc61d59</BuildToolsCurrentRef>
-    <CoreFxOptimizationDataCurrentRef>49fdd3c017cc8168c200760cbf973598e954c811</CoreFxOptimizationDataCurrentRef>
+    <BuildToolsCurrentRef>1ccc8cf922acbb3645020c882f1ec849fc1eb9aa</BuildToolsCurrentRef>
+    <CoreFxOptimizationDataCurrentRef>1ccc8cf922acbb3645020c882f1ec849fc1eb9aa</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -59,16 +59,16 @@
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
     <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
-    <CoreFxOptimizationDataVersion>99.99.99-master-20181030-0056</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>99.99.99-master-20181030-1015</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03326-01</FeedTasksPackageVersion>
+    <FeedTasksPackageVersion>3.0.0-preview1-03330-01</FeedTasksPackageVersion>
 
     <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03326-01</BuildToolsPackageVersion>
+    <BuildToolsPackageVersion>3.0.0-preview1-03330-01</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
