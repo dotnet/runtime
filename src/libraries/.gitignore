@@ -20,8 +20,6 @@ artifacts/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
-x64/
-x86/
 build/
 bld/
 [Bb]in/
@@ -39,8 +37,6 @@ msbuild.binlog
 # Cross building rootfs
 cross/rootfs/
 cross/android-rootfs/
-# add x86 as it is ignored in 'Build results'
-!cross/x86
 
 # Visual Studio 2015
 .vs/
