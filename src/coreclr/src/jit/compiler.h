@@ -850,6 +850,8 @@ public:
 
 #ifdef DEBUG
 public:
+    const char* lvReason;
+
     void PrintVarReg() const
     {
         printf("%s", getRegName(lvRegNum));
