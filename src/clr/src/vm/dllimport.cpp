@@ -599,7 +599,7 @@ public:
 
 #ifndef _TARGET_X86_
             // we store the real managed argument stack size in the stub MethodDesc on non-X86
-            UINT stackSize = pStubMD->SizeOfArgStack();
+            UINT stackSize = pStubMD->SizeOfNativeArgStack();
 
             if (!FitsInU2(stackSize))
                 COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);

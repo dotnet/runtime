@@ -2012,7 +2012,7 @@ public:
     bool IsNativeHFA();
     CorElementType GetNativeHFAType();
 
-#if defined(UNIX_AMD64_ABI)
+#ifdef UNIX_AMD64_ABI
     inline bool IsRegPassedStruct()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2024,7 +2024,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsRegStructPassed);
     }
-#endif // defined(UNIX_AMD64_ABI)
+#else
+    inline bool IsRegPassedStruct()
+    {
+        return false;
+    }
+#endif
 
 #ifdef FEATURE_64BIT_ALIGNMENT
     // Returns true iff the native view of this type requires 64-bit aligment.
