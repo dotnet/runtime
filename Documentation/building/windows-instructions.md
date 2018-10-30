@@ -92,24 +92,22 @@ Powershell version must be 3.0 or higher. This should be the case for Windows 8 
 - Windows 7 SP1 can install Powershell version 4 [here](https://www.microsoft.com/en-us/download/details.aspx?id=40855).
 
 ## DotNet Core SDK
-While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets 
-you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the 
+While not strictly needed to build or test the .NET Core repository, having the .NET Core SDK installed lets you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the 
 [Using Your Build](../workflow/UsingYourBuild.md) instructions.  Visual Studio 2015 (update 3) should have
 installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .Net Core SDK](https://www.microsoft.com/net/core) page.  
 
 ## Adding to the default PATH variable
 
-The commands above need to be on your command lookup path.   Some installers will automatically add them to 
-the path as part of installation, but if not here is how you can do it.  
+The commands above need to be on your command lookup path.   Some installers will automatically add them to the path as part of the installation, but if not here is how you can do it.  
 
-You can of course add a directory to the PATH environment variable with the syntax
+You can, of course, add a directory to the PATH environment variable with the syntax
 ```
     set PATH=%PATH%;DIRECTORY_TO_ADD_TO_PATH
 ```
-However the change above will only last until the command windows closes.   You can make your change to
+However, the change above will only last until the command windows close.   You can make your change to
 the PATH variable persistent by going to  Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables, 
 and select the 'Path' variable in the 'System variables' (if you want to change it for all users) or 'User variables' (if you only want
-to change it for the currnet user).  Simply edit the PATH variable's value and add the directory (with a semicolon separator).
+to change it for the current user).  Simply edit the PATH variable's value and add the directory (with a semicolon separator).
 
 -------------------------------------
 # Building
@@ -120,19 +118,19 @@ the base of the repository.
 ```bat
     .\build 
 
-	[Lots of build spew]
+    [Lots of build spew]
 
-	Product binaries are available at C:\git\coreclr\bin\Product\Windows_NT.x64.debug
-	Test binaries are available at C:\git\coreclr\bin\tests\Windows_NT.x64.debug
+    Product binaries are available at C:\git\coreclr\bin\Product\Windows_NT.x64.debug
+    Test binaries are available at C:\git\coreclr\bin\tests\Windows_NT.x64.debug
 ```
 
-As shown above the product will be placed in 
+As shown above, the product will be placed in 
 
 - Product binaries will be dropped in `bin\Product\<OS>.<arch>.<flavor>` folder. 
 - A NuGet package, Microsoft.Dotnet.CoreCLR, will be created under `bin\Product\<OS>.<arch>.<flavor>\.nuget` folder. 
 - Test binaries will be dropped under `bin\Tests\<OS>.<arch>.<flavor>` folder
 
-By default build generates a 'Debug' build type, that has extra checking (assert) compiled into it. You can
+By default, build generates a 'Debug' build type, that has extra checking (assert) compiled into it. You can
 also build the 'release' version which does not have these checks
 
 The build places logs in `bin\Logs` and these are useful when the build fails.
@@ -140,7 +138,7 @@ The build places logs in `bin\Logs` and these are useful when the build fails.
 The build places all of its output in the `bin` directory, so if you remove that directory you can force a 
 full rebuild.    
 
-Build has a number of options that you can learn about using build -?.   Some of the more important options are
+The build has a number of options that you can learn about using build -?.   Some of the more important options are
 
  * -skiptests - don't build the tests.   This can shorten build times quite a bit, but means you can't run tests.
  * -release - build the 'Release' build type that does not have extra development-time checking compiled in.
