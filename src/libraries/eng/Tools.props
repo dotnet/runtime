@@ -12,7 +12,7 @@
     <!-- Need to keep in sync with CodeAnalysis.targets file. -->
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
   </PropertyGroup>
-  <Import Project="$(MSBuildThisFileDirectory)..\dependencies.props" />
+  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <ItemGroup>
     <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" />
