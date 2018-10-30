@@ -38,7 +38,7 @@ Test cases are categorized by priority level. The most important subset should b
         // See the LICENSE file in the project root for more information.
     ```
 * Disable building of a test by conditionally setting the `<DisableProjectBuild>` property.
-	* e.g. `<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>`
+    * e.g. `<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>`
 * Exclude test from GCStress runs by adding the following to the csproj:
     * `<GCStressIncompatible>true</GCStressIncompatible>`
 * Exclude test from JIT stress runs runs by adding the following to the csproj:
@@ -59,7 +59,7 @@ Test cases are categorized by priority level. The most important subset should b
     * Not removing this can cause confusion with the way tests are generally handled behind the scenes by the build system.
 
 1. Set the `<CLRTestKind>`/`<CLRTestPriority>` properties.
-1. Add source files to new project.
+1. Add source files to the new project.
 1. Indicate the success of the test by returning `100`. Failure can be indicated by any non-`100` value.
 
     Example:
