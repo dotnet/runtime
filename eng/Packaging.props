@@ -31,7 +31,7 @@
     <SkipGenerationCheck>true</SkipGenerationCheck>
   </PropertyGroup>
 
-  <Import Condition="Exists('pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="pkg/baseline/baseline.props" />
+  <Import Condition="Exists('../pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="../pkg/baseline/baseline.props" />
 
   <PropertyGroup Condition="'$(OsEnvironment)'=='Unix'">
     <!--
