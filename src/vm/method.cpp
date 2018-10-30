@@ -98,6 +98,24 @@ const SIZE_T MethodDesc::s_ClassificationSizeTable[] = {
 #undef ComPlusCallMethodDesc
 #endif
 
+class ArgIteratorBaseForPInvoke : public ArgIteratorBase
+{
+protected:
+    FORCEINLINE BOOL IsRegPassedStruct(MethodTable* pMT)
+    {
+        return pMT->GetLayoutInfo()->IsNativeStructPassedInRegisters();
+    }
+};
+
+class PInvokeArgIterator : public ArgIteratorTemplate<ArgIteratorBaseForPInvoke>
+{
+public:
+    PInvokeArgIterator(MetaSig* pSig)
+    {
+        m_pSig = pSig;
+    }
+};
+
 
 //*******************************************************************************
 SIZE_T MethodDesc::SizeOf()
@@ -1751,6 +1769,19 @@ UINT MethodDesc::SizeOfArgStack()
     MetaSig msig(this);
     ArgIterator argit(&msig);
     return argit.SizeOfArgStack();
+}
+
+
+UINT MethodDesc::SizeOfNativeArgStack()
+{
+#ifndef UNIX_AMD64_ABI
+    return SizeOfArgStack();
+#else
+    WRAPPER_NO_CONTRACT;
+    MetaSig msig(this);
+    PInvokeArgIterator argit(&msig);
+    return argit.SizeOfArgStack();
+#endif
 }
 
 #ifdef _TARGET_X86_
