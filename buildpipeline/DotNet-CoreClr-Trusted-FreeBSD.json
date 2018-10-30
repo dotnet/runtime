@@ -55,7 +55,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build.sh",
-        "arguments": "$(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -clang6.0 -osgroup=FreeBSD",
+        "arguments": "$(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -clang6.0 -osgroup FreeBSD -msbuildonunsupportedplatform",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
