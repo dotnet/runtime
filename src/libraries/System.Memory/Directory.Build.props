@@ -5,7 +5,7 @@
     <!-- System.Memory has forwarded types into the runtime on netcoreapp/uap
          It must win over assemblies versioned at 4.0.* -->
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
   </PropertyGroup>
