@@ -3908,7 +3908,8 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 
 	if (callvirt) {
 		if (!closed_over_null) {
-			if (m_class_is_valuetype (target_class)) {
+			/* if target_method is not really virtual, turn it into a direct call */
+			if (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) || m_class_is_valuetype (target_class)) {
 				mono_mb_emit_ldarg (mb, 1);
 				for (i = 1; i < sig->param_count; ++i)
 					mono_mb_emit_ldarg (mb, i + 1);
