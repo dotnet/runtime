@@ -12,7 +12,7 @@ phases:
     variables:
       config: ${{ parameters.configuration }}
     steps:
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
         - task: DownloadBuildArtifacts@0
           displayName: Download artifact
           inputs:
