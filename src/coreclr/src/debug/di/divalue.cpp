@@ -485,6 +485,12 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     return S_OK;
 }   // CordbValue::InternalCreateHandle
 
+COM_METHOD CordbValue::GetContainingObject(ICorDebugObjectValue** ppContainingObject)
+{        
+    PUBLIC_API_ENTRY(this);
+    return GetProcess()->GetContainingObject(this, ppContainingObject);
+}
+
 /* ------------------------------------------------------------------------- *
  * Generic Value class
  * ------------------------------------------------------------------------- */
