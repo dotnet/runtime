@@ -239,7 +239,7 @@ If all works, you should be greeted by a friendly daemon you know well.
 
 Over time, this process will get easier. We will remove the dependency on having to compile managed code on Windows. For example, we are working to get our NuGet packages to include both the Windows and FreeBSD versions of an assembly, so you can simply nuget restore the dependencies. 
 
-A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would be great! Some of our processes (e.g. the System.Private.CoreLib build) rely on Windows specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
+A sample that builds Hello World on FreeBSD using the correct references but via XBuild or MonoDevelop would be great! Some of our processes (e.g. the System.Private.CoreLib build) rely on Windows-specific tools, but we want to figure out how to solve these problems for FreeBSD as well. There's still a lot of work ahead, so if you're interested in helping, we're ready for you!
 
 
 Run the test suite
@@ -279,7 +279,7 @@ llvm37 and llvm-devel include clang and lldb. Since clang is included with llvm 
 
 After you have installed your desired version of LLVM you will need to specify the version to the build.sh script.
 
-For example if you chose to install llvm37 you would add the clangX.X to your build command as follows.
+For example, if you chose to install llvm37 you would add the clangX.X to your build command as follows.
 ```sh
 janhenke@freebsd-frankfurt:~/git/coreclr % ./build.sh clang3.7
 ```

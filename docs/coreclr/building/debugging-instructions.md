@@ -9,16 +9,16 @@ Debugging CoreCLR on Windows
 1. Perform a build of the repo.
 2. Open solution \<reporoot\>\bin\obj\Windows_NT.\<platform\>.\<configuration\>\CoreCLR.sln in Visual Studio. \<platform\> and \<configuration\> are based
     on type of build you did. By default they are 'x64' and 'Debug'.
-3. Right click the INSTALL project and choose ‘Set as StartUp Project’
+3. Right-click the INSTALL project and choose ‘Set as StartUp Project’
 4. Bring up the properties page for the INSTALL project
 5. Select Configuration Properties->Debugging from the left side tree control
 6. Set Command=`$(SolutionDir)..\..\product\Windows_NT.$(Platform).$(Configuration)\corerun.exe`
-	1. This points to the folder where the built runtime binaries are present.
+    1. This points to the folder where the built runtime binaries are present.
 7. Set Command Arguments=`<managed app you wish to run>` (e.g. HelloWorld.exe)
 8. Set Working Directory=`$(SolutionDir)..\..\product\Windows_NT.$(Platform).$(Configuration)`
-	1. This points to the folder containing CoreCLR binaries.
+    1. This points to the folder containing CoreCLR binaries.
 9. Press F11 to start debugging at wmain in corerun (or set a breakpoint in source and press F5 to run to it)
-	1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
+    1. As an example, set a breakpoint for the EEStartup function in ceemain.cpp to break into CoreCLR startup.
 
 Steps 1-8 only need to be done once, and then (9) can be repeated whenever you want to start debugging. The above can be done with Visual Studio 2013.
 
@@ -56,38 +56,38 @@ For .NET Core version 1.x and 2.0.x, libsosplugin.so is built for and will only 
 
 ### SOS commands ###
 
-This is the full list of commands currently supported by SOS. lldb is case-sensitive unlike windbg.
+This is the full list of commands currently supported by SOS. lldb is case-sensitive, unlike windbg.
 
-	Type "soshelp <functionname>" for detailed info on that function.
+    Type "soshelp <functionname>" for detailed info on that function.
 
-	Object Inspection                  Examining code and stacks
-	-----------------------------      -----------------------------
-	DumpObj (dumpobj)                  Threads (clrthreads)
-	DumpArray                          ThreadState
-	DumpStackObjects (dso)             IP2MD (ip2md)
-	DumpHeap (dumpheap)                u (clru)
-	DumpVC                             DumpStack (dumpstack)
-	GCRoot (gcroot)                    EEStack (eestack)
-	PrintException (pe)                ClrStack (clrstack)
-	                                   GCInfo
-	                                   EHInfo
-	                                   bpmd (bpmd)
+    Object Inspection                  Examining code and stacks
+    -----------------------------      -----------------------------
+    DumpObj (dumpobj)                  Threads (clrthreads)
+    DumpArray                          ThreadState
+    DumpStackObjects (dso)             IP2MD (ip2md)
+    DumpHeap (dumpheap)                u (clru)
+    DumpVC                             DumpStack (dumpstack)
+    GCRoot (gcroot)                    EEStack (eestack)
+    PrintException (pe)                ClrStack (clrstack)
+                                       GCInfo
+                                       EHInfo
+                                       bpmd (bpmd)
 
-	Examining CLR data structures      Diagnostic Utilities
-	-----------------------------      -----------------------------
-	DumpDomain                         VerifyHeap
-	EEHeap (eeheap)                    FindAppDomain
-	Name2EE (name2ee)                  DumpLog (dumplog)
-	DumpMT (dumpmt)                    CreateDump (createdump)
-	DumpClass (dumpclass)
-	DumpMD (dumpmd)
-	Token2EE
-	DumpModule (dumpmodule)
-	DumpAssembly
-	DumpRuntimeTypes
-	DumpIL (dumpil)
-	DumpSig
-	DumpSigElem
+    Examining CLR data structures      Diagnostic Utilities
+    -----------------------------      -----------------------------
+    DumpDomain                         VerifyHeap
+    EEHeap (eeheap)                    FindAppDomain
+    Name2EE (name2ee)                  DumpLog (dumplog)
+    DumpMT (dumpmt)                    CreateDump (createdump)
+    DumpClass (dumpclass)
+    DumpMD (dumpmd)
+    Token2EE
+    DumpModule (dumpmodule)
+    DumpAssembly
+    DumpRuntimeTypes
+    DumpIL (dumpil)
+    DumpSig
+    DumpSigElem
 
     Examining the GC history           Other
     -----------------------------      -----------------------------
@@ -107,7 +107,7 @@ However the common commands have been aliased so that you don't need the SOS pre
     clrthreads      -> sos Threads
     clru            -> sos U
     createdump      -> sos CreateDump
-	dso             -> sos DumpStackObjects
+    dso             -> sos DumpStackObjects
     dumpclass       -> sos DumpClass
     dumpheap        -> sos DumpHeap
     dumpil          -> sos DumpIL
@@ -135,7 +135,7 @@ However the common commands have been aliased so that you don't need the SOS pre
 It is also possible to debug .NET Core crash dumps using lldb and SOS. In order to do this, you need all of the following:
 
 - The crash dump file. We have a service called "Dumpling" which collects, uploads, and archives crash dump files during all of our CI jobs and official builds.
-- On Linux, there is an utility called `createdump` (see [doc](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/xplat-minidump-generation.md#configurationpolicy)) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
+- On Linux, there is a utility called `createdump` (see [doc](https://github.com/dotnet/coreclr/blob/master/Documentation/botr/xplat-minidump-generation.md#configurationpolicy)) that can be setup to generate core dumps when a managed app throws an unhandled exception or faults.
 - To get matching runtime and symbol binaries for the core dump use the symbol downloader CLI extension:
   - Install the [.NET Core 2.1 SDK](https://www.microsoft.com/net/download/).
   - Install the symbol downloader extension: `dotnet tool install -g dotnet-symbol`. Make sure you are not in any project directory with a NuGet.Config that doesn't include nuget.org as a source. 
@@ -161,7 +161,7 @@ lldb-3.9 -O "settings set target.exec-search-paths <runtime-path>" -o "plugin lo
 - `<host-path>`: The path to the dotnet or corerun executable, potentially in the `<runtime-path>` folder.
 - `<path-to-libsosplugin.so>`: The path to libsosplugin.so, should be in the `<runtime-path>` folder.
 
-lldb should start debugging successfully at this point. You should see stacktraces with resolved symbols for libcoreclr.so. At this point, you can run `plugin load <libsosplugin.so-path>`, and begin using SOS commands, as above.
+lldb should start debugging successfully at this point. You should see stack traces with resolved symbols for libcoreclr.so. At this point, you can run `plugin load <libsosplugin.so-path>`, and begin using SOS commands, as above.
 
 ##### Example
 
