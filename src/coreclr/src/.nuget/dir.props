@@ -84,6 +84,13 @@
         <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'freebsd'">
+      <PropertyGroup>
+        <PackageRID>freebsd.11-$(ArchGroup)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">freebsd-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(_runtimeOSFamily)' == 'android'">
       <PropertyGroup>
         <PackageRID>android.21-$(ArchGroup)</PackageRID>
@@ -150,6 +157,9 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';OSX;'))">
     <OfficialBuildRID Include="osx-x64" />
+  </ItemGroup>
+  <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';FreeBSD;'))">
+    <OfficialBuildRID Include="freebsd-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Windows_NT;'))">
     <OfficialBuildRID Include="win-x86">
