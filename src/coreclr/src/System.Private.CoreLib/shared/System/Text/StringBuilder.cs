@@ -2088,7 +2088,10 @@ namespace System.Text
                 fixed (char* valuePtr = value)
                 {
                     // calculate the total amount of extra space or space needed for all the replacements.
-                    int delta = (value.Length - removeCount) * replacementsCount;
+                    long longDelta = (value.Length - removeCount) * (long)replacementsCount;
+                    int delta = (int)longDelta;
+                    if (delta != longDelta)
+                        throw new OutOfMemoryException();
 
                     StringBuilder targetChunk = sourceChunk;        // the target as we copy chars down
                     int targetIndexInChunk = replacements[0];
