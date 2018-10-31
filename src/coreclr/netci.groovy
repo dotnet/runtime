@@ -1310,7 +1310,12 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
 }
 
 def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def bidailyCrossList) {
-    def isNormalOrInnerloop = (scenario == "normal" || scenario == "innerloop")
+
+    // The dev/unix_test_workflow branch is used for Jenkins CI testing. We generally do not need any non-PR
+    // triggers in the branch, because that would use machine resources unnecessarily.
+    if (branch == 'dev/unix_test_workflow') {
+        return
+    }
 
     // Limited hardware is restricted for non-PR triggers to certain branches.
     if (jobRequiresLimitedHardware(architecture, os) && (!(branch in Constants.LimitedHardwareBranches))) {
@@ -1322,6 +1327,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
     if (architecture == 'x86' && os == 'Ubuntu') {
         return
     }
+
+    def isNormalOrInnerloop = (scenario == "normal" || scenario == "innerloop")
 
     // Check scenario.
     switch (scenario) {
