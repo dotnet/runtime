@@ -38,8 +38,14 @@ namespace System.Diagnostics
             }
         }
 
-        private static void WriteCore(string message)
+        public static void WriteCore(string message)
         {
+            if (s_WriteCore != null)
+            {
+                s_WriteCore(message); 
+                return;
+            }
+
             WriteToDebugger(message);
 
             if (s_shouldWriteToStdErr)
