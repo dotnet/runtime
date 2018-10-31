@@ -55,7 +55,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build.sh",
-        "arguments": "$(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -clang6.0 -osgroup FreeBSD -msbuildonunsupportedplatform -portablebuild=false",
+        "arguments": "$(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -clang6.0",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -75,7 +75,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build-packages.sh",
-        "arguments": "-BuildType=$(PB_BuildType) -BuildArch=$(Architecture) -portablebuild=false -- /p:OfficialBuildId=$(OfficialBuildId)",
+        "arguments": "-BuildType=$(PB_BuildType) -BuildArch=$(Architecture) -- /p:OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
