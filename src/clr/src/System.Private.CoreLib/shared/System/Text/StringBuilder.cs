@@ -2337,19 +2337,20 @@ namespace System.Text
             //     really big chunks even if the string gets really big.
             int newBlockLength = Math.Max(minBlockCharCount, Math.Min(Length, MaxChunkSize));
 
+            // Check for integer overflow (logical buffer size > int.MaxValue)
+            if (m_ChunkOffset + m_ChunkLength + newBlockLength < newBlockLength)
+                throw new OutOfMemoryException();
+
+            // Allocate the array before updating any state to avoid leaving inconsistent state behind in case of out of memory exception
+            char[] chunkChars = new char[newBlockLength];
+
             // Move all of the data from this chunk to a new one, via a few O(1) pointer adjustments.
             // Then, have this chunk point to the new one as its predecessor.
             m_ChunkPrevious = new StringBuilder(this);
             m_ChunkOffset += m_ChunkLength;
             m_ChunkLength = 0;
 
-            // Check for integer overflow (logical buffer size > int.MaxValue)
-            if (m_ChunkOffset + newBlockLength < newBlockLength)
-            {
-                m_ChunkChars = null;
-                throw new OutOfMemoryException();
-            }
-            m_ChunkChars = new char[newBlockLength];
+            m_ChunkChars = chunkChars;
 
             AssertInvariants();
         }
