@@ -117,6 +117,8 @@ if [ $__IsPortableBuild == 1 ]; then
         export __DistroRid="linux-$__Arch"
     elif [ "$__BuildOS" == "OSX" ]; then
         export __DistroRid="osx-$__Arch"
+    elif [ "$__BuildOS" == "FreeBSD" ]; then
+        export __DistroRid="freebsd-$__Arch"
     fi
 else
     # init the host distro name
