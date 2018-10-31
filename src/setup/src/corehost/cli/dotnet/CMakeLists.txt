@@ -6,6 +6,12 @@ project(dotnet)
 set(DOTNET_HOST_EXE_NAME "dotnet")
 set(SOURCES 
     ../fxr/fx_ver.cpp)
+
+if(WIN32)
+    list(APPEND SOURCES
+        dotnet.manifest)
+endif()
+
 include(../exe.cmake)
 
 install_library_and_symbols (dotnet)
