@@ -206,7 +206,7 @@ struct DispatchStub
         e_TYPE_LONG,
     };
 
-    inline DispatchStubType const type() const
+    inline DispatchStubType type() const
     {
         LIMITED_METHOD_CONTRACT;
         CONSISTENCY_CHECK(DispatchStubShort::isShortStub(reinterpret_cast<LPCBYTE>(this + 1))

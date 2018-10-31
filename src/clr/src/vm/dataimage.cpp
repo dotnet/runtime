@@ -111,7 +111,7 @@ public:
         return (count_t)k.m_dwSize ^ (count_t)k.m_kind ^ HashBytes((BYTE *)k.m_data, k.m_dwSize);
     }
 
-    static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+    static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
     static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
 };
 

@@ -117,8 +117,8 @@ class DefaultSHashTraits
 
     static const bool s_supports_remove = true;
 
-    static const ELEMENT Null() { return (const ELEMENT) 0; }
-    static const ELEMENT Deleted() { return (const ELEMENT) -1; }
+    static ELEMENT Null() { return (const ELEMENT) 0; }
+    static ELEMENT Deleted() { return (const ELEMENT) -1; }
     static bool IsNull(const ELEMENT &e) { return e == (const ELEMENT) 0; }
     static bool IsDeleted(const ELEMENT &e) { return e == (const ELEMENT) -1; }
 
@@ -612,7 +612,7 @@ public:
     typedef typename PARENT::count_t count_t;
 
     static const bool s_supports_remove = false;
-    static const element_t Deleted() { UNREACHABLE(); }
+    static element_t Deleted() { UNREACHABLE(); }
     static bool IsDeleted(const element_t &e) { LIMITED_METHOD_DAC_CONTRACT; return false; }
 };
 

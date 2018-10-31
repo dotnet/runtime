@@ -3475,7 +3475,7 @@ void LclVarDsc::lvaDisqualifyVar()
 /**********************************************************************************
 * Get stack size of the varDsc.
 */
-const size_t LclVarDsc::lvArgStackSize() const
+size_t LclVarDsc::lvArgStackSize() const
 {
     // Make sure this will have a stack size
     assert(!this->lvIsRegArg);

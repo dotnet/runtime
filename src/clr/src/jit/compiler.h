@@ -778,7 +778,7 @@ public:
         return roundUp(lvExactSize, TARGET_POINTER_SIZE);
     }
 
-    const size_t lvArgStackSize() const;
+    size_t lvArgStackSize() const;
 
     unsigned lvSlotNum; // original slot # (if remapped)
 
@@ -7136,7 +7136,7 @@ public:
         return codeGen->getEmitter();
     }
 
-    const bool isFramePointerUsed()
+    bool isFramePointerUsed()
     {
         return codeGen->isFramePointerUsed();
     }
