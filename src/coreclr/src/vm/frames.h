@@ -487,7 +487,7 @@ public:
 
     // indicate the current X86 IP address within the current method
     // return 0 if the information is not available
-    virtual const PTR_BYTE GetIP()
+    virtual PTR_BYTE GetIP()
     {
         LIMITED_METHOD_CONTRACT;
         return NULL;

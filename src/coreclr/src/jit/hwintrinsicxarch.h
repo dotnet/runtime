@@ -207,127 +207,127 @@ struct HWIntrinsicInfo
 
     // Flags lookup
 
-    static const bool IsCommutative(NamedIntrinsic id)
+    static bool IsCommutative(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_Commutative) != 0;
     }
 
-    static const bool HasFullRangeImm(NamedIntrinsic id)
+    static bool HasFullRangeImm(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_FullRangeIMM) != 0;
     }
 
-    static const bool IsOneTypeGeneric(NamedIntrinsic id)
+    static bool IsOneTypeGeneric(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_OneTypeGeneric) != 0;
     }
 
-    static const bool IsTwoTypeGeneric(NamedIntrinsic id)
+    static bool IsTwoTypeGeneric(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_TwoTypeGeneric) != 0;
     }
 
-    static const bool RequiresCodegen(NamedIntrinsic id)
+    static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoCodeGen) == 0;
     }
 
-    static const bool HasFixedSimdSize(NamedIntrinsic id)
+    static bool HasFixedSimdSize(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_UnfixedSIMDSize) == 0;
     }
 
-    static const bool GeneratesMultipleIns(NamedIntrinsic id)
+    static bool GeneratesMultipleIns(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MultiIns) != 0;
     }
 
-    static const bool SupportsContainment(NamedIntrinsic id)
+    static bool SupportsContainment(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoContainment) == 0;
     }
 
-    static const bool CopiesUpperBits(NamedIntrinsic id)
+    static bool CopiesUpperBits(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_CopyUpperBits) != 0;
     }
 
-    static const bool BaseTypeFromFirstArg(NamedIntrinsic id)
+    static bool BaseTypeFromFirstArg(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_BaseTypeFromFirstArg) != 0;
     }
 
-    static const bool IsFloatingPointUsed(NamedIntrinsic id)
+    static bool IsFloatingPointUsed(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoFloatingPointUsed) == 0;
     }
 
-    static const bool MaybeImm(NamedIntrinsic id)
+    static bool MaybeImm(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeIMM) != 0;
     }
 
-    static const bool MaybeMemoryLoad(NamedIntrinsic id)
+    static bool MaybeMemoryLoad(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryLoad) != 0;
     }
 
-    static const bool MaybeMemoryStore(NamedIntrinsic id)
+    static bool MaybeMemoryStore(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_MaybeMemoryStore) != 0;
     }
 
-    static const bool NoJmpTableImm(NamedIntrinsic id)
+    static bool NoJmpTableImm(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoJmpTableIMM) != 0;
     }
 
-    static const bool Is64BitOnly(NamedIntrinsic id)
+    static bool Is64BitOnly(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_64BitOnly) != 0;
     }
 
-    static const bool SecondArgMaybe64Bit(NamedIntrinsic id)
+    static bool SecondArgMaybe64Bit(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SecondArgMaybe64Bit) != 0;
     }
 
-    static const bool BaseTypeFromSecondArg(NamedIntrinsic id)
+    static bool BaseTypeFromSecondArg(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_BaseTypeFromSecondArg) != 0;
     }
 
-    static const bool HasSpecialCodegen(NamedIntrinsic id)
+    static bool HasSpecialCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialCodeGen) != 0;
     }
 
-    static const bool HasRMWSemantics(NamedIntrinsic id)
+    static bool HasRMWSemantics(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_NoRMWSemantics) == 0;
     }
 
-    static const bool HasSpecialImport(NamedIntrinsic id)
+    static bool HasSpecialImport(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SpecialImport) != 0;

@@ -986,7 +986,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return (count_t) k->Hash();
     }
-    static const element_t Null() 
+    static element_t Null()
     { 
         LIMITED_METHOD_CONTRACT; 
         return NULL; 

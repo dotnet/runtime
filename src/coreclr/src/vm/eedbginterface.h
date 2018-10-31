@@ -165,7 +165,7 @@ public:
 
     virtual size_t GetFunctionSize(MethodDesc *pFD) = 0;
 
-    virtual const PCODE GetFunctionAddress(MethodDesc *pFD) = 0;
+    virtual PCODE GetFunctionAddress(MethodDesc *pFD) = 0;
 
 #ifndef DACCESS_COMPILE
 

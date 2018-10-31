@@ -88,7 +88,7 @@ namespace BINDER_SPACE
             else
                 return HashStringA(textualIdentity); 
         }
-        static const element_t Null()
+        static element_t Null()
         {
             return NULL;
         }

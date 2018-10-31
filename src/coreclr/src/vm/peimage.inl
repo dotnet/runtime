@@ -175,7 +175,7 @@ inline BOOL PEImage::IsReferenceAssembly()
 }
 
 
-inline const BOOL PEImage::HasNTHeaders()   
+inline BOOL PEImage::HasNTHeaders()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -187,7 +187,7 @@ inline const BOOL PEImage::HasNTHeaders()
     }
 }
 
-inline const BOOL PEImage::HasCorHeader()   
+inline BOOL PEImage::HasCorHeader()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -199,7 +199,7 @@ inline const BOOL PEImage::HasCorHeader()
     }
 }
 
-inline const BOOL PEImage::HasReadyToRunHeader()   
+inline BOOL PEImage::HasReadyToRunHeader()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -223,7 +223,7 @@ inline BOOL PEImage::PassiveDomainOnly()
     return m_bPassiveDomainOnly;
 }
 
-inline const BOOL PEImage::HasDirectoryEntry(int entry)   
+inline BOOL PEImage::HasDirectoryEntry(int entry)
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -235,7 +235,7 @@ inline const BOOL PEImage::HasDirectoryEntry(int entry)
     }
 }
 
-inline const mdToken PEImage::GetEntryPointToken()
+inline mdToken PEImage::GetEntryPointToken()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -254,7 +254,7 @@ inline const mdToken PEImage::GetEntryPointToken()
     }
 }
 
-inline const DWORD PEImage::GetCorHeaderFlags()   
+inline DWORD PEImage::GetCorHeaderFlags()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -275,13 +275,13 @@ inline BOOL PEImage::MDImportLoaded()
     return m_pMDImport != NULL;
 }
 
-inline const BOOL PEImage::HasV1Metadata()   
+inline BOOL PEImage::HasV1Metadata()
 {
     WRAPPER_NO_CONTRACT;
     return GetMDImport()->GetMetadataStreamVersion()==MD_STREAM_VER_1X;
 }
 
-inline const BOOL PEImage::IsILOnly()   
+inline BOOL PEImage::IsILOnly()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -293,7 +293,7 @@ inline const BOOL PEImage::IsILOnly()
     }
 }
 
-inline const WORD PEImage::GetSubsystem()   
+inline WORD PEImage::GetSubsystem()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -307,8 +307,8 @@ inline const WORD PEImage::GetSubsystem()
     }
 }
 
-#ifdef FEATURE_PREJIT    
-inline const BOOL PEImage::IsNativeILILOnly()   
+#ifdef FEATURE_PREJIT
+inline BOOL PEImage::IsNativeILILOnly()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -332,7 +332,7 @@ inline void PEImage::GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachi
     }
 }
 
-inline const BOOL PEImage::IsNativeILDll()   
+inline BOOL PEImage::IsNativeILDll()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -345,7 +345,7 @@ inline const BOOL PEImage::IsNativeILDll()
 }
 #endif // FEATURE_PREJIT
 
-inline const BOOL PEImage::IsDll()   
+inline BOOL PEImage::IsDll()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -357,7 +357,7 @@ inline const BOOL PEImage::IsDll()
     }
 }
 
-inline const BOOL PEImage::HasStrongNameSignature()   
+inline BOOL PEImage::HasStrongNameSignature()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())
@@ -416,7 +416,7 @@ inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize)
     }
 }
 
-inline BOOL PEImage::HasNativeHeader() 
+inline BOOL PEImage::HasNativeHeader()
 {
     WRAPPER_NO_CONTRACT;
     if (HasLoadedLayout())

@@ -114,7 +114,7 @@ class ZapInnerPtrTable
             return (count_t)(size_t)k.m_pBase ^ (count_t)k.m_offset;
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+        static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
     };
 

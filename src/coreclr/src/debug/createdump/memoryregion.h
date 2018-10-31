@@ -100,13 +100,13 @@ public:
     {
     }
 
-    const uint32_t Permissions() const { return m_flags & MEMORY_REGION_FLAG_PERMISSIONS_MASK; }
-    const uint32_t Flags() const { return m_flags; }
-    const bool IsBackedByMemory() const { return (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) != 0; }
-    const uint64_t StartAddress() const { return m_startAddress; }
-    const uint64_t EndAddress() const { return m_endAddress; }
-    const uint64_t Size() const { return m_endAddress - m_startAddress; }
-    const uint64_t Offset() const { return m_offset; }
+    uint32_t Permissions() const { return m_flags & MEMORY_REGION_FLAG_PERMISSIONS_MASK; }
+    uint32_t Flags() const { return m_flags; }
+    bool IsBackedByMemory() const { return (m_flags & MEMORY_REGION_FLAG_MEMORY_BACKED) != 0; }
+    uint64_t StartAddress() const { return m_startAddress; }
+    uint64_t EndAddress() const { return m_endAddress; }
+    uint64_t Size() const { return m_endAddress - m_startAddress; }
+    uint64_t Offset() const { return m_offset; }
     const char* FileName() const { return m_fileName; }
 
     bool operator<(const MemoryRegion& rhs) const

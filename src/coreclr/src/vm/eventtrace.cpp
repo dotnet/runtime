@@ -2722,7 +2722,7 @@ public:
         return (e == NULL);
     }
 
-    static const element_t Null()
+    static element_t Null()
     {
         LIMITED_METHOD_CONTRACT;
         return NULL; 
