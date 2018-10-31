@@ -196,6 +196,25 @@ namespace
         THROW_IF_FAILED(numericTesting->Add_Double_Out(a, b, &c));
         THROW_FAIL_IF_FALSE(EqualByBound(expected, c));
     }
+
+    void MarshalManyInts(_In_ INumericTesting *numericTesting)
+    {
+        HRESULT hr;
+
+        int expected = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11;
+        ::printf("Many ints 11 test invariant: 1 + 2 + 3 + 4... + 11 = %d\n", expected);
+
+        int result = 0;
+        THROW_IF_FAILED(numericTesting->Add_ManyInts11(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, &result));
+        THROW_FAIL_IF_FALSE(result == expected);
+
+        expected = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12;
+        ::printf("Many ints 12 test invariant: 1 + 2 + 3 + 4... + 11 + 12= %d\n", expected);
+
+        result = 0;
+        THROW_IF_FAILED(numericTesting->Add_ManyInts12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, &result));
+        THROW_FAIL_IF_FALSE(result == expected);
+    }
 }
 
 void Run_NumericTests()
@@ -224,4 +243,5 @@ void Run_NumericTests()
     MarshalULong(numericTesting, (uint64_t)a, (uint64_t)b);
     MarshalFloat(numericTesting, (float)a / 100.f, (float)b / 100.f);
     MarshalDouble(numericTesting, (double)a / 100.0, (double)b / 100.0);
+    MarshalManyInts(numericTesting);
 }

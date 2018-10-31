@@ -148,6 +148,33 @@ INumericTesting : IUnknown
         /*[in]*/ double a,
         /*[in]*/ double b,
         /*[out]*/ double * c ) = 0;
+      virtual HRESULT STDMETHODCALLTYPE Add_ManyInts11 (
+        /*[in]*/ int i1,
+        /*[in]*/ int i2,
+        /*[in]*/ int i3,
+        /*[in]*/ int i4,
+        /*[in]*/ int i5,
+        /*[in]*/ int i6,
+        /*[in]*/ int i7,
+        /*[in]*/ int i8,
+        /*[in]*/ int i9,
+        /*[in]*/ int i10,
+        /*[in]*/ int i11,
+        /*[out]*/ int * result ) = 0;
+      virtual HRESULT STDMETHODCALLTYPE Add_ManyInts12 (
+        /*[in]*/ int i1,
+        /*[in]*/ int i2,
+        /*[in]*/ int i3,
+        /*[in]*/ int i4,
+        /*[in]*/ int i5,
+        /*[in]*/ int i6,
+        /*[in]*/ int i7,
+        /*[in]*/ int i8,
+        /*[in]*/ int i9,
+        /*[in]*/ int i10,
+        /*[in]*/ int i11,
+        /*[in]*/ int i12,
+        /*[out]*/ int * result ) = 0;
 };
 
 struct __declspec(uuid("7731cb31-e063-4cc8-bcd2-d151d6bc8f43"))
