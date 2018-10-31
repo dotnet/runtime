@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageVersion>10.4.0</PackageVersion>
     <AssemblyVersion>10.0.4.0</AssemblyVersion>
-    <AssemblyKey>MSFT</AssemblyKey>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
   </PropertyGroup>

@@ -4,6 +4,6 @@
   <PropertyGroup>
     <PackageVersion>2.1.0</PackageVersion>
     <AssemblyVersion>2.0.2.0</AssemblyVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <StrongNameKeyId>Open</StrongNameKeyId>
   </PropertyGroup>
 </Project>
