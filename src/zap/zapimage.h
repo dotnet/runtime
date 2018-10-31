@@ -478,7 +478,7 @@ private:
         static BOOL Equals(key_t k1, key_t k2);
         static COUNT_T Hash(key_t k);
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+        static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
     };
 

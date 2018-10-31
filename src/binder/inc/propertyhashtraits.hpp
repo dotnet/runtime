@@ -80,7 +80,7 @@ namespace BINDER_SPACE
         {
             return pPropertyName->Hash();
         }
-        static const element_t Null()
+        static element_t Null()
         {
             return NULL;
         }

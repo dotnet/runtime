@@ -191,7 +191,7 @@ public:
 #endif // POINTER_BITS
     }
 
-    static const element_t Null() 
+    static element_t Null()
 {
         WRAPPER_NO_CONTRACT;
         return NULL;
@@ -203,7 +203,7 @@ public:
         return e == NULL;
     }
 
-    static const element_t Deleted()
+    static element_t Deleted()
     {
         WRAPPER_NO_CONTRACT;
         return (element_t)-1;

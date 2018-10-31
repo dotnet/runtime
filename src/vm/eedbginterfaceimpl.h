@@ -146,7 +146,7 @@ public:
 
     size_t GetFunctionSize(MethodDesc *pFD) DAC_UNEXPECTED();
 
-    const PCODE GetFunctionAddress(MethodDesc *pFD);
+    PCODE GetFunctionAddress(MethodDesc *pFD);
 
     void DisablePreemptiveGC(void);
 

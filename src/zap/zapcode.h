@@ -317,7 +317,7 @@ class ZapMethodEntryPointTable
             return (count_t)(size_t)k.m_handle ^ (count_t)k.m_accessFlags;
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+        static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
     };
 
@@ -517,7 +517,7 @@ class ZapUnwindDataTable
             return ZapBlob::SHashTraits::Hash(k.m_unwindData) ^ k.m_fIsFilterFunclet;
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+        static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
     };
     // Hashtable with all unwind data blobs. If two methods have unwind data
@@ -638,7 +638,7 @@ class ZapGCInfoTable
             return ZapBlob::SHashTraits::Hash(k.m_gcInfo) ^ ZapBlob::SHashTraits::Hash(k.m_unwindInfo);
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
+        static element_t Null() { LIMITED_METHOD_CONTRACT; return NULL; }
         static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e == NULL; }
     };
 

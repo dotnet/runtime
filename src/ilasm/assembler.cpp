@@ -193,7 +193,7 @@ public:
         return memcmp(ptr_, t->ptr_, len_);
     }
     // The only public data we need
-    const mdToken Token() const { return token_; }
+    mdToken Token() const { return token_; }
 };
 
 static RBTREE<TypeSpecContainer> typeSpecCache;
