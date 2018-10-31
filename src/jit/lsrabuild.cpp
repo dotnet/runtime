@@ -1581,6 +1581,14 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, BasicBlock* block, Lsra
                 }
             }
         }
+
+        if (tree->OperIsPutArgSplit())
+        {
+            // While we have attempted to account for any "specialPutArg" defs above, we're only looking at RefPositions
+            // created for this node. We must be defining at least one register in the PutArgSplit, so conservatively
+            // add one less than the maximum number of registers args to 'minRegCount'.
+            minRegCount += MAX_REG_ARG - 1;
+        }
         for (refPositionMark++; refPositionMark != refPositions.end(); refPositionMark++)
         {
             RefPosition* newRefPosition    = &(*refPositionMark);
