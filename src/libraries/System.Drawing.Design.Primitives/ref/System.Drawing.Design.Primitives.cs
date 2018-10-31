@@ -113,7 +113,6 @@ namespace System.Drawing.Design
         public System.ComponentModel.IComponent[] CreateComponents(System.ComponentModel.Design.IDesignerHost host, System.Collections.IDictionary defaultValues) { throw null; }
         protected virtual System.ComponentModel.IComponent[] CreateComponentsCore(System.ComponentModel.Design.IDesignerHost host) { throw null; }
         protected virtual System.ComponentModel.IComponent[] CreateComponentsCore(System.ComponentModel.Design.IDesignerHost host, System.Collections.IDictionary defaultValues) { throw null; }
-        protected virtual void Deserialize(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override bool Equals(object obj) { throw null; }
         protected virtual object FilterPropertyValue(string propertyName, object value) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -123,7 +122,6 @@ namespace System.Drawing.Design
         public virtual void Lock() { }
         protected virtual void OnComponentsCreated(System.Drawing.Design.ToolboxComponentsCreatedEventArgs args) { }
         protected virtual void OnComponentsCreating(System.Drawing.Design.ToolboxComponentsCreatingEventArgs args) { }
-        protected virtual void Serialize(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override string ToString() { throw null; }
         protected void ValidatePropertyType(string propertyName, object value, System.Type expectedType, bool allowNull) { }
