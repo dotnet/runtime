@@ -2079,12 +2079,6 @@ mono_compile_create_vars (MonoCompile *cfg)
 		mono_apply_volatile (cfg->locals [i], header->volatile_locals, i);
 	}
 
-	mono_bitset_free (header->volatile_locals);
-	header->volatile_locals = NULL;
-
-	mono_bitset_free (header->volatile_args);
-	header->volatile_args = NULL;
-
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
 

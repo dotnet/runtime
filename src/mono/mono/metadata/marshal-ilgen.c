@@ -6368,11 +6368,20 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
 					// FIXME better type
 					local = mono_mb_add_local (mb, mono_get_object_type ());
-					mono_bitset_set_safe (&mb->volatile_locals, local);
+
+					if (!mb->volatile_locals) {
+						char *mem = (char *)mono_image_alloc0 (get_method_image (method), mono_bitset_alloc_size (csig->param_count + 1, 0));
+						mb->volatile_locals = mono_bitset_mem_new (mem, csig->param_count + 1, 0);
+					}
+					mono_bitset_set (mb->volatile_locals, local);
 					break;
 				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
 				case ICALL_HANDLES_WRAP_OBJ:
-					mono_bitset_set_safe (&mb->volatile_args, i);
+					if (!mb->volatile_args) {
+						char *mem = (char *)mono_image_alloc0 (get_method_image (method), mono_bitset_alloc_size (csig->param_count + 1, 0));
+						mb->volatile_args = mono_bitset_mem_new (mem, csig->param_count + 1, 0);
+					}
+					mono_bitset_set (mb->volatile_args, i);
 					break;
 				case ICALL_HANDLES_WRAP_NONE:
 					break;
