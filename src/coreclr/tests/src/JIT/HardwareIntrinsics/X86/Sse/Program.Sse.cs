@@ -54,6 +54,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["CompareUnorderedScalar.Single"] = CompareUnorderedScalarSingle,
                 ["Divide.Single"] = DivideSingle,
                 ["DivideScalar.Single"] = DivideScalarSingle,
+                ["LoadVector128.Single"] = LoadVector128Single,
+                ["LoadScalarVector128.Single"] = LoadScalarVector128Single,
                 ["Max.Single"] = MaxSingle,
                 ["MaxScalar.Single"] = MaxScalarSingle,
                 ["Min.Single"] = MinSingle,
