@@ -11,9 +11,9 @@ namespace System.Diagnostics
     /// <summary>
     /// Provides a set of properties and methods for debugging code.
     /// </summary>
-    public static partial class Debug
+    public static class Debug
     {
-        private static DebugProvider s_provider = new DebugProvider();
+        private static volatile DebugProvider s_provider = new DebugProvider();
 
         public static DebugProvider SetProvider(DebugProvider provider)
         {
@@ -25,27 +25,32 @@ namespace System.Diagnostics
 
         public static bool AutoFlush { get { return true; } set { } }
 
+        [ThreadStatic]
+        private static int t_indentLevel;
         public static int IndentLevel
         {
             get
             {
-                return DebugProvider.IndentLevel;
+                return t_indentLevel;
             }
             set
             {
-                DebugProvider.IndentLevel = value;
+                t_indentLevel = value < 0 ? 0 : value;
+                s_provider.OnIndentLevelChanged(t_indentLevel);
             }
         }
 
+        private static volatile int s_indentSize = 4;
         public static int IndentSize
         {
             get
             {
-                return DebugProvider.IndentSize;
+                return s_indentSize;
             }
             set
             {
-                DebugProvider.IndentSize = value;
+                s_indentSize = value < 0 ? 0 : value;
+                s_provider.OnIndentSizeChanged(s_indentSize);
             }
         }
 
@@ -105,7 +110,7 @@ namespace System.Diagnostics
                 {
                     stackTrace = "";
                 }
-                WriteLine(FormatAssert(stackTrace, message, detailMessage));
+                WriteAssert(stackTrace, message, detailMessage);
                 s_provider.ShowDialog(stackTrace, message, detailMessage, "Assertion Failed");
             }
         }
@@ -123,7 +128,7 @@ namespace System.Diagnostics
                 {
                     stackTrace = "";
                 }
-                WriteLine(FormatAssert(stackTrace, message, detailMessage));
+                WriteAssert(stackTrace, message, detailMessage);
                 s_provider.ShowDialog(stackTrace, message, detailMessage, SR.GetResourceString(failureKindMessage));
             }
         }
@@ -140,15 +145,14 @@ namespace System.Diagnostics
             Assert(false, message, detailMessage);
         }
 
-        private static string FormatAssert(string stackTrace, string message, string detailMessage)
+        private static void WriteAssert(string stackTrace, string message, string detailMessage)
         {
-            string newLine = DebugProvider.GetIndentString() + Environment.NewLine;
-            return SR.DebugAssertBanner + newLine
-                   + SR.DebugAssertShortMessage + newLine
-                   + message + newLine
-                   + SR.DebugAssertLongMessage + newLine
-                   + detailMessage + newLine
-                   + stackTrace;
+            WriteLine(SR.DebugAssertBanner + Environment.NewLine
+                   + SR.DebugAssertShortMessage + Environment.NewLine
+                   + message + Environment.NewLine
+                   + SR.DebugAssertLongMessage + Environment.NewLine
+                   + detailMessage + Environment.NewLine
+                   + stackTrace);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -160,7 +164,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string message)
         {
-            Write(message + Environment.NewLine);
+            s_provider.WriteLine(message);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -196,7 +200,7 @@ namespace System.Diagnostics
             }
             else
             {
-                WriteLine(category + ":" + message);
+                WriteLine(category + ": " + message);
             }
         }
 
@@ -215,7 +219,7 @@ namespace System.Diagnostics
             }
             else
             {
-                Write(category + ":" + message);
+                Write(category + ": " + message);
             }
         }
 
