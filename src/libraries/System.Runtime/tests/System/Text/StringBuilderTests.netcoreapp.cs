@@ -417,5 +417,33 @@ namespace System.Text.Tests
                 Assert.Equal(outStr, inBuilder.ToString());
             }
         }
+
+        [Fact]
+        public static void EqualsIgnoresCapacity()
+        {
+            var sb1 = new StringBuilder(5);
+            var sb2 = new StringBuilder(10);
+
+            Assert.True(sb1.Equals(sb2));
+
+            sb1.Append("12345");
+            sb2.Append("12345");
+
+            Assert.True(sb1.Equals(sb2));
+        }
+
+        [Fact]
+        public static void EqualsIgnoresMaxCapacity()
+        {
+            var sb1 = new StringBuilder(5, 5);
+            var sb2 = new StringBuilder(5, 10);
+
+            Assert.True(sb1.Equals(sb2));
+
+            sb1.Append("12345");
+            sb2.Append("12345");
+
+            Assert.True(sb1.Equals(sb2));
+        }
     }
 }
