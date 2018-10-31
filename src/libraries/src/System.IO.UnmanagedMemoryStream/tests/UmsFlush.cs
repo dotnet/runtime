@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class FlushTests
+    public class UnmanagedMemoryStreamFlushTests
     {
         [Fact]
         public static void Flush()
