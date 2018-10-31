@@ -3814,6 +3814,18 @@ get_plt_entry (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 	return res;
 }
 
+static guint32
+lookup_got_offset (MonoAotCompile *acfg, gboolean llvm, MonoJumpInfo *ji)
+{
+	guint32 got_offset;
+	GotInfo *info = llvm ? &acfg->llvm_got_info : &acfg->got_info;
+
+	got_offset = GPOINTER_TO_UINT (g_hash_table_lookup (info->patch_to_got_offset_by_type [ji->type], ji));
+	if (got_offset)
+		return got_offset - 1;
+	g_assert_not_reached ();
+}
+
 /**
  * get_got_offset:
  *
@@ -6318,7 +6330,10 @@ encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, gboo
 			/* Nothing to do */
 			continue;
 
-		offset = get_got_offset (acfg, llvm, patch_info);
+		if (patch_info->type == MONO_PATCH_INFO_METHOD && patch_info->data.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			printf ("HIT!\n");
+		}
+		offset = lookup_got_offset (acfg, llvm, patch_info);
 		encode_value (offset, p, &p);
 	}
 
@@ -6341,8 +6356,12 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+		if (patch_info->type == MONO_PATCH_INFO_METHOD && patch_info->data.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+			printf ("HIT!\n");
+		}
 		g_ptr_array_add (patches, patch_info);
+	}
 	g_ptr_array_sort (patches, compare_patches);
 
 	/**********************/
@@ -11388,6 +11407,9 @@ compile_methods (MonoAotCompile *acfg)
 		/* This can add new methods to acfg->methods */
 		compile_method (acfg, (MonoMethod *)g_ptr_array_index (acfg->methods, i));
 	}
+
+	if (acfg->llvm)
+		mono_llvm_fixup_aot_module ();
 }
 
 static int

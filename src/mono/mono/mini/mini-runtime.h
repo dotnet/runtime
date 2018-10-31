@@ -301,6 +301,7 @@ struct MonoJumpInfo {
 	MonoJumpInfo *next;
 	/* Relocation type for patching */
 	int relocation;
+	int got_offset;
 	union {
 		int i;
 		guint8 *p;
