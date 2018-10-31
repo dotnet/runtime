@@ -38,7 +38,7 @@ namespace BINDER_SPACE
         typedef PCWSTR key_t;
         static const FileNameMapEntry Null() { FileNameMapEntry e; e.m_wszFileName = nullptr; return e; }
         static bool IsNull(const FileNameMapEntry & e) { return e.m_wszFileName == nullptr; }
-        static const key_t GetKey(const FileNameMapEntry & e)
+        static key_t GetKey(const FileNameMapEntry & e)
         {
             key_t key;
             key = e.m_wszFileName;
@@ -65,7 +65,7 @@ namespace BINDER_SPACE
         typedef PCWSTR key_t;
         static const SimpleNameToFileNameMapEntry Null() { SimpleNameToFileNameMapEntry e; e.m_wszSimpleName = nullptr; return e; }
         static bool IsNull(const SimpleNameToFileNameMapEntry & e) { return e.m_wszSimpleName == nullptr; }
-        static const key_t GetKey(const SimpleNameToFileNameMapEntry & e)
+        static key_t GetKey(const SimpleNameToFileNameMapEntry & e)
         {
             key_t key;
             key = e.m_wszSimpleName;

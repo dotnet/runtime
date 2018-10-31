@@ -3721,8 +3721,8 @@ private:
             return (count_t)(dac_cast<TADDR>(key));
         }
         
-        static const element_t Null() { return NULL; }
-        static const element_t Deleted() { return (element_t)(TADDR)-1; }
+        static element_t Null() { return NULL; }
+        static element_t Deleted() { return (element_t)(TADDR)-1; }
         static bool IsNull(const element_t & e) { return e == NULL; }
         static bool IsDeleted(const element_t & e) { return dac_cast<TADDR>(e) == (TADDR)-1; }
     };

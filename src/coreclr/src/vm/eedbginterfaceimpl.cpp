@@ -641,7 +641,7 @@ size_t EEDbgInterfaceImpl::GetFunctionSize(MethodDesc *pFD)
 }
 #endif //!DACCESS_COMPILE
 
-const PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
+PCODE EEDbgInterfaceImpl::GetFunctionAddress(MethodDesc *pFD)
 { 
     CONTRACTL
     {

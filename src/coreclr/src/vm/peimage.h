@@ -162,7 +162,7 @@ public:
     BOOL Equals(PEImage *pImage);
 
     void GetMVID(GUID *pMvid);
-    const BOOL HasV1Metadata();
+    BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
     BOOL MDImportLoaded();
     IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);    
@@ -198,26 +198,26 @@ public:
     const SString &GetModuleFileNameHintForDAC();
 #endif
 
-    const BOOL HasNTHeaders();
-    const BOOL HasCorHeader(); 
-    const BOOL HasReadyToRunHeader();
+    BOOL HasNTHeaders();
+    BOOL HasCorHeader();
+    BOOL HasReadyToRunHeader();
     void SetPassiveDomainOnly();
     BOOL PassiveDomainOnly();
     BOOL IsReferenceAssembly();
-#ifdef FEATURE_PREJIT  
-    const BOOL IsNativeILILOnly();
-    const BOOL IsNativeILDll();
+#ifdef FEATURE_PREJIT
+    BOOL IsNativeILILOnly();
+    BOOL IsNativeILDll();
     void GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL);
 #endif
-    const BOOL HasDirectoryEntry(int entry);
-    const mdToken GetEntryPointToken();
-    const DWORD GetCorHeaderFlags(); 
-    const BOOL IsILOnly();
-    const BOOL IsDll();
-    const WORD GetSubsystem();
+    BOOL HasDirectoryEntry(int entry);
+    mdToken GetEntryPointToken();
+    DWORD GetCorHeaderFlags();
+    BOOL IsILOnly();
+    BOOL IsDll();
+    WORD GetSubsystem();
     BOOL  IsFileLocked();
-    const BOOL HasStrongNameSignature();
+    BOOL HasStrongNameSignature();
 
     BOOL IsIbcOptimized();
     BOOL Has32BitNTHeaders();

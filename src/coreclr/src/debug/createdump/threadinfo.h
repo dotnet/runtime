@@ -41,9 +41,9 @@ public:
     void GetThreadStack(CrashInfo& crashInfo);
     void GetThreadContext(uint32_t flags, CONTEXT* context) const;
 
-    inline const pid_t Tid() const { return m_tid; }
-    inline const pid_t Ppid() const { return m_ppid; }
-    inline const pid_t Tgid() const { return m_tgid; }
+    inline pid_t Tid() const { return m_tid; }
+    inline pid_t Ppid() const { return m_ppid; }
+    inline pid_t Tgid() const { return m_tgid; }
 
     inline const user_regs_struct* GPRegisters() const { return &m_gpRegisters; }
     inline const user_fpregs_struct* FPRegisters() const { return &m_fpRegisters; }

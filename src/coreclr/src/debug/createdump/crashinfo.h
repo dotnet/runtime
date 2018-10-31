@@ -55,9 +55,9 @@ public:
     static bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char** name);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
-    inline const pid_t Pid() const { return m_pid; }
-    inline const pid_t Ppid() const { return m_ppid; }
-    inline const pid_t Tgid() const { return m_tgid; }
+    inline pid_t Pid() const { return m_pid; }
+    inline pid_t Ppid() const { return m_ppid; }
+    inline pid_t Tgid() const { return m_tgid; }
     inline const char* Name() const { return m_name; }
     inline ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
@@ -66,7 +66,7 @@ public:
     inline const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
     inline const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
-    inline const size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
+    inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 
     // IUnknown
     STDMETHOD(QueryInterface)(___in REFIID InterfaceId, ___out PVOID* Interface);
