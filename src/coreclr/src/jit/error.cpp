@@ -232,14 +232,18 @@ DWORD getBreakOnBadCode()
 void debugError(const char* msg, const char* file, unsigned line)
 {
     const char* tail = strrchr(file, '\\');
-    if (tail)
+    if (tail != nullptr)
     {
-        file = tail + 1;
+        tail = tail + 1;
+    }
+    else
+    {
+        tail = file;
     }
 
     LogEnv* env = JitTls::GetLogEnv();
 
-    logf(LL_ERROR, "COMPILATION FAILED: file: %s:%d compiling method %s reason %s\n", file, line,
+    logf(LL_ERROR, "COMPILATION FAILED: file: %s:%d compiling method %s reason %s\n", tail, line,
          env->compiler->info.compFullName, msg);
 
     // We now only assert when user explicitly set ComPlus_JitRequired=1
@@ -249,7 +253,7 @@ void debugError(const char* msg, const char* file, unsigned line)
         // Don't assert if verification is done.
         if (!env->compiler->tiVerificationNeeded || getBreakOnBadCode())
         {
-            assertAbort(msg, "NO-FILE", 0);
+            assertAbort(msg, file, line);
         }
     }
 
