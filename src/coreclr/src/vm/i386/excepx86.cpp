@@ -1255,6 +1255,13 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
     CallRtlUnwindSafe(pEstablisherFrame, RtlUnwindCallback, pExceptionRecord, 0);
     // on x86 at least, RtlUnwind always returns
 
+    // The CallRtlUnwindSafe could have popped the explicit frame that the tct.pBottomFrame points to (UMThunkPrestubHandler
+    // does that). In such case, the tct.pBottomFrame needs to be updated to point to the first valid explicit frame.
+    Frame* frame = pThread->GetFrame();
+    if ((tct.pBottomFrame != NULL) && (frame > tct.pBottomFrame))
+    {
+        tct.pBottomFrame = frame;
+    }
     // Note: we've completed the unwind pass up to the establisher frame, and we're headed off to finish our
     // cleanup and end up back in jitted code. Any more FS0 handlers pushed from this point on out will _not_ be
     // unwound.
