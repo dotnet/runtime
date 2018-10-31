@@ -143,6 +143,16 @@
     <Compile Include="GetLowerHalf.UInt16.cs" />
     <Compile Include="GetLowerHalf.UInt32.cs" />
     <Compile Include="GetLowerHalf.UInt64.cs" />
+    <Compile Include="LoadVector256.Byte.cs" />
+    <Compile Include="LoadVector256.SByte.cs" />
+    <Compile Include="LoadVector256.Int16.cs" />
+    <Compile Include="LoadVector256.UInt16.cs" />
+    <Compile Include="LoadVector256.Int32.cs" />
+    <Compile Include="LoadVector256.UInt32.cs" />
+    <Compile Include="LoadVector256.Int64.cs" />
+    <Compile Include="LoadVector256.UInt64.cs" />
+    <Compile Include="LoadVector256.Single.cs" />
+    <Compile Include="LoadVector256.Double.cs" />
     <Compile Include="MaskLoad.Double.cs" />
     <Compile Include="MaskLoad.Single.cs" />
     <Compile Include="MaskStore.Double.cs" />
