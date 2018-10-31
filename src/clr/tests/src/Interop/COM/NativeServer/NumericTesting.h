@@ -246,6 +246,43 @@ public:
         return S_OK;
     }
 
+    DEF_FUNC(Add_ManyInts11)(
+        /*[in]*/ int i1,
+        /*[in]*/ int i2,
+        /*[in]*/ int i3,
+        /*[in]*/ int i4,
+        /*[in]*/ int i5,
+        /*[in]*/ int i6,
+        /*[in]*/ int i7,
+        /*[in]*/ int i8,
+        /*[in]*/ int i9,
+        /*[in]*/ int i10,
+        /*[in]*/ int i11,
+        /*[out]*/ int * result )
+    {
+        *result = i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 + i9 + i10 + i11;
+        return S_OK;
+    }
+
+    DEF_FUNC(Add_ManyInts12)(
+        /*[in]*/ int i1,
+        /*[in]*/ int i2,
+        /*[in]*/ int i3,
+        /*[in]*/ int i4,
+        /*[in]*/ int i5,
+        /*[in]*/ int i6,
+        /*[in]*/ int i7,
+        /*[in]*/ int i8,
+        /*[in]*/ int i9,
+        /*[in]*/ int i10,
+        /*[in]*/ int i11,
+        /*[in]*/ int i12,
+        /*[out]*/ int * result )
+    {
+        *result = i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 + i9 + i10 + i11 + i12;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,

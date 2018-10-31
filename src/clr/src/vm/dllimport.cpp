@@ -1142,9 +1142,176 @@ public:
         }
         LOG((LF_STUBS, LL_INFO1000, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"));
 #endif // LOGGING
+
+        //
+        // Publish ETW events for IL stubs
+        //
         
+        // If the category and the event is enabled...
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ILStubGenerated))
+        {
+            EtwOnILStubGenerated(
+                pStubMD, 
+                pbLocalSig, 
+                cbSig,
+                jitFlags,
+                &convertToHRTryCatch,
+                &cleanupTryFinally,
+                maxStack,
+                (DWORD)cbCode
+                );
+        }
+
     }
 
+    //---------------------------------------------------------------------------------------
+    // 
+    void 
+    EtwOnILStubGenerated(
+        MethodDesc *    pStubMD, 
+        PCCOR_SIGNATURE pbLocalSig, 
+        DWORD           cbSig, 
+        CORJIT_FLAGS    jitFlags,
+        ILStubEHClause * pConvertToHRTryCatchBounds,
+        ILStubEHClause * pCleanupTryFinallyBounds,
+        DWORD           maxStack, 
+        DWORD           cbCode)
+    {
+        STANDARD_VM_CONTRACT;
+
+        //
+        // Interop Method Information
+        //
+        MethodDesc *pTargetMD = m_slIL.GetTargetMD();
+        SString strNamespaceOrClassName, strMethodName, strMethodSignature;                
+        UINT64 uModuleId = 0;
+        
+        if (pTargetMD)
+        {
+            pTargetMD->GetMethodInfoWithNewSig(strNamespaceOrClassName, strMethodName, strMethodSignature);
+            uModuleId = (UINT64)pTargetMD->GetModule()->GetAddrModuleID();
+        }
+
+        //
+        // Stub Method Signature
+        //
+        SString stubNamespaceOrClassName, stubMethodName, stubMethodSignature;
+        pStubMD->GetMethodInfoWithNewSig(stubNamespaceOrClassName, stubMethodName, stubMethodSignature);
+        
+        IMDInternalImport *pStubImport = pStubMD->GetModule()->GetMDImport();
+        
+        CQuickBytes qbLocal;
+        PrettyPrintSig(pbLocalSig, (DWORD)cbSig, NULL, &qbLocal,  pStubImport, NULL);
+
+        SString strLocalSig(SString::Utf8, (LPCUTF8)qbLocal.Ptr());
+        
+        //
+        // Native Signature
+        // 
+        SString strNativeSignature(SString::Utf8);
+        if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
+        {
+            // Reverse interop. Use StubSignature
+            strNativeSignature = stubMethodSignature;                
+        }
+        else
+        {
+            // Forward interop. Use StubTarget siganture
+            PCCOR_SIGNATURE pCallTargetSig = GetStubTargetMethodSig();
+            DWORD           cCallTargetSig = GetStubTargetMethodSigLength();
+            
+            CQuickBytes qbCallTargetSig;
+            
+            PrettyPrintSig(pCallTargetSig, cCallTargetSig, "", &qbCallTargetSig,  pStubImport, NULL);
+
+            strNativeSignature.SetUTF8((LPCUTF8)qbCallTargetSig.Ptr());
+        }
+        
+        //
+        // Dump IL stub code       
+        //
+        SString strILStubCode;
+        strILStubCode.Preallocate(4096);    // Preallocate 4K bytes to avoid unnecessary growth
+
+        SString codeSizeFormat;
+        codeSizeFormat.LoadResource(CCompRC::Optional, IDS_EE_INTEROP_CODE_SIZE_COMMENT);
+        strILStubCode.AppendPrintf(W("// %s\t%d (0x%04x)\n"), codeSizeFormat.GetUnicode(), cbCode, cbCode);
+        strILStubCode.AppendPrintf(W(".maxstack %d \n"), maxStack);
+        strILStubCode.AppendPrintf(W(".locals %s\n"), strLocalSig.GetUnicode());
+        
+        m_slIL.LogILStub(jitFlags, &strILStubCode);
+
+        if (pConvertToHRTryCatchBounds->cbTryLength != 0 && pConvertToHRTryCatchBounds->cbHandlerLength != 0)
+        {
+            strILStubCode.AppendPrintf(
+                W(".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%04x\n"), 
+                pConvertToHRTryCatchBounds->dwTryBeginOffset, 
+                pConvertToHRTryCatchBounds->dwTryBeginOffset + pConvertToHRTryCatchBounds->cbTryLength, 
+                pConvertToHRTryCatchBounds->dwHandlerBeginOffset, 
+                pConvertToHRTryCatchBounds->dwHandlerBeginOffset + pConvertToHRTryCatchBounds->cbHandlerLength);
+        }
+
+        if (pCleanupTryFinallyBounds->cbTryLength != 0 && pCleanupTryFinallyBounds->cbHandlerLength != 0)
+        {
+            strILStubCode.AppendPrintf(
+                W(".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n"), 
+                pCleanupTryFinallyBounds->dwTryBeginOffset, 
+                pCleanupTryFinallyBounds->dwTryBeginOffset + pCleanupTryFinallyBounds->cbTryLength, 
+                pCleanupTryFinallyBounds->dwHandlerBeginOffset, 
+                pCleanupTryFinallyBounds->dwHandlerBeginOffset + pCleanupTryFinallyBounds->cbHandlerLength);
+        }
+
+        //
+        // Fire the event
+        //
+        DWORD dwFlags = 0;
+        if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
+            dwFlags |= ETW_IL_STUB_FLAGS_REVERSE_INTEROP;
+#ifdef FEATURE_COMINTEROP            
+        if (m_dwStubFlags & NDIRECTSTUB_FL_COM)
+            dwFlags |= ETW_IL_STUB_FLAGS_COM_INTEROP;
+#endif // FEATURE_COMINTEROP            
+        if (m_dwStubFlags & NDIRECTSTUB_FL_NGENEDSTUB)
+            dwFlags |= ETW_IL_STUB_FLAGS_NGENED_STUB;
+        if (m_dwStubFlags & NDIRECTSTUB_FL_DELEGATE)
+            dwFlags |= ETW_IL_STUB_FLAGS_DELEGATE;
+        if (m_dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)
+            dwFlags |= ETW_IL_STUB_FLAGS_VARARG;
+        if (m_dwStubFlags & NDIRECTSTUB_FL_UNMANAGED_CALLI)
+            dwFlags |= ETW_IL_STUB_FLAGS_UNMANAGED_CALLI;
+            
+        DWORD dwToken = 0;
+        if (pTargetMD)
+            dwToken = pTargetMD->GetMemberDef();
+
+
+        //
+        // Truncate string fields. Make sure the whole event is less than 64KB
+        //
+        TruncateUnicodeString(strNamespaceOrClassName, ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strMethodName,           ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strMethodSignature,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strNativeSignature,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(stubMethodSignature,     ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strILStubCode,           ETW_IL_STUB_EVENT_CODE_STRING_FIELD_MAXSIZE);
+        
+        //
+        // Fire ETW event
+        //
+        FireEtwILStubGenerated(
+            GetClrInstanceId(),                         // ClrInstanceId
+            uModuleId,                                  // ModuleIdentifier
+            (UINT64)pStubMD,                            // StubMethodIdentifier
+            dwFlags,                                    // StubFlags                 
+            dwToken,                                    // ManagedInteropMethodToken
+            strNamespaceOrClassName.GetUnicode(),       // ManagedInteropMethodNamespace
+            strMethodName.GetUnicode(),                 // ManagedInteropMethodName
+            strMethodSignature.GetUnicode(),            // ManagedInteropMethodSignature
+            strNativeSignature.GetUnicode(),            // NativeSignature
+            stubMethodSignature.GetUnicode(),           // StubMethodSigature
+            strILStubCode.GetUnicode()                  // StubMethodILCode
+            );            
+    } // EtwOnILStubGenerated
 
 #ifdef LOGGING
     //---------------------------------------------------------------------------------------
