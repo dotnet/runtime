@@ -18,11 +18,15 @@
     <Compile Include="DebuggerTypeProxyAttributeTests.cs" />
     <Compile Include="DebuggerDisplayAttributeTests.cs" />
     <Compile Include="DebuggerBrowsableAttributeTests.cs" />
-    <Compile Include="DebuggerTests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="DebuggerVisualizerAttributeTests.cs" />
-    <Compile Include="DebugTests.cs"  Condition="'$(TargetGroup)' == 'netcoreapp'"/>
     <Compile Include="EmptyAttributeTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="DebuggerTests.cs" />
+    <Compile Include="DebugTests.cs" />
+    <Compile Include="DebugTestsNoListeners.cs" />
+    <Compile Include="DebugTestsUsingListeners.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
