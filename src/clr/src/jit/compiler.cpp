@@ -5306,6 +5306,54 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     info.compMatchedVM = false;
 #endif
 
+    // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
+    // architecture. The two main examples here are an ARM targeting altjit hosted on x86 and an ARM64
+    // targeting altjit hosted on x64. (Though with cross-bitness work, the host doesn't necessarily need
+    // to be of the same bitness.) In these cases, we need to fix up the JIT flags to be appropriate for
+    // the target, as the VM's expected target may overlap bit flags with different meaning to our target.
+    // Note that it might be better to do this immediately when setting the JIT flags in CILJit::compileMethod()
+    // (when JitFlags::SetFromFlags() is called), but this is close enough. (To move this logic to
+    // CILJit::compileMethod() would require moving the info.compMatchedVM computation there as well.)
+
+    if (!info.compMatchedVM)
+    {
+#if defined(_TARGET_ARM_)
+
+// Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
+
+#endif // defined(_TARGET_ARM_)
+
+#if defined(_TARGET_ARM64_)
+
+        // The x86/x64 architecture capabilities flags overlap with the ARM64 ones. Set a reasonable architecture
+        // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
+        // should be altered to possibly enable all of them, when they are known to all work.
+
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_AES);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_ATOMICS);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_CRC32);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_DCPOP);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_DP);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_FCMA);
+        compileFlags->Set(JitFlags::JIT_FLAG_HAS_ARM64_FP);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_FP16);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_JSCVT);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_LRCPC);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_PMULL);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA1);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA256);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA512);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SHA3);
+        compileFlags->Set(JitFlags::JIT_FLAG_HAS_ARM64_SIMD);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SIMD_V81);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SIMD_FP16);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM3);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SM4);
+        compileFlags->Clear(JitFlags::JIT_FLAG_HAS_ARM64_SVE);
+
+#endif // defined(_TARGET_ARM64_)
+    }
+
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
 
     // Set the context for token lookup.
