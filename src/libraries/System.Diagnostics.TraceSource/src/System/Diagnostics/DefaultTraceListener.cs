@@ -19,31 +19,6 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private class DefaultTraceDebugProvider : DebugProvider
-        {
-            private const int InternalWriteSize = 16384;
-            
-            public override void Write(string message)
-            {
-                // really huge messages mess up both VS and dbmon, so we chop it up into 
-                // reasonable chunks if it's too big
-                if (message == null || message.Length <= InternalWriteSize)
-                {
-                    base.Write(message);
-                }
-                else
-                {
-                    int offset;
-                    for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
-                    {
-                        base.Write(message.Substring(offset, InternalWriteSize));
-                    }
-                    base.Write(message.Substring(offset));
-                }
-            }
-        }
-
-        private static readonly DebugProvider s_provider = new DefaultTraceDebugProvider();
         private bool _assertUIEnabled; 
         private bool _settingsInitialized;
         private string _logFileName;
@@ -137,14 +112,12 @@ namespace System.Diagnostics
 
         private void WriteAssert(string stackTrace, string message, string detailMessage)
         {
-            // Tracked by #32955: WriteAssert should indent "assertMessage" same way Debug.Fail does.
-            string assertMessage = SR.DebugAssertBanner + Environment.NewLine
-                                            + SR.DebugAssertShortMessage + Environment.NewLine
-                                            + message + Environment.NewLine
-                                            + SR.DebugAssertLongMessage + Environment.NewLine +
-                                            detailMessage + Environment.NewLine
-                                            + stackTrace;
-            WriteLine(assertMessage);
+            WriteLine(SR.DebugAssertBanner + Environment.NewLine
+                   + SR.DebugAssertShortMessage + Environment.NewLine
+                   + message + Environment.NewLine
+                   + SR.DebugAssertLongMessage + Environment.NewLine
+                   + detailMessage + Environment.NewLine
+                   + stackTrace);
         }
 
         /// <devdoc>
@@ -179,13 +152,22 @@ namespace System.Diagnostics
 
         private void Write(string message, bool useLogFile)
         {
-            if (NeedIndent) 
-                WriteIndent();
+            if (message == null)
+            {
+                message = string.Empty;
+            }
 
-            s_provider.Write(message);
+            if (NeedIndent && message.Length != 0)
+            {
+                WriteIndent();
+            }
+
+            DebugProvider.WriteCore(message);
 
             if (useLogFile && !string.IsNullOrEmpty(LogFileName))
+            {
                 WriteToLogFile(message);
+            }
         }
 
         private void WriteToLogFile(string message)
