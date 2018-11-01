@@ -8,6 +8,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Serialization;
 
@@ -565,9 +567,33 @@ namespace Microsoft.XmlSerializer.Generator
                     return null;
                 }
 
-                if(s_referencedic.ContainsKey(assemblyname))
+                if (s_referencedic.ContainsKey(assemblyname))
                 {
                     string reference = s_referencedic[assemblyname];
+
+                    // For System.ServiceModel.Primitives, we need to load its runtime assembly rather than reference assembly
+                    if (assemblyname.Equals("System.ServiceModel.Primitives"))
+                    {
+                        // Replace "ref" with "lib" in the assembly's path, the path looks like:
+                        // dir\.nuget\packages\system.servicemodel.primitives\4.5.3\ref\netstandard2.0\System.ServiceModel.Primitives.dll;
+                        string pattern = @"\\ref\\netstandard\d*\.?\d*\.?\d*\\System.ServiceModel.Primitives.dll";
+                        Match match = null;
+                        try
+                        {
+                            match = Regex.Match(reference, pattern);
+                        }
+                        catch { }
+
+                        if (match != null && match.Success)
+                        {
+                            int index = match.Index + 1;
+                            StringBuilder sb = new StringBuilder(reference);
+                            sb.Remove(index, "ref".Length);
+                            sb.Insert(index, "lib");
+                            reference = sb.ToString();
+                        }
+                    }
+
                     if (!string.IsNullOrEmpty(reference))
                     {
                         if (File.Exists(reference))
