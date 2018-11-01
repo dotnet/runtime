@@ -10,6 +10,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Diagnostics
 {
@@ -1338,6 +1339,46 @@ namespace System.Diagnostics
                 RaiseOnExited();
             }
             return exited;
+        }
+
+        /// <summary>
+        /// Instructs the Process component to wait for the associated process to exit, or
+        /// for the <paramref name="cancellationToken"/> to be canceled.
+        /// </summary>
+        /// <returns>
+        /// Return true if the process has exited, false otherwise.
+        /// </returns>
+        public async Task<bool> WaitForExitAsync(CancellationToken cancellationToken = default)
+        {
+            if (!Associated) { throw new InvalidOperationException(SR.NoAssociatedProcess); }
+            if (!EnableRaisingEvents) { throw new InvalidOperationException(SR.EnableRaisingEventsRequired); }
+
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void ExitedHandler(object sender, EventArgs e)
+            {
+                tcs.TrySetResult(true);
+            }
+
+            Exited += ExitedHandler;
+
+            try
+            {
+                if (HasExited)
+                {
+                    // Catch the race where the process exited prior to registering the event handler
+                    tcs.TrySetResult(true);
+                }
+
+                using (cancellationToken.Register(() => tcs.TrySetResult(false)))
+                {
+                    return await tcs.Task.ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                Exited -= ExitedHandler;
+            }
         }
 
         /// <devdoc>
