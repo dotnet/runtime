@@ -50,6 +50,10 @@ dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
 	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
 	rm -rf `find $(top_distdir)/external -path '*\.git'`
+	rm -rf `find $(top_distdir)/external -path '*\.libs'`
+	rm -rf `find $(top_distdir)/external -path '*\.deps'`
+	rm -f `find $(top_distdir)/external -path '*\.so'`
+	rm -f `find $(top_distdir)/external -name '\.dirstamp'`
 	rm -f `find $(top_distdir)/external -path '*\.exe' -not -path '*/roslyn-binaries/*'`
 	rm -f `find $(top_distdir)/external -path '*\.dll' -not -path '*/binary-reference-assemblies/*' -not -path '*/roslyn-binaries/*'`
 	rm -rf "$(top_distdir)/external/linker/linker/Tests"
