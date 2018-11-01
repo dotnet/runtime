@@ -23,6 +23,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('windows'))">win</_OSPlatform>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</_OSPlatform>
     <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('osx'))">osx</_OSPlatform>
+    <_OSPlatform Condition="$([MSBuild]::IsOSPlatform('freebsd'))">freebsd</_OSPlatform>
     <_OSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)</_OSArchitecture>
 
     <MicrosoftNetCoreIlasmPackageRuntimeId Condition="'$(MicrosoftNetCoreIlasmPackageRuntimeId)' == ''">$(_OSPlatform)-$(_OSArchitecture.ToLower())</MicrosoftNetCoreIlasmPackageRuntimeId>
