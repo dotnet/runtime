@@ -53,5 +53,6 @@
     <Compile Include="BigInteger\ToByteArray.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="BigInteger\TryWriteBytes.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="ComplexTests.cs" />
+    <Compile Include="ComplexTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
   </ItemGroup>
 </Project>
