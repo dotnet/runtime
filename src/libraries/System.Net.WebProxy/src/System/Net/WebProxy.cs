@@ -152,6 +152,11 @@ namespace System.Net
 
         private bool IsLocal(Uri host)
         {
+            if (host.IsLoopback)
+            {
+                return true;
+            }
+
             string hostString = host.Host;
 
             IPAddress hostAddress;
@@ -200,7 +205,6 @@ namespace System.Net
 
             return
                 Address == null ||
-                host.IsLoopback ||
                 (BypassProxyOnLocal && IsLocal(host)) ||
                 IsMatchInBypassList(host);
         }
