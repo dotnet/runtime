@@ -4577,6 +4577,11 @@ mono_aot_init_gshared_method_this (gpointer aot_module, guint32 method_index, Mo
 	g_assert (this_obj);
 	klass = this_obj->vtable->klass;
 
+	/* 
+	 * We can't obtain the context from THIS_OBJ since it can point to a child class etc., so
+	 * we depend on these methods to be called indirectly which causes them to be added
+	 * to extra_methods.
+	 */
 	amodule_lock (amodule);
 	method = (MonoMethod *)g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
 	amodule_unlock (amodule);

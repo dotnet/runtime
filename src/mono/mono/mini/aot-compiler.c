@@ -6329,10 +6329,7 @@ encode_patch_list (MonoAotCompile *acfg, GPtrArray *patches, int n_patches, gboo
 		if (patch_info->type == MONO_PATCH_INFO_NONE || patch_info->type == MONO_PATCH_INFO_BB)
 			/* Nothing to do */
 			continue;
-
-		if (patch_info->type == MONO_PATCH_INFO_METHOD && patch_info->data.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-			printf ("HIT!\n");
-		}
+		/* This shouldn't allocate a new offset */
 		offset = lookup_got_offset (acfg, llvm, patch_info);
 		encode_value (offset, p, &p);
 	}
@@ -6356,12 +6353,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();
-	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
-		if (patch_info->type == MONO_PATCH_INFO_METHOD && patch_info->data.method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-			printf ("HIT!\n");
-		}
+	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
 		g_ptr_array_add (patches, patch_info);
-	}
 	g_ptr_array_sort (patches, compare_patches);
 
 	/**********************/
@@ -11408,8 +11401,10 @@ compile_methods (MonoAotCompile *acfg)
 		compile_method (acfg, (MonoMethod *)g_ptr_array_index (acfg->methods, i));
 	}
 
+#ifdef ENABLE_LLVM
 	if (acfg->llvm)
 		mono_llvm_fixup_aot_module ();
+#endif
 }
 
 static int

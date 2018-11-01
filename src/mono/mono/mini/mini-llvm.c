@@ -1670,7 +1670,7 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 	if (!mono_aot_is_shared_got_offset (got_offset)) {
 		//mono_print_ji (ji);
 		//printf ("\n");
-		ctx->has_got_access = TRUE;
+		ctx->cfg->got_access_count ++;
 	}
 
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -1746,7 +1746,9 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	}
 
 	/*
-	 * Calls are made through the GOT.
+	 * Instead of emitting an indirect call through a got slot, emit a placeholder, and
+	 * replace it with a direct call or an indirect call in mono_llvm_fixup_aot_module ()
+	 * after all methods have been emitted.
 	 */
 	if (type == MONO_PATCH_INFO_METHOD) {
 		MonoMethod *method = (MonoMethod*)data;
@@ -1760,13 +1762,8 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			ctx->cfg->patch_info = ji;
 			LLVMTypeRef llvm_type = LLVMPointerType (llvm_sig, 0);
 
-			//int got_offset = mono_aot_get_got_offset (ji);
-			//ctx->module->max_got_offset = MAX (ctx->module->max_got_offset, got_offset);
+			ctx->cfg->got_access_count ++;
 
-			// FIXME:
-			ctx->has_got_access = TRUE;
-
-			// FIXME: Memory management
 			CallSite *info = g_new0 (CallSite, 1);
 			info->method = method;
 			info->ji = ji;
@@ -1779,21 +1776,15 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			 */
 			LLVMValueRef indexes [2];
 			LLVMValueRef got_entry_addr, load;
-			//char *name;
 
 			LLVMBuilderRef builder = ctx->builder;
 			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
 			got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
 
-			//name = get_aotconst_name (type, data, got_offset);
 			load = LLVMBuildLoad (builder, got_entry_addr, "");
 			load = convert (ctx, load, llvm_type);
 			info->load = load;
-			//LLVMSetValueName (load, name ? name : "");
-			//g_free (name);
-
-			//callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
 
 			GSList *l = (GSList*)g_hash_table_lookup (ctx->method_to_callers, method);
 			l = g_slist_prepend (l, info);
@@ -1803,6 +1794,9 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 		}
 	}
 
+	/*
+	 * Calls are made through the GOT.
+	 */
 	callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
 
 	return callee;
@@ -2977,7 +2971,7 @@ emit_init_method (EmitContext *ctx)
 	inited_bb = ctx->inited_bb;
 	notinited_bb = gen_bb (ctx, "NOTINITED_BB");
 
-	LLVMBuildCondBr (ctx->builder, cmp, notinited_bb, inited_bb);
+	ctx->cfg->llvmonly_init_cond = LLVMBuildCondBr (ctx->builder, cmp, notinited_bb, inited_bb);
 
 	builder = ctx->builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (ctx->builder, notinited_bb);
@@ -5593,7 +5587,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (!mono_aot_is_shared_got_offset (got_offset)) {
 				//mono_print_ji (ji);
 				//printf ("\n");
-				ctx->has_got_access = TRUE;
+				ctx->cfg->got_access_count ++;
 			}
  
 			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -7714,7 +7708,7 @@ emit_method_inner (EmitContext *ctx)
 		 * NATIVE_TO_MANAGED methods might be called on a thread not attached to the runtime, so they are initialized when loaded
 		 * in load_method ().
 		 */
-		gboolean needs_init = ctx->has_got_access;
+		gboolean needs_init = ctx->cfg->got_access_count > 0;
 		if (!needs_init && mono_class_get_cctor (cfg->method->klass)) {
 			/* Needs init to run the cctor */
 			if (cfg->method->flags & METHOD_ATTRIBUTE_STATIC)
@@ -9012,20 +9006,19 @@ void
 mono_llvm_fixup_aot_module (void)
 {
 	MonoLLVMModule *module = &aot_module;
+	GHashTableIter iter;
+	MonoMethod *method;
+	GSList *callers, *l;
 
 	if (!module->llvm_only)
 		return;
 
-	printf ("FIXUP!\n");
 	/*
 	 * Replace GOT entries for directly callable methods with the methods themselves.
 	 * It would be easier to implement this by predefining all methods before compiling
 	 * their bodies, but that couldn't handle the case when a method fails to compile
 	 * with llvm.
 	 */
-	GHashTableIter iter;
-	MonoMethod *method;
-	GSList *callers, *l;
 
 	GHashTable *patches_to_null = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 
@@ -9045,50 +9038,11 @@ mono_llvm_fixup_aot_module (void)
 			 * amodule->extra_methods.
 			 */
 			if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && !method->is_inflated) {
-				//int got_offset = mono_aot_get_got_offset (site->ji);
-				//module->max_got_offset = MAX (module->max_got_offset, got_offset);
-
 				mono_llvm_replace_uses_of (placeholder, lmethod);
-				/*
-				 * This patch was added to cfg->patch_info, so we have to
-				 * nullify it since it has no GOT slot assigned.
-				 */
 				g_hash_table_insert (patches_to_null, site->ji, site->ji);
-				//site->ji->type = MONO_PATCH_INFO_NONE;
-#if 0
-	/* 
-	 * If the got slot is shared, it means its initialized when the aot image is loaded, so we don't need to
-	 * explicitly initialize it.
-	 */
-	if (!mono_aot_is_shared_got_offset (got_offset)) {
-		//mono_print_ji (ji);
-		//printf ("\n");
-		ctx->has_got_access = TRUE;
-	}
-
-	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
-	indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
-	got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
-
-	name = get_aotconst_name (type, data, got_offset);
-	if (llvm_type) {
-		load = LLVMBuildLoad (builder, got_entry_addr, "");
-		load = convert (ctx, load, llvm_type);
-		LLVMSetValueName (load, name ? name : "");
-	} else {
-		load = LLVMBuildLoad (builder, got_entry_addr, name ? name : "");
-	}
-	g_free (name);
-	//set_invariant_load_flag (load);
-
-	return load;
-#endif
-	//mono_llvm_replace_uses_of (caller, lmethod);
 			} else {
 				int got_offset = mono_aot_get_got_offset (site->ji);
 				module->max_got_offset = MAX (module->max_got_offset, got_offset);
-
-				//site->ji->got_offset = got_offset;
 
 				LLVMBuilderRef builder = LLVMCreateBuilder ();
 				LLVMPositionBuilderBefore (builder, placeholder);
@@ -9101,6 +9055,7 @@ mono_llvm_fixup_aot_module (void)
 				load = LLVMBuildBitCast (builder, load, site->type, name ? name : "");
 				LLVMReplaceAllUsesWith (placeholder, load);
 			}
+			g_free (site);
 		}
 	}
 
@@ -9115,19 +9070,22 @@ mono_llvm_fixup_aot_module (void)
 		MonoCompile *cfg = (MonoCompile *)g_ptr_array_index (module->cfgs, i);
 		for (MonoJumpInfo *patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 			if (patch_info->type == MONO_PATCH_INFO_METHOD) {
-				if (g_hash_table_lookup (patches_to_null, patch_info))
+				if (g_hash_table_lookup (patches_to_null, patch_info)) {
 					patch_info->type = MONO_PATCH_INFO_NONE;
-#if FALSE
-				method = patch_info->data.method;
-				LLVMValueRef lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
+					/* Nullify the call to init_method () if possible */
+					g_assert (cfg->got_access_count);
+					cfg->got_access_count --;
+					if (cfg->got_access_count == 0) {
+						LLVMValueRef br = (LLVMValueRef)cfg->llvmonly_init_cond;
 
-				if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED))
-					patch_info->type = MONO_PATCH_INFO_NONE;
-#endif
+						LLVMSetSuccessor (br, 0, LLVMGetSuccessor (br, 1));
+					}
+				}
 			}
 		}
 	}
 
+	g_hash_table_destroy (patches_to_null);
 }
 
 static LLVMValueRef
