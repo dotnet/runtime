@@ -19,6 +19,8 @@ namespace System.Numerics
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
         public static readonly Complex ImaginaryOne = new Complex(0.0, 1.0);
+        public static readonly Complex NaN = new Complex(double.NaN, double.NaN);
+        public static readonly Complex Infinity = new Complex(double.PositiveInfinity, double.PositiveInfinity);
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
@@ -647,6 +649,11 @@ namespace System.Numerics
             }
         }
 
+        public static bool IsFinite(Complex value) => double.IsFinite(value.m_real) && double.IsFinite(value.m_imaginary);
+
+        public static bool IsInfinity(Complex value) => double.IsInfinity(value.m_real) || double.IsInfinity(value.m_imaginary);
+
+        public static bool IsNaN(Complex value) => !IsInfinity(value) && !IsFinite(value);
 
         public static Complex Log(Complex value)
         {
