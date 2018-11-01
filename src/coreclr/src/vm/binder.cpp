@@ -646,7 +646,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 {
     STANDARD_VM_CONTRACT;
 
-    char* pUnmanagedSig = NULL;
+    const char* pUnmanagedSig = NULL;
 
     FCSigCheck* pSigCheck = FCSigCheck::g_pFCSigCheck;
     while (pSigCheck != NULL)
@@ -661,7 +661,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
     MetaSig msig(pMD);   
     int argIndex = -2; // start with return value
     int enregisteredArguments = 0;
-    char* pUnmanagedArg = pUnmanagedSig;
+    const char* pUnmanagedArg = pUnmanagedSig;
     for (;;)
     {
         CorElementType argType = ELEMENT_TYPE_END;
@@ -755,9 +755,9 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
                 ("Unexpected end of managed fcall signature\n"
                 "Method: %s:%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-            char* pUnmanagedArgEnd = strchr(pUnmanagedArg, ',');
+            const char* pUnmanagedArgEnd = strchr(pUnmanagedArg, ',');
 
-            char* pUnmanagedTypeEnd = (pUnmanagedArgEnd != NULL) ? 
+            const char* pUnmanagedTypeEnd = (pUnmanagedArgEnd != NULL) ? 
                 pUnmanagedArgEnd : (pUnmanagedArg + strlen(pUnmanagedArg));
 
             if (argIndex != -2)

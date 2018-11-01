@@ -434,7 +434,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define CANNOTTHROWCOMPLUSEXCEPTION() ANNOTATION_NOTHROW; \
     COMPlusCannotThrowExceptionHelper _dummyvariable(TRUE, __FUNCTION__, __FILE__, __LINE__);
 
-extern char *g_ExceptionFile;
+extern const char *g_ExceptionFile;
 extern DWORD g_ExceptionLine;
 
 #define THROWLOG() ( g_ExceptionFile = __FILE__, g_ExceptionLine = __LINE__, TRUE )

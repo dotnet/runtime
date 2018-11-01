@@ -39,7 +39,7 @@ BBSweep              g_BBSweep;
 Volatile<LONG>       g_trtChgStamp = 0;
 Volatile<LONG>       g_trtChgInFlight = 0;
 
-char *               g_ExceptionFile;   // Source of the last thrown exception (COMPLUSThrow())
+const char *         g_ExceptionFile;   // Source of the last thrown exception (COMPLUSThrow())
 DWORD                g_ExceptionLine;   // ... ditto ...
 void *               g_ExceptionEIP;    // Managed EIP of the last guy to call JITThrow.
 #endif // _DEBUG

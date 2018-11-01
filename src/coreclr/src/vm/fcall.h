@@ -967,7 +967,7 @@ extern int FC_NO_TAILCALL;
 #ifdef CHECK_FCALL_SIGNATURE
 struct FCSigCheck {
 public:
-    FCSigCheck(void* fnc, char* sig)
+    FCSigCheck(void* fnc, const char* sig)
     {
         LIMITED_METHOD_CONTRACT;
         func = fnc;
@@ -978,7 +978,7 @@ public:
 
     FCSigCheck* next;
     void* func;
-    char* signature;
+    const char* signature;
 
     static FCSigCheck* g_pFCSigCheck;
 };

@@ -1137,7 +1137,7 @@ class BaseContract
         }
     }
 
-    void DoChecks(UINT testmask, __in_z const char *szFunction, __in_z char *szFile, int lineNum);
+    void DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum);
     void Disable()
     {
     }
@@ -1380,8 +1380,9 @@ typedef __SafeToUsePostCondition __PostConditionOK;
     Contract::Returner<_returntype> ___returner(RETVAL);                \
     Contract::RanPostconditions ___ran(__FUNCTION__);                   \
     Contract::Operation ___op = Contract::Setup;                        \
+    BOOL ___contract_enabled = FALSE;                                   \
     DEBUG_ASSURE_NO_RETURN_BEGIN(CONTRACT)                              \
-    BOOL ___contract_enabled = Contract::EnforceContract();             \
+    ___contract_enabled = Contract::EnforceContract();                  \
     enum {___disabled = 0};                                             \
     if (!___contract_enabled)                                           \
         ___contract.Disable();                                          \
@@ -1897,7 +1898,7 @@ public:
     DEBUG_NOINLINE ~AutoCleanupContractViolationHolder()
     {
         SCAN_SCOPE_END;
-        LeaveInternal();
+        this->LeaveInternal();
     };
 };
 
