@@ -6983,13 +6983,14 @@ AdjustContextForWriteBarrier(
         if (withinWriteBarrierGroup || withinPatchedWriteBarrierGroup)
         {
             DWORD* esp = (DWORD*)pContext->Esp;
-            if (withinWriteBarrierGroup) {
+            if (withinWriteBarrierGroup)
+            {
 #if defined(WRITE_BARRIER_CHECK)
-                pContext->Ebp = *esp; esp++;
-                pContext->Ecx = *esp; esp++;
+                pContext->Ebp = *esp++;
+                pContext->Ecx = *esp++;
 #endif
             }
-            pContext->Eip = *esp; esp++;
+            pContext->Eip = *esp++;
             pContext->Esp = (DWORD)esp;
             return TRUE;
         }
