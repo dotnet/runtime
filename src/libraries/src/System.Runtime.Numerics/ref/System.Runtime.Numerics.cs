@@ -170,6 +170,8 @@ namespace System.Numerics
         public static readonly System.Numerics.Complex ImaginaryOne;
         public static readonly System.Numerics.Complex One;
         public static readonly System.Numerics.Complex Zero;
+        public static readonly System.Numerics.Complex NaN;
+        public static readonly System.Numerics.Complex Infinity;
         public Complex(double real, double imaginary) { throw null; }
         public double Imaginary { get { throw null; } }
         public double Magnitude { get { throw null; } }
@@ -193,6 +195,9 @@ namespace System.Numerics
         public static System.Numerics.Complex Exp(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex FromPolarCoordinates(double magnitude, double phase) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsFinite(System.Numerics.Complex value) { throw null; }
+        public static bool IsInfinity(System.Numerics.Complex value) { throw null; }
+        public static bool IsNaN(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Log(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Log(System.Numerics.Complex value, double baseValue) { throw null; }
         public static System.Numerics.Complex Log10(System.Numerics.Complex value) { throw null; }
