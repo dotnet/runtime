@@ -401,8 +401,8 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT);
 
 #ifdef _DEBUG
 
-VOID LogInterop(__in_z LPSTR szMsg);
-VOID LogInterop(__in_z LPWSTR szMsg);
+VOID LogInterop(__in_z LPCSTR szMsg);
+VOID LogInterop(__in_z LPCWSTR szMsg);
 
 VOID LogInteropLeak(IUnkEntry * pEntry);
 VOID LogInteropLeak(IUnknown* pItf);

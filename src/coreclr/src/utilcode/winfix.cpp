@@ -52,7 +52,7 @@ static BOOL gWinWrapperContractRecursionBreak = FALSE;
 class WinWrapperContract
 {
     public:
-        WinWrapperContract(char *szFunction, char *szFile, int lineNum)
+        WinWrapperContract(const char *szFunction, const char *szFile, int lineNum)
         {
             CANNOT_HAVE_CONTRACT;
 
