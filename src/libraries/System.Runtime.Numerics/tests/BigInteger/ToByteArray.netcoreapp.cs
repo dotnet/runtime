@@ -55,6 +55,7 @@ namespace System.Numerics.Tests
             MatrixGenerator(FromStringTests_MemberDataSeed(), true);
 
         [Theory]
+        [MemberData(nameof(FromStringTests_MemberData))]
         public void ToByteArray_FromStringTests(string str, bool isUnsigned, bool isBigEndian, byte[] expectedBytes)
         {
             BigInteger bi = BigInteger.Parse(str);
