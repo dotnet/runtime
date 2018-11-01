@@ -130,6 +130,8 @@ ENDM
 
 ; The code here is tightly coupled with AdjustContextForWriteBarrier, if you change
 ; anything here, you might need to change AdjustContextForWriteBarrier as well
+; Note that beside the AV case, we might be unwinding inside the region where we have
+; already push ecx and ebp in the branch under FEATURE_DATABREAKPOINT 
 WriteBarrierHelper MACRO rg
         ALIGN 4
 
