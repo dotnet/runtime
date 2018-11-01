@@ -284,7 +284,7 @@ BOOL LaunchJITDebugger()
         STARTUPINFO StartupInfo;
         memset(&StartupInfo, 0, sizeof(StartupInfo));
         StartupInfo.cb = sizeof(StartupInfo);
-        StartupInfo.lpDesktop = W("Winsta0\\Default");
+        StartupInfo.lpDesktop = const_cast<LPWSTR>(W("Winsta0\\Default"));
 
         PROCESS_INFORMATION ProcessInformation;
         if (WszCreateProcess(NULL, cmdLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))

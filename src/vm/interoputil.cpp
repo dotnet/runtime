@@ -6273,13 +6273,13 @@ VOID IntializeInteropLogging()
     g_TraceCount = g_pConfig->GetTraceWrapper();
 }
 
-VOID LogInterop(__in_z LPSTR szMsg)
+VOID LogInterop(__in_z LPCSTR szMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%s\n",szMsg) );
 }
 
-VOID LogInterop(__in_z LPWSTR wszMsg)
+VOID LogInterop(__in_z LPCWSTR wszMsg)
 {
     LIMITED_METHOD_CONTRACT;
     LOG( (LF_INTEROP, LL_INFO10, "%S\n", wszMsg) );

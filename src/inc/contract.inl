@@ -40,7 +40,7 @@ void SoTolerantViolationHelper(const char *szFunction,
 #endif
 
 
-inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z char *szFile, int lineNum)
+inline void BaseContract::DoChecks(UINT testmask, __in_z const char *szFunction, __in_z const char *szFile, int lineNum)
 {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_NOTHROW;
