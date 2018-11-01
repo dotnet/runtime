@@ -78,6 +78,6 @@ namespace System.Diagnostics
         }
 
         // internal and not readonly so that the tests can swap this out.
-        internal static Action<string> s_WriteCore;
+        internal static Action<string> s_WriteCore = null;
     }
 }
