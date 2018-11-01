@@ -126,9 +126,9 @@ typedef void (*GcScanFunc) (gpointer*, gpointer);
 #endif
 
 #ifndef MONO_HANDLE_TRACK_OWNER
-MonoRawHandle mono_handle_new (MonoObject *object);
+MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info);
 #else
-MonoRawHandle mono_handle_new (MonoObject *object, const char* owner);
+MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info, const char* owner);
 #endif
 
 void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check);
@@ -172,32 +172,36 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 #endif
 }
 
+// There are deliberately locals and a constant NULL global with this same name.
+extern MonoThreadInfo * const mono_thread_info_current_var;
+
 /*
 Icall macros
 */
 #define SETUP_ICALL_COMMON	\
 	do { \
 		ERROR_DECL (error);	\
-		MonoThreadInfo *__info = mono_thread_info_current ();	\
-		error_init (error);	\
+		/* There are deliberately locals and a constant NULL global with this same name. */ \
+		MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current (); \
 
 #define CLEAR_ICALL_COMMON	\
 	mono_error_set_pending_exception (error);
 
 #define SETUP_ICALL_FRAME	\
 	HandleStackMark __mark;	\
-	mono_stack_mark_init (__info, &__mark);
+	mono_stack_mark_init (mono_thread_info_current_var, &__mark);
 
 #define CLEAR_ICALL_FRAME	\
-	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
-	mono_stack_mark_pop (__info, &__mark);
+	mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__);	\
+	mono_stack_mark_pop (mono_thread_info_current_var, &__mark);
 
 #define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
-	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
-	(RESULT) = g_cast (mono_stack_mark_pop_value (__info, &__mark, (HANDLE)));
+	mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__);	\
+	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_thread_info_current_var, &__mark, (HANDLE)));
 
 #define HANDLE_FUNCTION_ENTER() do {				\
-	MonoThreadInfo *__info = mono_thread_info_current ();	\
+	/* There are deliberately locals and a constant NULL global with this same name. */ \
+	MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ();	\
 	SETUP_ICALL_FRAME					\
 
 #define HANDLE_FUNCTION_RETURN()		\
@@ -245,10 +249,10 @@ mono_thread_info_push_stack_mark (MonoThreadInfo *info, void *mark)
 #define SETUP_STACK_WATERMARK	\
 	int __dummy;	\
 	__builtin_unwind_init ();	\
-	void *__old_stack_mark = mono_thread_info_push_stack_mark (__info, &__dummy);
+	void *__old_stack_mark = mono_thread_info_push_stack_mark (mono_thread_info_current_var, &__dummy);
 
 #define CLEAR_STACK_WATERMARK	\
-	mono_thread_info_pop_stack_mark (__info, __old_stack_mark);
+	mono_thread_info_pop_stack_mark (mono_thread_info_current_var, __old_stack_mark);
 
 #else
 #define SETUP_STACK_WATERMARK
@@ -311,12 +315,12 @@ typedef struct _MonoTypeofCastHelper *MonoTypeofCastHelper; // a pointer type un
 #ifndef MONO_HANDLE_TRACK_OWNER
 
 #define MONO_HANDLE_NEW(type, object) \
-	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object))))
+	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), mono_thread_info_current_var)))
 
 #else
 
 #define MONO_HANDLE_NEW(type, object) \
-	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), HANDLE_OWNER)))
+	(MONO_HANDLE_CAST_FOR (type) (mono_handle_new (MONO_HANDLE_TYPECHECK_FOR (type) (object), mono_thread_info_current_var, HANDLE_OWNER)))
 
 #endif
 

@@ -155,15 +155,18 @@ mono_handle_chunk_leak_check (HandleStack *handles) {
 }
 #endif
 
+// There are deliberately locals and a constant NULL global with this same name.
+extern MonoThreadInfo * const mono_thread_info_current_var = NULL;
+
 /* Actual handles implementation */
 MonoRawHandle
 #ifndef MONO_HANDLE_TRACK_OWNER
-mono_handle_new (MonoObject *obj)
+mono_handle_new (MonoObject *obj, MonoThreadInfo *info)
 #else
-mono_handle_new (MonoObject *obj, const char *owner)
+mono_handle_new (MonoObject *obj, MonoThreadInfo *info, const char *owner)
 #endif
 {
-	MonoThreadInfo *info = mono_thread_info_current ();
+	info = info ? info : mono_thread_info_current ();
 	HandleStack *handles = info->handle_stack;
 	HandleChunk *top = handles->top;
 #ifdef MONO_HANDLE_TRACK_SP
@@ -366,9 +369,9 @@ mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, Mon
 	MonoObject *obj = value ? *((MonoObject**)value) : NULL;
 	mono_stack_mark_pop (info, stackmark);
 #ifndef MONO_HANDLE_TRACK_OWNER
-	return mono_handle_new (obj);
+	return mono_handle_new (obj, info);
 #else
-	return mono_handle_new (obj, "<mono_stack_mark_pop_value>");
+	return mono_handle_new (obj, info, "<mono_stack_mark_pop_value>");
 #endif
 }
 
