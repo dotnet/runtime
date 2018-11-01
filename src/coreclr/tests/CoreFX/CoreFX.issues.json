@@ -59,8 +59,65 @@
                 {
                     "name": "System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateAgainstBlobs",
                     "reason": "The stored blob for type System.CodeDom.MemberAttributes is outdated and needs to be updated."
+                },
+                {
+                    "name": "System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateEqualityComparersAgainstBlobs",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream",
+                    "reason": "outdated"
                 }
             ]
+        }
+    },
+    {
+        "name": "System.Collections.Immutable.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
+        }
+    },
+    {
+        "name": "System.Reflection.Metadata.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
+        }
+    },
+    {
+        "name": "System.Text.Encodings.Web.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
+        }
+    },
+    {
+        "name": "System.IO.Pipelines.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
+        }
+    },
+    {
+        "name": "System.Data.Common.Tests",
+        "enabled": false,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": null
         }
     },
     {
