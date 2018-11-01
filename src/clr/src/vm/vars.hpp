@@ -352,7 +352,7 @@ EXTERN IBCLogger            g_IBCLogger;
 // that does not allow g_TrapReturningThreads to creep up unchecked.
 EXTERN Volatile<LONG>       g_trtChgStamp;
 EXTERN Volatile<LONG>       g_trtChgInFlight;
-EXTERN char *               g_ExceptionFile;
+EXTERN const char *         g_ExceptionFile;
 EXTERN DWORD                g_ExceptionLine;
 EXTERN void *               g_ExceptionEIP;
 #endif

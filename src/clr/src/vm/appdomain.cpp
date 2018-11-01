@@ -6125,7 +6125,7 @@ LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
 
 LPCWSTR AppDomain::GetFriendlyNameForLogging()
 {
-    CONTRACT(LPWSTR)
+    CONTRACT(LPCWSTR)
     {
         NOTHROW;
         GC_NOTRIGGER;

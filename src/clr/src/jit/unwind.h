@@ -95,7 +95,7 @@ protected:
         return uwiComp->dspOffset(o);
     }
 
-    static char* dspBool(bool b)
+    static const char* dspBool(bool b)
     {
         return (b) ? "true" : "false";
     }
