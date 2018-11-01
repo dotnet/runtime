@@ -2135,15 +2135,16 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
 
                     if (scenario == 'pmi_asm_diffs') {
-                        // Now, generate the layout. We don't have any tests, so we need to do some annoying magic before calling runtest.cmd.
-                        buildCommands += "run.cmd build -Project=\"tests\\build.proj\" -BuildOS=Windows_NT -BuildType=${lowerConfiguration} -BuildArch=${arch} -BatchRestorePackages"
+                        // Now, generate the layout. We don't have any tests, but we need to restore the packages before calling runtest.cmd.
+                        // Call build-test.cmd to do this. It will do a little more than we need, but that's ok.
+                        buildCommands += "build-test.cmd ${lowerConfiguration} ${arch} skipmanaged skipnative"
                         buildCommands += "tests\\runtest.cmd ${lowerConfiguration} ${arch} GenerateLayoutOnly"
 
                         // TODO: Add -target_branch and -commit_hash arguments based on GitHub variables.
                         buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-pmi-diffs.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration}"
 
                         // ZIP up the asm
-                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('_\\_asm', '.\\dasm.${os}.${architecture}.${configuration}.zip')\"";
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('_\\pmi\\asm', '.\\dasm.${os}.${architecture}.${configuration}.zip')\"";
 
                         // Archive the asm
                         Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.zip")
@@ -2397,7 +2398,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration}"
 
                         // ZIP up the asm
-                        buildCommands += "zip -r dasm.${os}.${architecture}.${configuration}.zip ./_/_asm"
+                        buildCommands += "zip -r dasm.${os}.${architecture}.${configuration}.zip ./_/pmi/asm"
 
                         // Archive the asm
                         Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.zip")
@@ -2573,13 +2574,13 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     else if (scenario == 'pmi_asm_diffs') {
                         buildCommands += "${dockerCmd}\${WORKSPACE}/build-test.sh ${lowerConfiguration} ${architecture} cross generatelayoutonly"
 
-                        // Pass `-skip_diffs` -- the actual diffs will be done on an arm machine in the test job. This is the build job.
+                        // Pass `--skip_diffs` -- the actual diffs will be done on an arm machine in the test job. This is the build job.
                         // TODO: Add -target_branch and -commit_hash arguments based on GitHub variables.
-                        buildCommands += "python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -skip_diffs True"
+                        buildCommands += "python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} --skip_diffs"
 
                         // ZIP what we created.
                         buildCommands += "zip -r coreroot.${os}.${architecture}.${lowerConfiguration}.zip ./bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
-                        buildCommands += "zip -r coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip ./_/_c/bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
+                        buildCommands += "zip -r coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip ./_/pmi/base/bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
 
                         // Archive the built artifacts
                         Utilities.addArchival(newJob, "coreroot.${os}.${architecture}.${lowerConfiguration}.zip,coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip")
@@ -3350,7 +3351,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 def inputUrlRoot = "https://ci.dot.net/job/${mungedProjectName}/job/${mungedBranchName}/${inputJobPath}/\${CORECLR_BUILD}/artifact"
 
                 if (isPmiAsmDiffsScenario) {
-                    def workspaceRelativeRootLinux = "_"
+                    def workspaceRelativeRootLinux = "_/pmi"
                     shell("mkdir -p ${workspaceRelativeRootLinux}")
                     shell("wget --progress=dot:giga ${inputUrlRoot}/coreroot.${os}.${architecture}.${lowerConfiguration}.zip")
                     shell("wget --progress=dot:giga ${inputUrlRoot}/coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip")
@@ -3432,9 +3433,9 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
 
             if (isPmiAsmDiffsScenario) {
                 shell("""\
-python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -skip_baseline_build True""")
+python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} --skip_baseline_build""")
 
-                shell("zip -r dasm.${os}.${architecture}.${configuration}.zip ./_/_asm")
+                shell("zip -r dasm.${os}.${architecture}.${configuration}.zip ./_/pmi/asm")
             }
             else if (doCoreFxTesting) {
                 shell("""\
