@@ -1,3 +1,13 @@
 {
-  "projects": [ "./tests/src", "./tests/src/Common" ]
+  "tools": {
+    "dotnet": "2.1.401"
+  },
+  "native-tools": {
+    "cmake": "3.11.1",
+    "python": "2.7.15"
+  },
+  "msbuild-sdks": {
+    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.18529.8",
+    "Microsoft.DotNet.Helix.Sdk": "1.0.0-beta.18529.8"
+  }
 }
