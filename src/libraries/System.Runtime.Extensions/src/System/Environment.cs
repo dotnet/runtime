@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.Augments;
@@ -44,7 +45,14 @@ namespace System
             Hashtable hashTable = new Hashtable();
             foreach (KeyValuePair<string, string> pair in pairs)
             {
-                hashTable.Add(pair.Key, pair.Value);
+                try 
+                {
+                    hashTable.Add(pair.Key, pair.Value);                 
+                }
+                catch (ArgumentException)
+                {
+                    // Throw and catch intentionally to provide non-fatal notification about corrupted environment block
+                }
             }
             return hashTable;
         }
