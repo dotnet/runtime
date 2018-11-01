@@ -9075,11 +9075,13 @@ mono_llvm_fixup_aot_module (void)
 					/* Nullify the call to init_method () if possible */
 					g_assert (cfg->got_access_count);
 					cfg->got_access_count --;
+#if LLVM_API_VERSION >= 600
 					if (cfg->got_access_count == 0) {
 						LLVMValueRef br = (LLVMValueRef)cfg->llvmonly_init_cond;
 
 						LLVMSetSuccessor (br, 0, LLVMGetSuccessor (br, 1));
 					}
+#endif
 				}
 			}
 		}
