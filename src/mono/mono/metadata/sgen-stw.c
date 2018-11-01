@@ -253,6 +253,9 @@ sgen_unified_suspend_stop_world (void)
 {
 	int sleep_duration = -1;
 
+	// we can't lead STW if we promised not to safepoint.
+	g_assert (!mono_thread_info_will_not_safepoint (mono_thread_info_current ()));
+
 	mono_threads_begin_global_suspend ();
 	THREADS_STW_DEBUG ("[GC-STW-BEGIN][%p] *** BEGIN SUSPEND *** \n", mono_thread_info_get_tid (mono_thread_info_current ()));
 

@@ -129,6 +129,9 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 
 	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", mono_thread_info_get_tid (info));
 
+	/* Fast fail if no_safepoints is set */
+	g_assert (!(info->thread_state & THREAD_SUSPEND_NO_SAFEPOINTS_MASK));
+
 	/* Fast check for pending suspend requests */
 	if (!(info->thread_state & STATE_ASYNC_SUSPEND_REQUESTED))
 		return;
@@ -703,4 +706,18 @@ mono_threads_coop_end_global_suspend (void)
 {
 	if (mono_threads_are_safepoints_enabled ())
 		mono_polling_required = 0;
+}
+
+void
+mono_threads_enter_no_safepoints_region (const char *func)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_threads_transition_begin_no_safepoints (mono_thread_info_current (), func);
+}
+
+void
+mono_threads_exit_no_safepoints_region (const char *func)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_threads_transition_end_no_safepoints (mono_thread_info_current (), func);
 }
