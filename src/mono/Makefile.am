@@ -52,7 +52,10 @@ dist-hook:
 	rm -rf `find $(top_distdir)/external -path '*\.git'`
 	rm -rf `find $(top_distdir)/external -path '*\.libs'`
 	rm -rf `find $(top_distdir)/external -path '*\.deps'`
+	rm -f `find $(top_distdir)/external -path '*\.o'`
 	rm -f `find $(top_distdir)/external -path '*\.so'`
+	rm -f `find $(top_distdir)/external -path '*\.lo'`
+	rm -f `find $(top_distdir)/external -path '*\.Plo'`
 	rm -f `find $(top_distdir)/external -name '\.dirstamp'`
 	rm -f `find $(top_distdir)/external -path '*\.exe' -not -path '*/roslyn-binaries/*'`
 	rm -f `find $(top_distdir)/external -path '*\.dll' -not -path '*/binary-reference-assemblies/*' -not -path '*/roslyn-binaries/*'`
