@@ -11,7 +11,7 @@ namespace System.Diagnostics
     /// <summary>
     /// Provides a set of properties and methods for debugging code.
     /// </summary>
-    public static class Debug
+    public static partial class Debug
     {
         private static volatile DebugProvider s_provider = new DebugProvider();
 
