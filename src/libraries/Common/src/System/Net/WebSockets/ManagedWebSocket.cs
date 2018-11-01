@@ -440,7 +440,7 @@ namespace System.Net.WebSockets
                 int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, payloadBuffer.Span);
                 using (cancellationToken.Register(s => ((ManagedWebSocket)s).Abort(), this))
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), default).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -639,7 +639,7 @@ namespace System.Net.WebSockets
                             // Make sure we have the first two bytes, which includes the start of the payload length.
                             if (_receiveBufferCount < 2)
                             {
-                                await EnsureBufferContainsAsync(2, throwOnPrematureClosure: true).ConfigureAwait(false);
+                                await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: true).ConfigureAwait(false);
                             }
 
                             // Then make sure we have the full header based on the payload length.
@@ -651,7 +651,7 @@ namespace System.Net.WebSockets
                                     2 +
                                     (_isServer ? MaskLength : 0) +
                                     (payloadLength <= 125 ? 0 : payloadLength == 126 ? sizeof(ushort) : sizeof(ulong)); // additional 2 or 8 bytes for 16-bit or 64-bit length
-                                await EnsureBufferContainsAsync(minNeeded).ConfigureAwait(false);
+                                await EnsureBufferContainsAsync(minNeeded, cancellationToken).ConfigureAwait(false);
                             }
                         }
 
@@ -667,12 +667,12 @@ namespace System.Net.WebSockets
                     // Alternatively, if it's a close message, handle it and exit.
                     if (header.Opcode == MessageOpcode.Ping || header.Opcode == MessageOpcode.Pong)
                     {
-                        await HandleReceivedPingPongAsync(header).ConfigureAwait(false);
+                        await HandleReceivedPingPongAsync(header, cancellationToken).ConfigureAwait(false);
                         continue;
                     }
                     else if (header.Opcode == MessageOpcode.Close)
                     {
-                        await HandleReceivedCloseAsync(header).ConfigureAwait(false);
+                        await HandleReceivedCloseAsync(header, cancellationToken).ConfigureAwait(false);
                         return resultGetter.GetResult(0, WebSocketMessageType.Close, true, _closeStatus, _closeStatusDescription);
                     }
 
@@ -722,7 +722,7 @@ namespace System.Net.WebSockets
                     {
                         int numBytesRead = await _stream.ReadAsync(payloadBuffer.Slice(
                             totalBytesReceived,
-                            (int)Math.Min(payloadBuffer.Length, header.PayloadLength) - totalBytesReceived)).ConfigureAwait(false);
+                            (int)Math.Min(payloadBuffer.Length, header.PayloadLength) - totalBytesReceived), cancellationToken).ConfigureAwait(false);
                         if (numBytesRead <= 0)
                         {
                             ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
@@ -770,7 +770,7 @@ namespace System.Net.WebSockets
         /// <summary>Processes a received close message.</summary>
         /// <param name="header">The message header.</param>
         /// <returns>The received result message.</returns>
-        private async Task HandleReceivedCloseAsync(MessageHeader header)
+        private async Task HandleReceivedCloseAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             lock (StateUpdateLock)
             {
@@ -794,7 +794,7 @@ namespace System.Net.WebSockets
             {
                 if (_receiveBufferCount < header.PayloadLength)
                 {
-                    await EnsureBufferContainsAsync((int)header.PayloadLength).ConfigureAwait(false);
+                    await EnsureBufferContainsAsync((int)header.PayloadLength, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (_isServer)
@@ -828,18 +828,18 @@ namespace System.Net.WebSockets
 
             if (!_isServer && _sentCloseFrame)
             {
-                await WaitForServerToCloseConnectionAsync().ConfigureAwait(false);
+                await WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
         /// <summary>Issues a read on the stream to wait for EOF.</summary>
-        private async Task WaitForServerToCloseConnectionAsync()
+        private async Task WaitForServerToCloseConnectionAsync(CancellationToken cancellationToken)
         {
             // Per RFC 6455 7.1.1, try to let the server close the connection.  We give it up to a second.
             // We simply issue a read and don't care what we get back; we could validate that we don't get
             // additional data, but at this point we're about to close the connection and we're just stalling
             // to try to get the server to close first.
-            ValueTask<int> finalReadTask = _stream.ReadAsync(_receiveBuffer, default);
+            ValueTask<int> finalReadTask = _stream.ReadAsync(_receiveBuffer, cancellationToken);
             if (!finalReadTask.IsCompletedSuccessfully)
             {
                 const int WaitForCloseTimeoutMs = 1_000; // arbitrary amount of time to give the server (same as netfx)
@@ -861,12 +861,12 @@ namespace System.Net.WebSockets
 
         /// <summary>Processes a received ping or pong message.</summary>
         /// <param name="header">The message header.</param>
-        private async Task HandleReceivedPingPongAsync(MessageHeader header)
+        private async Task HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             // Consume any (optional) payload associated with the ping/pong.
             if (header.PayloadLength > 0 && _receiveBufferCount < header.PayloadLength)
             {
-                await EnsureBufferContainsAsync((int)header.PayloadLength).ConfigureAwait(false);
+                await EnsureBufferContainsAsync((int)header.PayloadLength, cancellationToken).ConfigureAwait(false);
             }
 
             // If this was a ping, send back a pong response.
@@ -1158,7 +1158,7 @@ namespace System.Net.WebSockets
 
             if (!_isServer && _receivedCloseFrame)
             {
-                await WaitForServerToCloseConnectionAsync().ConfigureAwait(false);
+                await WaitForServerToCloseConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -1170,7 +1170,7 @@ namespace System.Net.WebSockets
             _receiveBufferOffset += count;
         }
 
-        private async Task EnsureBufferContainsAsync(int minimumRequiredBytes, bool throwOnPrematureClosure = true)
+        private async Task EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken, bool throwOnPrematureClosure = true)
         {
             Debug.Assert(minimumRequiredBytes <= _receiveBuffer.Length, $"Requested number of bytes {minimumRequiredBytes} must not exceed {_receiveBuffer.Length}");
 
@@ -1187,7 +1187,7 @@ namespace System.Net.WebSockets
                 // While we don't have enough data, read more.
                 while (_receiveBufferCount < minimumRequiredBytes)
                 {
-                    int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount, _receiveBuffer.Length - _receiveBufferCount), default).ConfigureAwait(false);
+                    int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount, _receiveBuffer.Length - _receiveBufferCount), cancellationToken).ConfigureAwait(false);
                     Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
                     if (numRead <= 0)
                     {
