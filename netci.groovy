@@ -1800,6 +1800,12 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                 break
             }
 
+            if (scenario == 'pmi_asm_diffs') {
+                // Everything is already set.
+                // No default triggers.
+                break
+            }
+
             switch (os) {
                 // OpenSUSE, Debian & RedHat get trigger phrases for pri 0 build, and pri 1 build & test
                 case 'Debian8.4':
@@ -2397,11 +2403,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // TODO: Add -target_branch and -commit_hash arguments based on GitHub variables.
                         buildCommands += "python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration}"
 
-                        // ZIP up the asm
-                        buildCommands += "zip -r dasm.${os}.${architecture}.${configuration}.zip ./_/pmi/asm"
-
                         // Archive the asm
-                        Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.zip")
+                        buildCommands += "tar -czf dasm.${os}.${architecture}.${configuration}.tgz ./_/pmi/asm"
+                        Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.tgz")
                         break
                     }
 
@@ -2894,7 +2898,8 @@ def static shouldGenerateJob(def scenario, def isPR, def architecture, def confi
                 if (architecture == 'armem') {
                     return false
                 }
-                // Currently, we don't support pmi_asm_diffs for Windows arm/arm64. Is is not in validArmWindowsScenarios.
+                // Currently, we don't support pmi_asm_diffs for Windows arm/arm64. We don't have a dotnet CLI available to
+                // build jitutils. The jobs are not in validArmWindowsScenarios.
                 if ((os == 'Windows_NT') && (architecture == 'arm' || architecture == 'arm64')) {
                     return false
                 }
