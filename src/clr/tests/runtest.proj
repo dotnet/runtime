@@ -57,9 +57,9 @@
   <!-- Target to check the test build, to see if it looks ok. We've had several cases where a change inadvertently and drastically changes
        the set of tests that are built, and that change is unnoticed. The most common case is for a build of the Priority 1 tests
        to only build the Priority 0 tests. This target is run after a test build to verify that the basic number of tests that were
-       built is basically what was expected. When this was written, there were about 2500 Priority 0 tests and about 12270 Priority 1
-       tests (differing slightly based on platform). We currently check that the number of Priority 0 tests is greater than 2000 and
-       less than 3000, and the number of Priority 1 tests is greater than 10000.
+       built is basically what was expected. When this was written, there were about 2500 Priority 0 tests and about 10268 Priority 1
+       tests on Windows, 9976 on Ubuntu (it differs slightly based on platform). We currently check that the number of Priority 0 tests
+       is greater than 2000 and less than 3000, and the number of Priority 1 tests is greater than 9000.
   -->
   <Target Name="CheckTestBuild" DependsOnTargets="GetListOfTestCmds">
     <Error Condition="!Exists('$(XunitTestBinBase)')"
@@ -73,7 +73,7 @@
 
     <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &lt;= 2000" Text="Unexpected test count. Expected &gt; 2000, found $(TestCount).'" />
     <Error Condition="'$(CLRTestPriorityToBuild)' == '0' and '$(TestCount)' &gt;= 3000" Text="Unexpected test count. Expected &lt; 3000, found $(TestCount).'" />
-    <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 10000" Text="Unexpected test count. Expected &gt; 10000, found $(TestCount).'" />
+    <Error Condition="'$(CLRTestPriorityToBuild)' == '1' and '$(TestCount)' &lt;= 9000" Text="Unexpected test count. Expected &gt; 9000, found $(TestCount).'" />
     <Error Condition="'$(CLRTestPriorityToBuild)' != '0' and '$(CLRTestPriorityToBuild)' != '1'" Text="Unknown priority $(CLRTestPriorityToBuild)" />
   </Target>
 
