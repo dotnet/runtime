@@ -143,6 +143,7 @@
     </PropertyGroup>
     <ItemGroup>
       <SymbolPackagesToPublish Include="$(SymbolsPackagesPattern)" />
+      <SymbolPackagesToPublish Remove="*freebsd*.symbols.nupkg" />
     </ItemGroup>
     <Error Condition="'$(SymbolServerPath)'==''" Text="Missing property SymbolServerPath" />
     <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
