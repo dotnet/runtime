@@ -27,7 +27,7 @@
     <Message Text="%(PackageIds.Identity)" Importance="High" />
   </Target>
 
-  <Import Project="buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true'" />
 
   <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>

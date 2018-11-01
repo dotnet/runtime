@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <!-- Import configuration data model -->
-  <Import Project="$(ProjectDir)tools-local/properties.props" />
+  <Import Project="$(RepositoryEngineeringDir)configurations/properties.props" />
 
   <!-- Runs during traversal when BuildAllConfigurations is set to expand each project
        to a seperate instance for each of its BuildConfigurations -->

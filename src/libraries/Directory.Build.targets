@@ -21,7 +21,7 @@
     <PackageOutputPath>$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
   </PropertyGroup>
 
-  <Import Project="eng\versioning.targets" />
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
   <Target Name="CheckForBuildTools">
     <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
@@ -30,8 +30,8 @@
            Text="The tools directory [$(ToolsDir)] does not exist. Please run init-tools.cmd in your repo to ensure the tools are installed before attempting to build an individual project." />
   </Target>
 
-  <Import Project="buildvertical.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)eng\CodeAnalysis.targets" />
+  <Import Project="$(RepositoryEngineeringDir)buildvertical.targets" />
+  <Import Project="$(RepositoryEngineeringDir)CodeAnalysis.targets" />
 
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
@@ -131,16 +131,16 @@
 
   <Import Project="$(MSBuildThisFileDirectory)eng/depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
-  <Import Project="$(MSBuildThisFileDirectory)eng/Resources.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)eng/resolveContract.targets" />
+  <Import Project="$(RepositoryEngineeringDir)Resources.targets" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
 
   <!-- permit a wrapping build system to contribute targets to this build -->
   <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
 
-  <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
 
   <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
     <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uapvNext -->
@@ -174,8 +174,8 @@
     <PropertyGroup>
       <_GenApiExePath>$(ToolsDir)GenApi.exe</_GenApiExePath>
       <_RefSourceFileOutputPath>$(MSBuildProjectDirectory)/../ref/$(AssemblyName).cs</_RefSourceFileOutputPath>
-      <_ExcludeAPIList>$(MSBuildThisFileDirectory)tools-local/DefaultGenApiDocIds.txt</_ExcludeAPIList>
-      <_LicenseHeaderTxtPath>$(MSBuildThisFileDirectory)tools-local/LicenseHeader.txt</_LicenseHeaderTxtPath>
+      <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
+      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -191,7 +191,7 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
-  <Import Project="eng/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+  <Import Project="$(RepositoryEngineeringDir)/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
   <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
   <Target Name="CreateVersionFileDuringBuild" />

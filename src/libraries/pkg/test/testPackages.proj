@@ -9,11 +9,11 @@
 
     <PackageReports Condition="'@(TestPackages)' == ''" Include="$(PackageReportDir)*.json" Exclude="@(ExcludePackages->'$(PackageReportDir)%(Identity).json')"/>
     <PackageReports Condition="'@(TestPackages)' != ''" Include="@(TestPackages->'$(PackageReportDir)%(Identity).json')" />
-    
+
     <!-- support override via commandline -->
     <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
     <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
-    
+
     <RestoreSource Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
 
     <!-- needed for SQLClient's SNI packages -->
@@ -43,7 +43,7 @@
     <TestProjectDir>$(TestDir)projects/</TestProjectDir>
     <TestPackageDir>$(BinDir)testPackages</TestPackageDir>
     <TestDotNetPath>$(TestToolsDir)/dotnet</TestDotNetPath>
-    
+
     <ProjectTemplate>project.csproj.template</ProjectTemplate>
 
     <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
@@ -65,10 +65,10 @@
     <TestSupportFiles Include="$(SourceDir)shims\netfxreference.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
-    <TestSupportFiles Include="$(ProjectDir)dependencies.props">
+    <TestSupportFiles Include="$(RepositoryEngineeringDir)dependencies.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
-    <TestSupportFiles Include="$(ProjectDir)eng/versions.props">
+    <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">
       <DestinationFolder>$(TestToolsDir)eng/</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="$(ToolsDir)Packaging.common.targets">
@@ -93,7 +93,7 @@
       <DestinationFolder>$(TestDir)</DestinationFolder>
     </TestSupportFiles>
   </ItemGroup>
-  
+
   <ItemGroup>
     <CliEnvironment Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <CliEnvironment Include="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1" />
@@ -106,12 +106,12 @@
     <MakeDir Directories="%(TestSupportFiles.DestinationFolder)" />
     <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
   </Target>
-  
+
   <Target Name="GetSupportedPackages">
     <GetSupportedPackagesFromPackageReports PackageReports="@(PackageReports)">
       <Output TaskParameter="SupportedPackages" ItemName="SupportedPackage"/>
     </GetSupportedPackagesFromPackageReports>
-    
+
     <ItemGroup>
       <SupportedPackage>
         <ProjectDir>$(TestProjectDir)%(Identity)/%(TargetFrameworkShort)/</ProjectDir>
@@ -137,7 +137,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="UpdateRuntimeIdentifiers" 
+  <Target Name="UpdateRuntimeIdentifiers"
           AfterTargets="GetSupportedPackages"
           Inputs="%(SupportedPackage.Identity);%(SupportedPackage.TargetFrameworkShort)"
           Outputs="unused">
@@ -181,7 +181,7 @@
     <Message Importance="High" Text="*** Restoring ***" />
     <Exec Command="$(TestRestoreCommand) &quot;$(TestProject)&quot;" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
   </Target>
-  
+
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects">
     <Message Importance="High" Text="*** Testing ***" />

@@ -1,5 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Base repo layout properties -->
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <RepositoryEngineeringDir>$(RepoRoot)eng\</RepositoryEngineeringDir>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!--
@@ -33,7 +38,7 @@
   </PropertyGroup>
 
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
-  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
+  <Import Project="$(RepositoryEngineeringDir)dependencies.props" />
 
   <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
   <PropertyGroup>
@@ -46,7 +51,7 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
+    <ProjectDir>$(RepoRoot)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
 
     <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
@@ -145,7 +150,7 @@
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
     <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreappaot'">true</RunApiCompat>
-    <ApiCompatExcludeAttributeList>$(MSBuildThisFileDirectory)tools-local/DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
+    <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
     <!-- Build as portable by default -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
     <Performance Condition="'$(Performance)' == ''">false</Performance>
@@ -227,7 +232,7 @@
   </PropertyGroup>
 
   <!-- Import packaging props -->
-  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
+  <Import Project="$(RepositoryEngineeringDir)Packaging.props"/>
 
   <!-- set properties for each vertical -->
   <PropertyGroup>
