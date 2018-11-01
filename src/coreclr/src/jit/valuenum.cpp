@@ -2235,7 +2235,6 @@ TailCall:
     }
     else
     {
-
         // Give up if we've run out of budget.
         if (--(*pBudget) <= 0)
         {
@@ -6082,8 +6081,8 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
     assert(nonLoopPred != nullptr);
     // What is its memory post-state?
     ValueNum newMemoryVN = GetMemoryPerSsaData(nonLoopPred->bbMemorySsaNumOut[memoryKind])->m_vnPair.GetLiberal();
-    assert(newMemoryVN !=
-           ValueNumStore::NoVN); // We must have processed the single non-loop pred before reaching the loop entry.
+    assert(newMemoryVN != ValueNumStore::NoVN); // We must have processed the single non-loop pred before reaching the
+                                                // loop entry.
 
 #ifdef DEBUG
     if (verbose)
@@ -6352,10 +6351,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 {
     GenTree* lhs = tree->gtGetOp1();
     GenTree* rhs = tree->gtGetOp2();
-#ifdef DEBUG
-    // Sometimes we query the memory ssa map in an assertion, and need a dummy location for the ignored result.
-    unsigned memorySsaNum;
-#endif
 
     if (tree->OperIsInitBlkOp())
     {
@@ -6366,7 +6361,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         {
             assert(lclVarTree->gtFlags & GTF_VAR_DEF);
             // Should not have been recorded as updating the GC heap.
-            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
+            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
             unsigned lclNum = lclVarTree->GetLclNum();
 
@@ -6375,7 +6370,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             if (lvaInSsa(lclNum))
             {
                 // Should not have been recorded as updating ByrefExposed.
-                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
+                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
 
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
@@ -6435,7 +6430,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         if (tree->DefinesLocal(this, &lclVarTree, &isEntire))
         {
             // Should not have been recorded as updating the GC heap.
-            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree, &memorySsaNum));
+            assert(!GetMemorySsaMap(GcHeap)->Lookup(tree));
 
             unsigned      lhsLclNum = lclVarTree->GetLclNum();
             FieldSeqNode* lhsFldSeq = nullptr;
@@ -6443,12 +6438,11 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             if (lvaInSsa(lhsLclNum))
             {
                 // Should not have been recorded as updating ByrefExposed.
-                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree, &memorySsaNum));
+                assert(!GetMemorySsaMap(ByrefExposed)->Lookup(tree));
 
                 unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
-                if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq) ||
-                    (lhs->OperIsBlk() && (lhs->AsBlk()->gtBlkSize == lvaLclSize(lhsLclNum))))
+                if (lhs->IsLocalExpr(this, &lclVarTree, &lhsFldSeq))
                 {
                     noway_assert(lclVarTree->gtLclNum == lhsLclNum);
                 }
@@ -6599,12 +6593,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                 }
                 else if (lhsFldSeq != nullptr && isEntire)
                 {
-                    // This can occur in for structs with one field, itself of a struct type.
-                    // We won't promote these.
-                    // TODO-Cleanup: decide what exactly to do about this.
-                    // Always treat them as maps, making them use/def, or reconstitute the
-                    // map view here?
-                    isNewUniq = true;
+                    // This can occur for structs with one field, itself of a struct type.
+                    // We are assigning the one field and it is also the entire enclosing struct.
+                    //
+                    // Use an unique value number for the old map, as this is an an entire assignment
+                    // and we won't have any other values in the map
+                    ValueNumPair oldMap;
+                    oldMap.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
+                    rhsVNPair = vnStore->VNPairApplySelectorsAssign(oldMap, lhsFldSeq, rhsVNPair, lclVarTree->TypeGet(),
+                                                                    compCurBB);
                 }
                 else if (!isNewUniq)
                 {
@@ -8479,8 +8476,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         // Add the accumulated exceptions.
         call->gtVNPair = vnStore->VNPWithExc(call->gtVNPair, vnpExc);
     }
-    assert(args == nullptr ||
-           generateUniqueVN); // All arguments should be processed or we generate unique VN and do not care.
+    assert(args == nullptr || generateUniqueVN); // All arguments should be processed or we generate unique VN and do
+                                                 // not care.
 }
 
 void Compiler::fgValueNumberCall(GenTreeCall* call)
