@@ -1175,14 +1175,6 @@ inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfo
     return node;
 }
 
-/*****************************************************************************/
-
-inline GenTree* Compiler::gtNewCodeRef(BasicBlock* block)
-{
-    GenTree* node = new (this, GT_LABEL) GenTreeLabel(block);
-    return node;
-}
-
 /*****************************************************************************
  *
  *  A little helper to create a data member reference node.
