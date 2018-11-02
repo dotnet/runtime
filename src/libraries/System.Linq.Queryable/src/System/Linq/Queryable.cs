@@ -592,6 +592,25 @@ namespace System.Linq
                     ));
         }
 
+        public static IQueryable<(TFirst First, TSecond Second)> Zip<TFirst, TSecond>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2)
+        {
+            if (source1 == null)
+            {
+                throw Error.ArgumentNull(nameof(source1));
+            }
+
+            if (source2 == null)
+            {
+                throw Error.ArgumentNull(nameof(source2));
+            }
+
+            return source1.Provider.CreateQuery<(TFirst, TSecond)>(
+                Expression.Call(
+                    null,
+                    CachedReflectionInfo.Zip_TFirst_TSecond_2(typeof(TFirst), typeof(TSecond)),
+                    source1.Expression, GetSourceExpression(source2)));
+        }
+
         public static IQueryable<TResult> Zip<TFirst, TSecond, TResult>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, Expression<Func<TFirst, TSecond, TResult>> resultSelector)
         {
             if (source1 == null)
