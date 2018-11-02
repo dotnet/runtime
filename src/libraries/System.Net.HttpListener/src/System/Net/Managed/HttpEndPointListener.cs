@@ -116,7 +116,17 @@ namespace System.Net
                 return;
             }
 
-            HttpConnection conn = new HttpConnection(accepted, epl, epl._secure, epl._cert);
+            HttpConnection conn;
+            try
+            {
+                conn = new HttpConnection(accepted, epl, epl._secure, epl._cert);
+            }
+            catch
+            {
+                accepted.Close();
+                return;
+            }
+
             lock (epl._unregisteredConnections)
             {
                 epl._unregisteredConnections[conn] = conn;
