@@ -142,17 +142,22 @@ namespace System.Threading.Tasks.Sources
             // awaited twice concurrently), _continuationState might get erroneously overwritten.
             // To minimize the chances of that, we check preemptively whether _continuation
             // is already set to something other than the completion sentinel.
-            object currentContinuation = _continuation;
-            if (currentContinuation != null &&
-                !ReferenceEquals(currentContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
-            {
-                ManualResetValueTaskSourceCoreShared.ThrowInvalidOperationException();
-            }
-            _continuationState = state;
 
-            Action<object> oldContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
+            object oldContinuation = _continuation;
+            if (oldContinuation == null)
+            {
+                _continuationState = state;
+                oldContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
+            }
+
             if (oldContinuation != null)
             {
+                // Operation already completed, so we need to queue the supplied callback.
+                if (!ReferenceEquals(oldContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
+                {
+                    ManualResetValueTaskSourceCoreShared.ThrowInvalidOperationException();
+                }
+
                 switch (_capturedContext)
                 {
                     case null:
@@ -200,7 +205,7 @@ namespace System.Threading.Tasks.Sources
             }
             _completed = true;
 
-            if (Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) != null)
+            if (_continuation != null || Interlocked.CompareExchange(ref _continuation, ManualResetValueTaskSourceCoreShared.s_sentinel, null) != null)
             {
                 if (_executionContext != null)
                 {
