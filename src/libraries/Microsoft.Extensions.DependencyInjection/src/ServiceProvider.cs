@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public void Dispose() => _engine.Dispose();
 
-        void IServiceProviderEngineCallback.OnCreate(IServiceCallSite callSite)
+        void IServiceProviderEngineCallback.OnCreate(ServiceCallSite callSite)
         {
             _callSiteValidator.ValidateCallSite(callSite);
         }

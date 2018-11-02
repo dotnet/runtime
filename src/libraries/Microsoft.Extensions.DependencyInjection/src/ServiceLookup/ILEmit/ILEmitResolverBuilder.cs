@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -19,6 +20,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly FieldInfo RootField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Root));
         private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
         private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
+        private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
+
+        private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors().First();
 
         private class ILEmitResolverBuilderRuntimeContext
         {
@@ -35,7 +39,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private readonly ServiceProviderEngineScope _rootScope;
 
-        public ILEmitResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope)
+        public ILEmitResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope) :
+            base()
         {
             if (runtimeResolver == null)
             {
@@ -46,13 +51,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _rootScope = rootScope;
         }
 
-        public Func<ServiceProviderEngineScope, object> Build(IServiceCallSite callSite)
+        public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
         {
-            if (callSite is SingletonCallSite singletonCallSite)
+            if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
             {
                 // If root call site is singleton we can return Func calling
                 // _runtimeResolver.Resolve directly and avoid Expression generation
-                if (TryResolveSingletonValue(singletonCallSite, out var value))
+                if (TryResolveSingletonValue(callSite, out var value))
                 {
                     return scope => value;
                 }
@@ -63,12 +68,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return BuildType(callSite);
         }
 
-        protected override Expression VisitTransient(TransientCallSite transientCallSite, ILEmitResolverBuilderContext argument)
+        protected override Expression VisitDisposeCache(ServiceCallSite transientCallSite, ILEmitResolverBuilderContext argument)
         {
             // RuntimeScope.CaptureDisposables([create value])
-            var shouldCapture = BeginCaptureDisposable(transientCallSite.ServiceCallSite.ImplementationType, argument);
+            var shouldCapture = BeginCaptureDisposable(transientCallSite.ImplementationType, argument);
 
-            VisitCallSite(transientCallSite.ServiceCallSite, argument);
+            VisitCallSiteMain(transientCallSite, argument);
 
             if (shouldCapture)
             {
@@ -88,9 +93,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override Expression VisitSingleton(SingletonCallSite singletonCallSite, ILEmitResolverBuilderContext argument)
+        protected override Expression VisitRootCache(ServiceCallSite callSite, ILEmitResolverBuilderContext argument)
         {
-            if (TryResolveSingletonValue(singletonCallSite, out var value))
+            if (TryResolveSingletonValue(callSite, out var value))
             {
                 AddConstant(argument, value);
                 return null;
@@ -101,7 +106,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Ldarg_0);
             argument.Generator.Emit(OpCodes.Ldfld, RuntimeResolverField);
 
-            AddConstant(argument, singletonCallSite);
+            AddConstant(argument, callSite);
 
             argument.Generator.Emit(OpCodes.Ldarg_0);
             argument.Generator.Emit(OpCodes.Ldfld, RootField);
@@ -110,7 +115,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return null;
         }
 
-        protected override Expression VisitScoped(ScopedCallSite scopedCallSite, ILEmitResolverBuilderContext argument)
+        protected override Expression VisitScopeCache(ServiceCallSite scopedCallSite, ILEmitResolverBuilderContext argument)
         {
 
             // var cacheKey = scopedCallSite.CacheKey;
@@ -125,13 +130,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // }
 
             var resultLocal = argument.Generator.DeclareLocal(scopedCallSite.ServiceType);
-            var cacheKeyLocal = argument.Generator.DeclareLocal(typeof(object));
+            var cacheKeyLocal = argument.Generator.DeclareLocal(typeof(ServiceCacheKey));
             var endLabel = argument.Generator.DefineLabel();
 
             // Resolved services would be 0 local
             argument.Generator.Emit(OpCodes.Ldloc_0);
 
-            AddConstant(argument, scopedCallSite.CacheKey);
+            AddCacheKey(argument, scopedCallSite.Cache.Key);
             // Duplicate cache key
             argument.Generator.Emit(OpCodes.Dup);
             // and store to local
@@ -145,9 +150,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Jump to create new if nothing in cache
             argument.Generator.Emit(OpCodes.Brtrue, endLabel);
 
-            var shouldCapture = BeginCaptureDisposable(scopedCallSite.ServiceCallSite.ImplementationType, argument);
+            var shouldCapture = BeginCaptureDisposable(scopedCallSite.ImplementationType, argument);
 
-            VisitCallSite(scopedCallSite.ServiceCallSite, argument);
+            VisitCallSiteMain(scopedCallSite, argument);
 
             if (shouldCapture)
             {
@@ -175,13 +180,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override Expression VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
         {
             AddConstant(argument, constantCallSite.DefaultValue);
-            return null;
-        }
-
-        protected override Expression VisitCreateInstance(CreateInstanceCallSite createInstanceCallSite, ILEmitResolverBuilderContext argument)
-        {
-             // new Type
-            argument.Generator.Emit(OpCodes.Newobj, createInstanceCallSite.ImplementationType.GetConstructor(Type.EmptyTypes));
             return null;
         }
 
@@ -269,8 +267,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Constants.Add(value);
         }
 
+        private void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
+        {
+            // new ServiceCacheKey(typeof(key.Type), key.Slot)
+            argument.Generator.Emit(OpCodes.Ldtoken, key.Type);
+            argument.Generator.Emit(OpCodes.Call, GetTypeFromHandleMethod);
+            argument.Generator.Emit(OpCodes.Ldc_I4, key.Slot);
+            argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);
+        }
 
-        private Func<ServiceProviderEngineScope, object> BuildType(IServiceCallSite callSite)
+
+        private Func<ServiceProviderEngineScope, object> BuildType(ServiceCallSite callSite)
         {
             // We need to skip visibility checks because services/constructors might be private
             var dynamicMethod = new DynamicMethod("ResolveService",
@@ -298,13 +305,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             GenerateMethodBody(callSite, method.GetILGenerator(), info);
             type.CreateTypeInfo();
-            assembly.Save(assemblyName+".dll");
+            assembly.Save(assemblyName + ".dll");
 #endif
 
             return (Func<ServiceProviderEngineScope, object>)dynamicMethod.CreateDelegate(typeof(Func<ServiceProviderEngineScope, object>), runtimeContext);
         }
 
-        private ILEmitResolverBuilderRuntimeContext GenerateMethodBody(IServiceCallSite callSite, ILGenerator generator, ILEmitCallSiteAnalysisResult info)
+        private ILEmitResolverBuilderRuntimeContext GenerateMethodBody(ServiceCallSite callSite, ILGenerator generator, ILEmitCallSiteAnalysisResult info)
         {
             var context = new ILEmitResolverBuilderContext()
             {
@@ -384,11 +391,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             };
         }
 
-        private bool TryResolveSingletonValue(SingletonCallSite singletonCallSite, out object value)
+        private bool TryResolveSingletonValue(ServiceCallSite callSite, out object value)
         {
             lock (_rootScope.ResolvedServices)
             {
-                return _rootScope.ResolvedServices.TryGetValue(singletonCallSite.CacheKey, out value);
+                return _rootScope.ResolvedServices.TryGetValue(callSite.Cache.Key, out value);
             }
         }
 

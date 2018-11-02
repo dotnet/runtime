@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public object GetService(Type serviceType) => GetService(serviceType, Root);
 
-        protected abstract Func<ServiceProviderEngineScope, object> RealizeService(IServiceCallSite callSite);
+        protected abstract Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite);
 
         public void Dispose()
         {
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private Func<ServiceProviderEngineScope, object> CreateServiceAccessor(Type serviceType)
         {
-            var callSite = CallSiteFactory.CreateCallSite(serviceType, new CallSiteChain());
+            var callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
                 _callback?.OnCreate(callSite);

@@ -8,10 +8,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     /// <summary>
     /// Summary description for IServiceCallSite
     /// </summary>
-    internal interface IServiceCallSite
+    internal abstract class ServiceCallSite
     {
-        Type ServiceType { get; }
-        Type ImplementationType { get; }
-        CallSiteKind Kind { get; }
+        protected ServiceCallSite(ResultCache cache)
+        {
+            Cache = cache;
+        }
+
+        public abstract Type ServiceType { get; }
+        public abstract Type ImplementationType { get; }
+        public abstract CallSiteKind Kind { get; }
+        public ResultCache Cache { get; }
     }
 }

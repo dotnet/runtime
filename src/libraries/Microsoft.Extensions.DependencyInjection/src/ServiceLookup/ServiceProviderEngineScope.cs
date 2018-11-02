@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             Engine = engine;
         }
 
-        internal Dictionary<object, object> ResolvedServices { get; } = new Dictionary<object, object>();
+        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; } = new Dictionary<ServiceCacheKey, object>();
 
         public ServiceProviderEngine Engine { get; }
 

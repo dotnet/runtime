@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             ExpressionResolverBuilder = new ExpressionResolverBuilder(RuntimeResolver, this, Root);
         }
 
-        protected override Func<ServiceProviderEngineScope, object> RealizeService(IServiceCallSite callSite)
+        protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
             var realizedService = ExpressionResolverBuilder.Build(callSite);
             RealizedServices[callSite.ServiceType] = realizedService;
