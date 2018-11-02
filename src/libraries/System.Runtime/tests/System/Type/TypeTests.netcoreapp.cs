@@ -272,8 +272,8 @@ namespace System.Tests
                 yield return new object[] { typeof(int[,]), false, false, false };
                 yield return new object[] { typeof(int).MakeByRefType(), false, false, false };
                 yield return new object[] { typeof(int).MakePointerType(), false, false, false };
-                yield return new object[] { typeof(G<>), false, false, false };
-                yield return new object[] { typeof(G<int>), false, false, false };
+                yield return new object[] { typeof(DummyGenericClassForTypeTestsNetcore<>), false, false, false };
+                yield return new object[] { typeof(DummyGenericClassForTypeTestsNetcore<int>), false, false, false };
                 if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
                 {
                     yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false, false, false };
@@ -290,3 +290,5 @@ namespace System.Tests
         private static void GenericMethod<M>() { }
     }
 }
+
+internal class DummyGenericClassForTypeTestsNetcore<T> { }

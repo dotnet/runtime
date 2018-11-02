@@ -31,9 +31,6 @@
     <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
       <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
-      <Link>Common\System\IO\TempFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\Tests\System\StringTests.cs">
       <Link>System\StringTests.cs</Link>
     </Compile>
@@ -173,15 +170,12 @@
     <Compile Include="System\IO\PathTooLongExceptionTests.cs" />
     <Compile Include="System\IO\PathTooLongException.InteropTests.cs" />
     <Compile Include="System\Reflection\AssemblyAttributesTests.cs" />
-    <Compile Include="System\Reflection\AssemblyTests.cs" />
-    <Compile Include="System\Reflection\AssemblyNameTests.cs" />
-    <Compile Include="System\Reflection\DefaultMemberAttributeTests.cs" />
     <Compile Include="System\Reflection\CustomAttributeDataTests.cs" />
     <Compile Include="System\Reflection\CustomAttributesTestData.cs" />
     <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
+    <Compile Include="System\Reflection\DefaultMemberAttributeTests.cs" />    
     <Compile Include="System\Reflection\MethodBaseTests.cs" />
     <Compile Include="System\Reflection\MethodBodyTests.cs" />
-    <Compile Include="System\Reflection\MethodInfoTests.cs" />
     <Compile Include="System\Reflection\ModuleTests.cs" />
     <Compile Include="System\Reflection\PointerTests.cs" />
     <Compile Include="System\Reflection\ReflectionTypeLoadExceptionTests.cs" />
@@ -245,7 +239,6 @@
     <Compile Include="System\UInt64Tests.netcoreapp.cs" />
     <Compile Include="System\VersionTests.netcoreapp.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
-    <Compile Include="System\Reflection\AssemblyTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
