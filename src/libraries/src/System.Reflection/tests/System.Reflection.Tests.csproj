@@ -9,6 +9,9 @@
       <Link>Common\System\Reflection\MockParameterInfo.cs</Link>
     </Compile>    
     <Compile Include="..\..\Common\tests\System\MockType.cs" Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>    
     <Compile Include="AssemblyNameTests.cs" />
     <Compile Include="AssemblyTests.cs" />
     <Compile Include="ConstructorInfoTests.cs" />
@@ -31,13 +34,37 @@
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
       <LogicalName>EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\EmbeddedImage.png">
+      <LogicalName>System.Reflection.Tests.EmbeddedImage1.png</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\EmbeddedTextFile.txt">
+      <LogicalName>EmbeddedTextFile.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\EmbeddedTextFile.txt">
+      <LogicalName>System.Reflection.Tests.EmbeddedTextFile1.txt</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\ResourceTextFile.txt">
       <LogicalName>ResourceTextFile.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
+    <Compile Include="AssemblyTests.netcoreapp.cs" />
     <Compile Include="MemberInfoTests.netcoreapp.cs" />
     <Compile Include="TypeInfoTests.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="TestAssembly\TestAssembly.csproj">
+      <Project>{66805D20-6565-47FA-BFD4-05B8E0D17AFC}</Project>
+      <Name>TestAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="ForwardedTypesAssembly\ForwardedTypesAssembly.csproj">
+      <Project>{FA12CC14-C4A5-495D-B7AA-651E4BCC1027}</Project>
+      <Name>ForwardedTypesAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj">
+      <Project>{7FFD1B55-D69A-4469-B775-6CBEB1CE50B0}</Project>
+      <Name>UnloadableAssembly</Name>
+    </ProjectReference>    
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="AssemblyVersion\System.Reflection.Tests.Assembly_0_0_0_0.csproj" />
