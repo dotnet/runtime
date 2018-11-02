@@ -81,9 +81,6 @@ if ($ENV{__VSVersion} STREQUAL vs2015)
     add_definitions(-DHAVE_VSNPRINTF)
 endif ()
 
-# Include the dir that contains the generated _version.h
-include_directories("${CMAKE_BINARY_DIR}/../../../../artifacts/obj")
-
 #Include Brotli include files
 include_directories("../../AnyOS/brotli/include")
 

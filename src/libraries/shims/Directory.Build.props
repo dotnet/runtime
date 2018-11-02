@@ -20,6 +20,6 @@
 
   <PropertyGroup>
     <!-- shared folder for ApiCompat.proj and shims.proj -->
-    <GenFacadesOutputPath>$(RootIntermediateOutputPath)shims/$(TargetGroup)/</GenFacadesOutputPath>
+    <GenFacadesOutputPath>$(ArtifactsObjDir)shims/$(TargetGroup)/</GenFacadesOutputPath>
   </PropertyGroup>
 </Project>
