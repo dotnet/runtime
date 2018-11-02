@@ -349,7 +349,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // OSX doesn't support throwing on Process.Start
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();
@@ -360,23 +359,6 @@ namespace System.Diagnostics.Tests
 
             Win32Exception e = Assert.Throws<Win32Exception>(() => Process.Start(path));
             Assert.NotEqual(0, e.NativeErrorCode);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)] // OSX doesn't support throwing on Process.Start
-        public void TestStartOnOSXWithBadFormat()
-        {
-            string path = GetTestFilePath();
-            File.Create(path).Dispose();
-            int mode = Convert.ToInt32("744", 8);
-
-            Assert.Equal(0, chmod(path, mode)); // execute permissions
-
-            using (Process p = Process.Start(path))
-            {
-                p.WaitForExit();
-                Assert.NotEqual(0, p.ExitCode);
-            }
         }
 
         [Fact]
