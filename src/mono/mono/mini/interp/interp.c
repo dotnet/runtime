@@ -2116,6 +2116,7 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, InterpF
 	case MONO_TYPE_R8:
 		sp->data.f = *(double*)res_buf;
 		break;
+	case MONO_TYPE_TYPEDBYREF:
 	case MONO_TYPE_VALUETYPE:
 		/* The result was written to vt_sp */
 		sp->data.p = vt_sp;
