@@ -2496,28 +2496,6 @@ struct GenTreePhysReg : public GenTree
 #endif
 };
 
-// gtJumpTable - Switch Jump Table
-//
-// This node stores a DWORD constant that represents the
-// absolute address of a jump table for switches.  The code
-// generator uses this table to code the destination for every case
-// in an array of addresses which starting position is stored in
-// this constant.
-struct GenTreeJumpTable : public GenTreeIntConCommon
-{
-    ssize_t gtJumpTableAddr;
-
-    GenTreeJumpTable(var_types type DEBUGARG(bool largeNode = false))
-        : GenTreeIntConCommon(GT_JMPTABLE, type DEBUGARG(largeNode))
-    {
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeJumpTable() : GenTreeIntConCommon()
-    {
-    }
-#endif // DEBUG
-};
-
 /* gtIntCon -- integer constant (GT_CNS_INT) */
 struct GenTreeIntCon : public GenTreeIntConCommon
 {
