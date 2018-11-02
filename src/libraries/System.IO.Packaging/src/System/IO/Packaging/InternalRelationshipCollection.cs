@@ -468,7 +468,8 @@ namespace System.IO.Packaging
         /// <param name="part">part to persist to</param>
         private void WriteRelationshipPart(PackagePart part)
         {
-            using (IgnoreFlushAndCloseStream s = new IgnoreFlushAndCloseStream(part.GetStream()))
+            using (Stream partStream = part.GetStream())
+            using (IgnoreFlushAndCloseStream s = new IgnoreFlushAndCloseStream(partStream))
             {
                 s.SetLength(0);    // truncate to resolve PS 954048
 
