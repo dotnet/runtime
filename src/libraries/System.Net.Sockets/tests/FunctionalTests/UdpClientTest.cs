@@ -15,6 +15,8 @@ namespace System.Net.Sockets.Tests
         // Port 8 is unassigned as per https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt
         private const int UnusedPort = 8;
 
+        private const int DiscardPort = 9;
+
         private ManualResetEvent _waitHandle = new ManualResetEvent(false);
 
         [Theory]
@@ -686,6 +688,21 @@ namespace System.Net.Sockets.Tests
             Assert.True(new UdpReceiveResult(buffer1, ep1) == new UdpReceiveResult(buffer1, ep2));
             Assert.True(new UdpReceiveResult(buffer1, ep1) != new UdpReceiveResult(buffer2, ep1));
             Assert.True(new UdpReceiveResult(buffer1, ep1) != new UdpReceiveResult(buffer1, ep3));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void BeginSend_IPv6Socket_IPv4Dns_Success()
+        {
+            using (var receiver = new UdpClient("127.0.0.1", DiscardPort))
+            using (var sender = new UdpClient(AddressFamily.InterNetworkV6))
+            {
+                sender.Client.DualMode = true;
+                if (sender.Client.AddressFamily == AddressFamily.InterNetworkV6 && sender.Client.DualMode)
+                {
+                    sender.Send(new byte[1], 1, "127.0.0.1", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
+                }
+            }
         }
 
         private sealed class DerivedUdpClient : UdpClient
