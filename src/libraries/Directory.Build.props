@@ -51,19 +51,13 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
+    <!-- Properties to remove with buildtools removal -->
     <ProjectDir>$(RepoRoot)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
+    <BinDir>$(ProjectDir)artifacts\bin\</BinDir>
 
-    <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
-    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
-
-    <!-- Output directories -->
-    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
-    <RootIntermediateOutputPath>$(MSBuildThisFileDirectory)bin/obj/</RootIntermediateOutputPath>
-
+    <!-- CoreFx sepcific paths -->
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
-    <PackageOutputRoot Condition="'$(PackageOutputRoot)'=='' and '$(NonShippingPackage)' == 'true'">$(BinDir)packages_noship/</PackageOutputRoot>
-    <PackageOutputRoot Condition="'$(PackageOutputRoot)'==''">$(BinDir)packages/</PackageOutputRoot>
 
     <!-- Input Directories -->
     <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
@@ -187,7 +181,7 @@
     <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>
 
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$(BinDir)$(OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
+    <NativeBinDir>$(BinDir)native/$(BuildConfiguration)</NativeBinDir>
   </PropertyGroup>
 
   <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
@@ -340,6 +334,9 @@
 
     <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+
+    <!-- Suppress preview message as we are usually using preview SDK versions. -->
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
@@ -356,18 +353,14 @@
     -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
-    <!-- Suppress preview message as we are usually using preview SDK versions. -->
-    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
-
+    <!--
+      OSPlatformConfig and TargetOutputRelPath are used by the test archiving targets in
+      corefx and in our publish test targets (https://github.com/dotnet/buildtools/blob/17f28536524248603108c56a16b5b16dcb5a87ff/src/Microsoft.DotNet.Build.Tasks/PackageFiles/publishtest.targets#L54)
+      Once we refactor our test targets we should try to break this tight coupling so it is only
+      on the corefx side as these are specific to corefx.
+    -->
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
-
-    <BaseOutputPath>$(BinDir)</BaseOutputPath>
-
-    <OutputPath>$(BaseOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/$(TargetOutputRelPath)$(OutputPathSubfolder)</OutputPath>
-
-    <BaseIntermediateOutputPath>$(RootIntermediateOutputPath)$(OSPlatformConfig)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(TargetOutputRelPath)</IntermediateOutputPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <ShimsTargetRuntimeRoot>$(BinDir)shimsTargetRuntime/</ShimsTargetRuntimeRoot>
@@ -414,8 +407,6 @@
     <!-- System.Private.* comes from test ilc, so the symbol packages for those versions will no exist, this is to avoid warnings -->
     <DownloadCoreCLRSymbols Condition="'$(UseDotNetNativeToolchain)' == 'true' OR '$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">false</DownloadCoreCLRSymbols>
 
-    <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
-    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
 
     <!-- interop is not available on NETStandard1.0 -->

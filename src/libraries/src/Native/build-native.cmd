@@ -4,7 +4,7 @@ setlocal
 :SetupArgs
 :: Initialize the args that will be passed to cmake
 set __nativeWindowsDir=%~dp0\Windows
-set __binDir=%~dp0..\..\bin
+set __artifactsDir=%~dp0..\..\artifacts
 set __rootDir=%~dp0..\..
 set __CMakeBinDir=""
 set __IntermediatesDir=""
@@ -30,6 +30,7 @@ if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&
 if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=x86_arm64&&set __SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"&&shift&goto Arg_Loop)
 if /i [%1] == [wasm]        ( set __BuildArch=wasm&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 
+if /i [%1] == [outconfig] ( set __outConfig=%2&&shift&&shift&goto Arg_Loop)
 
 if /i [%1] == [WebAssembly] ( set __BuildOS=WebAssembly&&shift&goto Arg_Loop)
 
@@ -98,13 +99,14 @@ goto :SetupDirs
 echo Commencing build of native components
 echo.
 
-set "__BaseIntermediatesDir=%__binDir%\obj\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%"
+
+if [%__outConfig%] == [] set __outConfig=%__BuildOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%
 
 if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native"
+    set "__CMakeBinDir=%__artifactsDir%\bin\native\%__outConfig%"
 )
 if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__BaseIntermediatesDir%\native"
+    set "__IntermediatesDir=%__artifactsDir%\obj\native\%__outConfig%"
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
@@ -118,8 +120,8 @@ if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
 set MSBUILD_EMPTY_PROJECT_CONTENT= ^
  ^^^<Project xmlns=^"http://schemas.microsoft.com/developer/msbuild/2003^"^^^> ^
  ^^^</Project^^^>
-echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.props"
-echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__BaseIntermediatesDir%\Directory.Build.targets"
+echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.props"
+echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
 
 if exist "%VSINSTALLDIR%DIA SDK" goto GenVSSolution
 echo Error: DIA SDK is missing at "%VSINSTALLDIR%DIA SDK". ^
@@ -155,8 +157,8 @@ IF ERRORLEVEL 1 (
 echo Done building Native components
 
 :BuildNativeAOT
-set "__CMakeBinDir=%__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot"
-set "__IntermediatesDir=%__BaseIntermediatesDir%\native_aot"
+set "__CMakeBinDir=%__artifactsDir%\bin\native\%__outConfig%-aot"
+set "__IntermediatesDir=%__IntermediatesDir%-aot"
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
@@ -186,8 +188,8 @@ IF ERRORLEVEL 1 (
 )
 
 :: Copy results to native_aot since packaging expects a copy there too
-mkdir %__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot
-copy %__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\* %__binDir%\%__BuildOS%.%__BuildArch%.%CMAKE_BUILD_TYPE%\native_aot\
+mkdir %__artifactsDir%\bin\native\%__outConfig%-aot
+copy %__artifactsDir%\bin\native\%__outConfig%\* %__artifactsDir%\bin\native\%__outConfig%-aot\
 
 exit /B 0
 

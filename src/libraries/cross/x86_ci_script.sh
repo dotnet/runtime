@@ -34,7 +34,7 @@ function cross_build_native_with_docker {
     __buildNativeCmd="./src/Native/build-native.sh x86 $__buildConfig cross"
 
     $__dockerCmd $__buildNativeCmd
-    sudo chown -R $(id -u -n) ./bin
+    sudo chown -R $(id -u -n) ./artifacts
 }
 
 __buildConfig=

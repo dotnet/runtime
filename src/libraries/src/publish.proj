@@ -7,7 +7,7 @@
   <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
   <PropertyGroup>
-    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputRoot)\**\*.nupkg</PublishPattern>
+    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputPath)\**\*.nupkg</PublishPattern>
   </PropertyGroup>
 
   <ItemGroup>
