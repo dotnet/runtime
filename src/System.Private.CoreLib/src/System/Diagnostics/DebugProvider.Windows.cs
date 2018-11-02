@@ -6,8 +6,14 @@ namespace System.Diagnostics
 {
     public partial class DebugProvider
     {
-        public virtual void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
+        public static void FailCore(string stackTrace, string message, string detailMessage, string errorSource)
         {
+            if (s_FailCore != null)
+            {
+                s_FailCore(stackTrace, message, detailMessage, errorSource); 
+                return;
+            }
+
             if (Debugger.IsAttached)
             {
                 Debugger.Break();
