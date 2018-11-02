@@ -33,6 +33,37 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        public void WriteRelationsTwice()
+        {
+            FileInfo tempGuidFile = GetTempFileInfoWithExtension(".zip");
+
+            using (Package package = Package.Open(tempGuidFile.FullName, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                //first part
+                PackagePart packagePart = package.CreatePart(PackUriHelper.CreatePartUri(new Uri("MyFile1.xml", UriKind.Relative)),
+                                                             System.Net.Mime.MediaTypeNames.Application.Octet);
+                using (packagePart.GetStream(FileMode.Create))
+                {
+                    //do stuff with stream - not necessary to reproduce bug
+                }
+                package.CreateRelationship(PackUriHelper.CreatePartUri(new Uri("MyFile1.xml", UriKind.Relative)),
+                                           TargetMode.Internal, "http://my-fancy-relationship.com");
+
+                package.Flush();
+
+                //create second part after flush
+                packagePart = package.CreatePart(PackUriHelper.CreatePartUri(new Uri("MyFile2.xml", UriKind.Relative)),
+                                                 System.Net.Mime.MediaTypeNames.Application.Octet);
+                using (packagePart.GetStream(FileMode.Create))
+                {
+                    //do stuff with stream - not necessary to reproduce bug
+                }
+                package.CreateRelationship(PackUriHelper.CreatePartUri(new Uri("MyFile2.xml", UriKind.Relative)),
+                                           TargetMode.Internal, "http://my-fancy-relationship.com");
+            }
+        }
+
+        [Fact]
         public void T201_FileFormatException()
         {
             var e = new FileFormatException();
