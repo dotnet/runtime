@@ -45,7 +45,6 @@ namespace DefaultNamespace
 
         ~RootMem()
         {
-            root[n - 1].Free();
         }
     }
 }
