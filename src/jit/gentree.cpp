@@ -182,7 +182,7 @@ const char* GenTree::OpName(genTreeOps op)
 
 #endif
 
-#if MEASURE_NODE_SIZE && SMALL_TREE_NODES
+#if MEASURE_NODE_SIZE
 
 static const char* opStructNames[] = {
 #define GTNODE(en, st, cm, ok) #st,
@@ -198,14 +198,12 @@ const char* GenTree::OpStructName(genTreeOps op)
 
 #endif
 
-/*****************************************************************************
- *
- *  When 'SMALL_TREE_NODES' is enabled, we allocate tree nodes in 2 different
- *  sizes: 'TREE_NODE_SZ_SMALL' for most nodes and 'TREE_NODE_SZ_LARGE' for the
- *  few nodes (such as calls) that have more fields and take up a lot more space.
- */
-
-#if SMALL_TREE_NODES
+//
+//  We allocate tree nodes in 2 different sizes:
+//  - TREE_NODE_SZ_SMALL for most nodes
+//  - TREE_NODE_SZ_LARGE for the few nodes (such as calls) that have
+//    more fields and take up a lot more space.
+//
 
 /* GT_COUNT'th oper is overloaded as 'undefined oper', so allocate storage for GT_COUNT'th oper also */
 /* static */
@@ -391,7 +389,6 @@ bool GenTree::IsNodeProperlySized() const
 }
 #endif
 
-#if SMALL_TREE_NODES
 //------------------------------------------------------------------------
 // ReplaceWith: replace this with the src node. The source must be an isolated node
 //              and cannot be used after the replacement.
@@ -430,8 +427,6 @@ void GenTree::ReplaceWith(GenTree* src, Compiler* comp)
     }
     DEBUG_DESTROY_NODE(src);
 }
-
-#endif
 
 /*****************************************************************************
  *
@@ -515,32 +510,17 @@ void GenTree::ReportOperBashing(FILE* f)
 
 #endif // NODEBASH_STATS
 
-#else // SMALL_TREE_NODES
-
-#ifdef DEBUG
-bool GenTree::IsNodeProperlySized() const
-{
-    return true;
-}
-#endif
-
-#endif // SMALL_TREE_NODES
-
 /*****************************************************************************/
 
 #if MEASURE_NODE_SIZE
 
 void GenTree::DumpNodeSizes(FILE* fp)
 {
-// Dump the sizes of the various GenTree flavors
+    // Dump the sizes of the various GenTree flavors
 
-#if SMALL_TREE_NODES
     fprintf(fp, "Small tree node size = %3u bytes\n", TREE_NODE_SZ_SMALL);
-#endif
     fprintf(fp, "Large tree node size = %3u bytes\n", TREE_NODE_SZ_LARGE);
     fprintf(fp, "\n");
-
-#if SMALL_TREE_NODES
 
     // Verify that node sizes are set kosherly and dump sizes
     for (unsigned op = GT_NONE + 1; op < GT_COUNT; op++)
@@ -586,8 +566,6 @@ void GenTree::DumpNodeSizes(FILE* fp)
             fprintf(fp, "\n");
         }
     }
-
-#endif
 }
 
 #endif // MEASURE_NODE_SIZE
@@ -5671,18 +5649,9 @@ GenTree* Compiler::gtNewDconNode(double value)
 
 GenTree* Compiler::gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle)
 {
-
-#if SMALL_TREE_NODES
-
-    /* 'GT_CNS_STR' nodes later get transformed into 'GT_CALL' */
-
+    // 'GT_CNS_STR' nodes later get transformed into 'GT_CALL'
     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_CNS_STR]);
-
     GenTree* node = new (this, GT_CALL) GenTreeStrCon(CPX, scpHandle DEBUGARG(/*largeNode*/ true));
-#else
-    GenTree* node = new (this, GT_CNS_STR) GenTreeStrCon(CPX, scpHandle DEBUGARG(/*largeNode*/ true));
-#endif
-
     return node;
 }
 
@@ -5937,16 +5906,9 @@ GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoff
         assert(type == lvaTable[lnum].lvType ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
     }
-#if SMALL_TREE_NODES
-    /* This local variable node may later get transformed into a large node */
-
-    // assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
-
+    // This local variable node may later get transformed into a large node
+    assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
     GenTree* node = new (this, GT_CALL) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
-#else
-    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
-#endif
-
     return node;
 }
 
@@ -6994,7 +6956,6 @@ GenTree* Compiler::gtCloneExpr(
         /* If necessary, make sure we allocate a "fat" tree node */
         CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if SMALL_TREE_NODES
         switch (oper)
         {
             /* These nodes sometimes get bashed to "fat" ones */
@@ -7189,10 +7150,6 @@ GenTree* Compiler::gtCloneExpr(
                 }
                 break;
         }
-#else
-        // We're in the SimpleOp case, so it's always unary or binary.
-        copy = gtNewOperNode(oper, tree->TypeGet(), tree->gtOp.gtOp1, tree->gtOp.gtOp2);
-#endif
 
         // Some flags are conceptually part of the gtOper, and should be copied immediately.
         if (tree->gtOverflowEx())
