@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{7C70BB15-870B-4946-8098-625DACD645A6}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
@@ -10,6 +10,7 @@
     <Compile Include="OrderByTests.cs" />
     <Compile Include="ToHashSetTests.cs" />
     <Compile Include="SelectManyTests.netcoreapp.cs" />
+    <Compile Include="ZipTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
