@@ -127,6 +127,35 @@
       ]
     },
     {
+      "Name": "Trusted-All-FreeBSD",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "PB_BuildArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) -stripSymbols",
+        "PB_BuildTestsArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) -SkipTests -Outerloop /p:ArchiveTests=true",
+        "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+        "PB_EnableCloudTest": "false",
+        "PB_SkipTests": "true",
+        "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:EnableCloudTest=false /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=FreeBSD"
+      },
+      "Definitions": [{
+          "Name": "DotNet-CoreFx-Trusted-FreeBSD",
+          "Parameters": {
+            "PB_BuildArguments": "/p:ArchGroup=x64 -$(PB_ConfigurationGroup) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_SyncArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:DotNetAssetRootUrl=$(PB_AssetRootUrl)",
+            "PB_TargetQueue": "FreeBSD.11.Amd64",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=$(PB_ConfigurationGroup) /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=FreeBSD"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "FreeBSD",
+            "Platform": "x64",
+            "Type": "build/product/"
+          }
+        }
+      ]
+    },    
+    {
       "Name": "Trusted-All-Windows",
       "Parameters": {
         "TreatWarningsAsErrors": "false"
@@ -387,6 +416,7 @@
       "DependsOn": [
         "Trusted-All-Windows",
         "Trusted-All-OSX",
+        "Trusted-All-FreeBSD",
         "Trusted-All-Linux"
       ]
     },
@@ -409,6 +439,7 @@
       "DependsOn": [
         "Trusted-All-Windows",
         "Trusted-All-OSX",
+        "Trusted-All-FreeBSD",
         "Trusted-All-Linux"
       ]
     }
