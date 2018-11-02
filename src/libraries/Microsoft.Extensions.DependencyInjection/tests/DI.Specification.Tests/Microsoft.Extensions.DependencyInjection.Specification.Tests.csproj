@@ -4,6 +4,8 @@
     <Description>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.Extensions.DependencyInjection.Specification</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageTags>dependencyinjection;di</PackageTags>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <!-- Api check throws while trying to get default value for one of the test class arguments
       https://github.com/dotnet/corefx/issues/12338 & https://github.com/dotnet/corefx/issues/11797
