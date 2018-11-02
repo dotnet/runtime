@@ -101,17 +101,7 @@ namespace System.Diagnostics
         {
             if (!condition)
             {
-                string stackTrace;
-                try
-                {
-                    stackTrace = new StackTrace(0, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
-                }
-                catch
-                {
-                    stackTrace = "";
-                }
-                WriteAssert(stackTrace, message, detailMessage);
-                s_provider.ShowDialog(stackTrace, message, detailMessage, "Assertion Failed");
+                Fail(message, detailMessage);
             }
         }
 
@@ -128,31 +118,21 @@ namespace System.Diagnostics
                 {
                     stackTrace = "";
                 }
-                WriteAssert(stackTrace, message, detailMessage);
-                s_provider.ShowDialog(stackTrace, message, detailMessage, SR.GetResourceString(failureKindMessage));
+                s_provider.WriteAssert(stackTrace, message, detailMessage);
+                DebugProvider.FailCore(stackTrace, message, detailMessage, SR.GetResourceString(failureKindMessage));
             }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Fail(string message)
         {
-            Assert(false, message, string.Empty);
+            Fail(message, string.Empty);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Fail(string message, string detailMessage)
         {
-            Assert(false, message, detailMessage);
-        }
-
-        private static void WriteAssert(string stackTrace, string message, string detailMessage)
-        {
-            WriteLine(SR.DebugAssertBanner + Environment.NewLine
-                   + SR.DebugAssertShortMessage + Environment.NewLine
-                   + message + Environment.NewLine
-                   + SR.DebugAssertLongMessage + Environment.NewLine
-                   + detailMessage + Environment.NewLine
-                   + stackTrace);
+            s_provider.Fail(message, detailMessage);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
