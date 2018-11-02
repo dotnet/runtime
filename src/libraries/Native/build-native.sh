@@ -109,7 +109,7 @@ prepare_native_build()
     fi
 
     # Generate version.c if specified, else have an empty one.
-    __versionSourceFile=$__rootRepo/artifacts/obj/_version.c
+    __versionSourceFile=$__artifactsDir/obj/_version.c
     if [ ! -e "${__versionSourceFile}" ]; then
         __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
         echo "${__versionSourceLine}" > ${__versionSourceFile}
@@ -148,7 +148,7 @@ build_native()
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
 __nativeroot=$__scriptpath/Unix
 __rootRepo="$__scriptpath/../.."
-__rootbinpath="$__scriptpath/../../bin"
+__artifactsDir="$__rootRepo/artifacts"
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __CMakeExtraArgs=""
@@ -244,6 +244,10 @@ while :; do
         release|-release)
             __BuildType=Release
             __CMakeArgs=RELEASE
+            ;;
+        outconfig|-outconfig)
+            __outConfig=$2
+            shift
             ;;
         freebsd|FreeBSD|-freebsd|-FreeBSD)
             __BuildOS=FreeBSD
@@ -363,8 +367,9 @@ if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
 fi
 
 # Set the remaining variables based upon the determined build configuration
-__IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/native"
-__BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/native"
+__outConfig=${__outConfig:-"$__BuildOS-$__BuildArch-$__BuildType"}
+__IntermediatesDir="$__artifactsDir/obj/native/$__outConfig"
+__BinDir="$__artifactsDir/bin/native/$__outConfig"
 
 # Make the directories necessary for build if they don't exist
 setup_dirs
