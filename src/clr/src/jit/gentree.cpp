@@ -340,7 +340,6 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeStmt)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeClsVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArgPlace)     <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeLabel)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
 #ifndef FEATURE_PUT_STRUCT_ARG_STK
@@ -4546,10 +4545,6 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
             {
                 return &(parent->gtBoundsChk.gtArrLen);
             }
-            if (this == parent->gtBoundsChk.gtIndRngFailBB)
-            {
-                return &(parent->gtBoundsChk.gtIndRngFailBB);
-            }
             break;
 
         case GT_ARR_ELEM:
@@ -6926,6 +6921,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_CATCH_ARG:
             case GT_NO_OP:
+            case GT_LABEL:
                 copy = new (this, oper) GenTree(oper, tree->gtType);
                 goto DONE;
 
@@ -6934,10 +6930,6 @@ GenTree* Compiler::gtCloneExpr(
 #endif // !FEATURE_EH_FUNCLETS
             case GT_JMP:
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->gtVal.gtVal1);
-                goto DONE;
-
-            case GT_LABEL:
-                copy = new (this, oper) GenTreeLabel(tree->gtLabel.gtLabBB);
                 goto DONE;
 
             default:
@@ -10236,15 +10228,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             break;
 
         case GT_LABEL:
-            if (tree->gtLabel.gtLabBB)
-            {
-                printf(" dst=" FMT_BB, tree->gtLabel.gtLabBB->bbNum);
-            }
-            else
-            {
-                printf(" dst=<null>");
-            }
-
             break;
 
         case GT_FTN_ADDR:
