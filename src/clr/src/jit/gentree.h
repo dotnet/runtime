@@ -128,10 +128,6 @@ enum genTreeKinds
 
 /*****************************************************************************/
 
-#define SMALL_TREE_NODES 1
-
-/*****************************************************************************/
-
 enum gtCallTypes : BYTE
 {
     CT_USER_FUNC, // User function
@@ -1758,7 +1754,6 @@ public:
     bool IsAddWithI32Const(GenTree** addr, int* offset);
 
 public:
-#if SMALL_TREE_NODES
     static unsigned char s_gtNodeSizes[];
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
     static unsigned char s_gtTrueSizes[];
@@ -1766,7 +1761,6 @@ public:
 #if COUNT_AST_OPERS
     static LONG s_gtNodeCounts[];
 #endif
-#endif // SMALL_TREE_NODES
 
     static void InitNodeSize();
 
@@ -1790,7 +1784,7 @@ public:
     static const char* OpName(genTreeOps op);
 #endif
 
-#if MEASURE_NODE_SIZE && SMALL_TREE_NODES
+#if MEASURE_NODE_SIZE
     static const char* OpStructName(genTreeOps op);
 #endif
 
@@ -1828,7 +1822,6 @@ public:
         }
     }
 
-#if SMALL_TREE_NODES
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
     static void ReportOperBashing(FILE* fp);
@@ -1839,7 +1832,6 @@ public:
     static void ReportOperBashing(FILE* fp)
     { /* do nothing */
     }
-#endif
 #endif
 
     bool IsLocal() const
@@ -6345,13 +6337,8 @@ inline bool GenTree::isUsedFromSpillTemp() const
 
 /*****************************************************************************/
 
-#if SMALL_TREE_NODES
-
 // In debug, on some platforms (e.g., when LATE_DISASM is defined), GenTreeIntCon is bigger than GenTreeLclFld.
 const size_t TREE_NODE_SZ_SMALL = max(sizeof(GenTreeIntCon), sizeof(GenTreeLclFld));
-
-#endif // SMALL_TREE_NODES
-
 const size_t TREE_NODE_SZ_LARGE = sizeof(GenTreeCall);
 
 enum varRefKinds
