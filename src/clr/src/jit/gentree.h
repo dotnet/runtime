@@ -2733,15 +2733,18 @@ public:
 
 struct GenTreeLclVar : public GenTreeLclVarCommon
 {
-    IL_OFFSET gtLclILoffs; // instr offset of ref (only for debug info)
+    INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for debug)
 
-    GenTreeLclVar(var_types type, unsigned lclNum, IL_OFFSET ilOffs DEBUGARG(bool largeNode = false))
-        : GenTreeLclVarCommon(GT_LCL_VAR, type, lclNum DEBUGARG(largeNode)), gtLclILoffs(ilOffs)
+    GenTreeLclVar(var_types type,
+                  unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
+        : GenTreeLclVarCommon(GT_LCL_VAR, type, lclNum DEBUGARG(largeNode)) DEBUGARG(gtLclILoffs(ilOffs))
     {
     }
 
-    GenTreeLclVar(genTreeOps oper, var_types type, unsigned lclNum, IL_OFFSET ilOffs DEBUGARG(bool largeNode = false))
-        : GenTreeLclVarCommon(oper, type, lclNum DEBUGARG(largeNode)), gtLclILoffs(ilOffs)
+    GenTreeLclVar(genTreeOps oper,
+                  var_types  type,
+                  unsigned lclNum DEBUGARG(IL_OFFSET ilOffs = BAD_IL_OFFSET) DEBUGARG(bool largeNode = false))
+        : GenTreeLclVarCommon(oper, type, lclNum DEBUGARG(largeNode)) DEBUGARG(gtLclILoffs(ilOffs))
     {
         assert(OperIsLocal(oper) || OperIsLocalAddr(oper));
     }
