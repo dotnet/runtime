@@ -6828,8 +6828,6 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 {
 	// FIXMEcoop gpointer value needs more attention
 	MONO_REQ_GC_UNSAFE_MODE;
-	MonoObject *res;
-	int size;
 	MonoVTable *vtable;
 
 	error_init (error);
@@ -6845,22 +6843,24 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 		return mono_nullable_box_handle (value, klass, error);
 
 	vtable = mono_class_vtable_checked (domain, klass, error);
-	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+	return_val_if_nok (error, NULL_HANDLE);
 
-	size = mono_class_instance_size (klass);
+	int size = mono_class_instance_size (klass);
 
 	MonoObjectHandle res_handle = mono_object_new_alloc_by_vtable (vtable, error);
-	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
-	res = MONO_HANDLE_RAW (res_handle);
+	return_val_if_nok (error, NULL_HANDLE);
 
-	size = size - MONO_ABI_SIZEOF (MonoObject);
-
-	gpointer data = mono_object_get_data (res);
+	size -= MONO_ABI_SIZEOF (MonoObject);
 
 	if (mono_gc_is_moving ()) {
 		g_assert (size == mono_class_value_size (klass, NULL));
+		MONO_ENTER_NO_SAFEPOINTS;
+		gpointer data = mono_handle_get_data_unsafe (res_handle);
 		mono_gc_wbarrier_value_copy_internal (data, value, 1, klass);
+		MONO_EXIT_NO_SAFEPOINTS;
 	} else {
+		MONO_ENTER_NO_SAFEPOINTS;
+		gpointer data = mono_handle_get_data_unsafe (res_handle);
 #if NO_UNALIGNED_ACCESS
 		mono_gc_memmove_atomic (data, value, size);
 #else
@@ -6881,9 +6881,10 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 			mono_gc_memmove_atomic (data, value, size);
 		}
 #endif
+		MONO_EXIT_NO_SAFEPOINTS;
 	}
 	if (m_class_has_finalize (klass))
-		mono_object_register_finalizer (res);
+		mono_object_register_finalizer_handle (res_handle);
 
 	return res_handle;
 }
@@ -6900,63 +6901,8 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 MonoObject *
 mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-	MonoObject *res;
-	int size;
-	MonoVTable *vtable;
-
-	error_init (error);
-
-	g_assert (m_class_is_valuetype (klass));
-	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
-		char *full_name = mono_type_get_full_name (klass);
-		mono_error_set_execution_engine (error, "Cannot box IsByRefLike type %s", full_name);
-		g_free (full_name);
-		return NULL;
-	}
-	if (mono_class_is_nullable (klass))
-		return mono_nullable_box ((guint8 *)value, klass, error);
-
-	vtable = mono_class_vtable_checked (domain, klass, error);
-	return_val_if_nok (error, NULL);
-
-	size = mono_class_instance_size (klass);
-	res = mono_object_new_alloc_specific_checked (vtable, error);
-	return_val_if_nok (error, NULL);
-
-	size = size - MONO_ABI_SIZEOF (MonoObject);
-
-	gpointer data = mono_object_get_data (res);
-	if (mono_gc_is_moving ()) {
-		g_assert (size == mono_class_value_size (klass, NULL));
-		mono_gc_wbarrier_value_copy_internal (data, value, 1, klass);
-	} else {
-#if NO_UNALIGNED_ACCESS
-		mono_gc_memmove_atomic (data, value, size);
-#else
-		switch (size) {
-		case 1:
-			*(guint8 *)(data) = *(guint8 *) value;
-			break;
-		case 2:
-			*(guint16 *)(data) = *(guint16 *) value;
-			break;
-		case 4:
-			*(guint32 *)(data) = *(guint32 *) value;
-			break;
-		case 8:
-			*(guint64 *)(data) = *(guint64 *) value;
-			break;
-		default:
-			mono_gc_memmove_atomic (data, value, size);
-		}
-#endif
-	}
-	if (m_class_has_finalize (klass)) {
-		mono_object_register_finalizer (res);
-		return_val_if_nok (error, NULL);
-	}
-	return res;
+	HANDLE_FUNCTION_ENTER ();
+	HANDLE_FUNCTION_RETURN_OBJ (mono_value_box_handle (domain, klass, value,  error));
 }
 
 void

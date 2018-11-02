@@ -2160,6 +2160,8 @@ mono_string_empty_handle (MonoDomain *domain);
 gpointer
 mono_object_get_data (MonoObject *o);
 
+#define mono_handle_get_data_unsafe(handle) ((gpointer)((guint8*)MONO_HANDLE_RAW (handle) + MONO_ABI_SIZEOF (MonoObject)))
+
 gpointer
 mono_vtype_get_field_addr (gpointer vtype, MonoClassField *field);
 
