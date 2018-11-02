@@ -8,10 +8,35 @@
 namespace System.Diagnostics
 {
     /// <summary>
-    /// Provides default implementation for Write and ShowDialog methods in Debug class.
+    /// Provides default implementation for Write and Fail methods in Debug class.
     /// </summary>
     public partial class DebugProvider
     {
+        public virtual void Fail(string message, string detailMessage)
+        {
+            string stackTrace;
+            try
+            {
+                stackTrace = new StackTrace(0, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            }
+            catch
+            {
+                stackTrace = "";
+            }
+            WriteAssert(stackTrace, message, detailMessage);
+            FailCore(stackTrace, message, detailMessage, "Assertion Failed");
+        }
+
+        internal void WriteAssert(string stackTrace, string message, string detailMessage)
+        {
+            WriteLine(SR.DebugAssertBanner + Environment.NewLine
+                   + SR.DebugAssertShortMessage + Environment.NewLine
+                   + message + Environment.NewLine
+                   + SR.DebugAssertLongMessage + Environment.NewLine
+                   + detailMessage + Environment.NewLine
+                   + stackTrace);
+        }
+
         public virtual void Write(string message)
         {
             lock (s_lock)
@@ -78,6 +103,7 @@ namespace System.Diagnostics
         }
 
         // internal and not readonly so that the tests can swap this out.
+        internal static Action<string, string, string, string> s_FailCore = null;
         internal static Action<string> s_WriteCore = null;
     }
 }
