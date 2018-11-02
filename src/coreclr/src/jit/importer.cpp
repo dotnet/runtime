@@ -11763,7 +11763,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-#if SMALL_TREE_NODES
                 if (callNode)
                 {
                     /* These operators can later be transformed into 'GT_CALL' */
@@ -11785,7 +11784,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = new (this, GT_CALL) GenTreeOp(oper, type, op1, op2 DEBUGARG(/*largeNode*/ true));
                 }
                 else
-#endif // SMALL_TREE_NODES
                 {
                     op1 = gtNewOperNode(oper, type, op1, op2);
                 }
@@ -12504,13 +12502,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // Work is evidently required, add cast node
                 else
                 {
-#if SMALL_TREE_NODES
                     if (callNode)
                     {
                         op1 = gtNewCastNodeL(type, op1, uns, lclTyp);
                     }
                     else
-#endif // SMALL_TREE_NODES
                     {
                         op1 = gtNewCastNode(type, op1, uns, lclTyp);
                     }
