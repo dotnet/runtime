@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</Description>
+    <TargetFrameworks>netcoreapp2.0;net461;netstandard2.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageTags>dependencyinjection;di</PackageTags>
+
+    <ILEmitBackend Condition="$(TargetFramework) != 'netstandard2.0'">True</ILEmitBackend>
+    <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
+
+    <!-- Debug IL generation -->
+    <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
+    <DefineConstants Condition="'$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="ServiceLookup\ILEmit\**\*.cs" />
+
+    <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
+
+    <Compile Include="..\..\..\Shared\src\ParameterDefaultValue\*.cs" />
+    <Compile Include="..\..\..\Shared\src\TypeNameHelper\*.cs" />
+  </ItemGroup>
+
+</Project>
