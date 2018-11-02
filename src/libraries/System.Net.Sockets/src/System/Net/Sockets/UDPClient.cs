@@ -222,6 +222,22 @@ namespace System.Net.Sockets
             _cleanedUp = true;
         }
 
+        private bool IsAddressFamilyCompatible(AddressFamily family)
+        {
+            // Check if the provided address family is compatible with the socket address family
+            if (family == _family)
+            {
+                return true;
+            }
+
+            if (family == AddressFamily.InterNetwork)
+            {
+                return _family == AddressFamily.InterNetworkV6 && _clientSocket.DualMode;
+            }
+
+            return false;
+        }
+
         public void Dispose()
         {
             Dispose(true);
@@ -314,7 +330,7 @@ namespace System.Net.Sockets
                 IPAddress[] addresses = Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
 
                 int i = 0;
-                for (; i < addresses.Length && addresses[i].AddressFamily != _family; i++)
+                for (; i < addresses.Length && !IsAddressFamilyCompatible(addresses[i].AddressFamily); i++)
                 {
                 }
 
@@ -424,6 +440,8 @@ namespace System.Net.Sockets
 
             // IPv6 Changes: we need to create the correct MulticastOption and
             //               must also check for address family compatibility.
+            // Note: we cannot reliably use IPv4 multicast over IPv6 in DualMode
+            // as such we keep the compatibility explicit between IP stack versions
             if (multicastAddr.AddressFamily != _family)
             {
                 throw new ArgumentException(SR.Format(SR.net_protocol_invalid_multicast_family, "UDP"), nameof(multicastAddr));
@@ -764,7 +782,7 @@ namespace System.Net.Sockets
                             _active = true;
                             break;
                         }
-                        else if (address.AddressFamily == _family)
+                        else if (IsAddressFamilyCompatible(address.AddressFamily))
                         {
                             // Only use addresses with a matching family
                             Connect(new IPEndPoint(address, port));
@@ -953,7 +971,7 @@ namespace System.Net.Sockets
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
 
             int i = 0;
-            for (; i < addresses.Length && addresses[i].AddressFamily != _family; i++)
+            for (; i < addresses.Length && !IsAddressFamilyCompatible(addresses[i].AddressFamily); i++)
             {
                 ; // just count the addresses
             }
