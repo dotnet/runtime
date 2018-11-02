@@ -270,7 +270,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned blockWeight, u
     assert(store->gtOp1 == node);
 
     GenTree* const load =
-        new (compiler, GT_LCL_VAR) GenTreeLclVar(store->TypeGet(), store->AsLclVarCommon()->GetLclNum(), BAD_IL_OFFSET);
+        new (compiler, GT_LCL_VAR) GenTreeLclVar(store->TypeGet(), store->AsLclVarCommon()->GetLclNum());
 
     m_range->InsertAfter(node, store, load);
 

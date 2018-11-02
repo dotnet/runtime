@@ -5869,7 +5869,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     return node;
 }
 
-GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs)
+GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -5881,7 +5881,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILoff
         assert(type == lvaTable[lnum].lvType ||
                (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
     }
-    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum, ILoffs);
+    GenTree* node = new (this, GT_LCL_VAR) GenTreeLclVar(type, lnum DEBUGARG(ILoffs));
 
     /* Cannot have this assert because the inliner uses this function
      * to add temporaries */
@@ -5891,7 +5891,7 @@ GenTree* Compiler::gtNewLclvNode(unsigned lnum, var_types type, IL_OFFSETX ILoff
     return node;
 }
 
-GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoffs)
+GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs))
 {
     // We need to ensure that all struct values are normalized.
     // It might be nice to assert this in general, but we have assignments of int to long.
@@ -5905,7 +5905,7 @@ GenTree* Compiler::gtNewLclLNode(unsigned lnum, var_types type, IL_OFFSETX ILoff
     }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[GT_CALL] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
-    GenTree* node = new (this, GT_CALL) GenTreeLclVar(type, lnum, ILoffs DEBUGARG(/*largeNode*/ true));
+    GenTree* node = new (this, GT_CALL) GenTreeLclVar(type, lnum DEBUGARG(ILoffs) DEBUGARG(/*largeNode*/ true));
     return node;
 }
 
@@ -6682,7 +6682,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             // Remember that the LclVar node has been cloned. The flag will be set
             // on 'copy' as well.
             tree->gtFlags |= GTF_VAR_CLONED;
-            copy = gtNewLclvNode(tree->gtLclVarCommon.gtLclNum, tree->gtType, tree->gtLclVar.gtLclILoffs);
+            copy = gtNewLclvNode(tree->gtLclVarCommon.gtLclNum, tree->gtType DEBUGARG(tree->gtLclVar.gtLclILoffs));
             break;
 
         case GT_LCL_FLD:
@@ -6869,7 +6869,7 @@ GenTree* Compiler::gtCloneExpr(
                     // Remember that the LclVar node has been cloned. The flag will
                     // be set on 'copy' as well.
                     tree->gtFlags |= GTF_VAR_CLONED;
-                    copy = gtNewLclvNode(tree->gtLclVar.gtLclNum, tree->gtType, tree->gtLclVar.gtLclILoffs);
+                    copy = gtNewLclvNode(tree->gtLclVar.gtLclNum, tree->gtType DEBUGARG(tree->gtLclVar.gtLclILoffs));
                     copy->AsLclVarCommon()->SetSsaNum(tree->AsLclVarCommon()->GetSsaNum());
                 }
                 copy->gtFlags = tree->gtFlags;

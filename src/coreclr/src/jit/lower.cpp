@@ -481,10 +481,9 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         unsigned lclNum               = comp->lvaGrabTemp(true DEBUGARG("Lowering is creating a new local variable"));
         comp->lvaTable[lclNum].lvType = rhs->TypeGet();
 
-        GenTreeLclVar* store =
-            new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, rhs->TypeGet(), lclNum, BAD_IL_OFFSET);
-        store->gtOp1   = rhs;
-        store->gtFlags = (rhs->gtFlags & GTF_COMMON_MASK);
+        GenTreeLclVar* store = new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, rhs->TypeGet(), lclNum);
+        store->gtOp1         = rhs;
+        store->gtFlags       = (rhs->gtFlags & GTF_COMMON_MASK);
         store->gtFlags |= GTF_VAR_DEF;
 
         switchBBRange.InsertAfter(node, store);
@@ -2070,9 +2069,8 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         if (tmpLclNum != BAD_VAR_NUM)
         {
             assert(tmpType != TYP_UNDEF);
-            GenTreeLclVar* local =
-                new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, tmpType, callerArgLclNum, BAD_IL_OFFSET);
-            GenTree* assignExpr = comp->gtNewTempAssign(tmpLclNum, local);
+            GenTreeLclVar* local      = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, tmpType, callerArgLclNum);
+            GenTree*       assignExpr = comp->gtNewTempAssign(tmpLclNum, local);
             ContainCheckRange(local, assignExpr);
             BlockRange().InsertBefore(firstPutArgStk, LIR::SeqTree(comp, assignExpr));
         }
@@ -3176,7 +3174,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // the control target is
     // [originalThis + firstTgtOffs]
 
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(originalThisExpr->TypeGet(), lclNum, BAD_IL_OFFSET);
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(originalThisExpr->TypeGet(), lclNum);
 
     unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
     GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
@@ -3262,7 +3260,7 @@ GenTree* Lowering::SetGCState(int state)
 
     const CORINFO_EE_INFO* pInfo = comp->eeGetEEInfo();
 
-    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->info.compLvFrameListRoot, -1);
+    GenTree* base = new (comp, GT_LCL_VAR) GenTreeLclVar(TYP_I_IMPL, comp->info.compLvFrameListRoot);
 
     GenTree* stateNode    = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_BYTE, state);
     GenTree* addr         = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, base, nullptr, 1, pInfo->offsetOfGCState);
@@ -3287,8 +3285,7 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     const CORINFO_EE_INFO*                       pInfo         = comp->eeGetEEInfo();
     const CORINFO_EE_INFO::InlinedCallFrameInfo& callFrameInfo = pInfo->inlinedCallFrameInfo;
 
-    GenTree* TCB = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot,
-                                                        (IL_OFFSET)-1); // cast to resolve ambiguity.
+    GenTree* TCB = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
 
     // Thread->m_pFrame
     GenTree* addr = new (comp, GT_LEA) GenTreeAddrMode(TYP_I_IMPL, TCB, nullptr, 1, pInfo->offsetOfThreadFrame);
@@ -3395,8 +3392,7 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(varDsc->lvType == TYP_I_IMPL);
 
     GenTree* store =
-        new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot,
-                                                   (IL_OFFSET)-1); // cast to resolve ambiguity.
+        new (comp, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, TYP_I_IMPL, comp->info.compLvFrameListRoot);
     store->gtOp.gtOp1 = call;
     store->gtFlags |= GTF_VAR_DEF;
 
@@ -3563,8 +3559,8 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         // First argument is the address of the frame variable.
-        GenTree* frameAddr = new (comp, GT_LCL_VAR_ADDR)
-            GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+        GenTree* frameAddr =
+            new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
 
         // Insert call to CORINFO_HELP_JIT_PINVOKE_BEGIN
         GenTree* helperCall =
@@ -3718,7 +3714,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 
         // First argument is the address of the frame variable.
         GenTree* frameAddr =
-            new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, BAD_IL_OFFSET);
+            new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
         frameAddr->SetOperRaw(GT_LCL_VAR_ADDR);
 
         // Insert call to CORINFO_HELP_JIT_PINVOKE_END
@@ -3962,7 +3958,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     }
     else
     {
-        local = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, thisPtr->TypeGet(), lclNum, BAD_IL_OFFSET);
+        local = new (comp, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, thisPtr->TypeGet(), lclNum);
     }
 
     // pointer to virtual table = [REG_CALL_THIS + offs]
