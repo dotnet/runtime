@@ -3658,11 +3658,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
                                                    callFrameInfo.offsetOfReturnAddress);
 
-    // We don't have a real label, and inserting one is hard (even if we made a special node),
-    // so for now we will just 'know' what this means in codegen.
-    GenTreeLabel* labelRef = new (comp, GT_LABEL) GenTreeLabel(nullptr);
-    labelRef->gtType       = TYP_I_IMPL;
-    storeLab->gtOp1        = labelRef;
+    storeLab->gtOp1 = new (comp, GT_LABEL) GenTree(GT_LABEL, TYP_I_IMPL);
     storeLab->gtFlags |= GTF_VAR_DEF;
 
     InsertTreeBeforeAndContainCheck(insertBefore, storeLab);

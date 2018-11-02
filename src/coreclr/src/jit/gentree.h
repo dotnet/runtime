@@ -4211,7 +4211,7 @@ struct GenTreeIndexAddr : public GenTreeOp
 
     CORINFO_CLASS_HANDLE gtStructElemClass; // If the element type is a struct, this is the struct type.
 
-    GenTree* gtIndRngFailBB; // Label to jump to for array-index-out-of-range
+    BasicBlock* gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
 
     var_types gtElemType;   // The element type of the array.
     unsigned  gtElemSize;   // size of elements in the array
@@ -4297,7 +4297,7 @@ struct GenTreeBoundsChk : public GenTree
     GenTree* gtIndex;  // The index expression.
     GenTree* gtArrLen; // An expression for the length of the array being indexed.
 
-    GenTree*        gtIndRngFailBB; // Label to jump to for array-index-out-of-range
+    BasicBlock*     gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
     GenTreeBoundsChk(genTreeOps oper, var_types type, GenTree* index, GenTree* arrLen, SpecialCodeKind kind)
@@ -5015,22 +5015,6 @@ struct GenTreeArgPlace : public GenTree
     }
 #if DEBUGGABLE_GENTREE
     GenTreeArgPlace() : GenTree()
-    {
-    }
-#endif
-};
-
-/* gtLabel  -- code label target    (GT_LABEL) */
-
-struct GenTreeLabel : public GenTree
-{
-    BasicBlock* gtLabBB;
-
-    GenTreeLabel(BasicBlock* bb) : GenTree(GT_LABEL, TYP_VOID), gtLabBB(bb)
-    {
-    }
-#if DEBUGGABLE_GENTREE
-    GenTreeLabel() : GenTree()
     {
     }
 #endif

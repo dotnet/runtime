@@ -1967,7 +1967,7 @@ void CodeGen::genExitCode(BasicBlock* block)
 //   codeKind - the special throw-helper kind;
 //   failBlk  - optional fail target block, if it is already known;
 //
-void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, GenTree* failBlk)
+void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk)
 {
     bool useThrowHlpBlk = compiler->fgUseThrowHelperBlocks();
 #if defined(UNIX_X86_ABI) && FEATURE_EH_FUNCLETS
@@ -1985,8 +1985,7 @@ void CodeGen::genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKi
         if (failBlk != nullptr)
         {
             // We already know which block to jump to. Use that.
-            assert(failBlk->gtOper == GT_LABEL);
-            excpRaisingBlock = failBlk->gtLabel.gtLabBB;
+            excpRaisingBlock = failBlk;
 
 #ifdef DEBUG
             Compiler::AddCodeDsc* add =
