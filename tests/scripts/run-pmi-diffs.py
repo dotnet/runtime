@@ -565,8 +565,7 @@ def do_pmi_diffs():
 
         # Over which set of assemblies should we generate asm?
         # TODO: parameterize this
-        asm_source_args = ["--corelib"]
-        # asm_source_args = ["--frameworks"]
+        asm_source_args = ["--frameworks", "--benchmarks"]
 
         command = ["dotnet", jitDiffPath, "diff", "--pmi", "--base", "--base_root", baseCoreClrPath, "--diff", "--diff_root", diff_root, "--arch", arch, "--build", build_type, "--tag", "1", "--noanalyze", "--output", asmRootPath] + asm_source_args + altjit_args
         returncode = run_command(command, my_env)
