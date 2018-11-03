@@ -4053,17 +4053,13 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 {
                     if (fIsStatic)
                     {
-                        // By-ref-like types cannot be used for static fields
+                        // Byref-like types cannot be used for static fields
                         BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
-                    }
-                    if (!IsValueClass())
-                    {
-                        // Non-value-classes cannot contain by-ref-like instance fields
-                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_NOTVALUECLASSFIELD);
                     }
                     if (!bmtFP->fIsByRefLikeType)
                     {
-                        BuildMethodTableThrowException(IDS_CLASSLOAD_NOTBYREFLIKE);
+                        // Non-byref-like types cannot contain byref-like instance fields
+                        BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD);
                     }
                 }
 
@@ -9589,7 +9585,7 @@ void MethodTableBuilder::CheckForSystemTypes()
             {
                 // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
                 // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
-                // treated as a value type so that its field can be considered as a by-ref pointer.
+                // treated as a value type so that its field can be considered as a byref pointer.
                 _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
                 pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
                 pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);
@@ -9670,7 +9666,7 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             // x86 by default treats the type of ByReference<T> as the actual type of its IntPtr field, see calls to
             // ComputeInternalCorElementTypeForValueType in this file. This is a special case where the struct needs to be
-            // treated as a value type so that its field can be considered as a by-ref pointer.
+            // treated as a value type so that its field can be considered as a byref pointer.
             _ASSERTE(pMT->GetFlag(MethodTable::enum_flag_Category_Mask) == MethodTable::enum_flag_Category_PrimitiveValueType);
             pMT->ClearFlag(MethodTable::enum_flag_Category_Mask);
             pMT->SetInternalCorElementType(ELEMENT_TYPE_VALUETYPE);

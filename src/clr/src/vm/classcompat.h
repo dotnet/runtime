@@ -266,7 +266,6 @@ private:
     BOOL IsAbstract() { LIMITED_METHOD_CONTRACT; return IsTdAbstract(bmtType->dwAttr); } 
     BOOL HasLayout() { LIMITED_METHOD_CONTRACT; return bmtProp->fHasLayout; } 
     BOOL IsDelegate() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsDelegate; } 
-    BOOL IsContextful() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsContextful; } 
     Module *GetModule() { LIMITED_METHOD_CONTRACT; return bmtType->pModule; } 
     Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); } 
     BaseDomain *GetDomain() { LIMITED_METHOD_CONTRACT; return bmtDomain; } 
@@ -289,7 +288,6 @@ private:
     void SetEnum() { LIMITED_METHOD_CONTRACT; bmtProp->fIsEnum = TRUE; }
     void SetHasLayout() { LIMITED_METHOD_CONTRACT; bmtProp->fHasLayout = TRUE; }
     void SetIsDelegate() { LIMITED_METHOD_CONTRACT; bmtProp->fIsDelegate = TRUE; }
-    void SetContextful() { LIMITED_METHOD_CONTRACT; bmtProp->fIsContextful = TRUE; }
 #ifdef _DEBUG
     void SetDebugClassName(LPUTF8 x) { LIMITED_METHOD_CONTRACT; bmtProp->szDebugClassName = x; }
 #endif
@@ -325,7 +323,6 @@ private:
  
         BOOL fIsValueClass;
         BOOL fIsEnum;
-        BOOL fIsContextful;
         BOOL fIsComClassInterface;
         BOOL fHasLayout;
         BOOL fIsDelegate;
