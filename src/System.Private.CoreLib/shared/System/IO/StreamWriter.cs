@@ -195,33 +195,60 @@ namespace System.IO
             }
             finally
             {
-                // Dispose of our resources if this StreamWriter is closable. 
-                // Note: Console.Out and other such non closable streamwriters should be left alone 
-                if (!LeaveOpen && _stream != null)
+                CloseStreamFromDispose(disposing);
+            }
+        }
+
+        private void CloseStreamFromDispose(bool disposing)
+        {
+            // Dispose of our resources if this StreamWriter is closable. 
+            if (!LeaveOpen && _stream != null)
+            {
+                try
                 {
-                    try
+                    // Attempt to close the stream even if there was an IO error from Flushing.
+                    // Note that Stream.Close() can potentially throw here (may or may not be
+                    // due to the same Flush error). In this case, we still need to ensure 
+                    // cleaning up internal resources, hence the finally block.  
+                    if (disposing)
                     {
-                        // Attempt to close the stream even if there was an IO error from Flushing.
-                        // Note that Stream.Close() can potentially throw here (may or may not be
-                        // due to the same Flush error). In this case, we still need to ensure 
-                        // cleaning up internal resources, hence the finally block.  
-                        if (disposing)
-                        {
-                            _stream.Close();
-                        }
-                    }
-                    finally
-                    {
-                        _stream = null;
-                        _byteBuffer = null;
-                        _charBuffer = null;
-                        _encoding = null;
-                        _encoder = null;
-                        _charLen = 0;
-                        base.Dispose(disposing);
+                        _stream.Close();
                     }
                 }
+                finally
+                {
+                    _stream = null;
+                    _byteBuffer = null;
+                    _charBuffer = null;
+                    _encoding = null;
+                    _encoder = null;
+                    _charLen = 0;
+                    base.Dispose(disposing);
+                }
             }
+        }
+
+        public override ValueTask DisposeAsync() =>
+            GetType() != typeof(StreamWriter) ?
+                base.DisposeAsync() :
+                DisposeAsyncCore();
+
+        private async ValueTask DisposeAsyncCore()
+        {
+            // Same logic as in Dispose(), but with async flushing.
+            Debug.Assert(GetType() == typeof(StreamWriter));
+            try
+            {
+                if (_stream != null)
+                {
+                    await FlushAsync().ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                CloseStreamFromDispose(disposing: true);
+            }
+            GC.SuppressFinalize(this);
         }
 
         public override void Flush()

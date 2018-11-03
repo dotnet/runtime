@@ -269,6 +269,24 @@ namespace System.IO
             }
         }
 
+        public override ValueTask DisposeAsync()
+        {
+            // On Unix, we don't have any special support for async I/O, simply queueing writes
+            // rather than doing them synchronously.  As such, if we're "using async I/O" and we
+            // have something to flush, queue the call to Dispose, so that we end up queueing whatever
+            // write work happens to flush the buffer.  Otherwise, just delegate to the base implementation,
+            // which will synchronously invoke Dispose.  We don't need to factor in the current type
+            // as we're using the virtual Dispose either way, and therefore factoring in whatever
+            // override may already exist on a derived type.
+            if (_useAsyncIO && _writePos > 0)
+            {
+                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s).Dispose(), this,
+                    CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
+            }
+
+            return base.DisposeAsync();
+        }
+
         /// <summary>Flushes the OS buffer.  This does not flush the internal read/write buffer.</summary>
         private void FlushOSBuffer()
         {
