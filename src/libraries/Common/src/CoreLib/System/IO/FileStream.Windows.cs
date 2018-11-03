@@ -226,24 +226,21 @@ namespace System.IO
             // finalized.
             try
             {
-                if (_fileHandle != null && !_fileHandle.IsClosed)
+                if (_fileHandle != null && !_fileHandle.IsClosed && _writePos > 0)
                 {
                     // Flush data to disk iff we were writing.  After 
                     // thinking about this, we also don't need to flush
                     // our read position, regardless of whether the handle
                     // was exposed to the user.  They probably would NOT 
                     // want us to do this.
-                    if (_writePos > 0)
+                    try
                     {
-                        try
-                        {
-                            FlushWriteBuffer(!disposing);
-                        }
-                        catch (Exception e) when (IsIoRelatedException(e) && !disposing)
-                        {
-                            // On finalization, ignore failures from trying to flush the write buffer,
-                            // e.g. if this stream is wrapping a pipe and the pipe is now broken.
-                        }
+                        FlushWriteBuffer(!disposing);
+                    }
+                    catch (Exception e) when (IsIoRelatedException(e) && !disposing)
+                    {
+                        // On finalization, ignore failures from trying to flush the write buffer,
+                        // e.g. if this stream is wrapping a pipe and the pipe is now broken.
                     }
                 }
             }
@@ -251,22 +248,46 @@ namespace System.IO
             {
                 if (_fileHandle != null && !_fileHandle.IsClosed)
                 {
-                    if (_fileHandle.ThreadPoolBinding != null)
-                        _fileHandle.ThreadPoolBinding.Dispose();
-
+                    _fileHandle.ThreadPoolBinding?.Dispose();
                     _fileHandle.Dispose();
                 }
 
-                if (_preallocatedOverlapped != null)
-                    _preallocatedOverlapped.Dispose();
-
+                _preallocatedOverlapped?.Dispose();
                 _canSeek = false;
 
                 // Don't set the buffer to null, to avoid a NullReferenceException
                 // when users have a race condition in their code (i.e. they call
                 // Close when calling another method on Stream like Read).
-                //_buffer = null;
-                base.Dispose(disposing);
+            }
+        }
+
+        public override ValueTask DisposeAsync() =>
+            GetType() == typeof(FileStream) ?
+                DisposeAsyncCore() :
+                base.DisposeAsync();
+
+        private async ValueTask DisposeAsyncCore()
+        {
+            // Same logic as in Dispose(), except with async counterparts.
+            // TODO: https://github.com/dotnet/corefx/issues/32837: FlushAsync does synchronous work.
+            try
+            {
+                if (_fileHandle != null && !_fileHandle.IsClosed && _writePos > 0)
+                {
+                    await FlushAsyncInternal(default).ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                if (_fileHandle != null && !_fileHandle.IsClosed)
+                {
+                    _fileHandle.ThreadPoolBinding?.Dispose();
+                    _fileHandle.Dispose();
+                }
+
+                _preallocatedOverlapped?.Dispose();
+                _canSeek = false;
+                GC.SuppressFinalize(this); // the handle is closed; nothing further for the finalizer to do
             }
         }
 
@@ -1544,6 +1565,7 @@ namespace System.IO
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
 
+            // TODO: https://github.com/dotnet/corefx/issues/32837 (stop doing this synchronous work).
             // The always synchronous data transfer between the OS and the internal buffer is intentional 
             // because this is needed to allow concurrent async IO requests. Concurrent data transfer
             // between the OS and the internal buffer will result in race conditions. Since FlushWrite and
