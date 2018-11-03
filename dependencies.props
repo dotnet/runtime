@@ -23,23 +23,23 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>0c1e9d13c02fea39a5ba3790cf75645a5185790c</CoreFxCurrentRef>
+    <CoreFxCurrentRef>fabf6d88a0185c0aa6f0cbfc14c14463fe41af1d</CoreFxCurrentRef>
     <CoreClrCurrentRef>0c1e9d13c02fea39a5ba3790cf75645a5185790c</CoreClrCurrentRef>
     <BuildToolsCurrentRef>0c1e9d13c02fea39a5ba3790cf75645a5185790c</BuildToolsCurrentRef>
-    <PgoDataCurrentRef>0c1e9d13c02fea39a5ba3790cf75645a5185790c</PgoDataCurrentRef>
-    <CoreSetupCurrentRef>0c1e9d13c02fea39a5ba3790cf75645a5185790c</CoreSetupCurrentRef>
-    <IbcDataCurrentRef>0c1e9d13c02fea39a5ba3790cf75645a5185790c</IbcDataCurrentRef>
+    <PgoDataCurrentRef>fabf6d88a0185c0aa6f0cbfc14c14463fe41af1d</PgoDataCurrentRef>
+    <CoreSetupCurrentRef>fabf6d88a0185c0aa6f0cbfc14c14463fe41af1d</CoreSetupCurrentRef>
+    <IbcDataCurrentRef>fabf6d88a0185c0aa6f0cbfc14c14463fe41af1d</IbcDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.18552.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18552.1</MicrosoftNETCorePlatformsPackageVersion>
-    <PgoDataPackageVersion>99.99.99-master-20181102-0041</PgoDataPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.18553.3</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18553.3</MicrosoftNETCorePlatformsPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20181103-0042</PgoDataPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27102-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27102-03</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27103-01</MicrosoftNETCoreAppPackageVersion>
     <XunitPackageVersion>2.4.1-pre.build.4059</XunitPackageVersion>
-    <IbcDataPackageVersion>99.99.99-master-20181102-0044</IbcDataPackageVersion>
+    <IbcDataPackageVersion>99.99.99-master-20181103-0046</IbcDataPackageVersion>
     <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.4</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
