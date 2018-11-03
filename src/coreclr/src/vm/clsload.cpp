@@ -3656,7 +3656,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             // Arrays of BYREFS not allowed
             if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
             {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_CANTCREATEARRAYCLASS);
+                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_BYREFARRAY);
             }
 
             // Arrays of ByRefLike types not allowed
@@ -3665,7 +3665,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
             {
                 if (pMT->IsByRefLike())
                 {
-                    ThrowTypeLoadException(pKey, IDS_CLASSLOAD_CANTCREATEARRAYCLASS);
+                    ThrowTypeLoadException(pKey, IDS_CLASSLOAD_BYREFLIKEARRAY);
                 }
             }
 
