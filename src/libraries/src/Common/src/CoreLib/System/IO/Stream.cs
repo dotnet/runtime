@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 
 namespace System.IO
 {
-    public abstract partial class Stream : MarshalByRefObject, IDisposable
+    public abstract partial class Stream : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly Stream Null = new NullStream();
 
@@ -232,6 +232,19 @@ namespace System.IO
             // Note: Never change this to call other virtual methods on Stream
             // like Write, since the state on subclasses has already been 
             // torn down.  This is the last code to run on cleanup for a stream.
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            try
+            {
+                Dispose();
+                return default;
+            }
+            catch (Exception exc)
+            {
+                return new ValueTask(Task.FromException(exc));
+            }
         }
 
         public abstract void Flush();
@@ -1200,6 +1213,12 @@ namespace System.IO
                         base.Dispose(disposing);
                     }
                 }
+            }
+
+            public override ValueTask DisposeAsync()
+            {
+                lock (_stream)
+                    return _stream.DisposeAsync();
             }
 
             public override void Flush()
