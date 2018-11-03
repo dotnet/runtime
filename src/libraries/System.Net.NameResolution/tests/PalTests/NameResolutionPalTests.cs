@@ -92,7 +92,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
             string hostName = NameResolutionPal.GetHostName();
