@@ -1846,7 +1846,7 @@ namespace System.Reflection
 
         private static object[] CreateAttributeArrayHelper(Type elementType, int elementCount)
         {
-            return (object[])Array.UnsafeCreateInstance(elementType, elementCount);
+            return (object[])Array.CreateInstance(elementType, elementCount);
         }
         #endregion
     }

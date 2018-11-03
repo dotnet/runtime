@@ -124,25 +124,6 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        internal override string FormatNameAndSig(bool serialization)
-        {
-            // Serialization uses ToString to resolve MethodInfo overloads.
-            StringBuilder sbName = new StringBuilder(Name);
-
-            // serialization == true: use unambiguous (except for assembly name) type names to distinguish between overloads.
-            // serialization == false: use basic format to maintain backward compatibility of MethodInfo.ToString().
-            TypeNameFormatFlags format = serialization ? TypeNameFormatFlags.FormatSerialization : TypeNameFormatFlags.FormatBasic;
-
-            if (IsGenericMethod)
-                sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, format));
-
-            sbName.Append("(");
-            sbName.Append(ConstructParameters(GetParameterTypes(), CallingConvention, serialization));
-            sbName.Append(")");
-
-            return sbName.ToString();
-        }
-
         internal override bool CacheEquals(object o)
         {
             RuntimeMethodInfo m = o as RuntimeMethodInfo;
@@ -197,7 +178,22 @@ namespace System.Reflection
         public override string ToString()
         {
             if (m_toString == null)
-                m_toString = ReturnType.FormatTypeName() + " " + FormatNameAndSig();
+            {
+                var sbName = new ValueStringBuilder(MethodNameBufferSize);
+
+                sbName.Append(ReturnType.FormatTypeName());
+                sbName.Append(' ');
+                sbName.Append(Name);
+
+                if (IsGenericMethod)
+                    sbName.Append(RuntimeMethodHandle.ConstructInstantiation(this, TypeNameFormatFlags.FormatBasic));
+
+                sbName.Append('(');
+                AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
+                sbName.Append(')');
+
+                m_toString = sbName.ToString();
+            }
 
             return m_toString;
         }

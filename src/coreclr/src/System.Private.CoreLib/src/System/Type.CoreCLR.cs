@@ -142,12 +142,7 @@ namespace System
 #endif // FEATURE_COMINTEROP
 
         // This is only ever called on RuntimeType objects.
-        internal string FormatTypeName()
-        {
-            return FormatTypeName(false);
-        }
-
-        internal virtual string FormatTypeName(bool serialization)
+        internal virtual string FormatTypeName()
         {
             throw new NotImplementedException();
         }

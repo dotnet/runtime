@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Threading;
@@ -54,9 +53,10 @@ namespace System.Reflection
         #region Internal Methods
         // helper method to construct the string representation of the parameter list
 
-        internal static string ConstructParameters(Type[] parameterTypes, CallingConventions callingConvention, bool serialization)
+        internal const int MethodNameBufferSize = 100;
+
+        internal static void AppendParameters(ref ValueStringBuilder sbParamList, Type[] parameterTypes, CallingConventions callingConvention)
         {
-            StringBuilder sbParamList = new StringBuilder();
             string comma = "";
 
             for (int i = 0; i < parameterTypes.Length; i++)
@@ -65,12 +65,12 @@ namespace System.Reflection
 
                 sbParamList.Append(comma);
 
-                string typeName = t.FormatTypeName(serialization);
+                string typeName = t.FormatTypeName();
 
                 // Legacy: Why use "ByRef" for by ref parameters? What language is this? 
                 // VB uses "ByRef" but it should precede (not follow) the parameter name.
                 // Why don't we just use "&"?
-                if (t.IsByRef && !serialization)
+                if (t.IsByRef)
                 {
                     sbParamList.Append(typeName.TrimEnd('&'));
                     sbParamList.Append(" ByRef");
@@ -88,32 +88,6 @@ namespace System.Reflection
                 sbParamList.Append(comma);
                 sbParamList.Append("...");
             }
-
-            return sbParamList.ToString();
-        }
-
-        internal string FullName
-        {
-            get
-            {
-                return string.Format("{0}.{1}", DeclaringType.FullName, FormatNameAndSig());
-            }
-        }
-        internal string FormatNameAndSig()
-        {
-            return FormatNameAndSig(false);
-        }
-
-        internal virtual string FormatNameAndSig(bool serialization)
-        {
-            // Serialization uses ToString to resolve MethodInfo overloads.
-            StringBuilder sbName = new StringBuilder(Name);
-
-            sbName.Append("(");
-            sbName.Append(ConstructParameters(GetParameterTypes(), CallingConvention, serialization));
-            sbName.Append(")");
-
-            return sbName.ToString();
         }
 
         internal virtual Type[] GetParameterTypes()
