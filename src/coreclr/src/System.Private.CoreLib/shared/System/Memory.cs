@@ -104,8 +104,14 @@ namespace System
             }
             if (default(T) == null && array.GetType() != typeof(T[]))
                 ThrowHelper.ThrowArrayTypeMismatchException();
+#if BIT64
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+#else
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
+#endif
 
             _object = array;
             _index = start;
@@ -250,10 +256,14 @@ namespace System
             // Used to maintain the high-bit which indicates whether the Memory has been pre-pinned or not.
             int capturedLength = _length;
             int actualLength = capturedLength & RemoveFlagsBitMask;
-            if ((uint)start > (uint)actualLength || (uint)length > (uint)(actualLength - start))
-            {
+#if BIT64
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)actualLength)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
-            }
+#else
+            if ((uint)start > (uint)actualLength || (uint)length > (uint)(actualLength - start))
+                ThrowHelper.ThrowArgumentOutOfRangeException();
+#endif
 
             // Set the high-bit to match the this._length high bit (1 for pre-pinned, 0 for unpinned).
             return new Memory<T>(_object, _index + start, length | (capturedLength & ~RemoveFlagsBitMask));
