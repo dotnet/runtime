@@ -1,5 +1,5 @@
 /* crc32.c -- compute the CRC-32 of a data stream
- * Copyright (C) 1995-2006, 2010, 2011, 2012 Mark Adler
+ * Copyright (C) 1995-2006, 2010, 2011, 2012, 2016 Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  *
  * Thanks to Rodney Brown <rbrown64@csc.com.au> for his contribution of faster
@@ -30,17 +30,15 @@
 
 #include "zutil.h"      /* for STDC and FAR definitions */
 
-#define local static
-
 /* Definitions for doing the crc four data bytes at a time. */
 #if !defined(NOBYFOUR) && defined(Z_U4)
 #  define BYFOUR
 #endif
 #ifdef BYFOUR
    local unsigned long crc32_little OF((unsigned long,
-                        const unsigned char FAR *, unsigned));
+                        const unsigned char FAR *, z_size_t));
    local unsigned long crc32_big OF((unsigned long,
-                        const unsigned char FAR *, unsigned));
+                        const unsigned char FAR *, z_size_t));
 #  define TBLS 8
 #else
 #  define TBLS 1
@@ -202,10 +200,10 @@ const z_crc_t FAR * ZEXPORT get_crc_table()
 #define DO4 DO1; DO1; DO1; DO1
 
 /* ========================================================================= */
-unsigned long ZEXPORT crc32(crc, buf, len)
+unsigned long ZEXPORT crc32_z(crc, buf, len)
     unsigned long crc;
     const unsigned char FAR *buf;
-    uInt len;
+    z_size_t len;
 {
     if (buf == Z_NULL) return 0UL;
 
@@ -215,7 +213,7 @@ unsigned long ZEXPORT crc32(crc, buf, len)
 #endif /* DYNAMIC_CRC_TABLE */
 
 #ifdef BYFOUR
-    if (sizeof(void *) == sizeof(ptrdiff_t)) {
+    if (sizeof(void *) == sizeof(z_size_t)) {
         z_crc_t endian;
 
         endian = 1;
@@ -245,7 +243,28 @@ unsigned long ZEXPORT crc32(crc, buf, len)
     return crc ^ 0xffffffffUL;
 }
 
+/* ========================================================================= */
+unsigned long ZEXPORT crc32(crc, buf, len)
+    unsigned long crc;
+    const unsigned char FAR *buf;
+    uInt len;
+{
+    return crc32_z(crc, buf, len);
+}
+
 #ifdef BYFOUR
+
+/*
+   This BYFOUR code accesses the passed unsigned char * buffer with a 32-bit
+   integer pointer type. This violates the strict aliasing rule, where a
+   compiler can assume, for optimization purposes, that two pointers to
+   fundamentally different types won't ever point to the same memory. This can
+   manifest as a problem only if one of the pointers is written to. This code
+   only reads from those pointers. So long as this code remains isolated in
+   this compilation unit, there won't be a problem. For this reason, this code
+   should not be copied and pasted into a compilation unit in which other code
+   writes to the buffer that is passed to these routines.
+ */
 
 /* ========================================================================= */
 #define DOLIT4 c ^= *buf4++; \
@@ -257,14 +276,14 @@ unsigned long ZEXPORT crc32(crc, buf, len)
 local unsigned long crc32_little(crc, buf, len)
     unsigned long crc;
     const unsigned char FAR *buf;
-    unsigned len;
+    z_size_t len;
 {
     register z_crc_t c;
     register const z_crc_t FAR *buf4;
 
     c = (z_crc_t)crc;
     c = ~c;
-    while (len && ((ptrdiff_t)buf & 3)) {
+    while (len && ((z_size_t)buf & 3)) {
         c = crc_table[0][(c ^ *buf++) & 0xff] ^ (c >> 8);
         len--;
     }
@@ -292,7 +311,7 @@ local unsigned long crc32_little(crc, buf, len)
 }
 
 /* ========================================================================= */
-#define DOBIG4 c ^= *++buf4; \
+#define DOBIG4 c ^= *buf4++; \
         c = crc_table[4][c & 0xff] ^ crc_table[5][(c >> 8) & 0xff] ^ \
             crc_table[6][(c >> 16) & 0xff] ^ crc_table[7][c >> 24]
 #define DOBIG32 DOBIG4; DOBIG4; DOBIG4; DOBIG4; DOBIG4; DOBIG4; DOBIG4; DOBIG4
@@ -301,20 +320,19 @@ local unsigned long crc32_little(crc, buf, len)
 local unsigned long crc32_big(crc, buf, len)
     unsigned long crc;
     const unsigned char FAR *buf;
-    unsigned len;
+    z_size_t len;
 {
     register z_crc_t c;
     register const z_crc_t FAR *buf4;
 
     c = ZSWAP32((z_crc_t)crc);
     c = ~c;
-    while (len && ((ptrdiff_t)buf & 3)) {
+    while (len && ((z_size_t)buf & 3)) {
         c = crc_table[4][(c >> 24) ^ *buf++] ^ (c << 8);
         len--;
     }
 
     buf4 = (const z_crc_t FAR *)(const void FAR *)buf;
-    buf4--;
     while (len >= 32) {
         DOBIG32;
         len -= 32;
@@ -323,7 +341,6 @@ local unsigned long crc32_big(crc, buf, len)
         DOBIG4;
         len -= 4;
     }
-    buf4++;
     buf = (const unsigned char FAR *)buf4;
 
     if (len) do {
@@ -436,46 +453,5 @@ uLong ZEXPORT crc32_combine64(crc1, crc2, len2)
     z_off64_t len2;
 {
     return crc32_combine_(crc1, crc2, len2);
-}
-
-#include "deflate.h"
-
-#ifdef HAVE_PCLMULQDQ
-#include "x86.h"
-extern void ZLIB_INTERNAL crc_fold_init(deflate_state *z_const s);
-extern void ZLIB_INTERNAL crc_fold_copy(deflate_state *z_const s,
-        unsigned char *dst, z_const unsigned char *src, long len);
-extern unsigned ZLIB_INTERNAL crc_fold_512to32(deflate_state *z_const s);
-#endif
-
-ZLIB_INTERNAL void crc_reset(deflate_state *const s)
-{
-#ifdef HAVE_PCLMULQDQ
-    if (x86_cpu_has_pclmulqdq) {
-        crc_fold_init(s);
-        return;
-    }
-#endif
-    s->strm->adler = crc32(0L, Z_NULL, 0);
-}
-
-ZLIB_INTERNAL void crc_finalize(deflate_state *const s)
-{
-#ifdef HAVE_PCLMULQDQ
-    if (x86_cpu_has_pclmulqdq)
-        s->strm->adler = crc_fold_512to32(s);
-#endif
-}
-
-ZLIB_INTERNAL void copy_with_crc(z_streamp strm, Bytef *dst, long size)
-{
-#ifdef HAVE_PCLMULQDQ
-    if (x86_cpu_has_pclmulqdq) {
-        crc_fold_copy(strm->state, dst, strm->next_in, size);
-        return;
-    }
-#endif
-    zmemcpy(dst, strm->next_in, size);
-    strm->adler = crc32(strm->adler, dst, size);
 }
 
