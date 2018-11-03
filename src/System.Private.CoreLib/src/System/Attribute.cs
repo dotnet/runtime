@@ -436,7 +436,7 @@ namespace System
 
         private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount)
         {
-            return (Attribute[])Array.UnsafeCreateInstance(elementType, elementCount);
+            return (Attribute[])Array.CreateInstance(elementType, elementCount);
         }
         #endregion
 
