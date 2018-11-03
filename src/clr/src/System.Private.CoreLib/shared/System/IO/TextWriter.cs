@@ -18,7 +18,7 @@ namespace System.IO
     //
     // This class is intended for character output, not bytes.
     // There are methods on the Stream class for writing bytes.
-    public abstract partial class TextWriter : MarshalByRefObject, IDisposable
+    public abstract partial class TextWriter : MarshalByRefObject, IDisposable, IAsyncDisposable
     {
         public static readonly TextWriter Null = new NullTextWriter();
 
@@ -77,6 +77,19 @@ namespace System.IO
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            try
+            {
+                Dispose();
+                return default;
+            }
+            catch (Exception exc)
+            {
+                return new ValueTask(Task.FromException(exc));
+            }
         }
 
         // Clears all buffers for this TextWriter and causes any buffered data to be
@@ -772,6 +785,14 @@ namespace System.IO
                 // Explicitly pick up a potentially methodimpl'ed Dispose
                 if (disposing)
                     ((IDisposable)_out).Dispose();
+            }
+
+            // [MethodImpl(MethodImplOptions.Synchronized)]
+            public override ValueTask DisposeAsync()
+            {
+                // TODO: https://github.com/dotnet/coreclr/issues/20499
+                // Manual synchronization should be replaced by Synchronized for consistency.
+                lock (this) return _out.DisposeAsync();
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
