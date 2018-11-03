@@ -2861,10 +2861,10 @@
     <value>Cannot create arrays of ByRef-like values.</value>
   </data>
   <data name="NotSupported_ByRefToByRefLikeReturn" xml:space="preserve">
-    <value>ByRef to ByRefLike return values not supported in reflection invocation.</value>
+    <value>ByRef to ByRef-like return values are not supported in reflection invocation.</value>
   </data>
   <data name="NotSupported_ByRefToVoidReturn" xml:space="preserve">
-    <value>ByRef to void return values not supported in reflection invocation.</value>
+    <value>ByRef to void return values are not supported in reflection invocation.</value>
   </data>
   <data name="NotSupported_CallToVarArg" xml:space="preserve">
     <value>Vararg calling convention not supported.</value>

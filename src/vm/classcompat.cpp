@@ -288,7 +288,6 @@ InteropMethodTableData *MethodTableBuilder::BuildInteropVTable(AllocMemTracker *
     if (pThisMT->IsEnum()) SetEnum();
     if (pThisMT->HasLayout()) SetHasLayout();
     if (pThisMT->IsDelegate()) SetIsDelegate();
-    if (pThisMT->IsContextful()) SetContextful();
 #ifdef FEATURE_COMINTEROP
     if(pThisMT->GetClass()->IsComClassInterface()) SetIsComClassInterface();
 #endif
@@ -2413,12 +2412,6 @@ VOID    MethodTableBuilder::EnumerateClassMethods()
         }
 
         WORD numGenericMethodArgs = (WORD) hEnumTyPars.EnumGetCount();
-
-        // We do not want to support context-bound objects with generic methods.
-        if (IsContextful() && numGenericMethodArgs > 0)
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_CONTEXT_BOUND_GENERIC_METHOD);
-        }
 
         if (numGenericMethodArgs != 0)
         {
