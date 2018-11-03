@@ -204,11 +204,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe Array InternalCreate(void* elementType, int rank, int* pLengths, int* pLowerBounds);
 
-        internal static Array UnsafeCreateInstance(Type elementType, int length)
-        {
-            return CreateInstance(elementType, length);
-        }
-
         // Copies length elements from sourceArray, starting at index 0, to
         // destinationArray, starting at index 0.
         //

@@ -52,20 +52,12 @@ namespace System
         FormatAngleBrackets = 0x00000040, // Whether generic types are C<T> or C[T]
         FormatStubInfo = 0x00000080, // Include stub info like {unbox-stub}
         FormatGenericParam = 0x00000100, // Use !name and !!name for generic type and method parameters
-
-        // If we want to be able to distinguish between overloads whose parameter types have the same name but come from different assemblies,
-        // we can add FormatAssembly | FormatNoVersion to FormatSerialization. But we are omitting it because it is not a useful scenario
-        // and including the assembly name will normally increase the size of the serialized data and also decrease the performance.
-        FormatSerialization = FormatNamespace |
-                              FormatGenericParam |
-                              FormatFullInst
     }
 
     internal enum TypeNameKind
     {
         Name,
         ToString,
-        SerializationName,
         FullName,
     }
 
@@ -1448,7 +1440,6 @@ namespace System
             private string m_fullname;
             private string m_toString;
             private string m_namespace;
-            private string m_serializationname;
             private bool m_isGlobal;
             private bool m_bIsDomainInitialized;
             private MemberInfoCache<RuntimeMethodInfo> m_methodInfoCache;
@@ -1544,13 +1535,6 @@ namespace System
                     case TypeNameKind.ToString:
                         // No full instantiation and assembly.
                         return ConstructName(ref m_toString, TypeNameFormatFlags.FormatNamespace);
-
-                    case TypeNameKind.SerializationName:
-                        // Use FormatGenericParam in serialization. Otherwise we won't be able 
-                        // to distinguish between a generic parameter and a normal type with the same name.
-                        // e.g. Foo<T>.Bar(T t), the parameter type T could be !1 or a real type named "T".
-                        // Excluding the version number in the assembly name for VTS.
-                        return ConstructName(ref m_serializationname, TypeNameFormatFlags.FormatSerialization);
 
                     default:
                         throw new InvalidOperationException();
@@ -3576,7 +3560,7 @@ namespace System
             ulong[] values = Enum.InternalGetValues(this);
 
             // Create a generic Array
-            Array ret = Array.UnsafeCreateInstance(this, values.Length);
+            Array ret = Array.CreateInstance(this, values.Length);
 
             for (int i = 0; i < values.Length; i++)
             {
@@ -4496,36 +4480,27 @@ namespace System
         //  3. Remove the namespace ("System") for all primitive types, which is not language neutral.
         //  4. MethodBase.ToString() use "ByRef" for byref parameters which is different than Type.ToString().
         //  5. ConstructorInfo.ToString() outputs "Void" as the return type. Why Void?
-        // Since it could be a breaking changes to fix these legacy behaviors, we only use the better and more unambiguous format
-        // in serialization (MemberInfoSerializationHolder).
-        internal override string FormatTypeName(bool serialization)
+        internal override string FormatTypeName()
         {
-            if (serialization)
+            Type elementType = GetRootElementType();
+
+            // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
+            // ToString() which contains namespace.
+            if (elementType.IsNested)
+                return Name;
+
+            string typeName = ToString();
+
+            // Legacy: why removing "System"? Is it just because C# has keywords for these types?
+            // If so why don't we change it to lower case to match the C# keyword casing?
+            if (elementType.IsPrimitive ||
+                elementType == typeof(void) ||
+                elementType == typeof(TypedReference))
             {
-                return GetCachedName(TypeNameKind.SerializationName);
+                typeName = typeName.Substring(@"System.".Length);
             }
-            else
-            {
-                Type elementType = GetRootElementType();
 
-                // Legacy: this doesn't make sense, why use only Name for nested types but otherwise
-                // ToString() which contains namespace.
-                if (elementType.IsNested)
-                    return Name;
-
-                string typeName = ToString();
-
-                // Legacy: why removing "System"? Is it just because C# has keywords for these types?
-                // If so why don't we change it to lower case to match the C# keyword casing?
-                if (elementType.IsPrimitive ||
-                    elementType == typeof(void) ||
-                    elementType == typeof(TypedReference))
-                {
-                    typeName = typeName.Substring(@"System.".Length);
-                }
-
-                return typeName;
-            }
+            return typeName;
         }
 
         // This method looks like an attractive inline but expands to two calls,
@@ -4997,7 +4972,7 @@ namespace System
                     // Allocate the new array of wrappers.
                     Array oldArray = (Array)aArgs[i];
                     int numElems = oldArray.Length;
-                    Object[] newArray = (Object[])Array.UnsafeCreateInstance(wrapperType, numElems);
+                    Object[] newArray = (Object[])Array.CreateInstance(wrapperType, numElems);
 
                     // Retrieve the ConstructorInfo for the wrapper type.
                     ConstructorInfo wrapperCons;
