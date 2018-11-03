@@ -7381,7 +7381,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 // We never single-step into calls (we place a patch at the call destination).
 bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 {
-    LOG((LF_CORDB,LL_INFO10000,"DS:TSS this:0x%x, @ ip:0x%x\n", this, ip));
+    LOG((LF_CORDB,LL_INFO10000,"DS:TSS this:0x%p, @ ip:0x%p\n", this, ip));
 
     _ASSERTE(!IsFrozen());
 
@@ -7443,7 +7443,7 @@ bool DebuggerStepper::TriggerSingleStep(Thread *thread, const BYTE *ip)
 
     DisableAll();
 
-    LOG((LF_CORDB,LL_INFO10000, "DS::TSS m_fp:0x%x, activeFP:0x%x fpExc:0x%x\n",
+    LOG((LF_CORDB,LL_INFO10000, "DS::TSS m_fp:0x%p, activeFP:0x%p fpExc:0x%p\n",
         m_fp.GetSPValue(), info.m_activeFrame.fp.GetSPValue(), m_fpException.GetSPValue()));
 
     if (DetectHandleLCGMethods((PCODE)ip, fd, &info))
