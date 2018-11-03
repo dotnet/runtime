@@ -16,7 +16,7 @@ using System.Reflection;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Buffers;
+using System.Text;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
@@ -595,37 +595,143 @@ namespace System.Globalization
         }
 
 
-        internal static bool EqualsOrdinalIgnoreCase(ref char strA, ref char strB, int length)
+        internal static bool EqualsOrdinalIgnoreCase(ref char charA, ref char charB, int length)
         {
-            ref char charA = ref strA;
-            ref char charB = ref strB;
+            IntPtr byteOffset = IntPtr.Zero;
 
-            // in InvariantMode we support all range and not only the ascii characters.
-            char maxChar = (GlobalizationMode.Invariant ? (char)0xFFFF : (char)0x7F);
-
-            while (length != 0 && charA <= maxChar && charB <= maxChar)
+#if BIT64
+            // Read 4 chars (64 bits) at a time from each string
+            while ((uint)length >= 4)
             {
-                // Ordinal equals or lowercase equals if the result ends up in the a-z range 
-                if (charA == charB ||
-                    ((charA | 0x20) == (charB | 0x20) &&
-                        (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                ulong valueA = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
+                ulong valueB = Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+
+                // A 32-bit test - even with the bit-twiddling here - is more efficient than a 64-bit test.
+                ulong temp = valueA | valueB;
+                if (!Utf16Utility.AllCharsInUInt32AreAscii((uint)temp | (uint)(temp >> 32)))
                 {
-                    length--;
-                    charA = ref Unsafe.Add(ref charA, 1);
-                    charB = ref Unsafe.Add(ref charB, 1);
+                    goto NonAscii; // one of the inputs contains non-ASCII data
                 }
-                else
+
+                // Generally, the caller has likely performed a first-pass check that the input strings
+                // are likely equal. Consider a dictionary which computes the hash code of its key before
+                // performing a proper deep equality check of the string contents. We want to optimize for
+                // the case where the equality check is likely to succeed, which means that we want to avoid
+                // branching within this loop unless we're about to exit the loop, either due to failure or
+                // due to us running out of input data.
+
+                if (!Utf16Utility.UInt64OrdinalIgnoreCaseAscii(valueA, valueB))
                 {
                     return false;
                 }
+
+                byteOffset += 8;
+                length -= 4;
+            }
+#endif
+
+            // Read 2 chars (32 bits) at a time from each string
+#if BIT64
+            if ((uint)length >= 2)
+#else
+            while ((uint)length >= 2)
+#endif
+            {
+                uint valueA = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charA, byteOffset)));
+                uint valueB = Unsafe.ReadUnaligned<uint>(ref Unsafe.As<char, byte>(ref Unsafe.AddByteOffset(ref charB, byteOffset)));
+
+                if (!Utf16Utility.AllCharsInUInt32AreAscii(valueA | valueB))
+                {
+                    goto NonAscii; // one of the inputs contains non-ASCII data
+                }
+
+                // Generally, the caller has likely performed a first-pass check that the input strings
+                // are likely equal. Consider a dictionary which computes the hash code of its key before
+                // performing a proper deep equality check of the string contents. We want to optimize for
+                // the case where the equality check is likely to succeed, which means that we want to avoid
+                // branching within this loop unless we're about to exit the loop, either due to failure or
+                // due to us running out of input data.
+
+                if (!Utf16Utility.UInt32OrdinalIgnoreCaseAscii(valueA, valueB))
+                {
+                    return false;
+                }
+
+                byteOffset += 4;
+                length -= 2;
             }
 
-            if (length == 0)
+            if (length != 0)
+            {
+                Debug.Assert(length == 1);
+
+                uint valueA = Unsafe.AddByteOffset(ref charA, byteOffset);
+                uint valueB = Unsafe.AddByteOffset(ref charB, byteOffset);
+
+                if ((valueA | valueB) > 0x7Fu)
+                {
+                    goto NonAscii; // one of the inputs contains non-ASCII data
+                }
+
+                if (valueA == valueB)
+                {
+                    return true; // exact match
+                }
+
+                valueA |= 0x20u;
+                if ((uint)(valueA - 'a') > (uint)('z' - 'a'))
+                {
+                    return false; // not exact match, and first input isn't in [A-Za-z]
+                }
+
+                // The ternary operator below seems redundant but helps RyuJIT generate more optimal code.
+                // See https://github.com/dotnet/coreclr/issues/914.
+                return (valueA == (valueB | 0x20u)) ? true : false;
+            }
+
+            Debug.Assert(length == 0);
+            return true;
+
+        NonAscii:
+            // The non-ASCII case is factored out into its own helper method so that the JIT
+            // doesn't need to emit a complex prolog for its caller (this method).
+            return EqualsOrdinalIgnoreCaseNonAscii(ref Unsafe.AddByteOffset(ref charA, byteOffset), ref Unsafe.AddByteOffset(ref charB, byteOffset), length);
+        }
+
+        private static bool EqualsOrdinalIgnoreCaseNonAscii(ref char charA, ref char charB, int length)
+        {
+            if (!GlobalizationMode.Invariant)
+            {
+                return CompareStringOrdinalIgnoreCase(ref charA, length, ref charB, length) == 0;
+            }
+            else
+            {
+                // If we don't have localization tables to consult, we'll still perform a case-insensitive
+                // check for ASCII characters, but if we see anything outside the ASCII range we'll immediately
+                // fail if it doesn't have true bitwise equality.
+
+                IntPtr byteOffset = IntPtr.Zero;
+                while (length != 0)
+                {
+                    // Ordinal equals or lowercase equals if the result ends up in the a-z range 
+                    uint valueA = Unsafe.AddByteOffset(ref charA, byteOffset);
+                    uint valueB = Unsafe.AddByteOffset(ref charB, byteOffset);
+
+                    if (valueA == valueB ||
+                        ((valueA | 0x20) == (valueB | 0x20) &&
+                            (uint)((valueA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                    {
+                        byteOffset += 2;
+                        length--;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
                 return true;
-
-            Debug.Assert(!GlobalizationMode.Invariant);
-
-            return CompareStringOrdinalIgnoreCase(ref charA, length, ref charB, length) == 0;
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
