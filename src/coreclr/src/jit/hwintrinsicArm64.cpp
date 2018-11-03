@@ -108,7 +108,7 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* me
         {
             if ((isaFlag & hwIntrinsicInfoArray[i].isaflags) && strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
             {
-                if (compSupports(isa))
+                if (compSupportsHWIntrinsic(isa))
                 {
                     // Intrinsic is supported on platform
                     result = hwIntrinsicInfoArray[i].id;
@@ -134,6 +134,84 @@ NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* me
 bool Compiler::impCheckImmediate(GenTree* immediateOp, unsigned int max)
 {
     return immediateOp->IsCnsIntOrI() && (immediateOp->AsIntConCommon()->IconValue() < max);
+}
+
+//------------------------------------------------------------------------
+// isFullyImplementedIsa: Gets a value that indicates whether the InstructionSet is fully implemented
+//
+// Arguments:
+//    isa - The InstructionSet to check
+//
+// Return Value:
+//    true if isa is supported; otherwise, false
+//
+// Notes:
+//    This currently returns true for all partially-implemented ISAs.
+//    TODO-Bug: Set this to return the correct values as GH 20427 is resolved.
+//
+bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_Base:
+        case InstructionSet_Crc32:
+        case InstructionSet_Aes:
+        case InstructionSet_Simd:
+        case InstructionSet_Sha1:
+        case InstructionSet_Sha256:
+            return true;
+
+        default:
+            assert(!"Unexpected Arm64 HW intrinsics ISA");
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// isScalarIsa: Gets a value that indicates whether the InstructionSet is scalar
+//
+// Arguments:
+//    isa - The InstructionSet to check
+//
+// Return Value:
+//    true if isa is scalar; otherwise, false
+bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_Base:
+        case InstructionSet_Crc32:
+            return true;
+
+        case InstructionSet_Aes:
+        case InstructionSet_Simd:
+        case InstructionSet_Sha1:
+        case InstructionSet_Sha256:
+            return false;
+
+        default:
+            assert(!"Unexpected Arm64 HW intrinsics ISA");
+            return true;
+    }
+}
+
+//------------------------------------------------------------------------
+// compSupportsHWIntrinsic: compiler support of hardware intrinsics
+//
+// Arguments:
+//    isa - Instruction set
+// Return Value:
+//    true if
+//    - isa is a scalar ISA
+//    - isa is a SIMD ISA and featureSIMD=true
+//    - isa is fully implemented or EnableIncompleteISAClass=true
+bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
+{
+    return (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) && (
+#ifdef DEBUG
+                                                                     JitConfig.EnableIncompleteISAClass() ||
+#endif
+                                                                     HWIntrinsicInfo::isFullyImplementedIsa(isa));
 }
 
 //------------------------------------------------------------------------
@@ -235,13 +313,16 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // Simd instantiation type check
     if (simdClass != nullptr)
     {
-        compFloatingPointUsed = true;
+        if (featureSIMD)
+        {
+            compFloatingPointUsed = true;
 
-        simdBaseType = getBaseTypeAndSizeOfSIMDType(simdClass, &simdSizeBytes);
+            simdBaseType = getBaseTypeAndSizeOfSIMDType(simdClass, &simdSizeBytes);
+        }
 
         if (simdBaseType == TYP_UNKNOWN)
         {
-            return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
+            return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
         }
         simdType = getSIMDTypeForSize(simdSizeBytes);
     }
