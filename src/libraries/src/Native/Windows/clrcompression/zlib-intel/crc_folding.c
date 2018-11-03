@@ -15,46 +15,45 @@
  *
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
-#include "deflate.h"
+#include "x86.h"
 
-#ifdef HAVE_PCLMULQDQ
+#if defined(USE_PCLMUL_CRC)
+
+#include "zutil.h"
 
 #include <inttypes.h>
 #include <immintrin.h>
 #include <wmmintrin.h>
 
-#define CRC_LOAD(s) \
+#define CRC_LOAD(crc) \
     do { \
-        __m128i xmm_crc0 = _mm_loadu_si128((__m128i *)s->crc0 + 0);\
-        __m128i xmm_crc1 = _mm_loadu_si128((__m128i *)s->crc0 + 1);\
-        __m128i xmm_crc2 = _mm_loadu_si128((__m128i *)s->crc0 + 2);\
-        __m128i xmm_crc3 = _mm_loadu_si128((__m128i *)s->crc0 + 3);\
-        __m128i xmm_crc_part = _mm_loadu_si128((__m128i *)s->crc0 + 4);
+        __m128i xmm_crc0 = _mm_loadu_si128((__m128i *)crc + 0);\
+        __m128i xmm_crc1 = _mm_loadu_si128((__m128i *)crc + 1);\
+        __m128i xmm_crc2 = _mm_loadu_si128((__m128i *)crc + 2);\
+        __m128i xmm_crc3 = _mm_loadu_si128((__m128i *)crc + 3);\
+        __m128i xmm_crc_part = _mm_loadu_si128((__m128i *)crc + 4);
 
 #define CRC_SAVE(s) \
-        _mm_storeu_si128((__m128i *)s->crc0 + 0, xmm_crc0);\
-        _mm_storeu_si128((__m128i *)s->crc0 + 1, xmm_crc1);\
-        _mm_storeu_si128((__m128i *)s->crc0 + 2, xmm_crc2);\
-        _mm_storeu_si128((__m128i *)s->crc0 + 3, xmm_crc3);\
-        _mm_storeu_si128((__m128i *)s->crc0 + 4, xmm_crc_part);\
+        _mm_storeu_si128((__m128i *)crc + 0, xmm_crc0);\
+        _mm_storeu_si128((__m128i *)crc + 1, xmm_crc1);\
+        _mm_storeu_si128((__m128i *)crc + 2, xmm_crc2);\
+        _mm_storeu_si128((__m128i *)crc + 3, xmm_crc3);\
+        _mm_storeu_si128((__m128i *)crc + 4, xmm_crc_part);\
     } while (0);
 
-ZLIB_INTERNAL void crc_fold_init(deflate_state *z_const s)
+ZLIB_INTERNAL void crc_fold_init(unsigned crc[4 * 5])
 {
-    CRC_LOAD(s)
+    CRC_LOAD(crc)
 
     xmm_crc0 = _mm_cvtsi32_si128(0x9db42487);
     xmm_crc1 = _mm_setzero_si128();
     xmm_crc2 = _mm_setzero_si128();
     xmm_crc3 = _mm_setzero_si128();
 
-    CRC_SAVE(s)
-
-    s->strm->adler = 0;
+    CRC_SAVE(crc)
 }
 
-local void fold_1(deflate_state *z_const s,
-        __m128i *xmm_crc0, __m128i *xmm_crc1,
+local void fold_1(__m128i *xmm_crc0, __m128i *xmm_crc1,
         __m128i *xmm_crc2, __m128i *xmm_crc3)
 {
     z_const __m128i xmm_fold4 = _mm_set_epi32(
@@ -79,8 +78,7 @@ local void fold_1(deflate_state *z_const s,
     *xmm_crc3 = _mm_castps_si128(ps_res);
 }
 
-local void fold_2(deflate_state *z_const s,
-        __m128i *xmm_crc0, __m128i *xmm_crc1,
+local void fold_2(__m128i *xmm_crc0, __m128i *xmm_crc1,
         __m128i *xmm_crc2, __m128i *xmm_crc3)
 {
     z_const __m128i xmm_fold4 = _mm_set_epi32(
@@ -113,8 +111,7 @@ local void fold_2(deflate_state *z_const s,
     *xmm_crc3 = _mm_castps_si128(ps_res31);
 }
 
-local void fold_3(deflate_state *z_const s,
-        __m128i *xmm_crc0, __m128i *xmm_crc1,
+local void fold_3(__m128i *xmm_crc0, __m128i *xmm_crc1,
         __m128i *xmm_crc2, __m128i *xmm_crc3)
 {
     z_const __m128i xmm_fold4 = _mm_set_epi32(
@@ -153,8 +150,7 @@ local void fold_3(deflate_state *z_const s,
     *xmm_crc3 = _mm_castps_si128(ps_res32);
 }
 
-local void fold_4(deflate_state *z_const s,
-        __m128i *xmm_crc0, __m128i *xmm_crc1,
+local void fold_4(__m128i *xmm_crc0, __m128i *xmm_crc1,
         __m128i *xmm_crc2, __m128i *xmm_crc3)
 {
     z_const __m128i xmm_fold4 = _mm_set_epi32(
@@ -219,7 +215,7 @@ local z_const unsigned zalign(32) pshufb_shf_table[60] = {
 	0x0201008f,0x06050403,0x0a090807,0x0e0d0c0b  /* shl  1 (16 -15)/shr15*/
 };
 
-local void partial_fold(deflate_state *z_const s, z_const size_t len,
+local void partial_fold(z_const size_t len,
         __m128i *xmm_crc0, __m128i *xmm_crc1,
         __m128i *xmm_crc2, __m128i *xmm_crc3,
         __m128i *xmm_crc_part)
@@ -269,22 +265,26 @@ local void partial_fold(deflate_state *z_const s, z_const size_t len,
     *xmm_crc3 = _mm_castps_si128(ps_res);
 }
 
-ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
-        unsigned char *dst, z_const unsigned char *src, long len)
+ZLIB_INTERNAL void crc_fold_copy(unsigned crc[4 * 5],
+        unsigned char *dst, const unsigned char *src, long len)
 {
     unsigned long algn_diff;
     __m128i xmm_t0, xmm_t1, xmm_t2, xmm_t3;
+    char zalign(16) partial_buf[16] = { 0 };
 
-    CRC_LOAD(s)
+    CRC_LOAD(crc)
 
     if (len < 16) {
         if (len == 0)
             return;
-        xmm_crc_part = _mm_loadu_si128((__m128i *)src);
+
+        memcpy(partial_buf, src, len);
+        xmm_crc_part = _mm_loadu_si128((const __m128i *)partial_buf);
+        memcpy(dst, partial_buf, len);
         goto partial;
     }
 
-    algn_diff = (unsigned char*)0 -src & 0xF;
+    algn_diff = 0 - (uintptr_t)src & 0xF;
     if (algn_diff) {
         xmm_crc_part = _mm_loadu_si128((__m128i *)src);
         _mm_storeu_si128((__m128i *)dst, xmm_crc_part);
@@ -293,7 +293,7 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
         src += algn_diff;
         len -= algn_diff;
 
-        partial_fold(s, algn_diff, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3,
+        partial_fold(algn_diff, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3,
             &xmm_crc_part);
     }
 
@@ -303,7 +303,7 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
         xmm_t2 = _mm_load_si128((__m128i *)src + 2);
         xmm_t3 = _mm_load_si128((__m128i *)src + 3);
 
-        fold_4(s, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+        fold_4(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         _mm_storeu_si128((__m128i *)dst, xmm_t0);
         _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -329,7 +329,7 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
         xmm_t1 = _mm_load_si128((__m128i *)src + 1);
         xmm_t2 = _mm_load_si128((__m128i *)src + 2);
 
-        fold_3(s, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+        fold_3(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         _mm_storeu_si128((__m128i *)dst, xmm_t0);
         _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -350,7 +350,7 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
         xmm_t0 = _mm_load_si128((__m128i *)src);
         xmm_t1 = _mm_load_si128((__m128i *)src + 1);
 
-        fold_2(s, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+        fold_2(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         _mm_storeu_si128((__m128i *)dst, xmm_t0);
         _mm_storeu_si128((__m128i *)dst + 1, xmm_t1);
@@ -368,7 +368,7 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
 
         xmm_t0 = _mm_load_si128((__m128i *)src);
 
-        fold_1(s, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
+        fold_1(&xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3);
 
         _mm_storeu_si128((__m128i *)dst, xmm_t0);
 
@@ -386,12 +386,14 @@ ZLIB_INTERNAL void crc_fold_copy(deflate_state *z_const s,
         xmm_crc_part = _mm_load_si128((__m128i *)src);
     }
 
+    _mm_storeu_si128((__m128i *)partial_buf, xmm_crc_part);
+    memcpy(dst, partial_buf, len);
+
 partial:
-    _mm_storeu_si128((__m128i *)dst, xmm_crc_part);
-    partial_fold(s, len, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3,
+    partial_fold(len, &xmm_crc0, &xmm_crc1, &xmm_crc2, &xmm_crc3,
         &xmm_crc_part);
 done:
-    CRC_SAVE(s)
+    CRC_SAVE(crc)
 }
 
 local z_const unsigned zalign(16) crc_k[] = {
@@ -411,15 +413,15 @@ local z_const unsigned zalign(16) crc_mask2[4] = {
     0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
 };
 
-unsigned ZLIB_INTERNAL crc_fold_512to32(deflate_state *z_const s)
+unsigned ZLIB_INTERNAL crc_fold_512to32(unsigned crc[4 * 5])
 {
     z_const __m128i xmm_mask  = _mm_load_si128((__m128i *)crc_mask);
     z_const __m128i xmm_mask2 = _mm_load_si128((__m128i *)crc_mask2);
 
-    unsigned crc;
+    unsigned crc_final;
     __m128i x_tmp0, x_tmp1, x_tmp2, crc_fold;
 
-    CRC_LOAD(s)
+    CRC_LOAD(crc)
 
     /*
      * k1
@@ -473,9 +475,9 @@ unsigned ZLIB_INTERNAL crc_fold_512to32(deflate_state *z_const s)
     xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc2);
     xmm_crc3 = _mm_xor_si128(xmm_crc3, xmm_crc1);
 
-    crc = _mm_extract_epi32(xmm_crc3, 2);
-    return ~crc;
-    CRC_SAVE(s)
+    crc_final = _mm_extract_epi32(xmm_crc3, 2);
+    return ~crc_final;
+    CRC_SAVE(crc)
 }
 
 #endif

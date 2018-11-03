@@ -54,23 +54,25 @@ static int emit_match(deflate_state *s, struct match match, IPos hash_head)
 
 static void insert_match(deflate_state *s, struct match match)
 {
+    IPos hash_head;
+
     if (zunlikely(s->lookahead <= match.match_length + MIN_MATCH))
         return;
 
-        /* matches that are not long enough we need to emit as litterals */
-        if (match.match_length < MIN_MATCH) {
-            while (match.match_length) {
-                    match.strstart++;
-                    match.match_length--;
+    /* matches that are not long enough we need to emit as litterals */
+    if (match.match_length < MIN_MATCH) {
+        while (match.match_length) {
+                match.strstart++;
+                match.match_length--;
 
-                    if (match.match_length) {
-                        if (match.strstart >= match.orgstart) {
-                            insert_string(s, match.strstart);
-                        }
+                if (match.match_length) {
+                    if (match.strstart >= match.orgstart) {
+                        INSERT_STRING(s, match.strstart, hash_head);
                     }
-            }
-            return;
+                }
         }
+        return;
+    }
 
         /* Insert new strings in the hash table only if the match length
          * is not too large. This saves time but degrades compression.
@@ -81,7 +83,7 @@ static void insert_match(deflate_state *s, struct match match)
                 do {
                         match.strstart++;
                         if (zlikely(match.strstart >= match.orgstart)) {
-                            insert_string(s, match.strstart);
+                            INSERT_STRING(s, match.strstart, hash_head);
                         }
                     /* strstart never exceeds WSIZE-MAX_MATCH, so there are
                      * always MIN_MATCH bytes ahead.
@@ -114,11 +116,11 @@ static void fizzle_matches(deflate_state *s, struct match *current, struct match
     if (current->match_length <= 1)
             return;
 
-	if (zunlikely(current->match_length > 1 + next->match_start))
-		return;
+    if (zunlikely(current->match_length > 1 + next->match_start))
+        return;
 
-	if (zunlikely(current->match_length > 1 + next->strstart))
-		return;
+    if (zunlikely(current->match_length > 1 + next->strstart))
+        return;
 
     match = s->window - current->match_length + 1 + next->match_start ;
     orig  = s->window - current->match_length + 1 + next->strstart ;
@@ -210,7 +212,7 @@ block_state deflate_medium(deflate_state *s, int flush)
         } else {
             hash_head = 0;
             if (s->lookahead >= MIN_MATCH) {
-                hash_head = insert_string(s, s->strstart);
+                INSERT_STRING(s, s->strstart, hash_head);
             }
         
             /* set up the initial match to be a 1 byte literal */
@@ -244,7 +246,7 @@ block_state deflate_medium(deflate_state *s, int flush)
         /* now, look ahead one */
         if (s->lookahead > MIN_LOOKAHEAD) {
             s->strstart = current_match.strstart + current_match.match_length;
-            hash_head = insert_string(s, s->strstart);
+            INSERT_STRING(s, s->strstart, hash_head);
         
             /* set up the initial match to be a 1 byte literal */
             next_match.match_start = 0;
