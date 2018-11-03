@@ -12,13 +12,12 @@
  *
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
+
 #include "deflate.h"
 
-#ifdef USE_QUICK
-#include <immintrin.h>
+#if defined(USE_QUICK)
 
-extern void fill_window_sse(deflate_state *s);
-extern void flush_pending  OF((z_streamp strm));
+#include <immintrin.h>
 
 #ifndef _MSC_VER
 local inline long compare258(z_const unsigned char *z_const src0,
@@ -71,7 +70,7 @@ local inline long compare258(z_const unsigned char *z_const src0,
     );
     return ax - 16;
 }
-#else /* _MSC_VER >= 1500 */
+#else
 #include <nmmintrin.h>
 
 local inline long compare258(z_const unsigned char *z_const src0,
@@ -91,7 +90,7 @@ local inline long compare258(z_const unsigned char *z_const src0,
         ret = _mm_cmpestri(xmm_src0, 16, xmm_src1, 16, mode);
         if (_mm_cmpestrc(xmm_src0, 16, xmm_src1, 16, mode)) {
             cnt += ret;
-	    break;
+            break;
         }
         cnt += 16;
 
@@ -100,7 +99,7 @@ local inline long compare258(z_const unsigned char *z_const src0,
         ret = _mm_cmpestri(xmm_src0, 16, xmm_src1, 16, mode);
         if (_mm_cmpestrc(xmm_src0, 16, xmm_src1, 16, mode)) {
             cnt += ret;
-	    break;
+            break;
         }
         cnt += 16;
     } while (cnt < 256);
@@ -112,6 +111,7 @@ local inline long compare258(z_const unsigned char *z_const src0,
     }
     return cnt;
 }
+
 #endif
 
 local z_const unsigned quick_len_codes[MAX_MATCH-MIN_MATCH+1];
@@ -214,7 +214,7 @@ block_state deflate_quick(deflate_state *s, int flush)
 
     do {
         if (s->lookahead < MIN_LOOKAHEAD) {
-            fill_window_sse(s);
+            fill_window(s);
             if (s->lookahead < MIN_LOOKAHEAD && flush == Z_NO_FLUSH) {
                 static_emit_end_block(s, 0);
                 return need_more;
@@ -254,7 +254,7 @@ block_state deflate_quick(deflate_state *s, int flush)
     if (flush == Z_FINISH) {
         static_emit_end_block(s, 1);
         if (s->strm->avail_out == 0)
-			return s->strm->avail_in == 0 ? finish_started : need_more;
+            return finish_started;
         else
             return finish_done;
     }
@@ -2380,4 +2380,4 @@ local z_const unsigned quick_dist_codes[8192] = {
 	0x00ff1310, 0x00ff3310, 0x00ff5310, 0x00ff7310, 
 	0x00ff9310, 0x00ffb310, 0x00ffd310, 0x00fff310, 
 };
-#endif /* USE_QUICK */
+#endif

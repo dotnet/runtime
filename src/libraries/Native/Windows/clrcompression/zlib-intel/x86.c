@@ -4,54 +4,56 @@
  * Copyright (C) 2013 Intel Corporation. All rights reserved.
  * Author:
  *  Jim Kukunas
- * 
+ *
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
 #include "x86.h"
 
+#ifdef ZLIB_X86
+
 int x86_cpu_has_sse2;
 int x86_cpu_has_sse42;
-int x86_cpu_has_pclmulqdq;
+int x86_cpu_has_pclmul;
 
-#ifndef _MSC_VER
-void x86_check_features(void)
-{
-    unsigned eax, ebx, ecx, edx;
-
-    eax = 1;
-    __asm__ __volatile__ (
-#ifdef X86
-        "xchg %%ebx, %1\n\t"
-#endif
-        "cpuid\n\t"
-#ifdef X86
-        "xchg %1, %%ebx\n\t"
-    : "+a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)
-#else
-    : "+a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
-#endif
-    );
-
-    x86_cpu_has_sse2 = edx & 0x4000000;
-    x86_cpu_has_sse42= ecx & 0x100000;
-    x86_cpu_has_pclmulqdq = ecx & 0x2;
-}
-#elif _MSC_VER >= 1400 /* Visual Studio 2005 (first ref on MSDN to __cpuid() */
+#ifdef _MSC_VER
 #include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
+
+#ifndef bit_SSE2
+# define bit_SSE2 0x4000000
+#endif
+
+#ifndef bit_SSE4_2
+# define bit_SSE4_2 0x100000
+#endif
+
+#ifndef bit_PCLMUL
+# define bit_PCLMUL 0x2
+#endif
 
 void x86_check_features(void)
 {
+    static int once;
+
+    enum reg { A = 0, B = 1, C = 2, D = 3};
     int regs[4];
 
-    __cpuid(regs, 1);
+    if (once != 0)
+        return;
+    once = 1;
 
-    x86_cpu_has_sse2 = regs[3] & 0x4000000;
-    x86_cpu_has_sse42= regs[2] & 0x100000;
-    x86_cpu_has_pclmulqdq = regs[2] & 0x2;
-}
+#ifdef _MSC_VER
+    __cpuid(&regs, 1);
 #else
-void x86_check_features(void)
-{
+    __cpuid(1, regs[A], regs[B], regs[C], regs[D]);
+#endif
+
+    x86_cpu_has_sse2 = regs[D] & bit_SSE2;
+    x86_cpu_has_sse42= regs[C] & bit_SSE4_2;
+    x86_cpu_has_pclmul=regs[C] & bit_PCLMUL;
 }
+
 #endif
