@@ -171,6 +171,20 @@
         }
     },
     {
+        "name": "System.Net.WebProxy.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name" : "System.Net.Tests.WebProxyTest.WebProxy_BypassOnLocal_SpecialCases",
+                    "reason" : "outdated"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.ComponentModel.TypeConverter.Tests",
         "enabled": true,
         "exclusions": {
