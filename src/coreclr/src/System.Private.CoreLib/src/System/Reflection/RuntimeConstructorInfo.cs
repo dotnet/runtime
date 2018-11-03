@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -140,9 +141,21 @@ namespace System.Reflection
         #region Object Overrides
         public override string ToString()
         {
-            // "Void" really doesn't make sense here. But we'll keep it for compat reasons.
             if (m_toString == null)
-                m_toString = "Void " + FormatNameAndSig();
+            {
+                var sbName = new ValueStringBuilder(MethodNameBufferSize);
+
+                // "Void" really doesn't make sense here. But we'll keep it for compat reasons.
+                sbName.Append("Void ");
+
+                sbName.Append(Name);
+
+                sbName.Append('(');
+                AppendParameters(ref sbName, GetParameterTypes(), CallingConvention);
+                sbName.Append(')');
+
+                m_toString = sbName.ToString();
+            }
 
             return m_toString;
         }
