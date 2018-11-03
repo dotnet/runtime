@@ -4336,10 +4336,29 @@ add_module_cb (gpointer key, gpointer value, gpointer user_data)
 gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
+#ifdef TARGET_WASM
+	/* Use a set of wrappers/instances which work */
+	switch (method->wrapper_type) {
+	case MONO_WRAPPER_RUNTIME_INVOKE:
+	case MONO_WRAPPER_UNKNOWN:
+		return TRUE;
+		break;
+	default:
+		break;
+	}
+
+	if (method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE) &&
+		!mini_is_gsharedvt_signature (mono_method_signature_internal (method)) &&
+		!mini_is_gsharedvt_klass (method->klass))
+		return TRUE;
+
+	return FALSE;
+#else
 	gboolean not_normal_gshared = method->is_inflated && !mono_method_is_generic_sharable_full (method, TRUE, FALSE, FALSE);
 	gboolean extra_method = (method->wrapper_type != MONO_WRAPPER_NONE) || not_normal_gshared;
 
 	return extra_method;
+#endif
 }
 
 
