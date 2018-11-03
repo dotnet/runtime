@@ -712,7 +712,6 @@ BEGIN
     IDS_CLASSLOAD_VARIANCE_IN_CONSTRAINT    "Could not load type '%1' from assembly '%2' because a covariant or contravariant type parameter was used illegally in a type parameter constraint in method '%3'."
     IDS_CLASSLOAD_VARIANCE_CLASS            "Could not load type '%1' from assembly '%2' because it declares a covariant or contravariant type parameter and is not an interface or delegate."
     IDS_CLASSLOAD_BADVARIANCE               "Could not load type '%1' from assembly '%2' because it uses an illegal variance annotation on a type parameter."
-    IDS_CLASSLOAD_CONTEXT_BOUND_GENERIC_METHOD "Context-bound objects with generic methods are not supported."
     IDS_CLASSLOAD_ENUM_EXTRA_GENERIC_TYPE_PARAM "Enumerated types cannot have any generic type parameters, beyond any inherited from their enclosing type (for nested enums)."
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
@@ -721,7 +720,8 @@ BEGIN
     IDS_CLASSLOAD_TYPESPEC                  "Could not load TypeSpec from assembly '%2'."
     IDS_CLASSLOAD_SEALEDPARENT              "Could not load type '%1' from assembly '%2' because the parent type is sealed."
     IDS_CLASSLOAD_BADFORMAT                 "Could not load type '%1' from assembly '%2' because the format is invalid."
-    IDS_CLASSLOAD_CANTCREATEARRAYCLASS      "Could not create array type '%1' from assembly '%2'."
+    IDS_CLASSLOAD_BYREFARRAY                "Could not create array type '%1' from assembly '%2' because the element type is ByRef."
+    IDS_CLASSLOAD_BYREFLIKEARRAY            "Could not create array type '%1' from assembly '%2' because the element type is ByRef-like."
     IDS_CLASSLOAD_MISSINGMETHOD             "Could not load type '%1' from assembly '%2' because the method '%3' could not be loaded."
     IDS_CLASSLOAD_FIELDTOOLARGE             "Size of field of type '%1' from assembly '%2' is too large."
     IDS_CLASSLOAD_CANTEXTEND                "Type '%1' from assembly '%2' cannot extend from any other type."
@@ -740,8 +740,8 @@ BEGIN
     IDS_CLASSLOAD_NOTINTERFACE              "Could not load type '%1' from assembly '%2' because it attempts to implement a class as an interface."
     IDS_CLASSLOAD_VALUEINSTANCEFIELD        "Could not load the value type '%1' from assembly '%2' because it has an instance field of itself."
 
-    IDS_CLASSLOAD_BYREFLIKE_STATICFIELD     "A value type containing a by-ref instance field, such as Span<T>, cannot be used as the type for a static field."
-    IDS_CLASSLOAD_BYREFLIKE_NOTVALUECLASSFIELD "A value type containing a by-ref instance field, such as Span<T>, cannot be used as the type for a class instance field."
+    IDS_CLASSLOAD_BYREFLIKE_STATICFIELD     "A ByRef-like type cannot be used as the type for a static field."
+    IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD   "A ByRef-like type cannot be used as the type for an instance field in a non-ByRef-like type."
 
     IDS_CLASSLOAD_RANK_TOOLARGE             "'%1' from assembly '%2' has too many dimensions."
     IDS_CLASSLOAD_BAD_UNMANAGED_RVA         "Native method '%3' on type '%1' from assembly '%2' is not supported."
