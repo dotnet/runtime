@@ -3869,7 +3869,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		}
 
 		if (cfg->verbose_level > 0 && !cfg->compile_aot) {
-			nm = mono_method_full_name (cfg->method, TRUE);
+			nm = mono_method_get_full_name (cfg->method);
 			g_print ("LLVM Method %s emitted at %p to %p (code length %d) [%s]\n", 
 					 nm, 
 					 cfg->native_code, cfg->native_code + cfg->code_len, cfg->code_len, cfg->domain->friendly_name);

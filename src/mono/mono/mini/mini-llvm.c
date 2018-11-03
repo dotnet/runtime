@@ -7776,8 +7776,11 @@ emit_method_inner (EmitContext *ctx)
 
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
-		if (cfg->verbose_level)
-			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), ctx->method_name);
+		if (cfg->verbose_level) {
+			char *name = mono_method_get_full_name (cfg->method);
+			printf ("%s emitted as %s\n", name, ctx->method_name);
+			g_free (name);
+		}
 
 		//LLVMDumpValue (ctx->lmethod);
 #if LLVM_API_VERSION < 100
