@@ -48,6 +48,8 @@ namespace System.IO.Pipelines
         private readonly DefaultPipeReader _reader;
         private readonly DefaultPipeWriter _writer;
 
+        private readonly bool _useSynchronizationContext;
+
         private long _length;
         private long _currentWriteLength;
 
@@ -105,9 +107,9 @@ namespace System.IO.Pipelines
             _resumeWriterThreshold = options.ResumeWriterThreshold;
             _readerScheduler = options.ReaderScheduler;
             _writerScheduler = options.WriterScheduler;
-            var useSynchronizationContext = options.UseSynchronizationContext;
-            _readerAwaitable = new PipeAwaitable(completed: false, useSynchronizationContext);
-            _writerAwaitable = new PipeAwaitable(completed: true, useSynchronizationContext);
+            _useSynchronizationContext = options.UseSynchronizationContext;
+            _readerAwaitable = new PipeAwaitable(completed: false, _useSynchronizationContext);
+            _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
             _reader = new DefaultPipeReader(this);
             _writer = new DefaultPipeWriter(this);
         }
@@ -116,6 +118,8 @@ namespace System.IO.Pipelines
         {
             _readerCompletion.Reset();
             _writerCompletion.Reset();
+            _readerAwaitable = new PipeAwaitable(completed: false, _useSynchronizationContext);
+            _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
             _commitHeadIndex = 0;
             _currentWriteLength = 0;
             _length = 0;
