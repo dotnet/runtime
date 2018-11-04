@@ -17,6 +17,10 @@ parameters:
   # Optional: variables
   variables: {}
 
+  # Optional: should run as a public build even in the internal project
+  #           if 'true', the build won't run any of the internal only steps, even if it is running in non-public projects.
+  runAsPublic: false
+
   ## Telemetry variables
 
   # Optional: enable sending telemetry
@@ -56,10 +60,11 @@ phases:
         buildConfig: $(_HelixBuildConfig)
         helixSource: $(_HelixSource)
         helixType: $(_HelixType)
+        runAsPublic: ${{ parameters.runAsPublic }}
 
   - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
     # Internal only resource, and Microbuild signing shouldn't be applied to PRs.
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
+    - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: MicroBuildSigningPlugin@2
         displayName: Install MicroBuild plugin
         inputs:
@@ -77,7 +82,7 @@ phases:
 
   - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
     # Internal only resources
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
+    - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - task: MicroBuildCleanup@1
         displayName: Execute Microbuild cleanup tasks  
         condition: and(always(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
@@ -90,7 +95,7 @@ phases:
         helixSource: $(_HelixSource)
         helixType: $(_HelixType)
 
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
+  - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
     - task: CopyFiles@2
       displayName: Gather Asset Manifests
       inputs:
