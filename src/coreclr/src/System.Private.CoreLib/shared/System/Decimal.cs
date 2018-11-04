@@ -307,7 +307,7 @@ namespace System
         // positive, the result is d. If d is negative, the result
         // is -d.
         //
-        internal static decimal Abs(ref decimal d)
+        internal static decimal Abs(in decimal d)
         {
             return new decimal(in d, d.flags & ~SignMask);
         }
@@ -319,7 +319,6 @@ namespace System
             DecCalc.DecAddSub(ref AsMutable(ref d1), ref AsMutable(ref d2), false);
             return d1;
         }
-
 
         // Rounds a Decimal to an integer value. The Decimal argument is rounded
         // towards positive infinity.
@@ -530,7 +529,7 @@ namespace System
             return new int[] { d.lo, d.mid, d.hi, d.flags };
         }
 
-        internal static void GetBytes(decimal d, byte[] buffer)
+        internal static void GetBytes(in decimal d, byte[] buffer)
         {
             Debug.Assert((buffer != null && buffer.Length >= 16), "[GetBytes]buffer != null && buffer.Length >= 16");
             buffer[0] = (byte)d.lo;
@@ -566,14 +565,14 @@ namespace System
 
         // Returns the larger of two Decimal values.
         //
-        internal static ref decimal Max(ref decimal d1, ref decimal d2)
+        internal static ref readonly decimal Max(in decimal d1, in decimal d2)
         {
             return ref DecCalc.VarDecCmp(in d1, in d2) >= 0 ? ref d1 : ref d2;
         }
 
         // Returns the smaller of two Decimal values.
         //
-        internal static ref decimal Min(ref decimal d1, ref decimal d2)
+        internal static ref readonly decimal Min(in decimal d1, in decimal d2)
         {
             return ref DecCalc.VarDecCmp(in d1, in d2) < 0 ? ref d1 : ref d2;
         }
@@ -626,7 +625,7 @@ namespace System
             return d;
         }
 
-        internal static int Sign(ref decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
+        internal static int Sign(in decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
 
         // Subtracts two Decimal values.
         //
@@ -699,7 +698,7 @@ namespace System
         //
         public static double ToDouble(decimal d)
         {
-            return DecCalc.VarR8FromDec(ref d);
+            return DecCalc.VarR8FromDec(in d);
         }
 
         // Converts a Decimal to an integer. The Decimal value is rounded towards
@@ -807,7 +806,7 @@ namespace System
         //
         public static float ToSingle(decimal d)
         {
-            return DecCalc.VarR4FromDec(ref d);
+            return DecCalc.VarR4FromDec(in d);
         }
 
         // Truncates a Decimal to an integer value. The Decimal argument is rounded
@@ -830,7 +829,7 @@ namespace System
 
         public static implicit operator decimal(byte value)
         {
-            return new decimal(value);
+            return new decimal((uint)value);
         }
 
         [CLSCompliant(false)]
@@ -847,12 +846,12 @@ namespace System
         [CLSCompliant(false)]
         public static implicit operator decimal(ushort value)
         {
-            return new decimal(value);
+            return new decimal((uint)value);
         }
 
         public static implicit operator decimal(char value)
         {
-            return new decimal(value);
+            return new decimal((uint)value);
         }
 
         public static implicit operator decimal(int value)
@@ -963,7 +962,7 @@ namespace System
 
         public static decimal operator -(decimal d)
         {
-            return Negate(d);
+            return new decimal(in d, d.flags ^ SignMask);
         }
 
         public static decimal operator ++(decimal d)
@@ -978,27 +977,32 @@ namespace System
 
         public static decimal operator +(decimal d1, decimal d2)
         {
-            return Add(d1, d2);
+            DecCalc.DecAddSub(ref AsMutable(ref d1), ref AsMutable(ref d2), false);
+            return d1;
         }
 
         public static decimal operator -(decimal d1, decimal d2)
         {
-            return Subtract(d1, d2);
+            DecCalc.DecAddSub(ref AsMutable(ref d1), ref AsMutable(ref d2), true);
+            return d1;
         }
 
         public static decimal operator *(decimal d1, decimal d2)
         {
-            return Multiply(d1, d2);
+            DecCalc.VarDecMul(ref AsMutable(ref d1), ref AsMutable(ref d2));
+            return d1;
         }
 
         public static decimal operator /(decimal d1, decimal d2)
         {
-            return Divide(d1, d2);
+            DecCalc.VarDecDiv(ref AsMutable(ref d1), ref AsMutable(ref d2));
+            return d1;
         }
 
         public static decimal operator %(decimal d1, decimal d2)
         {
-            return Remainder(d1, d2);
+            DecCalc.VarDecMod(ref AsMutable(ref d1), ref AsMutable(ref d2));
+            return d1;
         }
 
         public static bool operator ==(decimal d1, decimal d2)
@@ -1044,7 +1048,6 @@ namespace System
         {
             return Convert.ToBoolean(this);
         }
-
 
         char IConvertible.ToChar(IFormatProvider provider)
         {
