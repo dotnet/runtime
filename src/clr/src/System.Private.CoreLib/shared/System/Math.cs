@@ -96,7 +96,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Abs(decimal value)
         {
-            return decimal.Abs(ref value);
+            return decimal.Abs(value);
         }
 
         [StackTraceHidden]
@@ -463,7 +463,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Max(decimal val1, decimal val2)
         {
-            return decimal.Max(ref val1, ref val2);
+            return decimal.Max(val1, val2);
         }
 
         public static double Max(double val1, double val2)
@@ -551,7 +551,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Min(decimal val1, decimal val2)
         {
-            return decimal.Min(ref val1, ref val2);
+            return decimal.Min(val1, val2);
         }
 
         public static double Min(double val1, double val2)
@@ -736,7 +736,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Sign(decimal value)
         {
-            return decimal.Sign(ref value);
+            return decimal.Sign(value);
         }
 
         public static int Sign(double value)
