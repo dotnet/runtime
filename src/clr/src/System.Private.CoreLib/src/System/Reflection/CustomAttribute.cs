@@ -62,7 +62,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeType)target, typeof(object) as RuntimeType, out int pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeType)target, (RuntimeType)typeof(object), out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -83,7 +83,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeFieldInfo)target, typeof(object) as RuntimeType, out int pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeFieldInfo)target, (RuntimeType)typeof(object), out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -104,7 +104,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeMethodInfo)target, typeof(object) as RuntimeType, out int pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes((RuntimeMethodInfo)target, (RuntimeType)typeof(object), out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -156,7 +156,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target.GetNativeHandle()));
 
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, typeof(object) as RuntimeType, out int pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -177,7 +177,7 @@ namespace System.Reflection
 
             IList<CustomAttributeData> cad = GetCustomAttributes(target.GetRuntimeModule(), target.MetadataToken);
 
-            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, typeof(object) as RuntimeType, out int pcaCount);
+            Attribute[] a = PseudoCustomAttribute.GetCustomAttributes(target, (RuntimeType)typeof(object), out int pcaCount);
 
             if (pcaCount == 0)
                 return cad;
@@ -1276,17 +1276,17 @@ namespace System.Reflection
                 return attributes;
             }
 
-            List<object> result = new List<object>();
+            RuntimeType.ListBuilder<object> result = new RuntimeType.ListBuilder<object>();
             bool mustBeInheritable = false;
             bool useObjectArray = (caType == null || caType.IsValueType || caType.ContainsGenericParameters);
-            Type arrayType = useObjectArray ? typeof(object) : caType;
+            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
             while (pcaCount > 0)
                 result.Add(pca[--pcaCount]);
 
             while (type != (RuntimeType)typeof(object) && type != null)
             {
-                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, 0, caType, mustBeInheritable, result);
+                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, 0, caType, mustBeInheritable, ref result);
                 mustBeInheritable = true;
                 for (int i = 0; i < attributes.Length; i++)
                     result.Add(attributes[i]);
@@ -1295,7 +1295,10 @@ namespace System.Reflection
             }
 
             object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
-            Array.Copy(result.ToArray(), 0, typedResult, 0, result.Count);
+            for (var i = 0; i < result.Count; i++)
+            {
+                typedResult[i] = result[i];
+            }
             return typedResult;
         }
 
@@ -1319,17 +1322,17 @@ namespace System.Reflection
                 return attributes;
             }
 
-            List<object> result = new List<object>();
+            RuntimeType.ListBuilder<object> result = new RuntimeType.ListBuilder<object>();
             bool mustBeInheritable = false;
             bool useObjectArray = (caType == null || caType.IsValueType || caType.ContainsGenericParameters);
-            Type arrayType = useObjectArray ? typeof(object) : caType;
+            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : caType;
 
             while (pcaCount > 0)
                 result.Add(pca[--pcaCount]);
 
             while (method != null)
             {
-                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, 0, caType, mustBeInheritable, result);
+                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, 0, caType, mustBeInheritable, ref result);
                 mustBeInheritable = true;
                 for (int i = 0; i < attributes.Length; i++)
                     result.Add(attributes[i]);
@@ -1338,7 +1341,10 @@ namespace System.Reflection
             }
 
             object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
-            Array.Copy(result.ToArray(), 0, typedResult, 0, result.Count);
+            for (var i = 0; i < result.Count; i++)
+            {
+                typedResult[i] = result[i];
+            }
             return typedResult;
         }
 
@@ -1445,6 +1451,7 @@ namespace System.Reflection
                 RuntimeType attributeType;
                 IRuntimeMethodInfo ctor;
                 bool ctorHasParameters, isVarArg;
+                RuntimeType.ListBuilder<object> derivedAttributes = default;
 
                 // Optimization for the case where attributes decorate entities in the same assembly in which case 
                 // we can cache the successful APTCA check between the decorated and the declared assembly.
@@ -1455,7 +1462,7 @@ namespace System.Reflection
                     CustomAttributeRecord caRecord = car[i];
 
                     if (FilterCustomAttributeRecord(caRecord, scope, ref lastAptcaOkAssembly,
-                        decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, null, null,
+                        decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable, null, ref derivedAttributes,
                         out attributeType, out ctor, out ctorHasParameters, out isVarArg))
                         return true;
                 }
@@ -1480,18 +1487,19 @@ namespace System.Reflection
         private static unsafe object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
-            return GetCustomAttributes(decoratedModule, decoratedMetadataToken, pcaCount, attributeFilterType, false, null);
+            RuntimeType.ListBuilder<object> _ = default;
+            return GetCustomAttributes(decoratedModule, decoratedMetadataToken, pcaCount, attributeFilterType, false, ref _);
         }
 
         private static unsafe object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount,
-            RuntimeType attributeFilterType, bool mustBeInheritable, IList derivedAttributes)
+            RuntimeType attributeFilterType, bool mustBeInheritable, ref RuntimeType.ListBuilder<object> derivedAttributes)
         {
             MetadataImport scope = decoratedModule.MetadataImport;
             CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
 
             bool useObjectArray = (attributeFilterType == null || attributeFilterType.IsValueType || attributeFilterType.ContainsGenericParameters);
-            Type arrayType = useObjectArray ? typeof(object) : attributeFilterType;
+            RuntimeType arrayType = useObjectArray ? (RuntimeType)typeof(object) : attributeFilterType;
 
             if (attributeFilterType == null && car.Length == 0)
                 return CreateAttributeArrayHelper(arrayType, 0);
@@ -1519,7 +1527,7 @@ namespace System.Reflection
 
                 if (!FilterCustomAttributeRecord(caRecord, scope, ref lastAptcaOkAssembly,
                                                  decoratedModule, decoratedMetadataToken, attributeFilterType, mustBeInheritable,
-                                                 attributes, derivedAttributes,
+                                                 attributes, ref derivedAttributes,
                                                  out attributeType, out ctor, out ctorHasParameters, out isVarArg))
                     continue;
 
@@ -1647,7 +1655,7 @@ namespace System.Reflection
             RuntimeType attributeFilterType,
             bool mustBeInheritable,
             object[] attributes,
-            IList derivedAttributes,
+            ref RuntimeType.ListBuilder<object> derivedAttributes,
             out RuntimeType attributeType,
             out IRuntimeMethodInfo ctor,
             out bool ctorHasParameters,
@@ -1671,7 +1679,7 @@ namespace System.Reflection
 
             // Ensure if attribute type must be inheritable that it is inhertiable
             // Ensure that to consider a duplicate attribute type AllowMultiple is true
-            if (!AttributeUsageCheck(attributeType, mustBeInheritable, attributes, derivedAttributes))
+            if (!AttributeUsageCheck(attributeType, mustBeInheritable, ref derivedAttributes))
                 return false;
 
             // Windows Runtime attributes aren't real types - they exist to be read as metadata only, and as such
@@ -1743,7 +1751,7 @@ namespace System.Reflection
 
         #region Private Static Methods
         private static bool AttributeUsageCheck(
-            RuntimeType attributeType, bool mustBeInheritable, object[] attributes, IList derivedAttributes)
+            RuntimeType attributeType, bool mustBeInheritable, ref RuntimeType.ListBuilder<object> derivedAttributes)
         {
             AttributeUsageAttribute attributeUsageAttribute = null;
 
@@ -1756,8 +1764,7 @@ namespace System.Reflection
             }
 
             // Legacy: AllowMultiple ignored for none inheritable attributes
-
-            if (derivedAttributes == null)
+            if (derivedAttributes.Count == 0)
                 return true;
 
             for (int i = 0; i < derivedAttributes.Count; i++)
@@ -1844,8 +1851,14 @@ namespace System.Reflection
             blobStart = (IntPtr)pBlobStart;
         }
 
-        private static object[] CreateAttributeArrayHelper(Type elementType, int elementCount)
+        private static object[] CreateAttributeArrayHelper(RuntimeType elementType, int elementCount)
         {
+            // If we have 0 elements, don't allocate a new array
+            if (elementCount == 0)
+            {
+                return elementType.GetEmptyArray();
+            }
+
             return (object[])Array.CreateInstance(elementType, elementCount);
         }
         #endregion

@@ -75,7 +75,7 @@ namespace System
         }
 
         // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
-        private struct ListBuilder<T> where T : class
+        internal struct ListBuilder<T> where T : class
         {
             private T[] _items;
             private T _item;
@@ -1453,6 +1453,7 @@ namespace System
             private static object s_methodInstantiationsLock;
             private string m_defaultMemberName;
             private object m_genericCache; // Generic cache for rare scenario specific data. It is used to cache Enum names and values.
+            private object[] _emptyArray; // Object array cache for Attribute.GetCustomAttributes() pathological no-result case.
             #endregion
 
             #region Constructor
@@ -1619,6 +1620,11 @@ namespace System
                 }
 
                 return m_defaultMemberName;
+            }
+
+            internal object[] GetEmptyArray()
+            {
+                return _emptyArray ?? (_emptyArray = (object[])Array.CreateInstance(m_runtimeType, 0));
             }
             #endregion
 
@@ -3532,6 +3538,11 @@ namespace System
         public override Type GetElementType()
         {
             return RuntimeTypeHandle.GetElementType(this);
+        }
+
+        internal object[] GetEmptyArray()
+        {
+            return Cache.GetEmptyArray();
         }
         #endregion
 
