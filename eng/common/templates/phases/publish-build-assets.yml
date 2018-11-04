@@ -4,6 +4,7 @@ parameters:
   configuration: 'Debug'
   condition: succeeded()
   continueOnError: false
+  runAsPublic: false
 phases:
   - phase: Asset_Registry_Publish
     displayName: Publish to Build Asset Registry
@@ -12,7 +13,7 @@ phases:
     variables:
       config: ${{ parameters.configuration }}
     steps:
-      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
+      - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
         - task: DownloadBuildArtifacts@0
           displayName: Download artifact
           inputs:
