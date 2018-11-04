@@ -63,5 +63,16 @@ namespace System.IO.Pipelines.Tests
             _pipe.Reader.Complete();
             Assert.Throws<InvalidOperationException>(() => _pipe.Reset());
         }
+
+        [Fact]
+        public void ResetResetsReaderAwaitable()
+        {
+            _pipe.Reader.Complete();
+            _pipe.Writer.Complete();
+
+            _pipe.Reset();
+
+            Assert.False(_pipe.Reader.TryRead(out ReadResult result));
+        }
     }
 }
