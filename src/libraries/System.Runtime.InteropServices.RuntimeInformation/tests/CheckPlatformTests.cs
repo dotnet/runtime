@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.RuntimeInformationTests
 {
-    public class CheckPlatformTests
+    public partial class CheckPlatformTests
     {
         [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Tests RuntimeInformation OS platform
         public void CheckLinux()
