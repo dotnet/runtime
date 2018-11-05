@@ -11745,17 +11745,6 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
         break;
 
-    case DB_IPCE_GET_CONTAINER:
-        {
-            DebuggerIPCEvent * pResult = m_pRCThread->GetIPCEventReceiveBuffer();
-            Object *pObject = GCHeapUtilities::GetGCHeap()->GetContainingObject(pEvent->GetContainer.interiorPointer, false);
-            pResult->GetContainerResult.answer = pObject;
-            InitIPCEvent(pResult, DB_IPCE_GET_CONTAINER_RESULT, NULL, NULL);
-            pResult->hr = S_OK;
-            m_pRCThread->SendIPCReply();
-        }
-        break;
-
     default:
         // We should never get an event that we don't know about.
         CONSISTENCY_CHECK_MSGF(false, ("Unknown Debug-Event on LS:id=0x%08x.", pEvent->type));

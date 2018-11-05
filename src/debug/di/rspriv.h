@@ -3154,8 +3154,6 @@ public:
     // Methods not exposed via a COM interface.
     //-----------------------------------------------------------
 
-    COM_METHOD GetContainingObject(CordbValue* pCordbValue, ICorDebugObjectValue** ppContainingObject);
-
     HRESULT ContinueInternal(BOOL fIsOutOfBand);
     HRESULT StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainToken);
 
@@ -3438,8 +3436,7 @@ public:
                  type == DB_IPCE_INTERCEPT_EXCEPTION ||
                  type == DB_IPCE_GET_NGEN_COMPILER_FLAGS ||
                  type == DB_IPCE_SET_NGEN_COMPILER_FLAGS || 
-                 type == DB_IPCE_SET_VALUE_CLASS ||
-                 type == DB_IPCE_GET_CONTAINER);
+                 type == DB_IPCE_SET_VALUE_CLASS);
 
         ipce->type = type;
         ipce->hr = S_OK;
@@ -8719,10 +8716,6 @@ public:
         return (S_OK);
     }
 
-    //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject);
     virtual HRESULT STDMETHODCALLTYPE GetAddress(CORDB_ADDRESS *pAddress) = 0;
 
     //-----------------------------------------------------------
@@ -8852,7 +8845,7 @@ public:
 * Generic Value class
 * ------------------------------------------------------------------------- */
 
-class CordbGenericValue : public CordbValue, public ICorDebugGenericValue, public ICorDebugValue2, public ICorDebugValue3, public ICorDebugValue4
+class CordbGenericValue : public CordbValue, public ICorDebugGenericValue, public ICorDebugValue2, public ICorDebugValue3
 {
 public:
     CordbGenericValue(CordbAppDomain *              appdomain,
@@ -8945,15 +8938,6 @@ public:
     }
 
     //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
-    }
-
-    //-----------------------------------------------------------
     // ICorDebugGenericValue
     //-----------------------------------------------------------
 
@@ -8990,7 +8974,7 @@ private:
  * Reference Value class
  * ------------------------------------------------------------------------- */
 
-class CordbReferenceValue : public CordbValue, public ICorDebugReferenceValue, public ICorDebugValue2, public ICorDebugValue3, public ICorDebugValue4
+class CordbReferenceValue : public CordbValue, public ICorDebugReferenceValue, public ICorDebugValue2, public ICorDebugValue3
 {
 public:
     CordbReferenceValue(CordbAppDomain *              pAppdomain,
@@ -9059,15 +9043,6 @@ public:
     COM_METHOD GetSize64(ULONG64 *pSize)
     {
         return (CordbValue::GetSize64(pSize));
-    }
-
-    //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
     }
 
     //-----------------------------------------------------------
@@ -9181,7 +9156,6 @@ class CordbObjectValue : public CordbValue,
                          public ICorDebugStringValue, 
                          public ICorDebugValue2,
                          public ICorDebugValue3,
-                         public ICorDebugValue4,
                          public ICorDebugHeapValue2,
                          public ICorDebugHeapValue3,
                          public ICorDebugExceptionObjectValue,
@@ -9239,15 +9213,6 @@ public:
     //-----------------------------------------------------------
 
     COM_METHOD GetSize64(ULONG64 *pSize);
-
-    //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
-    }
 
     //-----------------------------------------------------------
     // ICorDebugHeapValue
@@ -9368,7 +9333,7 @@ private:
 class CordbVCObjectValue : public CordbValue,
                            public ICorDebugObjectValue, public ICorDebugObjectValue2,
                            public ICorDebugGenericValue, public ICorDebugValue2,
-                           public ICorDebugValue3, public ICorDebugValue4
+                           public ICorDebugValue3
 {
 public:
     CordbVCObjectValue(CordbAppDomain *               pAppdomain,
@@ -9440,15 +9405,6 @@ public:
     }
 
     //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
-    }
-
-    //-----------------------------------------------------------
     // ICorDebugObjectValue
     //-----------------------------------------------------------
 
@@ -9512,7 +9468,6 @@ class CordbBoxValue : public CordbValue,
                       public ICorDebugGenericValue,
                       public ICorDebugValue2,
                       public ICorDebugValue3,
-                      public ICorDebugValue4,
                       public ICorDebugHeapValue2,
                       public ICorDebugHeapValue3
 {
@@ -9587,15 +9542,6 @@ public:
     }
 
     //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
-    }
-
-    //-----------------------------------------------------------
     // ICorDebugHeapValue
     //-----------------------------------------------------------
 
@@ -9650,7 +9596,6 @@ class CordbArrayValue : public CordbValue,
                         public ICorDebugGenericValue,
                         public ICorDebugValue2,
                         public ICorDebugValue3,
-                        public ICorDebugValue4,
                         public ICorDebugHeapValue2,
                         public ICorDebugHeapValue3
 {
@@ -9718,15 +9663,6 @@ public:
     COM_METHOD GetSize64(ULONG64 *pSize)
     {
         return (CordbValue::GetSize64(pSize));
-    }
-
-    //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
     }
 
     //-----------------------------------------------------------
@@ -9812,7 +9748,7 @@ private:
 
 };
 
-class CordbHandleValue : public CordbValue, public ICorDebugHandleValue, public ICorDebugValue2, public ICorDebugValue3, public ICorDebugValue4
+class CordbHandleValue : public CordbValue, public ICorDebugHandleValue, public ICorDebugValue2, public ICorDebugValue3
 {
 public:
     CordbHandleValue(CordbAppDomain *appdomain,
@@ -9891,15 +9827,6 @@ public:
     //-----------------------------------------------------------
 
     COM_METHOD GetSize64(ULONG64 *pSize);
-
-    //-----------------------------------------------------------
-    // ICorDebugValue4
-    //-----------------------------------------------------------
-
-    COM_METHOD GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-    {
-        return (CordbValue::GetContainingObject(ppContainingObject));
-    }
 
     //-----------------------------------------------------------
     // ICorDebugReferenceValue interface
