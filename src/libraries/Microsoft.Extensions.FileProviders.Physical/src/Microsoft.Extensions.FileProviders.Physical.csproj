@@ -16,4 +16,8 @@
     <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.NonCapturingTimer.Sources" Version="$(MicrosoftExtensionsNonCapturingTimerSourcesPackageVersion)" PrivateAssets="All" />
+  </ItemGroup>
+
 </Project>
