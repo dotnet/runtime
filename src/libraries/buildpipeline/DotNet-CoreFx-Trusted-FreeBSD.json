@@ -76,7 +76,7 @@
     },
     {
       "environment": {},
-      "enabled": true,
+      "enabled": false,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Run Build Tests",
@@ -96,7 +96,7 @@
     },
     {
       "environment": {},
-      "enabled": true,
+      "enabled": false,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
