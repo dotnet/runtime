@@ -4971,6 +4971,24 @@ HCIMPL0(void, JIT_ThrowArgumentOutOfRangeException)
 HCIMPLEND
 
 /*********************************************************************/
+HCIMPL0(void, JIT_ThrowNotImplementedException)
+{
+    FCALL_CONTRACT;
+
+    /* Make no assumptions about the current machine state */
+    ResetCurrentContext();
+
+    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
+
+    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
+
+    COMPlusThrow(kNotImplementedException);
+
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*********************************************************************/
 HCIMPL0(void, JIT_ThrowPlatformNotSupportedException)
 {
     FCALL_CONTRACT;
