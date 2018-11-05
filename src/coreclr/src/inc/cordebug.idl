@@ -6237,28 +6237,6 @@ interface ICorDebugValue3 : IUnknown
 
 };
 
-[
-    object,
-    local,
-    uuid(C54C6A4A-ADC4-4969-AEF4-BDC548720018),
-    pointer_default(unique)
-]
-interface ICorDebugValue4 : IUnknown
-{
-    //
-    // Given a value, returns the containing object. 
-    // 
-    // Parameters
-    //   ppContainingObject - [out] An ICorDebugObjectValue that represents the containing object.
-    //   
-    // Returns
-    //   S_OK - on success
-    //   S_FALSE   - if the value is not inside an object
-    //   E_POINTER - ppContainingObject is NULL
-    // 
-    HRESULT GetContainingObject([out] ICorDebugObjectValue** ppContainingObject);
-};
-
 /*
  * ICorDebugGenericValue is a subclass of ICorDebugValue which applies to
  * all values, and can be used to get & set the value.  It is a
