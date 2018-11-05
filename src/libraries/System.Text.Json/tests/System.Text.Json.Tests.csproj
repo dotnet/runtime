@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{5F553243-042C-45C0-8E49-C739131E11C3}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PlaceHolder.cs" />
+  </ItemGroup>
+</Project>
