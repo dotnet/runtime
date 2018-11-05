@@ -1,6 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <!-- This project restores and publishes the targeting pack for specific versions of .NET Core.
        With this, we are able to compile assemblies against shipped, stable versions of .NET Core. -->
   <PropertyGroup>
@@ -15,8 +14,7 @@
     and the non-OS the ref assemblies. -->
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <!-- We use the win implementation to create the shims shipped inside the compat pack -->
-    <NugetRuntimeIdentifier>win-x64</NugetRuntimeIdentifier>
-    <RidSpecificAssets>true</RidSpecificAssets>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <BinPlaceRuntime>true</BinPlaceRuntime>
     <BinPlaceRef>false</BinPlaceRef>
     <NuGetDeploySourceItem>ReferenceCopyLocalPaths</NuGetDeploySourceItem>
@@ -37,6 +35,4 @@
 
     <FileToExclude Include="System.ComponentModel.Composition" />
   </ItemGroup>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>

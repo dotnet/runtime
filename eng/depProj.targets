@@ -16,7 +16,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 See the LICENSE file in the project root for more information.
 ***********************************************************************************************
 -->
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project InitialTargets="RemoveImplicitPackageReferences">
 
   <!-- Deployment project
        Restores NuGet dependencies and copies them to the output directory.
@@ -34,6 +34,18 @@ See the LICENSE file in the project root for more information.
   -->
 
   <PropertyGroup>
+    <!-- Always raise runtime/lib items even for frameworks that may not use them -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- Don't reference implicit framework packages, depprojs are meant to be wholy explicit -->
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <!-- We don't need the SDK to validate that we get runtime packages -->
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+    <!-- don't generate netcoreapp files -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <NuGetDeploySourceItem Condition="'$(NuGetDeploySourceItem)' == ''">ReferenceCopyLocalPaths</NuGetDeploySourceItem>
 
     <!-- suppress the attempt to copy build output. -->
@@ -46,6 +58,18 @@ See the LICENSE file in the project root for more information.
     <!-- make sure we tell nuget targets to copy, even if output type would not by default -->
     <CopyNuGetImplementations>true</CopyNuGetImplementations>
   </PropertyGroup>
+
+  <Target Name="RemoveImplicitPackageReferences">
+    <ItemGroup>
+      <!-- Remove all implicit framework packages, depprojs are meant to be wholly explicit -->
+      <PackageReference Remove="@(PackageReference)" Condition="'%(PackageReference.IsImplicitlyDefined)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RunRestoreDuringBuild"
+          DependsOnTargets="Restore"
+          BeforeTargets="ResolvePackageAssets"
+          Condition="!('$(VSDesignTimeBuild)'=='true' and '$(VisualStudioVersion)' >= '14.0')" />
 
   <Target Name="CoreCompile">
 
@@ -87,19 +111,13 @@ See the LICENSE file in the project root for more information.
     </Touch>
   </Target>
 
-  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
-
   <!-- Required by Common.Targets but not used for depproj -->
   <Target Name="CreateManifestResourceNames" />
-
-  <PropertyGroup>
-    <!-- don't use TargetingPackReference, we do our own filtering -->
-    <SkipFilterTargetingPackResolvedNugetPackages>true</SkipFilterTargetingPackResolvedNugetPackages>
-  </PropertyGroup>
   
   <!-- Support filtering to a subset of packages or files -->
   <Target Name="FilterNugetPackages" 
-          AfterTargets="ResolveNuGetPackages"
+          BeforeTargets="ResolveAssemblyReferences"
+          DependsOnTargets="ResolvePackageAssets"
           Condition="'@(PackageToInclude)' != '' OR '@(PackageToExclude)' != '' OR '@(FileToInclude)' != '' OR '@(FileToExclude)' != ''">
     <ItemGroup>
       <_nuGetDeploy Include="@($(NuGetDeploySourceItem))"/>
