@@ -149,7 +149,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/eng/common/msbuild.sh",
-        "arguments": "$(Agent.BuildDirectory)/s/corefx/src/publish.proj /p:CloudDropAccountName=$(PB_CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(PB_Label) /flp:v=diag;LogFile=publish-packages.log /p:OverwriteOnPublish=false",
+        "arguments": "--warnaserror false $(Agent.BuildDirectory)/s/corefx/src/publish.proj /p:CloudDropAccountName=$(PB_CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(PB_Label) /flp:v=diag;LogFile=publish-packages.log /p:OverwriteOnPublish=false",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
