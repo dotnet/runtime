@@ -35,7 +35,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostEntry.Aliases);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         public void TryGetAddrInfo_HostName()
         {
             string hostName = NameResolutionPal.GetHostName();
@@ -92,7 +92,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
             string hostName = NameResolutionPal.GetHostName();
