@@ -4,6 +4,12 @@
   <PropertyGroup>
     <RestorePackages>true</RestorePackages>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
+
+    <!--
+       We need to pass Configuration to our independent restore step to ensure the output paths are constructed the same.
+       This can go away once we move away from our own custom exec call to restore.
+    -->
+    <AdditionalRestoreArgs Condition="'$(Configuration)' != ''">$(AdditionalRestoreArgs) /p:Configuration=$(Configuration)</AdditionalRestoreArgs>
   </PropertyGroup>
 
   <!-- Override build and GetTargetPath to return all items deployed -->
