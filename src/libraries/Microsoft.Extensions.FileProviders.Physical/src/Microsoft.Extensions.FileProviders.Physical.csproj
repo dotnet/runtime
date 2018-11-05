@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Microsoft.Extensions.FileProviders</RootNamespace>
+    <Description>File provider for physical files for Microsoft.Extensions.FileProviders.</Description>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SharedSourceRoot)EmptyDisposable.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.FileProviders.Abstractions" />
+    <Reference Include="Microsoft.Extensions.FileSystemGlobbing" />
+  </ItemGroup>
+
+</Project>
