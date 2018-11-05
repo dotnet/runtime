@@ -36,6 +36,8 @@ namespace System.IO.Ports
         // called when one character is received.
         internal event SerialDataReceivedEventHandler DataReceived;
 
+        private SafeFileHandle _handle = null;
+
         // members supporting properties exposed to SerialPort
         private byte _parityReplace = (byte)'?';
         private bool _isAsync = true;
