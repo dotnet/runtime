@@ -1,24 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <NugetRuntimeIdentifier>$(PackageRID)</NugetRuntimeIdentifier>
-    <RidSpecificAssets>true</RidSpecificAssets>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAOT)'=='true'">
-    <!-- Temporarily Override restore moniker since NETNative's targeting pack still uses uap10.1 moniker -->
-    <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
     <!-- System.Private.* can't be on the ILCInputFolder since ilc.exe needs to use the matching one from its toolchain. -->
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+    <AssetTargetFallback>uap10.1</AssetTargetFallback>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
   
   <!-- There isn't a WebAssembly runtime package yet, but the Windows AOT package has the right surface area 
   to build against. -->  
   <PropertyGroup Condition="'$(TargetsAOT)'=='true' AND '$(ArchGroup)'=='wasm'">
-    <NugetRuntimeIdentifier>win10-x86</NugetRuntimeIdentifier>
+    <RuntimeIdentifier>win10-x86</RuntimeIdentifier>
   </PropertyGroup>
     
   <ItemGroup Condition="'$(TargetsAOT)'=='true'">
@@ -55,23 +52,39 @@
     </PackageReference>
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
-
   <ItemGroup>
     <!-- For IL rewrite tools of crossgen dll from CoreClr we need the respective IL and respective pdbs -->
     <!-- For crossgen dlls save respective pdbs too -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(Configuration)">
+    <AdditionalBinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(Configuration)">
       <ItemName>CoreCLRILFiles</ItemName>
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)il</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(Configuration)">
+    </AdditionalBinPlaceConfiguration>
+    <AdditionalBinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="$(Configuration)">
       <ItemName>CoreCLRCrossGenFiles</ItemName>
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)ni</RuntimePath>
-    </BinPlaceConfiguration>
+    </AdditionalBinPlaceConfiguration>
   </ItemGroup>
   
+  <Target Name="WorkaroundNETNativeTFM" Condition="'$(TargetsAOT)'=='true'" AfterTargets="AfterResolveReferences">
+    <!-- NETNative's targeting pack still uses uap10.1 moniker, but also includes netcore50 so we cannot use AssetTargetFallback
+         Replace the netcore50 assets with those from uap10.1 directory -->
+    <ItemGroup>
+      <_coreLib Include="@(Reference)"  Condition="'%(Reference.FileName)' == 'System.Private.CoreLib'" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_coreLibPath>%(_coreLib.RootDir)%(_coreLib.Directory)..\uap10.1</_coreLibPath>
+      <_coreLibPackage>%(_coreLib.NuGetPackageId)</_coreLibPackage>
+      <_coreLibPackageVersion>%(_coreLib.NuGetPackageVersion)</_coreLibPackageVersion>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(_coreLibPath)')" Text="'$(_coreLibPath)' doesn't exist: can this workaround target be removed?" />
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(NuGetPackageId)' == '$(_coreLibPackage)'" />
+      <Reference Include="$(_coreLibPath)\*.*" NuGetPackageId="$(_coreLibPackage)" NuGetPackageVersion="$(_coreLibPackageVersion)" />
+    </ItemGroup>
+  </Target>
+  
   <!-- Setup the testing shared framework host -->
-  <Target Name="SetupTestingHost" AfterTargets="ResolveNuGetPackages" Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+  <Target Name="SetupTestingHost" AfterTargets="AfterResolveReferences" Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
 
     <PropertyGroup>
       <HostFxrFileName Condition="'$(OSGroup)'=='Windows_NT'">hostfxr</HostFxrFileName>
@@ -119,19 +132,19 @@
   </Target>
 
   <Target Name="BinPlaceCoreCLRSymbols"
-          AfterTargets="ResolveNuGetPackages"
+          AfterTargets="AfterResolveReferences"
           DependsOnTargets="CalculateCoreCLRSymbolPackageProperties;DownloadAndUnzipSymbolPackage"
           Condition="'$(CoreCLROverridePath)' == '' AND '$(DownloadCoreCLRSymbols)' != 'false'">
 
       <Warning Text="Failed to download CoreCLR symbols" Condition="'@(SymbolPackagesDownloaded)' == '' AND '@(SymbolPackagesToDownload)' != ''" />
 
       <ItemGroup>
-        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.pdb" />
-        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/*.dbg" />
+        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/*.pdb" />
+        <_CoreCLRSymbolFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/*.dbg" />
         <ReferenceCopyLocalPaths Include="@(_CoreCLRSymbolFiles)"/>
 
-        <CoreCLRILFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/il/*.*">
-          <CrossGenAssemblyPath>%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(NugetRuntimeIdentifier)/native/</CrossGenAssemblyPath>
+        <CoreCLRILFiles Include="%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/il/*.*">
+          <CrossGenAssemblyPath>%(_CoreCLRSymbolPackagesToDownload.UnzipDestinationDir)/runtimes/$(RuntimeIdentifier)/native/</CrossGenAssemblyPath>
         </CoreCLRILFiles>
         <CoreCLRCrossGenFiles Include="@(CoreCLRILFiles -> '%(CrossGenAssemblyPath)%(Filename)%(Extension)')" />
         <CoreCLRCrossGenFiles Condition="'$(OSGroup)'=='Windows_NT'" Include="@(CoreCLRILFiles -> '%(CrossGenAssemblyPath)%(Filename).ni.pdb')" />
@@ -141,7 +154,7 @@
 
   <Target Name="OverrideRuntime"
           Condition="'$(CoreCLROverridePath)' != ''"
-          AfterTargets="ResolveNuGetPackages;FilterNugetPackages">
+          AfterTargets="AfterResolveReferences;FilterNugetPackages">
     <Warning Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
     <PropertyGroup>
       <CoreCLRPDBOverridePath Condition="'$(CoreCLRPDBOverridePath)' == '' and Exists('$(CoreCLROverridePath)/PDB')">$(CoreCLROverridePath)/PDB</CoreCLRPDBOverridePath>
