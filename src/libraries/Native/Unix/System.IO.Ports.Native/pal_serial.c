@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "pal_types.h"
+#include "pal_utilities.h"
 #include <fcntl.h>
 #include <errno.h>
 #include <pal_serial.h>
@@ -31,4 +32,15 @@ intptr_t SystemIoPortsNative_SerialPortOpen(const char * name)
     }
 
     return fd;
+}
+
+int SystemIoPortsNative_SerialPortClose(intptr_t handle)
+{
+    int fd = ToFileDescriptor(handle);
+    // some devices don't unlock handles from exclusive access
+    // preventing reopening after closing the handle
+
+    // ignoring the error - best effort
+    ioctl(fd, TIOCNXCL);
+    return close(fd);
 }

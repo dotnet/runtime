@@ -6,4 +6,4 @@
 #include "pal_compiler.h"
 
 DLLEXPORT intptr_t SystemIoPortsNative_SerialPortOpen(const char * name);
-
+DLLEXPORT int SystemIoPortsNative_SerialPortClose(intptr_t fd);
