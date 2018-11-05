@@ -5129,12 +5129,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 					g_free (wrapper_name);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 					/*
-					 * Handled when transforming caller.
-					 *
-					 * FIXME Resolve other calls in interp_transform_call instead of here
-					 * since changing the called method on the spot might trigger issues
+					 * Usually handled during transformation of the caller, but
+					 * when the caller is handled by another execution engine
+					 * (for example fullAOT) we need to handle it here. That's
+					 * known to be wrong in cases where the reference to
+					 * `MonoDelegate` would be needed (FIXME).
 					 */
-					g_assert_not_reached ();
+					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
