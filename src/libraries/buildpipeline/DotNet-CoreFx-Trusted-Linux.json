@@ -134,7 +134,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/eng/common/msbuild.sh --ci $(PB_DockerVolumeName)/src/publish.proj /p:CloudDropAccountName=$(PB_CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(PB_Label) /flp:v=diag;LogFile=publish-packages.log /p:OverwriteOnPublish=false",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/eng/common/msbuild.sh --ci --warnaserror false $(PB_DockerVolumeName)/src/publish.proj /p:CloudDropAccountName=$(PB_CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(PB_Label) /flp:v=diag;LogFile=publish-packages.log /p:OverwriteOnPublish=false",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
