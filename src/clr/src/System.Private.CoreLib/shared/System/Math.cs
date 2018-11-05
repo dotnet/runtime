@@ -110,6 +110,76 @@ namespace System
             return ((long)a) * b;
         }
 
+        public static double BitDecrement(double x)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(x);
+
+            if (((bits >> 32) & 0x7FF00000) >= 0x7FF00000)
+            {
+                // NaN returns NaN
+                // -Infinity returns -Infinity
+                // +Infinity returns double.MaxValue
+                return (bits == 0x7FF00000_00000000) ? double.MaxValue : x;
+            }
+
+            if (bits == 0x00000000_00000000)
+            {
+                // +0.0 returns -double.Epsilon
+                return -double.Epsilon;
+            }
+
+            // Negative values need to be incremented
+            // Positive values need to be decremented
+
+            bits += ((bits < 0) ? +1 : -1);
+            return BitConverter.Int64BitsToDouble(bits);
+        }
+
+        public static double BitIncrement(double x)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(x);
+
+            if (((bits >> 32) & 0x7FF00000) >= 0x7FF00000)
+            {
+                // NaN returns NaN
+                // -Infinity returns double.MinValue
+                // +Infinity returns +Infinity
+                return (bits == unchecked((long)(0xFFF00000_00000000))) ? double.MinValue : x;
+            }
+
+            if (bits == unchecked((long)(0x80000000_00000000)))
+            {
+                // -0.0 returns double.Epsilon
+                return double.Epsilon;
+            }
+
+            // Negative values need to be decremented
+            // Positive values need to be incremented
+
+            bits += ((bits < 0) ? -1 : +1);
+            return BitConverter.Int64BitsToDouble(bits);
+        }
+
+        public static unsafe double CopySign(double x, double y)
+        {
+            // This method is required to work for all inputs,
+            // including NaN, so we operate on the raw bits.
+
+            var xbits = BitConverter.DoubleToInt64Bits(x);
+            var ybits = BitConverter.DoubleToInt64Bits(y);
+
+            // If the sign bits of x and y are not the same,
+            // flip the sign bit of x and return the new value;
+            // otherwise, just return x
+
+            if ((xbits ^ ybits) < 0)
+            {
+                return BitConverter.Int64BitsToDouble(xbits ^ long.MinValue);
+            }
+
+            return x;
+        }
+
         public static int DivRem(int a, int b, out int result)
         {
             // TODO https://github.com/dotnet/coreclr/issues/3439:
@@ -542,6 +612,11 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        public static double MaxMagnitude(double x, double y)
+        {
+            return Max(Abs(x), Abs(y));
+        }
+
         [NonVersionable]
         public static byte Min(byte val1, byte val2)
         {
@@ -630,6 +705,11 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        public static double MinMagnitude(double x, double y)
+        {
+            return Min(Abs(x), Abs(y));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static decimal Round(decimal d)
         {
@@ -680,7 +760,7 @@ namespace System
                 flrTempVal -= 1.0;
             }
 
-            return copysign(flrTempVal, a);
+            return CopySign(flrTempVal, a);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -808,23 +888,6 @@ namespace System
         {
             ModF(d, &d);
             return d;
-        }
-
-        private static unsafe double copysign(double x, double y)
-        {
-            var xbits = BitConverter.DoubleToInt64Bits(x);
-            var ybits = BitConverter.DoubleToInt64Bits(y);
-
-            // If the sign bits of x and y are not the same,
-            // flip the sign bit of x and return the new value;
-            // otherwise, just return x
-
-            if (((xbits ^ ybits) >> 63) != 0)
-            {
-                return BitConverter.Int64BitsToDouble(xbits ^ long.MinValue);
-            }
-
-            return x;
         }
 
         private static void ThrowMinMaxException<T>(T min, T max)

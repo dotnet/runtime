@@ -56,13 +56,25 @@ namespace System
         public static extern float Floor(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float FusedMultiplyAdd(float x, float y, float z);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern int IlogB(float x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Log(float x);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float Log2(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Log10(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Pow(float x, float y);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern float ScaleB(float x, int n);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Sin(float x);

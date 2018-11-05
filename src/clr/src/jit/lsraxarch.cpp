@@ -1797,9 +1797,6 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
     switch (tree->gtIntrinsic.gtIntrinsicId)
     {
-        case CORINFO_INTRINSIC_Sqrt:
-            break;
-
         case CORINFO_INTRINSIC_Abs:
             // Abs(float x) = x & 0x7fffffff
             // Abs(double x) = x & 0x7ffffff ffffffff
@@ -1826,6 +1823,7 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
             break;
 #endif // _TARGET_X86_
 
+        case CORINFO_INTRINSIC_Sqrt:
         case CORINFO_INTRINSIC_Round:
         case CORINFO_INTRINSIC_Ceiling:
         case CORINFO_INTRINSIC_Floor:

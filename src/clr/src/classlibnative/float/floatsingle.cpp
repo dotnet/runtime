@@ -187,6 +187,24 @@ FCIMPL2_VV(float, COMSingle::FMod, float x, float y)
     return (float)fmodf(x, y);
 FCIMPLEND
 
+/*=====================================FusedMultiplyAdd==========================
+**
+==============================================================================*/
+FCIMPL3_VVV(float, COMSingle::FusedMultiplyAdd, float x, float y, float z)
+    FCALL_CONTRACT;
+
+    return (float)fmaf(x, y, z);
+FCIMPLEND
+
+/*=====================================Ilog2====================================
+**
+==============================================================================*/
+FCIMPL1_V(int, COMSingle::IlogB, float x)
+    FCALL_CONTRACT;
+
+    return (int)ilogbf(x);
+FCIMPLEND
+
 /*=====================================Log======================================
 **
 ==============================================================================*/
@@ -194,6 +212,15 @@ FCIMPL1_V(float, COMSingle::Log, float x)
     FCALL_CONTRACT;
 
     return (float)logf(x);
+FCIMPLEND
+
+/*=====================================Log2=====================================
+**
+==============================================================================*/
+FCIMPL1_V(float, COMSingle::Log2, float x)
+    FCALL_CONTRACT;
+
+    return (float)log2f(x);
 FCIMPLEND
 
 /*====================================Log10=====================================
@@ -221,6 +248,15 @@ FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
     return (float)powf(x, y);
+FCIMPLEND
+
+/*=====================================ScaleB===================================
+**
+==============================================================================*/
+FCIMPL2_VI(float, COMSingle::ScaleB, float x, int n)
+    FCALL_CONTRACT;
+
+    return (float)scalbnf(x, n);
 FCIMPLEND
 
 /*=====================================Sin======================================
