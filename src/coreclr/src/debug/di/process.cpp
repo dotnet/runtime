@@ -2532,58 +2532,6 @@ COM_METHOD CordbProcess::EnableExceptionCallbacksOutsideOfMyCode(BOOL enableExce
     return hr;
 }
 
-COM_METHOD CordbProcess::GetContainingObject(CordbValue* pValue, ICorDebugObjectValue** ppContainingObject)
-{
-    if (!ppContainingObject)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-
-    FAIL_IF_NEUTERED(this);
-    ATT_REQUIRE_STOPPED_MAY_FAIL(this);
-
-    CORDB_ADDRESS interiorPointer;
-    IfFailRet(pValue->GetAddress(&interiorPointer));
-
-    *ppContainingObject = nullptr;
-
-    if (interiorPointer == 0)
-    {
-        return S_FALSE;
-    }
-
-    DebuggerIPCEvent      event;
-    this->InitIPCEvent(&event,
-        DB_IPCE_GET_CONTAINER,
-        true,
-        VMPTR_AppDomain::NullPtr());
-
-    event.GetContainer.interiorPointer = CORDB_ADDRESS_TO_PTR(interiorPointer);
-
-    hr = this->SendIPCEvent(&event, sizeof(DebuggerIPCEvent));
-    hr = WORST_HR(hr, event.hr);
-
-    if (SUCCEEDED(hr))
-    {
-        _ASSERTE(event.type == DB_IPCE_GET_CONTAINER_RESULT);
-        CORDB_ADDRESS containerAddress = PTR_TO_CORDB_ADDRESS(event.GetContainerResult.answer);
-        if (containerAddress == 0)
-        {
-            hr = S_FALSE;
-        }
-        else
-        {
-            if (SUCCEEDED(hr))
-            {
-                CordbAppDomain* pAppDomain = pValue->GetAppDomain();
-                hr = this->GetObjectInternal(containerAddress, pAppDomain, ppContainingObject);
-            }
-        }
-    }
-
-    return hr;
-}
-
 COM_METHOD CordbProcess::EnableGCNotificationEvents(BOOL fEnable)
 {
     HRESULT hr = S_OK;

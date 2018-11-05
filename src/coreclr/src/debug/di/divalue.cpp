@@ -485,12 +485,6 @@ HRESULT CordbValue::InternalCreateHandle(CorDebugHandleType      handleType,
     return S_OK;
 }   // CordbValue::InternalCreateHandle
 
-COM_METHOD CordbValue::GetContainingObject(ICorDebugObjectValue** ppContainingObject)
-{        
-    PUBLIC_API_ENTRY(this);
-    return GetProcess()->GetContainingObject(this, ppContainingObject);
-}
-
 /* ------------------------------------------------------------------------- *
  * Generic Value class
  * ------------------------------------------------------------------------- */
@@ -586,10 +580,6 @@ HRESULT CordbGenericValue::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugValue3)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
-    }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
     }
     else if (id == IID_ICorDebugGenericValue)
     {
@@ -851,10 +841,6 @@ HRESULT CordbReferenceValue::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugValue3)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
-    }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
     }
     else if (id == IID_ICorDebugReferenceValue)
     {
@@ -1804,10 +1790,6 @@ HRESULT CordbObjectValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
     }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
-    }
     else if (id == IID_ICorDebugObjectValue)
     {
         *pInterface = static_cast<ICorDebugObjectValue*>(this);
@@ -2745,10 +2727,6 @@ HRESULT CordbVCObjectValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
     }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
-    }
     else if (id == IID_ICorDebugObjectValue)
     {
         *pInterface = static_cast<ICorDebugObjectValue*>(this);
@@ -3150,10 +3128,6 @@ HRESULT CordbBoxValue::QueryInterface(REFIID id, void **pInterface)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
     }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
-    }
     else if (id == IID_ICorDebugBoxValue)
     {
         *pInterface = static_cast<ICorDebugBoxValue*>(this);
@@ -3393,10 +3367,6 @@ HRESULT CordbArrayValue::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugValue3)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
-    }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
     }
     else if (id == IID_ICorDebugArrayValue)
     {
@@ -4116,10 +4086,6 @@ HRESULT CordbHandleValue::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugValue3)
     {
         *pInterface = static_cast<ICorDebugValue3*>(this);
-    }
-    else if (id == IID_ICorDebugValue4)
-    {
-        *pInterface = static_cast<ICorDebugValue4*>(this);
     }
     else if (id == IID_ICorDebugReferenceValue)
     {

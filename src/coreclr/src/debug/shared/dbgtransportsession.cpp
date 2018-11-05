@@ -2494,14 +2494,6 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->CustomNotification);
         break;
             
-    case DB_IPCE_GET_CONTAINER:
-        cbAdditionalSize = sizeof(pEvent->GetContainer);
-        break;
-            
-    case DB_IPCE_GET_CONTAINER_RESULT:
-        cbAdditionalSize = sizeof(pEvent->GetContainerResult);
-        break;
-            
     default:
         printf("Unknown debugger event type: 0x%x\n", (pEvent->type & DB_IPCE_TYPE_MASK));
         _ASSERTE(!"Unknown debugger event type");
