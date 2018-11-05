@@ -17,7 +17,7 @@
     <LibFileTargetPath Condition="'$(LibFileTargetPath)' == '' AND '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)</LibFileTargetPath>
 
     <NativeFileTargetPath Condition="'$(NativeFileTargetPath)' == '' AND '$(PackageTargetRuntime)' != ''">runtimes/$(PackageTargetRuntime)/native</NativeFileTargetPath>
-    <NativeBinDir Condition="'$(PackageTargetRuntimeSuffix)' == 'aot'">$(NativeBinDir)_aot</NativeBinDir>
+    <NativeBinDir Condition="'$(PackageTargetRuntimeSuffix)' == 'aot'">$(NativeBinDir)-aot</NativeBinDir>
   </PropertyGroup>
 
   <!-- Bring in ref content from binplaced ref props -->

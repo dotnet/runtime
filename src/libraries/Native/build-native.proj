@@ -5,7 +5,7 @@
   <Target Name="Build" DependsOnTargets="GenerateNativeVersionFile;BuildNativeUnix;BuildNativeWindows" />
 
   <PropertyGroup>
-    <_BuildNativeArgs>$(ArchGroup) $(ConfigurationGroup) $(OSGroup)</_BuildNativeArgs>
+    <_BuildNativeArgs>$(ArchGroup) $(ConfigurationGroup) $(OSGroup) outconfig $(Configuration)</_BuildNativeArgs>
   </PropertyGroup>
 
   <Target Name="BuildNativeUnix"

@@ -71,7 +71,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
         // Set the machine affinity to windows machines
         Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
         // Publish reports
-        Utilities.addHtmlPublisher(newJob, 'bin/tests/coverage', 'Code Coverage Report', 'index.htm')
+        Utilities.addHtmlPublisher(newJob, 'artifacts/bin/tests/coverage', 'Code Coverage Report', 'index.htm')
         // Archive results.
         Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
         // Timeout. Code coverage runs take longer, so we set the timeout to be longer.
@@ -137,23 +137,23 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     steps {
                         if (osName == 'Windows 7' || osName == 'Windows_NT') {
                             batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -ci -includetests -framework:${targetGroup} -${configurationGroup} -outerloop ")
-                            batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin\\runtime\\${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}")
+                            batchFile("C:\\Packer\\Packer.exe .\\artifacts\\bin\\build.pack .\\artifacts\\bin\\runtime\\${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}")
                         }
                         else if (osName == 'OSX10.12') {
                             shell("HOME=\$WORKSPACE/tempHome ./build.sh --ci -includetests -${configurationGroup.toLowerCase()} -outerloop")
-                            shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}\" .")
+                            shell("tar -czf artifacts/bin/build.tar.gz --directory=\"artifacts/bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}\" .")
                         }
                         else if (osName == 'CentOS7.1') {
                             // On Centos7.1, the cmake toolset is currently installed in /usr/local/bin (it was built manually).  When
                             // running sudo, that will be typically eliminated from the PATH, so let's add it back in.
                             shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build.sh --ci -includetests -${configurationGroup.toLowerCase()} -outerloop")
-                            shell("sudo tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}\" .")
+                            shell("sudo tar -czf artifacts/bin/build.tar.gz --directory=\"artifacts/bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}\" .")
                         }
                         else {
                             def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
                             shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh --ci -includetests -${configurationGroup.toLowerCase()} ${portableLinux} -outerloop")
                             // Tar up the appropriate bits.
-                            shell("sudo tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}\" .")
+                            shell("sudo tar -czf artifacts/bin/build.tar.gz --directory=\"artifacts/bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}\" .")
 
                         }
                     }
@@ -172,14 +172,14 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Set up standard options.
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
                 // Add the unit test results
-                Utilities.addXUnitDotNETResults(newJob, 'bin/**/testResults.xml')
+                Utilities.addXUnitDotNETResults(newJob, 'artifacts/bin/**/testResults.xml')
                 def archiveContents = "msbuild.log"
                 if (osName.contains('Windows')) {
                     // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
-                    archiveContents += ",bin/build.pack"
+                    archiveContents += ",artifacts/bin/build.pack"
                 }
                 else {
-                    archiveContents += ",bin/build.tar.gz"
+                    archiveContents += ",artifacts/bin/build.tar.gz"
                 }
                 // Add archival for the built data.
                 Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
@@ -227,7 +227,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     steps {
                         if (osName == 'Windows 7' || osName == 'Windows_NT') {
                             batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -ci -includetests -${configurationGroup} -os:${osGroup} /p:ArchGroup:${archGroup} -framework:${targetGroup}")
-                            batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
+                            batchFile("C:\\Packer\\Packer.exe .\\artifacts\\bin\\build.pack .\\artifacts\\bin")
                         }
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
@@ -235,7 +235,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                             def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
                             shell("HOME=\$WORKSPACE/tempHome ./build.sh --ci -includetests -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} /p:ArchGroup:${archGroup} ${useServerGC}")
                             // Tar up the appropriate bits.
-                            shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
+                            shell("tar -czf artifacts/bin/build.tar.gz --directory=\"artifacts/bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
                         }
                     }
                 }
@@ -245,14 +245,14 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Set up standard options.
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
                 // Add the unit test results
-                Utilities.addXUnitDotNETResults(newJob, 'bin/**/testResults.xml')
+                Utilities.addXUnitDotNETResults(newJob, 'artifacts/bin/**/testResults.xml')
                 def archiveContents = "msbuild.log"
                 if (osName.contains('Windows')) {
                     // Packer.exe is a .NET Framework application. When we can use it from the tool-runtime, we can archive the ".pack" file here.
-                    archiveContents += ",bin/build.pack"
+                    archiveContents += ",artifacts/bin/build.pack"
                 }
                 else {
-                    archiveContents += ",bin/build.tar.gz"
+                    archiveContents += ",artifacts/bin/build.tar.gz"
                 }
                 // Add archival for the built data.
                 Utilities.addArchival(newJob, archiveContents, '', doNotFailIfNothingArchived=true, archiveOnlyIfSuccessful=false)
@@ -297,7 +297,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                         shell(script)
 
                         // Tar up the appropriate bits.
-                        shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${abi}\" .")
+                        shell("tar -czf artifacts/bin/build.tar.gz --directory=\"artifacts/bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-${abi}\" .")
                     }
                 }
 
@@ -309,7 +309,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                 // Add archival for the built binaries
-                def archiveContents = "bin/build.tar.gz"
+                def archiveContents = "artifacts/bin/build.tar.gz"
                 Utilities.addArchival(newJob, archiveContents)
 
                 newJob.with {
@@ -355,7 +355,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
             shell(script)
 
             // Tar up the appropriate bits
-            shell("tar -czf bin/build.tar.gz --directory=\"bin/Linux.${archGroup}.${configurationGroup}/native\" .")
+            shell("tar -czf artifacts/bin/build.tar.gz --directory=\"artifacts/bin/Linux.${archGroup}.${configurationGroup}/native\" .")
         }
     }
 
@@ -367,7 +367,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
     Utilities.standardJobSetup(newJob, project, false, "*/${branch}")
 
     // Add archival for the built binaries
-    def archiveContents = "bin/build.tar.gz"
+    def archiveContents = "artifacts/bin/build.tar.gz"
     Utilities.addArchival(newJob, archiveContents)
 
     // Set a push trigger as a daily work
