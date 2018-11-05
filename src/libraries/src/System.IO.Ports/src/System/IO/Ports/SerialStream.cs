@@ -21,8 +21,6 @@ namespace System.IO.Ports
         private bool _inBreak = false;
         private Handshake _handshake;
 
-        private SafeFileHandle _handle = null;
-
 #pragma warning disable CS0067 // Events shared by Windows and Linux, on Linux we currently never call them
         // called when any of the pin/ring-related triggers occurs
         internal event SerialPinChangedEventHandler PinChanged;

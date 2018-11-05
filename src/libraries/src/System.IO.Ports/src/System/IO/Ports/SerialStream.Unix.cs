@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32.SafeHandles;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -11,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Sockets;
 
 namespace System.IO.Ports
 {
@@ -22,6 +20,7 @@ namespace System.IO.Ports
         private const int IOLoopIdleTimeout = 2000;
         private bool _ioLoopFinished = false;
 
+        private SafeSerialDeviceHandle _handle = null;
         private int _baudRate;
         private StopBits _stopBits;
         private Parity _parity;
@@ -507,17 +506,6 @@ namespace System.IO.Ports
             }
         }
 
-        internal SafeFileHandle OpenPort(string portName)
-        {
-            SafeFileHandle handle = Interop.Serial.SerialPortOpen(portName);
-            if (handle.IsInvalid)
-            {
-                throw new UnauthorizedAccessException(string.Format(SR.UnauthorizedAccess_IODenied_Port, portName));
-            }
-
-            return handle;
-        }
-
         // this method is used by SerialPort upon SerialStream's creation
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
@@ -531,7 +519,7 @@ namespace System.IO.Ports
 
             // Error checking done in SerialPort.
 
-            SafeFileHandle tempHandle = OpenPort(portName);
+            SafeSerialDeviceHandle tempHandle = SafeSerialDeviceHandle.Open(portName);
 
             try
             {
@@ -569,7 +557,7 @@ namespace System.IO.Ports
             {
                 // if there are any exceptions after the call to CreateFile, we need to be sure to close the
                 // handle before we let them continue up.
-                tempHandle.Close();
+                tempHandle.Dispose();
                 _handle = null;
                 throw;
             }
@@ -623,12 +611,9 @@ namespace System.IO.Ports
 
                 FinishPendingIORequests();
 
-                // Signal the other side that we're closing.  Should do regardless of whether we've called
-                // Close() or not Dispose()
-                if (_handle != null && !_handle.IsInvalid)
+                if (_handle != null)
                 {
-                    Interop.Sys.Shutdown(_handle, SocketShutdown.Both);
-                    _handle.Close();
+                    _handle.Dispose();
                     _handle = null;
                 }
             }
