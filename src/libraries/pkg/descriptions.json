@@ -1963,6 +1963,13 @@
     ]
   },
   {
+    "Name": "System.Text.Json",
+    "Description": "Provides a fast, non-cached, forward-only way to read UTF-8 encoded JavaScript Object Notation (JSON) text.",
+    "CommonTypes": [
+      "System.Text.Json.Utf8JsonReader"
+    ]
+  },
+  {
     "Name": "System.Text.RegularExpressions",
     "Description": "Provides the System.Text.RegularExpressions.Regex class, an implementation of a regular expression engine.",
     "CommonTypes": [
