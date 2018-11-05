@@ -1,9 +1,4 @@
 <Project>
-  <ItemGroup>
-    <!-- List of container files that will be opened and checked for files that need to be signed. -->
-    <ItemsToSign Include="$(RepoRoot)bin\packages\$(Configuration)\**\*.nupkg" />
-  </ItemGroup>
-
   <Target Name="ValidateSignFileListIsNotEmpty" BeforeTargets="Sign">
     <!-- we don't sign any files during our netfx build because we don't have any packages we produce there -->
     <Error Condition="'@(ItemsToSign)' == '' and '$(TargetGroup)' != 'netfx'" Text="List of files to sign is empty. Ensure '$(RepoRoot)bin\packages\$(Configuration)' contains nupkg files to sign." />
