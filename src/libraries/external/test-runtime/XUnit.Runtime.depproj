@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- reset parts so that they can be re-inferred -->
+    <TargetFrameworkIdentifier />
+    <TargetFrameworkVersion />
+  </PropertyGroup>
   <PropertyGroup>
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          The only asset that we copy which is RID-specific is sni.dll which is only used in windows, which is why we default to Windows as the RID -->
-    <NugetRuntimeIdentifier>win10-$(ArchGroup)</NugetRuntimeIdentifier>
+    <RuntimeIdentifier>win10-$(ArchGroup)</RuntimeIdentifier>
     <!-- Use xunit for arm packages because of not providing armel package in win10 -->
-    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">win10-arm</NugetRuntimeIdentifier>
-    <RidSpecificAssets>true</RidSpecificAssets>
+    <RuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">win10-arm</RuntimeIdentifier>
     <OutputPath>$(RuntimePath)</OutputPath>
     <XUnitRunnerPackageId>xunit.runner.console</XUnitRunnerPackageId>
     <XUnitRunner>xunit.console</XUnitRunner>
@@ -17,15 +21,13 @@
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.visualstudio.testadapter</XUnitAdapter>
     <TestPlatformHostPackageId>microsoft.testplatform.testhost</TestPlatformHostPackageId>
     <TestPlatformHost>testhost</TestPlatformHost>
-    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">netstandard2.0</NuGetTargetMonikerShort>
     <!-- Coverlet related properties -->
     <CoverletPackageId>coverlet.msbuild</CoverletPackageId>
     <CoverletPackageVersion>2.3.0</CoverletPackageVersion>
     <!-- Explicitly set Language to c# to handle the analyzer resolution in nuget -->
     <Language Condition="'$(Language)' == ''">c#</Language>
     <!-- Don't warn if some dependencies were rolled forward -->
-    <NoWarn>$(NoWarn);NU1603</NoWarn>
+    <NoWarn>$(NoWarn);NU1603;NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -163,7 +165,7 @@
   </ItemGroup>
 
   <!-- Ensure that the native components of TraceEvent are restored into the runtime directory so that TraceEvent can pinvoke into them. -->
-  <Target Name="CopyTraceEventNativeFiles" AfterTargets="RestorePackages">
+  <Target Name="CopyTraceEventNativeFiles" AfterTargets="AfterResolveReferences">
     <ItemGroup>
       <TraceEventNativeFiles
         Include="$(PackagesDir)\Microsoft.Diagnostics.Tracing.TraceEvent\$(TraceEventPackageVersion)\lib\native\**\*.*" />
@@ -195,12 +197,9 @@
     <PackageToInclude Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni"/>
   </ItemGroup>
 
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
-
   <!-- Retrieve the UAP Tools to the TestHost folder -->
   <Target Name="CopyUAPToolsToTestHost"
-          AfterTargets="RestorePackages"
+          AfterTargets="AfterResolveReferences"
           Condition="'$(TargetGroup)'=='uap'" >
 
     <PropertyGroup>
@@ -235,7 +234,7 @@
   </Target>
 
   <Target Name="CopyTestILCToolsToTestHost"
-          AfterTargets="RestorePackages"
+          AfterTargets="AfterResolveReferences"
           Condition="'$(TargetsAOT)'=='true'">
     <PropertyGroup>
       <TestILCToolsPackageName>TestILC</TestILCToolsPackageName>
