@@ -11249,6 +11249,17 @@ emit_unwind_info_sections_win32 (MonoAotCompile *acfg, const char *function_star
 #endif
 
 static gboolean
+should_emit_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+#ifdef TARGET_WASM
+	if (acfg->image == mono_get_corlib () && !strcmp (m_class_get_name (method->klass), "Vector`1"))
+		/* The SIMD fallback code in Vector<T> is very large, and not likely to be used */
+		return FALSE;
+#endif
+	return TRUE;
+}
+
+static gboolean
 collect_methods (MonoAotCompile *acfg)
 {
 	int mindex, i;
@@ -11322,7 +11333,7 @@ collect_methods (MonoAotCompile *acfg)
 		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
 		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
 
-		if (method->is_generic || mono_class_is_gtd (method->klass)) {
+		if ((method->is_generic || mono_class_is_gtd (method->klass)) && should_emit_gsharedvt_method (acfg, method)) {
 			MonoMethod *gshared;
 
 			gshared = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
