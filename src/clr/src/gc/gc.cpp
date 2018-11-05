@@ -26099,7 +26099,7 @@ void gc_heap::background_mark_phase ()
 }
 
 void
-gc_heap::suspend_EE()
+gc_heap::suspend_EE ()
 {
     dprintf (2, ("suspend_EE"));
 #ifdef MULTIPLE_HEAPS
@@ -26110,45 +26110,46 @@ gc_heap::suspend_EE()
 #endif //MULTIPLE_HEAPS
 }
 
-void
-gc_heap::restart_EE()
-{
-    dprintf (2, ("restart_EE"));
-    GCToEEInterface::RestartEE(FALSE);
-}
-
-void
-gc_heap::bgc_suspend_EE()
-{
 #ifdef MULTIPLE_HEAPS
+void
+gc_heap::bgc_suspend_EE ()
+{
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap::g_heaps[i]->reset_gc_done();
     }
-#else
-    reset_gc_done();
-#endif //MULTIPLE_HEAPS
-
     gc_started = TRUE;
     dprintf (2, ("bgc_suspend_EE"));
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
-}
 
-void
-gc_heap::bgc_restart_EE()
-{
     gc_started = FALSE;
-#ifdef MULTIPLE_HEAPS
     for (int i = 0; i < n_heaps; i++)
     {
         gc_heap::g_heaps[i]->set_gc_done();
     }
+}
 #else
+void
+gc_heap::bgc_suspend_EE ()
+{
+    reset_gc_done();
+    gc_started = TRUE;
+    dprintf (2, ("bgc_suspend_EE"));
+    GCToEEInterface::SuspendEE(SUSPEND_FOR_GC_PREP);
+    gc_started = FALSE;
     set_gc_done();
+}
 #endif //MULTIPLE_HEAPS
 
-    dprintf (2, ("bgc_restart_EE"));
+void
+gc_heap::restart_EE ()
+{
+    dprintf (2, ("restart_EE"));
+#ifdef MULTIPLE_HEAPS
     GCToEEInterface::RestartEE(FALSE);
+#else
+    GCToEEInterface::RestartEE(FALSE);
+#endif //MULTIPLE_HEAPS
 }
 
 inline uint8_t* gc_heap::high_page ( heap_segment* seg, BOOL concurrent_p)
@@ -31279,7 +31280,7 @@ void gc_heap::background_sweep()
 
     if (heap_number == 0)
     {
-        bgc_restart_EE ();
+        restart_EE ();
     }
 
     FIRE_EVENT(BGC2ndConBegin);
@@ -34436,8 +34437,6 @@ GCHeap::FixAllocContext (gc_alloc_context* context, bool lockp, void* arg, void 
 Object*
 GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 {
-    assert (g_fSuspensionPending > 0);
-
     uint8_t *o = (uint8_t*)pInteriorPtr;
 
     gc_heap* hp = gc_heap::heap_of (o);
@@ -34447,17 +34446,7 @@ GCHeap::GetContainingObject (void *pInteriorPtr, bool fCollectedGenOnly)
 
     if (o >= lowest && o < highest)
     {
-        if (!gc_heap::gc_started)
-        {
-            hp->fix_allocation_contexts (FALSE);
-        }
-
         o = hp->find_object (o, lowest);
-    
-        if (!gc_heap::gc_started)
-        {
-            hp->repair_allocation_contexts (TRUE);
-        }    
     }
     else
     {

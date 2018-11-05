@@ -2597,16 +2597,13 @@ protected:
     void concurrent_scan_dependent_handles (ScanContext *sc);
 
     PER_HEAP_ISOLATED
-    void suspend_EE();
+    void suspend_EE ();
 
     PER_HEAP_ISOLATED
-    void bgc_suspend_EE();
+    void bgc_suspend_EE ();
 
     PER_HEAP_ISOLATED
-    void restart_EE();
-
-    PER_HEAP_ISOLATED
-    void bgc_restart_EE();
+    void restart_EE ();
 
     PER_HEAP
     void background_verify_mark (Object*& object, ScanContext* sc, uint32_t flags);
