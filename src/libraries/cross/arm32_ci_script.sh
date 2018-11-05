@@ -240,7 +240,7 @@ function cross_build_corefx_with_docker {
 
     __buildCmd="./build.sh /p:ArchGroup=$__buildArch -$__buildConfig /p:RuntimeOS=$__runtimeOS $__portableLinux $__extraCmd"
     $__dockerCmd $__buildCmd
-    sudo chown -R $(id -u -n) ./bin
+    sudo chown -R $(id -u -n) ./artifacts
 }
 
 #Define script variables
