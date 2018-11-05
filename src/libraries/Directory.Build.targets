@@ -17,8 +17,8 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <PropertyGroup>
-    <!-- PackageOutputPath gets unconditionally in arcade sdk targets we need to reset it here until we reconcile the paths -->
-    <PackageOutputPath>$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
+    <!-- SymbolPaagkeOutputPath is based on PackageOutputPath which is set in the arcade sdk targets so we need to set this after that -->
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
