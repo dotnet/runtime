@@ -1508,10 +1508,25 @@ endif
 
 if AOT_FULL_INTERP_TESTS
 PROFILE_DISABLED_TESTS += \
+	appdomain-async-invoke.exe \
+	appdomain-unload-callback.exe \
+	appdomain-unload.exe \
+	appdomain-unload-doesnot-raise-pending-events.exe \
+	appdomain-serialize-exception.exe \
+	appdomain-thread-abort.exe \
+	bug-322722_dyn_method_throw.2.exe \
 	bug-80307.exe \
+	bug-70561.exe \
+	xdomain-threads.exe \
+	thread6.exe \
+	marshal2.exe \
+	transparentproxy.exe \
+	unload-appdomain-on-shutdown.exe \
+	remoting4.exe \
 	threadpool-exceptions2.exe \
+	threadpool-exceptions4.exe \
 	threadpool-exceptions5.exe \
-	threadpool-exceptions4.exe
+	threadpool-exceptions7.exe
 endif
 
 AOT_DISABLED_TESTS= \
