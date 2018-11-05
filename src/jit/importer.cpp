@@ -3386,7 +3386,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #ifdef FEATURE_HW_INTRINSICS
             if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
             {
-                return impHWIntrinsic(ni, method, sig, mustExpand);
+                GenTree* hwintrinsic = impHWIntrinsic(ni, method, sig, mustExpand);
+
+                if (mustExpand && (hwintrinsic == nullptr))
+                {
+                    return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
+                }
+
+                return hwintrinsic;
             }
 #endif // FEATURE_HW_INTRINSICS
         }
@@ -3932,12 +3939,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         }
     }
 
-    if (mustExpand)
+    if (mustExpand && (retNode == nullptr))
     {
-        if (retNode == nullptr)
-        {
-            NO_WAY("JIT must expand the intrinsic!");
-        }
+        NO_WAY("JIT must expand the intrinsic!");
     }
 
     // Optionally report if this intrinsic is special
