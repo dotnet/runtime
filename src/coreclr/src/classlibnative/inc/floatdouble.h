@@ -25,10 +25,14 @@ public:
     FCDECL1_V(static double, Exp, double x);
     FCDECL1_V(static double, Floor, double x);
     FCDECL2_VV(static double, FMod, double x, double y);
+    FCDECL3_VVV(static double, FusedMultiplyAdd, double x, double y, double z);
+    FCDECL1_V(static int, IlogB, double x);
     FCDECL1_V(static double, Log, double x);
+    FCDECL1_V(static double, Log2, double x);
     FCDECL1_V(static double, Log10, double x);
     FCDECL2_VI(static double, ModF, double x, double* intptr);
     FCDECL2_VV(static double, Pow, double x, double y);
+    FCDECL2_VI(static double, ScaleB, double x, int n);
     FCDECL1_V(static double, Sin, double x);
     FCDECL1_V(static double, Sinh, double x);
     FCDECL1_V(static double, Sqrt, double x);

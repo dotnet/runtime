@@ -200,6 +200,24 @@ FCIMPL2_VV(double, COMDouble::FMod, double x, double y)
     return (double)fmod(x, y);
 FCIMPLEND
 
+/*=====================================FusedMultiplyAdd==========================
+**
+==============================================================================*/
+FCIMPL3_VVV(double, COMDouble::FusedMultiplyAdd, double x, double y, double z)
+    FCALL_CONTRACT;
+
+    return (double)fma(x, y, z);
+FCIMPLEND
+
+/*=====================================Ilog2====================================
+**
+==============================================================================*/
+FCIMPL1_V(int, COMDouble::IlogB, double x)
+    FCALL_CONTRACT;
+
+    return (int)ilogb(x);
+FCIMPLEND
+
 /*=====================================Log======================================
 **
 ==============================================================================*/
@@ -207,6 +225,15 @@ FCIMPL1_V(double, COMDouble::Log, double x)
     FCALL_CONTRACT;
 
     return (double)log(x);
+FCIMPLEND
+
+/*=====================================Log2=====================================
+**
+==============================================================================*/
+FCIMPL1_V(double, COMDouble::Log2, double x)
+    FCALL_CONTRACT;
+
+    return (double)log2(x);
 FCIMPLEND
 
 /*====================================Log10=====================================
@@ -234,6 +261,15 @@ FCIMPL2_VV(double, COMDouble::Pow, double x, double y)
     FCALL_CONTRACT;
 
     return (double)pow(x, y);
+FCIMPLEND
+
+/*=====================================ScaleB===================================
+**
+==============================================================================*/
+FCIMPL2_VI(double, COMDouble::ScaleB, double x, int n)
+    FCALL_CONTRACT;
+
+    return (double)scalbn(x, n);
 FCIMPLEND
 
 /*=====================================Sin======================================
