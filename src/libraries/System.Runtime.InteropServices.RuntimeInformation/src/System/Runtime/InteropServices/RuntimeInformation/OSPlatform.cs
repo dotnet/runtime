@@ -8,6 +8,8 @@ namespace System.Runtime.InteropServices
     {
         private readonly string _osPlatform;
 
+        public static OSPlatform FreeBSD { get; } = new OSPlatform("FREEBSD");
+
         public static OSPlatform Linux { get; } = new OSPlatform("LINUX");
 
         public static OSPlatform OSX { get; } = new OSPlatform("OSX");
