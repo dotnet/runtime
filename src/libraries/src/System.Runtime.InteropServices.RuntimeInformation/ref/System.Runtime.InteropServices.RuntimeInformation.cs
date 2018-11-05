@@ -17,6 +17,7 @@ namespace System.Runtime.InteropServices
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {
         private readonly object _dummy;
+        public static System.Runtime.InteropServices.OSPlatform FreeBSD { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform Linux { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform OSX { get { throw null; } }
         public static System.Runtime.InteropServices.OSPlatform Windows { get { throw null; } }
