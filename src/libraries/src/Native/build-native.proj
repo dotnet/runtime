@@ -20,7 +20,13 @@
       <_StripSymbolsArg Condition="'$(BuildNativeStripSymbols)' == 'true'"> stripsymbols</_StripSymbolsArg>
       <_PortableBuildArg Condition="'$(PortableBuild)' == 'true'"> -portable</_PortableBuildArg>
 
-      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_StripSymbolsArg)$(_PortableBuildArg)</_BuildNativeUnixArgs>
+      <!--
+        BuildNativeClang is a pass-through argument, to pass an argument to build-native.sh. It is intended to be
+        used to force a specific clang toolset.
+      -->
+      <_BuildNativeClangArg Condition="'$(BuildNativeClang)' != ''"> $(BuildNativeClang)</_BuildNativeClangArg>
+
+      <_BuildNativeUnixArgs>$(_BuildNativeArgs)$(_ProcessCountArg)$(_StripSymbolsArg)$(_PortableBuildArg)$(_BuildNativeClangArg)</_BuildNativeUnixArgs>
     </PropertyGroup>
 
     <Message Text="$(MSBuildProjectDirectory)/build-native.sh $(_BuildNativeUnixArgs)" Importance="High"/>
