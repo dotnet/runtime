@@ -84,8 +84,16 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public Action<TOptions, TDep> Action { get; }
 
+        /// <summary>
+        /// The dependency.
+        /// </summary>
         public TDep Dependency { get; }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance.
+        /// </summary>
+        /// <param name="name">The name of the options instance being configured.</param>
+        /// <param name="options">The options instance to configured.</param>
         public virtual void PostConfigure(string name, TOptions options)
         {
             if (options == null)
@@ -100,6 +108,10 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance using the <see cref="Options.DefaultName"/>.
+        /// </summary>
+        /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
     }
 
@@ -139,10 +151,21 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public Action<TOptions, TDep1, TDep2> Action { get; }
 
+        /// <summary>
+        /// The first dependency.
+        /// </summary>
         public TDep1 Dependency1 { get; }
 
+        /// <summary>
+        /// The second dependency.
+        /// </summary>
         public TDep2 Dependency2 { get; }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance.
+        /// </summary>
+        /// <param name="name">The name of the options instance being configured.</param>
+        /// <param name="options">The options instance to configured.</param>
         public virtual void PostConfigure(string name, TOptions options)
         {
             if (options == null)
@@ -157,6 +180,10 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance using the <see cref="Options.DefaultName"/>.
+        /// </summary>
+        /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
     }
 
@@ -200,13 +227,26 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3> Action { get; }
 
+        /// <summary>
+        /// The first dependency.
+        /// </summary>
         public TDep1 Dependency1 { get; }
 
+        /// <summary>
+        /// The second dependency.
+        /// </summary>
         public TDep2 Dependency2 { get; }
 
+        /// <summary>
+        /// The third dependency.
+        /// </summary>
         public TDep3 Dependency3 { get; }
 
-
+        /// <summary>
+        /// Invoked to configure a TOptions instance.
+        /// </summary>
+        /// <param name="name">The name of the options instance being configured.</param>
+        /// <param name="options">The options instance to configured.</param>
         public virtual void PostConfigure(string name, TOptions options)
         {
             if (options == null)
@@ -221,6 +261,10 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance using the <see cref="Options.DefaultName"/>.
+        /// </summary>
+        /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
     }
 
@@ -268,15 +312,31 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3, TDep4> Action { get; }
 
+        /// <summary>
+        /// The first dependency.
+        /// </summary>
         public TDep1 Dependency1 { get; }
 
+        /// <summary>
+        /// The second dependency.
+        /// </summary>
         public TDep2 Dependency2 { get; }
 
+        /// <summary>
+        /// The third dependency.
+        /// </summary>
         public TDep3 Dependency3 { get; }
 
+        /// <summary>
+        /// The fourth dependency.
+        /// </summary>
         public TDep4 Dependency4 { get; }
 
-
+        /// <summary>
+        /// Invoked to configure a TOptions instance.
+        /// </summary>
+        /// <param name="name">The name of the options instance being configured.</param>
+        /// <param name="options">The options instance to configured.</param>
         public virtual void PostConfigure(string name, TOptions options)
         {
             if (options == null)
@@ -291,6 +351,10 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance using the <see cref="Options.DefaultName"/>.
+        /// </summary>
+        /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
     }
 
@@ -342,17 +406,36 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public Action<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> Action { get; }
 
+        /// <summary>
+        /// The first dependency.
+        /// </summary>
         public TDep1 Dependency1 { get; }
 
+        /// <summary>
+        /// The second dependency.
+        /// </summary>
         public TDep2 Dependency2 { get; }
 
+        /// <summary>
+        /// The third dependency.
+        /// </summary>
         public TDep3 Dependency3 { get; }
 
+        /// <summary>
+        /// The fourth dependency.
+        /// </summary>
         public TDep4 Dependency4 { get; }
 
+        /// <summary>
+        /// The fifth dependency.
+        /// </summary>
         public TDep5 Dependency5 { get; }
 
-
+        /// <summary>
+        /// Invoked to configure a TOptions instance.
+        /// </summary>
+        /// <param name="name">The name of the options instance being configured.</param>
+        /// <param name="options">The options instance to configured.</param>
         public virtual void PostConfigure(string name, TOptions options)
         {
             if (options == null)
@@ -367,6 +450,10 @@ namespace Microsoft.Extensions.Options
             }
         }
 
+        /// <summary>
+        /// Invoked to configure a TOptions instance using the <see cref="Options.DefaultName"/>.
+        /// </summary>
+        /// <param name="options">The options instance to configured.</param>
         public void PostConfigure(TOptions options) => PostConfigure(Options.DefaultName, options);
     }
 
