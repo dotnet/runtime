@@ -15,46 +15,45 @@
 #define _countof(a) (sizeof(a) / sizeof(a[0]))
 #endif // !_countof
 
-// The temporary folder is used for storing shared memory files and their lock files.
-// The location of the temporary folder varies (e.g. /data/local/tmp on Android)
-// and is set in TEMP_DIRECTORY_PATH. TEMP_DIRECTORY_PATH ends with '/'
+// The folder used for storing shared memory files and their lock files is defined in 
+// the gSharedFilesPath global variable. The value of the variable depends on which 
+// OS is being used, and if the application is running in a sandbox in Mac.
+// gSharedFilesPath ends with '/'
 // - Global shared memory files go in:
-//     {tmp}/.dotnet/shm/global/<fileName>
+//     {gSharedFilesPath}/.dotnet/shm/global/<fileName>
 // - Session-scoped shared memory files go in:
-//     {tmp}/.dotnet/shm/session<sessionId>/<fileName>
+//     {gSharedFilesPath}/.dotnet/shm/session<sessionId>/<fileName>
 // - Lock files associated with global shared memory files go in:
-//     {tmp}/.dotnet/lockfiles/global/<fileName>
+//     {gSharedFilesPath}/.dotnet/lockfiles/global/<fileName>
 // - Lock files associated with session-scoped shared memory files go in:
-//     {tmp}/.dotnet/lockfiles/session<sessionId>/<fileName>
+//     {gSharedFilesPath}/.dotnet/lockfiles/session<sessionId>/<fileName>
 
 #define SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT (_MAX_FNAME - 1)
-#define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (_countof("Global\\") - 1 + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
+#define SHARED_MEMORY_MAX_NAME_CHAR_COUNT (string_countof("Global\\") + SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT)
 
-#define SHARED_MEMORY_TEMP_DIRECTORY_PATH TEMP_DIRECTORY_PATH
-#define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_PATH TEMP_DIRECTORY_PATH ".dotnet"
-
-#define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH TEMP_DIRECTORY_PATH ".dotnet/shm"
-#define SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH TEMP_DIRECTORY_PATH ".dotnet/lockfiles"
-static_assert_no_msg(_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH) >= _countof(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_PATH));
+#define SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_NAME ".dotnet"
+#define SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME ".dotnet/shm"
+#define SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME ".dotnet/lockfiles"
+static_assert_no_msg(_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) >= _countof(SHARED_MEMORY_SHARED_MEMORY_DIRECTORY_NAME));
 
 #define SHARED_MEMORY_GLOBAL_DIRECTORY_NAME "global"
 #define SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX "session"
 static_assert_no_msg(_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) >= _countof(SHARED_MEMORY_GLOBAL_DIRECTORY_NAME));
 
-#define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE TEMP_DIRECTORY_PATH ".coreclr.XXXXXX"
+#define SHARED_MEMORY_UNIQUE_TEMP_NAME_TEMPLATE ".coreclr.XXXXXX"
 
 #define SHARED_MEMORY_MAX_SESSION_ID_CHAR_COUNT (10)
 
+// Note that this Max size does not include the prefix folder path size which is unknown (in the case of sandbox) until runtime
 #define SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT \
     ( \
-        _countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_PATH) - 1 + \
+        string_countof(SHARED_MEMORY_LOCK_FILES_DIRECTORY_NAME) + \
         1 /* path separator */ + \
-        _countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) - 1 + \
+        string_countof(SHARED_MEMORY_SESSION_DIRECTORY_NAME_PREFIX) + \
         SHARED_MEMORY_MAX_SESSION_ID_CHAR_COUNT + \
         1 /* path separator */ + \
         SHARED_MEMORY_MAX_FILE_NAME_CHAR_COUNT \
     )
-static_assert_no_msg(SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
 
 class AutoFreeBuffer
 {
@@ -107,9 +106,9 @@ public:
 
     static void *Alloc(SIZE_T byteCount);
 
-    template<SIZE_T DestinationByteCount, SIZE_T SourceByteCount> static SIZE_T CopyString(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, const char (&source)[SourceByteCount]);
-    template<SIZE_T DestinationByteCount> static SIZE_T CopyString(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, LPCSTR source, SIZE_T sourceCharCount);
-    template<SIZE_T DestinationByteCount> static SIZE_T AppendUInt32String(char (&destination)[DestinationByteCount], SIZE_T destinationStartOffset, UINT32 value);
+    template<SIZE_T SuffixByteCount> static void BuildSharedFilesPath(PathCharString& destination, const char (&suffix)[SuffixByteCount]);
+    static void BuildSharedFilesPath(PathCharString& destination, const char *suffix, int suffixByteCount);
+    static bool AppendUInt32String(PathCharString& destination, UINT32 value);
 
     static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
 private:
@@ -126,6 +125,12 @@ public:
 
     static bool TryAcquireFileLock(int fileDescriptor, int operation);
     static void ReleaseFileLock(int fileDescriptor);
+
+    static void VerifyStringOperation(bool success);
+    static void VerifyStringOperation(BOOL success)
+    {
+        VerifyStringOperation(success != FALSE); 
+    }
 };
 
 class SharedMemoryId
@@ -147,7 +152,7 @@ public:
     bool Equals(SharedMemoryId *other) const;
 
 public:
-    SIZE_T AppendSessionDirectoryName(char (&path)[SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1], SIZE_T pathCharCount) const;
+    bool AppendSessionDirectoryName(PathCharString& path) const;
 };
 
 enum class SharedMemoryType : UINT8
@@ -238,6 +243,9 @@ private:
     static CRITICAL_SECTION s_creationDeletionProcessLock;
     static int s_creationDeletionLockFileDescriptor;
 
+    static PathCharString* s_runtimeTempDirectoryPath;
+    static PathCharString* s_sharedMemoryDirectoryPath;
+
 private:
     static SharedMemoryProcessDataHeader *s_processDataHeaderListHead;
 
@@ -248,7 +256,7 @@ private:
 #endif // _DEBUG
 
 public:
-    static void StaticInitialize();
+    static bool StaticInitialize();
     static void StaticClose();
 
 public:
@@ -256,6 +264,9 @@ public:
     static void ReleaseCreationDeletionProcessLock();
     static void AcquireCreationDeletionFileLock();
     static void ReleaseCreationDeletionFileLock();
+
+public:
+    static bool CopySharedMemoryBasePath(PathCharString& destination);
 
 #ifdef _DEBUG
 public:

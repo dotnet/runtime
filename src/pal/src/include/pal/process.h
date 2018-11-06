@@ -24,6 +24,7 @@ Revision History:
 #define _PAL_PROCESS_H_
 
 #include "pal/palinternal.h"
+#include "pal/stackstring.hpp"
 
 #ifdef __cplusplus
 extern "C"
@@ -42,6 +43,13 @@ extern DWORD gPID;
 extern DWORD gSID;
 
 extern LPWSTR pAppDir;
+
+// The Mac sandbox application group ID (if exists) and container (shared) path
+#ifdef __APPLE__
+extern LPCSTR gApplicationGroupId;
+extern int gApplicationGroupIdLength;
+#endif // __APPLE__
+extern PathCharString *gSharedFilesPath;
 
 /*++
 Function:

@@ -355,6 +355,52 @@ Initialize(
         gPID = getpid();
         gSID = getsid(gPID);
 
+        // The gSharedFilesPath is allocated dynamically so its destructor does not get 
+        // called unexpectedly during cleanup
+        gSharedFilesPath = InternalNew<PathCharString>();
+        if (gSharedFilesPath == nullptr)
+        {
+            SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+            goto done;
+        }
+
+#ifdef __APPLE__
+        // Store application group Id. It will be null if not set
+        gApplicationGroupId = getenv("DOTNET_SANDBOX_APPLICATION_GROUP_ID");
+
+        if (nullptr != gApplicationGroupId)
+        {
+            // Verify the length of the application group ID
+            gApplicationGroupIdLength = strlen(gApplicationGroupId);
+            if (gApplicationGroupIdLength > MAX_APPLICATION_GROUP_ID_LENGTH)
+            {
+                SetLastError(ERROR_BAD_LENGTH);
+                goto done;
+            }
+
+            // In sandbox, all IPC files (locks, pipes) should be written to the application group
+            // container. There will be no write permissions to TEMP_DIRECTORY_PATH
+            if (!GetApplicationContainerFolder(*gSharedFilesPath, gApplicationGroupId, gApplicationGroupIdLength))
+            {
+                SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+                goto done;
+            }
+
+            // Verify the size of the path won't exceed maximum allowed size
+            if (gSharedFilesPath->GetCount() + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ > MAX_LONGPATH)
+            {
+                SetLastError(ERROR_FILENAME_EXCED_RANGE);
+            }
+        }
+        else
+#endif // __APPLE__
+        {
+            gSharedFilesPath->Set(TEMP_DIRECTORY_PATH);
+
+            // We can verify statically the non sandboxed case, since the size is known during compile time
+            static_assert_no_msg(string_countof(TEMP_DIRECTORY_PATH) + SHARED_MEMORY_MAX_FILE_PATH_CHAR_COUNT + 1 /* null terminator */ <= MAX_LONGPATH);
+        }
+
         fFirstTimeInit = true;
 
         InitializeDefaultStackSize();
@@ -393,7 +439,11 @@ Initialize(
             // we use large numbers of threads or have many open files.
         }
 
-        SharedMemoryManager::StaticInitialize();
+        if (!SharedMemoryManager::StaticInitialize())
+        {
+            ERROR("Shared memory static initialization failed!\n");
+            goto CLEANUP0;
+        }
 
         /* initialize the shared memory infrastructure */
         if (!SHMInitialize())
