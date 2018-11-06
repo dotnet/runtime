@@ -51,7 +51,7 @@ namespace System.IO.Pipelines
                 if (_cancellationToken.CanBeCanceled)
                 {
                     _cancellationToken.ThrowIfCancellationRequested();
-                    _cancellationTokenRegistration = _cancellationToken.Register(callback, state);
+                    _cancellationTokenRegistration = _cancellationToken.UnsafeRegister(callback, state);
                 }
             }
             return oldRegistration;
