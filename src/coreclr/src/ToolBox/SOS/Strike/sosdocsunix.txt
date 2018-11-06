@@ -34,12 +34,12 @@ GCRoot (gcroot)                    GCInfo
 PrintException (pe)                EHInfo
                                    bpmd (bpmd)
                                    
-
 Examining CLR data structures      Diagnostic Utilities
 -----------------------------      -----------------------------
 DumpDomain                         VerifyHeap
 EEHeap (eeheap)                    FindAppDomain          
 Name2EE (name2ee)                  DumpLog (dumplog)
+SyncBlk (syncblk)
 DumpMT (dumpmt)
 DumpClass (dumpclass)
 DumpMD (dumpmd)                    
@@ -308,7 +308,7 @@ DumpHeap [-stat]
 
 DumpHeap is a powerful command that traverses the garbage collected heap, 
 collection statistics about objects. With it's various options, it can look for
-particular types, restrict to a range, or look for ThinLocks (see SyncBlk 
+particular types, restrict to a range, or look for ThinLocks (see syncblk 
 documentation). Finally, it will provide a warning if it detects excessive 
 fragmentation in the GC heap. 
 
@@ -361,7 +361,7 @@ The arguments in detail:
 -live     Only print live objects
 -dead     Only print dead objects (objects which will be collected in the
           next full GC)
--thinlock Report on any ThinLocks (an efficient locking scheme, see SyncBlk 
+-thinlock Report on any ThinLocks (an efficient locking scheme, see syncblk 
           documentation for more info)
 -startAtLowerBound 
           Force heap walk to begin at lower bound of a supplied address range.
@@ -1206,6 +1206,84 @@ For this kind of module, simply use price as the module name:
 Where are we getting these module names from? Run DumpDomain to see a list of
 all loaded modules in all domains. And remember that you can browse all the
 types in a module with DumpModule -mt <module pointer>.
+\\
+
+COMMAND: syncblk.
+SyncBlk [-all | <syncblk number>]
+
+A SyncBlock is a holder for extra information that doesn't need to be created 
+for every object. It can hold COM Interop data, HashCodes, and locking 
+information for thread-safe operations.
+
+When called without arguments, syncblk will print the list of SyncBlocks 
+corresponding to objects that are owned by a thread. For example, a
+
+    lock(MyObject)
+    {
+        ....
+    }
+
+statement will set MyObject to be owned by the current thread. A SyncBlock will
+be created for MyObject, and the thread ownership information stored there 
+(this is an oversimplification, see NOTE below). If another thread tries to 
+execute the same code, they won't be able to enter the block until the first 
+thread exits.
+
+This makes syncblk useful for detecting managed deadlocks. Consider that the
+following code is executed by Threads A & B:
+
+    Resource r1 = new Resource();
+    Resource r2 = new Resource();
+
+    ...
+    
+    lock(r1)                             lock(r2)
+    {                                    {
+        lock(r2)                             lock(r1)
+        {                                    {
+            ...                                  ...
+        }                                    }
+    }                                    }
+
+This is a deadlock situation, as Thread A could take r1, and Thread B r2, 
+leaving both threads with no option but to wait forever in the second lock 
+statement. syncblk will detect this with the following output:
+
+        0:003> syncblk
+        Index SyncBlock MonitorHeld Recursion Owning Thread Info   SyncBlock Owner
+          238 001e40ec            3         1 001e4e60   e04   3   00a7a194 Resource
+          239 001e4124            3         1 001e5980   ab8   4   00a7a1a4 Resource
+
+It means that Thread e04 owns object 00a7a194, and Thread ab8 owns object 
+00a7a1a4. Combine that information with the call stacks of the deadlock:
+
+(threads 3 and 4 have similar output)  
+        0:003> bt
+        ChildEBP RetAddr
+        0404ea04 77f5c524 SharedUserData!SystemCallStub+0x4
+        0404ea08 77e75ee0 ntdll!NtWaitForMultipleObjects+0xc
+        0404eaa4 5d9de9d6 KERNEL32!WaitForMultipleObjectsEx+0x12c
+        0404eb38 5d9def80 clr!Thread::DoAppropriateAptStateWait+0x156
+        0404ecc4 5d9dd8bb clr!Thread::DoAppropriateWaitWorker+0x360
+        0404ed20 5da628dd clr!Thread::DoAppropriateWait+0xbb
+        0404ede4 5da4e2e2 clr!CLREvent::Wait+0x29d
+        0404ee70 5da4dd41 clr!AwareLock::EnterEpilog+0x132
+        0404ef34 5da4efa3 clr!AwareLock::Enter+0x2c1
+        0404f09c 5d767880 clr!AwareLock::Contention+0x483
+        0404f1c4 03f00229 clr!JITutil_MonContention+0x2c0
+        0404f1f4 5b6ef077 image00400000!Worker.Work()+0x79
+        ...
+
+By looking at the code corresponding to Worker.Work()+0x79 (run "clru 03f00229"),
+you can see that thread 3 is attempting to acquire the Resource 00a7a1a4, which
+is owned by thread 4.
+  
+NOTE:
+It is not always the case that a SyncBlock will be created for every object 
+that is locked by a thread. In version 2.0 of the CLR and above, a mechanism 
+called a ThinLock will be used if there is not already a SyncBlock for the 
+object in question. ThinLocks will not be reported by the syncblk command. 
+You can use "dumpheap -thinlock" to list objects locked in this way.
 \\
 
 COMMAND: dumpmt.
