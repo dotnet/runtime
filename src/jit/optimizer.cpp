@@ -7757,14 +7757,16 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                                     ArrayInfo arrInfo;
                                     bool      b = GetArrayInfoMap()->Lookup(addrArg, &arrInfo);
                                     assert(b);
-                                    CORINFO_CLASS_HANDLE elemType =
+                                    CORINFO_CLASS_HANDLE elemTypeEq =
                                         EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                                    tree->gtVNPair.SetBoth(
-                                        vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem,
-                                                           vnStore->VNForHandle(ssize_t(elemType), GTF_ICON_CLASS_HDL),
+                                    ValueNum elemTypeEqVN =
+                                        vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+                                    ValueNum ptrToArrElemVN =
+                                        vnStore->VNForFunc(TYP_BYREF, VNF_PtrToArrElem, elemTypeEqVN,
                                                            // The rest are dummy arguments.
                                                            vnStore->VNForNull(), vnStore->VNForNull(),
-                                                           vnStore->VNForNull()));
+                                                           vnStore->VNForNull());
+                                    tree->gtVNPair.SetBoth(ptrToArrElemVN);
                                 }
                             }
                         }
