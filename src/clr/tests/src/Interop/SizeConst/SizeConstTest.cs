@@ -19,7 +19,7 @@ class Test
     internal const int ARRAY_SIZE = 100;
 
     //UnmanagedType.ByValTStr
-    [DllImport("SizeConstNative",CharSet = CharSet.Ansi)]
+    [DllImport("SizeConstNative",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
     static extern bool TakeByValTStr(S_CHARArray_ByValTStr s, int size);
 
     static bool SizeConstByValTStr()

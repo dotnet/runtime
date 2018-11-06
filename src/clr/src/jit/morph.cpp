@@ -16694,19 +16694,23 @@ void Compiler::fgMorph()
             }
         }
     }
+#endif // DEBUG
 
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
     if (opts.compStackCheckOnRet)
     {
-        lvaReturnEspCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnEspCheck"));
-        lvaTable[lvaReturnEspCheck].lvType = TYP_INT;
+        lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+        lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
     }
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
 
+#if defined(DEBUG) && defined(_TARGET_X86_)
     if (opts.compStackCheckOnCall)
     {
-        lvaCallEspCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallEspCheck"));
-        lvaTable[lvaCallEspCheck].lvType = TYP_INT;
+        lvaCallSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
+        lvaTable[lvaCallSpCheck].lvType = TYP_I_IMPL;
     }
-#endif // DEBUG
+#endif // defined(DEBUG) && defined(_TARGET_X86_)
 
     /* Filter out unimported BBs */
 
