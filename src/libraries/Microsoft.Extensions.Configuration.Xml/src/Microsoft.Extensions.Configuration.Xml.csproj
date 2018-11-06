@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>XML configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageTags>$(PackageTags);xml</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Configuration" />
+    <Reference Include="Microsoft.Extensions.Configuration.FileExtensions" />
+    <Reference Include="System.Security.Cryptography.Xml" />
+  </ItemGroup>
+
+</Project>
+
