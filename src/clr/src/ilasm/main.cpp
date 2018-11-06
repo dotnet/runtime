@@ -171,7 +171,6 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
       printf("\n/CLOCK          Measure and report compilation times");
 //      printf("\n/ERROR          Try to create .exe or .dll file despite errors reported");
 //      printf("\n       Warning! Results are unpredictable, use this option at your own risk!");
-      printf("\n/RESOURCE=<res_file>    Link the specified resource file (*.res) \n\t\t\tinto resulting .exe or .dll");
       printf("\n/OUTPUT=<targetfile>    Compile to file with specified name \n\t\t\t(user must provide extension, if any)");
       printf("\n/KEY=<keyfile>      Compile with strong signature \n\t\t\t(<keyfile> contains private key)");
       printf("\n/KEY=@<keysource>   Compile with strong signature \n\t\t\t(<keysource> is the private key source name)");
