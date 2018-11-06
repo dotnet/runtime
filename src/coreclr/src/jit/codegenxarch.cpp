@@ -520,6 +520,46 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genCodeForBswap: Produce code for a GT_BSWAP / GT_BSWAP16 node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForBswap(GenTree* tree)
+{
+    // TODO: If we're swapping immediately after a read from memory or immediately before
+    // a write to memory, use the MOVBE instruction instead of the BSWAP instruction if
+    // the platform supports it.
+
+    assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
+
+    regNumber targetReg  = tree->gtRegNum;
+    var_types targetType = tree->TypeGet();
+
+    GenTree* operand = tree->gtGetOp1();
+    assert(operand->isUsedFromReg());
+    regNumber operandReg = genConsumeReg(operand);
+
+    if (operandReg != targetReg)
+    {
+        inst_RV_RV(INS_mov, targetReg, operandReg, targetType);
+    }
+
+    if (tree->OperIs(GT_BSWAP))
+    {
+        // 32-bit and 64-bit byte swaps use "bswap reg"
+        inst_RV(INS_bswap, targetReg, targetType);
+    }
+    else
+    {
+        // 16-bit byte swaps use "ror reg.16, 8"
+        inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
+    }
+
+    genProduceReg(tree);
+}
+
 // Generate code to get the high N bits of a N*N=2N bit multiplication result
 void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 {
@@ -1560,6 +1600,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_NOT:
         case GT_NEG:
             genCodeForNegNot(treeNode);
+            break;
+
+        case GT_BSWAP:
+        case GT_BSWAP16:
+            genCodeForBswap(treeNode);
             break;
 
         case GT_DIV:
