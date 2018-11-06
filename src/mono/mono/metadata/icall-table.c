@@ -40,7 +40,6 @@
 
 // These definitions are used for multiple includes of icall-def.h and eventually undefined.
 #define NOHANDLES(inner) inner
-#define HANDLES_MAYBE(cond, id, name, func, ret, nargs, argtypes) HANDLES (id, name, func, ret, nargs, argtypes)
 #define HANDLES(id, name, func, ...)	ICALL (id, name, func ## _raw)
 #define HANDLES_REUSE_WRAPPER		HANDLES
 
@@ -155,14 +154,12 @@ static const gconstpointer icall_symbols [] = {
 #endif // ENABLE_ICALL_SYMBOL_MAP
 
 #undef HANDLES
-#undef HANDLES_MAYBE
 #undef NOHANDLES
 
 static const guchar icall_uses_handles [] = {
 #define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) 0,
 #define HANDLES(...) 1,
-#define HANDLES_MAYBE(...) 1,
 #define NOHANDLES(inner) 0,
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
@@ -170,7 +167,6 @@ static const guchar icall_uses_handles [] = {
 };
 
 #undef HANDLES
-#undef HANDLES_MAYBE
 #undef HANDLES_REUSE_WRAPPER
 #undef NOHANDLES
 

@@ -909,30 +909,28 @@ HANDLES(RNG_2, "RngGetBytes", ves_icall_System_Security_Cryptography_RNGCryptoSe
 HANDLES(RNG_3, "RngInitialize", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngInitialize, gpointer, 2, (const_guchar_ptr, gssize))
 HANDLES(RNG_4, "RngOpen", ves_icall_System_Security_Cryptography_RNGCryptoServiceProvider_RngOpen, MonoBoolean, 0, ())
 
-#ifndef DISABLE_POLICY_EVIDENCE
 ICALL_TYPE(EVID, "System.Security.Policy.Evidence", EVID_1)
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, EVID_1, "IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent, MonoBoolean, 1, (MonoReflectionAssembly))
+HANDLES(EVID_1, "IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent, MonoBoolean, 1, (MonoReflectionAssembly))
 
 ICALL_TYPE(WINID, "System.Security.Principal.WindowsIdentity", WINID_1)
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINID_1, "GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken, gpointer, 0, ())
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINID_2, "GetTokenName", ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName, MonoString, 1, (gpointer))
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINID_3, "GetUserToken", ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken, gpointer, 1, (MonoString))
+HANDLES(WINID_1, "GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken, gpointer, 0, ())
+HANDLES(WINID_2, "GetTokenName", ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName, MonoString, 1, (gpointer))
+HANDLES(WINID_3, "GetUserToken", ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken, gpointer, 1, (MonoString))
 ICALL(WINID_4, "_GetRoles", ves_icall_System_Security_Principal_WindowsIdentity_GetRoles)
 
 ICALL_TYPE(WINIMP, "System.Security.Principal.WindowsImpersonationContext", WINIMP_1)
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINIMP_1, "CloseToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken, MonoBoolean, 1, (gpointer))
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINIMP_2, "DuplicateToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken, gpointer, 1, (gpointer))
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINIMP_3, "RevertToSelf", ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf, MonoBoolean, 0, ())
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINIMP_4, "SetCurrentToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken, MonoBoolean, 1, (gpointer))
+HANDLES(WINIMP_1, "CloseToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_CloseToken, MonoBoolean, 1, (gpointer))
+HANDLES(WINIMP_2, "DuplicateToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_DuplicateToken, gpointer, 1, (gpointer))
+HANDLES(WINIMP_3, "RevertToSelf", ves_icall_System_Security_Principal_WindowsImpersonationContext_RevertToSelf, MonoBoolean, 0, ())
+HANDLES(WINIMP_4, "SetCurrentToken", ves_icall_System_Security_Principal_WindowsImpersonationContext_SetCurrentToken, MonoBoolean, 1, (gpointer))
 
 ICALL_TYPE(WINPRIN, "System.Security.Principal.WindowsPrincipal", WINPRIN_1)
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINPRIN_1, "IsMemberOfGroupId", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId, MonoBoolean, 2, (gpointer, gpointer))
-HANDLES_MAYBE(ENABLE_POLICY_EVIDENCE, WINPRIN_2, "IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName, MonoBoolean, 2, (gpointer, const_char_ptr))
+HANDLES(WINPRIN_1, "IsMemberOfGroupId", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupId, MonoBoolean, 2, (gpointer, gpointer))
+HANDLES(WINPRIN_2, "IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName, MonoBoolean, 2, (gpointer, const_char_ptr))
 
 ICALL_TYPE(SECSTRING, "System.Security.SecureString", SECSTRING_1)
 ICALL(SECSTRING_1, "DecryptInternal", ves_icall_System_Security_SecureString_DecryptInternal)
 ICALL(SECSTRING_2, "EncryptInternal", ves_icall_System_Security_SecureString_EncryptInternal)
-#endif /* !DISABLE_POLICY_EVIDENCE */
 
 ICALL_TYPE(SECMAN, "System.Security.SecurityManager", SECMAN_1)
 NOHANDLES(ICALL(SECMAN_1, "get_RequiresElevatedPermissions", mono_security_core_clr_require_elevated_permissions))

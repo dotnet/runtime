@@ -52,7 +52,6 @@ typedef enum {
 #include "icall-table.h"
 
 #define NOHANDLES(inner) inner
-#define HANDLES_MAYBE(cond, id, name, func, ret, nargs, argtypes) HANDLES (id, name, func, ret, nargs, argtypes)
 #define HANDLES_REUSE_WRAPPER(...) /* nothing */
 
 // Generate prototypes for coop icall wrappers.
@@ -65,7 +64,6 @@ typedef enum {
 #undef ICALL_TYPE
 #undef ICALL
 #undef HANDLES
-#undef HANDLES_MAYBE
 #undef HANDLES_REUSE_WRAPPER
 #undef NOHANDLES
 

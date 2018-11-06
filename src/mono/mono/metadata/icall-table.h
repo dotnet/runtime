@@ -347,12 +347,10 @@ func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## 
 // Implement ves_icall_foo_raw over ves_icall_foo.
 // Raw handles are converted to/from typed handles and the rest is passed through.
 
-#define MONO_HANDLE_IMPLEMENT_MAYBE(cond, id, name, func, rettype, n, argtypes)	\
+#define MONO_HANDLE_IMPLEMENT(id, name, func, rettype, n, argtypes)	\
 										\
 MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 {										\
-	g_assert (cond);							\
-										\
 	HANDLE_FUNCTION_ENTER ();						\
 										\
 	/* FIXME Should be ERROR_DECL but for fragile test. */			\
@@ -366,8 +364,5 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 										\
 	MONO_HANDLE_RETURN_END (rettype)					\
 }										\
-
-#define MONO_HANDLE_IMPLEMENT(id, name, func, rettype, n, argtypes)			\
-	MONO_HANDLE_IMPLEMENT_MAYBE (TRUE, id, name, func, rettype, n, argtypes)
 
 #endif
