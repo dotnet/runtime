@@ -12,7 +12,7 @@ namespace PInvokeTest
 {
     internal class Test
     {
-        [DllImport("msvcrt", EntryPoint = "sin")]
+        [DllImport("msvcrt", EntryPoint = "sin", CallingConvention = CallingConvention.Cdecl)]
         private static extern double sin(double x);
 
         private static double g;
