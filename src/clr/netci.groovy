@@ -2493,7 +2493,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     // Unpack the corefx binaries
                     buildCommands += "mkdir ./bin/CoreFxBinDir"
-                    buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
+                    buildCommands += "tar -xf ./artifacts/bin/build.tar.gz -C ./bin/CoreFxBinDir"
 
                     // Call the ARM CI script to cross build and test using docker
                     buildCommands += """./tests/scripts/arm32_ci_script.sh \\
@@ -3000,7 +3000,7 @@ Constants.allScenarios.each { scenario ->
                                     }
                                 }
                                 copyArtifacts("${corefxFolder}/${corefx_os}_${arm_abi}_cross_${corefx_lowerConfiguration}") {
-                                    includePatterns('bin/build.tar.gz')
+                                    includePatterns('artifacts/bin/build.tar.gz')
                                     buildSelector {
                                         latestSuccessful(true)
                                     }
@@ -3383,7 +3383,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(fxBranch)
 
                 copyArtifacts("${corefxFolder}/ubuntu16.04_x86_release") {
-                    includePatterns('bin/build.tar.gz')
+                    includePatterns('artifacts/bin/build.tar.gz')
                     targetDirectory('bin/CoreFxNative')
                     buildSelector {
                         latestSuccessful(true)
@@ -3391,7 +3391,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 }
 
                 shell("mkdir ./bin/CoreFxBinDir")
-                shell("tar -xf ./bin/CoreFxNative/bin/build.tar.gz -C ./bin/CoreFxBinDir")
+                shell("tar -xf ./bin/CoreFxNative/artifacts/bin/build.tar.gz -C ./bin/CoreFxBinDir")
             }
 
             if (isPmiAsmDiffsScenario) {
