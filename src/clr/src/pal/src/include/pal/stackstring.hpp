@@ -129,6 +129,12 @@ public:
         return Set(s.m_buffer, s.m_count);
     }
 
+    template<SIZE_T bufferLength> BOOL Set(const T (&buffer)[bufferLength])
+    {
+        // bufferLength includes terminator character
+        return Set(buffer, bufferLength - 1);
+    }
+
     SIZE_T GetCount() const
     {
         return m_count;
@@ -155,6 +161,11 @@ public:
             result = (T *)m_buffer;
         }
         return result;
+    }
+
+    T * OpenStringBuffer()
+    {
+        return m_buffer;
     }
 
     //count should not include the terminating null
@@ -198,21 +209,38 @@ public:
     {
         return Append(s.GetString(), s.GetCount());
     }
-   
-   BOOL IsEmpty()
-   {
-       return 0 == m_buffer[0];
-   }
 
-   void Clear()
-   {
-       m_count = 0;
-       NullTerminate();
-   }
-   ~StackString()
-   {
-       DeleteBuffer();
-   }
+    template<SIZE_T bufferLength> BOOL Append(const T (&buffer)[bufferLength])
+    {
+        // bufferLength includes terminator character
+        return Append(buffer, bufferLength - 1);
+    }
+
+    BOOL Append(T ch)
+    {
+        SIZE_T endpos = m_count;
+        if (!Resize(m_count + 1))
+            return FALSE;
+
+        m_buffer[endpos] = ch;
+        NullTerminate();
+        return TRUE;
+    }
+
+    BOOL IsEmpty()
+    {
+        return 0 == m_buffer[0];
+    }
+
+    void Clear()
+    {
+        m_count = 0;
+        NullTerminate();
+    }
+    ~StackString()
+    {
+        DeleteBuffer();
+    }
 };
 
 #if _DEBUG
