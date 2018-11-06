@@ -17,7 +17,11 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <PropertyGroup>
-    <!-- SymbolPaagkeOutputPath is based on PackageOutputPath which is set in the arcade sdk targets so we need to set this after that -->
+    <!--
+      Reset PackageOutputPath property from arcade as we need to use ConfigurationGroup instead of Configuration which arcade uses.
+      See issue https://github.com/dotnet/corefx/issues/33275
+    -->
+    <PackageOutputPath>$(ArtifactsDir)packages/$(ConfigurationGroup)</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
   </PropertyGroup>
 
