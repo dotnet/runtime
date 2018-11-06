@@ -87,19 +87,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return _stackGuard.RunOnEmptyStack((type, chain) => CreateCallSite(type, chain), serviceType, callSiteChain);
             }
 
-            ServiceCallSite callSite;
-            try
-            {
-                callSiteChain.CheckCircularDependency(serviceType);
+            callSiteChain.CheckCircularDependency(serviceType);
 
-                callSite = TryCreateExact(serviceType, callSiteChain) ??
-                           TryCreateOpenGeneric(serviceType, callSiteChain) ??
-                           TryCreateEnumerable(serviceType, callSiteChain);
-            }
-            finally
-            {
-                callSiteChain.Remove(serviceType);
-            }
+            var callSite = TryCreateExact(serviceType, callSiteChain) ??
+                                       TryCreateOpenGeneric(serviceType, callSiteChain) ??
+                                       TryCreateEnumerable(serviceType, callSiteChain);
 
             _callSiteCache[serviceType] = callSite;
 
@@ -129,54 +121,62 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private ServiceCallSite TryCreateEnumerable(Type serviceType, CallSiteChain callSiteChain)
         {
-            if (serviceType.IsConstructedGenericType &&
-                serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            try
             {
-                var itemType = serviceType.GenericTypeArguments.Single();
                 callSiteChain.Add(serviceType);
 
-                var callSites = new List<ServiceCallSite>();
-
-                // If item type is not generic we can safely use descriptor cache
-                if (!itemType.IsConstructedGenericType &&
-                    _descriptorLookup.TryGetValue(itemType, out var descriptors))
+                if (serviceType.IsConstructedGenericType &&
+                    serviceType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 {
-                    for (int i = 0; i < descriptors.Count; i++)
-                    {
-                        var descriptor = descriptors[i];
+                    var itemType = serviceType.GenericTypeArguments.Single();
 
-                        // Last service should get slot 0
-                        var slot = descriptors.Count - i - 1;
-                        // There may not be any open generics here
-                        var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot);
-                        Debug.Assert(callSite != null);
+                    var callSites = new List<ServiceCallSite>();
 
-                        callSites.Add(callSite);
-                    }
-                }
-                else
-                {
-                    var slot = 0;
-                    // We are going in reverse so the last service in descriptor list gets slot 0
-                    for (var i = _descriptors.Count - 1; i >= 0; i--)
+                    // If item type is not generic we can safely use descriptor cache
+                    if (!itemType.IsConstructedGenericType &&
+                        _descriptorLookup.TryGetValue(itemType, out var descriptors))
                     {
-                        var descriptor = _descriptors[i];
-                        var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
-                                       TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot);
-                        slot++;
-                        if (callSite != null)
+                        for (int i = 0; i < descriptors.Count; i++)
                         {
+                            var descriptor = descriptors[i];
+
+                            // Last service should get slot 0
+                            var slot = descriptors.Count - i - 1;
+                            // There may not be any open generics here
+                            var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot);
+                            Debug.Assert(callSite != null);
+
                             callSites.Add(callSite);
                         }
                     }
+                    else
+                    {
+                        var slot = 0;
+                        // We are going in reverse so the last service in descriptor list gets slot 0
+                        for (var i = _descriptors.Count - 1; i >= 0; i--)
+                        {
+                            var descriptor = _descriptors[i];
+                            var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
+                                           TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot);
+                            slot++;
+                            if (callSite != null)
+                            {
+                                callSites.Add(callSite);
+                            }
+                        }
 
-                    callSites.Reverse();
+                        callSites.Reverse();
+                    }
+
+                    return new IEnumerableCallSite(itemType, callSites.ToArray());
                 }
 
-                return new IEnumerableCallSite(itemType, callSites.ToArray());
+                return null;
             }
-
-            return null;
+            finally
+            {
+                callSiteChain.Remove(serviceType);
+            }
         }
 
         private ServiceCallSite TryCreateExact(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot)
@@ -225,95 +225,101 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private ServiceCallSite CreateConstructorCallSite(ResultCache lifetime, Type serviceType, Type implementationType,
             CallSiteChain callSiteChain)
         {
-            callSiteChain.Add(serviceType, implementationType);
-
-            var constructors = implementationType.GetTypeInfo()
-                .DeclaredConstructors
-                .Where(constructor => constructor.IsPublic)
-                .ToArray();
-
-            ServiceCallSite[] parameterCallSites = null;
-
-            if (constructors.Length == 0)
+            try
             {
-                throw new InvalidOperationException(Resources.FormatNoConstructorMatch(implementationType));
-            }
-            else if (constructors.Length == 1)
-            {
-                var constructor = constructors[0];
-                var parameters = constructor.GetParameters();
-                if (parameters.Length == 0)
+                callSiteChain.Add(serviceType, implementationType);
+                var constructors = implementationType.GetTypeInfo()
+                    .DeclaredConstructors
+                    .Where(constructor => constructor.IsPublic)
+                    .ToArray();
+
+                ServiceCallSite[] parameterCallSites = null;
+
+                if (constructors.Length == 0)
                 {
-                    return new ConstructorCallSite(lifetime, serviceType, constructor);
+                    throw new InvalidOperationException(Resources.FormatNoConstructorMatch(implementationType));
+                }
+                else if (constructors.Length == 1)
+                {
+                    var constructor = constructors[0];
+                    var parameters = constructor.GetParameters();
+                    if (parameters.Length == 0)
+                    {
+                        return new ConstructorCallSite(lifetime, serviceType, constructor);
+                    }
+
+                    parameterCallSites = CreateArgumentCallSites(
+                        serviceType,
+                        implementationType,
+                        callSiteChain,
+                        parameters,
+                        throwIfCallSiteNotFound: true);
+
+                    return new ConstructorCallSite(lifetime, serviceType, constructor, parameterCallSites);
                 }
 
-                parameterCallSites = CreateArgumentCallSites(
-                    serviceType,
-                    implementationType,
-                    callSiteChain,
-                    parameters,
-                    throwIfCallSiteNotFound: true);
+                Array.Sort(constructors,
+                    (a, b) => b.GetParameters().Length.CompareTo(a.GetParameters().Length));
 
-                return new ConstructorCallSite(lifetime, serviceType, constructor, parameterCallSites);
-            }
-
-            Array.Sort(constructors,
-                (a, b) => b.GetParameters().Length.CompareTo(a.GetParameters().Length));
-
-            ConstructorInfo bestConstructor = null;
-            HashSet<Type> bestConstructorParameterTypes = null;
-            for (var i = 0; i < constructors.Length; i++)
-            {
-                var parameters = constructors[i].GetParameters();
-
-                var currentParameterCallSites = CreateArgumentCallSites(
-                    serviceType,
-                    implementationType,
-                    callSiteChain,
-                    parameters,
-                    throwIfCallSiteNotFound: false);
-
-                if (currentParameterCallSites != null)
+                ConstructorInfo bestConstructor = null;
+                HashSet<Type> bestConstructorParameterTypes = null;
+                for (var i = 0; i < constructors.Length; i++)
                 {
-                    if (bestConstructor == null)
-                    {
-                        bestConstructor = constructors[i];
-                        parameterCallSites = currentParameterCallSites;
-                    }
-                    else
-                    {
-                        // Since we're visiting constructors in decreasing order of number of parameters,
-                        // we'll only see ambiguities or supersets once we've seen a 'bestConstructor'.
+                    var parameters = constructors[i].GetParameters();
 
-                        if (bestConstructorParameterTypes == null)
+                    var currentParameterCallSites = CreateArgumentCallSites(
+                        serviceType,
+                        implementationType,
+                        callSiteChain,
+                        parameters,
+                        throwIfCallSiteNotFound: false);
+
+                    if (currentParameterCallSites != null)
+                    {
+                        if (bestConstructor == null)
                         {
-                            bestConstructorParameterTypes = new HashSet<Type>(
-                                bestConstructor.GetParameters().Select(p => p.ParameterType));
+                            bestConstructor = constructors[i];
+                            parameterCallSites = currentParameterCallSites;
                         }
-
-                        if (!bestConstructorParameterTypes.IsSupersetOf(parameters.Select(p => p.ParameterType)))
+                        else
                         {
-                            // Ambiguous match exception
-                            var message = string.Join(
-                                Environment.NewLine,
-                                Resources.FormatAmbiguousConstructorException(implementationType),
-                                bestConstructor,
-                                constructors[i]);
-                            throw new InvalidOperationException(message);
+                            // Since we're visiting constructors in decreasing order of number of parameters,
+                            // we'll only see ambiguities or supersets once we've seen a 'bestConstructor'.
+
+                            if (bestConstructorParameterTypes == null)
+                            {
+                                bestConstructorParameterTypes = new HashSet<Type>(
+                                    bestConstructor.GetParameters().Select(p => p.ParameterType));
+                            }
+
+                            if (!bestConstructorParameterTypes.IsSupersetOf(parameters.Select(p => p.ParameterType)))
+                            {
+                                // Ambiguous match exception
+                                var message = string.Join(
+                                    Environment.NewLine,
+                                    Resources.FormatAmbiguousConstructorException(implementationType),
+                                    bestConstructor,
+                                    constructors[i]);
+                                throw new InvalidOperationException(message);
+                            }
                         }
                     }
                 }
-            }
 
-            if (bestConstructor == null)
-            {
-                throw new InvalidOperationException(
-                    Resources.FormatUnableToActivateTypeException(implementationType));
+                if (bestConstructor == null)
+                {
+                    throw new InvalidOperationException(
+                        Resources.FormatUnableToActivateTypeException(implementationType));
+                }
+                else
+                {
+                    Debug.Assert(parameterCallSites != null);
+                    return new ConstructorCallSite(lifetime, serviceType, bestConstructor, parameterCallSites);
+                }
             }
-            else
+            finally
             {
-                Debug.Assert(parameterCallSites != null);
-                return new ConstructorCallSite(lifetime, serviceType, bestConstructor, parameterCallSites);
+                callSiteChain.Remove(serviceType);
             }
         }
 
