@@ -1369,6 +1369,7 @@ typedef struct {
 	guint            compute_gc_maps : 1;
 	guint            soft_breakpoints : 1;
 	guint            arch_eh_jit_info : 1;
+	guint            has_calls : 1;
 	guint            has_emulated_ops : 1;
 	guint            has_indirection : 1;
 	guint            has_atomic_add_i4 : 1;

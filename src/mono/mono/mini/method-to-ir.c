@@ -2314,6 +2314,8 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 	MonoType *sig_ret;
 	MonoCallInst *call;
 
+	cfg->has_calls = TRUE;
+
 	if (tailcall && cfg->llvm_only) {
 		// FIXME tailcall should not be changed this late.
 		// FIXME It really should not be changed due to llvm_only.
