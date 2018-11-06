@@ -101,6 +101,9 @@ GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP)               // Initi
 
 GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP)    // Runtime handle lookup
 
+GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
+GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (16-bit)
+
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
 //-----------------------------------------------------------------------------

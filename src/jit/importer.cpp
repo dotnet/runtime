@@ -3934,6 +3934,45 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
+            {
+                assert(sig->numArgs == 1);
+
+                // We expect the return type of the ReverseEndianness routine to match the type of the
+                // one and only argument to the method. We use a special instruction for 16-bit
+                // BSWAPs since on x86 processors this is implemented as ROR <16-bit reg>, 8. Additionally,
+                // we only emit 64-bit BSWAP instructions on 64-bit archs; if we're asked to perform a
+                // 64-bit byte swap on a 32-bit arch, we'll fall to the default case in the switch block below.
+
+                switch (sig->retType)
+                {
+                    case CorInfoType::CORINFO_TYPE_SHORT:
+                    case CorInfoType::CORINFO_TYPE_USHORT:
+                        retNode = gtNewOperNode(GT_BSWAP16, callType, impPopStack().val);
+                        break;
+
+                    case CorInfoType::CORINFO_TYPE_INT:
+                    case CorInfoType::CORINFO_TYPE_UINT:
+#ifdef _TARGET_64BIT_
+                    case CorInfoType::CORINFO_TYPE_LONG:
+                    case CorInfoType::CORINFO_TYPE_ULONG:
+#endif // _TARGET_64BIT_
+                        retNode = gtNewOperNode(GT_BSWAP, callType, impPopStack().val);
+                        break;
+
+                    default:
+                        // This default case gets hit on 32-bit archs when a call to a 64-bit overload
+                        // of ReverseEndianness is encountered. In that case we'll let JIT treat this as a standard
+                        // method call, where the implementation decomposes the operation into two 32-bit
+                        // bswap routines. If the input to the 64-bit function is a constant, then we rely
+                        // on inlining + constant folding of 32-bit bswaps to effectively constant fold
+                        // the 64-bit call site.
+                        break;
+                }
+
+                break;
+            }
+
             default:
                 break;
         }
@@ -4072,6 +4111,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_Math_Round;
         }
     }
+#if defined(_TARGET_XARCH_) // We currently only support BSWAP on x86
+    else if (strcmp(namespaceName, "System.Buffers.Binary") == 0)
+    {
+        if ((strcmp(className, "BinaryPrimitives") == 0) && (strcmp(methodName, "ReverseEndianness") == 0))
+        {
+            result = NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness;
+        }
+    }
+#endif // !defined(_TARGET_XARCH_)
     else if (strcmp(namespaceName, "System.Collections.Generic") == 0)
     {
         if ((strcmp(className, "EqualityComparer`1") == 0) && (strcmp(methodName, "get_Default") == 0))
