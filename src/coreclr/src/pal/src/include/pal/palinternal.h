@@ -342,6 +342,7 @@ function_name() to call the system's implementation
 
 #if !defined(_MSC_VER) && defined(_WIN64)
 #undef _BitScanForward64
+#undef _BitScanReverse64
 #endif 
 
 /* pal.h defines alloca(3) as a compiler builtin.

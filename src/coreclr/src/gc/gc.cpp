@@ -308,78 +308,69 @@ void GCStatistics::DisplayAndUpdate()
 
 #endif // GC_STATS
 
-#ifdef BIT64
-#define TOTAL_TIMES_TO_SHIFT 6
-#else
-#define TOTAL_TIMES_TO_SHIFT 5
-#endif // BIT64
-
+inline
 size_t round_up_power2 (size_t size)
 {
-    unsigned short shift = 1;
-    size_t shifted = 0;
+    // Get the 0-based index of the most-significant bit in size-1.
+    // If the call failed (because size-1 is zero), size must be 1,
+    // so return 1 (because 1 rounds up to itself).
+    DWORD highest_set_bit_index;
+    if (0 ==
+#ifdef BIT64
+        BitScanReverse64(
+#else
+        BitScanReverse(
+#endif
+            &highest_set_bit_index, size - 1)) { return 1; }
 
-    size--;
-    for (unsigned short i = 0; i < TOTAL_TIMES_TO_SHIFT; i++)
-    {
-        shifted = size | (size >> shift);
-        if (shifted == size)
-        {
-            break;
-        }
-
-        size = shifted;
-        shift <<= 1;
-    }
-    shifted++;
-
-    return shifted;
+    // The size == 0 case (which would have overflowed to SIZE_MAX when decremented)
+    // is handled below by relying on the fact that highest_set_bit_index is the maximum value
+    // (31 or 63, depending on sizeof(size_t)) and left-shifting a value >= 2 by that
+    // number of bits shifts in zeros from the right, resulting in an output of zero.
+    return static_cast<size_t>(2) << highest_set_bit_index;
 }
 
 inline
 size_t round_down_power2 (size_t size)
 {
-    size_t power2 = round_up_power2 (size);
+    // Get the 0-based index of the most-significant bit in size.
+    // If the call failed, size must be zero so return zero.
+    DWORD highest_set_bit_index;
+    if (0 ==
+#ifdef BIT64
+        BitScanReverse64(
+#else
+        BitScanReverse(
+#endif
+            &highest_set_bit_index, size)) { return 0; }
 
-    if (power2 != size)
-    {
-        power2 >>= 1;
-    }
-
-    return power2;
+    // Left-shift 1 by highest_set_bit_index to get back a value containing only
+    // the most-significant set bit of size, i.e. size rounded down
+    // to the next power-of-two value.
+    return static_cast<size_t>(1) << highest_set_bit_index;
 }
 
-// the index starts from 0.
-int index_of_set_bit (size_t power2)
+// Get the 0-based index of the most-significant bit in the value.
+// Returns -1 if the input value is zero (i.e. has no set bits).
+inline
+int index_of_highest_set_bit (size_t value)
 {
-    int low = 0;
-    int high = sizeof (size_t) * 8 - 1;
-    int mid; 
-    while (low <= high)
-    {
-        mid = ((low + high)/2);
-        size_t temp = (size_t)1 << mid;
-        if (power2 & temp)
-        {
-            return mid;
-        }
-        else if (power2 < temp)
-        {
-            high = mid - 1;
-        }
-        else
-        {
-            low = mid + 1;
-        }
-    }
-
-    return -1;
+    // Get the 0-based index of the most-significant bit in the value.
+    // If the call failed (because value is zero), return -1.
+    DWORD highest_set_bit_index;
+    return (0 ==
+#ifdef BIT64
+        BitScanReverse64(
+#else
+        BitScanReverse(
+#endif
+            &highest_set_bit_index, value)) ? -1 : static_cast<int>(highest_set_bit_index);
 }
 
 inline
 int relative_index_power2_plug (size_t power2)
 {
-    int index = index_of_set_bit (power2);
+    int index = index_of_highest_set_bit (power2);
     assert (index <= MAX_INDEX_POWER2);
 
     return ((index < MIN_INDEX_POWER2) ? 0 : (index - MIN_INDEX_POWER2));
@@ -388,7 +379,7 @@ int relative_index_power2_plug (size_t power2)
 inline
 int relative_index_power2_free_space (size_t power2)
 {
-    int index = index_of_set_bit (power2);
+    int index = index_of_highest_set_bit (power2);
     assert (index <= MAX_INDEX_POWER2);
 
     return ((index < MIN_INDEX_POWER2) ? -1 : (index - MIN_INDEX_POWER2));
@@ -8688,7 +8679,7 @@ public:
             }
         }
 
-        int bucket_power2 = index_of_set_bit (round_down_power2 (size));
+        int bucket_power2 = index_of_highest_set_bit (size);
         if (bucket_power2 < base_power2)
         {
             return;
@@ -8791,7 +8782,7 @@ public:
         plug_size_to_fit += (pad_in_front ? Align(min_obj_size) : 0);
 #endif //SHORT_PLUGS
 
-        int plug_power2 = index_of_set_bit (round_up_power2 (plug_size_to_fit + Align(min_obj_size)));
+        int plug_power2 = index_of_highest_set_bit (round_up_power2 (plug_size_to_fit + Align(min_obj_size)));
         ptrdiff_t i;
         uint8_t* new_address = 0;
 
@@ -8873,9 +8864,9 @@ retry:
                                 (plug_size - pad),
                                 pad,
                                 pinned_plug (m), 
-                                index_of_set_bit (round_down_power2 (free_space_size)),
+                                index_of_highest_set_bit (free_space_size),
                                 (pinned_plug (m) - pinned_len (m)), 
-                                index_of_set_bit (round_down_power2 (new_free_space_size))));
+                                index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
 #ifdef SHORT_PLUGS
@@ -8919,9 +8910,9 @@ retry:
                                 old_loc,
                                 new_address, 
                                 (plug_size - pad),
-                                index_of_set_bit (round_down_power2 (free_space_size)),
+                                index_of_highest_set_bit (free_space_size),
                                 heap_segment_plan_allocated (seg), 
-                                index_of_set_bit (round_down_power2 (new_free_space_size))));
+                                index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
 
                     if (realign_padding_p)
@@ -8953,7 +8944,7 @@ retry:
                     (!chosen_power2) && (i < free_space_count));
         }
 
-        int new_bucket_power2 = index_of_set_bit (round_down_power2 (new_free_space_size));
+        int new_bucket_power2 = index_of_highest_set_bit (new_free_space_size);
 
         if (new_bucket_power2 < base_power2)
         {
@@ -33465,7 +33456,7 @@ HRESULT GCHeap::Initialize ()
     gc_heap::min_loh_segment_size = large_seg_size;
     gc_heap::min_segment_size = min (seg_size, large_seg_size);
 #ifdef SEG_MAPPING_TABLE
-    gc_heap::min_segment_size_shr = index_of_set_bit (gc_heap::min_segment_size);
+    gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //SEG_MAPPING_TABLE
 
 #ifdef MULTIPLE_HEAPS

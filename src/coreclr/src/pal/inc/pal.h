@@ -3302,6 +3302,55 @@ BitScanForward64(
     return qwMask != 0 ? TRUE : FALSE;
 }
 
+// Define BitScanReverse64 and BitScanReverse
+// Per MSDN, BitScanReverse64 will search the mask data from MSB to LSB for a set bit.
+// If one is found, its bit position is stored in the out PDWORD argument and 1 is returned.
+// Otherwise, an undefined value is stored in the out PDWORD argument and 0 is returned.
+//
+// GCC/clang don't have a directly equivalent intrinsic; they do provide the __builtin_clzll
+// intrinsic, which returns the number of leading 0-bits in x starting at the most significant
+// bit position (the result is undefined when x = 0).
+//
+// The same is true for BitScanReverse, except that the GCC function is __builtin_clzl.
+
+EXTERN_C
+PALIMPORT
+inline
+unsigned char
+PALAPI
+BitScanReverse(
+    IN OUT PDWORD Index,
+    IN UINT qwMask)
+{
+    // The result of __builtin_clzl is undefined when qwMask is zero,
+    // but it's still OK to call the intrinsic in that case (just don't use the output).
+    // Unconditionally calling the intrinsic in this way allows the compiler to
+    // emit branchless code for this function when possible (depending on how the
+    // intrinsic is implemented for the target platform).
+    int lzcount = __builtin_clzl(qwMask);
+    *Index = (DWORD)(31 - lzcount);
+    return qwMask != 0;
+}
+
+EXTERN_C
+PALIMPORT
+inline
+unsigned char
+PALAPI
+BitScanReverse64(
+    IN OUT PDWORD Index,
+    IN UINT64 qwMask)
+{
+    // The result of __builtin_clzll is undefined when qwMask is zero,
+    // but it's still OK to call the intrinsic in that case (just don't use the output).
+    // Unconditionally calling the intrinsic in this way allows the compiler to
+    // emit branchless code for this function when possible (depending on how the
+    // intrinsic is implemented for the target platform).
+    int lzcount = __builtin_clzll(qwMask);
+    *Index = (DWORD)(63 - lzcount);
+    return qwMask != 0;
+}
+
 FORCEINLINE void PAL_ArmInterlockedOperationBarrier()
 {
 #ifdef _ARM64_
