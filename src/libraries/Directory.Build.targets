@@ -21,7 +21,7 @@
       Reset PackageOutputPath property from arcade as we need to use ConfigurationGroup instead of Configuration which arcade uses.
       See issue https://github.com/dotnet/corefx/issues/33275
     -->
-    <PackageOutputPath>$(ArtifactsDir)packages/$(ConfigurationGroup)</PackageOutputPath>
+    <PackageOutputPath>$(ArtifactsDir)packages/$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
   </PropertyGroup>
 
