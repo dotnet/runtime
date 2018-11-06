@@ -533,7 +533,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(0, store.Certificates.Count);
             }
         }
-
+#if Unix
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)] // Windows/OSX doesn't use SSL_CERT_{DIR,FILE}.
         private void X509Store_MachineStoreLoadSkipsInvalidFiles()
@@ -576,5 +576,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [DllImport("libc")]
         private static extern int chmod(string path, int mode);
+#endif
     }
 }
