@@ -305,6 +305,7 @@ def main(args):
     # corefx msbuild files somewhere.
 
     fx_runtime = os.path.join(fx_root,
+                             'artifacts',
                              'bin',
                              'testhost',
                              'netcoreapp-%s-%s-%s' % (clr_os, 'Release', arch),
