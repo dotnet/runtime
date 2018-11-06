@@ -248,6 +248,22 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.Equal(nameof(ClassWithThrowingCtor), ex2.Message);
         }
 
+        [Fact]
+        public void DoesNotThrowWhenServiceIsUsedAsEnumerableAndNotInOneCallSite()
+        {
+            var descriptors = new ServiceCollection();
+            descriptors.AddTransient<ServiceA>();
+            descriptors.AddTransient<ServiceD>();
+            descriptors.AddTransient<ServiceE>();
+
+            var provider = new DynamicServiceProviderEngine(descriptors, null);
+
+            var callSite1 = provider.CallSiteFactory.GetCallSite(typeof(ServiceE), new CallSiteChain());
+            var compileCallSite = CompileCallSite(callSite1, provider);
+
+            Assert.NotNull(compileCallSite);
+        }
+
         private class ServiceD
         {
             public ServiceD(IEnumerable<ServiceA> services)
@@ -278,6 +294,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
 
             public ServiceB ServiceB { get; set; }
+        }
+
+        private class ServiceE
+        {
+            public ServiceE(ServiceD serviceD, ServiceA serviceA)
+            {
+                ServiceD = serviceD;
+                ServiceA = serviceA;
+            }
+
+            public ServiceD ServiceD { get; set; }
+
+            public ServiceA ServiceA { get; set; }
         }
 
         private class DisposableServiceA : ServiceA, IDisposable
