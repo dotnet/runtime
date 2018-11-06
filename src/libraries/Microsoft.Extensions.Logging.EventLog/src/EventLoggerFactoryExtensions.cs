@@ -55,6 +55,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds an event logger that is enabled for <see cref="LogLevel"/>.Information or higher.
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddEventLog(this ILoggerFactory factory)
         {
             if (factory == null)
@@ -70,6 +71,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="minLevel">The minimum <see cref="LogLevel"/> to be logged</param>
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddEventLog(this ILoggerFactory factory, LogLevel minLevel)
         {
             if (factory == null)
@@ -88,6 +90,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The extension method argument.</param>
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
+        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventLog(this ILoggingBuilder builder).")]
         public static ILoggerFactory AddEventLog(
             this ILoggerFactory factory,
             EventLogSettings settings)

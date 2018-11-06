@@ -4,12 +4,12 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions.Internal;
 using Microsoft.Extensions.Logging.Console.Internal;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is ConsoleLoggerProvider.")]
     public class ConsoleLogger : ILogger
     {
         private static readonly string _loglevelPadding = ": ";
@@ -169,19 +169,16 @@ namespace Microsoft.Extensions.Logging.Console
                 logBuilder.AppendLine(exception.ToString());
             }
 
-            if (logBuilder.Length > 0)
+            var hasLevel = !string.IsNullOrEmpty(logLevelString);
+            // Queue log message
+            _queueProcessor.EnqueueMessage(new LogMessageEntry()
             {
-                var hasLevel = !string.IsNullOrEmpty(logLevelString);
-                // Queue log message
-                _queueProcessor.EnqueueMessage(new LogMessageEntry()
-                {
-                    Message = logBuilder.ToString(),
-                    MessageColor = DefaultConsoleColor,
-                    LevelString = hasLevel ? logLevelString : null,
-                    LevelBackground = hasLevel ? logLevelColors.Background : null,
-                    LevelForeground = hasLevel ? logLevelColors.Foreground : null
-                });
-            }
+                Message = logBuilder.ToString(),
+                MessageColor = DefaultConsoleColor,
+                LevelString = hasLevel ? logLevelString : null,
+                LevelBackground = hasLevel ? logLevelColors.Background : null,
+                LevelForeground = hasLevel ? logLevelColors.Foreground : null
+            });
 
             logBuilder.Clear();
             if (logBuilder.Capacity > 1024)
@@ -274,7 +271,7 @@ namespace Microsoft.Extensions.Logging.Console
             }
         }
 
-        private struct ConsoleColors
+        private readonly struct ConsoleColors
         {
             public ConsoleColors(ConsoleColor? foreground, ConsoleColor? background)
             {
