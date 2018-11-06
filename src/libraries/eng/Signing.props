@@ -1,5 +1,7 @@
 <Project>
   <ItemGroup>
+    <!-- Clear out the item list from arcade targets -->
+    <ItemsToSign Remove="@(ItemsToSign)" />
     <!--
         List of container files that will be opened and checked for files that need to be signed.
 
