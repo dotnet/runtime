@@ -25,7 +25,7 @@
 
   <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
-  <Target Name="Restore" DependsOnTargets="RestoreOptionalToolingPackages">
+  <Target Name="Restore" DependsOnTargets="RestoreOptionalToolingPackages;RestoreOptimizationDataPackage">
     <ItemGroup>
       <_RestoreProjects Include="external\dir.proj" />
     </ItemGroup>
