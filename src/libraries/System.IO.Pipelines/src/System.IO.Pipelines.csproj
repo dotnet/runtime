@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{1032D5F6-5AE7-4002-A0E4-FEBEADFEA977}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\InternalsVisibleTo.cs" />
@@ -27,11 +27,12 @@
     <Compile Include="System\IO\Pipelines\ResultFlags.cs" />
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNETCoreApp)'=='true'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
+    <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Buffers" />
