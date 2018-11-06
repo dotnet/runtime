@@ -24,26 +24,49 @@ namespace System.Runtime.InteropServices
         public static bool TryGetArray<T>(ReadOnlyMemory<T> memory, out ArraySegment<T> segment)
         {
             object obj = memory.GetObjectStartLength(out int index, out int length);
-            if (index < 0)
+
+            // As an optimization, we skip the "is string?" check below if typeof(T) is not char,
+            // as Memory<T> / ROM<T> can't possibly contain a string instance in this case.
+
+            if (obj != null && (typeof(T) != typeof(char) || obj.GetType() != typeof(string)))
             {
-                Debug.Assert(length >= 0);
-                if (((MemoryManager<T>)obj).TryGetArray(out ArraySegment<T> arraySegment))
+                if (RuntimeHelpers.ObjectHasComponentSize(obj))
                 {
-                    segment = new ArraySegment<T>(arraySegment.Array, arraySegment.Offset + (index & ReadOnlyMemory<T>.RemoveFlagsBitMask), length);
+                    // The object has a component size, which means it's variable-length, but we already
+                    // checked above that it's not a String. The only remaining option is that it's a T[]
+                    // or a U[] which is blittable to a T[] (e.g., int[] and uint[]).
+
+                    // The array may be prepinned, so remove the high bit from the start index in the line below.
+                    // The ArraySegment<T> ctor will perform bounds checking on index & length.
+
+                    segment = new ArraySegment<T>(Unsafe.As<T[]>(obj), index & ReadOnlyMemory<T>.RemoveFlagsBitMask, length);
                     return true;
                 }
-            }
-            else if (obj is T[] arr)
-            {
-                segment = new ArraySegment<T>(arr, index, length & ReadOnlyMemory<T>.RemoveFlagsBitMask);
-                return true;
+                else
+                {
+                    // The object isn't null, and it's not variable-length, so the only remaining option
+                    // is MemoryManager<T>. The ArraySegment<T> ctor will perform bounds checking on index & length.
+
+                    Debug.Assert(obj is MemoryManager<T>);
+                    if (Unsafe.As<MemoryManager<T>>(obj).TryGetArray(out ArraySegment<T> tempArraySegment))
+                    {
+                        segment = new ArraySegment<T>(tempArraySegment.Array, tempArraySegment.Offset + index, length);
+                        return true;
+                    }
+                }
             }
 
-            if ((length & ReadOnlyMemory<T>.RemoveFlagsBitMask) == 0)
+            // If we got to this point, the object is null, or it's a string, or it's a MemoryManager<T>
+            // which isn't backed by an array. We'll quickly homogenize all zero-length Memory<T> instances
+            // to an empty array for the purposes of reporting back to our caller.
+
+            if (length == 0)
             {
                 segment = ArraySegment<T>.Empty;
                 return true;
             }
+
+            // Otherwise, there's *some* data, but it's not convertible to T[].
 
             segment = default;
             return false;
@@ -82,7 +105,6 @@ namespace System.Runtime.InteropServices
         {
             TManager localManager; // Use register for null comparison rather than byref
             manager = localManager = memory.GetObjectStartLength(out start, out length) as TManager;
-            start &= ReadOnlyMemory<T>.RemoveFlagsBitMask;
 
             Debug.Assert(length >= 0);
 
@@ -284,8 +306,8 @@ namespace System.Runtime.InteropServices
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            // Before using _length, check if _length < 0, then 'and' it with RemoveFlagsBitMask
-            return new Memory<T>((object)array, start, length | (1 << 31));
+            // Before using _index, check if _index < 0, then 'and' it with RemoveFlagsBitMask
+            return new Memory<T>((object)array, start | (1 << 31), length);
         }
     }
 }

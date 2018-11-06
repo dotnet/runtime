@@ -24,11 +24,9 @@ namespace System
         // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
         // as code uses Unsafe.As to cast between them.
 
-        // The highest order bit of _index is used to discern whether _object is an array/string or an owned memory
-        // if (_index >> 31) == 1, _object is an MemoryManager<T>
-        // else, _object is a T[] or string.
-        //     if (_length >> 31) == 1, _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
-        //     else, Pin() needs to allocate a new GCHandle to pin the object.
+        // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
+        // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
+        //       (else) => Pin() needs to allocate a new GCHandle to pin the object.
         private readonly object _object;
         private readonly int _index;
         private readonly int _length;
@@ -98,7 +96,11 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ReadOnlyMemory(object obj, int start, int length)
         {
-            // No validation performed; caller must provide any necessary validation.
+            // No validation performed in release builds; caller must provide any necessary validation.
+
+            // 'obj is T[]' below also handles things like int[] <-> uint[] being convertible
+            Debug.Assert((obj == null) || (typeof(T) == typeof(char) && obj is string) || (obj is T[]) || (obj is MemoryManager<T>));
+
             _object = obj;
             _index = start;
             _length = length;
@@ -122,12 +124,12 @@ namespace System
         /// <summary>
         /// The number of items in the memory.
         /// </summary>
-        public int Length => _length & RemoveFlagsBitMask;
+        public int Length => _length;
 
         /// <summary>
         /// Returns true if Length is 0.
         /// </summary>
-        public bool IsEmpty => (_length & RemoveFlagsBitMask) == 0;
+        public bool IsEmpty => _length == 0;
 
         /// <summary>
         /// For <see cref="ReadOnlyMemory{Char}"/>, returns a new instance of string that represents the characters pointed to by the memory.
@@ -137,9 +139,9 @@ namespace System
         {
             if (typeof(T) == typeof(char))
             {
-                return (_object is string str) ? str.Substring(_index, _length & RemoveFlagsBitMask) : Span.ToString();
+                return (_object is string str) ? str.Substring(_index, _length) : Span.ToString();
             }
-            return string.Format("System.ReadOnlyMemory<{0}>[{1}]", typeof(T).Name, _length & RemoveFlagsBitMask);
+            return string.Format("System.ReadOnlyMemory<{0}>[{1}]", typeof(T).Name, _length);
         }
 
         /// <summary>
@@ -152,16 +154,13 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyMemory<T> Slice(int start)
         {
-            // Used to maintain the high-bit which indicates whether the Memory has been pre-pinned or not.
-            int capturedLength = _length;
-            int actualLength = capturedLength & RemoveFlagsBitMask;
-            if ((uint)start > (uint)actualLength)
+            if ((uint)start > (uint)_length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
             }
 
-            // It is expected for (capturedLength - start) to be negative if the memory is already pre-pinned.
-            return new ReadOnlyMemory<T>(_object, _index + start, capturedLength - start);
+            // It is expected for _index + start to be negative if the memory is already pre-pinned.
+            return new ReadOnlyMemory<T>(_object, _index + start, _length - start);
         }
 
         /// <summary>
@@ -175,49 +174,96 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlyMemory<T> Slice(int start, int length)
         {
-            // Used to maintain the high-bit which indicates whether the Memory has been pre-pinned or not.
-            int capturedLength = _length;
-            int actualLength = _length & RemoveFlagsBitMask;
 #if BIT64
             // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)actualLength)
+            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #else
-            if ((uint)start > (uint)actualLength || (uint)length > (uint)(actualLength - start))
+            if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
 #endif
 
-            // Set the high-bit to match the this._length high bit (1 for pre-pinned, 0 for unpinned).
-            return new ReadOnlyMemory<T>(_object, _index + start, length | (capturedLength & ~RemoveFlagsBitMask));
+            // It is expected for _index + start to be negative if the memory is already pre-pinned.
+            return new ReadOnlyMemory<T>(_object, _index + start, length);
         }
 
         /// <summary>
         /// Returns a span from the memory.
         /// </summary>
-        public ReadOnlySpan<T> Span
+        public unsafe ReadOnlySpan<T> Span
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (_index < 0)
+                ref T refToReturn = ref Unsafe.AsRef<T>(null);
+                int lengthOfUnderlyingSpan = 0;
+
+                // Copy this field into a local so that it can't change out from under us mid-operation.
+
+                object tmpObject = _object;
+                if (tmpObject != null)
                 {
-                    Debug.Assert(_length >= 0);
-                    Debug.Assert(_object != null);
-                    return ((MemoryManager<T>)_object).GetSpan().Slice(_index & RemoveFlagsBitMask, _length);
+                    if (typeof(T) == typeof(char) && tmpObject.GetType() == typeof(string))
+                    {
+                        // Special-case string since it's the most common for ROM<char>.
+
+                        refToReturn = ref Unsafe.As<char, T>(ref Unsafe.As<string>(tmpObject).GetRawStringData());
+                        lengthOfUnderlyingSpan = Unsafe.As<string>(tmpObject).Length;
+                    }
+                    else if (RuntimeHelpers.ObjectHasComponentSize(tmpObject))
+                    {
+                        // We know the object is not null, it's not a string, and it is variable-length. The only
+                        // remaining option is for it to be a T[] (or a U[] which is blittable to T[], like int[]
+                        // and uint[]). Otherwise somebody used private reflection to set this field, and we're not
+                        // too worried about type safety violations at this point.
+
+                        // 'tmpObject is T[]' below also handles things like int[] <-> uint[] being convertible
+                        Debug.Assert(tmpObject is T[]);
+
+                        refToReturn = ref Unsafe.As<byte, T>(ref Unsafe.As<T[]>(tmpObject).GetRawSzArrayData());
+                        lengthOfUnderlyingSpan = Unsafe.As<T[]>(tmpObject).Length;
+                    }
+                    else
+                    {
+                        // We know the object is not null, and it's not variable-length, so it must be a MemoryManager<T>.
+                        // Otherwise somebody used private reflection to set this field, and we're not too worried about
+                        // type safety violations at that point. Note that it can't be a MemoryManager<U>, even if U and
+                        // T are blittable (e.g., MemoryManager<int> to MemoryManager<uint>), since there exists no
+                        // constructor or other public API which would allow such a conversion.
+
+                        Debug.Assert(tmpObject is MemoryManager<T>);
+                        Span<T> memoryManagerSpan = Unsafe.As<MemoryManager<T>>(tmpObject).GetSpan();
+                        refToReturn = ref MemoryMarshal.GetReference(memoryManagerSpan);
+                        lengthOfUnderlyingSpan = memoryManagerSpan.Length;
+                    }
+
+                    // If the Memory<T> or ReadOnlyMemory<T> instance is torn, this property getter has undefined behavior.
+                    // We try to detect this condition and throw an exception, but it's possible that a torn struct might
+                    // appear to us to be valid, and we'll return an undesired span. Such a span is always guaranteed at
+                    // least to be in-bounds when compared with the original Memory<T> instance, so using the span won't
+                    // AV the process.
+
+                    int desiredStartIndex = _index & RemoveFlagsBitMask;
+                    int desiredLength = _length;
+
+#if BIT64
+                    // See comment in Span<T>.Slice for how this works.
+                    if ((ulong)(uint)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException();
+                    }
+#else
+                    if ((uint)desiredStartIndex > (uint)lengthOfUnderlyingSpan || (uint)desiredLength > (uint)(lengthOfUnderlyingSpan - desiredStartIndex))
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException();
+                    }
+#endif
+
+                    refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
+                    lengthOfUnderlyingSpan = desiredLength;
                 }
-                else if (typeof(T) == typeof(char) && _object is string s)
-                {
-                    Debug.Assert(_length >= 0);
-                    return new ReadOnlySpan<T>(ref Unsafe.As<char, T>(ref s.GetRawStringData()), s.Length).Slice(_index, _length);
-                }
-                else if (_object != null)
-                {
-                    return new ReadOnlySpan<T>((T[])_object, _index, _length & RemoveFlagsBitMask);
-                }
-                else
-                {
-                    return default;
-                }
+
+                return new ReadOnlySpan<T>(ref refToReturn, lengthOfUnderlyingSpan);
             }
         }
 
@@ -254,32 +300,44 @@ namespace System
         /// </summary>
         public unsafe MemoryHandle Pin()
         {
-            if (_index < 0)
+            // It's possible that the below logic could result in an AV if the struct
+            // is torn. This is ok since the caller is expecting to use raw pointers,
+            // and we're not required to keep this as safe as the other Span-based APIs.
+
+            object tmpObject = _object;
+            if (tmpObject != null)
             {
-                Debug.Assert(_object != null);
-                return ((MemoryManager<T>)_object).Pin((_index & RemoveFlagsBitMask));
-            }
-            else if (typeof(T) == typeof(char) && _object is string s)
-            {
-                GCHandle handle = GCHandle.Alloc(s, GCHandleType.Pinned);
-                void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref s.GetRawStringData()), _index);
-                return new MemoryHandle(pointer, handle);
-            }
-            else if (_object is T[] array)
-            {
-                // Array is already pre-pinned
-                if (_length < 0)
+                if (typeof(T) == typeof(char) && tmpObject is string s)
                 {
-                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
-                    return new MemoryHandle(pointer);
+                    GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
+                    ref char stringData = ref Unsafe.Add(ref s.GetRawStringData(), _index);
+                    return new MemoryHandle(Unsafe.AsPointer(ref stringData), handle);
+                }
+                else if (RuntimeHelpers.ObjectHasComponentSize(tmpObject))
+                {
+                    // 'tmpObject is T[]' below also handles things like int[] <-> uint[] being convertible
+                    Debug.Assert(tmpObject is T[]);
+
+                    // Array is already pre-pinned
+                    if (_index < 0)
+                    {
+                        void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref Unsafe.As<T[]>(tmpObject).GetRawSzArrayData()), _index & RemoveFlagsBitMask);
+                        return new MemoryHandle(pointer);
+                    }
+                    else
+                    {
+                        GCHandle handle = GCHandle.Alloc(tmpObject, GCHandleType.Pinned);
+                        void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref Unsafe.As<T[]>(tmpObject).GetRawSzArrayData()), _index);
+                        return new MemoryHandle(pointer, handle);
+                    }
                 }
                 else
                 {
-                    GCHandle handle = GCHandle.Alloc(array, GCHandleType.Pinned);
-                    void* pointer = Unsafe.Add<T>(Unsafe.AsPointer(ref array.GetRawSzArrayData()), _index);
-                    return new MemoryHandle(pointer, handle);
+                    Debug.Assert(tmpObject is MemoryManager<T>);
+                    return Unsafe.As<MemoryManager<T>>(tmpObject).Pin(_index);
                 }
             }
+
             return default;
         }
 
@@ -324,19 +382,11 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
-            return _object != null ? CombineHashCodes(_object.GetHashCode(), _index.GetHashCode(), _length.GetHashCode()) : 0;
+            // We use RuntimeHelpers.GetHashCode instead of Object.GetHashCode because the hash
+            // code is based on object identity and referential equality, not deep equality (as common with string).
+            return (_object != null) ? HashCode.Combine(RuntimeHelpers.GetHashCode(_object), _index, _length) : 0;
         }
-
-        private static int CombineHashCodes(int left, int right)
-        {
-            return ((left << 5) + left) ^ right;
-        }
-
-        private static int CombineHashCodes(int h1, int h2, int h3)
-        {
-            return CombineHashCodes(CombineHashCodes(h1, h2), h3);
-        }
-
+        
         /// <summary>Gets the state of the memory as individual fields.</summary>
         /// <param name="start">The offset.</param>
         /// <param name="length">The count.</param>
