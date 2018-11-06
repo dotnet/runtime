@@ -1242,6 +1242,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 #endif
 
+	/* Fallback if SIMD is disabled */
+	if (in_corlib && !strcmp ("System.Numerics", cmethod_klass_name_space) && !strcmp ("Vector", cmethod_klass_name)) {
+		if (!strcmp (cmethod->name, "get_IsHardwareAccelerated")) {
+			EMIT_NEW_ICONST (cfg, ins, 0);
+			ins->type = STACK_I4;
+			return ins;
+		}
+	}
+
 	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)
 		return ins;

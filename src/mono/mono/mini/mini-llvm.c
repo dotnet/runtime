@@ -100,6 +100,7 @@ typedef struct {
 	LLVMValueRef sentinel_exception;
 	void *di_builder, *cu;
 	GHashTable *objc_selector_to_var;
+	GPtrArray *cfgs;
 } MonoLLVMModule;
 
 /*
@@ -1669,7 +1670,7 @@ get_aotconst_typed (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data,
 	if (!mono_aot_is_shared_got_offset (got_offset)) {
 		//mono_print_ji (ji);
 		//printf ("\n");
-		ctx->has_got_access = TRUE;
+		ctx->cfg->got_access_count ++;
 	}
 
 	indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -1696,98 +1697,153 @@ get_aotconst (EmitContext *ctx, MonoJumpInfoType type, gconstpointer data)
 	return get_aotconst_typed (ctx, type, data, NULL);
 }
 
+typedef struct {
+	MonoJumpInfo *ji;
+	MonoMethod *method;
+	LLVMValueRef load;
+	LLVMTypeRef type;
+} CallSite;
+
 static LLVMValueRef
-get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
+get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
 	LLVMValueRef callee;
 	char *callee_name;
 
-	if (ctx->llvm_only) {
-		callee_name = mono_aot_get_direct_call_symbol (type, data);
-		if (callee_name) {
-			/* Directly callable */
-			// FIXME: Locking
-			callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->direct_callables, callee_name);
-			if (!callee) {
-				callee = LLVMAddFunction (ctx->lmodule, callee_name, llvm_sig);
-
-				LLVMSetVisibility (callee, LLVMHiddenVisibility);
-
-				g_hash_table_insert (ctx->module->direct_callables, (char*)callee_name, callee);
-			} else {
-				/* LLVMTypeRef's are uniqued */
-				if (LLVMGetElementType (LLVMTypeOf (callee)) != llvm_sig)
-					return LLVMConstBitCast (callee, LLVMPointerType (llvm_sig, 0));
-
-				g_free (callee_name);
-			}
-			return callee;
-		}
-
-		/*
-		 * Change references to jit icalls to the icall wrappers when in corlib, so
-		 * they can be called directly.
-		 */
-		if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_INTERNAL_METHOD) {
-			MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
-			g_assert (info);
-
-			if (info->func != info->wrapper) {
-				type = MONO_PATCH_INFO_METHOD;
-				data = mono_icall_get_wrapper_method (info);
-			}
-		}
-
-		/*
-		 * Calls are made through the GOT.
-		 */
-		LLVMValueRef callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
-
-		if (type == MONO_PATCH_INFO_METHOD) {
-			MonoMethod *method = (MonoMethod*)data;
-			if (m_class_get_image (method->klass)->assembly == ctx->module->assembly) {
-				/*
-				 * Collect instructions representing the callee into a hash so they can be replaced
-				 * by the llvm method for the callee if the callee turns out to be direct
-				 * callable. Currently this only requires it to not fail llvm compilation.
-				 */
-				GSList *l = (GSList*)g_hash_table_lookup (ctx->method_to_callers, method);
-				l = g_slist_prepend (l, callee);
-				g_hash_table_insert (ctx->method_to_callers, method, l);
-			}
-		}
-		return callee;
-	} else {
-		MonoJumpInfo *ji = NULL;
-
-		callee_name = mono_aot_get_plt_symbol (type, data);
-		if (!callee_name)
-			return NULL;
-
-		if (ctx->cfg->compile_aot)
-			/* Add a patch so referenced wrappers can be compiled in full aot mode */
-			mono_add_patch_info (ctx->cfg, 0, type, data);
-
+	callee_name = mono_aot_get_direct_call_symbol (type, data);
+	if (callee_name) {
+		/* Directly callable */
 		// FIXME: Locking
-		callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->plt_entries, callee_name);
+		callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->direct_callables, callee_name);
 		if (!callee) {
 			callee = LLVMAddFunction (ctx->lmodule, callee_name, llvm_sig);
 
 			LLVMSetVisibility (callee, LLVMHiddenVisibility);
 
-			g_hash_table_insert (ctx->module->plt_entries, (char*)callee_name, callee);
+			g_hash_table_insert (ctx->module->direct_callables, (char*)callee_name, callee);
+		} else {
+			/* LLVMTypeRef's are uniqued */
+			if (LLVMGetElementType (LLVMTypeOf (callee)) != llvm_sig)
+				return LLVMConstBitCast (callee, LLVMPointerType (llvm_sig, 0));
+
+			g_free (callee_name);
 		}
-
-		if (ctx->cfg->compile_aot) {
-			ji = g_new0 (MonoJumpInfo, 1);
-			ji->type = type;
-			ji->data.target = data;
-
-			g_hash_table_insert (ctx->module->plt_entries_ji, ji, callee);
-		}
-
 		return callee;
 	}
+
+	/*
+	 * Change references to jit icalls to the icall wrappers when in corlib, so
+	 * they can be called directly.
+	 */
+	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_INTERNAL_METHOD) {
+		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+		g_assert (info);
+
+		if (info->func != info->wrapper) {
+			type = MONO_PATCH_INFO_METHOD;
+			data = mono_icall_get_wrapper_method (info);
+		}
+	}
+
+	/*
+	 * Instead of emitting an indirect call through a got slot, emit a placeholder, and
+	 * replace it with a direct call or an indirect call in mono_llvm_fixup_aot_module ()
+	 * after all methods have been emitted.
+	 */
+	if (type == MONO_PATCH_INFO_METHOD) {
+		MonoMethod *method = (MonoMethod*)data;
+		if (m_class_get_image (method->klass)->assembly == ctx->module->assembly) {
+			MonoJumpInfo tmp_ji;
+			tmp_ji.type = type;
+			tmp_ji.data.target = data;
+
+			MonoJumpInfo *ji = mono_aot_patch_info_dup (&tmp_ji);
+			ji->next = ctx->cfg->patch_info;
+			ctx->cfg->patch_info = ji;
+			LLVMTypeRef llvm_type = LLVMPointerType (llvm_sig, 0);
+
+			ctx->cfg->got_access_count ++;
+
+			CallSite *info = g_new0 (CallSite, 1);
+			info->method = method;
+			info->ji = ji;
+			info->type = llvm_type;
+
+			/*
+			 * Emit a dummy load to represent the callee, and either replace it with
+			 * a reference to the llvm method for the callee, or from a load from the
+			 * GOT.
+			 */
+			LLVMValueRef indexes [2];
+			LLVMValueRef got_entry_addr, load;
+
+			LLVMBuilderRef builder = ctx->builder;
+			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			indexes [1] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+			got_entry_addr = LLVMBuildGEP (builder, ctx->module->got_var, indexes, 2, "");
+
+			load = LLVMBuildLoad (builder, got_entry_addr, "");
+			load = convert (ctx, load, llvm_type);
+			info->load = load;
+
+			GSList *l = (GSList*)g_hash_table_lookup (ctx->method_to_callers, method);
+			l = g_slist_prepend (l, info);
+			g_hash_table_insert (ctx->method_to_callers, method, l);
+
+			return load;
+		}
+	}
+
+	/*
+	 * Calls are made through the GOT.
+	 */
+	callee = get_aotconst_typed (ctx, type, data, LLVMPointerType (llvm_sig, 0));
+
+	return callee;
+}
+
+/*
+ * get_callee:
+ *
+ *   Return an llvm value representing the callee given by the arguments.
+ */
+static LLVMValueRef
+get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
+{
+	LLVMValueRef callee;
+	char *callee_name;
+	MonoJumpInfo *ji = NULL;
+
+	if (ctx->llvm_only)
+		return get_callee_llvmonly (ctx, llvm_sig, type, data);
+
+	callee_name = mono_aot_get_plt_symbol (type, data);
+	if (!callee_name)
+		return NULL;
+
+	if (ctx->cfg->compile_aot)
+		/* Add a patch so referenced wrappers can be compiled in full aot mode */
+		mono_add_patch_info (ctx->cfg, 0, type, data);
+
+	// FIXME: Locking
+	callee = (LLVMValueRef)g_hash_table_lookup (ctx->module->plt_entries, callee_name);
+	if (!callee) {
+		callee = LLVMAddFunction (ctx->lmodule, callee_name, llvm_sig);
+
+		LLVMSetVisibility (callee, LLVMHiddenVisibility);
+
+		g_hash_table_insert (ctx->module->plt_entries, (char*)callee_name, callee);
+	}
+
+	if (ctx->cfg->compile_aot) {
+		ji = g_new0 (MonoJumpInfo, 1);
+		ji->type = type;
+		ji->data.target = data;
+
+		g_hash_table_insert (ctx->module->plt_entries_ji, ji, callee);
+	}
+
+	return callee;
 }
 
 static LLVMValueRef
@@ -2915,7 +2971,7 @@ emit_init_method (EmitContext *ctx)
 	inited_bb = ctx->inited_bb;
 	notinited_bb = gen_bb (ctx, "NOTINITED_BB");
 
-	LLVMBuildCondBr (ctx->builder, cmp, notinited_bb, inited_bb);
+	ctx->cfg->llvmonly_init_cond = LLVMBuildCondBr (ctx->builder, cmp, notinited_bb, inited_bb);
 
 	builder = ctx->builder = create_builder (ctx);
 	LLVMPositionBuilderAtEnd (ctx->builder, notinited_bb);
@@ -5531,7 +5587,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (!mono_aot_is_shared_got_offset (got_offset)) {
 				//mono_print_ji (ji);
 				//printf ("\n");
-				ctx->has_got_access = TRUE;
+				ctx->cfg->got_access_count ++;
 			}
  
 			indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
@@ -7652,7 +7708,7 @@ emit_method_inner (EmitContext *ctx)
 		 * NATIVE_TO_MANAGED methods might be called on a thread not attached to the runtime, so they are initialized when loaded
 		 * in load_method ().
 		 */
-		gboolean needs_init = ctx->has_got_access;
+		gboolean needs_init = ctx->cfg->got_access_count > 0;
 		if (!needs_init && mono_class_get_cctor (cfg->method->klass)) {
 			/* Needs init to run the cctor */
 			if (cfg->method->flags & METHOD_ATTRIBUTE_STATIC)
@@ -7677,6 +7733,8 @@ emit_method_inner (EmitContext *ctx)
 		GHashTableIter iter;
 		MonoMethod *method;
 		GSList *callers, *l, *l2;
+
+		g_ptr_array_add (ctx->module->cfgs, cfg);
 
 		/*
 		 * Add the contents of ctx->method_to_callers to module->method_to_callers.
@@ -7718,8 +7776,11 @@ emit_method_inner (EmitContext *ctx)
 
 	if (cfg->compile_aot) {
 		/* Don't generate native code, keep the LLVM IR */
-		if (cfg->verbose_level)
-			printf ("%s emitted as %s\n", mono_method_full_name (cfg->method, TRUE), ctx->method_name);
+		if (cfg->verbose_level) {
+			char *name = mono_method_get_full_name (cfg->method);
+			printf ("%s emitted as %s\n", name, ctx->method_name);
+			g_free (name);
+		}
 
 		//LLVMDumpValue (ctx->lmethod);
 #if LLVM_API_VERSION < 100
@@ -8818,6 +8879,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	/* The first few entries are reserved */
 	module->max_got_offset = initial_got_size;
 	module->context = LLVMGetGlobalContext ();
+	module->cfgs = g_ptr_array_new ();
 
 	if (llvm_only)
 		/* clang ignores our debug info because it has an invalid version */
@@ -8941,6 +9003,94 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->idx_to_lmethod = g_hash_table_new (NULL, NULL);
 	module->idx_to_unbox_tramp = g_hash_table_new (NULL, NULL);
 	module->method_to_callers = g_hash_table_new (NULL, NULL);
+}
+
+void
+mono_llvm_fixup_aot_module (void)
+{
+	MonoLLVMModule *module = &aot_module;
+	GHashTableIter iter;
+	MonoMethod *method;
+	GSList *callers, *l;
+
+	if (!module->llvm_only)
+		return;
+
+	/*
+	 * Replace GOT entries for directly callable methods with the methods themselves.
+	 * It would be easier to implement this by predefining all methods before compiling
+	 * their bodies, but that couldn't handle the case when a method fails to compile
+	 * with llvm.
+	 */
+
+	GHashTable *patches_to_null = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
+
+	g_hash_table_iter_init (&iter, module->method_to_callers);
+	while (g_hash_table_iter_next (&iter, (void**)&method, (void**)&callers)) {
+		LLVMValueRef lmethod;
+
+		lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
+		for (l = callers; l; l = l->next) {
+			CallSite *site = (CallSite*)l->data;
+			LLVMValueRef placeholder = (LLVMValueRef)site->load;
+			LLVMValueRef indexes [2], got_entry_addr, load;
+			char *name;
+
+			/*
+			 * FIXME: Support inflated methods, it asserts in mono_aot_init_gshared_method_this () because the method is not in
+			 * amodule->extra_methods.
+			 */
+			if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && !method->is_inflated) {
+				mono_llvm_replace_uses_of (placeholder, lmethod);
+				g_hash_table_insert (patches_to_null, site->ji, site->ji);
+			} else {
+				int got_offset = mono_aot_get_got_offset (site->ji);
+				module->max_got_offset = MAX (module->max_got_offset, got_offset);
+
+				LLVMBuilderRef builder = LLVMCreateBuilder ();
+				LLVMPositionBuilderBefore (builder, placeholder);
+				indexes [0] = LLVMConstInt (LLVMInt32Type (), 0, FALSE);
+				indexes [1] = LLVMConstInt (LLVMInt32Type (), (gssize)got_offset, FALSE);
+				got_entry_addr = LLVMBuildGEP (builder, module->got_var, indexes, 2, "");
+
+				name = get_aotconst_name (site->ji->type, site->ji->data.target, got_offset);
+				load = LLVMBuildLoad (builder, got_entry_addr, "");
+				load = LLVMBuildBitCast (builder, load, site->type, name ? name : "");
+				LLVMReplaceAllUsesWith (placeholder, load);
+			}
+			g_free (site);
+		}
+	}
+
+	for (int i = 0; i < module->cfgs->len; ++i) {
+		/*
+		 * Nullify the patches pointing to direct calls. This is needed to
+		 * avoid allocating extra got slots, which is a perf problem and it
+		 * makes module->max_got_offset invalid.
+		 * It would be better to just store the patch_info in CallSite, but
+		 * cfg->patch_info is copied in aot-compiler.c.
+		 */
+		MonoCompile *cfg = (MonoCompile *)g_ptr_array_index (module->cfgs, i);
+		for (MonoJumpInfo *patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
+			if (patch_info->type == MONO_PATCH_INFO_METHOD) {
+				if (g_hash_table_lookup (patches_to_null, patch_info)) {
+					patch_info->type = MONO_PATCH_INFO_NONE;
+					/* Nullify the call to init_method () if possible */
+					g_assert (cfg->got_access_count);
+					cfg->got_access_count --;
+#if LLVM_API_VERSION >= 600
+					if (cfg->got_access_count == 0) {
+						LLVMValueRef br = (LLVMValueRef)cfg->llvmonly_init_cond;
+
+						LLVMSetSuccessor (br, 0, LLVMGetSuccessor (br, 1));
+					}
+#endif
+				}
+			}
+		}
+	}
+
+	g_hash_table_destroy (patches_to_null);
 }
 
 static LLVMValueRef
@@ -9267,35 +9417,6 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 	emit_llvm_used (&aot_module);
 	emit_dbg_info (&aot_module, filename, cu_name);
 	emit_aot_file_info (&aot_module);
-
-	/*
-	 * Replace GOT entries for directly callable methods with the methods themselves.
-	 * It would be easier to implement this by predefining all methods before compiling
-	 * their bodies, but that couldn't handle the case when a method fails to compile
-	 * with llvm.
-	 */
-	if (module->llvm_only) {
-		GHashTableIter iter;
-		MonoMethod *method;
-		GSList *callers, *l;
-
-		g_hash_table_iter_init (&iter, module->method_to_callers);
-		while (g_hash_table_iter_next (&iter, (void**)&method, (void**)&callers)) {
-			LLVMValueRef lmethod;
-
-			if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-				continue;
-
-			lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
-			if (lmethod) {
-				for (l = callers; l; l = l->next) {
-					LLVMValueRef caller = (LLVMValueRef)l->data;
-
-					mono_llvm_replace_uses_of (caller, lmethod);
-				}
-			}
-		}
-	}
 
 	/* Replace PLT entries for directly callable methods with the methods themselves */
 	{

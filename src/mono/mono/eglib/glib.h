@@ -883,7 +883,11 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 #endif
 
 /* g_assert is a boolean expression; the precise value is not preserved, just true or false. */
+#ifdef DISABLE_ASSERT_MESSAGES
+#define g_assert(x) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, "<disabled>"), 0))
+#else
 #define g_assert(x) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x), 0))
+#endif
 
 #define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 

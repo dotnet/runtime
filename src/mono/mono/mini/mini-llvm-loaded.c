@@ -15,6 +15,7 @@ typedef struct {
 	void (*emit_method)(MonoCompile *cfg);
 	void (*emit_call)(MonoCompile *cfg, MonoCallInst *call);
 	void (*create_aot_module)(MonoAssembly *assembly, const char *global_prefix, int initial_got_size, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only);
+	void (*fixup_aot_module)(void);
 	void (*emit_aot_module)(const char *filename, const char *cu_name);
 	void (*check_method_supported)(MonoCompile *cfg);
 	void (*emit_aot_file_info)(MonoAotFileInfo *info, gboolean has_jitted_code);
@@ -59,6 +60,12 @@ void
 mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 {
 	backend.emit_aot_module (filename, cu_name);
+}
+
+void
+mono_llvm_fixup_aot_module (void)
+{
+	backend.fixup_aot_module ();
 }
 
 void
@@ -116,6 +123,8 @@ mono_llvm_load (const char* bpath)
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_create_aot_module", (void**)&backend.create_aot_module);
 	if (err) goto symbol_error;
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_emit_aot_module", (void**)&backend.emit_aot_module);
+	if (err) goto symbol_error;
+	err = mono_dl_symbol (llvm_lib, "mono_llvm_fixup_aot_module", (void**)&backend.fixup_aot_module);
 	if (err) goto symbol_error;
 	err = mono_dl_symbol (llvm_lib, "mono_llvm_check_method_supported", (void**)&backend.check_method_supported);
 	if (err) goto symbol_error;
