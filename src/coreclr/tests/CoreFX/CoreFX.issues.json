@@ -486,6 +486,14 @@
                 {
                     "name": "System.Buffers.Text.Tests.FormatterTests.TestFormatterDecimal",
                     "reason": "https://github.com/dotnet/coreclr/pull/19775"
+                },
+                {
+                    "name": "System.SpanTests.MemoryMarshalTests.CreateFromPinnedArrayIntSliceRemainsPinned",
+                    "reason": "https://github.com/dotnet/corefx/pull/32994"
+                },
+                {
+                    "name": "System.SpanTests.MemoryMarshalTests.CreateFromPinnedArrayIntReadOnlyMemorySliceRemainsPinned",
+                    "reason": "https://github.com/dotnet/corefx/pull/32994"
                 }
             ]
         }
