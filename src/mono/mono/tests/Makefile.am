@@ -1815,7 +1815,6 @@ INTERP_DISABLED_TESTS += \
 	delegate-async-exit.exe \
 	delegate-delegate-exit.exe \
 	delegate-exit.exe \
-	delegate-with-null-target.exe \
 	delegate1.exe \
 	delegate3.exe \
 	delegate5.exe \
@@ -1853,7 +1852,6 @@ if ARM64
 INTERP_DISABLED_TESTS += \
 	bug-48015.exe \
 	bug-80307.exe \
-	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
 	pinvoke3.exe
 endif
@@ -1864,7 +1862,6 @@ INTERP_DISABLED_TESTS += \
 	bug-48015.exe \
 	bug-60862.exe \
 	cominterop.exe \
-	delegate-with-null-target.exe \
 	dim-diamondshape.exe \
 	pinvoke3.exe
 endif
