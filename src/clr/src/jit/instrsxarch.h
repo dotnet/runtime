@@ -63,6 +63,10 @@ INST5(inc_l,            "inc",              IUM_RW, 0x0000FE,     BAD_CODE,     
 INST5(dec,              "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x000048,    INS_FLAGS_WritesFlags)
 INST5(dec_l,            "dec",              IUM_RW, 0x0008FE,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C8FE,    INS_FLAGS_WritesFlags)
 
+// Multi-byte opcodes without modrm are represented in mixed endian fashion.
+// See comment around quarter way through this file for more information.
+INST5(bswap,            "bswap",            IUM_RW, 0x0F00C8,     BAD_CODE,     BAD_CODE,     BAD_CODE,     0x00C80F,    INS_FLAGS_None)
+
 //    id                nm                  um      mr            mi            rm            a4                         flags
 INST4(add,              "add",              IUM_RW, 0x000000,     0x000080,     0x000002,     0x000004,                  INS_FLAGS_WritesFlags)
 INST4(or,               "or",               IUM_RW, 0x000008,     0x000880,     0x00000A,     0x00000C,                  INS_FLAGS_WritesFlags)
