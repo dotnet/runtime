@@ -145,6 +145,7 @@ sosCommandInitialize(lldb::SBDebugger debugger)
     interpreter.AddCommand("ip2md", new sosCommand("IP2MD"), "Displays the MethodDesc structure at the specified address in code that has been JIT-compiled.");
     interpreter.AddCommand("name2ee", new sosCommand("Name2EE"), "Displays the MethodTable structure and EEClass structure for the specified type or method in the specified module.");
     interpreter.AddCommand("pe", new sosCommand("PrintException"), "Displays and formats fields of any object derived from the Exception class at the specified address.");
+    interpreter.AddCommand("syncblk", new sosCommand("SyncBlk"), "Displays the SyncBlock holder info.");
     interpreter.AddCommand("histclear", new sosCommand("HistClear"), "Releases any resources used by the family of Hist commands.");
     interpreter.AddCommand("histinit", new sosCommand("HistInit"), "Initializes the SOS structures from the stress log saved in the debuggee.");
     interpreter.AddCommand("histobj", new sosCommand("HistObj"), "Examines all stress log relocation records and displays the chain of garbage collection relocations that may have led to the address passed in as an argument.");
