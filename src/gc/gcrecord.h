@@ -311,7 +311,9 @@ static gc_mechanism_descr gc_mechanisms_descr[max_mechanism_per_heap] =
 };
 #endif //DT_LOG
 
-int index_of_set_bit (size_t power2);
+// Get the 0-based index of the most-significant bit in the value.
+// Returns -1 if the input value is zero (i.e. has no set bits).
+int index_of_highest_set_bit (size_t value);
 
 #define mechanism_mask (1 << (sizeof (uint32_t) * 8 - 1))
 // interesting per heap data we want to record for each GC.
@@ -372,7 +374,7 @@ public:
 
         if (mechanism & mechanism_mask)
         {
-            int index = index_of_set_bit ((size_t)(mechanism & (~mechanism_mask)));
+            int index = index_of_highest_set_bit ((size_t)(mechanism & (~mechanism_mask)));
             assert (index != -1);
             return index;
         }
