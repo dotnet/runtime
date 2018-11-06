@@ -1186,6 +1186,10 @@ protected:
 #endif // !_TARGET_X86_
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
+    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar);
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+
 #ifdef DEBUG
     GenTree* lastConsumedNode;
     void genNumberOperandUse(GenTree* const operand, int& useNum) const;

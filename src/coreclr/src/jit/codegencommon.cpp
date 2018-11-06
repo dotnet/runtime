@@ -3691,6 +3691,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if !defined(UNIX_AMD64_ABI)
             assert((i > 0) || (regNum == varDsc->lvArgReg));
 #endif // defined(UNIX_AMD64_ABI)
+
             // Is the arg dead on entry to the method ?
 
             if ((regArgMaskLive & genRegMask(regNum)) == 0)
@@ -3916,6 +3917,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             continue;
         }
 #endif // defined(UNIX_AMD64_ABI)
+
         // If the arg is dead on entry to the method, skip it
 
         if (regArgTab[argNum].processed)
@@ -4543,6 +4545,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 getEmitter()->emitIns_R_R_I(INS_mov, EA_8BYTE, destRegNum, nextRegNum, 1);
             }
 #endif // defined(_TARGET_ARM64_) && defined(FEATURE_SIMD)
+
             // Mark the rest of the argument registers corresponding to this multi-reg type as
             // being processed and no longer live.
             for (int regSlot = 1; regSlot < argRegCount; regSlot++)
@@ -8035,6 +8038,7 @@ void CodeGen::genFnProlog()
 
             noway_assert(!isFramePointerUsed() || loOffs != 0);
 #endif // !defined(_TARGET_AMD64_)
+
             // printf("    Untracked tmp at [EBP-%04X]\n", -stkOffs);
 
             hasUntrLcl = true;
@@ -8581,15 +8585,15 @@ void CodeGen::genFnProlog()
 
 #endif // _TARGET_X86_
 
-#ifdef DEBUG
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
     if (compiler->opts.compStackCheckOnRet)
     {
-        noway_assert(compiler->lvaReturnEspCheck != 0xCCCCCCCC &&
-                     compiler->lvaTable[compiler->lvaReturnEspCheck].lvDoNotEnregister &&
-                     compiler->lvaTable[compiler->lvaReturnEspCheck].lvOnFrame);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnEspCheck, 0);
+        noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
+                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvDoNotEnregister &&
+                     compiler->lvaTable[compiler->lvaReturnSpCheck].lvOnFrame);
+        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
-#endif
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
 
     getEmitter()->emitEndProlog();
     compiler->unwindEndProlog();
@@ -11927,4 +11931,56 @@ void CodeGen::genReturn(GenTree* treeNode)
         }
     }
 #endif // PROFILING_SUPPORTED
+
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
+    bool doStackPointerCheck = compiler->opts.compStackCheckOnRet;
+
+#if FEATURE_EH_FUNCLETS
+    // Don't do stack pointer check at the return from a funclet; only for the main function.
+    if (compiler->funCurrentFunc()->funKind != FUNC_ROOT)
+    {
+        doStackPointerCheck = false;
+    }
+#else  // !FEATURE_EH_FUNCLETS
+    // Don't generate stack checks for x86 finally/filter EH returns: these are not invoked
+    // with the same SP as the main function. See also CodeGen::genEHFinallyOrFilterRet().
+    if ((compiler->compCurBB->bbJumpKind == BBJ_EHFINALLYRET) || (compiler->compCurBB->bbJumpKind == BBJ_EHFILTERRET))
+    {
+        doStackPointerCheck = false;
+    }
+#endif // !FEATURE_EH_FUNCLETS
+
+    genStackPointerCheck(doStackPointerCheck, compiler->lvaReturnSpCheck);
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)
 }
+
+#if defined(DEBUG) && defined(_TARGET_XARCH_)
+
+//------------------------------------------------------------------------
+// genStackPointerCheck: Generate code to check the stack pointer against a saved value.
+// This is a debug check.
+//
+// Arguments:
+//    doStackPointerCheck - If true, do the stack pointer check, otherwise do nothing.
+//    lvaStackPointerVar  - The local variable number that holds the value of the stack pointer
+//                          we are comparing against.
+//
+// Return Value:
+//    None
+//
+void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar)
+{
+    if (doStackPointerCheck)
+    {
+        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaTable[lvaStackPointerVar].lvDoNotEnregister &&
+                     compiler->lvaTable[lvaStackPointerVar].lvOnFrame);
+        getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
+
+        BasicBlock* sp_check = genCreateTempLabel();
+        getEmitter()->emitIns_J(INS_je, sp_check);
+        instGen(INS_BREAKPOINT);
+        genDefineTempLabel(sp_check);
+    }
+}
+
+#endif // defined(DEBUG) && defined(_TARGET_XARCH_)

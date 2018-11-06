@@ -10,10 +10,10 @@ namespace JitTest
 
     internal class Test
     {
-        [DllImport("msvcrt", EntryPoint = "sin")]
+        [DllImport("msvcrt", EntryPoint = "sin", CallingConvention = CallingConvention.Cdecl)]
         private static extern double sin(double x);
 
-        [DllImport("msvcrt", EntryPoint = "acos")]
+        [DllImport("msvcrt", EntryPoint = "acos", CallingConvention = CallingConvention.Cdecl)]
         private static extern double acos(double x);
 
         private static int Main()
