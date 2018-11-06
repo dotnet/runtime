@@ -11018,6 +11018,32 @@ BYTE* emitter::emitOutputR(BYTE* dst, instrDesc* id)
             dst += emitOutputByte(dst, code);
             break;
 
+        case INS_bswap:
+        {
+            assert(size >= EA_4BYTE && size <= EA_PTRSIZE); // 16-bit BSWAP is undefined
+
+            // The Intel instruction set reference for BSWAP states that extended registers
+            // should be enabled via REX.R, but per Vol. 2A, Sec. 2.2.1.2 (see also Figure 2-7),
+            // REX.B should instead be used if the register is encoded in the opcode byte itself.
+            // Therefore the default logic of insEncodeReg012 is correct for this case.
+
+            code = insCodeRR(ins);
+
+            if (TakesRexWPrefix(ins, size))
+            {
+                code = AddRexWPrefix(ins, code);
+            }
+
+            // Register...
+            unsigned regcode = insEncodeReg012(ins, reg, size, &code);
+
+            // Output the REX prefix
+            dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
+
+            dst += emitOutputWord(dst, code | (regcode << 8));
+            break;
+        }
+
         case INS_seto:
         case INS_setno:
         case INS_setb:
