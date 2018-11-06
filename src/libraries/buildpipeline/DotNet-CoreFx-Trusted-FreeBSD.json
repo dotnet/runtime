@@ -128,7 +128,7 @@
       },
       "inputs": {
         "filename": "bash",
-        "arguments": "-c \"export DotNetCoreSdkDir=/usr/local/dotnet/ && export DotNetRoot=/usr/local/dotnet/ && $(Agent.BuildDirectory)/s/corefx/eng/common/msbuild.sh $(Agent.BuildDirectory)/s/corefx/src/publish.proj /p:CloudDropAccountName=$(PB_CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(PB_Label) /flp:LogFile=publish-packages.log /p:OverwriteOnPublish=false \"",
+        "arguments": "-c \"export DotNetCoreSdkDir=/usr/local/dotnet/ && export DotNetRoot=/usr/local/dotnet/ && $(Agent.BuildDirectory)/s/corefx/eng/common/msbuild.sh --warnaserror false $(Agent.BuildDirectory)/s/corefx/src/publish.proj /p:CloudDropAccountName=$(PB_CloudDropAccountName) /p:CloudDropAccessToken=$(CloudDropAccessToken) /p:ContainerName=$(PB_Label) /flp:LogFile=publish-packages.log /p:OverwriteOnPublish=false \"",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }
