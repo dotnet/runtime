@@ -673,13 +673,6 @@
 /* Use mono_mutex_t */
 /* #undef USE_MONO_MUTEX */
 
-#ifdef ENABLE_LLVM
-	#define ENABLE_LLVM 1
-	#define ENABLE_LLVM_RUNTIME 1
-	#define LLVM_VERSION "3.6.0svn-mono-"
-	#define LLVM_API_VERSION 4
-#endif
-
 /* Version number of package */
 #define VERSION "#MONO_VERSION#"
 
