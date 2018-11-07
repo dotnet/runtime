@@ -195,12 +195,11 @@ namespace Arm64intrisicsTest
                                                                 Func<TVectorType, TVectorType, TVectorType, TVectorTypeReturn> cryptoOp)
             where TVectorType : new()
         {
-            TVectorType v = new TVectorType();
-
             bool notSupported = false;
 
             try
             {
+                TVectorType v = new TVectorType();
                 cryptoOp(v,v,v);
             }
             catch (PlatformNotSupportedException) // TODO-Fixme check for Type not supported exception
@@ -266,8 +265,6 @@ namespace Arm64intrisicsTest
                 testCryptoOp<uint,  Vector128<uint>, uint, Vector128<uint> >(name, (x, y, z) => Sha1.SchedulePart2(x, y), sha1su2Res);
                 if(Sha1.FixedRotate(100) != 25)
                     throw new Exception("Sha1 FixedRotate failed.\n");
-
-
             }
             else
             {

@@ -54,6 +54,16 @@ struct HWIntrinsicInfo
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
     static int lookupNumArgs(const GenTreeHWIntrinsic* node);
 
+    static bool isFullyImplementedIsa(InstructionSet isa);
+    static bool isScalarIsa(InstructionSet isa);
+
+    // Member lookup
+
+    static NamedIntrinsic lookupId(NamedIntrinsic id)
+    {
+        return lookup(id).id;
+    }
+
     static const char* lookupName(NamedIntrinsic id)
     {
         return lookup(id).name;
