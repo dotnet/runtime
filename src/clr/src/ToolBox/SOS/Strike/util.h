@@ -356,6 +356,7 @@ namespace Output
         DML_RCWrapper,
         DML_CCWrapper,
         DML_ManagedVar,
+        DML_Async,
     };
 
     /**********************************************************************\
@@ -457,6 +458,7 @@ inline void ExtOutIndent()  { WhitespaceOut(Output::g_Indent << 2); }
 #define DMLRCWrapper(addr) Output::BuildHexValue(addr, Output::DML_RCWrapper).GetPtr()
 #define DMLCCWrapper(addr) Output::BuildHexValue(addr, Output::DML_CCWrapper).GetPtr()
 #define DMLManagedVar(expansionName,frame,simpleName) Output::BuildManagedVarValue(expansionName, frame, simpleName, Output::DML_ManagedVar).GetPtr()
+#define DMLAsync(addr) Output::BuildHexValue(addr, Output::DML_Async).GetPtr()
 
 bool IsDMLEnabled();
 

@@ -2499,25 +2499,28 @@ BOOL TryGetMethodDescriptorForDelegate(CLRDATA_ADDRESS delegateAddr, CLRDATA_ADD
     }
 
     sos::Object delegateObj = TO_TADDR(delegateAddr);
-    int offset;
 
-    if ((offset = GetObjFieldOffset(delegateObj.GetAddress(), delegateObj.GetMT(), W("_methodPtrAux"))) != 0)
+    for (int i = 0; i < 2; i++)
     {
-        CLRDATA_ADDRESS methodPtrAux;
-        MOVE(methodPtrAux, delegateObj.GetAddress() + offset);
-        if (methodPtrAux != NULL && g_sos->GetMethodDescPtrFromIP(methodPtrAux, pMD) == S_OK)
+        int offset;
+        if ((offset = GetObjFieldOffset(delegateObj.GetAddress(), delegateObj.GetMT(), i == 0 ? W("_methodPtrAux") : W("_methodPtr"))) != 0)
         {
-            return TRUE;
-        }
-    }
+            CLRDATA_ADDRESS methodPtr;
+            MOVE(methodPtr, delegateObj.GetAddress() + offset);
+            if (methodPtr != NULL)
+            {
+                if (g_sos->GetMethodDescPtrFromIP(methodPtr, pMD) == S_OK)
+                {
+                    return TRUE;
+                }
 
-    if ((offset = GetObjFieldOffset(delegateObj.GetAddress(), delegateObj.GetMT(), W("_methodPtr"))) != 0)
-    {
-        CLRDATA_ADDRESS methodPtr;
-        MOVE(methodPtr, delegateObj.GetAddress() + offset);
-        if (methodPtr != NULL && g_sos->GetMethodDescPtrFromIP(methodPtr, pMD) == S_OK)
-        {
-            return TRUE;
+                DacpCodeHeaderData codeHeaderData;
+                if (codeHeaderData.Request(g_sos, methodPtr) == S_OK)
+                {
+                    *pMD = codeHeaderData.MethodDescPtr;
+                    return TRUE;
+                }
+            }
         }
     }
 
@@ -5510,6 +5513,7 @@ const char * const DMLFormats[] =
     "<exec cmd=\"!DumpRCW /d %s\">%s</exec>",       // DML_RCWrapper
     "<exec cmd=\"!DumpCCW /d %s\">%s</exec>",       // DML_CCWrapper
     "<exec cmd=\"!ClrStack -i %S %d\">%S</exec>",   // DML_ManagedVar
+    "<exec cmd=\"!DumpAsync -addr %s -tasks -completed -fields -stacks -roots\">%s</exec>", // DML_Async
 };
 
 void ConvertToLower(__out_ecount(len) char *buffer, size_t len)
