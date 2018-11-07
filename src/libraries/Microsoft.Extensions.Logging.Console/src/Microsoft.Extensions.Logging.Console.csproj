@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Console logger provider implementation for Microsoft.Extensions.Logging.</Description>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <Reference Include="Microsoft.Extensions.Logging.Configuration" />
+    <Reference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+
+</Project>

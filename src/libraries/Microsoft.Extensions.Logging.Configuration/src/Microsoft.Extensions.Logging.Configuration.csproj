@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Configuration support for Microsoft.Extensions.Logging.</Description>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Logging" />
+    <Reference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+  </ItemGroup>
+
+</Project>
