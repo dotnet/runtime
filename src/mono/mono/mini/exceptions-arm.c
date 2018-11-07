@@ -41,6 +41,8 @@
 #include "mono/utils/mono-sigcontext.h"
 #include "mono/utils/mono-compiler.h"
 
+#ifndef DISABLE_JIT
+
 /*
  * arch_get_restore_context:
  *
@@ -143,6 +145,8 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	return start;
 }
 
+#endif /* DISABLE_JIT */
+
 void
 mono_arm_throw_exception (MonoObject *exc, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips)
 {
@@ -203,6 +207,8 @@ mono_arm_resume_unwind (guint32 dummy1, host_mgreg_t pc, host_mgreg_t sp, host_m
 
 	mono_resume_unwind (&ctx);
 }
+
+#ifndef DISABLE_JIT
 
 /**
  * get_throw_trampoline:
@@ -395,6 +401,17 @@ mono_arm_get_exception_trampolines (gboolean aot)
 
 	return tramps;
 }
+
+#else
+
+GSList*
+mono_arm_get_exception_trampolines (gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif
 
 void
 mono_arch_exceptions_init (void)

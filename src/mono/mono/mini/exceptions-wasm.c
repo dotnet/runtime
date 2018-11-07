@@ -55,6 +55,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	return FALSE;
 }
 
+#ifndef DISABLE_JIT
+
 gpointer
 mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 {
@@ -101,6 +103,8 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 		*info = mono_tramp_info_create ("throw_exception", (guint8*)wasm_throw_exception, 1, NULL, NULL);
 	return (gpointer)wasm_throw_exception;
 }
+
+#endif
 
 void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)

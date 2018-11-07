@@ -305,49 +305,7 @@ mono_arm_get_exception_trampolines (gboolean aot)
 	return tramps;
 }
 
-#else /* DISABLE_JIT */
-
-gpointer
-mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer 
-mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer 
-mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}	
+#else
 
 GSList*
 mono_arm_get_exception_trampolines (gboolean aot)
@@ -356,7 +314,7 @@ mono_arm_get_exception_trampolines (gboolean aot)
 	return NULL;
 }
 
-#endif /* !DISABLE_JIT */
+#endif /* DISABLE_JIT */
 
 void
 mono_arch_exceptions_init (void)
