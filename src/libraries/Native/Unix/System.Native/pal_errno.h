@@ -111,6 +111,9 @@ typedef enum
     Error_EHOSTDOWN = 0x10070,       // Host is down.
     Error_ENODATA = 0x10071,         // No data available.
 
+    // Error codes to track errors beyond kernel.
+    Error_EHOSTNOTFOUND = 0x20001,   // Name lookup failed.
+
     // POSIX permits these to have the same value and we make them
     // always equal so that we cannot introduce a dependency on
     // distinguishing between them that would not work on all

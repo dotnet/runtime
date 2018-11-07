@@ -81,7 +81,7 @@ namespace System.Net.Sockets
         {
             // This is *mostly* an inverse mapping of s_nativeErrorToSocketError.  However, some options have multiple mappings and thus
             // can't be inverted directly.  Other options don't have a mapping from native to SocketError, but when presented with a SocketError,
-            // we want to provide the closest relevant Error possible, e.g. EINPROGRESS maps to SocketError.InProgress, and vice versa, but 
+            // we want to provide the closest relevant Error possible, e.g. EINPROGRESS maps to SocketError.InProgress, and vice versa, but
             // SocketError.IOPending also maps closest to EINPROGRESS.  As such, roundtripping won't necessarily provide the original value 100% of the time,
             // but it's the best we can do given the mismatch between Interop.Error and SocketError.
 
@@ -97,7 +97,7 @@ namespace System.Net.Sockets
             { SocketError.Disconnecting, Interop.Error.ESHUTDOWN },
             { SocketError.Fault, Interop.Error.EFAULT },
             { SocketError.HostDown, Interop.Error.EHOSTDOWN },
-            { SocketError.HostNotFound, Interop.Error.ENXIO }, // not perfect, but closest match available
+            { SocketError.HostNotFound, Interop.Error.EHOSTNOTFOUND },
             { SocketError.HostUnreachable, Interop.Error.EHOSTUNREACH },
             { SocketError.InProgress, Interop.Error.EINPROGRESS },
             { SocketError.Interrupted, Interop.Error.EINTR },
