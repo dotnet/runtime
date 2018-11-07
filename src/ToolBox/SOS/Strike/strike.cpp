@@ -122,7 +122,6 @@
 #include "ExpressionNode.h"
 #include "WatchCmd.h"
 
-#include <set>
 #include <algorithm>
 
 #include "tls.h"
@@ -146,7 +145,9 @@ const PROCESSINFOCLASS ProcessVmCounters = static_cast<PROCESSINFOCLASS>(3);
 
 #endif // !FEATURE_PAL
 
+#include <set>
 #include <vector>
+#include <map>
 
 BOOL CallStatus;
 BOOL ControlC = FALSE;
@@ -156,7 +157,6 @@ WCHAR g_mdName[mdNameLen];
 
 #ifndef FEATURE_PAL
 HMODULE g_hInstance = NULL;
-#include <vector>
 #include <algorithm>
 #endif // !FEATURE_PAL
 
@@ -4234,11 +4234,169 @@ private:
 /**********************************************************************\
 * Routine Description:                                                 *
 *                                                                      *
-*    This function dumps async state machines on GC heap,          *
+*    This function dumps async state machines on GC heap,              *
 *    displaying details about each async operation found.              *
 *    (May not work if GC is in progress.)                              *
 *                                                                      *
 \**********************************************************************/
+
+void ResolveContinuation(CLRDATA_ADDRESS* contAddr)
+{
+    // Ideally this continuation is itself an async method box.
+    sos::Object contObj = TO_TADDR(*contAddr);
+    if (GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("StateMachine")) == 0)
+    {
+        // It was something else.
+
+        // If it's a standard task continuation, get its task field.
+        int offset;
+        if ((offset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("m_task"))) != 0)
+        {
+            MOVE(*contAddr, contObj.GetAddress() + offset);
+            if (sos::IsObject(*contAddr, false))
+            {
+                contObj = TO_TADDR(*contAddr);
+            }
+        }
+        else
+        {
+            // If it's storing an action wrapper, try to follow to that action's target.
+            if ((offset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("m_action"))) != 0)
+            {
+                MOVE(*contAddr, contObj.GetAddress() + offset);
+                if (sos::IsObject(*contAddr, false))
+                {
+                    contObj = TO_TADDR(*contAddr);
+                }
+            }
+
+            // If it was, or if it's storing an action, try to follow through to the action's target.
+            if ((offset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("_target"))) != 0)
+            {
+                MOVE(*contAddr, contObj.GetAddress() + offset);
+                if (sos::IsObject(*contAddr, false))
+                {
+                    contObj = TO_TADDR(*contAddr);
+                }
+            }
+        }
+
+        // Use whatever object we ended with.
+        *contAddr = contObj.GetAddress();
+    }
+}
+
+bool TryGetContinuation(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS mt, CLRDATA_ADDRESS* contAddr)
+{
+    // Get the continuation field from the task.
+    int offset = GetObjFieldOffset(addr, mt, W("m_continuationObject"));
+    if (offset != 0)
+    {
+        DWORD_PTR contObjPtr;
+        MOVE(contObjPtr, addr + offset);
+        if (sos::IsObject(contObjPtr, false))
+        {
+            *contAddr = TO_CDADDR(contObjPtr);
+            ResolveContinuation(contAddr);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+struct AsyncRecord
+{
+    CLRDATA_ADDRESS Address;
+    CLRDATA_ADDRESS MT;
+    DWORD Size;
+    CLRDATA_ADDRESS StateMachineAddr;
+    CLRDATA_ADDRESS StateMachineMT;
+    BOOL FilteredByOptions;
+    BOOL IsStateMachine;
+    BOOL IsValueType;
+    BOOL IsTopLevel;
+    int TaskStateFlags;
+    int StateValue;
+    std::vector<CLRDATA_ADDRESS> Continuations;
+};
+
+bool AsyncRecordIsCompleted(AsyncRecord& ar)
+{
+    const int TASK_STATE_COMPLETED_MASK = 0x1600000;
+    return (ar.TaskStateFlags & TASK_STATE_COMPLETED_MASK) != 0;
+}
+
+const char* GetAsyncRecordStatusDescription(AsyncRecord& ar)
+{
+    const int TASK_STATE_RAN_TO_COMPLETION = 0x1000000;
+    const int TASK_STATE_FAULTED = 0x200000;
+    const int TASK_STATE_CANCELED = 0x400000;
+
+    if ((ar.TaskStateFlags & TASK_STATE_RAN_TO_COMPLETION) != 0) return "Success";
+    if ((ar.TaskStateFlags & TASK_STATE_FAULTED) != 0) return "Failed";
+    if ((ar.TaskStateFlags & TASK_STATE_CANCELED) != 0) return "Canceled";
+    return "Pending";
+}
+
+void ExtOutTaskDelegateMethod(sos::Object& obj)
+{
+    DacpFieldDescData actionField;
+    int offset = GetObjFieldOffset(obj.GetAddress(), obj.GetMT(), W("m_action"), TRUE, &actionField);
+    if (offset != 0)
+    {
+        CLRDATA_ADDRESS actionAddr;
+        MOVE(actionAddr, obj.GetAddress() + offset);
+        CLRDATA_ADDRESS actionMD;
+        if (actionAddr != NULL && TryGetMethodDescriptorForDelegate(actionAddr, &actionMD))
+        {
+            NameForMD_s((DWORD_PTR)actionMD, g_mdName, mdNameLen);
+            ExtOut("(%S) ", g_mdName);
+        }
+    }
+}
+
+void ExtOutTaskStateFlagsDescription(int stateFlags)
+{
+    if (stateFlags == 0) return;
+
+    ExtOut("State Flags: ");
+
+    // TaskCreationOptions.*
+    if ((stateFlags & 0x01) != 0) ExtOut("PreferFairness ");
+    if ((stateFlags & 0x02) != 0) ExtOut("LongRunning ");
+    if ((stateFlags & 0x04) != 0) ExtOut("AttachedToParent ");
+    if ((stateFlags & 0x08) != 0) ExtOut("DenyChildAttach ");
+    if ((stateFlags & 0x10) != 0) ExtOut("HideScheduler ");
+    if ((stateFlags & 0x40) != 0) ExtOut("RunContinuationsAsynchronously ");
+
+    // InternalTaskOptions.*
+    if ((stateFlags & 0x0200) != 0) ExtOut("ContinuationTask ");
+    if ((stateFlags & 0x0400) != 0) ExtOut("PromiseTask ");
+    if ((stateFlags & 0x1000) != 0) ExtOut("LazyCancellation ");
+    if ((stateFlags & 0x2000) != 0) ExtOut("QueuedByRuntime ");
+    if ((stateFlags & 0x4000) != 0) ExtOut("DoNotDispose ");
+
+    // TASK_STATE_*
+    if ((stateFlags & 0x10000) != 0) ExtOut("STARTED ");
+    if ((stateFlags & 0x20000) != 0) ExtOut("DELEGATE_INVOKED ");
+    if ((stateFlags & 0x40000) != 0) ExtOut("DISPOSED ");
+    if ((stateFlags & 0x80000) != 0) ExtOut("EXCEPTIONOBSERVEDBYPARENT ");
+    if ((stateFlags & 0x100000) != 0) ExtOut("CANCELLATIONACKNOWLEDGED ");
+    if ((stateFlags & 0x200000) != 0) ExtOut("FAULTED ");
+    if ((stateFlags & 0x400000) != 0) ExtOut("CANCELED ");
+    if ((stateFlags & 0x800000) != 0) ExtOut("WAITING_ON_CHILDREN ");
+    if ((stateFlags & 0x1000000) != 0) ExtOut("RAN_TO_COMPLETION ");
+    if ((stateFlags & 0x2000000) != 0) ExtOut("WAITINGFORACTIVATION ");
+    if ((stateFlags & 0x4000000) != 0) ExtOut("COMPLETION_RESERVED ");
+    if ((stateFlags & 0x8000000) != 0) ExtOut("THREAD_WAS_ABORTED ");
+    if ((stateFlags & 0x10000000) != 0) ExtOut("WAIT_COMPLETION_NOTIFICATION ");
+    if ((stateFlags & 0x20000000) != 0) ExtOut("EXECUTIONCONTEXT_IS_NULL ");
+    if ((stateFlags & 0x40000000) != 0) ExtOut("TASKSCHEDULED_WAS_FIRED ");
+
+    ExtOut("\n");
+}
+
 DECLARE_API(DumpAsync)
 {
     INIT_API();
@@ -4253,40 +4411,47 @@ DECLARE_API(DumpAsync)
     {
         // Process command-line arguments.
         size_t nArg = 0;
-        TADDR mt = NULL;
+        TADDR mt = NULL, addr = NULL;
         ArrayHolder<char> ansiType = NULL;
         ArrayHolder<WCHAR> type = NULL;
-        BOOL dml = FALSE, waiting = FALSE, roots = FALSE;
+        BOOL dml = FALSE, includeCompleted = FALSE, includeStacks = FALSE, includeRoots = FALSE, includeAllTasks = FALSE, dumpFields = FALSE;
         CMDOption option[] =
         {   // name, vptr, type, hasValue
-            { "-mt", &mt, COHEX, TRUE },             // dump state machines only with a given MethodTable
-            { "-type", &ansiType, COSTRING, TRUE },  // dump state machines only that contain the specified type substring
-            { "-waiting", &waiting, COBOOL, FALSE }, // dump state machines only when they're in a waiting state
-            { "-roots", &roots, COBOOL, FALSE },     // gather GC root information
+            { "-addr", &addr, COHEX, TRUE },                // dump only the async object at the specified address
+            { "-mt", &mt, COHEX, TRUE },                        // dump only async objects with a given MethodTable
+            { "-type", &ansiType, COSTRING, TRUE },             // dump only async objects that contain the specified type substring
+            { "-tasks", &includeAllTasks, COBOOL, FALSE },      // include all tasks that can be found on the heap, not just async methods
+            { "-completed", &includeCompleted, COBOOL, FALSE }, // include async objects that are in a completed state
+            { "-fields", &dumpFields, COBOOL, FALSE },          // show relevant fields of found async objects
+            { "-stacks", &includeStacks, COBOOL, FALSE },       // gather and output continuation/stack information
+            { "-roots", &includeRoots, COBOOL, FALSE },         // gather and output GC root information
 #ifndef FEATURE_PAL
-            { "/d", &dml, COBOOL, FALSE },            // Debugger Markup Language
+            { "/d", &dml, COBOOL, FALSE },                      // Debugger Markup Language
 #endif
         };
-        if (!GetCMDOption(args, option, _countof(option), NULL, 0, &nArg))
+        if (!GetCMDOption(args, option, _countof(option), NULL, 0, &nArg) || nArg != 0)
         {
-            sos::Throw<sos::Exception>("Usage: DumpAsync [-mt MethodTableAddr] [-type TypeName] [-waiting] [-roots]");
-        }
-        if (nArg != 0)
-        {
-            sos::Throw<sos::Exception>("Unexpected command-line arguments.");
+            sos::Throw<sos::Exception>(
+                "Usage: DumpAsync [-addr ObjectAddr] [-mt MethodTableAddr] [-type TypeName] [-tasks] [-completed] [-fields] [-stacks] [-roots]\n"
+                "[-addr ObjectAddr]     => Only display the async object at the specified address.\n"
+                "[-mt MethodTableAddr]  => Only display top-level async objects with the specified method table address.\n"
+                "[-type TypeName]       => Only display top-level async objects whose type name includes the specified substring.\n"
+                "[-tasks]               => Include Task and Task-derived objects, in addition to any state machine objects found.\n"
+                "[-completed]           => Include async objects that represent completed operations but that are still on the heap.\n"
+                "[-fields]              => Show the fields of state machines.\n"
+                "[-stacks]              => Gather, output, and consolidate based on continuation chains / async stacks for discovered async objects.\n"
+                "[-roots]               => Perform a gcroot on each rendered async object.\n"
+                );
         }
         if (ansiType != NULL)
         {
-            if (mt != NULL)
-            {
-                sos::Throw<sos::Exception>("Cannot specify both -mt and -type");
-            }
-
             size_t ansiTypeLen = strlen(ansiType) + 1;
             type = new WCHAR[ansiTypeLen];
             MultiByteToWideChar(CP_ACP, 0, ansiType, -1, type, (int)ansiTypeLen);
         }
+        
         EnableDMLHolder dmlHolder(dml);
+        BOOL hasTypeFilter = mt != NULL || ansiType != NULL || addr != NULL;
 
         // Display a message if the heap isn't verified.
         sos::GCHeap gcheap;
@@ -4295,160 +4460,321 @@ DECLARE_API(DumpAsync)
             DisplayInvalidStructuresMessage();
         }
 
-        // Print out header for the main line of each async state machine object.
-        ExtOut("%" POINTERSIZE "s %" POINTERSIZE "s %8s %s\n", "Address", "MT", "Size", "Name");
-
-        // Walk each heap object looking for async state machine objects.
-        BOOL missingStateFieldWarning = FALSE;
-        int numStateMachines = 0;
+        // Walk each heap object looking for async state machine objects.  As we're targeting .NET Core 2.1+, all such objects
+        // will be Task or Task-derived types.
+        std::map<CLRDATA_ADDRESS, AsyncRecord> asyncRecords;
         for (sos::ObjectIterator itr = gcheap.WalkHeap(); !IsInterrupt() && itr != NULL; ++itr)
         {
-            // Skip objects we know to be too small to possibly be a state machine.
-            // This helps filter out some caching data structures generated by the compiler.
-            if (itr->GetSize() <= 24)
+            // Skip objects too small to be state machines or tasks, avoiding some compiler-generated caching data structures.
+            if (itr->GetSize() <= 24) 
             {
                 continue;
             }
 
-            // Match only MTs the user requested.
-            if (mt != NULL && mt != itr->GetMT())
+            // Match only async objects.
+            if (includeAllTasks)
             {
-                continue;
+                // If the user has selected to include all tasks and not just async state machine boxes, we simply need to validate
+                // that this is Task or Task-derived, and if it's not, skip it.
+                if (!IsDerivedFrom(itr->GetMT(), W("System.Threading.Tasks.Task")))
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                // Otherwise, we only care about AsyncStateMachineBox`1 as well as the DebugFinalizableAsyncStateMachineBox`1
+                // that's used when certain ETW events are set.
+                if (_wcsncmp(itr->GetTypeName(), W("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1"), 79) != 0 &&
+                    _wcsncmp(itr->GetTypeName(), W("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+DebugFinalizableAsyncStateMachineBox`1"), 95) != 0)
+                {
+                    continue;
+                }
             }
 
-            // Match only type name substrings the user requested.
-            if (type != NULL && _wcsstr(itr->GetTypeName(), type) == NULL)
+            // Create an AsyncRecord to store the state for this instance.  We're likely going to keep the object at this point,
+            // though we may still discard/skip it with a few checks later; to do that, though, we'll need some of the info
+            // gathered here, so we construct the record to store the data.
+            AsyncRecord ar;
+            ar.Address = itr->GetAddress();
+            ar.MT = itr->GetMT();
+            ar.Size = (DWORD)itr->GetSize();
+            ar.StateMachineAddr = itr->GetAddress();
+            ar.StateMachineMT = itr->GetMT();
+            ar.IsValueType = false;
+            ar.IsTopLevel = true;
+            ar.IsStateMachine = false;
+            ar.TaskStateFlags = 0;
+            ar.StateValue = 0;
+            ar.FilteredByOptions = // we process all objects to support forming proper chains, but then only display ones that match the user's request
+                (mt == NULL || mt == itr->GetMT()) && // Match only MTs the user requested.
+                (type == NULL || _wcsstr(itr->GetTypeName(), type) != NULL) && // Match only type name substrings the user requested.
+                (addr == NULL || addr == itr->GetAddress()); // Match only the object at the specified address.
+
+            // Get the state flags for the task.  This is used to determine whether async objects are completed (and thus should
+            // be culled by default).  It avoids our needing to depend on interpreting the compiler's "<>1__state" field, and also lets
+            // us display state information for non-async state machine objects.
+            DacpFieldDescData stateFlagsField;
+            int offset = GetObjFieldOffset(ar.Address, ar.MT, W("m_stateFlags"), TRUE, &stateFlagsField);
+            if (offset != 0)
             {
-                continue;
+                sos::Object obj = TO_TADDR(ar.Address);
+                MOVE(ar.TaskStateFlags, obj.GetAddress() + offset);
             }
 
-            // Match only the two known state machine class name prefixes.
-            if (_wcsncmp(itr->GetTypeName(), W("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1"), 79) != 0 &&               // Normal box.
-                _wcsncmp(itr->GetTypeName(), W("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+DebugFinalizableAsyncStateMachineBox`1"), 95) != 0) // Used when certain ETW events enabled.
-            {
-                continue;
-            }
-
-            // Get the async state machine object's StateMachine field.  If we can't, it's not
-            // an async state machine we can handle.
+            // Get the async state machine object's StateMachine field.
             DacpFieldDescData stateMachineField;
             int stateMachineFieldOffset = GetObjFieldOffset(TO_CDADDR(itr->GetAddress()), itr->GetMT(), W("StateMachine"), TRUE, &stateMachineField);
-            if (stateMachineFieldOffset <= 0)
+            if (stateMachineFieldOffset != 0)
+            {
+                ar.IsStateMachine = true;
+                ar.IsValueType = stateMachineField.Type == ELEMENT_TYPE_VALUETYPE;
+
+                // Get the address and method table of the state machine.  While it'll generally be a struct, it is valid for it to be a
+                // class (the C# compiler generates a class in debug builds to better support Edit-And-Continue), so we accommodate both.
+                DacpFieldDescData stateField;
+                int stateFieldOffset = -1;
+                if (ar.IsValueType)
+                {
+                    ar.StateMachineAddr = itr->GetAddress() + stateMachineFieldOffset;
+                    ar.StateMachineMT = stateMachineField.MTOfType;
+                    stateFieldOffset = GetValueFieldOffset(ar.StateMachineMT, W("<>1__state"), &stateField);
+                }
+                else
+                {
+                    MOVE(ar.StateMachineAddr, itr->GetAddress() + stateMachineFieldOffset);
+                    DacpObjectData objData;
+                    if (objData.Request(g_sos, ar.StateMachineAddr) == S_OK)
+                    {
+                        ar.StateMachineMT = objData.MethodTable; // update from Canon to actual type
+                        stateFieldOffset = GetObjFieldOffset(ar.StateMachineAddr, ar.StateMachineMT, W("<>1__state"), TRUE, &stateField);
+                    }
+                }
+
+                if (stateFieldOffset >= 0 && (ar.IsValueType || stateFieldOffset != 0))
+                {
+                    MOVE(ar.StateValue, ar.StateMachineAddr + stateFieldOffset);
+                }
+            }
+
+            // If we only want to include incomplete async objects, skip this one if it's completed.
+            if (!includeCompleted && AsyncRecordIsCompleted(ar))
             {
                 continue;
             }
 
-            // Get the address and method table of the state machine.  While it'll generally be a struct,
-            // it is valid for it to be a class, so we accommodate both.
-            BOOL bStateMachineIsValueType = stateMachineField.Type == ELEMENT_TYPE_VALUETYPE;
-            CLRDATA_ADDRESS stateMachineAddr;
-            CLRDATA_ADDRESS stateMachineMT;
-            if (bStateMachineIsValueType)
+            // If the user has asked to include "async stacks" information, resolve any continuation
+            // that might be registered with it.  This could be a single continuation, or it could
+            // be a list of continuations in the case of the same task being awaited multiple times.
+            CLRDATA_ADDRESS nextAddr;
+            if (includeStacks && TryGetContinuation(itr->GetAddress(), itr->GetMT(), &nextAddr))
             {
-                stateMachineAddr = itr->GetAddress() + stateMachineFieldOffset;
-                stateMachineMT = stateMachineField.MTOfType;
-            }
-            else
-            {
-                MOVE(stateMachineAddr, itr->GetAddress() + stateMachineFieldOffset);
-                DacpObjectData objData;
-                if (objData.Request(g_sos, stateMachineAddr) != S_OK)
+                sos::Object contObj = TO_TADDR(nextAddr);
+                if (_wcsncmp(contObj.GetTypeName(), W("System.Collections.Generic.List`1"), 33) == 0)
                 {
-                    // Couldn't get the class-based object; just skip this state machine.
-                    continue;
+                    // The continuation is a List<object>.  Iterate through its internal object[]
+                    // looking for non-null objects, and adding each one as a continuation.
+                    int itemsOffset = GetObjFieldOffset(contObj.GetAddress(), contObj.GetMT(), W("_items"));
+                    if (itemsOffset != 0)
+                    {
+                        DWORD_PTR listItemsPtr;
+                        MOVE(listItemsPtr, contObj.GetAddress() + itemsOffset);
+                        if (sos::IsObject(listItemsPtr, false))
+                        {
+                            DacpObjectData objData;
+                            if (objData.Request(g_sos, TO_CDADDR(listItemsPtr)) == S_OK && objData.ObjectType == OBJ_ARRAY)
+                            {
+                                for (int i = 0; i < objData.dwNumComponents; i++)
+                                {
+                                    CLRDATA_ADDRESS elementPtr;
+                                    MOVE(elementPtr, TO_CDADDR(objData.ArrayDataPtr + (i * objData.dwComponentSize)));
+                                    if (elementPtr != NULL && sos::IsObject(elementPtr, false))
+                                    {
+                                        ResolveContinuation(&elementPtr);
+                                        ar.Continuations.push_back(elementPtr);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                stateMachineMT = objData.MethodTable; // update from Canon to actual type
-            }
-
-            // Get the current state value of the state machine. If the user has requested to filter down
-            // to only those state machines that are currently at an await, compare it against the expected
-            // waiting values.  This value can also be used in later analysis.
-            int stateValue = -2;
-            DacpFieldDescData stateField;
-            int stateFieldOffset = bStateMachineIsValueType ?
-                GetValueFieldOffset(stateMachineMT, W("<>1__state"), &stateField) :
-                GetObjFieldOffset(stateMachineAddr, stateMachineMT, W("<>1__state"), TRUE, &stateField);
-            if (stateFieldOffset < 0 || (!bStateMachineIsValueType && stateFieldOffset == 0))
-            {
-                missingStateFieldWarning = TRUE;
-                if (waiting)
+                else
                 {
-                    // waiting was specified and we couldn't find the field to satisfy the query,
-                    // so skip this object.
-                    continue;
-                }
-            }
-            else
-            {
-                MOVE(stateValue, stateMachineAddr + stateFieldOffset);
-                if (waiting && stateValue < 0)
-                {
-                    // 0+ values correspond to the await in linear sequence in the method, so a non-negative
-                    // value indicates the state machine is at an await.  Since we're filtering for waiting,
-                    // anything else should be skipped.
-                    continue;
+                    ar.Continuations.push_back(contObj.GetAddress());
                 }
             }
 
-            // We now have a state machine that's passed all of our criteria.  Print out its details.
+            // We've gathered all of the needed information for this heap object.  Add it to our list of async records.
+            asyncRecords.insert(std::pair<CLRDATA_ADDRESS, AsyncRecord>(ar.Address, ar));
+        }
 
-            // Print out top level description of the state machine object.
-            ExtOut("#%d\n", numStateMachines);
-            numStateMachines++;
-            DMLOut("%s %s %8d", DMLObject(itr->GetAddress()), DMLDumpHeapMT(itr->GetMT()), itr->GetSize());
-            ExtOut("  %S\n", itr->GetTypeName());
+        // As with DumpHeap, output a summary table about all of the objects we found.  In contrast, though, his is based on the filtered
+        // list of async records we gathered rather than everything on the heap.
+        if (addr == NULL) // no point in stats if we're only targeting a single object
+        {
+            HeapStat stats;
+            for (std::map<CLRDATA_ADDRESS, AsyncRecord>::iterator arIt = asyncRecords.begin(); arIt != asyncRecords.end(); ++arIt)
+            {
+                if (!hasTypeFilter || arIt->second.FilteredByOptions)
+                {
+                    stats.Add((DWORD_PTR)arIt->second.MT, (DWORD)arIt->second.Size);
+                }
+            }
+            stats.Sort();
+            stats.Print();
+        }
 
-            // Output the state machine's name and fields.
+        // If the user has asked for "async stacks" and if there's not MT/type name filter, look through all of our async records
+        // to find the "top-level" nodes that start rather than that are a part of a continuation chain.  When we then iterate through
+        // async records, we only print ones out that are still classified as top-level.  We don't do this if there's a type filter
+        // because in that case we consider those and only those objects to be top-level.
+        if (includeStacks && !hasTypeFilter)
+        {
+            size_t uniqueChains = asyncRecords.size();
+            for (std::map<CLRDATA_ADDRESS, AsyncRecord>::iterator arIt = asyncRecords.begin(); arIt != asyncRecords.end(); ++arIt)
+            {
+                for (std::vector<CLRDATA_ADDRESS>::iterator contIt = arIt->second.Continuations.begin(); contIt != arIt->second.Continuations.end(); ++contIt)
+                {
+                    std::map<CLRDATA_ADDRESS, AsyncRecord>::iterator found = asyncRecords.find(*contIt);
+                    if (found != asyncRecords.end())
+                    {
+                        if (found->second.IsTopLevel)
+                        {
+                            found->second.IsTopLevel = false;
+                            uniqueChains--;
+                        }
+                    }
+                }
+            }
+
+            ExtOut("In %d chains.\n", uniqueChains);
+        }
+
+        // Print out header for the main line of each result.
+        ExtOut("%" POINTERSIZE "s %" POINTERSIZE "s %8s ", "Address", "MT", "Size");
+        if (includeCompleted) ExtOut("%8s ", "Status");
+        ExtOut("%10s %s\n", "State", "Description");
+
+        // Output each top-level async record.
+        int counter = 0;
+        for (std::map<CLRDATA_ADDRESS, AsyncRecord>::iterator arIt = asyncRecords.begin(); arIt != asyncRecords.end(); ++arIt)
+        {
+            if (!arIt->second.IsTopLevel || (hasTypeFilter && !arIt->second.FilteredByOptions))
+            {
+                continue;
+            }
+
+            // Output the state machine's details as a single line.
+            sos::Object obj = TO_TADDR(arIt->second.Address);
             DacpMethodTableData mtabledata;
             DacpMethodTableFieldData vMethodTableFields;
-            if (mtabledata.Request(g_sos, stateMachineMT) == S_OK &&
-                vMethodTableFields.Request(g_sos, stateMachineMT) == S_OK &&
+            if (arIt->second.IsStateMachine &&
+                mtabledata.Request(g_sos, arIt->second.StateMachineMT) == S_OK &&
+                vMethodTableFields.Request(g_sos, arIt->second.StateMachineMT) == S_OK &&
                 vMethodTableFields.wNumInstanceFields + vMethodTableFields.wNumStaticFields > 0)
             {
-                sos::MethodTable mt = (TADDR)stateMachineMT;
-                ExtOut("StateMachine: %S (%s)\n", mt.GetName(), bStateMachineIsValueType ? "struct" : "class");
-                DisplayFields(stateMachineMT, &mtabledata, &vMethodTableFields, (DWORD_PTR)stateMachineAddr, TRUE, bStateMachineIsValueType);
+                // This has a StateMachine.  Output its details.
+                sos::MethodTable mt = TO_TADDR(arIt->second.StateMachineMT);
+                DMLOut("%s %s %8d ", DMLAsync(obj.GetAddress()), DMLDumpHeapMT(obj.GetMT()), obj.GetSize());
+                if (includeCompleted) ExtOut("%8s ", GetAsyncRecordStatusDescription(arIt->second));
+                ExtOut("%10d %S\n", arIt->second.StateValue, mt.GetName());
+                if (dumpFields) DisplayFields(arIt->second.StateMachineMT, &mtabledata, &vMethodTableFields, (DWORD_PTR)arIt->second.StateMachineAddr, TRUE, arIt->second.IsValueType);
             }
-
-            // If the object already has a registered continuation, output it.
-            int iContOffset = GetObjFieldOffset(TO_CDADDR(itr->GetAddress()), itr->GetMT(), W("m_continuationObject"));
-            if (iContOffset > 0)
+            else
             {
-                DWORD_PTR ContObjPtr;
-                MOVE(ContObjPtr, itr->GetAddress() + iContOffset);
-                DMLOut("Continuation: %s", DMLObject(ContObjPtr));
-                if (sos::IsObject(ContObjPtr, false))
-                {
-                    sos::Object contObj = ContObjPtr;
-                    ExtOut(" (%S)", contObj.GetTypeName());
-                }
+                // This does not have a StateMachine.  Output the details of the Task itself.
+                DMLOut("%s %s %8d ", DMLAsync(obj.GetAddress()), DMLDumpHeapMT(obj.GetMT()), obj.GetSize());
+                if (includeCompleted) ExtOut("%8s ", GetAsyncRecordStatusDescription(arIt->second));
+                ExtOut("[%08x] %S ", arIt->second.TaskStateFlags, obj.GetTypeName());
+                ExtOutTaskDelegateMethod(obj);
                 ExtOut("\n");
+                if (dumpFields) ExtOutTaskStateFlagsDescription(arIt->second.TaskStateFlags);
             }
 
-            // Finally, output gcroots, as they can serve as call stacks, and also help to highlight
-            // state machines that aren't being kept alive.
-            if (roots)
+            // If we gathered any continuations for this record, output the chains now.
+            if (includeStacks && arIt->second.Continuations.size() > 0)
+            {
+                ExtOut(includeAllTasks ? "Continuation chains:\n" : "Async \"stack\":\n");
+                std::vector<std::pair<int, CLRDATA_ADDRESS>> continuationChainToExplore;
+                continuationChainToExplore.push_back(std::pair<int, CLRDATA_ADDRESS>(1, obj.GetAddress()));
+
+                // Do a depth-first traversal of continuations, outputting each continuation found and then
+                // looking in our gathered objects list for its continuations.
+                std::set<CLRDATA_ADDRESS> seen;
+                while (continuationChainToExplore.size() > 0)
+                {
+                    // Pop the next continuation from the stack.
+                    std::pair<int, CLRDATA_ADDRESS> cur = continuationChainToExplore.back();
+                    continuationChainToExplore.pop_back();
+
+                    // Get the async record for this continuation.  It should be one we already know about.
+                    std::map<CLRDATA_ADDRESS, AsyncRecord>::iterator curAsyncRecord = asyncRecords.find(cur.second);
+                    if (curAsyncRecord == asyncRecords.end())
+                    {
+                        continue;
+                    }
+
+                    // Make sure to avoid cycles in the rare case where async records may refer to each other.
+                    if (seen.find(cur.second) != seen.end())
+                    {
+                        continue;
+                    }
+                    seen.insert(cur.second);
+
+                    // Iterate through all continuations from this object.
+                    for (std::vector<CLRDATA_ADDRESS>::iterator contIt = curAsyncRecord->second.Continuations.begin(); contIt != curAsyncRecord->second.Continuations.end(); ++contIt)
+                    {
+                        sos::Object cont = TO_TADDR(*contIt);
+
+                        // Print out the depth of the continuation with dots, then its address.
+                        for (int i = 0; i < cur.first; i++) ExtOut(".");
+                        DMLOut("%s ", DMLObject(cont.GetAddress()));
+
+                        // Print out the name of the method for this task's delegate if it has one (state machines won't, but others tasks may).
+                        ExtOutTaskDelegateMethod(cont);
+
+                        // Find the async record for this continuation, and output its name.  If it's a state machine,
+                        // also output its current state value so that a user can see at a glance its status.
+                        std::map<CLRDATA_ADDRESS, AsyncRecord>::iterator contAsyncRecord = asyncRecords.find(cont.GetAddress());
+                        if (contAsyncRecord != asyncRecords.end())
+                        {
+                            sos::MethodTable contMT = TO_TADDR(contAsyncRecord->second.StateMachineMT);
+                            if (contAsyncRecord->second.IsStateMachine) ExtOut("(%d) ", contAsyncRecord->second.StateValue);
+                            ExtOut("%S\n", contMT.GetName());
+                        }
+                        else
+                        {
+                            ExtOut("%S\n", cont.GetTypeName());
+                        }
+
+                        // Add this continuation to the stack to explore.
+                        continuationChainToExplore.push_back(std::pair<int, CLRDATA_ADDRESS>(cur.first + 1, *contIt));
+                    }
+                }
+            }
+
+            // Finally, output gcroots, as they can serve as alternative/more detailed "async stacks", and also help to highlight
+            // state machines that aren't being kept alive.  However, they're more expensive to compute, so they're opt-in.
+            if (includeRoots)
             {
                 ExtOut("GC roots:\n");
                 IncrementIndent();
                 GCRootImpl gcroot;
-                int numRoots = gcroot.PrintRootsForObject(*itr, FALSE, FALSE);
+                int numRoots = gcroot.PrintRootsForObject(obj.GetAddress(), FALSE, FALSE);
                 DecrementIndent();
-
-                if (stateValue >= 0 && numRoots == 0)
+                if (numRoots == 0 && !AsyncRecordIsCompleted(arIt->second))
                 {
-                    ExtOut("Incomplete state machine (<>1__state == %d) with 0 roots.\n", stateValue);
+                    ExtOut("Incomplete state machine or task with 0 roots.\n");
                 }
             }
 
-            ExtOut("\n");
+            // If we're rendering more than one line per entry, output a separator to help distinguish the entries.
+            if (dumpFields || includeStacks || includeRoots)
+            {
+                ExtOut("--------------------------------------------------------------------------------\n");
+            }
         }
 
-        ExtOut("\nFound %d state machines.\n", numStateMachines);
-        if (missingStateFieldWarning)
-        {
-            ExtOut("Warning: Could not find a state machine's <>1__state field.\n");
-        }
         return S_OK;
     }
     catch (const sos::Exception &e)
