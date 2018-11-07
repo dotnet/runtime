@@ -566,4 +566,34 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	g_error ("MonoContext not supported");
 }
 
+#elif ((defined (HOST_RISCV) || defined (HOST_RISCV64)) && !defined (MONO_CROSS_COMPILE)) || defined (TARGET_RISCV)
+
+#include <mono/utils/mono-context.h>
+
+void
+mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	ucontext_t *uctx = sigctx;
+
+	memcpy (&mctx->gregs, &uctx->uc_mcontext.gregs, sizeof (mgreg_t) * G_N_ELEMENTS (mctx->gregs));
+	memcpy (&mctx->fregs, &uctx->uc_mcontext.fpregs, sizeof (double) * G_N_ELEMENTS (mctx->fregs));
+#endif
+}
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	ucontext_t *uctx = sigctx;
+
+	memcpy (&uctx->uc_mcontext.gregs, &mctx->gregs, sizeof (mgreg_t) * G_N_ELEMENTS (mctx->gregs));
+	memcpy (&uctx->uc_mcontext.fpregs, &mctx->fregs, sizeof (double) * G_N_ELEMENTS (mctx->fregs));
+#endif
+}
+
 #endif /* #if defined(__i386__) */

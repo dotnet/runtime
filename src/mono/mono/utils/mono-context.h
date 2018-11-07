@@ -892,6 +892,119 @@ typedef struct ucontext MonoContext;
 		: "memory"			\
 	)
 
+#elif (defined (HOST_RISCV) && !defined (MONO_CROSS_COMPILE)) || defined (TARGET_RISCV)
+
+#include <mono/arch/riscv/riscv-codegen.h>
+
+typedef struct {
+	mgreg_t gregs [RISCV_N_GREGS]; // [0] contains pc since x0 is hard-wired to zero anyway.
+	double fregs [RISCV_N_FREGS * 2 + 2]; // [32] contains fcsr (32 bits), the rest is for quad-precision values (currently unused).
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx, ip) do { (ctx)->gregs [RISCV_ZERO] = (mgreg_t) (ip); } while (0)
+#define MONO_CONTEXT_SET_BP(ctx, bp) do { (ctx)->gregs [RISCV_FP] = (mgreg_t) (bp); } while (0)
+#define MONO_CONTEXT_SET_SP(ctx, sp) do { (ctx)->gregs [RISCV_SP] = (mgreg_t) (sp); } while (0)
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer) ((ctx)->gregs [RISCV_ZERO]))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer) ((ctx)->gregs [RISCV_FP]))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer) ((ctx)->gregs [RISCV_SP]))
+
+#ifdef TARGET_RISCV64
+#define _RISCV_STR "sd"
+#define _RISCV_SZ "8"
+#else
+#define _RISCV_STR "sw"
+#define _RISCV_SZ "4"
+#endif
+
+#define MONO_CONTEXT_GET_CURRENT(ctx) \
+	do { \
+		__asm__ __volatile__ ( \
+			_RISCV_STR " x1, " _RISCV_SZ "*1(%0)\n" \
+			_RISCV_STR " x2, " _RISCV_SZ "*2(%0)\n" \
+			_RISCV_STR " x3, " _RISCV_SZ "*3(%0)\n" \
+			_RISCV_STR " x4, " _RISCV_SZ "*4(%0)\n" \
+			_RISCV_STR " x5, " _RISCV_SZ "*5(%0)\n" \
+			_RISCV_STR " x6, " _RISCV_SZ "*6(%0)\n" \
+			_RISCV_STR " x7, " _RISCV_SZ "*7(%0)\n" \
+			_RISCV_STR " x8, " _RISCV_SZ "*8(%0)\n" \
+			_RISCV_STR " x9, " _RISCV_SZ "*9(%0)\n" \
+			_RISCV_STR " x10, " _RISCV_SZ "*10(%0)\n" \
+			_RISCV_STR " x11, " _RISCV_SZ "*11(%0)\n" \
+			_RISCV_STR " x12, " _RISCV_SZ "*12(%0)\n" \
+			_RISCV_STR " x13, " _RISCV_SZ "*13(%0)\n" \
+			_RISCV_STR " x14, " _RISCV_SZ "*14(%0)\n" \
+			_RISCV_STR " x15, " _RISCV_SZ "*15(%0)\n" \
+			_RISCV_STR " x16, " _RISCV_SZ "*16(%0)\n" \
+			_RISCV_STR " x17, " _RISCV_SZ "*17(%0)\n" \
+			_RISCV_STR " x18, " _RISCV_SZ "*18(%0)\n" \
+			_RISCV_STR " x19, " _RISCV_SZ "*19(%0)\n" \
+			_RISCV_STR " x20, " _RISCV_SZ "*20(%0)\n" \
+			_RISCV_STR " x21, " _RISCV_SZ "*21(%0)\n" \
+			_RISCV_STR " x22, " _RISCV_SZ "*22(%0)\n" \
+			_RISCV_STR " x23, " _RISCV_SZ "*23(%0)\n" \
+			_RISCV_STR " x24, " _RISCV_SZ "*24(%0)\n" \
+			_RISCV_STR " x25, " _RISCV_SZ "*25(%0)\n" \
+			_RISCV_STR " x26, " _RISCV_SZ "*26(%0)\n" \
+			_RISCV_STR " x27, " _RISCV_SZ "*27(%0)\n" \
+			_RISCV_STR " x28, " _RISCV_SZ "*28(%0)\n" \
+			_RISCV_STR " x29, " _RISCV_SZ "*29(%0)\n" \
+			_RISCV_STR " x30, " _RISCV_SZ "*30(%0)\n" \
+			_RISCV_STR " x31, " _RISCV_SZ "*31(%0)\n" \
+			: \
+			: "r" (&(ctx).gregs) \
+			: "memory" \
+		); \
+		__asm__ __volatile__ ( \
+			"frcsr t0\n" \
+			"fsd f0, 8*0(%0)\n" \
+			"fsd f1, 8*1(%0)\n" \
+			"fsd f2, 8*2(%0)\n" \
+			"fsd f3, 8*3(%0)\n" \
+			"fsd f4, 8*4(%0)\n" \
+			"fsd f5, 8*5(%0)\n" \
+			"fsd f6, 8*6(%0)\n" \
+			"fsd f7, 8*7(%0)\n" \
+			"fsd f8, 8*8(%0)\n" \
+			"fsd f9, 8*9(%0)\n" \
+			"fsd f10, 8*10(%0)\n" \
+			"fsd f11, 8*11(%0)\n" \
+			"fsd f12, 8*12(%0)\n" \
+			"fsd f13, 8*13(%0)\n" \
+			"fsd f14, 8*14(%0)\n" \
+			"fsd f15, 8*15(%0)\n" \
+			"fsd f16, 8*16(%0)\n" \
+			"fsd f17, 8*17(%0)\n" \
+			"fsd f18, 8*18(%0)\n" \
+			"fsd f19, 8*19(%0)\n" \
+			"fsd f20, 8*20(%0)\n" \
+			"fsd f21, 8*21(%0)\n" \
+			"fsd f22, 8*22(%0)\n" \
+			"fsd f23, 8*23(%0)\n" \
+			"fsd f24, 8*24(%0)\n" \
+			"fsd f25, 8*25(%0)\n" \
+			"fsd f26, 8*26(%0)\n" \
+			"fsd f27, 8*27(%0)\n" \
+			"fsd f28, 8*28(%0)\n" \
+			"fsd f29, 8*29(%0)\n" \
+			"fsd f30, 8*30(%0)\n" \
+			"fsd f31, 8*31(%0)\n" \
+			"sw t0, 8*32(%0)\n" \
+			: \
+			: "r" (&(ctx).fregs) \
+			: "t0", "memory" \
+		); \
+		__asm__ __volatile__ ( \
+			"auipc t0, 0\n" \
+			_RISCV_STR " t0, (%0)\n" \
+			: \
+			: "r" (&(ctx).gregs [0]) \
+			: "t0", "memory" \
+		); \
+	} while (0)
+
+#define MONO_ARCH_HAS_MONO_CONTEXT (1)
+
 #else
 
 #error "Implement mono-context for the current arch"

@@ -6833,7 +6833,7 @@ mono_icall_is_64bit_os (void)
 	struct utsname name;
 
 	if (uname (&name) >= 0) {
-		return strcmp (name.machine, "x86_64") == 0 || strncmp (name.machine, "aarch64", 7) == 0 || strncmp (name.machine, "ppc64", 5) == 0;
+		return strcmp (name.machine, "x86_64") == 0 || strncmp (name.machine, "aarch64", 7) == 0 || strncmp (name.machine, "ppc64", 5) == 0 || strncmp (name.machine, "riscv64", 7) == 0;
 	}
 #endif
 	return FALSE;

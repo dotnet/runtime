@@ -26,6 +26,9 @@ allowed_defines = { "TARGET_X86" : 1,
                     "TARGET_SPARC" : 1,
                     "TARGET_S390X" : 1,
                     "TARGET_MIPS" : 1,
+                    "TARGET_RISCV" : 1,
+                    "TARGET_RISCV32" : 1,
+                    "TARGET_RISCV64" : 1,
                     "TARGET_WASM" : 1
                     }
                     

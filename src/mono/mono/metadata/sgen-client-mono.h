@@ -700,7 +700,7 @@ sgen_client_binary_protocol_collection_end_stats (long long major_scan, long lon
  *
  * TODO: Query the JIT instead of this ifdef hack.
  */
-#if defined (TARGET_X86) || defined (TARGET_AMD64) || (defined (TARGET_ARM) && defined (HAVE_ARMV7)) || defined (TARGET_ARM64)
+#if defined (TARGET_X86) || defined (TARGET_AMD64) || (defined (TARGET_ARM) && defined (HAVE_ARMV7)) || defined (TARGET_ARM64) || defined (TARGET_RISCV)
 #define MANAGED_ALLOCATOR_CAN_USE_CRITICAL_REGION
 #endif
 #endif

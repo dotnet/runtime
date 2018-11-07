@@ -239,6 +239,10 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define AS_CMD "as -arch ppc64"
 #elif defined(__powerpc64__)
 #define AS_CMD "as -mppc64"
+#elif defined (TARGET_RISCV64)
+#define AS_CMD "as -march=rv64ima"
+#elif defined (TARGET_RISCV32)
+#define AS_CMD "as -march=rv32ima"
 #else
 #define AS_CMD "as"
 #endif

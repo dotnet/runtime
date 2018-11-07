@@ -364,6 +364,12 @@ s390x_sources = \
 	exceptions-s390x.c	\
 	tramp-s390x.c
 
+riscv_sources = \
+	mini-riscv.c \
+	mini-riscv.h \
+	exceptions-riscv.c \
+	tramp-riscv.c
+
 darwin_sources = \
 	mini-darwin.c
 
@@ -627,6 +633,20 @@ arch_define=__s390__
 target_define=TARGET_S390X
 endif
 
+if RISCV32
+arch_sources = $(riscv_sources)
+arch_built = cpu-riscv32.h
+arch_define = __riscv
+target_define = TARGET_RISCV32
+endif
+
+if RISCV64
+arch_sources = $(riscv_sources)
+arch_built = cpu-riscv64.h
+arch_define = __riscv
+target_define = TARGET_RISCV64
+endif
+
 if HOST_WIN32
 os_sources = $(windows_sources)
 monobin_platform_ldflags=
@@ -773,6 +793,12 @@ cpu-s390x.h: mini-ops.h cpu-s390x.md
 
 cpu-mips.h: mini-ops.h cpu-mips.md
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
+
+cpu-riscv32.h: cpu-riscv32.md
+	$(GENMDESC_PRG) cpu-riscv32.h riscv32_cpu_desc $(srcdir)/cpu-riscv32.md
+
+cpu-riscv64.h: cpu-riscv64.md
+	$(GENMDESC_PRG) cpu-riscv64.h riscv64_cpu_desc $(srcdir)/cpu-riscv64.md
 
 testi: mono test.exe
 	$(MINI_RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe
@@ -957,6 +983,7 @@ EXTRA_DIST = TestDriver.cs \
 	$(mips_sources) cpu-mips.md 		\
 	$(sparc_sources) cpu-sparc.md 		\
 	$(s390x_sources) cpu-s390x.md 		\
+	$(riscv_sources) cpu-riscv32.md cpu-riscv64.md \
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)					\

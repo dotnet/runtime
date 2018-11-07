@@ -84,6 +84,12 @@
 #elif defined(mips) || defined(__mips) || defined(_mips)
 #define CONFIG_CPU "mips"
 #define CONFIG_WORDSIZE "32"
+#elif defined (TARGET_RISCV32)
+#define CONFIG_CPU "riscv32"
+#define CONFIG_WORDSIZE "32"
+#elif defined (TARGET_RISCV64)
+#define CONFIG_CPU "riscv64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(TARGET_WASM)
 #define CONFIG_CPU "wasm"
 #define CONFIG_WORDSIZE "32"

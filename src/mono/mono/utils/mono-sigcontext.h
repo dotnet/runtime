@@ -533,4 +533,26 @@ typedef struct ucontext
 # define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
 #endif
 
+#elif defined (TARGET_RISCV)
+
+#if defined(MONO_CROSS_COMPILE)
+
+#define UCONTEXT_GREGS(ctx) (NULL)
+#define UCONTEXT_FREGS(ctx) (NULL)
+#define UCONTEXT_REG_PC(ctx) (NULL)
+#define UCONTEXT_REG_BP(ctx) (NULL)
+#define UCONTEXT_REG_SP(ctx) (NULL)
+
+#else
+
+#include <ucontext.h>
+
+#define UCONTEXT_GREGS(ctx) (((ucontext_t *) (ctx))->uc_mcontext.gregs)
+#define UCONTEXT_FREGS(ctx) (((ucontext_t *) (ctx))->uc_mcontext.fpregs)
+#define UCONTEXT_REG_PC(ctx) (UCONTEXT_GREGS ((ctx)) [REG_PC])
+#define UCONTEXT_REG_BP(ctx) (UCONTEXT_GREGS ((ctx)) [REG_S0])
+#define UCONTEXT_REG_SP(ctx) (UCONTEXT_GREGS ((ctx)) [REG_SP])
+
+#endif
+
 #endif

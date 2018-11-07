@@ -408,6 +408,11 @@ encode_frame_reg (int frame_reg)
 		return 0;
 	else if (frame_reg == S390_FP)
 		return 1;
+#elif defined (TARGET_RISCV)
+	if (frame_reg == RISCV_SP)
+		return 0;
+	else if (frame_reg == RISCV_FP)
+		return 1;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -438,6 +443,11 @@ decode_frame_reg (int encoded)
 		return S390_SP;
 	else if (encoded == 1)
 		return S390_FP;
+#elif defined (TARGET_RISCV)
+	if (encoded == 0)
+		return RISCV_SP;
+	else if (encoded == 1)
+		return RISCV_FP;
 #else
 	NOT_IMPLEMENTED;
 #endif
@@ -469,6 +479,11 @@ static int callee_saved_regs [] = {
   ppc_r29, ppc_r30, ppc_r31 };
 #elif defined(TARGET_POWERPC)
 static int callee_saved_regs [] = { ppc_r6, ppc_r7, ppc_r8, ppc_r9, ppc_r10, ppc_r11, ppc_r12, ppc_r13, ppc_r14 };
+#elif defined (TARGET_RISCV)
+static int callee_saved_regs [] = {
+	RISCV_S0, RISCV_S1, RISCV_S2, RISCV_S3, RISCV_S4, RISCV_S5,
+	RISCV_S6, RISCV_S7, RISCV_S8, RISCV_S9, RISCV_S10, RISCV_S11,
+};
 #endif
 
 static guint32
@@ -721,6 +736,11 @@ get_frame_pointer (MonoContext *ctx, int frame_reg)
 			return (host_mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 		else if (frame_reg == S390_FP)
 			return (host_mgreg_t)MONO_CONTEXT_GET_BP (ctx);
+#elif defined (TARGET_RISCV)
+		if (frame_reg == RISCV_SP)
+			return MONO_CONTEXT_GET_SP (ctx);
+		else if (frame_reg == RISCV_FP)
+			return MONO_CONTEXT_GET_BP (ctx);
 #endif
 		g_assert_not_reached ();
 		return 0;

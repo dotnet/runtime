@@ -34,6 +34,10 @@ dump_arch (void)
 	g_print ("#ifdef TARGET_ARM\n");
 #elif defined (TARGET_ARM64)
 	g_print ("#ifdef TARGET_ARM64\n");
+#elif defined (TARGET_RISCV32)
+	g_print ("#ifdef TARGET_RISCV32\n");
+#elif defined (TARGET_RISCV64)
+	g_print ("#ifdef TARGET_RISCV64\n");
 #else
 	return 0;
 #endif

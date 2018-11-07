@@ -65,6 +65,10 @@
 
 #define REDZONE_SIZE	0
 
+#elif defined (TARGET_RISCV)
+
+#define REDZONE_SIZE (0)
+
 #elif defined (TARGET_WASM)
 
 #define REDZONE_SIZE	0

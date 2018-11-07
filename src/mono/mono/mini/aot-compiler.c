@@ -948,7 +948,7 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 
 /* ARCHITECTURE SPECIFIC CODE */
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_POWERPC) || defined(TARGET_ARM64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_POWERPC) || defined(TARGET_ARM64) || defined (TARGET_RISCV)
 #define EMIT_DWARF_INFO 1
 #endif
 
@@ -1048,6 +1048,14 @@ arch_emit_unwind_info_sections (MonoAotCompile *acfg, const char *function_start
 #endif
 #endif
 
+#ifdef TARGET_RISCV32
+#define AOT_TARGET_STR "RISCV32"
+#endif
+
+#ifdef TARGET_RISCV64
+#define AOT_TARGET_STR "RISCV64"
+#endif
+
 #ifdef TARGET_X86
 #ifdef TARGET_WIN32
 #define AOT_TARGET_STR "X86 (WIN32)"
@@ -1129,6 +1137,32 @@ arch_init (MonoAotCompile *acfg)
 
 #if defined(__linux__) && !defined(TARGET_ARM)
 	acfg->need_pt_gnu_stack = TRUE;
+#endif
+
+#ifdef TARGET_RISCV
+	if (acfg->aot_opts.mtriple)
+		mono_arch_set_target (acfg->aot_opts.mtriple);
+
+#ifdef TARGET_RISCV64
+
+	g_string_append (acfg->as_args, " -march=rv64i ");
+#ifdef RISCV_FPABI_DOUBLE
+	g_string_append (acfg->as_args, " -mabi=lp64d");
+#else
+	g_string_append (acfg->as_args, " -mabi=lp64");
+#endif
+
+#else
+
+	g_string_append (acfg->as_args, " -march=rv32i ");
+#ifdef RISCV_FPABI_DOUBLE
+	g_string_append (acfg->as_args, " -mabi=ilp32d ");
+#else
+	g_string_append (acfg->as_args, " -mabi=ilp32 ");
+#endif
+
+#endif
+
 #endif
 
 #ifdef MONOTOUCH

@@ -152,6 +152,21 @@
 							: "=r" (foo) : : "1");		\
 						offset = foo; } while (0)
 # endif
+
+#elif defined (TARGET_RISCV) && !defined (PIC)
+
+#define MONO_THREAD_VAR_OFFSET(var, offset) \
+	do { \
+		guint32 temp; \
+		__asm__ ( \
+			"lui %0, %%tprel_hi(" #var ")\n" \
+			"add %0, %0, tp, %%tprel_add(" #var ")\n" \
+			"addi %0, %0, %%tprel_lo(" #var ")\n" \
+			: "=r" (temp) \
+		); \
+		offset = temp; \
+	} while (0)
+
 #else
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
