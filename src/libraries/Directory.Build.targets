@@ -23,6 +23,13 @@
     -->
     <PackageOutputPath>$(ArtifactsDir)packages/$(ConfigurationGroup)/</PackageOutputPath>
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
+
+    <!--
+      PublishPattern needs to be the root of the packages folder to ensure we maintain the relative structure
+      in the blob container which would have a Debug or Release subfolder otherwise we end trying to publish both
+      Debug and Release assets during our publish legs.
+    -->
+    <PublishPattern Condition="'$(PublishPattern)' == ''">$(ArtifactsDir)packages\**\*.nupkg</PublishPattern>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
