@@ -245,19 +245,8 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
-      <BashCLRTestLaunchCmds><![CDATA[
-if [ -z "$DoLink" -a ! -z "$RunningIlasmRoundTrip" ];
-then
-  echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments
-  $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments
-  if [  $? -ne $CLRTestExpectedExitCode ]
-  then
-    echo END EXECUTION OF IL{D}ASM BINARY - FAILED $? vs $CLRTestExpectedExitCode
-    echo FAILED
-    exit 1
-  fi
-fi
-      ]]></BashCLRTestLaunchCmds>
+      
+      <BashCLRTestLaunchCmds>$(BashIlrtTestLaunchCmds)</BashCLRTestLaunchCmds>
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
     <![CDATA[
