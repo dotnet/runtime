@@ -1194,7 +1194,7 @@ static int8_t ConvertSocketFlagsPalToPlatform(int32_t palFlags, int* platformFla
 
 static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
 {
-    const int SupportedFlagsMask = MSG_OOB | MSG_PEEK | MSG_DONTROUTE | MSG_TRUNC | MSG_CTRUNC;
+    const int SupportedFlagsMask = MSG_OOB | MSG_DONTROUTE | MSG_TRUNC | MSG_CTRUNC;
 
     platformFlags &= SupportedFlagsMask;
 

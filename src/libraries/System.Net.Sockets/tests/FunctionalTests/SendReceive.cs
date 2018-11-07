@@ -1136,7 +1136,6 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ActiveIssue(31766, TestPlatforms.OSX)]
         public async Task Socket_ReceiveFlags_Success()
         {
             using (var sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
