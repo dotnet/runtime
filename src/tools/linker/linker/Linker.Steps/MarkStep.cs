@@ -1466,9 +1466,6 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				var argument_definition = ResolveTypeDefinition (argument);
-				if (argument_definition == null)
-					continue;
-
 				MarkDefaultConstructor (argument_definition);
 			}
 		}
