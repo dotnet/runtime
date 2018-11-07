@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>Windows Event Log logger provider implementation for Microsoft.Extensions.Logging.</Description>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <PackageTags>$(PackageTags);eventlog;windowseventlog</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.Extensions.Logging" />
+    <Reference Include="System.Diagnostics.EventLog" />
+  </ItemGroup>
+
+</Project>
