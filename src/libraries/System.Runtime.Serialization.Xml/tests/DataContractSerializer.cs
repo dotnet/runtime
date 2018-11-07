@@ -1120,6 +1120,7 @@ public static partial class DataContractSerializerTests
 
         Assert.True(myresolver.ResolveNameInvoked, "myresolver.ResolveNameInvoked is false");
         Assert.True(myresolver.TryResolveTypeInvoked, "myresolver.TryResolveTypeInvoked is false");
+        Assert.True(myresolver.DeclaredTypeIsNotNull, "myresolver.DeclaredTypeIsNotNull is false");
         Assert.True(input.OnSerializingMethodInvoked, "input.OnSerializingMethodInvoked is false");
         Assert.True(input.OnSerializedMethodInvoked, "input.OnSerializedMethodInvoked is false");
         Assert.True(output.OnDeserializingMethodInvoked, "output.OnDeserializingMethodInvoked is false");
