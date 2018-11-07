@@ -7,6 +7,14 @@ parameters:
 
   # Optional: name of the phase (not specifying phase name may cause name collisions)
   name: ''
+  # Optional: display name of the phase
+  displayName: ''
+
+  # Optional: condition for the job to run
+  condition: ''
+
+  # Optional: dependencies of the phase
+  dependsOn: ''
 
   # Required: A defined YAML queue
   queue: {}
@@ -42,10 +50,19 @@ parameters:
 phases:
 - phase: ${{ parameters.name }}
 
+  ${{ if ne(parameters.displayName, '') }}:
+    displayName: ${{ parameters.displayName }}
+
+  ${{ if ne(parameters.condition, '') }}:
+    condition: ${{ parameters.condition }}
+
+  ${{ if ne(parameters.dependsOn, '') }}:
+    dependsOn: ${{ parameters.dependsOn }}
+
   queue: ${{ parameters.queue }}
 
   ${{ if ne(parameters.variables, '') }}:
-    variables: 
+    variables:
       ${{ insert }}: ${{ parameters.variables }}
 
   steps:
