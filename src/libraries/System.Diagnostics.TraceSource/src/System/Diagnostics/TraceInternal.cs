@@ -13,6 +13,7 @@ namespace System.Diagnostics
     {
         private class TraceProvider : DebugProvider
         {
+            public override void Fail(string message, string detailMessage) { TraceInternal.Fail(message, detailMessage); }
             public override void OnIndentLevelChanged(int indentLevel)
             {
                 lock (TraceInternal.critSec)
