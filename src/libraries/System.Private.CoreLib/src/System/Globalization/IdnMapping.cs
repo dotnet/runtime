@@ -207,15 +207,6 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequence, unicode.Length - 1), nameof(unicode));
             }
 
-            // Have to correctly IDNA normalize the string and Unassigned flags
-            bool bHasLastDot = (unicode.Length > 0) && IsDot(unicode[unicode.Length - 1]);
-
-            // Make sure we didn't normalize away something after a last dot
-            if ((!bHasLastDot) && unicode.Length > 0 && IsDot(unicode[unicode.Length - 1]))
-            {
-                throw new ArgumentException(SR.Argument_IdnBadLabelSize, nameof(unicode));
-            }
-
             // May need to check Std3 rules again for non-ascii
             if (UseStd3AsciiRules)
             {
