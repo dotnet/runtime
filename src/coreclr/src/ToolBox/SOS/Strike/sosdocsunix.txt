@@ -203,64 +203,20 @@ The arguments in detail:
 \\
 
 COMMAND: dumpasync.
-!DumpAsync [-mt <MethodTable address>] 
+!DumpAsync [-addr <Object Address>]
+           [-mt <MethodTable address>]
            [-type <partial type name>]
-           [-waiting]
-           [-roots]]
+           [-tasks]
+           [-completed]
+           [-fields]
+           [-stacks]
+           [-roots]
 
 !DumpAsync traverses the garbage collected heap, looking for objects representing
 async state machines as created when an async method's state is transferred to the
 heap.  This command recognizes async state machines defined as "async void", "async Task",
-"async Task<T>", "async ValueTask", and "async ValueTask<T>".
-
-The output includes a block of details for each async state machine object found.
-These details include:
-    - a line for the type of the async state machine object, including its MethodTable address,
-      its object address, its size, and its type name.
-    - a line for the state machine type name as contained in the object.
-    - a listing of each field on the state machine.
-    - a line for a continuation from this state machine object, if one or more has been registered.
-    - discovered GC roots for this async state machine object.
-  
-For example:
-
-    (lldb) dumpasync -roots
-    #0
-    000001989f413de0 00007ff88c506ba8      112  System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodD>d__4, test]]
-    StateMachine: Program+<MethodD>d__4 (struct)
-                  MT    Field   Offset                 Type VT     Attr            Value Name
-    00007ff8d3df4b80  400000d        0         System.Int32  1 instance                0 <>1__state
-    00007ff8d3e082c0  400000e        8 ...TaskMethodBuilder  1 instance 000001989f413e38 <>t__builder
-    00007ff8d3dfea90  400000f       10 ...vices.TaskAwaiter  1 instance 000001989f413e40 <>u__1
-    Continuation: 000001989f413e50 (System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodC>d__3, test]])
-    GC roots:
-        Thread 2936c:
-            000000071a37e050 00007ff8d3ac1657 System.Threading.Tasks.Task.SpinThenBlockingWait(Int32, System.Threading.CancellationToken) [d:\repos\coreclr\src\System.Private.CoreLib\src\System\Threading\Tasks\Task.cs @ 2977]
-                rbp+10: 000000071a37e0c0
-                    ->  000001989f413fa0 System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<Main>d__0, test]]
-                    ->  000001989f413f30 System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodA>d__1, test]]
-                    ->  000001989f413ec0 System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodB>d__2, test]]
-                    ->  000001989f413e50 System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodC>d__3, test]]
-                    ->  000001989f413de0 System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodD>d__4, test]]
-        HandleTable:
-            000001989d8415f8 (pinned handle)
-            -> 00000198af3e1038 System.Object[]
-            -> 000001989f413410 System.Threading.TimerQueue[]
-            -> 000001989f413468 System.Threading.TimerQueue
-            -> 000001989f413330 System.Threading.TimerQueueTimer
-            -> 000001989f412e40 System.Threading.Tasks.Task+DelayPromise
-            -> 000001989f413de0 System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1[[System.Threading.Tasks.VoidTaskResult, System.Private.CoreLib],[Program+<MethodD>d__4, test]]
-    ...
-
-
-The arguments in detail:
-
--mt       List only those state machine objects with the MethodTable given.
--type     List only those state machine objects whose type name is a
-          substring match of the string provided.
--waiting  List only those state machines that are currently at an await point.
--roots    Include GC root information for each state machine object.
-
+"async Task<T>", "async ValueTask", and "async ValueTask<T>".  It also optionally supports
+any other tasks.
 \\
 
 COMMAND: dumpstackobjects.
