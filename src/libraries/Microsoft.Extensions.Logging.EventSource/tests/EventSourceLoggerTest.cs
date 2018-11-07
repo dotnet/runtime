@@ -117,6 +117,37 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void Logs_AsExpected_WithDefaults_EnabledEarly()
+        {
+            using (var testListener = new TestEventListener())
+            {
+                var listenerSettings = new TestEventListener.ListenerSettings();
+                listenerSettings.Keywords = (EventKeywords)(-1);
+                listenerSettings.FilterSpec = null;
+                listenerSettings.Level = default(EventLevel);
+                testListener.EnableEvents(listenerSettings);
+
+                LogStuff(CreateLoggerFactory());
+
+                // Use testListener.DumpEvents as necessary to examine what exactly the listener received
+
+                VerifyEvents(testListener,
+                    "E1FM", "E1MSG", "E1JS",
+                    // Second event is omitted because default LogLevel == Debug
+                    "E3FM", "E3MSG", "E3JS",
+                    "OuterScopeJsonStart",
+                    "E4FM", "E4MSG", "E4JS",
+                    "E5FM", "E5MSG", "E5JS",
+                    "InnerScopeJsonStart",
+                    "E6FM", "E6MSG", "E6JS",
+                    "InnerScopeJsonStop",
+                    "E7FM", "E7MSG", "E7JS",
+                    "OuterScopeJsonStop",
+                    "E8FM", "E8MSG", "E8JS");
+            }
+        }
+
+        [Fact]
         public void Logs_Nothing_IfNotEnabled()
         {
             using (var testListener = new TestEventListener())
@@ -490,6 +521,8 @@ namespace Microsoft.Extensions.Logging.Test
 
             private System.Diagnostics.Tracing.EventSource _loggingEventSource;
 
+            private ListenerSettings _enableWhenCreated;
+
             public TestEventListener()
             {
                 Events = new List<string>();
@@ -499,13 +532,25 @@ namespace Microsoft.Extensions.Logging.Test
 
             public void EnableEvents(ListenerSettings settings)
             {
+                if (_loggingEventSource != null)
+                {
+                    EnableEvents(_loggingEventSource, settings.Level, settings.Keywords,  GetArguments(settings));
+                }
+                else
+                {
+                    _enableWhenCreated = settings;
+                }
+            }
+
+            private static Dictionary<string, string> GetArguments(ListenerSettings settings)
+            {
                 var args = new Dictionary<string, string>();
                 if (!string.IsNullOrEmpty(settings.FilterSpec))
                 {
                     args["FilterSpecs"] = settings.FilterSpec;
                 }
 
-                EnableEvents(_loggingEventSource, settings.Level, settings.Keywords, args);
+                return args;
             }
 
             protected override void OnEventSourceCreated(System.Diagnostics.Tracing.EventSource eventSource)
@@ -513,6 +558,12 @@ namespace Microsoft.Extensions.Logging.Test
                 if (eventSource.Name == "Microsoft-Extensions-Logging")
                 {
                     _loggingEventSource = eventSource;
+                }
+
+                if (_enableWhenCreated != null)
+                {
+                    EnableEvents(_loggingEventSource, _enableWhenCreated.Level, _enableWhenCreated.Keywords, GetArguments(_enableWhenCreated));
+                    _enableWhenCreated = null;
                 }
             }
 

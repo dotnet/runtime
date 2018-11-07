@@ -133,6 +133,16 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        public void BeginScope_ReturnsInternalSourceTokenDirectly()
+        {
+            var loggerProvider = new InternalScopeLoggerProvider();
+            var loggerFactory = new LoggerFactory(new[] { loggerProvider });
+            var logger = loggerFactory.CreateLogger("Logger");
+            var scope = logger.BeginScope("Scope");
+            Assert.Contains("LoggerExternalScopeProvider+Scope", scope.GetType().FullName);
+        }
+
+        [Fact]
         public void BeginScope_ReturnsCompositeToken_ForMultipleLoggers()
         {
             var loggerProvider = new ExternalScopeLoggerProvider();

@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Console.Internal
         private readonly Thread _outputThread;
 
         public IConsole Console;
+        public IConsole ErrorConsole;
 
         public ConsoleLoggerProcessor()
         {
@@ -46,13 +47,20 @@ namespace Microsoft.Extensions.Logging.Console.Internal
         // for testing
         internal virtual void WriteMessage(LogMessageEntry message)
         {
-            if (message.LevelString != null)
+            var console = message.LogAsError ? ErrorConsole : Console;
+
+            if (message.TimeStamp != null)
             {
-                Console.Write(message.LevelString, message.LevelBackground, message.LevelForeground);
+                console.Write(message.TimeStamp, message.MessageColor, message.MessageColor);
             }
 
-            Console.Write(message.Message, message.MessageColor, message.MessageColor);
-            Console.Flush();
+            if (message.LevelString != null)
+            {
+                console.Write(message.LevelString, message.LevelBackground, message.LevelForeground);
+            }
+
+            console.Write(message.Message, message.MessageColor, message.MessageColor);
+            console.Flush();
         }
 
         private void ProcessLogQueue()

@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// }
     /// </summary>
     [EventSource(Name = "Microsoft-Extensions-Logging")]
-    internal class LoggingEventSource : System.Diagnostics.Tracing.EventSource
+    public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
     {
         /// <summary>
         /// This is public from an EventSource consumer point of view, but since these defintions
@@ -105,12 +105,14 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         internal static readonly LoggingEventSource Instance = new LoggingEventSource();
 
-        private LoggerFilterRule[] _filterSpec;
+        // It's important to have _filterSpec initialization here rather than in ctor
+        // base ctor might call OnEventCommand and set filter spec
+        // having assingment in ctor would overwrite the value
+        private LoggerFilterRule[] _filterSpec = new LoggerFilterRule[0];
         private CancellationTokenSource _cancellationTokenSource;
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
-            _filterSpec = new LoggerFilterRule[0];
         }
 
         /// <summary>
@@ -207,7 +209,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         private void FireChangeToken()
         {
             var tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
-            tcs.Cancel();
+            tcs?.Cancel();
         }
 
          /// <summary>
@@ -222,7 +224,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// The first specification that 'loggers' Name matches is used.
         /// </summary>
         [NonEvent]
-        public static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
+        private static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
         {
             if (filterSpec == string.Empty)
             {
@@ -350,7 +352,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         [NonEvent]
-        public LoggerFilterRule[] GetFilterRules()
+        internal LoggerFilterRule[] GetFilterRules()
         {
             return _filterSpec;
         }

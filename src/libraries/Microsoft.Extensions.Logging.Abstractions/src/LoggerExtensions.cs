@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class LoggerExtensions
     {
-        private static readonly Func<object, Exception, string> _messageFormatter = MessageFormatter;
+        private static readonly Func<FormattedLogValues, Exception, string> _messageFormatter = MessageFormatter;
 
         //------------------------------------------DEBUG------------------------------------------//
 
@@ -425,7 +425,7 @@ namespace Microsoft.Extensions.Logging
 
         //------------------------------------------HELPERS------------------------------------------//
 
-        private static string MessageFormatter(object state, Exception error)
+        private static string MessageFormatter(FormattedLogValues state, Exception error)
         {
             return state.ToString();
         }

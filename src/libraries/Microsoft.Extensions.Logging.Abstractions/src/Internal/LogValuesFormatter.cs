@@ -119,30 +119,31 @@ namespace Microsoft.Extensions.Logging.Internal
             {
                 for (int i = 0; i < values.Length; i++)
                 {
-                    var value = values[i];
-
-                    if (value == null)
-                    {
-                        values[i] = NullValue;
-                        continue;
-                    }
-
-                    // since 'string' implements IEnumerable, special case it
-                    if (value is string)
-                    {
-                        continue;
-                    }
-
-                    // if the value implements IEnumerable, build a comma separated string.
-                    var enumerable = value as IEnumerable;
-                    if (enumerable != null)
-                    {
-                        values[i] = string.Join(", ", enumerable.Cast<object>().Select(o => o ?? NullValue));
-                    }
+                    values[i] = FormatArgument(values[i]);
                 }
             }
 
             return string.Format(CultureInfo.InvariantCulture, _format, values ?? EmptyArray);
+        }
+
+        internal string Format()
+        {
+            return _format;
+        }
+
+        internal string Format(object arg0)
+        {
+            return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0));
+        }
+
+        internal string Format(object arg0, object arg1)
+        {
+            return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1));
+        }
+
+        internal string Format(object arg0, object arg1, object arg2)
+        {
+            return string.Format(CultureInfo.InvariantCulture, _format, FormatArgument(arg0), FormatArgument(arg1), FormatArgument(arg2));
         }
 
         public KeyValuePair<string, object> GetValue(object[] values, int index)
@@ -171,5 +172,29 @@ namespace Microsoft.Extensions.Logging.Internal
             valueArray[valueArray.Length - 1] = new KeyValuePair<string, object>("{OriginalFormat}", OriginalFormat);
             return valueArray;
         }
+
+        private object FormatArgument(object value)
+        {
+            if (value == null)
+            {
+                return NullValue;
+            }
+
+            // since 'string' implements IEnumerable, special case it
+            if (value is string)
+            {
+                return value;
+            }
+
+            // if the value implements IEnumerable, build a comma separated string.
+            var enumerable = value as IEnumerable;
+            if (enumerable != null)
+            {
+                return string.Join(", ", enumerable.Cast<object>().Select(o => o ?? NullValue));
+            }
+
+            return value;
+        }
+
     }
 }

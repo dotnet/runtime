@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging.Internal
     /// LogValues to enable formatting options supported by <see cref="M:string.Format"/>.
     /// This also enables using {NamedformatItem} in the format string.
     /// </summary>
-    public class FormattedLogValues : IReadOnlyList<KeyValuePair<string, object>>
+    public readonly struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object>>
     {
         internal const int MaxCachedFormatters = 1024;
         private const string NullFormat = "[null]";
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging.Internal
 
         public FormattedLogValues(string format, params object[] values)
         {
-            if (values?.Length != 0 && format != null)
+            if (values != null && values.Length != 0 && format != null)
             {
                 if (_count >= MaxCachedFormatters)
                 {
@@ -45,6 +45,10 @@ namespace Microsoft.Extensions.Logging.Internal
                         return new LogValuesFormatter(f);
                     });
                 }
+            }
+            else
+            {
+                _formatter = null;
             }
 
             _originalMessage = format ?? NullFormat;

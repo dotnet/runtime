@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions.Internal;
@@ -52,15 +53,18 @@ namespace Microsoft.Extensions.Logging.Console
             Name = name;
             Filter = filter ?? ((category, logLevel) => true);
             ScopeProvider = scopeProvider;
+            LogToStandardErrorThreshold = LogLevel.None;
             _queueProcessor = loggerProcessor;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Console = new WindowsLogConsole();
+                ErrorConsole = new WindowsLogConsole(stdErr: true);
             }
             else
             {
                 Console = new AnsiLogConsole(new AnsiSystemConsole());
+                ErrorConsole = new AnsiLogConsole(new AnsiSystemConsole(stdErr: true));
             }
         }
 
@@ -75,6 +79,20 @@ namespace Microsoft.Extensions.Logging.Console
                 }
 
                 _queueProcessor.Console = value;
+            }
+        }
+
+        internal IConsole ErrorConsole
+        {
+            get { return _queueProcessor.ErrorConsole; }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                _queueProcessor.ErrorConsole = value;
             }
         }
 
@@ -100,6 +118,10 @@ namespace Microsoft.Extensions.Logging.Console
         internal IExternalScopeProvider ScopeProvider { get; set; }
 
         public bool DisableColors { get; set; }
+
+        internal LogLevel LogToStandardErrorThreshold { get; set; }
+
+        internal string TimestampFormat { get; set; }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
@@ -170,14 +192,17 @@ namespace Microsoft.Extensions.Logging.Console
             }
 
             var hasLevel = !string.IsNullOrEmpty(logLevelString);
+            var timestampFormat = TimestampFormat;
             // Queue log message
             _queueProcessor.EnqueueMessage(new LogMessageEntry()
             {
+                TimeStamp = timestampFormat != null ? DateTime.Now.ToString(timestampFormat) : null,
                 Message = logBuilder.ToString(),
                 MessageColor = DefaultConsoleColor,
                 LevelString = hasLevel ? logLevelString : null,
                 LevelBackground = hasLevel ? logLevelColors.Background : null,
-                LevelForeground = hasLevel ? logLevelColors.Foreground : null
+                LevelForeground = hasLevel ? logLevelColors.Foreground : null,
+                LogAsError = logLevel >= LogToStandardErrorThreshold
             });
 
             logBuilder.Clear();
@@ -286,14 +311,23 @@ namespace Microsoft.Extensions.Logging.Console
 
         private class AnsiSystemConsole : IAnsiSystemConsole
         {
+
+            private readonly TextWriter _textWriter;
+
+            /// <inheritdoc />
+            public AnsiSystemConsole(bool stdErr = false)
+            {
+                _textWriter = stdErr? System.Console.Error : System.Console.Out;
+            }
+
             public void Write(string message)
             {
-                System.Console.Write(message);
+                _textWriter.Write(message);
             }
 
             public void WriteLine(string message)
             {
-                System.Console.WriteLine(message);
+                _textWriter.WriteLine(message);
             }
         }
     }

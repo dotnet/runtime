@@ -27,6 +27,8 @@ namespace Microsoft.Extensions.Logging.Console
         private bool _includeScopes;
         private bool _disableColors;
         private IExternalScopeProvider _scopeProvider;
+        private string _timestampFormat;
+        private LogLevel _logToStandardErrorThreshold;
 
         [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is using LoggerFactory to configure filtering and ConsoleLoggerOptions to configure logging options.")]
         public ConsoleLoggerProvider(Func<string, LogLevel, bool> filter, bool includeScopes)
@@ -59,11 +61,15 @@ namespace Microsoft.Extensions.Logging.Console
         {
             _includeScopes = options.IncludeScopes;
             _disableColors = options.DisableColors;
+            _timestampFormat = options.TimestampFormat;
+            _logToStandardErrorThreshold = options.LogToStandardErrorThreshold;
             var scopeProvider = GetScopeProvider();
             foreach (var logger in _loggers.Values)
             {
                 logger.ScopeProvider = scopeProvider;
                 logger.DisableColors = options.DisableColors;
+                logger.TimestampFormat = options.TimestampFormat;
+                logger.LogToStandardErrorThreshold = options.LogToStandardErrorThreshold;
             }
         }
 
@@ -122,11 +128,13 @@ namespace Microsoft.Extensions.Logging.Console
         private ConsoleLogger CreateLoggerImplementation(string name)
         {
             var includeScopes = _settings?.IncludeScopes ?? _includeScopes;
-            var disableColors = _disableColors;
+            var disableColors = _settings is ConsoleLoggerSettings settings ? settings.DisableColors : _disableColors;
 
             return new ConsoleLogger(name, GetFilter(name, _settings), includeScopes? _scopeProvider: null, _messageQueue)
                 {
-                    DisableColors = disableColors
+                    DisableColors = disableColors,
+                    TimestampFormat = _timestampFormat,
+                    LogToStandardErrorThreshold = _logToStandardErrorThreshold
                 };
         }
 
