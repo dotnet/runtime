@@ -37,17 +37,17 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
             // Get the user that should be associated with the submission
             def helixCreator = getUser()
             // Target queues
-            def targetHelixQueues = ['Centos.74.Amd64.Open',
-                                     'RedHat.74.Amd64.Open',
-                                     'Debian.87.Amd64.Open',
-                                     'Ubuntu.1404.Amd64.Open',
+            def targetHelixQueues = ['Centos.7.Amd64.Open',
+                                     'RedHat.7.Amd64.Open',
+                                     'Debian.8.Amd64.Open',
                                      'Ubuntu.1604.Amd64.Open',
                                      'Ubuntu.1804.Amd64.Open',
-                                     'OpenSuse.423.Amd64.Open',
+                                     'OpenSuse.42.Amd64.Open',
                                      'Fedora.27.Amd64.Open',]
             if (params.TestOuter) {
                 targetHelixQueues += ['Debian.9.Amd64.Open',
                                       'Fedora.28.Amd64.Open',
+                                      'Ubuntu.1810.Amd64.Open',
                                       'SLES.12.Amd64.Open',
                                       'SLES.15.Amd64.Open',]
             }
