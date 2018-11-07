@@ -344,35 +344,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        internal void CheckIfTypeNeedsVerifcation(DataContract declaredContract, DataContract runtimeContract)
-        {
-            if (WriteTypeInfo(null, runtimeContract, declaredContract))
-            {
-                VerifyType(runtimeContract);
-            }
-        }
-
-        internal void VerifyType(DataContract dataContract)
-        {
-            bool knownTypesAddedInCurrentScope = false;
-            if (dataContract.KnownDataContracts != null)
-            {
-                scopedKnownTypes.Push(dataContract.KnownDataContracts);
-                knownTypesAddedInCurrentScope = true;
-            }
-
-            DataContract knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/);
-            if (knownContract == null || knownContract.UnderlyingType != dataContract.UnderlyingType)
-            {
-                throw System.ServiceModel.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DcTypeNotFoundOnSerialize, DataContract.GetClrTypeFullName(dataContract.UnderlyingType), dataContract.StableName.Name, dataContract.StableName.Namespace)));
-            }
-
-            if (knownTypesAddedInCurrentScope)
-            {
-                scopedKnownTypes.Pop();
-            }
-        }
-
         internal void WriteJsonISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
         {
             Type objType = obj.GetType();
