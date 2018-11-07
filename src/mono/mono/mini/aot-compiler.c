@@ -1090,6 +1090,7 @@ arch_init (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
 	} else {
+		g_string_append (acfg->llc_args, " -march=arm");
 #if defined(ARM_FPU_VFP_HARD)
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16 -float-abi=hard");
 		g_string_append (acfg->as_args, " -mfpu=vfp3");
@@ -1112,6 +1113,7 @@ arch_init (MonoAotCompile *acfg)
 #endif
 
 #ifdef TARGET_ARM64
+	g_string_append (acfg->llc_args, " -march=aarch64");
 	acfg->inst_directive = ".inst";
 	if (acfg->aot_opts.mtriple)
 		mono_arch_set_target (acfg->aot_opts.mtriple);
