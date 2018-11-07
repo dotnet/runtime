@@ -6,10 +6,6 @@
   <Import Project="$(PackagesDir)/$(FeedTasksPackage.ToLower())/$(FeedTasksPackageVersion)/build/$(FeedTasksPackage).targets" />
   <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
-  <PropertyGroup>
-    <PublishPattern Condition="'$(PublishPattern)' == ''">$(PackageOutputPath)\**\*.nupkg</PublishPattern>
-  </PropertyGroup>
-
   <ItemGroup>
     <_PackagesToPublish Include="$(PublishPattern)" />
   </ItemGroup>
