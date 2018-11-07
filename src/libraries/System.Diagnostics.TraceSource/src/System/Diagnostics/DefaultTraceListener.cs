@@ -89,16 +89,10 @@ namespace System.Diagnostics
             {
                 stackTrace = "";
             }
-            // Tracked by #32955: WriteAssert should write "stackTrace" rather than string.Empty. 
-            WriteAssert(string.Empty, message, detailMessage);
+            WriteAssert(stackTrace, message, detailMessage);
             if (AssertUiEnabled)
             {
-                // Tracked by #32955: Currently AssertUiEnabled is true by default but we are not calling Enviroment.FailFast as Debug.Fail does 
-                // s_provider.ShowDialog(stackTrace, message, detailMessage, "Assertion Failed");
-            }
-            if (Debugger.IsAttached)
-            {
-                Debugger.Break();
+                DebugProvider.FailCore(stackTrace, message, detailMessage, "Assertion Failed");
             }
         }
 
