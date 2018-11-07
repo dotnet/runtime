@@ -41,7 +41,7 @@ namespace System.Diagnostics.Tests
 
             // First use our test logger to verify the output
             var originalWriteCoreHook = writeCoreHook.GetValue(null);
-            writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.MockWrite));
+            writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
 
             try
             {
@@ -62,11 +62,12 @@ namespace System.Diagnostics.Tests
         protected void VerifyAssert(Action test, params string[] expectedOutputStrings)
         {
             FieldInfo writeCoreHook = typeof(DebugProvider).GetField("s_WriteCore", BindingFlags.Static | BindingFlags.NonPublic);
-            s_defaultProvider = Debug.SetProvider(WriteLogger.s_instance);
-            WriteLogger.s_instance.OriginalProvider = s_defaultProvider;
-            
             var originalWriteCoreHook = writeCoreHook.GetValue(null);
-            writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.MockWrite));
+            writeCoreHook.SetValue(null, new Action<string>(WriteLogger.s_instance.WriteCore));
+            
+            FieldInfo failCoreHook = typeof(DebugProvider).GetField("s_FailCore", BindingFlags.Static | BindingFlags.NonPublic);
+            var originalFailCoreHook = failCoreHook.GetValue(null);
+            failCoreHook.SetValue(null, new Action<string, string, string, string>(WriteLogger.s_instance.FailCore));
 
             try
             {
@@ -82,18 +83,15 @@ namespace System.Diagnostics.Tests
             finally
             {
                 writeCoreHook.SetValue(null, originalWriteCoreHook);
-                Debug.SetProvider(s_defaultProvider);
+                failCoreHook.SetValue(null, originalFailCoreHook);
             }
         }
 
-        private static DebugProvider s_defaultProvider;
-        private class WriteLogger : DebugProvider
+        internal class WriteLogger
         {
             public static readonly WriteLogger s_instance = new WriteLogger();
 
             private WriteLogger() { }
-
-            public DebugProvider OriginalProvider { get; set; }
 
             public string LoggedOutput { get; private set; }
 
@@ -105,24 +103,12 @@ namespace System.Diagnostics.Tests
                 AssertUIOutput = string.Empty;
             }
 
-            public override void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
+            public void FailCore(string stackTrace, string message, string detailMessage, string errorSource)
             {
                 AssertUIOutput += stackTrace + message + detailMessage + errorSource;
             }
 
-            public override void OnIndentLevelChanged(int indentLevel)
-            {
-                OriginalProvider.OnIndentLevelChanged(indentLevel);
-            }
-
-            public override void OnIndentSizeChanged(int indentSize)
-            {
-                OriginalProvider.OnIndentLevelChanged(indentSize);
-            }
-            public override void Write(string message) { OriginalProvider.Write(message); }
-            public override void WriteLine(string message) { OriginalProvider.WriteLine(message); }
-
-            public void MockWrite(string message)
+            public void WriteCore(string message)
             {
                 Assert.NotNull(message);
                 LoggedOutput += message;
