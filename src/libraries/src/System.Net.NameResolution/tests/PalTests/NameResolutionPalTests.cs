@@ -166,5 +166,14 @@ namespace System.Net.NameResolution.PalTests
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(hostEntry);
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void Exception_HostNotFound_Success()
+        {
+            var ex = new  SocketException((int)SocketError.HostNotFound);
+
+            Assert.Equal(-1, ex.Message.IndexOf("Device"));
+        }
     }
 }
