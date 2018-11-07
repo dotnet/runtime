@@ -2070,7 +2070,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoReflectionAssemblyHandle rassembly = MONO_HANDLE_CAST (MonoReflectionAssembly, obj);
 		cinfo = mono_custom_attrs_from_assembly_checked (MONO_HANDLE_GETVAL (rassembly, assembly), FALSE, error);
 		goto_if_nok (error, leave);
-	} else if (strcmp ("Module", klass_name) == 0 || strcmp ("MonoModule", klass_name) == 0) {
+	} else if (strcmp ("MonoModule", klass_name) == 0) {
 		MonoReflectionModuleHandle module = MONO_HANDLE_CAST (MonoReflectionModule, obj);
 		cinfo = mono_custom_attrs_from_module (MONO_HANDLE_GETVAL (module, image), error);
 		goto_if_nok (error, leave);
