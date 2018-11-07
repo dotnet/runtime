@@ -10,10 +10,12 @@ internal class MyResolver : DataContractResolver
 {
     public bool ResolveNameInvoked = false;
     public bool TryResolveTypeInvoked = false;
+    public bool DeclaredTypeIsNotNull = false;
 
     public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver knownTypeResolver)
     {
         ResolveNameInvoked = true;
+        DeclaredTypeIsNotNull = declaredType != null;
         return knownTypeResolver.ResolveName(typeName, typeNamespace, declaredType, null);
     }
 

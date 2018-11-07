@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
             }
             ReadAttributes(xmlReader);
             string objectId = GetObjectId();
-            object oldObj = InternalDeserialize(xmlReader, name, ns, ref dataContract);
+            object oldObj = InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
             object obj = DataContractSurrogateCaller.GetDeserializedObject(_serializationSurrogateProvider, oldObj, dataContract.UnderlyingType, declaredType);
             ReplaceDeserializedObject(objectId, oldObj, obj);
 
