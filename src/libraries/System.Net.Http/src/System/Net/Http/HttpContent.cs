@@ -196,13 +196,25 @@ namespace System.Net.Http
             Encoding encoding = null;
             int bomLength = -1;
 
+            string charset = headers.ContentType?.CharSet;
+
             // If we do have encoding information in the 'Content-Type' header, use that information to convert
             // the content to a string.
-            if ((headers.ContentType != null) && (headers.ContentType.CharSet != null))
+            if (charset != null)
             {
                 try
                 {
-                    encoding = Encoding.GetEncoding(headers.ContentType.CharSet);
+                    // Remove at most a single set of quotes.
+                    if (charset.Length > 2 &&
+                        charset[0] == '\"' &&
+                        charset[charset.Length - 1] == '\"')
+                    {
+                        encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
+                    }
+                    else
+                    {
+                        encoding = Encoding.GetEncoding(charset);
+                    }
 
                     // Byte-order-mark (BOM) characters may be present even if a charset was specified.
                     bomLength = GetPreambleLength(buffer, encoding);
