@@ -30,13 +30,7 @@ namespace System.Buffers.Text
         {
             if (TryParseNormalAsFloatingPoint(source, out double d, out bytesConsumed, standardFormat))
             {
-                value = (float)d;
-                if (float.IsInfinity(value))
-                {
-                    value = default;
-                    bytesConsumed = 0;
-                    return false;
-                }
+                value = (float)(d);
                 return true;
             }
 
@@ -110,18 +104,7 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            if (number.Digits[0] == 0)
-            {
-                number.IsNegative = false;
-            }
-
-            if (!Number.NumberBufferToDouble(ref number, out value))
-            {
-                value = default;
-                bytesConsumed = 0;
-                return false;
-            }
-
+            value = Number.NumberBufferToDouble(ref number);
             return true;
         }
 

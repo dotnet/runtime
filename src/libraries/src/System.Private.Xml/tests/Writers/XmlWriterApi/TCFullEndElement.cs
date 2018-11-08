@@ -3784,7 +3784,6 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(1, "List", "float", false, null )]
             [XmlWriterInlineData(1, "TimeSpan", "float", false, null )]
             [XmlWriterInlineData(1, "Uri", "float", false, null )]
-            [XmlWriterInlineData(1, "Double", "float", false, null )]
             [XmlWriterInlineData(1, "Single", "float", true, null )]
             [XmlWriterInlineData(1, "XmlQualifiedName", "float", false, null )]
             [XmlWriterInlineData(1, "string", "float", true, null )]
@@ -3945,7 +3944,6 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(1, "List", "Single", false, null )]
             [XmlWriterInlineData(1, "TimeSpan", "Single", false, null )]
             [XmlWriterInlineData(1, "Uri", "Single", false, null )]
-            [XmlWriterInlineData(1, "Double", "Single", false, null )]
             [XmlWriterInlineData(1, "Single", "Single", true, null )]
             [XmlWriterInlineData(1, "XmlQualifiedName", "Single", false, null )]
             [XmlWriterInlineData(1, "string", "Single", true, null )]
@@ -4213,7 +4211,6 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(2, "float", "Double", true, null )]
             [XmlWriterInlineData(2, "object", "Double", true, null )]
             [XmlWriterInlineData(2, "bool", "Double", false, null )]
-            [XmlWriterInlineData(2, "Double", "Double", false, null )]
             [XmlWriterInlineData(2, "Single", "Double", true, null )]
             [XmlWriterInlineData(2, "string", "Double", true, null )]
 
@@ -4313,6 +4310,26 @@ namespace System.Xml.Tests
                     CultureInfo.CurrentCulture = origCulture;
                 }
                 Assert.True((isValid));
+            }
+
+            [Theory]
+            [XmlWriterInlineData(1, "Double", "float", false, null)]
+            [XmlWriterInlineData(1, "Double", "Single", false, null)]
+            [XmlWriterInlineData(2, "Double", "Double", false, null)]
+            [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+            public void writeValue_27_NetFramework(XmlWriterUtils utils, int param, string sourceStr, string destStr, bool isValid, object expVal)
+            {
+                writeValue_27(utils, param, sourceStr, destStr, isValid, expVal);
+            }
+
+            [Theory]
+            [XmlWriterInlineData(1, "Double", "float", true, float.PositiveInfinity)]
+            [XmlWriterInlineData(1, "Double", "Single", true, float.PositiveInfinity)]
+            [XmlWriterInlineData(2, "Double", "Double", true, double.PositiveInfinity)]
+            [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+            public void writeValue_27_NotNetFramework(XmlWriterUtils utils, int param, string sourceStr, string destStr, bool isValid, object expVal)
+            {
+                writeValue_27(utils, param, sourceStr, destStr, isValid, expVal);
             }
 
             [Theory]

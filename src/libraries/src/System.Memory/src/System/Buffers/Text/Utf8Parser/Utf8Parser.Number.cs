@@ -68,6 +68,7 @@ namespace System.Buffers.Text
             {
                 digits[0] = 0;
                 number.Scale = 0;
+                number.IsNegative = false;
                 bytesConsumed = srcIndex;
                 number.CheckConsistency();
                 return true;
@@ -155,6 +156,11 @@ namespace System.Buffers.Text
 
             if ((c & ~0x20u) != 'E')
             {
+                if ((digits[0] == 0) && (numDigitsAfterDecimal == 0))
+                {
+                    number.IsNegative = false;
+                }
+
                 bytesConsumed = srcIndex;
                 number.CheckConsistency();
                 return true;
