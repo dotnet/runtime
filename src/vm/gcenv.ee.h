@@ -50,7 +50,6 @@ public:
     void EnableFinalization(bool foundFinalizers);
     void HandleFatalError(unsigned int exitCode);
     bool ShouldFinalizeObjectForUnload(void* pDomain, Object* obj);
-    bool ForceFullGCToBeBlocking();
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
     bool GetBooleanConfigValue(const char* key, bool* value);
