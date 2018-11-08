@@ -110,7 +110,7 @@ namespace System.Threading
         internal sealed class WorkStealingQueue
         {
             private const int INITIAL_SIZE = 32;
-            internal volatile object[] m_array = new object[INITIAL_SIZE];
+            internal volatile object[] m_array = new object[INITIAL_SIZE]; // SOS's ThreadPool command depends on this name
             private volatile int m_mask = INITIAL_SIZE - 1;
 
 #if DEBUG
@@ -377,7 +377,7 @@ namespace System.Threading
         }
 
         internal bool loggingEnabled;
-        internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>();
+        internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>(); // SOS's ThreadPool command depends on this name
 
         private Internal.PaddingFor32 pad1;
 
@@ -933,7 +933,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallback : QueueUserWorkItemCallbackBase
     {
-        private WaitCallback _callback;
+        private WaitCallback _callback; // SOS's ThreadPool command depends on this name
         private readonly object _state;
         private readonly ExecutionContext _context;
 
@@ -972,7 +972,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallback<TState> : QueueUserWorkItemCallbackBase
     {
-        private Action<TState> _callback;
+        private Action<TState> _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
         private readonly ExecutionContext _context;
 
@@ -1011,7 +1011,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallbackDefaultContext : QueueUserWorkItemCallbackBase
     {
-        private WaitCallback _callback;
+        private WaitCallback _callback; // SOS's ThreadPool command depends on this name
         private readonly object _state;
 
         internal static readonly ContextCallback s_executionContextShim = state =>
@@ -1038,7 +1038,7 @@ namespace System.Threading
 
     internal sealed class QueueUserWorkItemCallbackDefaultContext<TState> : QueueUserWorkItemCallbackBase
     {
-        private Action<TState> _callback;
+        private Action<TState> _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
 
         internal static readonly ContextCallback s_executionContextShim = state =>
