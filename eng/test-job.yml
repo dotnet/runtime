@@ -1,0 +1,121 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  priority: 0
+  crossgen: false
+  scenarios: ''
+
+### Test job
+
+### Each test job depends on a corresponding build job with the same
+### buildConfig and archType.
+
+jobs:
+- template: xplat-job.yml
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+
+    # Compute job name from template parameters
+    ${{ if eq(parameters.crossgen, 'false') }}:
+        name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Test pri{0} {1} {2} {3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.crossgen, 'true') }}:
+        name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+
+    variables:
+      # Map template parameters to command line arguments
+      ${{ if eq(parameters.priority, '1') }}:
+        ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+          priorityArg: 'priority1'
+        ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+          priorityArg: '-priority=1'
+      ${{ if eq(parameters.priority, '0') }}:
+        priorityArg: ''
+
+      ${{ if eq(parameters.crossgen, 'true') }}:
+        crossgenArg: 'crossgen'
+      ${{ if eq(parameters.crossgen, 'false') }}:
+        crossgenArg: ''
+      ${{ if ne(parameters.scenarios, '') }}:
+        scenariosArg: ${{ format('/p:"Scenarios={0}"', parameters.scenarios) }}
+      ${{ if eq(parameters.scenarios, '') }}:
+        scenariosArg: ''
+
+    # TODO: Enable crossgen in build-test.sh. It currently doesn't
+    # accept a crossgen arg, so disable the macos/linux crossgen test
+    # build jobs.
+    ${{ if and(eq(parameters.crossgen, 'true'), or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX'))) }}:
+      condition: false
+
+    # Test job depends on the corresponding build job
+    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+
+    steps:
+
+    # Install test build dependencies
+    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+      - script: sh eng/install-native-dependencies.sh $(osGroup)
+        displayName: Install native dependencies
+
+
+    # Download product build from pipeline artifact storage
+    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+      - task: DownloadPipelineArtifact@0
+        displayName: Download product build pipeline artifact
+        inputs:
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - task: DownloadPipelineArtifact@0
+        displayName: Download product build pipeline artifact
+        inputs:
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)\bin\Product\Windows_NT.$(archType).$(buildConfigUpper)
+
+      
+    # Build tests
+    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+        # TODO: enable crossgen in build-test.sh
+      - script: ./build-test.sh $(buildConfig) $(archType) $(priorityArg) $(crossgenArg)
+        displayName: Build tests
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: build-test.cmd $(buildConfig) $(archType) $(priorityArg) $(crossgenArg)
+        displayName: Build tests
+
+
+    # Prepare tests for helix
+    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixprep.proj /p:CORE_ROOT=$(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper)/Tests/Core_Root /p:__BuildType=$(buildConfig) /p:__BuildArch=$(archType) /p:UsePython=true
+        # TODO: remove UsePython argument once we've removed generated wrappers in helixprep.proj
+        displayName: Prepare test archives for Helix
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        # TODO: remove UsePython argument once we've removed generated wrappers in helixprep.proj
+      - script: .\Tools\dotnetcli\dotnet.exe msbuild tests\helixprep.proj /p:CORE_ROOT=$(Build.SourcesDirectory)\bin\tests\Windows_NT.$(archType).$(buildConfigUpper)\tests\core_root /p:__BuildType=$(buildConfig) /p:__BuildArch=$(archType) /p:UsePython=true
+        displayName: Prepare test archives for Helix
+
+
+    # Send tests to helix
+    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj /t:Test $(scenariosArg)
+        displayName: Send test jobs to Helix
+        env:
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            # Access token variable for internal project
+            HelixAccessToken: $(HelixApiAccessToken)
+          ${{ if eq(variables['System.TeamProject'], 'public') }}:
+            # Access token variable for public project
+            HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj /t:Test $(scenariosArg)
+        displayName: Send test jobs to Helix
+        env:
+          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+            # Access token variable for internal project
+            HelixAccessToken: $(HelixApiAccessToken)
+          ${{ if eq(variables['System.TeamProject'], 'public') }}:
+            # Access token variable for public project
+            HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)

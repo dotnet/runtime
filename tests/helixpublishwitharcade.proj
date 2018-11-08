@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+
+  <!-- This project uses the helix SDK ,documented at
+       https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
+       to send test jobs to helix. -->
+
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <!-- TODO: pick appropriate helix source and type. -->
+    <HelixSource>pr/coreclr/master</HelixSource>
+    <HelixType>test/stuff</HelixType>
+    <HelixBuild>$(BUILD_BUILDNUMBER)</HelixBuild>
+
+    <!-- TODO: add target queues for rhel and linux-musl -->
+    <!-- TODO: why don't we currently run tests on windows x86? -->
+    <HelixTargetQueues Condition=" '$(BuildOS)' == 'Windows_NT' ">
+      Windows.10.Amd64;
+      Windows.10.Nano.Amd64;
+      Windows.10.Amd64.Core;
+      Windows.7.Amd64;
+      Windows.81.Amd64
+    </HelixTargetQueues>
+    <HelixTargetQueues Condition=" '$(BuildOS)' == 'Linux' ">
+      debian.82.amd64;
+      fedora.27.amd64;
+      fedora.28.amd64;
+      redhat.73.amd64;
+      ubuntu.1404.amd64;
+      ubuntu.1604.amd64;
+      ubuntu.1804.amd64;
+      opensuse.423.amd64;
+      sles.12.amd64
+    </HelixTargetQueues>
+    <HelixTargetQueues Condition=" '$(BuildOS)' == 'OSX' ">
+      osx.1012.amd64;
+      osx.1013.amd64
+    </HelixTargetQueues>
+
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
+    <SourceDirectory>$(MSBuildProjectDirectory)/..</SourceDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(SourceDirectory)\bin\tests\*\archive\Core_Root\*.zip">
+      <PayloadArchive>%(Identity)</PayloadArchive>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <Target Name="SubmitTestsToHelix">
+    <ItemGroup>
+      <Scenarios Include="$(Scenarios)" />
+    </ItemGroup>
+
+    <!-- If no scenario was specified, just run the normal test
+         scenario -->
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test"
+             Condition=" '@(Scenarios->Count())' == '0' " />
+
+    <!-- If scenarios were specified, submit jobs for each
+         scenario. -->
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test"
+             Properties="Scenario=%(Scenarios.Identity)"
+             BuildInParallel="true"
+             Condition=" '@(Scenarios->Count())' != '0' " />
+
+  </Target>
+
+  <Target Name="BuildHelixWorkItem"
+          BeforeTargets="Test">
+    <PropertyGroup>
+      <!-- The "normal" scenario is just a way to include the default
+           (empty) scenario when specifying multiple scenarios at
+           once. From here, on, treat it as the empty scenario so that
+           job names will not have a scenario prefix and the runtest
+           script doesn't have to define a "normal" scenario. -->
+      <Scenario Condition=" '$(Scenario)' == 'normal' "></Scenario>
+      <ScenarioPrefix Condition=" '$(Scenario)' == '' " />
+      <ScenarioPrefix Condition=" '$(Scenario)' != '' ">$(Scenario) </ScenarioPrefix>
+    </PropertyGroup>
+    <ItemGroup>
+      <TestZipFiles Include="$(SourceDirectory)\bin\tests\*\archive\tests\*.zip" />
+      <HelixWorkItem Include="@(TestZipFiles->'$(ScenarioPrefix)%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command Condition=" '$(Scenario)' == '' ">python runtest_helix.py -wrapper %(FileName).dll</Command>
+        <Command Condition=" '$(Scenario)' != '' ">python runtest_helix.py -scenario $(Scenario) -wrapper %(FileName).dll</Command>
+      </HelixWorkItem>
+    </ItemGroup>
+
+  </Target>
+
+</Project>

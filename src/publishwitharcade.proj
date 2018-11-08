@@ -1,0 +1,37 @@
+<Project DefaultTargets="PublishProductPackages" Sdk="Microsoft.DotNet.Arcade.Sdk">
+
+  <!-- TODO: move properties imported from here into a common props file -->
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <Import Project="$(NuGetPackageRoot)microsoft.dotnet.build.tasks.feed\$(MicrosoftDotNetBuildTasksFeedVersion)\build\Microsoft.DotNet.Build.Tasks.Feed.targets" />
+
+  <Target Name="PublishPackages">
+
+    <ItemGroup>
+      <ItemsToPush Remove="*.nupkg" />
+      <ItemsToPush Include="$(PackagesBinDir)pkg\*.nupkg">
+        <ManifestArtifactData>NonShipping=true</ManifestArtifactData> <!-- TODO: how is this metadata used? -->
+      </ItemsToPush>
+    </ItemGroup>
+
+    <Error Condition=" '$(AzureFeedUrl)' == '' " Text="AzureFeedUrl must be set" />
+    <Error Condition=" '$(AccountKey)' == '' " Text="AccountKey must be set" />
+    <Error Condition=" '$(BUILD_REPOSITORY_URI)' == '' " Text="BUILD_REPOSITORY_URI must be set" />
+    <Error Condition=" '$(BUILD_SOURCEBRANCH)' == '' " Text="BUILD_SOURCEBRANCH must be set" />
+    <Error Condition=" '$(BUILD_BUILDNUMBER)' == '' " Text="BUILD_BUILDNUMBER must be set" />
+    <Error Condition=" '$(BUILD_SOURCEVERSION)' == '' " Text="BUILD_SOURCEVERSION must be set" />
+
+    <PushToBlobFeed ExpectedFeedUrl="$(AzureFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(ItemsToPush)"
+                    ManifestBuildData="Location=$(AzureFeedUrl)"
+                    ManifestRepoUri="$(BUILD_REPOSITORY_URI)"
+                    ManifestBranch="$(BUILD_SOURCEBRANCH)"
+                    ManifestBuildId="$(BUILD_BUILDNUMBER)"
+                    ManifestCommit="$(BUILD_SOURCEVERSION)" />
+                    <!-- TODO: The arcade sample publishes an asset manifest. Do we want this?
+                    AssetManifestPath="" />
+                    -->
+  </Target>
+
+</Project>
