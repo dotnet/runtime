@@ -121,6 +121,7 @@ else()
     list(APPEND CORECLR_LIBRARIES
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
+        tracepointprovider
         ${END_WHOLE_ARCHIVE}
         mscorrc_debug
         palrt
