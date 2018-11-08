@@ -1184,10 +1184,11 @@ static int8_t ConvertSocketFlagsPalToPlatform(int32_t palFlags, int* platformFla
         return false;
     }
 
-    *platformFlags = ((palFlags & SocketFlags_MSG_OOB) == 0 ? 0 : MSG_OOB) | ((palFlags & SocketFlags_MSG_PEEK) == 0 ? 0 : MSG_PEEK) |
-                    ((palFlags & SocketFlags_MSG_DONTROUTE) == 0 ? 0 : MSG_DONTROUTE) |
-                    ((palFlags & SocketFlags_MSG_TRUNC) == 0 ? 0 : MSG_TRUNC) |
-                    ((palFlags & SocketFlags_MSG_CTRUNC) == 0 ? 0 : MSG_CTRUNC);
+    *platformFlags = ((palFlags & SocketFlags_MSG_OOB) == 0 ? 0 : MSG_OOB) |
+                     ((palFlags & SocketFlags_MSG_PEEK) == 0 ? 0 : MSG_PEEK) |
+                     ((palFlags & SocketFlags_MSG_DONTROUTE) == 0 ? 0 : MSG_DONTROUTE) |
+                     ((palFlags & SocketFlags_MSG_TRUNC) == 0 ? 0 : MSG_TRUNC) |
+                     ((palFlags & SocketFlags_MSG_CTRUNC) == 0 ? 0 : MSG_CTRUNC);
 
     return true;
 }
@@ -1198,7 +1199,7 @@ static int32_t ConvertSocketFlagsPlatformToPal(int platformFlags)
 
     platformFlags &= SupportedFlagsMask;
 
-    return ((platformFlags & MSG_OOB) == 0 ? 0 : SocketFlags_MSG_OOB) | ((platformFlags & MSG_PEEK) == 0 ? 0 : SocketFlags_MSG_PEEK) |
+    return ((platformFlags & MSG_OOB) == 0 ? 0 : SocketFlags_MSG_OOB) |
            ((platformFlags & MSG_DONTROUTE) == 0 ? 0 : SocketFlags_MSG_DONTROUTE) |
            ((platformFlags & MSG_TRUNC) == 0 ? 0 : SocketFlags_MSG_TRUNC) |
            ((platformFlags & MSG_CTRUNC) == 0 ? 0 : SocketFlags_MSG_CTRUNC);
