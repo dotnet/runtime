@@ -54,9 +54,6 @@ namespace System.Globalization
 
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
-        // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
-        private readonly bool _invariantMode = GlobalizationMode.Invariant;
-
         // Invariant text info
         internal static TextInfo Invariant
         {
@@ -192,7 +189,7 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual char ToLower(char c)
         {
-            if (_invariantMode || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -204,7 +201,7 @@ namespace System.Globalization
         {
             if (str == null) { throw new ArgumentNullException(nameof(str)); }
 
-            if (_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 return ToLowerAsciiInvariant(str);
             }
@@ -214,7 +211,7 @@ namespace System.Globalization
 
         private unsafe char ChangeCase(char c, bool toUpper)
         {
-            Debug.Assert(!_invariantMode);
+            Debug.Assert(!GlobalizationMode.Invariant);
             
             char dst = default;
             ChangeCase(&c, 1, &dst, 1, toUpper);
@@ -247,7 +244,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
 
-            Debug.Assert(!_invariantMode);
+            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(charCount >= 0);
 
             if (charCount == 0)
@@ -354,7 +351,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TConversion) == typeof(ToUpperConversion) || typeof(TConversion) == typeof(ToLowerConversion));
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
 
-            Debug.Assert(!_invariantMode);
+            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(source != null);
 
             // If the string is empty, we're done.
@@ -585,7 +582,7 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public virtual char ToUpper(char c)
         {
-            if (_invariantMode || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -597,7 +594,7 @@ namespace System.Globalization
         {
             if (str == null) { throw new ArgumentNullException(nameof(str)); }
 
-            if (_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 return ToUpperAsciiInvariant(str);
             }
@@ -856,7 +853,7 @@ namespace System.Globalization
             {
                 // for surrogate pairs do a ToUpper operation on the substring
                 ReadOnlySpan<char> src = input.AsSpan(inputIndex, 2);
-                if (_invariantMode)
+                if (GlobalizationMode.Invariant)
                 {
                     result.Append(src); // surrogate pair in invariant mode, so changing case is a nop
                 }
