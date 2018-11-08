@@ -98,17 +98,6 @@ os_group_list = {
     'Ubuntu16.04': 'Linux'
 }
 
-python_exe_list = {
-    'Windows_NT': {
-        'x64': 'py',
-        'x86': 'py'
-    },
-    'Linux': {
-        'x64': 'python3.5',
-        'arm': 'python3.6'
-    }
-}
-
 ##########################################################################
 # Argument Parser
 ##########################################################################
@@ -337,7 +326,6 @@ def main(args):
     global dll_exclude_list
     global jit_list
     global os_group_list
-    global python_exe_list
 
     architecture, operating_system, os_group, build_type, run_type, clr_root, assembly_root, benchview_path, iterations, opt_level, jit_name, no_pgo = validate_args(args)
     arch = architecture
@@ -371,7 +359,7 @@ def main(args):
     # Replace assembly_root's System.Private.CoreLib with built System.Private.CoreLib.
     shutil.copyfile(os.path.join(bin_path, 'System.Private.CoreLib.dll'), os.path.join(assembly_root, 'System.Private.CoreLib.dll'))
 
-    python_exe = python_exe_list[os_group][arch]
+    python_exe = sys.executable
 
     # Run throughput testing
     for dll_file_name in os.listdir(assembly_root):
