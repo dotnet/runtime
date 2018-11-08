@@ -111,21 +111,27 @@ ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
 
 Alternatively, to avoid modifying /usr/local/ you can invoke cmake with the `OPENSSL_ROOT_DIR` env var set. The value to be passed in the directory where openssl is installed. Use `brew info openssl` to determine it. For example:
 
-```
-$brew info openssl
-openssl: stable 1.0.2l (bottled) [keg-only]
+```none
+$ brew info openssl
+openssl: stable 1.0.2p (bottled) [keg-only]
 SSL/TLS cryptography library
 https://openssl.org/
-/usr/local/Cellar/openssl/1.0.1f (1,229 files, 10.8MB)
-  Poured from bottle on 2014-01-20 at 19:25:30
-/usr/local/Cellar/openssl/1.0.1g (1,229 files, 10.6MB)
-  Poured from bottle on 2014-04-07 at 11:26:41
+/usr/local/Cellar/openssl/1.0.2l (1,709 files, 12.3MB)
+  Poured from bottle on 2017-10-10 at 21:30:10
+/usr/local/Cellar/openssl/1.0.2m (1,792 files, 12.3MB)
+  Poured from bottle on 2017-11-06 at 17:45:21
+/usr/local/Cellar/openssl/1.0.2n (1,792 files, 12.3MB)
+  Poured from bottle on 2018-01-25 at 20:22:45
+/usr/local/Cellar/openssl/1.0.2o_2 (1,792 files, 12.3MB)
+  Poured from bottle on 2018-07-15 at 16:59:46
+/usr/local/Cellar/openssl/1.0.2p (1,793 files, 12.3MB)
+  Poured from bottle on 2018-08-31 at 19:37:10
 ```
 
-With the above example, we'd pick the latest version `1.0.1g` and invoke cmake like the following:
+With the above example, use the latest version path for `1.0.2p`:
 
-```
-OPENSSL_ROOT_DIR="/usr/local/Cellar/openssl/1.0.1g cmake
+```none
+$ OPENSSL_ROOT_DIR=/usr/local/Cellar/openssl/1.0.2p ./build.sh
 ```
 
 ### Known Issues
