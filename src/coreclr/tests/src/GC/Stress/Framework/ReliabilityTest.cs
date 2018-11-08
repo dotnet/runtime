@@ -11,7 +11,79 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using System.Threading;
+using System.Runtime.Loader;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+
+public class TestAssemblyLoadContext : AssemblyLoadContext
+{
+    List<string> _privatePaths = new List<string>();
+    string _applicationBase;
+    public TestAssemblyLoadContext(string name, string applicationBase = null, string[] paths = null) : base(true)
+    {
+        FriendlyName = name;
+
+        SetPaths(applicationBase, paths);
+    }
+
+    public void SetPaths(string applicationBase, string[] paths)
+    {
+        _applicationBase = applicationBase;
+        if (paths != null)
+        {
+            _privatePaths.AddRange(paths);
+        }
+    }
+
+    public void AppendPrivatePath(string path)
+    {
+        _privatePaths.Add(path);
+    }
+
+    public int ExecuteAssemblyByName(string name, string[] args)
+    {
+        return ExecuteAssembly(name + ".exe", args);
+
+    }
+
+    public int ExecuteAssembly(string path, string[] args)
+    {
+        Assembly assembly = LoadFromAssemblyPath(Path.Combine(_applicationBase, path));
+        object[] actualArgs = new object[] { args != null ? args : new string[0] };
+        return (int)assembly.EntryPoint.Invoke(null, actualArgs);
+    }
+
+    protected override Assembly Load(AssemblyName assemblyName)
+    {
+        Assembly assembly = null;
+        foreach (string path in _privatePaths)
+        {
+            try
+            {
+                assembly = LoadFromAssemblyPath(Path.Combine(path, assemblyName.Name + ".dll"));
+                break;
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        if (assembly == null)
+        {
+            try
+            {
+                assembly = LoadFromAssemblyPath(Path.Combine(_applicationBase, assemblyName.Name + ".dll"));
+            }
+            catch (Exception)
+            {
+            }
+        }
+
+        return assembly;
+    }
+
+    public string FriendlyName { get; private set; }
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// <summary>
@@ -40,7 +112,9 @@ public class ReliabilityTest
 #if !PROJECTK_BUILD
     private AppDomain appDomain;
 #endif
+    private TestAssemblyLoadContext _assemblyLoadContext;
     private Object _testObject;
+    private object _myLoader;
     private int _concurrentCopies = 1;
     private int _runningCount = 0;
     private int _expectedDuration = -1;
@@ -54,6 +128,7 @@ public class ReliabilityTest
     private List<string> _preCommands;
     private List<string> _postCommands;
     private int _appDomainIndex = 0;
+    private int _assemblyLoadContextIndex = 0;
     private TestAttributes _testAttrs = TestAttributes.None;
     private CustomActionType _customAction = CustomActionType.None;
     private bool _testLoadFailed = false;
@@ -144,6 +219,18 @@ public class ReliabilityTest
         }
     }
 
+    public Object MyLoader
+    {
+        get
+        {
+            return (_myLoader);
+        }
+        set
+        {
+            _myLoader = value;
+        }
+    }
+
     public bool TestLoadFailed
     {
         get
@@ -169,6 +256,32 @@ public class ReliabilityTest
         }
     }
 #endif
+
+    public TestAssemblyLoadContext AssemblyLoadContext
+    {
+        get
+        {
+            return _assemblyLoadContext;
+        }
+        set
+        {
+            _assemblyLoadContext = value;
+        }
+    }
+
+
+    public bool HasAssemblyLoadContext
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        get { return _assemblyLoadContext != null;  }
+    }
+
+    public string AssemblyLoadContextName
+    {
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        get { return _assemblyLoadContext.FriendlyName; }
+    }
+
     public string Assembly
     {
         get
@@ -489,6 +602,18 @@ public class ReliabilityTest
         }
     }
 
+    public int AssemblyLoadContextIndex
+    {
+        get
+        {
+            return (_assemblyLoadContextIndex);
+        }
+        set
+        {
+            _assemblyLoadContextIndex = value;
+        }
+    }
+
     public int Index
     {
         get
@@ -521,6 +646,25 @@ public class ReliabilityTest
     public object Clone()
     {
         return (this.MemberwiseClone());
+    }
+
+    public int ExecuteInAssemblyLoadContext()
+    {
+        int exitCode;
+
+        AssemblyLoadContext.AppendPrivatePath(BasePath);
+
+        // Execute the test.
+        if (Assembly.ToLower().IndexOf(".exe") == -1 && Assembly.ToLower().IndexOf(".dll") == -1) // must be a simple name or fullname...
+        {
+            exitCode = AssemblyLoadContext.ExecuteAssemblyByName(Assembly, GetSplitArguments());
+        }
+        else
+        {
+            exitCode = AssemblyLoadContext.ExecuteAssembly(Assembly, GetSplitArguments());
+        }
+
+        return exitCode;
     }
 }
 

@@ -24,14 +24,18 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Linq;
+
 #if !PROJECTK_BUILD
 using System.Security.Policy;
 delegate void AppDomainUnloadDelegate(AppDomain domain);
-delegate void TestPreLoaderDelegate(ReliabilityTest test, string[] paths);
 #endif
 
 #if PROJECTK_BUILD
 using System.Runtime.Loader;
+
+delegate void TestPreLoaderDelegate(ReliabilityTest test, string[] paths);
+delegate void AssemblyLoadContextUnloadDelegate();
 
 internal class CustomAssemblyResolver : AssemblyLoadContext
 {
@@ -124,6 +128,7 @@ public class ReliabilityFramework
 #if !PROJECTK_BUILD
     AppDomain[] _testDomains = null;
 #endif
+    TestAssemblyLoadContext[]  _testALCs = null;
     private DetourHelpers _detourHelpers;
     private Hashtable _foundTests;
     public int LoadingCount = 0;
@@ -368,6 +373,18 @@ public class ReliabilityFramework
                 }
             }
 #endif
+            if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.RoundRobin)
+            {
+                // full isoloation & normal are handled by the way we setup
+                // tests in ReliabilityConfiguration.  Round robin needs extra
+                // logic when we create app domains.
+                _testALCs = new TestAssemblyLoadContext[_curTestSet.NumAssemblyLoadContexts];
+                for (int alc = 0; alc < _curTestSet.NumAssemblyLoadContexts; alc++)
+                {
+                    _testALCs[alc] = new TestAssemblyLoadContext("RoundRobinContext" + alc.ToString());
+                }
+            }
+
             if (_curTestSet.ReportResults)
             {
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, "Reporting results...");
@@ -473,6 +490,27 @@ public class ReliabilityFramework
                             haveAtLeastOneTest = true;
                         }
 
+                        break;
+                    case TestStartModeEnum.AssemblyLoadContextLoader:
+                        // for the AssemblyLoadContext loader we create the
+                        // AssemblyLoadContexts here
+                        try
+                        {
+                            if (_curTestSet.AssemblyLoadContextLoaderMode != AssemblyLoadContextLoaderMode.Lazy)
+                            {
+                                Interlocked.Increment(ref LoadingCount);
+
+                                test.AssemblyLoadContextIndex = i % _curTestSet.NumAssemblyLoadContexts;    // only used for roudn robin scheduling.
+                                Task.Factory.StartNew(() =>
+                                {
+                                    TestPreLoader(test, testSet.DiscoveryPaths);
+                                });
+                                //                                TestPreLoaderDelegate loadTestDelegate = new TestPreLoaderDelegate(this.TestPreLoader);
+                                //                                loadTestDelegate.BeginInvoke(test, testSet.DiscoveryPaths, null, null);
+                            }
+                            haveAtLeastOneTest = true;
+                        }
+                        catch { }
                         break;
                     case TestStartModeEnum.AppDomainLoader:
 #if PROJECTK_BUILD
@@ -882,7 +920,9 @@ public class ReliabilityFramework
                         // we can start this test if it hasn't exceeded the maximum loops and we aren't running too many concurrent copies.
                         ReliabilityTest curTest = _curTestSet.Tests[startingTest];
                         //Console.WriteLine("current test: {0}: {1}", curTest.TestObject, (curTest.TestLoadFailed ? "failed" : "succeeded"));
-                        if (!curTest.TestLoadFailed && ((curTest.TestObject != null) || (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)))
+                        if (!curTest.TestLoadFailed && ((curTest.TestObject != null) ||
+                            (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy) ||
+                            (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.Lazy)))
                         {
                             bool fLogEntered = false;
 
@@ -1053,25 +1093,23 @@ public class ReliabilityFramework
     /// <param name="test">The test to run.</param>
     private void StartTest(ReliabilityTest test)
     {
-#if PROJECTK_BUILD
-        Interlocked.Increment(ref _testsRunningCount);
-        test.TestStarted();
-
-        StartTestWorker(test);
-#else
         try
         {
-            if (curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
+#if PROJECTK_BUILD
+            if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.Lazy)
+#else
+            if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
+#endif
             {
                 Console.WriteLine("Test Loading: {0} run #{1}", test.RefOrID, test.RunCount);
-                TestPreLoader(test, curTestSet.DiscoveryPaths);
+                TestPreLoader(test, _curTestSet.DiscoveryPaths);
             }
 
             // Any test failed to load during the preload step should be removed. Need to take a closer look.
             // This is to fix Dev10 Bug 552621.
             if (test.TestLoadFailed)
             {
-                logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.Tests, "Test failed to load.");
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Test failed to load.");
                 return;
             }
 
@@ -1092,10 +1130,10 @@ public class ReliabilityFramework
             }
 
             newThread.Name = test.RefOrID;
-            
-            Interlocked.Increment(ref testsRunningCount);
+
+            Interlocked.Increment(ref _testsRunningCount);
             test.TestStarted();
-            logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}", testsRunningCount, test.RunningCount, test.RefOrID));
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}", _testsRunningCount, test.RunningCount, test.RefOrID));
 
             newThread.Start(test);
         }
@@ -1103,7 +1141,6 @@ public class ReliabilityFramework
         {
             HandleOom(e, "StartTest");
         }
-#endif
     }
 
     /// <summary>
@@ -1297,13 +1334,18 @@ public class ReliabilityFramework
                 case TestStartModeEnum.AppDomainLoader:
 #if PROJECTK_BUILD
                     Console.WriteLine("Appdomain mode is NOT supported for ProjectK");
-#else
+                    break;
+                case TestStartModeEnum.AssemblyLoadContextLoader:
+#endif
                     try
                     {
                         if (daTest.TestObject is string)
                         {
                             try
                             {
+#if PROJECTK_BUILD
+                                int exitCode = daTest.ExecuteInAssemblyLoadContext();
+#else
                                 int exitCode;
 #pragma warning disable 0618
                                 // AppendPrivatePath is obsolute, should move to AppDomainSetup but it's too risky at end of beta 1.
@@ -1321,7 +1363,7 @@ public class ReliabilityFramework
                                     //exitCode = daTest.AppDomain.ExecuteAssembly(daTest.Assembly, daTest.GetSplitArguments());
                                     exitCode = daTest.AppDomain.ExecuteAssembly(daTest.Assembly, null, daTest.GetSplitArguments());
                                 }
-
+#endif
                                 // HACKHACK: VSWhidbey bug #113535: Breaking change.  Tests that return a value via Environment.ExitCode
                                 // will not have their value propagated back properly via AppDomain.ExecuteAssembly.   These tests will
                                 // typically have a return value of 0 (because they have a void entry point).  We will check 
@@ -1330,7 +1372,7 @@ public class ReliabilityFramework
 
                                 if (exitCode == 0 && Environment.ExitCode != 0)
                                 {
-                                    logger.WriteTestRace(daTest);
+                                    _logger.WriteTestRace(daTest);
                                     exitCode = Environment.ExitCode;
                                     Environment.ExitCode = 0;
                                 }
@@ -1343,20 +1385,22 @@ public class ReliabilityFramework
                                 {
                                     AddSuccess("", daTest, exitCode);
                                 }
-                                logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.Tests, String.Format("Test {0} has exited with result {1}", daTest.RefOrID, exitCode));
+                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Test {0} has exited with result {1}", daTest.RefOrID, exitCode));
                             }
                             catch (PathTooLongException)
                             {
-                                if (curTestSet.DebugBreakOnPathTooLong)
+                                if (_curTestSet.DebugBreakOnPathTooLong)
                                 {
                                     MyDebugBreak("Path too long");
                                 }
                             }
+#if !PROJECTK_BUILD
                             catch (AppDomainUnloadedException)
                             {
-                                logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.Tests, String.Format("Error in executing test {0}: AppDomainUnloaded", daTest.RefOrID));
+                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Error in executing test {0}: AppDomainUnloaded", daTest.RefOrID));
                                 AddFailure("Failed to ExecuteAssembly, AD Unloaded (" + daTest.AppDomain.FriendlyName + ")", daTest, -1);
                             }
+#endif
                             catch (OutOfMemoryException e)
                             {
                                 HandleOom(e, "ExecuteAssembly");
@@ -1378,17 +1422,19 @@ public class ReliabilityFramework
 
                                 if (eTemp == null)
                                 {
-                                    logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.Tests, String.Format("Error in executing test {0}: {1}", daTest.RefOrID, e));
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Error in executing test {0}: {1}", daTest.RefOrID, e));
                                     AddFailure("Failed to ExecuteAssembly (" + e.ToString() + ")", daTest, -1);
                                 }
 
+#if !PROJECTK_BUILD
                                 if ((Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0)
                                 {
                                     UnexpectedThreadAbortDebugBreak();
-                                    logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.Tests, String.Format("Test left thread w/ abort requested set"));
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Test left thread w/ abort requested set"));
                                     AddFailure("Abort Requested Bit Still Set (" + e.ToString() + ")", daTest, -1);
                                     Thread.ResetAbort();
                                 }
+#endif
                             }
                         }
                         else if (daTest.TestObject is ISingleReliabilityTest)
@@ -1432,9 +1478,46 @@ public class ReliabilityFramework
 
                         /* Test is finished executing, we need to clean up now... */
 
-                        Interlocked.Increment(ref testsRanCount);
+                        Interlocked.Increment(ref _testsRanCount);
 
-                        if (curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation || curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
+#if PROJECTK_BUILD
+                        if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.FullIsolation || _curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.Lazy)
+                        {
+                            // we're in full isolation & have test runs left.  we need to 
+                            // recreate the AssemblyLoadContext so that we don't die on statics.
+                            lock (daTest)
+                            {
+                                if (daTest.HasAssemblyLoadContext)
+                                {
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, String.Format("Unloading AssemblyLoadContext (locked): {0}", daTest.AssemblyLoadContextName));
+                                    daTest.MyLoader = null;
+                                    daTest.TestObject = null;
+                                    UnloadAssemblyLoadContext(daTest);
+                                }
+                                if (_curTestSet.MaximumLoops != 1 && _curTestSet.AssemblyLoadContextLoaderMode != AssemblyLoadContextLoaderMode.Lazy)
+                                {
+                                    TestPreLoader(daTest, _curTestSet.DiscoveryPaths);  // need to reload assembly & AssemblyLoadContext
+                                }
+                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, String.Format("Unloading complete (freeing lock): {0}", daTest.RefOrID));
+                            }
+                        }
+                        else if ((daTest.RunCount >= (_curTestSet.MaximumLoops * daTest.ConcurrentCopies) ||
+                            ((DateTime.Now.Subtract(_startTime).Ticks / TimeSpan.TicksPerMinute > _curTestSet.MaximumTime))) &&
+                            (_curTestSet.AssemblyLoadContextLoaderMode != AssemblyLoadContextLoaderMode.RoundRobin))    // don't want to unload domains in round robin mode, we don't know how
+                                                                                                                        // many tests are left.
+                        {
+                            lock (daTest)
+                            {   // make sure no one accesses the assembly load context at the same time (between here & RunReliabilityTests)
+                                if (daTest.RunningCount == 1 && daTest.HasAssemblyLoadContext)
+                                {   // only unload when the last test finishes.
+                                    UnloadAssemblyLoadContext(daTest);
+                                    RunCommands(daTest.PostCommands, "post", daTest);
+                                }
+                            }
+                        }
+                    }
+#else
+                        if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation || _curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
                         {
                             // we're in full isolation & have test runs left.  we need to 
                             // recreate the app domain so that we don't die on statics.
@@ -1442,21 +1525,21 @@ public class ReliabilityFramework
                             {
                                 if (daTest.AppDomain != null)
                                 {
-                                    logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.AppDomain, String.Format("Unloading app domain (locked): {0}", daTest.AppDomain.FriendlyName));
+                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AppDomain, String.Format("Unloading app domain (locked): {0}", daTest.AppDomain.FriendlyName));
                                     AppDomain.Unload(daTest.AppDomain);
                                     daTest.AppDomain = null;
                                     daTest.MyLoader = null;
                                 }
-                                if (curTestSet.MaximumLoops != 1 && curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.Lazy)
+                                if (_curTestSet.MaximumLoops != 1 && _curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.Lazy)
                                 {
-                                    TestPreLoader(daTest, curTestSet.DiscoveryPaths);	// need to reload assembly & appdomain
+                                    TestPreLoader(daTest, _curTestSet.DiscoveryPaths);	// need to reload assembly & appdomain
                                 }
-                                logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.AppDomain, String.Format("Unloading complete (freeing lock): {0}", daTest.RefOrID));
+                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AppDomain, String.Format("Unloading complete (freeing lock): {0}", daTest.RefOrID));
                             }
                         }
-                        else if ((daTest.RunCount >= (curTestSet.MaximumLoops * daTest.ConcurrentCopies) ||
-                            ((DateTime.Now.Subtract(startTime).Ticks / TimeSpan.TicksPerMinute > curTestSet.MaximumTime))) &&
-                            (curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.RoundRobin))	// don't want to unload domains in round robin mode, we don't know how
+                        else if ((daTest.RunCount >= (_curTestSet.MaximumLoops * daTest.ConcurrentCopies) ||
+                            ((DateTime.Now.Subtract(_startTime).Ticks / TimeSpan.TicksPerMinute > _curTestSet.MaximumTime))) &&
+                            (_curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.RoundRobin))	// don't want to unload domains in round robin mode, we don't know how
                         // many tests are left.  
                         {
                             lock (daTest)
@@ -1476,11 +1559,11 @@ public class ReliabilityFramework
                     {
                         UnexpectedThreadAbortDebugBreak();
                     }
+#endif
                     finally
                     {
                         SignalTestFinished(daTest);
                     }
-#endif
                     break;
             }
         }
@@ -1593,6 +1676,9 @@ public class ReliabilityFramework
                 case TestStartModeEnum.ProcessLoader:
                     TestPreLoader_Process(test, newPaths.ToArray());
                     break;
+                case TestStartModeEnum.AssemblyLoadContextLoader:
+                    TestPreLoader_AssemblyLoadContext(test, newPaths.ToArray());
+                    break;
                 case TestStartModeEnum.AppDomainLoader:
 #if PROJECTK_BUILD
                     Console.WriteLine("Appdomain mode is NOT supported for ProjectK");
@@ -1625,6 +1711,152 @@ public class ReliabilityFramework
         MyDebugBreak(msg);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    WeakReference UnloadAssemblyLoadContextInner(ReliabilityTest test)
+    {
+        WeakReference alcRef = new WeakReference(test.AssemblyLoadContext);
+        test.AssemblyLoadContext.Unload();
+        test.AssemblyLoadContext = null;
+
+        return alcRef;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    void UnloadAssemblyLoadContext(ReliabilityTest test)
+    {
+        WeakReference alcWeakRef = UnloadAssemblyLoadContextInner(test);
+        for (int i = 0; (i < 8) && alcWeakRef.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+        }
+
+        if (alcWeakRef.IsAlive)
+        {
+            TestAssemblyLoadContext alc = (TestAssemblyLoadContext)alcWeakRef.Target;
+            if (alc != null)
+            {
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "FAILED unloading AssemblyLoadContext: " + alc.FriendlyName + " for " + test.Index.ToString());
+            }
+        }
+    }
+
+    /// <summary>
+    /// Pre-loads a test into the correct AssemblyLoadContext for the current loader mode.
+    /// This method behaves in the same way as the TestPreLoader_AppDomain, the difference
+    /// (besides the AssemblyLoadContext vs AppDomain creation differences) is that it uses 
+    /// reflection to get and invoke the methods on the LoaderClass loaded into 
+    /// the AssemblyLoadContext.
+    /// </summary>
+    /// <param name="test"></param>
+    /// <param name="paths"></param>
+    void TestPreLoader_AssemblyLoadContext(ReliabilityTest test, string[] paths)
+    {
+        TestAssemblyLoadContext alc = null;
+
+        try
+        {
+            if (_curTestSet.AssemblyLoadContextLoaderMode != AssemblyLoadContextLoaderMode.RoundRobin || test.CustomAction == CustomActionType.LegacySecurityPolicy)
+            {
+                // TODO: can there be a parent ALC whose name we would like to prepend?
+                string assemblyLoadContextName = "TestContext_" + test.Assembly + "_" + Guid.NewGuid().ToString();
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "Creating AssemblyLoadContext: " + assemblyLoadContextName + " for " + test.Index.ToString());
+
+                alc = new TestAssemblyLoadContext(assemblyLoadContextName, test.BasePath, paths);
+            }
+            else
+            {
+                alc = _testALCs[test.AssemblyLoadContextIndex];
+                alc.SetPaths(test.BasePath, paths);
+            }
+
+            AssemblyName an = new AssemblyName();
+            Object ourObj = null;
+
+            test.AssemblyLoadContext = alc;
+            Assembly testAssembly = alc.LoadFromAssemblyPath(Assembly.GetExecutingAssembly().Location);
+            object obj = testAssembly.CreateInstance(typeof(LoaderClass).FullName);
+            Type loaderClassType = testAssembly.GetType(typeof(LoaderClass).FullName);
+
+            MethodInfo[] methods = loaderClassType.GetMethods();
+
+            MethodInfo suppressConsoleMethod = loaderClassType.GetMethod("SuppressConsole");
+            MethodInfo loadMethod = loaderClassType.GetMethod("Load");
+            MethodInfo loadFromMethod = loaderClassType.GetMethod("LoadFrom");
+            MethodInfo checkMainForThreadTypeMethod = loaderClassType.GetMethod("CheckMainForThreadType");
+            MethodInfo getTestMethod = loaderClassType.GetMethod("GetTest");
+
+            if (test.SuppressConsoleOutput)
+                suppressConsoleMethod.Invoke(obj, new object[0]);
+
+
+            if (test.Assembly.ToLower().IndexOf(".exe") == -1 && test.Assembly.ToLower().IndexOf(".dll") == -1)	// must be a simple name or fullname...
+            {
+                loadMethod.Invoke(obj, new object[] { test.Assembly, paths});
+            }
+            else			// has an executable extension, must be in local directory.
+            {
+                loadFromMethod.Invoke(obj, new object[] { Path.Combine(test.BasePath, test.Assembly), paths});
+            }
+
+            // check and see if this test is marked as requiring STA.  We only do
+            // the check once, and then we set the STA/MTA/Unknown bit on the test attributes
+            // to avoid doing reflection every time we start the test.
+            if ((test.TestAttrs & TestAttributes.RequiresThread) == TestAttributes.None)
+            {
+                ApartmentState state = (ApartmentState)(int)checkMainForThreadTypeMethod.Invoke(obj, new object[0]);
+                switch (state)
+                {
+                    case ApartmentState.STA:
+                        test.TestAttrs |= TestAttributes.RequiresSTAThread;
+                        break;
+                    case ApartmentState.MTA:
+                        test.TestAttrs |= TestAttributes.RequiresMTAThread;
+                        break;
+                    case ApartmentState.Unknown:
+                        test.TestAttrs |= TestAttributes.RequiresUnknownThread;
+                        break;
+
+                }
+            }
+
+            ourObj = getTestMethod.Invoke(obj, new object[0]);
+            IEnumerable<Type> interfaces = ourObj.GetType().GetTypeInfo().ImplementedInterfaces;
+
+            Type iSingleReliabilityTestType = testAssembly.GetType(typeof(ISingleReliabilityTest).FullName);
+            Type iMultipleReliabilityTestType = testAssembly.GetType(typeof(IMultipleReliabilityTest).FullName);
+
+            if (interfaces.Contains(iSingleReliabilityTestType))
+            {
+                iSingleReliabilityTestType.InvokeMember("Register", BindingFlags.InvokeMethod | BindingFlags.Public, null, ourObj, new object[0]);
+            }
+            else if (interfaces.Contains(iMultipleReliabilityTestType))
+            {
+                iMultipleReliabilityTestType.InvokeMember("Register", BindingFlags.InvokeMethod | BindingFlags.Public, null, ourObj, new object[0]);
+            }
+            else if (!(ourObj is string))	// we were unable to find a test here - a string is an executable filename.
+            {
+                Interlocked.Decrement(ref LoadingCount);
+                return;
+            }
+
+            test.TestObject = ourObj;
+            test.MyLoader = obj;
+        }
+        catch (Exception)
+        {
+            // if we took an exception while loading the test, but we still have an app domain
+            // we don't want to leak the app domain.
+            if (alc != null)
+            {
+                alc = null;
+                UnloadAssemblyLoadContext(test);
+            }
+            throw;
+        }
+    }
+
 #if !PROJECTK_BUILD
     /// <summary>
     /// Pre-loads a test into the correct app domain for the current loader mode.
@@ -1637,10 +1869,10 @@ public class ReliabilityFramework
 
         try
         {
-            if (curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.RoundRobin || test.CustomAction == CustomActionType.LegacySecurityPolicy)
+            if (_curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.RoundRobin || test.CustomAction == CustomActionType.LegacySecurityPolicy)
             {
                 string appDomainName = AppDomain.CurrentDomain.FriendlyName + "_" + "TestDomain_" + test.Assembly + "_" + Guid.NewGuid().ToString();
-                logger.WriteToInstrumentationLog(curTestSet, LoggingLevels.AppDomain, "Creating app domain: " + appDomainName + " for " + test.Index.ToString());
+                logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AppDomain, "Creating app domain: " + appDomainName + " for " + test.Index.ToString());
 
                 AppDomainSetup ads = new AppDomainSetup();
                 Evidence ev = AppDomain.CurrentDomain.Evidence;
@@ -1899,9 +2131,9 @@ public class ReliabilityFramework
                     mail.To = to;
                 }
 
-                if (curTestSet.CCFailMail != null)
+                if (_curTestSet.CCFailMail != null)
                 {
-                    mail.Cc = curTestSet.CCFailMail;
+                    mail.Cc = _curTestSet.CCFailMail;
                 }
 
 #pragma warning disable 0618
@@ -1992,7 +2224,7 @@ Thanks for contributing to CLR Stress!
             }
 
 #if !PROJECTK_BUILD
-            if (curTestSet.ReportResults && test.Guid != Guid.Empty && resultReporter != null)
+            if (_curTestSet.ReportResults && test.Guid != Guid.Empty && resultReporter != null)
             {
                 lock (resultReporter)
                 {
@@ -2004,7 +2236,7 @@ Thanks for contributing to CLR Stress!
                             resultGroupGuid,                // result group (guid)
                             test.Guid,                      // test command line (guid)
                             Guid.Empty,                     // clover bug (guid)
-                            curTestSet.BvtCategory,         // bvt category (guid)
+                            _curTestSet.BvtCategory,         // bvt category (guid)
                             Guid.Empty,                     // machine image (guid)
                             true,                           // is failure (bool)
                             returnCode,                     // return code  (int)
