@@ -1244,6 +1244,15 @@ public class TypeWithMismatchBetweenAttributeAndPropertyType
     }
 }
 
+[DataContract(IsReference = true)]
+public class TypeWithLinkedProperty
+{
+    [DataMember]
+    public TypeWithLinkedProperty Child { get; set; }
+    [DataMember]
+    public List<TypeWithLinkedProperty> Children { get; set; }
+}
+
 [Serializable()]
 [System.Xml.Serialization.XmlType("MsgDocumentType", Namespace = "http://example.com")]
 [System.Xml.Serialization.XmlRoot("Document", Namespace = "http://example.com")]
