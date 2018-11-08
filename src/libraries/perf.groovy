@@ -84,6 +84,7 @@ def osShortName = ['Windows 10': 'win10',
                 def runType = isPR ? 'private' : 'rolling'
 
                 if (os == 'Windows_NT') {
+                    def python = "C:\\Python35\\python.exe"
                     def benchViewName = isPR ? 'corefx private %BenchviewCommitName%' : 'corefx rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
                     steps {
                         //We need to specify the max cpu count to be one as we do not want to be executing performance tests in parallel
@@ -92,9 +93,9 @@ def osShortName = ['Windows 10': 'win10',
                         //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
                         //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                         batchFile("if [%GIT_BRANCH:~0,7%] == [origin/] (set GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%) else (set GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%)\n" +
-                        "py \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user-email " + "\"dotnet-bot@microsoft.com\"\n" +
-                        "py \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
-                        batchFile("py \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
+                        "${python} \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user-email " + "\"dotnet-bot@microsoft.com\"\n" +
+                        "${python} \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
+                        batchFile("${python} \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
 
                         batchFile("build.cmd -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
                         batchFile("build.cmd -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic")
