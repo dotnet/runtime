@@ -527,7 +527,7 @@ set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%"
 set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 set __Logging=-MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr!
 
-call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\helixprep.proj !__Logging! %__RunArgs% %__BuildAgainstPackagesArg% %RuntimeIdArg% %TargetsWindowsArg% %__CrossgenArg% %__PriorityArg% %__PassThroughArg% %__UnprocessedBuildArgs%
+call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\tests\helixprep.proj !__Logging! %__RunArgs% %RuntimeIdArg% %TargetsWindowsArg% %__CrossgenArg% %__PriorityArg% %__PassThroughArg% %__UnprocessedBuildArgs%
 if errorlevel 1 (
     echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
     echo     %__BuildLog%

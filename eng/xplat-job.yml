@@ -1,0 +1,50 @@
+parameters:
+  buildConfig: ''
+  archType: ''
+  osGroup: ''
+  name: ''
+  displayName: ''
+  condition: ''
+  dependsOn: ''
+  variables: {} ## any extra variables to add to the defaults defined below
+
+jobs:
+- template: /eng/common/templates/phases/base.yml@arcade
+  parameters:
+
+    name: ${{ parameters.name }}
+    displayName: ${{ parameters.displayName }}
+
+    condition: ${{ parameters.condition }}
+
+    dependsOn: ${{ parameters.dependsOn }}
+
+    queue:
+      ${{ if eq(parameters.osGroup, 'Linux') }}:
+        name: Hosted Ubuntu 1604
+      ${{ if eq(parameters.osGroup, 'OSX') }}:
+        name: Hosted macOS
+      ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        name: dotnet-external-temp
+      timeoutInMinutes: 180
+
+    ${{ if eq(parameters.osGroup, 'Linux') }}:
+      agentOs: Ubuntu
+    ${{ if eq(parameters.osGroup, 'OSX') }}:
+      agentOs: MacOS
+    ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      agentOs: Windows_NT
+
+    variables:
+      buildConfig: ${{ parameters.buildConfig }}
+      ${{ if eq(parameters.buildConfig, 'checked') }}:
+        buildConfigUpper: 'Checked'
+      ${{ if eq(parameters.buildConfig, 'debug') }}:
+        buildConfigUpper: 'Debug'
+      ${{ if eq(parameters.buildConfig, 'release') }}:
+        buildConfigUpper: 'Release'
+      archType: ${{ parameters.archType }}
+      osGroup: ${{ parameters.osGroup }}
+      ${{insert}}: ${{ parameters.variables }}
+
+    steps: ${{ parameters.steps }}

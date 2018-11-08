@@ -46,7 +46,7 @@ function LocateCMake
   $validVersions = @()
   foreach ($regKey in GetCMakeVersions) {
     $info = GetCMakeInfo($regKey)
-    if ($info -ne $null) { 
+    if ($info -ne $null) {
       $validVersions += @($info)
     }
   }
