@@ -9,9 +9,10 @@ using System;
 using System.Reflection;
 using System.Threading;
 using System.IO;
+using System.Runtime.Loader;
 #if !PROJECTK_BUILD
 using System.Runtime.Remoting;
-#endif 
+#endif
 
 public enum eReasonForUnload
 {
@@ -32,10 +33,11 @@ public class LoaderClass
     : MarshalByRefObject
 #endif 
 {
-#if !PROJECTK_BUILD
     private Assembly assem;
     string assembly;
-#endif
+#if !PROJECTK_BUILD
+    ReliabilityFramework myRf;
+#endif 
 
     public LoaderClass()
     {
@@ -45,15 +47,20 @@ public class LoaderClass
     {
         Console.SetOut(System.IO.TextWriter.Null);
     }
-#if !PROJECTK_BUILD
+
     /// <summary>
     /// Executes a LoadFrom in the app domain LoaderClass has been loaded into.  Attempts to load a given assembly, looking in the
     /// given paths & the current directory.
     /// </summary>
     /// <param name="path">The assembly to load</param>
     /// <param name="paths">Paths to search for the given assembly</param>
-    public void LoadFrom(string path, string[] paths, ReliabilityFramework rf)
+    public void LoadFrom(string path, string[] paths
+#if !PROJECTK_BUILD
+        , ReliabilityFramework rf
+#endif
+        )
     {
+#if !PROJECTK_BUILD
         myRf = rf;
 
         AssemblyName an = new AssemblyName();
@@ -62,21 +69,32 @@ public class LoaderClass
         //register AssemblyLoad and DomainUnload events
         AppDomain.CurrentDomain.AssemblyLoad += new AssemblyLoadEventHandler(this.UnloadOnAssemblyLoad);
         AppDomain.CurrentDomain.DomainUnload += new EventHandler(this.UnloadOnDomainUnload);
-
+#else
+        AssemblyLoadContext alc = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
+#endif
         try
         {
+#if !PROJECTK_BUILD
             assem = Assembly.Load(an);
+#else
+            assembly = path;
+            assem = alc.LoadFromAssemblyPath(assembly);
+#endif
         }
         catch
         {
             try
             {
                 FileInfo fi = new FileInfo(path);
-
+                assembly = fi.FullName;
+#if !PROJECTK_BUILD
                 an = new AssemblyName();
-                an.CodeBase = assembly = fi.FullName;
+                an.CodeBase = assembly;
 
                 assem = Assembly.Load(an);
+#else
+                assem = alc.LoadFromAssemblyPath(assembly);
+#endif
             }
             catch
             {
@@ -86,16 +104,20 @@ public class LoaderClass
                     {
                         try
                         {
+                            assembly = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(basePath, path);
+#if !PROJECTK_BUILD
                             an = new AssemblyName();
-                            an.CodeBase = assembly = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(basePath, path);
+                            an.CodeBase = assembly;
 
                             assem = Assembly.Load(an);
+#else
+                            assem = alc.LoadFromAssemblyPath(assembly);
+#endif
+                            break;
                         }
                         catch
                         {
-                            continue;
                         }
-                        break;
                     }
                 }
             }
@@ -107,22 +129,33 @@ public class LoaderClass
     /// </summary>
     /// <param name="assemblyName">The assembly name to load</param>
     /// <param name="paths">paths to look in if the initial load fails</param>
-    public void Load(string assemblyName, string[] paths, ReliabilityFramework rf)
+    public void Load(string assemblyName, string[] paths
+#if !PROJECTK_BUILD
+        , ReliabilityFramework rf
+#endif
+        )
     {
+#if !PROJECTK_BUILD
         myRf = rf;
 
         AssemblyName an = new AssemblyName(assemblyName);
         assembly = assemblyName;
-
+#endif
         try
         {
+#if !PROJECTK_BUILD
             assem = Assembly.Load(an);
+#else
+            LoadFrom(assemblyName + ".exe", paths);
+#endif
         }
         catch
         {
             Console.WriteLine("Load failed for: {0}", assemblyName);
-            LoadFrom(assemblyName, paths, rf);	// couldn't load the assembly, try doing a LoadFrom with paths.
 
+#if !PROJECTK_BUILD
+            LoadFrom(assemblyName, paths, rf);	// couldn't load the assembly, try doing a LoadFrom with paths.
+#endif
         }
     }
 
@@ -148,27 +181,6 @@ public class LoaderClass
             }
         }
         return (ApartmentState.Unknown);
-    }
-
-#endif 
-    /// <summary>
-    /// Helper function to call into the app domain and make sure that we're still functioning in a sane way.
-    /// </summary>
-    public bool StillAlive()
-    {
-        return (true);
-    }
-
-#if !PROJECTK_BUILD
-    /// <summary>
-    /// Gets the full path to the loaded assembly.
-    /// </summary>
-    public string FullPath
-    {
-        get
-        {
-            return (assembly);
-        }
     }
 
     /// <summary>
@@ -201,6 +213,7 @@ public class LoaderClass
             {
                 if (t.GetInterface("ISingleReliabilityTest") != null || t.GetInterface("IMultipleReliabilityTest") != null)
                 {
+#if !PROJECTK_BUILD
                     ObjectHandle handle;
                     if (assembly.IndexOf("\\") != -1)
                         handle = AppDomain.CurrentDomain.CreateInstanceFrom(assembly, t.FullName);
@@ -213,6 +226,9 @@ public class LoaderClass
                         ourObj = handle.Unwrap();
                         break;
                     }
+#else
+                    ourObj = Activator.CreateInstance(t);
+#endif
                 }
 
             }
@@ -220,11 +236,14 @@ public class LoaderClass
 
         if (ourObj == null)
             return (assembly);
+#if !PROJECTK_BUILD
         if (!(ourObj is MarshalByRefObject))
             throw new ArgumentException("All tests implementing ISingleReliabilityTest or IMultipleReliabilityTest must inherit from MarshalByRefObject");
+#endif
 
         return (ourObj);
     }
+#if !PROJECTK_BUILD
     /// <summary>
     /// This stops our MBR from being deallocated by the distributed GC mechanism in remoting.
     /// </summary>
