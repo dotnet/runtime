@@ -930,6 +930,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Theory]
         [InlineData(1.0, 2.0, "2E+308")]
         [InlineData(1.0, 2.0, "-2E+308")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void Validate_DoubleConversionOverflows_ThrowsOverflowException(double minimum, double maximum, object value)
         {
             RangeAttribute attribute = new RangeAttribute(minimum, maximum);

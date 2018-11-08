@@ -98,11 +98,24 @@ namespace System.Tests
             float[] expectedValues = { float.MaxValue, 0f, float.MinValue, 0f };
             VerifyFromString(Convert.ToSingle, Convert.ToSingle, testValues, expectedValues);
 
-            string[] overflowValues = { Double.MinValue.ToString(), Double.MaxValue.ToString() };
-            VerifyFromStringThrows<OverflowException>(Convert.ToSingle, Convert.ToSingle, overflowValues);
-
             string[] formatExceptionValues = { "1f2d" };
             VerifyFromStringThrows<FormatException>(Convert.ToSingle, Convert.ToSingle, formatExceptionValues);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void FromString_NetFramework()
+        {
+            string[] overflowValues = { Double.MinValue.ToString(), Double.MaxValue.ToString() };
+            VerifyFromStringThrows<OverflowException>(Convert.ToSingle, Convert.ToSingle, overflowValues);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void FromString_NotNetFramework()
+        {
+            string[] overflowValues = { Double.MinValue.ToString(), Double.MaxValue.ToString() };
+            VerifyFromString(Convert.ToSingle, Convert.ToSingle, overflowValues, new float[] { float.NegativeInfinity, float.PositiveInfinity });
         }
 
         [Fact]

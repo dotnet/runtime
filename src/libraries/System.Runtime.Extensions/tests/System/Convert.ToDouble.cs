@@ -98,11 +98,24 @@ namespace System.Tests
             double[] expectedValues = { double.MinValue, double.MaxValue, 0.0, 10.0, -10.0, 0.0 };
             VerifyFromString(Convert.ToDouble, Convert.ToDouble, testValues, expectedValues);
 
-            string[] overflowValues = { Double.MaxValue.ToString(), Double.MinValue.ToString() };
-            VerifyFromStringThrows<OverflowException>(Convert.ToDouble, Convert.ToDouble, overflowValues);
-
             string[] formatExceptionValues = { "123xyz" };
             VerifyFromStringThrows<FormatException>(Convert.ToDouble, Convert.ToDouble, formatExceptionValues);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void FromString_NetFramework()
+        {
+            string[] overflowValues = { Double.MaxValue.ToString(), Double.MinValue.ToString() };
+            VerifyFromStringThrows<OverflowException>(Convert.ToDouble, Convert.ToDouble, overflowValues);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void FromString_NotNetFramework()
+        {
+            string[] overflowValues = { Double.MaxValue.ToString(), Double.MinValue.ToString() };
+            VerifyFromString(Convert.ToDouble, Convert.ToDouble, overflowValues, new double[] { double.PositiveInfinity, double.NegativeInfinity });
         }
 
         [Fact]

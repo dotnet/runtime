@@ -14,28 +14,6 @@ namespace System
 {
     internal static partial class Number
     {
-        //
-        // Convert a Number to a double.
-        //
-        internal static bool NumberBufferToDouble(ref NumberBuffer number, out double value)
-        {
-            double d = NumberToDouble(ref number);
-            if (!Double.IsFinite(d))
-            {
-                value = default;
-                return false;
-            }
-
-            if (d == 0.0)
-            {
-                // normalize -0.0 to 0.0
-                d = 0.0;
-            }
-
-            value = d;
-            return true;
-        }
-
         public static unsafe bool NumberBufferToDecimal(ref NumberBuffer number, ref decimal value)
         {
             MutableDecimal d = new MutableDecimal();
@@ -364,7 +342,7 @@ namespace System
             return value;
         }
 
-        private static unsafe double NumberToDouble(ref NumberBuffer number)
+        public static unsafe double NumberBufferToDouble(ref NumberBuffer number)
         {
             ulong val;
             int exp;
@@ -388,7 +366,7 @@ namespace System
             }
 
             if (remaining == 0)
-                return 0;
+                return number.IsNegative ? -0.0 : 0.0;
 
             count = Math.Min(remaining, 9);
             remaining -= count;
