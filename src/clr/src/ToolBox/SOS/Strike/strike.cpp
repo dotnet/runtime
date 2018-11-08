@@ -4518,8 +4518,7 @@ DECLARE_API(DumpAsync)
             int offset = GetObjFieldOffset(ar.Address, ar.MT, W("m_stateFlags"), TRUE, &stateFlagsField);
             if (offset != 0)
             {
-                sos::Object obj = TO_TADDR(ar.Address);
-                MOVE(ar.TaskStateFlags, obj.GetAddress() + offset);
+                MOVE(ar.TaskStateFlags, ar.Address + offset);
             }
 
             // Get the async state machine object's StateMachine field.
@@ -8161,17 +8160,23 @@ DECLARE_API(ThreadPool)
 
     if ((Status = threadpool.Request(g_sos)) == S_OK)
     {
-        BOOL doHCDump = FALSE;
+        BOOL doHCDump = FALSE, doWorkItemDump = FALSE, dml = FALSE;
 
         CMDOption option[] = 
         {   // name, vptr, type, hasValue
-            {"-ti", &doHCDump, COBOOL, FALSE}
+            {"-ti", &doHCDump, COBOOL, FALSE},
+            {"-wi", &doWorkItemDump, COBOOL, FALSE},
+#ifndef FEATURE_PAL
+            {"/d", &dml, COBOOL, FALSE},
+#endif
         };    
 
         if (!GetCMDOption(args, option, _countof(option), NULL, 0, NULL)) 
         {
             return Status;
         }
+
+        EnableDMLHolder dmlHolder(dml);
 
         ExtOut ("CPU utilization: %d%%\n", threadpool.cpuUtilization);            
         ExtOut ("Worker Thread:");
@@ -8213,6 +8218,152 @@ DECLARE_API(ThreadPool)
                     SOS_PTR(workRequestData.Context));
 
             workRequestPtr = workRequestData.NextWorkRequest;
+        }
+
+        if (doWorkItemDump && g_snapshot.Build())
+        {
+            // Display a message if the heap isn't verified.
+            sos::GCHeap gcheap;
+            if (!gcheap.AreGCStructuresValid())
+            {
+                DisplayInvalidStructuresMessage();
+            }
+
+            // Walk every heap item looking for the global queue and local queues.
+            ExtOut("\nQueued work items:\n%" POINTERSIZE "s %" POINTERSIZE "s %s\n", "Queue", "Address", "Work Item");
+            HeapStat stats;
+            for (sos::ObjectIterator itr = gcheap.WalkHeap(); !IsInterrupt() && itr != NULL; ++itr)
+            {
+                if (_wcscmp(itr->GetTypeName(), W("System.Threading.ThreadPoolWorkQueue")) == 0)
+                {
+                    // We found a global queue (there should be only one, given one AppDomain).
+                    // Get its workItems ConcurrentQueue<IThreadPoolWorkItem>.
+                    int offset = GetObjFieldOffset(itr->GetAddress(), itr->GetMT(), W("workItems"));
+                    if (offset > 0)
+                    {
+                        DWORD_PTR workItemsConcurrentQueuePtr;
+                        MOVE(workItemsConcurrentQueuePtr, itr->GetAddress() + offset);
+                        if (sos::IsObject(workItemsConcurrentQueuePtr, false))
+                        {
+                            // We got the ConcurrentQueue.  Get its head segment.
+                            sos::Object workItemsConcurrentQueue = TO_TADDR(workItemsConcurrentQueuePtr);
+                            offset = GetObjFieldOffset(workItemsConcurrentQueue.GetAddress(), workItemsConcurrentQueue.GetMT(), W("_head"));
+                            if (offset > 0)
+                            {
+                                // Now, walk from segment to segment, each of which contains an array of work items.
+                                DWORD_PTR segmentPtr;
+                                MOVE(segmentPtr, workItemsConcurrentQueue.GetAddress() + offset);
+                                while (sos::IsObject(segmentPtr, false))
+                                {
+                                    sos::Object segment = TO_TADDR(segmentPtr);
+
+                                    // Get the work items array.  It's an array of Slot structs, which starts with the T.
+                                    offset = GetObjFieldOffset(segment.GetAddress(), segment.GetMT(), W("_slots"));
+                                    if (offset <= 0)
+                                    {
+                                        break;
+                                    }
+
+                                    DWORD_PTR slotsPtr;
+                                    MOVE(slotsPtr, segment.GetAddress() + offset);
+                                    if (!sos::IsObject(slotsPtr, false))
+                                    {
+                                        break;
+                                    }
+
+                                    // Walk every element in the array, outputting details on non-null work items.
+                                    DacpObjectData slotsArray;
+                                    if (slotsArray.Request(g_sos, TO_CDADDR(slotsPtr)) == S_OK && slotsArray.ObjectType == OBJ_ARRAY)
+                                    {
+                                        for (int i = 0; i < slotsArray.dwNumComponents; i++)
+                                        {
+                                            CLRDATA_ADDRESS workItemPtr;
+                                            MOVE(workItemPtr, TO_CDADDR(slotsArray.ArrayDataPtr + (i * slotsArray.dwComponentSize))); // the item object reference is at the beginning of the Slot
+                                            if (workItemPtr != NULL && sos::IsObject(workItemPtr, false))
+                                            {
+                                                sos::Object workItem = TO_TADDR(workItemPtr);
+                                                stats.Add((DWORD_PTR)workItem.GetMT(), (DWORD)workItem.GetSize());
+                                                DMLOut("%" POINTERSIZE "s %s %S", "[Global]", DMLObject(workItem.GetAddress()), workItem.GetTypeName());
+                                                if ((offset = GetObjFieldOffset(workItem.GetAddress(), workItem.GetMT(), W("_callback"))) > 0 ||
+                                                    (offset = GetObjFieldOffset(workItem.GetAddress(), workItem.GetMT(), W("m_action"))) > 0)
+                                                {
+                                                    CLRDATA_ADDRESS delegatePtr;
+                                                    MOVE(delegatePtr, workItem.GetAddress() + offset);
+                                                    CLRDATA_ADDRESS md;
+                                                    if (TryGetMethodDescriptorForDelegate(delegatePtr, &md))
+                                                    {
+                                                        NameForMD_s((DWORD_PTR)md, g_mdName, mdNameLen);
+                                                        ExtOut(" => %S", g_mdName);
+                                                    }
+                                                }
+                                                ExtOut("\n");
+                                            }
+                                        }
+                                    }
+
+                                    // Move to the next segment.
+                                    DacpFieldDescData segmentField;
+                                    offset = GetObjFieldOffset(segment.GetAddress(), segment.GetMT(), W("_nextSegment"), TRUE, &segmentField);
+                                    if (offset <= 0)
+                                    {
+                                        break;
+                                    }
+
+                                    MOVE(segmentPtr, segment.GetAddress() + offset);
+                                    if (segmentPtr == NULL)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (_wcscmp(itr->GetTypeName(), W("System.Threading.ThreadPoolWorkQueue+WorkStealingQueue")) == 0)
+                {
+                    // We found a local queue.  Get its work items array.
+                    int offset = GetObjFieldOffset(itr->GetAddress(), itr->GetMT(), W("m_array"));
+                    if (offset > 0)
+                    {
+                        // Walk every element in the array, outputting details on non-null work items.
+                        DWORD_PTR workItemArrayPtr;
+                        MOVE(workItemArrayPtr, itr->GetAddress() + offset);
+                        DacpObjectData workItemArray;
+                        if (workItemArray.Request(g_sos, TO_CDADDR(workItemArrayPtr)) == S_OK && workItemArray.ObjectType == OBJ_ARRAY)
+                        {
+                            for (int i = 0; i < workItemArray.dwNumComponents; i++)
+                            {
+                                CLRDATA_ADDRESS workItemPtr;
+                                MOVE(workItemPtr, TO_CDADDR(workItemArray.ArrayDataPtr + (i * workItemArray.dwComponentSize)));
+                                if (workItemPtr != NULL && sos::IsObject(workItemPtr, false))
+                                {
+                                    sos::Object workItem = TO_TADDR(workItemPtr);
+                                    stats.Add((DWORD_PTR)workItem.GetMT(), (DWORD)workItem.GetSize());
+                                    DMLOut("%s %s %S", DMLObject(itr->GetAddress()), DMLObject(workItem.GetAddress()), workItem.GetTypeName());
+                                    if ((offset = GetObjFieldOffset(workItem.GetAddress(), workItem.GetMT(), W("_callback"))) > 0 ||
+                                        (offset = GetObjFieldOffset(workItem.GetAddress(), workItem.GetMT(), W("m_action"))) > 0)
+                                    {
+                                        CLRDATA_ADDRESS delegatePtr;
+                                        MOVE(delegatePtr, workItem.GetAddress() + offset);
+                                        CLRDATA_ADDRESS md;
+                                        if (TryGetMethodDescriptorForDelegate(delegatePtr, &md))
+                                        {
+                                            NameForMD_s((DWORD_PTR)md, g_mdName, mdNameLen);
+                                            ExtOut(" => %S", g_mdName);
+                                        }
+                                    }
+                                    ExtOut("\n");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Output a summary.
+            stats.Sort();
+            stats.Print();
+            ExtOut("\n");
         }
 
         if (doHCDump)
