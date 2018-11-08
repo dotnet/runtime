@@ -3,9 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.ExceptionServices;
-using System.Threading.Tasks.Sources;
 
-namespace System.Threading.Tasks.Tests
+namespace System.Threading.Tasks.Sources.Tests
 {
     internal static class ManualResetValueTaskSourceFactory
     {
