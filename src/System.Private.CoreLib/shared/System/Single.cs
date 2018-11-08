@@ -330,7 +330,7 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out float result)
         {
-            return Number.TryParseSingle(s, style, info, out result, out _);
+            return Number.TryParseSingle(s, style, info, out result);
         }
 
         //

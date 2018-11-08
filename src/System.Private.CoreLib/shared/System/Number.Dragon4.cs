@@ -129,15 +129,11 @@ namespace System
 
             if (k > 0)
             {
-                BigInteger poweredValue = new BigInteger(0);
-                BigInteger.Pow10((uint)(k), ref poweredValue);
-                s.Multiply(ref poweredValue);
+                s.MultiplyPow10((uint)(k));
             }
             else if (k < 0)
             {
-                BigInteger poweredValue = new BigInteger(0);
-                BigInteger.Pow10((uint)(-k), ref poweredValue);
-                r.Multiply(ref poweredValue);
+                r.MultiplyPow10((uint)(-k));
             }
 
             if (BigInteger.Compare(ref r, ref s) >= 0)

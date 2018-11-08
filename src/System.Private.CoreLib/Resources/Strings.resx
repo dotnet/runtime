@@ -3100,9 +3100,6 @@
   <data name="Overflow_Decimal" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
   </data>
-  <data name="Overflow_Double" xml:space="preserve">
-    <value>Value was either too large or too small for a Double.</value>
-  </data>
   <data name="Overflow_Duration" xml:space="preserve">
     <value>The duration cannot be returned for TimeSpan.MinValue because the absolute value of TimeSpan.MinValue exceeds the value of TimeSpan.MaxValue.</value>
   </data>
@@ -3123,9 +3120,6 @@
   </data>
   <data name="Overflow_SByte" xml:space="preserve">
     <value>Value was either too large or too small for a signed byte.</value>
-  </data>
-  <data name="Overflow_Single" xml:space="preserve">
-    <value>Value was either too large or too small for a Single.</value>
   </data>
   <data name="Overflow_TimeSpanElementTooLarge" xml:space="preserve">
     <value>The TimeSpan string '{0}' could not be parsed because at least one of the numeric components is out of range or contains too many digits.</value>

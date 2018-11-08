@@ -393,7 +393,7 @@ namespace System
             int precision = DoublePrecision;
 
             char* pDigits = stackalloc char[DoubleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Double, pDigits, DoubleNumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
 
             switch (fmt)
             {
@@ -413,7 +413,9 @@ namespace System
                         return number.Sign ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
                     }
 
-                    if (NumberToDouble(ref number) == value)
+                    double roundTrip = NumberToDouble(ref number);
+
+                    if (roundTrip == value)
                     {
                         NumberToString(ref sb, ref number, 'G', DoublePrecision, info);
                     }
@@ -495,7 +497,7 @@ namespace System
             int precision = SinglePrecision;
 
             char* pDigits = stackalloc char[SingleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Double, pDigits, SingleNumberBufferLength);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
 
             switch (fmt)
             {
@@ -515,7 +517,9 @@ namespace System
                         return number.Sign ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
                     }
 
-                    if ((float)NumberToDouble(ref number) == value)
+                    float roundTrip = NumberToSingle(ref number);
+
+                    if (roundTrip == value)
                     {
                         NumberToString(ref sb, ref number, 'G', SinglePrecision, info);
                     }
