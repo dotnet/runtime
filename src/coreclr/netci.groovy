@@ -2261,12 +2261,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
 
                                 // Archive and process (only) the test results
-                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
-                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
 
                                 //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
                                 Utilities.addArchival(newJob, "SetStressModes.bat", "", true, false)
-                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**", "", true, false)
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/testhost/**", "", true, false)
                             }
                         }
                         else if (isGcReliabilityFramework(scenario)) {
@@ -2476,8 +2476,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${scriptFileName}"
 
                             // Archive and process (only) the test results
-                            Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
-                            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                            Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
+                            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
                         }
                     }
                     break
