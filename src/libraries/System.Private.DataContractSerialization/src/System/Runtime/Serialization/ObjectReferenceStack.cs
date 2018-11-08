@@ -60,11 +60,11 @@ namespace System.Runtime.Serialization
                 {
                     if (_isReferenceArray == null)
                     {
-                        _isReferenceArray = new bool[InitialArraySize];
+                        _isReferenceArray = new bool[_objectArray.Length];
                     }
-                    else if (_count == _isReferenceArray.Length)
+                    else if (_count >= _isReferenceArray.Length)
                     {
-                        Array.Resize<bool>(ref _isReferenceArray, _isReferenceArray.Length * 2);
+                        Array.Resize<bool>(ref _isReferenceArray, _objectArray.Length);
                     }
                     _isReferenceArray[_count - 1] = true;
                 }
