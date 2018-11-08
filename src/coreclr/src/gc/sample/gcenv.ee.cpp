@@ -283,11 +283,6 @@ bool GCToEEInterface::ShouldFinalizeObjectForUnload(void* pDomain, Object* obj)
     return true;
 }
 
-bool GCToEEInterface::ForceFullGCToBeBlocking()
-{
-    return false;
-}
-
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     // The sample does not finalize anything eagerly.
