@@ -748,7 +748,7 @@ namespace System
         public override int GetHashCode()
         {
             ulong seed = Marvin.DefaultSeed;
-            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2, (uint)seed, (uint)(seed >> 32));
+            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref _firstChar), _stringLength * 2 /* in bytes, not chars */, (uint)seed, (uint)(seed >> 32));
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparison C are such
@@ -759,7 +759,48 @@ namespace System
         internal int GetHashCodeOrdinalIgnoreCase()
         {
             ulong seed = Marvin.DefaultSeed;
-            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength, (uint)seed, (uint)(seed >> 32));
+            return Marvin.ComputeHash32OrdinalIgnoreCase(ref _firstChar, _stringLength /* in chars, not bytes */, (uint)seed, (uint)(seed >> 32));
+        }
+
+        // A span-based equivalent of String.GetHashCode(). Computes an ordinal hash code.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetHashCode(ReadOnlySpan<char> value)
+        {
+            ulong seed = Marvin.DefaultSeed;
+            return Marvin.ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(value)), value.Length * 2 /* in bytes, not chars */, (uint)seed, (uint)(seed >> 32));
+        }
+
+        // A span-based equivalent of String.GetHashCode(StringComparison). Uses the specified comparison type.
+        public static int GetHashCode(ReadOnlySpan<char> value, StringComparison comparisonType)
+        {
+            switch (comparisonType)
+            {
+                case StringComparison.CurrentCulture:
+                case StringComparison.CurrentCultureIgnoreCase:
+                    return CultureInfo.CurrentCulture.CompareInfo.GetHashCode(value, GetCaseCompareOfComparisonCulture(comparisonType));
+
+                case StringComparison.InvariantCulture:
+                case StringComparison.InvariantCultureIgnoreCase:
+                    return CultureInfo.InvariantCulture.CompareInfo.GetHashCode(value, GetCaseCompareOfComparisonCulture(comparisonType));
+
+                case StringComparison.Ordinal:
+                    return GetHashCode(value);
+
+                case StringComparison.OrdinalIgnoreCase:
+                    return GetHashCodeOrdinalIgnoreCase(value);
+
+                default:
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.NotSupported_StringComparison, ExceptionArgument.comparisonType);
+                    Debug.Fail("Should not reach this point.");
+                    return default;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static int GetHashCodeOrdinalIgnoreCase(ReadOnlySpan<char> value)
+        {
+            ulong seed = Marvin.DefaultSeed;
+            return Marvin.ComputeHash32OrdinalIgnoreCase(ref MemoryMarshal.GetReference(value), value.Length /* in chars, not bytes */, (uint)seed, (uint)(seed >> 32));
         }
 
         // Use this if and only if 'Denial of Service' attacks are not a concern (i.e. never used for free-form user input),
