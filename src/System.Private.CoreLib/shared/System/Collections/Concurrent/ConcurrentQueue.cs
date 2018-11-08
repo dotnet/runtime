@@ -56,7 +56,7 @@ namespace System.Collections.Concurrent
         /// <summary>The current tail segment.</summary>
         private volatile ConcurrentQueueSegment<T> _tail;
         /// <summary>The current head segment.</summary>
-        private volatile ConcurrentQueueSegment<T> _head;
+        private volatile ConcurrentQueueSegment<T> _head; // SOS's ThreadPool command depends on this name
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class.

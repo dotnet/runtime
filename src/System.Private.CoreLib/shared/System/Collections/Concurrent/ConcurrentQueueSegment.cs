@@ -20,7 +20,7 @@ namespace System.Collections.Concurrent
         // http://www.1024cores.net/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
         /// <summary>The array of items in this queue.  Each slot contains the item in that slot and its "sequence number".</summary>
-        internal readonly Slot[] _slots;
+        internal readonly Slot[] _slots; // SOS's ThreadPool command depends on this name
         /// <summary>Mask for quickly accessing a position within the queue's array.</summary>
         internal readonly int _slotsMask;
         /// <summary>The head and tail positions, with padding to help avoid false sharing contention.</summary>
@@ -33,7 +33,7 @@ namespace System.Collections.Concurrent
         internal bool _frozenForEnqueues;
 #pragma warning disable 0649 // some builds don't assign to this field
         /// <summary>The segment following this one in the queue, or null if this segment is the last in the queue.</summary>
-        internal ConcurrentQueueSegment<T> _nextSegment;
+        internal ConcurrentQueueSegment<T> _nextSegment; // SOS's ThreadPool command depends on this name
 #pragma warning restore 0649
 
         /// <summary>Creates the segment.</summary>
@@ -315,7 +315,7 @@ namespace System.Collections.Concurrent
         internal struct Slot
         {
             /// <summary>The item.</summary>
-            public T Item;
+            public T Item; // SOS's ThreadPool command depends on this being at the beginning of the struct when T is a reference type
             /// <summary>The sequence number for this slot, used to synchronize between enqueuers and dequeuers.</summary>
             public int SequenceNumber;
         }
