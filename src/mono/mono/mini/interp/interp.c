@@ -4776,6 +4776,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 			sp -= numargs;
 
 			o = sp [0].data.o;
+			if (!o)
+				THROW_EX (mono_get_exception_null_reference (), ip);
 			sp->data.p = ves_array_element_address (frame, klass, (MonoArray *) o, &sp [1], needs_typecheck);
 			if (frame->ex)
 				THROW_EX (frame->ex, ip);

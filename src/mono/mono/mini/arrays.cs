@@ -768,6 +768,20 @@ class Tests
 		return 0;
 	}
 
+	public struct TestStruct {
+	}
+
+	// #11603
+	public static int test_0_ldelema () {
+		try {
+			TestStruct[] frames = null;
+			_ = frames[0];
+			return 1;
+		} catch (NullReferenceException) {
+			return 0;
+		}
+	}
+
 	static bool alloc_long (long l) {
 		try {
 			var arr = new byte[l];
