@@ -17,6 +17,18 @@ namespace System.Runtime.Intrinsics.X86
 
         public new static bool IsSupported { get => IsSupported; }
 
+        public new abstract class X64 : Sse41.X64
+        {
+            internal X64() { }
+            public new static bool IsSupported { get => IsSupported; }
+            /// <summary>
+            /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
+            ///   POPCNT reg64, reg/m64
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static ulong PopCount(ulong value) => PopCount(value);
+        }
+
         /// <summary>
         /// int _mm_popcnt_u32 (unsigned int a)
         ///   POPCNT reg, reg/m32
