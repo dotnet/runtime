@@ -4,6 +4,8 @@
 
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
+using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -399,15 +401,17 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(string.Empty, actualContent);
         }
 
-        [Fact]
-        public async Task ReadAsStringAsync_SetInvalidCharset_ThrowsInvalidOperationException()
+        [Theory]
+        [InlineData("invalid")]
+        [InlineData("\"\"")]
+        public async Task ReadAsStringAsync_SetInvalidCharset_ThrowsInvalidOperationException(string charset)
         {
             string sourceString = "some string";
             byte[] contentBytes = Encoding.UTF8.GetBytes(sourceString);
 
             var content = new MockContent(contentBytes);
             content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
-            content.Headers.ContentType.CharSet = "invalid";
+            content.Headers.ContentType.CharSet = charset;
 
             // This will throw because we have an invalid charset.
             Task t = content.ReadAsStringAsync();
@@ -417,14 +421,52 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task ReadAsStringAsync_SetNoCharset_DefaultCharsetUsed()
         {
-            // Use content with umlaut characters.
-            string sourceString = "ÄäüÜ"; // c4 e4 fc dc
+            // Assorted latin letters with diaeresis
+            string sourceString = "\u00C4\u00E4\u00FC\u00DC";
             Encoding defaultEncoding = Encoding.GetEncoding("utf-8");
             byte[] contentBytes = defaultEncoding.GetBytes(sourceString);
 
             var content = new MockContent(contentBytes);
 
             // Reading the string should consider the charset of the 'Content-Type' header.
+            string result = await content.ReadAsStringAsync();
+
+            Assert.Equal(sourceString, result);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public async Task ReadAsStringAsync_SetQuotedCharset_ParsesContent()
+        {
+            string sourceString = "some string";
+            byte[] contentBytes = Encoding.UTF8.GetBytes(sourceString);
+
+            var content = new MockContent(contentBytes);
+            content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+            content.Headers.ContentType.CharSet = "\"utf-8\"";
+
+            string result = await content.ReadAsStringAsync();
+
+            Assert.Equal(sourceString, result);
+        }
+
+        [Theory]
+        [InlineData("\"\"invalid")]
+        [InlineData("invalid\"\"")]
+        [InlineData("\"\"invalid\"\"")]
+        [InlineData("\"invalid")]
+        [InlineData("invalid\"")]
+        public async Task ReadAsStringAsync_SetInvalidContentTypeHeader_DefaultCharsetUsed(string charset)
+        {
+            // Assorted latin letters with diaeresis
+            string sourceString = "\u00C4\u00E4\u00FC\u00DC";
+
+            // Because the Content-Type header is invalid, we expect to default to UTF-8.
+            byte[] contentBytes = Encoding.UTF8.GetBytes(sourceString);
+            var content = new MockContent(contentBytes);
+
+            Assert.True(content.Headers.TryAddWithoutValidation("Content-Type", $"text/plain;charset={charset}"));
+
             string result = await content.ReadAsStringAsync();
 
             Assert.Equal(sourceString, result);
