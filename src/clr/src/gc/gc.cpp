@@ -15124,22 +15124,6 @@ exit:
         }
     }
 
-    if (n == max_generation && GCToEEInterface::ForceFullGCToBeBlocking())
-    {
-#ifdef BACKGROUND_GC
-        // do not turn stress-induced collections into blocking GCs, unless there
-        // have already been more full BGCs than full NGCs
-#if 0
-        // This exposes DevDiv 94129, so we'll leave this out for now
-        if (!settings.stress_induced ||
-            full_gc_counts[gc_type_blocking] <= full_gc_counts[gc_type_background])
-#endif // 0
-#endif // BACKGROUND_GC
-        {
-            *blocking_collection_p = TRUE;
-        }
-    }
-
     return n;
 }
 

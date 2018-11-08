@@ -72,7 +72,6 @@ public:
 
     static void HandleFatalError(unsigned int exitCode);
     static bool ShouldFinalizeObjectForUnload(void* pDomain, Object* obj);
-    static bool ForceFullGCToBeBlocking();
     static bool EagerFinalized(Object* obj);
     static MethodTable* GetFreeObjectMethodTable();
     static bool GetBooleanConfigValue(const char* key, bool* value);
