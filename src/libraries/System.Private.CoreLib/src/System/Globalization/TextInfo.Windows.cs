@@ -10,7 +10,7 @@ namespace System.Globalization
     {
         private unsafe void FinishInitialization()
         {
-            if (_invariantMode)
+            if (GlobalizationMode.Invariant)
             {
                 _sortHandle = IntPtr.Zero;
                 return;
@@ -25,7 +25,7 @@ namespace System.Globalization
 
         private unsafe void ChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
-            Debug.Assert(!_invariantMode);
+            Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(pSource != null);
             Debug.Assert(pResult != null);
             Debug.Assert(pSourceLen >= 0);
