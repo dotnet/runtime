@@ -265,7 +265,7 @@
   ],
   "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
-  "jobTimeoutInMinutes": 90,
+  "jobTimeoutInMinutes": 120,
   "jobCancelTimeoutInMinutes": 5,
   "repository": {
     "properties": {
