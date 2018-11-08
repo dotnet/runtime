@@ -180,5 +180,101 @@ namespace System.Threading.Tasks.Tests
             cts.Cancel();
             Assert.Equal(Iters, invoked);
         }
+
+        [Fact]
+        public static void CancellationTokenRegistration_DisposeAsyncOnDefaultIsNop()
+        {
+            Assert.True(default(CancellationTokenRegistration).DisposeAsync().IsCompletedSuccessfully);
+        }
+
+        [Fact]
+        public static void CancellationTokenRegistration_DisposeAsyncRemovesDelegate()
+        {
+            var cts = new CancellationTokenSource();
+            bool invoked = false;
+            CancellationTokenRegistration ctr = cts.Token.Register(() => invoked = true);
+            Assert.True(ctr.DisposeAsync().IsCompletedSuccessfully);
+            cts.Cancel();
+            Assert.False(invoked);
+        }
+
+        [Fact]
+        public static async Task CancellationTokenRegistration_DisposeAsyncWhileCallbackRunning_WaitsForCallbackToComplete()
+        {
+            using (var barrier = new Barrier(2))
+            {
+                var cts = new CancellationTokenSource();
+                CancellationTokenRegistration ctr = cts.Token.Register(() =>
+                {
+                    barrier.SignalAndWait();
+                    barrier.SignalAndWait();
+                });
+
+                Task ignored = Task.Run(() => cts.Cancel());
+
+                barrier.SignalAndWait();
+                ValueTask vt = ctr.DisposeAsync();
+                await Task.Delay(1);
+                Assert.False(vt.IsCompleted);
+                barrier.SignalAndWait();
+
+                await vt;
+            }
+        }
+
+        [Fact]
+        public static async Task CancellationTokenRegistration_DisposeAsyncDuringCancellation_SuccessfullyRemovedIfNotYetInvoked()
+        {
+            var ctr0running = new ManualResetEventSlim();
+            var ctr2blocked = new ManualResetEventSlim();
+            var ctr2running = new ManualResetEventSlim();
+            var cts = new CancellationTokenSource();
+
+            CancellationTokenRegistration ctr0 = cts.Token.Register(() => ctr0running.Set());
+
+            bool ctr1Invoked = false;
+            CancellationTokenRegistration ctr1 = cts.Token.Register(() => ctr1Invoked = true);
+
+            CancellationTokenRegistration ctr2 = cts.Token.Register(() =>
+            {
+                ctr2running.Set();
+                ctr2blocked.Wait();
+            });
+
+            // Cancel.  This will trigger ctr2 to run, then ctr1, then ctr0.
+            Task ignored = Task.Run(() => cts.Cancel());
+            ctr2running.Wait(); // wait for ctr2 to start running
+            ValueTask vt2 = ctr2.DisposeAsync();
+            Assert.False(vt2.IsCompleted);
+
+            // Now that ctr2 is running, unregister ctr1. This should succeed
+            // and ctr1 should not run.
+            Assert.True(ctr1.DisposeAsync().IsCompletedSuccessfully);
+
+            // Allow ctr2 to continue.  ctr1 should not run.  ctr0 should, so wait for it.
+            ctr2blocked.Set();
+            ctr0running.Wait();
+            await ctr0.DisposeAsync();
+            Assert.False(ctr1Invoked);
+            await vt2;
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public static void CancellationTokenRegistration_DisposeAsync_NopAfterDispose(int mode)
+        {
+            var reg = new CancellationTokenSource().Token.Register(() => { });
+
+            switch (mode)
+            {
+                case 0: reg.Dispose(); break;
+                case 1: reg.DisposeAsync(); break;
+                case 2: reg.Unregister(); break;
+            }
+
+            Assert.True(reg.DisposeAsync().IsCompletedSuccessfully);
+        }
     }
 }
