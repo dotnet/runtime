@@ -1109,7 +1109,7 @@ append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset
 		g_string_append_printf (text, "%s\n", msg);
 		g_free (msg);
 	} else {
-		g_string_append_printf (text, "<unknown native frame 0x%x>\n", ip);
+		g_string_append_printf (text, "<unknown native frame 0x%p>\n", ip);
 	}
 	MONO_EXIT_GC_UNSAFE;
 	return FALSE;

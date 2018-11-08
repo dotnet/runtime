@@ -3813,7 +3813,7 @@ verify_methodimpl_table_global_constraints (VerifyContext *ctx)
 		impl->method_declaration = data [MONO_METHODIMPL_DECLARATION];
 
 		if (g_hash_table_lookup (unique_impls, impl)) {
-			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("MethodImpl table row %d has duplicate for tuple (0x%x, 0x%x)", impl->klass, impl->method_declaration));
+			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("MethodImpl table row %d has duplicate for tuple (0x%x, 0x%x)", i, impl->klass, impl->method_declaration));
 			g_hash_table_destroy (unique_impls);
 			g_free (impl);
 			return;

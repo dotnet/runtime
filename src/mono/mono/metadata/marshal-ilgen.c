@@ -4939,7 +4939,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 				m = get_method_nofail (mono_defaults.string_class, "get_Length", -1, 0);
 
 			if (!t->byref) {
-				char *msg = g_strdup_printf ("VBByRefStr marshalling requires a ref parameter.", encoding);
+				char *msg = g_strdup ("VBByRefStr marshalling requires a ref parameter.");
 				mono_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}

@@ -102,7 +102,7 @@ mono_debugger_log_command (const char *command_set, const char *command, guint8 
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_COMMAND;
 	payload.tid = 0x0;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -118,7 +118,7 @@ mono_debugger_log_event (DebuggerTlsData *tls, const char *event, guint8 *buf, i
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_EVENT;
 	payload.tid = tid;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -132,7 +132,7 @@ mono_debugger_log_exit (int exit_code)
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_EXIT;
 	payload.tid = 0x0;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -151,7 +151,7 @@ mono_debugger_log_add_bp (gpointer bp, MonoMethod *method, long il_offset)
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_BREAKPOINT;
 	payload.tid = 0x0;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -170,7 +170,7 @@ mono_debugger_log_remove_bp (gpointer bp, MonoMethod *method, long il_offset)
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_BREAKPOINT;
 	payload.tid = 0x0;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -185,7 +185,7 @@ mono_debugger_log_bp_hit (DebuggerTlsData *tls, MonoMethod *method, long il_offs
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_BREAKPOINT;
 	payload.tid = tid;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -200,11 +200,11 @@ mono_debugger_log_resume (DebuggerTlsData *tls)
 	g_assert (prev_state == MONO_DEBUGGER_SUSPENDED || prev_state == MONO_DEBUGGER_STARTED);
 	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_RESUMED);
 
-	char *msg = g_strdup_printf ("Resuming 0x%x from state %s", tid, mono_debug_log_thread_state_to_string (prev_state));
+	char *msg = g_strdup_printf ("Resuming 0x%p from state %s", (void*)tid, mono_debug_log_thread_state_to_string (prev_state));
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_STATE_CHANGE;
 	payload.tid = tid;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 
@@ -219,11 +219,11 @@ mono_debugger_log_suspend (DebuggerTlsData *tls)
 	g_assert (prev_state == MONO_DEBUGGER_RESUMED || prev_state == MONO_DEBUGGER_STARTED);
 	mono_debugger_set_thread_state (tls, prev_state, MONO_DEBUGGER_SUSPENDED);
 
-	char *msg = g_strdup_printf ("Suspending 0x%x from state %s", tid, mono_debug_log_thread_state_to_string (prev_state));
+	char *msg = g_strdup_printf ("Suspending 0x%p from state %s", (void*)tid, mono_debug_log_thread_state_to_string (prev_state));
 	MonoDebugLogItem payload;
 	payload.kind = DEBUG_LOG_STATE_CHANGE;
 	payload.tid = tid;
-	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, msg);
+	g_snprintf ((gchar *) &payload.message, MONO_MAX_DEBUGGER_MSG_LEN, "%s", msg);
 	mono_flight_recorder_append (debugger_log, &payload);
 }
 

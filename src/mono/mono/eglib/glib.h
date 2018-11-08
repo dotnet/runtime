@@ -261,6 +261,12 @@ typedef guint32 gunichar;
 #define G_GUINT32_FORMAT PRIu32
 #define G_GINT32_FORMAT PRIi32
 
+#ifdef __GNUC__
+#define G_ATTR_FORMAT_PRINTF(fmt_pos,arg_pos) __attribute__((__format__(__printf__,fmt_pos,arg_pos)))
+#else
+#define G_ATTR_FORMAT_PRINTF(fmt_pos,arg_pos)
+#endif
+
 /*
  * Allocation
  */
@@ -345,7 +351,7 @@ void    g_propagate_error (GError **dest, GError *src);
  * Strings utility
  */
 G_EXTERN_C // Used by libtest, at least.
-gchar       *g_strdup_printf  (const gchar *format, ...);
+gchar       *g_strdup_printf  (const gchar *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
 gchar       *g_strdup_vprintf (const gchar *format, va_list args);
 gchar       *g_strndup        (const gchar *str, gsize n);
 const gchar *g_strerror       (gint errnum);
@@ -371,10 +377,10 @@ gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
 gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **gerror);
 gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror);
 
-gint         g_printf          (gchar const *format, ...);
-gint         g_fprintf         (FILE *file, gchar const *format, ...);
-gint         g_sprintf         (gchar *string, gchar const *format, ...);
-gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ...);
+gint         g_printf          (gchar const *format, ...) G_ATTR_FORMAT_PRINTF(1, 2);
+gint         g_fprintf         (FILE *file, gchar const *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
+gint         g_sprintf         (gchar *string, gchar const *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
+gint         g_snprintf        (gchar *string, gulong n, gchar const *format, ...) G_ATTR_FORMAT_PRINTF(3, 4);
 gint         g_vasprintf       (gchar **ret, const gchar *fmt, va_list ap);
 #define g_vprintf vprintf
 #define g_vfprintf vfprintf
@@ -426,8 +432,9 @@ GString     *g_string_new_len       (const gchar *init, gssize len);
 GString     *g_string_sized_new     (gsize default_size);
 gchar       *g_string_free          (GString *string, gboolean free_segment);
 GString     *g_string_append        (GString *string, const gchar *val);
-void         g_string_printf        (GString *string, const gchar *format, ...);
-void         g_string_append_printf (GString *string, const gchar *format, ...);
+
+void         g_string_printf        (GString *string, const gchar *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
+void         g_string_append_printf (GString *string, const gchar *format, ...) G_ATTR_FORMAT_PRINTF(2, 3);
 void         g_string_append_vprintf (GString *string, const gchar *format, va_list args);
 GString     *g_string_append_unichar (GString *string, gunichar c);
 GString     *g_string_append_c      (GString *string, gchar c);

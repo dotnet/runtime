@@ -4534,7 +4534,7 @@ do_ldstr (VerifyContext *ctx, guint32 token)
 		}
 
 		if (!mono_verifier_verify_string_signature (ctx->image, mono_metadata_token_index (token), error)) {
-			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x due to: %", token, ctx->ip_offset, mono_error_get_message (error)), MONO_EXCEPTION_BAD_IMAGE);
+			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid string index %x at 0x%04x due to: %s", token, ctx->ip_offset, mono_error_get_message (error)), MONO_EXCEPTION_BAD_IMAGE);
 			mono_error_cleanup (error);
 			return;
 		}
