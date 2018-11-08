@@ -17,6 +17,34 @@ namespace System.Runtime.Intrinsics.X86
 
         public static bool IsSupported { get { return false; } }
 
+        public abstract class X64
+        {
+            internal X64() { }
+
+            public static bool IsSupported { get { return false; } }
+
+            /// <summary>
+            /// __int64 _mm_cvtss_si64 (__m128 a)
+            ///   CVTSS2SI r64, xmm/m32
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static long ConvertToInt64(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+            /// <summary>
+            /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
+            ///   CVTSI2SS xmm, reg/m64
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// __int64 _mm_cvttss_si64 (__m128 a)
+            ///   CVTTSS2SI r64, xmm/m32
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static long ConvertToInt64WithTruncation(Vector128<float> value) { throw new PlatformNotSupportedException(); }
+
+        }
+
         /// <summary>
         /// __m128 _mm_add_ps (__m128 a,  __m128 b)
         ///   ADDPS xmm, xmm/m128

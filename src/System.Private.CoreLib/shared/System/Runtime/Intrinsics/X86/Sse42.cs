@@ -17,6 +17,20 @@ namespace System.Runtime.Intrinsics.X86
 
         public new static bool IsSupported { get => IsSupported; }
 
+        public new abstract class X64 : Sse41.X64
+        {
+            internal X64() { }
+
+            public new static bool IsSupported { get => IsSupported; }
+
+            /// <summary>
+            /// unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
+            ///   CRC32 reg, reg/m64
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static ulong Crc32(ulong crc, ulong data) => Crc32(crc, data);
+        }
+
         /// <summary>
         /// int _mm_cmpistra (__m128i a, __m128i b, const int imm8)
         ///   PCMPISTRI xmm, xmm/m128, imm8
