@@ -798,14 +798,17 @@ namespace System.Globalization
             }
             else
             {
-                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
-                keyData = new byte[sortKeyLength];
-
-                fixed (byte* pSortKey = keyData)
+                fixed (char* pSource = source)
                 {
-                    if (Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                    int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+                    keyData = new byte[sortKeyLength];
+
+                    fixed (byte* pSortKey = keyData)
                     {
-                        throw new ArgumentException(SR.Arg_ExternalException);
+                        if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                        {
+                            throw new ArgumentException(SR.Arg_ExternalException);
+                        }
                     }
                 }
             }
@@ -856,11 +859,9 @@ namespace System.Globalization
         // ---- PAL layer ends here ----
         // -----------------------------
 
-        internal unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
+        internal unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(!_invariantMode);
-
-            Debug.Assert(source != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
             if (source.Length == 0)
@@ -868,30 +869,33 @@ namespace System.Globalization
                 return 0;
             }
 
-            int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, null, 0, options);
-
-            byte[] borrowedArr = null;
-            Span<byte> span = sortKeyLength <= 512 ?
-                stackalloc byte[512] :
-                (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
-
-            fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
+            fixed (char* pSource = source)
             {
-                if (Interop.Globalization.GetSortKey(_sortHandle, source, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
+
+                byte[] borrowedArr = null;
+                Span<byte> span = sortKeyLength <= 512 ?
+                    stackalloc byte[512] :
+                    (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+                fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
                 {
-                    throw new ArgumentException(SR.Arg_ExternalException);
+                    if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                    {
+                        throw new ArgumentException(SR.Arg_ExternalException);
+                    }
                 }
+
+                int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
+
+                // Return the borrowed array if necessary.
+                if (borrowedArr != null)
+                {
+                    ArrayPool<byte>.Shared.Return(borrowedArr);
+                }
+
+                return hash;
             }
-
-            int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
-
-            // Return the borrowed array if necessary.
-            if (borrowedArr != null)
-            {
-                ArrayPool<byte>.Shared.Return(borrowedArr);
-            }
-
-            return hash;
         }
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)

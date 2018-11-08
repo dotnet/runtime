@@ -1420,43 +1420,71 @@ namespace System.Globalization
             {
                 throw new ArgumentNullException(nameof(source));
             }
-
-            if ((options & ValidHashCodeOfStringMaskOffFlags) != 0)
+            if ((options & ValidHashCodeOfStringMaskOffFlags) == 0)
             {
+                // No unsupported flags are set - continue on with the regular logic
+
+                if (_invariantMode)
+                {
+                    return ((options & CompareOptions.IgnoreCase) != 0) ? source.GetHashCodeOrdinalIgnoreCase() : source.GetHashCode();
+                }
+
+                return GetHashCodeOfStringCore(source, options);
+            }
+            else if (options == CompareOptions.Ordinal)
+            {
+                // We allow Ordinal in isolation
+                return source.GetHashCode();
+            }
+            else if (options == CompareOptions.OrdinalIgnoreCase)
+            {
+                // We allow OrdinalIgnoreCase in isolation
+                return source.GetHashCodeOrdinalIgnoreCase();
+            }
+            else
+            {
+                // Unsupported combination of flags specified
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
-
-            if (_invariantMode)
-            {
-                return ((options & CompareOptions.IgnoreCase) != 0) ? source.GetHashCodeOrdinalIgnoreCase() : source.GetHashCode();
-            }
-
-            return GetHashCodeOfStringCore(source, options);
         }
 
         public virtual int GetHashCode(string source, CompareOptions options)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                return source.GetHashCode();
-            }
-
-            if (options == CompareOptions.OrdinalIgnoreCase)
-            {
-                return source.GetHashCodeOrdinalIgnoreCase();
-            }
-
-            //
-            // GetHashCodeOfString does more parameters validation. basically will throw when
-            // having Ordinal, OrdinalIgnoreCase and StringSort
-            //
-
+            // virtual method delegates to non-virtual method
             return GetHashCodeOfString(source, options);
+        }
+
+        public int GetHashCode(ReadOnlySpan<char> source, CompareOptions options)
+        {
+            //
+            //  Parameter validation
+            //
+            if ((options & ValidHashCodeOfStringMaskOffFlags) == 0)
+            {
+                // No unsupported flags are set - continue on with the regular logic
+
+                if (_invariantMode)
+                {
+                    return ((options & CompareOptions.IgnoreCase) != 0) ? string.GetHashCodeOrdinalIgnoreCase(source) : string.GetHashCode(source);
+                }
+
+                return GetHashCodeOfStringCore(source, options);
+            }
+            else if (options == CompareOptions.Ordinal)
+            {
+                // We allow Ordinal in isolation
+                return string.GetHashCode(source);
+            }
+            else if (options == CompareOptions.OrdinalIgnoreCase)
+            {
+                // We allow OrdinalIgnoreCase in isolation
+                return string.GetHashCodeOrdinalIgnoreCase(source);
+            }
+            else
+            {
+                // Unsupported combination of flags specified
+                throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
+            }
         }
 
         ////////////////////////////////////////////////////////////////////////
