@@ -193,9 +193,17 @@ namespace System.Json.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public void Parse_DoubleTooLarge_ThrowsOverflowException()
         {
             Assert.Throws<OverflowException>(() => JsonValue.Parse("1.7976931348623157E+309"));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void Parse_DoubleTooLarge_ReturnsInfinity()
+        {
+            Assert.Equal(double.PositiveInfinity, (double)JsonValue.Parse("1.7976931348623157E+309"));
         }
 
         [Fact]
@@ -203,7 +211,7 @@ namespace System.Json.Tests
         {
             Assert.Throws<FormatException>(() => JsonValue.Parse("1E!"));
         }
-        
+
         [Theory]
         [InlineData("0", 0)]
         [InlineData("-0", 0)]
