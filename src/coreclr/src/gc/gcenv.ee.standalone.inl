@@ -197,12 +197,6 @@ inline bool GCToEEInterface::ShouldFinalizeObjectForUnload(void* pDomain, Object
     return g_theGCToCLR->ShouldFinalizeObjectForUnload(pDomain, obj);
 }
 
-inline bool GCToEEInterface::ForceFullGCToBeBlocking()
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->ForceFullGCToBeBlocking();
-}
-
 inline bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     assert(g_theGCToCLR != nullptr);
