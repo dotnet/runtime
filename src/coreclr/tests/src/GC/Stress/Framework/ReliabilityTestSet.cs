@@ -37,7 +37,9 @@ public class ReliabilityTestSet
     private Guid _bvtCategory = Guid.Empty;
     private string _ccFailMail;
     private AppDomainLoaderMode _adLoaderMode = AppDomainLoaderMode.Normal;
+    private AssemblyLoadContextLoaderMode _alcLoaderMode = AssemblyLoadContextLoaderMode.Normal;
     private int _numAppDomains = 10; //used for roundRobin scheduling, our app domain index
+    private int _numAssemblyLoadContexts = 10; //used for roundRobin scheduling, our AssemblyLoadContext index
     private Random _rand = new Random();
     private LoggingLevels _loggingLevel = LoggingLevels.All;	// by default log everything
 
@@ -319,6 +321,33 @@ public class ReliabilityTestSet
         set
         {
             _adLoaderMode = value;
+        }
+    }
+
+    public AssemblyLoadContextLoaderMode AssemblyLoadContextLoaderMode
+    {
+        get
+        {
+            return (_alcLoaderMode);
+        }
+        set
+        {
+            _alcLoaderMode = value;
+        }
+    }
+
+    /// <summary>
+    /// Used for round-robin scheduling.  Number of AssemblyLoadContexts domains to schedule tests into.
+    /// </summary>
+    public int NumAssemblyLoadContexts
+    {
+        get
+        {
+            return (_numAssemblyLoadContexts);
+        }
+        set
+        {
+            _numAssemblyLoadContexts = value;
         }
     }
 
