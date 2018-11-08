@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -25,13 +26,18 @@ namespace System.Threading.Tasks.Sources.Tests
         }
 
         [Fact]
-        public void AccessAfterReset_Fails()
+        public void AccessWrongVersion_Fails()
         {
             var mrvts = new ManualResetValueTaskSource<int>();
             mrvts.Reset();
+
             Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(0));
             Assert.Throws<InvalidOperationException>(() => mrvts.GetStatus(0));
             Assert.Throws<InvalidOperationException>(() => mrvts.OnCompleted(_ => { }, new object(), 0, ValueTaskSourceOnCompletedFlags.None));
+
+            Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(2));
+            Assert.Throws<InvalidOperationException>(() => mrvts.GetStatus(2));
+            Assert.Throws<InvalidOperationException>(() => mrvts.OnCompleted(_ => { }, new object(), 2, ValueTaskSourceOnCompletedFlags.None));
         }
 
         [Fact]
@@ -47,6 +53,348 @@ namespace System.Threading.Tasks.Sources.Tests
             mrvts.SetException(new Exception());
             Assert.Throws<InvalidOperationException>(() => mrvts.SetResult(42));
             Assert.Throws<InvalidOperationException>(() => mrvts.SetException(new Exception()));
+        }
+
+        [Fact]
+        public void GetResult_BeforeCompleted_Fails()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(0));
+        }
+
+        [Fact]
+        public void SetResult_BeforeOnCompleted_ResultAvailableSynchronously()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            mrvts.Reset();
+            mrvts.Reset();
+            Assert.Equal(2, mrvts.Version);
+
+            mrvts.SetResult(42);
+
+            Assert.Equal(ValueTaskSourceStatus.Succeeded, mrvts.GetStatus(2));
+            Assert.Equal(42, mrvts.GetResult(2));
+
+            var mres = new ManualResetEventSlim();
+            mrvts.OnCompleted(s => ((ManualResetEventSlim)s).Set(), mres, 2, ValueTaskSourceOnCompletedFlags.None);
+            mres.Wait();
+
+            Assert.Equal(2, mrvts.Version);
+        }
+
+        [Fact]
+        public async Task SetResult_AfterOnCompleted_ResultAvailableAsynchronously()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            mrvts.Reset();
+            mrvts.Reset();
+            Assert.Equal(2, mrvts.Version);
+
+            Assert.Equal(ValueTaskSourceStatus.Pending, mrvts.GetStatus(2));
+            Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(2));
+
+            var onCompletedRan = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource<bool>)s).SetResult(true), onCompletedRan, 2, ValueTaskSourceOnCompletedFlags.None);
+
+            Assert.False(onCompletedRan.Task.IsCompleted);
+            await Task.Delay(1);
+            Assert.False(onCompletedRan.Task.IsCompleted);
+
+            mrvts.SetResult(42);
+            Assert.Equal(ValueTaskSourceStatus.Succeeded, mrvts.GetStatus(2));
+            Assert.Equal(42, mrvts.GetResult(2));
+
+            await onCompletedRan.Task;
+
+            Assert.Equal(2, mrvts.Version);
+        }
+
+        [Fact]
+        public void SetException_BeforeOnCompleted_ResultAvailableSynchronously()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            mrvts.Reset();
+            mrvts.Reset();
+            Assert.Equal(2, mrvts.Version);
+
+            var e = new FormatException();
+            mrvts.SetException(e);
+
+            Assert.Equal(ValueTaskSourceStatus.Faulted, mrvts.GetStatus(2));
+            Assert.Same(e, Assert.Throws<FormatException>(() => mrvts.GetResult(2)));
+
+            var mres = new ManualResetEventSlim();
+            mrvts.OnCompleted(s => ((ManualResetEventSlim)s).Set(), mres, 2, ValueTaskSourceOnCompletedFlags.None);
+            mres.Wait();
+
+            Assert.Equal(2, mrvts.Version);
+        }
+
+        [Fact]
+        public async Task SetException_AfterOnCompleted_ResultAvailableAsynchronously()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            mrvts.Reset();
+            mrvts.Reset();
+            Assert.Equal(2, mrvts.Version);
+
+            Assert.Equal(ValueTaskSourceStatus.Pending, mrvts.GetStatus(2));
+            Assert.Throws<InvalidOperationException>(() => mrvts.GetResult(2));
+
+            var onCompletedRan = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            mrvts.OnCompleted(s => ((TaskCompletionSource<bool>)s).SetResult(true), onCompletedRan, 2, ValueTaskSourceOnCompletedFlags.None);
+
+            Assert.False(onCompletedRan.Task.IsCompleted);
+            await Task.Delay(1);
+            Assert.False(onCompletedRan.Task.IsCompleted);
+
+            var e = new FormatException();
+            mrvts.SetException(e);
+
+            Assert.Equal(ValueTaskSourceStatus.Faulted, mrvts.GetStatus(2));
+            Assert.Same(e, Assert.Throws<FormatException>(() => mrvts.GetResult(2)));
+
+            await onCompletedRan.Task;
+
+            Assert.Equal(2, mrvts.Version);
+        }
+
+        [Fact]
+        public void SetException_OperationCanceledException_StatusIsCanceled()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            var e = new OperationCanceledException();
+            mrvts.SetException(e);
+            Assert.Equal(ValueTaskSourceStatus.Canceled, mrvts.GetStatus(0));
+            Assert.Same(e, Assert.Throws<OperationCanceledException>(() => mrvts.GetResult(0)));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FlowContext_SetBeforeOnCompleted_FlowsIfExpected(bool flowContext)
+        {
+            var mres = new ManualResetEventSlim();
+            var mrvts = new ManualResetValueTaskSource<int>();
+
+            mrvts.RunContinuationsAsynchronously = true;
+
+            mrvts.SetResult(1);
+
+            var al = new AsyncLocal<int>();
+            al.Value = 42;
+            mrvts.OnCompleted(
+                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); mres.Set(); },
+                null,
+                0,
+                flowContext ? ValueTaskSourceOnCompletedFlags.FlowExecutionContext : ValueTaskSourceOnCompletedFlags.None);
+
+            mres.Wait();
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FlowContext_SetAfterOnCompleted_FlowsIfExpected(bool flowContext)
+        {
+            var mres = new ManualResetEventSlim();
+            var mrvts = new ManualResetValueTaskSource<int>();
+
+            mrvts.RunContinuationsAsynchronously = true;
+
+            var al = new AsyncLocal<int>();
+            al.Value = 42;
+            mrvts.OnCompleted(
+                _ => { Assert.Equal(flowContext ? 42 : 0, al.Value); mres.Set(); },
+                null,
+                0,
+                flowContext ? ValueTaskSourceOnCompletedFlags.FlowExecutionContext : ValueTaskSourceOnCompletedFlags.None);
+
+            mrvts.SetResult(1);
+
+            mres.Wait();
+        }
+
+        [Fact]
+        public void OnCompleted_NullDelegate_Throws()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            AssertExtensions.Throws<ArgumentNullException>("continuation", () => mrvts.OnCompleted(null, new object(), 0, ValueTaskSourceOnCompletedFlags.None));
+        }
+
+        [Fact]
+        public void OnCompleted_UsedTwiceBeforeCompletion_Throws()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            mrvts.OnCompleted(_ => { }, null, 0, ValueTaskSourceOnCompletedFlags.None);
+            Assert.Throws<InvalidOperationException>(() => mrvts.OnCompleted(_ => { }, null, 0, ValueTaskSourceOnCompletedFlags.None));
+        }
+
+        [Fact]
+        public void OnCompleted_UnknownFlagsIgnored()
+        {
+            var mrvts = new ManualResetValueTaskSource<int>();
+            mrvts.OnCompleted(_ => { }, new object(), 0, (ValueTaskSourceOnCompletedFlags)int.MaxValue);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void OnCompleted_ContinuationAlwaysInvokedAsynchronously(bool runContinuationsAsynchronously)
+        {
+            var mres = new ManualResetEventSlim();
+            var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+            for (short i = 0; i < 10; i++)
+            {
+                int threadId = Environment.CurrentManagedThreadId;
+                mrvts.SetResult(42);
+                mrvts.OnCompleted(
+                    _ =>
+                    {
+                        Assert.NotEqual(threadId, Environment.CurrentManagedThreadId);
+                        mres.Set();
+                    },
+                    null,
+                    i,
+                    ValueTaskSourceOnCompletedFlags.None);
+                mrvts.Reset();
+                mres.Reset();
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void SetResult_RunContinuationsAsynchronously_ContinuationInvokedAccordingly(bool runContinuationsAsynchronously)
+        {
+            var mres = new ManualResetEventSlim();
+            var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+            for (short i = 0; i < 10; i++)
+            {
+                int threadId = Environment.CurrentManagedThreadId;
+                mrvts.OnCompleted(
+                    _ =>
+                    {
+                        Assert.Equal(!runContinuationsAsynchronously, threadId == Environment.CurrentManagedThreadId);
+                        mres.Set();
+                    },
+                    null,
+                    i,
+                    ValueTaskSourceOnCompletedFlags.None);
+                mrvts.SetResult(42);
+                mrvts.Reset();
+                mres.Reset();
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task SynchronizationContext_CaptureIfRequested(
+            bool runContinuationsAsynchronously, bool captureSyncCtx, bool setBeforeOnCompleted)
+        {
+            await Task.Run(async () => // escape xunit sync ctx
+            {
+                var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+
+                if (setBeforeOnCompleted)
+                {
+                    mrvts.SetResult(42);
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+                var sc = new TrackingSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(sc);
+                Assert.Equal(0, sc.Posts);
+                mrvts.OnCompleted(
+                    _ => tcs.SetResult(true),
+                    null,
+                    0,
+                    captureSyncCtx ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
+                SynchronizationContext.SetSynchronizationContext(null);
+
+                if (!setBeforeOnCompleted)
+                {
+                    mrvts.SetResult(42);
+                }
+
+                await tcs.Task;
+                Assert.Equal(captureSyncCtx ? 1 : 0, sc.Posts);
+            });
+        }
+
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, true, false)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
+        [InlineData(true, true, true)]
+        public async Task TaskScheduler_CaptureIfRequested(
+            bool runContinuationsAsynchronously, bool captureTaskScheduler, bool setBeforeOnCompleted)
+        {
+            await Task.Run(async () => // escape xunit sync ctx
+            {
+                var mrvts = new ManualResetValueTaskSource<int>() { RunContinuationsAsynchronously = runContinuationsAsynchronously };
+
+                if (setBeforeOnCompleted)
+                {
+                    mrvts.SetResult(42);
+                }
+
+                var tcs = new TaskCompletionSource<bool>();
+                var ts = new TrackingTaskScheduler();
+                Assert.Equal(0, ts.QueueTasks);
+                await Task.Factory.StartNew(() =>
+                {
+                    mrvts.OnCompleted(
+                        _ => tcs.SetResult(true),
+                        null,
+                        0,
+                        captureTaskScheduler ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
+                }, CancellationToken.None, TaskCreationOptions.None, ts);
+
+                if (!setBeforeOnCompleted)
+                {
+                    mrvts.SetResult(42);
+                }
+
+                await tcs.Task;
+                Assert.Equal(captureTaskScheduler ? 2 : 1, ts.QueueTasks);
+            });
+        }
+
+        private sealed class TrackingSynchronizationContext : SynchronizationContext
+        {
+            public int Posts;
+
+            public override void Post(SendOrPostCallback d, object state)
+            {
+                Interlocked.Increment(ref Posts);
+                base.Post(d, state);
+            }
+        }
+
+        private sealed class TrackingTaskScheduler : TaskScheduler
+        {
+            public int QueueTasks;
+
+            protected override void QueueTask(Task task)
+            {
+                QueueTasks++;
+                ThreadPool.QueueUserWorkItem(_ => TryExecuteTask(task));
+            }
+
+            protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
+            protected override IEnumerable<Task> GetScheduledTasks() => null;
         }
 
         [Fact]
@@ -76,34 +424,6 @@ namespace System.Threading.Tasks.Sources.Tests
             }
         }
 
-        // The following is a sketch of an implementation to explore the IAsyncEnumerable feature.
-        // This should be replaced with the real implementation when available.
-        // https://github.com/dotnet/csharplang/issues/43
-
-        internal interface IAsyncEnumerable<out T>
-        {
-            IAsyncEnumerator<T> GetAsyncEnumerator();
-        }
-
-        internal interface IAsyncEnumerator<out T> : IAsyncDisposable
-        {
-            // One of two potential shapes for IAsyncEnumerator; another is
-            //     ValueTask<bool> WaitForNextAsync();
-            //     bool TryGetNext(out T current);
-            // which has several advantages, including that while the next
-            // result is available synchronously, it incurs only one interface
-            // call rather than two, and doesn't incur any boilerplate related
-            // to await.
-
-            ValueTask<bool> MoveNextAsync();
-            T Current { get; }
-        }
-
-        internal interface IAsyncDisposable
-        {
-            ValueTask DisposeAsync();
-        }
-
         // Approximate compiler-generated code for:
         //     internal static AsyncEnumerable<int> CountAsync(int items)
         //     {
@@ -120,7 +440,6 @@ namespace System.Threading.Tasks.Sources.Tests
             IAsyncEnumerable<int>,  // used as the enumerable itself
             IAsyncEnumerator<int>,  // used as the enumerator returned from first call to enumerable's GetAsyncEnumerator
             IValueTaskSource<bool>, // used as the backing store behind the ValueTask<bool> returned from each MoveNextAsync
-            IStrongBox<ManualResetValueTaskSourceLogic<bool>>, // exposes its ValueTaskSource logic implementation
             IAsyncStateMachine // uses existing builder's support for ExecutionContext, optimized awaits, etc.
         {
             // This implementation will generally incur only two allocations of overhead
@@ -139,9 +458,9 @@ namespace System.Threading.Tasks.Sources.Tests
             /// <summary>Current state of the state machine.</summary>
             private int _state = StateCtor;
             /// <summary>All of the logic for managing the IValueTaskSource implementation</summary>
-            private ManualResetValueTaskSourceLogic<bool> _vts; // mutable struct; do not make this readonly
+            private ManualResetValueTaskSourceCore<bool> _vts; // mutable struct; do not make this readonly
             /// <summary>Builder used for efficiently waiting and appropriately managing ExecutionContext.</summary>
-            private AsyncTaskMethodBuilder _builder = AsyncTaskMethodBuilder.Create(); // mutable struct; do not make this readonly
+            private AsyncIteratorMethodBuilder _builder = AsyncIteratorMethodBuilder.Create(); // mutable struct; do not make this readonly
 
             private readonly int _param_items;
 
@@ -152,10 +471,7 @@ namespace System.Threading.Tasks.Sources.Tests
             public CountAsyncEnumerable(int items)
             {
                 _local_items = _param_items = items;
-                _vts = new ManualResetValueTaskSourceLogic<bool>(this);
             }
-
-            ref ManualResetValueTaskSourceLogic<bool> IStrongBox<ManualResetValueTaskSourceLogic<bool>>.Value => ref _vts;
 
             public IAsyncEnumerator<int> GetAsyncEnumerator() =>
                 Interlocked.CompareExchange(ref _state, StateStart, StateCtor) == StateCtor ?
@@ -167,7 +483,7 @@ namespace System.Threading.Tasks.Sources.Tests
                 _vts.Reset();
 
                 CountAsyncEnumerable inst = this;
-                _builder.Start(ref inst); // invokes MoveNext, protected by ExecutionContext guards
+                _builder.MoveNext(ref inst); // invokes MoveNext, protected by ExecutionContext guards
 
                 switch (_vts.GetStatus(_vts.Version))
                 {
@@ -211,6 +527,7 @@ namespace System.Threading.Tasks.Sources.Tests
                                 goto case 1;
                             }
                             _state = int.MaxValue;
+                            _builder.Complete();
                             _vts.SetResult(false);
                             return;
 
@@ -235,6 +552,7 @@ namespace System.Threading.Tasks.Sources.Tests
                 catch (Exception e)
                 {
                     _state = int.MaxValue;
+                    _builder.Complete();
                     _vts.SetException(e); // see https://github.com/dotnet/roslyn/issues/26567; we may want to move this out of the catch
                     return;
                 }
