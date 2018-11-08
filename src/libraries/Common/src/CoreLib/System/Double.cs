@@ -341,28 +341,7 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out double result)
         {
-            bool success = Number.TryParseDouble(s, style, info, out result, out _);
-            if (!success)
-            {
-                ReadOnlySpan<char> sTrim = s.Trim();
-                if (sTrim.EqualsOrdinal(info.PositiveInfinitySymbol))
-                {
-                    result = PositiveInfinity;
-                }
-                else if (sTrim.EqualsOrdinal(info.NegativeInfinitySymbol))
-                {
-                    result = NegativeInfinity;
-                }
-                else if (sTrim.EqualsOrdinal(info.NaNSymbol))
-                {
-                    result = NaN;
-                }
-                else
-                {
-                    return false; // We really failed
-                }
-            }
-            return true;
+            return Number.TryParseDouble(s, style, info, out result);
         }
 
         //

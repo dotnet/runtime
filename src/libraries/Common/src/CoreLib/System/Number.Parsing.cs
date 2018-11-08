@@ -252,8 +252,12 @@ namespace System
             const int StateDecimal = 0x0010;
             const int StateCurrency = 0x0020;
 
-            number.Scale = 0;
-            number.Sign = false;
+            Debug.Assert(number.Precision == 0);
+            Debug.Assert(number.Scale == 0);
+            Debug.Assert(number.Sign == false);
+            Debug.Assert(number.HasNonZeroTail == false);
+            Debug.Assert(number.Kind != NumberBufferKind.Unknown);
+
             string decSep;                  // decimal separator from NumberFormatInfo.
             string groupSep;                // group separator from NumberFormatInfo.
             string currSymbol = null;       // currency symbol from NumberFormatInfo.
@@ -327,11 +331,23 @@ namespace System
                         if (digCount < maxDigCount)
                         {
                             number.Digits[digCount++] = ch;
-                            if (ch != '0' || number.Kind == NumberBufferKind.Decimal)
+                            if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
                                 digEnd = digCount;
                             }
                         }
+                        else if (ch != '0')
+                        {
+                            // For decimal and binary floating-point numbers, we only
+                            // need to store digits up to maxDigCount. However, we still
+                            // need to keep track of whether any additional digits past
+                            // maxDigCount were non-zero, as that can impact rounding
+                            // for an input that falls evenly between two representable
+                            // results.
+
+                            number.HasNonZeroTail = true;
+                        }
+
                         if ((state & StateDecimal) == 0)
                         {
                             number.Scale++;
@@ -1576,18 +1592,20 @@ namespace System
 
             if (c >= '5')
             {
-                // If the next digit is 5, round up if the number is odd or any following digit is non-zero
-                if (c == '5' && (low64 & 1) == 0)
+                if ((c == '5') && ((low64 & 1) == 0))
                 {
                     c = *++p;
-                    int count = 20; // Look at the next 20 digits to check to round
-                    while (c == '0' && count != 0)
+
+                    // At this point we should either be at the end of the buffer, or just
+                    // have a single rounding digit left, and the next should be the end
+                    Debug.Assert((c == 0) || (p[1] == 0));
+
+                    if (((c == 0) || c == '0') && !number.HasNonZeroTail)
                     {
-                        c = *++p;
-                        count--;
+                        // When the next digit is 5, the number is even, and all following digits are zero
+                        // we don't need to round.
+                        goto NoRounding;
                     }
-                    if (c == 0 || count == 0)
-                        goto NoRounding;// Do nothing
                 }
 
                 if (++low64 == 0 && ++high == 0)
@@ -1617,9 +1635,9 @@ namespace System
 
         internal static double ParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            if (!TryParseDouble(value, styles, info, out double result, out bool failureIsOverflow))
+            if (!TryParseDouble(value, styles, info, out double result))
             {
-                ThrowOverflowOrFormatException(failureIsOverflow, nameof(SR.Overflow_Double));
+                ThrowOverflowOrFormatException(overflow: false, overflowResourceKey: null);
             }
 
             return result;
@@ -1627,9 +1645,9 @@ namespace System
 
         internal static float ParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            if (!TryParseSingle(value, styles, info, out float result, out bool failureIsOverflow))
+            if (!TryParseSingle(value, styles, info, out float result))
             {
-                ThrowOverflowOrFormatException(failureIsOverflow, nameof(SR.Overflow_Single));
+                ThrowOverflowOrFormatException(overflow: false, overflowResourceKey: null);
             }
 
             return result;
@@ -1657,65 +1675,73 @@ namespace System
             return true;
         }
 
-        internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result, out bool failureIsOverflow)
+        internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
             char* pDigits = stackalloc char[DoubleNumberBufferLength];
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Double, pDigits, DoubleNumberBufferLength);
-
-            result = 0;
-            failureIsOverflow = false;
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
                 ReadOnlySpan<char> valueTrim = value.Trim();
 
-                if (valueTrim.EqualsOrdinal(info.PositiveInfinitySymbol))
+                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                 {
                     result = double.PositiveInfinity;
                 }
-                else if (valueTrim.EqualsOrdinal(info.NegativeInfinitySymbol))
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
                 {
                     result = double.NegativeInfinity;
                 }
-                else if (valueTrim.EqualsOrdinal(info.NaNSymbol))
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
                     result = double.NaN;
                 }
                 else
                 {
+                    result = 0;
                     return false; // We really failed
                 }
-
-                return true;
             }
-
-            if (!TryNumberToDouble(ref number, ref result))
+            else
             {
-                failureIsOverflow = true;
-                return false;
+                result = NumberToDouble(ref number);
             }
 
             return true;
         }
 
-        internal static bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result, out bool failureIsOverflow)
+        internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
         {
-            result = 0;
+            char* pDigits = stackalloc char[SingleNumberBufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
 
-            if (!TryParseDouble(value, styles, info, out double doubleResult, out failureIsOverflow))
+            if (!TryStringToNumber(value, styles, ref number, info))
             {
-                return false;
+                ReadOnlySpan<char> valueTrim = value.Trim();
+
+                if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                {
+                    result = float.PositiveInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NegativeInfinitySymbol))
+                {
+                    result = float.NegativeInfinity;
+                }
+                else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = float.NaN;
+                }
+                else
+                {
+                    result = 0;
+                    return false; // We really failed
+                }
+            }
+            else
+            {
+                result = NumberToSingle(ref number);
             }
 
-            float singleResult = (float)(doubleResult);
-
-            if (float.IsInfinity(singleResult) && double.IsFinite(doubleResult))
-            {
-                failureIsOverflow = true;
-                return false;
-            }
-
-            result = singleResult;
             return true;
         }
 
@@ -1723,7 +1749,7 @@ namespace System
         {
             if (!TryStringToNumber(value, styles, ref number, info))
             {
-                ThrowOverflowOrFormatException(overflow: false, null);
+                ThrowOverflowOrFormatException(overflow: false, overflowResourceKey: null);
             }
         }
 
@@ -1797,23 +1823,18 @@ namespace System
                (Exception)new FormatException(SR.Format_InvalidString);
         }
 
-        private static bool TryNumberToDouble(ref NumberBuffer number, ref double value)
+        private static double NumberToDouble(ref NumberBuffer number)
         {
-            double d = NumberToDouble(ref number);
-            if (!double.IsFinite(d))
-            {
-                value = default;
-                return false;
-            }
+            ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
+            double result = BitConverter.Int64BitsToDouble((long)(bits));
+            return number.Sign ? -result : result;
+        }
 
-            if (d == 0.0)
-            {
-                // normalize -0.0 to 0.0
-                d = 0.0;
-            }
-
-            value = d;
-            return true;
+        private static float NumberToSingle(ref NumberBuffer number)
+        {
+            uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
+            float result = BitConverter.Int32BitsToSingle((int)(bits));
+            return number.Sign ? -result : result;
         }
     }
 }
