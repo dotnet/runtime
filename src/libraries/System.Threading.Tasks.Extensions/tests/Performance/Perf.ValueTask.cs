@@ -4,7 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks.Sources;
-using System.Threading.Tasks.Tests;
+using System.Threading.Tasks.Sources.Tests;
 using Microsoft.Xunit.Performance;
 using Xunit;
 

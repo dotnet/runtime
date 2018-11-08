@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks.Sources.Tests;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
