@@ -2,9 +2,10 @@ parameters:
   helixSource: 'undefined_defaulted_in_telemetry.yml'
   helixType: 'undefined_defaulted_in_telemetry.yml'
   buildConfig: ''
+  runAsPublic: false
 
 steps:
-- ${{ if and(not(eq(variables['System.TeamProject'], 'public')), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
+- ${{ if and(eq(parameters.runAsPublic, 'false'), not(eq(variables['System.TeamProject'], 'public'))) }}:
   - task: AzureKeyVault@1
     inputs:
       azureSubscription: 'HelixProd_KeyVault'
