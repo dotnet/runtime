@@ -3465,6 +3465,12 @@
         "1.4.4.0": "1.7.0"
       }
     },
+    "System.Reflection.MetadataLoadContext": {
+        "InboxOn": {},
+        "AssemblyVersionInPackageVersion": {
+            "4.0.0.0": "4.6.0"
+        }
+    },
     "System.Reflection.Primitives": {
       "StableVersions": [
         "4.0.0",
