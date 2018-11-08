@@ -1,0 +1,178 @@
+resources:
+  repositories:
+  # shared library repository
+  - repository: arcade
+    type: github
+    endpoint: DotNet-Bot GitHub Connection
+    name: dotnet/arcade
+    ref: refs/heads/master
+
+variables:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+
+jobs:
+
+##   The following is the matrix of test runs that we have. This is
+##   duplicated for each os/arch combination in platform-matrix.yml.
+
+##
+##   Product build       Test build              Test run
+##   (Azure DevOps)      (Azure DevOps)          (helix)
+##
+##   ###########################################################################################
+##
+##   Debug
+##
+##   Checked ----------> Pri0 -----------------> plain runtests
+##           |
+##           \---------> Pri1 -----------------> plain runtests
+##           |                \----------------> jitstress
+##           |                \----------------> gcstress
+##           |                \----------------> maybe more (dynamically selected runtest modes)
+##           |
+##           \---------> Pri1 crossgen --------> plain runtests
+##                                     \-------> jitstress
+##                                     \-------> gcstress
+##                                     \-------> maybe more (dynamically selected runtest modes)
+##
+##   Release ----------> Pri1 -----------------> plain runtests
+##           |
+##           \---------> Pri1 crossgen --------> plain runtests
+##
+##
+
+## Each build or test job is defined in Azure DevOps, and will show
+## up in the UI in the order in which they are defined here. The
+## build and test build job matrix is defined statically, but
+## queue-time inputs can be used to control whether a job executes
+## (used to select which jobs run in ci vs for official builds), or
+## to select test modes. This should eventually be used to enable
+## requesting specific test runs from pull requests.
+
+
+##
+## Templates used to define jobs:
+## Please update this if the factoring changes.
+##
+## This file defines the set of jobs in a platform-agnostic manner,
+## using the platform-matrix.yml template. This will create one job
+## for each platform from the passed-in jobTemplate (either a build
+## job or a test job). The build-job.yml and test-job.yml templates
+## use xplat-job.yml to handle some of the common logic for
+## abstracting over platforms. Finally, xplat-job.yml uses the arcade
+## base.yml job template, which sets up telemetry and signing support.
+
+## azure-pipelines.yml -> platform-matrix.yml -------> build-job.yml -------> xplat-job.yml -> base.yml
+##                                            |  (passed-in jobTemplate)  |                    (arcade)
+##                                            \------> test-job.yml ------/
+
+
+
+#
+# Debug build
+#
+
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: debug
+
+#
+# Checked build
+#
+
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+
+#
+# Release build
+#
+
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+
+#
+# Checked test builds
+#
+
+# Pri0
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    jobParameters:
+      priority: 0
+
+# Pri1
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    jobParameters:
+      priority: 1
+      scenarios: 'normal;jitstress2'
+
+# Pri1 crossgen
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    jobParameters:
+      priority: 1
+      crossgen: true
+      scenarios: 'normal;jitstress2'
+
+#
+# Release test builds
+#
+
+# Pri1
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: release
+    jobParameters:
+      priority: 1
+
+# Pri1 crossgen
+- template: eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: release
+    jobParameters:
+      priority: 1
+      crossgen: true
+
+
+# Publish build information to Build Assets Registry
+
+# This job gathers build assets from the pipeline (from each official
+# product build job), and publishes them to the build assets
+# registry. Its dependencies should be updated to include all of the
+# official builds if we add more platform/arch combinations.
+
+# TODO: Enable publish to BAR
+#- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+#  - template: /eng/common/templates/phases/publish-build-assets.yml@arcade
+#- phase: publish_bar
+#  displayName: publish to BAR (empty currently)
+#  queue:
+#    name: Hosted VS2017
+#  dependsOn:
+#  - build_Linux_x64_release
+#  - build_OSX_x64_release
+#  - build_Windows_NT_x64_release
+#  - build_Windows_NT_x86_release
+#  - build_Windows_NT_arm_release
+#  - build_Windows_NT_arm64_release
+  # TODO: enable these builds
+  #  - build_rhel_x64_release
+  #  - build_alpine_x64_release
+  #  - build_crossbuild_arm_release
+  #  - build_crossbuild_arm64_release
+

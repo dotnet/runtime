@@ -1,23 +1,26 @@
 <Project ToolsVersion="12.0" DefaultTargets="ArchiveAll" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(ToolsDir)\net46\Microsoft.DotNet.Build.Tasks.dll"/>
-  
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(ToolsDir)\net46\Microsoft.DotNet.Build.Tasks.dll"
+             Condition=" '$(MSBuildRuntimeType)' != 'Core' " />
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(ToolsDir)\Microsoft.DotNet.Build.Tasks.dll"
+             Condition=" '$(MSBuildRuntimeType)' == 'Core' " />
+
   <Import Project="dir.props" />
   <Import Project="..\dir.props" />
 
   <PropertyGroup>
     <DiscoveryDirectory>$(TestWorkingDir)</DiscoveryDirectory>
-    <CoreRootDir>$(CORE_ROOT)</CoreRootDir>
     <CoreRootName>Core_Root_$(RuntimeID)</CoreRootName>
+    <UsePython Condition=" '$(UsePython)' == '' ">false</UsePython>
   </PropertyGroup>
 
   <ItemGroup>
-    <TestCmds Include="$(DiscoveryDirectory)\**\*.cmd" ></TestCmds>
     <XunitDlls Include="$(DiscoveryDirectory)\**\*.XUnitWrapper.dll" ></XunitDlls>
     <RequiresSigningFilesToDelete Include="$(DiscoveryDirectory)\**\*.requires_signing" />
   </ItemGroup>
 
   <!-- Build the platform-specific wrapper to run an individual xunit wrapper -->
+  <!-- We should remove the generated wrappers once we have transitioned our official build -->
 
   <Target Name="GenerateWrapperExecutables"
     Inputs="@(XunitDlls)"
@@ -32,15 +35,26 @@
              Targets="GenerateWrapperSh" />
   </Target>
 
+  <!-- Copy the wrapper script to the xunit directory -->
+  <Target Name="CopyWrapperScript"
+    Inputs="@(XunitDlls)"
+    Outputs="$(TestWorkingDir)*\runtest_helix.py" >
+
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)\runtest_helix.py"
+          DestinationFolder="%(XunitDlls.RootDir)%(XunitDlls.Directory)" />
+
+  </Target>
+
   <!-- Zip each top-level test folder to send to Helix -->
 
   <Target Name="ArchiveTests"
     Inputs="@(XunitDlls)"
     Outputs="$(TestWorkingDir)archive\**" >
-    
+
     <Copy SourceFiles="$(CORE_ROOT)\xunit.console.dll"
           DestinationFolder="%(XunitDlls.RootDir)%(XunitDlls.Directory)"
-    />
+          Condition=" '$(UsePython)' == 'false' " />
+
     <Message Text="Deleting '.requires_signing' files to avoid file name lengths exceeding MAX_PATH" Importance="Low" />
     <Delete Files="@(RequiresSigningFilesToDelete)" />
     <MSBuild Projects="helixprep.proj"
@@ -52,10 +66,10 @@
   <!-- Zip Core_Root & Packages payload to send to Helix -->
 
   <Target Name="ArchiveCoreRoot"
-    Inputs="$(CoreRootDir)"
+    Inputs="$(CORE_ROOT)"
     Outputs="$(TestWorkingDir)archive\Core_Root" >
     <MSBuild Projects="helixprep.proj"
-             Properties="BuildPath=$(CoreRootDir);ProjectName=$(CoreRootName);BuildArchiveDir=$(TestWorkingDir)archive\Core_Root\"
+             Properties="BuildPath=$(CORE_ROOT);ProjectName=$(CoreRootName);BuildArchiveDir=$(TestWorkingDir)archive\Core_Root\"
              Targets="ArchiveBuild" />
 
     <!-- Make dummy packages.zip to upload to Helix -->
@@ -180,8 +194,13 @@ EXIT /B %ERRORLEVEL%
   <!-- Default target to run - builds executables & archives everything needed for Helix run -->
 
   <Target Name="ArchiveAll" >
+    <PropertyGroup>
+      <_ArchiveTargets Condition=" '$(UsePython)' == 'false' ">GenerateWrapperExecutables</_ArchiveTargets>
+      <_ArchiveTargets Condition=" '$(UsePython)' == 'true' ">CopyWrapperScript</_ArchiveTargets>
+      <_ArchiveTargets>$(_ArchiveTargets);ArchiveTests;ArchiveCoreRoot</_ArchiveTargets>
+    </PropertyGroup>
     <MSBuild Projects="helixprep.proj"
-             Targets="GenerateWrapperExecutables;ArchiveTests;ArchiveCoreRoot" />
+             Targets="$(_ArchiveTargets)" />
   </Target>
 
 </Project>

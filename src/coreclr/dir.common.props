@@ -22,7 +22,9 @@
     <BuildType Condition="'$(__BuildType)' == 'checked'">Checked</BuildType>
 
     <BuildOS>$(__BuildOS)</BuildOS>
-    <BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Windows))' == 'true'">Windows_NT</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(Linux))' == 'true'">Linux</BuildOS>
+    <BuildOS Condition="'$(__BuildOS)' == '' And '$([MSBuild]::IsOSPlatform(OSX))' == 'true'">OSX</BuildOS>
 
     <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
