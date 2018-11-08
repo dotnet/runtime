@@ -29,8 +29,9 @@ namespace System
 
             public NumberBuffer(NumberBufferKind kind, char* digits, int digitsLength)
             {
-                Debug.Assert(Enum.IsDefined(typeof(NumberBufferKind), kind));
-                Debug.Assert(kind != NumberBufferKind.Unknown);
+                Debug.Assert(kind == NumberBufferKind.Integer
+                    || kind == NumberBufferKind.Decimal
+                    || kind == NumberBufferKind.FloatingPoint);
                 Debug.Assert(digits != null);
                 Debug.Assert(digitsLength > 0);
 
