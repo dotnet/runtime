@@ -870,7 +870,7 @@ namespace
         virtual ULONG STDMETHODCALLTYPE Release();
         COM_METHOD BeforeGarbageCollection(ICorDebugProcess* pProcess);
         COM_METHOD AfterGarbageCollection(ICorDebugProcess* pProcess);
-        COM_METHOD DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread);
+        COM_METHOD DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread, BYTE* pContext, ULONG32 contextSize);
     private:
         // not implemented
         DefaultManagedCallback4(const DefaultManagedCallback4&);
@@ -944,7 +944,7 @@ namespace
     }
 
     HRESULT
-        DefaultManagedCallback4::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread)
+        DefaultManagedCallback4::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread, BYTE* pContext, ULONG32 contextSize)
     {
         //
         // Just ignore and continue the process.
