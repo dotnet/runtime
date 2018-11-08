@@ -3520,8 +3520,7 @@ ValueNum ValueNumStore::VNApplySelectors(ValueNumKind  vnk,
             printf("  VNApplySelectors:\n");
             const char* modName;
             const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
-            printf("    VNForHandle(Fseq[%s]) is " FMT_VN ", fieldType is %s", fldName, fldHndVN,
-                   varTypeName(fieldType));
+            printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s", fldName, fldHndVN, varTypeName(fieldType));
             if (varTypeIsStruct(fieldType))
             {
                 printf(", size = %d", structSize);
@@ -3662,24 +3661,46 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         }
 
         // Otherwise, fldHnd is a real field handle.
-        CORINFO_FIELD_HANDLE fldHnd = fieldSeq->m_fieldHnd;
+        CORINFO_FIELD_HANDLE fldHnd   = fieldSeq->m_fieldHnd;
+        ValueNum             fldHndVN = VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
         noway_assert(fldHnd != nullptr);
         CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fldHnd);
         var_types   fieldType = JITtype2varType(fieldCit);
 
-        ValueNum fieldHndVN = VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
         ValueNum elemAfter;
         if (fieldSeq->m_next)
         {
-            ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fieldHndVN);
+#ifdef DEBUG
+            if (m_pComp->verbose)
+            {
+                const char* modName;
+                const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
+                printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s\n", fldName, fldHndVN,
+                       varTypeName(fieldType));
+            }
+#endif
+            ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fldHndVN);
             elemAfter        = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->m_next, elem, indType, block);
         }
         else
         {
+#ifdef DEBUG
+            if (m_pComp->verbose)
+            {
+                if (fieldSeq->m_next == nullptr)
+                {
+                    printf("  VNApplySelectorsAssign:\n");
+                }
+                const char* modName;
+                const char* fldName = m_pComp->eeGetFieldName(fldHnd, &modName);
+                printf("    VNForHandle(%s) is " FMT_VN ", fieldType is %s\n", fldName, fldHndVN,
+                       varTypeName(fieldType));
+            }
+#endif
             elemAfter = VNApplySelectorsAssignTypeCoerce(elem, indType, block);
         }
 
-        ValueNum newMap = VNForMapStore(fieldType, map, fieldHndVN, elemAfter);
+        ValueNum newMap = VNForMapStore(fieldType, map, fldHndVN, elemAfter);
         return newMap;
     }
 }
@@ -3726,13 +3747,9 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
 #ifdef DEBUG
         if (m_pComp->verbose)
         {
-            printf("  fieldHnd " FMT_VN " is ", fieldHndVN);
-            vnDump(m_pComp, fieldHndVN);
-            printf("\n");
-
-            printf("  fieldSeq " FMT_VN " is ", fieldSeqVN);
+            printf("    FieldSeq");
             vnDump(m_pComp, fieldSeqVN);
-            printf("\n");
+            printf(" is " FMT_VN "\n", fieldSeqVN);
         }
 #endif
 
@@ -3804,7 +3821,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
         FieldSeqNode* fldSeq = opB->gtIntCon.gtFieldSeq;
         if (fldSeq != nullptr)
         {
-            return ExtendPtrVN(opA, opB->gtIntCon.gtFieldSeq);
+            return ExtendPtrVN(opA, fldSeq);
         }
     }
     return NoVN;
@@ -6109,7 +6126,7 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 {
                     const char* modName;
                     const char* fldName = eeGetFieldName(fldHnd, &modName);
-                    printf("     VNForHandle(Fseq[%s]) is " FMT_VN "\n", fldName, fldHndVN);
+                    printf("     VNForHandle(%s) is " FMT_VN "\n", fldName, fldHndVN);
                 }
 #endif // DEBUG
 
@@ -6701,19 +6718,27 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 GenTreeLclVarCommon* lcl    = tree->AsLclVarCommon();
                 unsigned             lclNum = lcl->gtLclNum;
+                LclVarDsc*           varDsc = &lvaTable[lclNum];
 
+                // Do we have a Use (read) of the LclVar?
+                //
                 if ((lcl->gtFlags & GTF_VAR_DEF) == 0 ||
                     (lcl->gtFlags & GTF_VAR_USEASG)) // If it is a "pure" def, will handled as part of the assignment.
                 {
-                    LclVarDsc* varDsc = &lvaTable[lcl->gtLclNum];
+                    bool          generateUniqueVN = false;
+                    FieldSeqNode* zeroOffsetFldSeq = nullptr;
+
+                    // When we have a TYP_BYREF LclVar it can have a zero offset field sequence that needs to be added
+                    if (typ == TYP_BYREF)
+                    {
+                        GetZeroOffsetFieldMap()->Lookup(tree, &zeroOffsetFldSeq);
+                    }
+
                     if (varDsc->lvPromoted && varDsc->lvFieldCnt == 1)
                     {
                         // If the promoted var has only one field var, treat like a use of the field var.
                         lclNum = varDsc->lvFieldLclStart;
                     }
-
-                    // Initialize to the undefined value, so we know whether we hit any of the cases here.
-                    lcl->gtVNPair = ValueNumPair();
 
                     if (lcl->gtSsaNum == SsaConfig::RESERVED_SSA_NUM)
                     {
@@ -6731,18 +6756,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         else
                         {
                             // Assign odd cases a new, unique, VN.
-                            lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                            generateUniqueVN = true;
                         }
                     }
                     else
                     {
-                        var_types    varType        = varDsc->TypeGet();
                         ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->gtSsaNum)->m_vnPair;
 
                         // Check for mismatched LclVar size
                         //
                         unsigned typSize = genTypeSize(genActualType(typ));
-                        unsigned varSize = genTypeSize(genActualType(varType));
+                        unsigned varSize = genTypeSize(genActualType(varDsc->TypeGet()));
 
                         if (typSize == varSize)
                         {
@@ -6755,54 +6779,76 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 // the indirection is reading less that the whole LclVar
                                 // create a new VN that represent the partial value
                                 //
-                                ValueNumPair partialLclVarVNP = vnStore->VNPairForCast(wholeLclVarVNP, typ, varType);
-                                lcl->gtVNPair                 = partialLclVarVNP;
+                                ValueNumPair partialLclVarVNP =
+                                    vnStore->VNPairForCast(wholeLclVarVNP, typ, varDsc->TypeGet());
+                                lcl->gtVNPair = partialLclVarVNP;
                             }
                             else
                             {
                                 assert(typSize > varSize);
                                 // the indirection is reading beyond the end of the field
                                 //
-                                lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, typ)); // return a new unique value
-                                                                                           // number
+                                generateUniqueVN = true;
                             }
                         }
                     }
-                    // Temporary, to make progress.
-                    // TODO-CQ: This should become an assert again...
-                    if (lcl->gtVNPair.GetLiberal() == ValueNumStore::NoVN)
+
+                    if (!generateUniqueVN)
                     {
-                        assert(lcl->gtVNPair.GetConservative() == ValueNumStore::NoVN);
+                        // There are a couple of cases where we haven't assigned a valid value number to 'lcl'
+                        //
+                        if (lcl->gtVNPair.GetLiberal() == ValueNumStore::NoVN)
+                        {
+                            // So far, we know about two of these cases:
+                            // Case 1) We have a local var who has never been defined but it's seen as a use.
+                            //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
+                            //         take the address of the variable, this doesn't mean it's a use nor we have to
+                            //         initialize it, so in this very rare case, we fabricate a value number.
+                            // Case 2) Local variables that represent structs which are assigned using CpBlk.
+                            //
+                            // Make sure we have either case 1 or case 2
+                            //
+                            GenTree* nextNode = lcl->gtNext;
+                            assert((nextNode->gtOper == GT_ADDR && nextNode->gtOp.gtOp1 == lcl) ||
+                                   varTypeIsStruct(lcl->TypeGet()));
 
-                        // We don't want to fabricate arbitrary value numbers to things we can't reason about.
-                        // So far, we know about two of these cases:
-                        // Case 1) We have a local var who has never been defined but it's seen as a use.
-                        //         This is the case of storeIndir(addr(lclvar)) = expr.  In this case since we only
-                        //         take the address of the variable, this doesn't mean it's a use nor we have to
-                        //         initialize it, so in this very rare case, we fabricate a value number.
-                        // Case 2) Local variables that represent structs which are assigned using CpBlk.
-                        GenTree* nextNode = lcl->gtNext;
-                        assert((nextNode->gtOper == GT_ADDR && nextNode->gtOp.gtOp1 == lcl) ||
-                               varTypeIsStruct(lcl->TypeGet()));
-                        lcl->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                            // We will assign a unique value number for these
+                            //
+                            generateUniqueVN = true;
+                        }
                     }
-                    assert(lcl->gtVNPair.BothDefined());
-                }
 
-                // TODO-Review: For the short term, we have a workaround for copyblk/initblk.  Those that use
-                // addrSpillTemp will have a statement like "addrSpillTemp = addr(local)."  If we previously decided
-                // that this block operation defines the local, we will have labeled the "local" node as a DEF
-                // This flag propagates to the "local" on the RHS.  So we'll assume that this is correct,
-                // and treat it as a def (to a new, unique VN).
+                    if (!generateUniqueVN && (zeroOffsetFldSeq != nullptr))
+                    {
+                        ValueNum addrExtended = vnStore->ExtendPtrVN(lcl, zeroOffsetFldSeq);
+                        if (addrExtended != ValueNumStore::NoVN)
+                        {
+                            lcl->gtVNPair.SetBoth(addrExtended);
+                        }
+                    }
+
+                    if (generateUniqueVN)
+                    {
+                        ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
+                        lcl->gtVNPair.SetBoth(uniqVN);
+                    }
+                }
                 else if ((lcl->gtFlags & GTF_VAR_DEF) != 0)
                 {
-                    LclVarDsc* varDsc = &lvaTable[lcl->gtLclNum];
+                    // We have a Def (write) of the LclVar
+
+                    // TODO-Review: For the short term, we have a workaround for copyblk/initblk.  Those that use
+                    // addrSpillTemp will have a statement like "addrSpillTemp = addr(local)."  If we previously decided
+                    // that this block operation defines the local, we will have labeled the "local" node as a DEF
+                    // This flag propagates to the "local" on the RHS.  So we'll assume that this is correct,
+                    // and treat it as a def (to a new, unique VN).
+                    //
                     if (lcl->gtSsaNum != SsaConfig::RESERVED_SSA_NUM)
                     {
-                        lvaTable[lclNum]
-                            .GetPerSsaData(lcl->gtSsaNum)
-                            ->m_vnPair.SetBoth(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
+                        ValueNum uniqVN = vnStore->VNForExpr(compCurBB, lcl->TypeGet());
+                        varDsc->GetPerSsaData(lcl->gtSsaNum)->m_vnPair.SetBoth(uniqVN);
                     }
+
                     lcl->gtVNPair = ValueNumPair(); // Avoid confusion -- we don't set the VN of a lcl being defined.
                 }
             }
@@ -7298,11 +7344,14 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             ValueNum      inxVN  = funcApp.m_args[2];
                             FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[3]);
 
-                            // Does the child of the GT_IND 'arg' have an associated zero-offset field sequence?
-                            FieldSeqNode* addrFieldSeq = nullptr;
-                            if (GetZeroOffsetFieldMap()->Lookup(arg, &addrFieldSeq))
+                            if (arg->gtOper != GT_LCL_VAR)
                             {
-                                fldSeq = GetFieldSeqStore()->Append(addrFieldSeq, fldSeq);
+                                // Does the child of the GT_IND 'arg' have an associated zero-offset field sequence?
+                                FieldSeqNode* addrFieldSeq = nullptr;
+                                if (GetZeroOffsetFieldMap()->Lookup(arg, &addrFieldSeq))
+                                {
+                                    fldSeq = GetFieldSeqStore()->Append(addrFieldSeq, fldSeq);
+                                }
                             }
 
 #ifdef DEBUG
@@ -7374,6 +7423,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     assert(staticOffset == nullptr);
                                 }
 #endif // DEBUG
+
                                 // Get the first (instance or static) field from field seq.  GcHeap[field] will yield
                                 // the "field map".
                                 if (fldSeq->IsFirstElemFieldSeq())
@@ -7681,6 +7731,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // Get the array element type equivalence class rep.
                 CORINFO_CLASS_HANDLE elemTypeEq   = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
                 ValueNum             elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemTypeEq), GTF_ICON_CLASS_HDL);
+                JITDUMP("    VNForHandle(arrElemType: %s) is " FMT_VN "\n",
+                        (arrInfo.m_elemType == TYP_STRUCT) ? eeGetClassName(arrInfo.m_elemStructType)
+                                                           : varTypeName(arrInfo.m_elemType),
+                        elemTypeEqVN)
 
                 // We take the "VNNormalValue"s here, because if either has exceptional outcomes, they will be captured
                 // as part of the value of the composite "addr" operation...
@@ -7711,6 +7765,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                 }
 #endif // DEBUG
+
                 // We now need to retrieve the value number for the array element value
                 // and give this value number to the GT_IND node 'tree'
                 // We do this whenever we have an rvalue, but we don't do it for a
@@ -7800,6 +7855,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             assert(staticOffset == nullptr);
                         }
 #endif // DEBUG
+
                         // Get a field sequence for just the first field in the sequence
                         //
                         FieldSeqNode* firstFieldOnly = GetFieldSeqStore()->CreateSingleton(fldSeq2->m_fieldHnd);
@@ -8361,6 +8417,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         GenTree* indirectCellAddress = call->fgArgInfo->GetArgNode(0);
         assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->gtRegNum == REG_R2R_INDIRECT_PARAM);
 #endif // DEBUG
+
         // For ARM indirectCellAddress is consumed by the call itself, so it should have added as an implicit argument
         // in morph. So we do not need to use EntryPointAddrAsArg0, because arg0 is already an entry point addr.
         useEntryPointAddrAsArg0 = false;
