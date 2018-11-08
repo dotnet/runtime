@@ -1390,6 +1390,14 @@
     ]
   },
   {
+    "Name": "System.Reflection.MetadataLoadContext",
+    "Description": "Provides read-only reflection on assemblies in an isolated context with support for assemblies that have different architectures and runtimes.",
+    "CommonTypes": [
+        "System.Reflection.MetadataLoadContext",
+        "System.Reflection.MetadataAssemblyResolver"
+    ]
+  },
+  {
     "Name": "System.Reflection.Primitives",
     "Description": "Provides common enumerations for reflection-based libraries.",
     "CommonTypes": [
