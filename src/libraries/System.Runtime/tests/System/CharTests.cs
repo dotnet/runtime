@@ -71,7 +71,6 @@ namespace System.Tests
         {
             yield return new object[] { "\uD800\uDC00", 0, 0x10000 };
             yield return new object[] { "\uDBBF\uDFFF", 0, 0xFFFFF };
-            yield return new object[] { "\uDBBF\uDFFF", 0, 0xFFFFF };
             yield return new object[] { "\uDBFF\uDC00", 0, 0x10FC00 };
             yield return new object[] { "\uDBFF\uDFFF", 0, 0x10FFFF };
             yield return new object[] { "\u0000\u0001", 0, 0 };
@@ -118,7 +117,6 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ConvertToUtf32_Char_Char_TestData()
         {
-            yield return new object[] { '\uD800', '\uDC00', 0x10000 };
             yield return new object[] { '\uD800', '\uDC00', 0x10000 };
             yield return new object[] { '\uD800', '\uDFFF', 0x103FF };
             yield return new object[] { '\uDBBF', '\uDFFF', 0xFFFFF };
