@@ -625,6 +625,38 @@ T ValueNumStore::EvalOpSpecialized(VNFunc vnf, T v0)
             case GT_NOT:
                 return ~v0;
 
+            case GT_BSWAP16:
+            {
+                UINT16 v0_unsigned = UINT16(v0);
+
+                v0_unsigned = ((v0_unsigned >> 8) & 0xFF) | ((v0_unsigned << 8) & 0xFF00);
+                return T(v0_unsigned);
+            }
+
+            case GT_BSWAP:
+                if (sizeof(T) == 4)
+                {
+                    UINT32 v0_unsigned = UINT32(v0);
+
+                    v0_unsigned = ((v0_unsigned >> 24) & 0xFF) | ((v0_unsigned >> 8) & 0xFF00) |
+                                  ((v0_unsigned << 8) & 0xFF0000) | ((v0_unsigned << 24) & 0xFF000000);
+                    return T(v0_unsigned);
+                }
+                else if (sizeof(T) == 8)
+                {
+                    UINT64 v0_unsigned = UINT64(v0);
+
+                    v0_unsigned = ((v0_unsigned >> 56) & 0xFF) | ((v0_unsigned >> 40) & 0xFF00) |
+                                  ((v0_unsigned >> 24) & 0xFF0000) | ((v0_unsigned >> 8) & 0xFF000000) |
+                                  ((v0_unsigned << 8) & 0xFF00000000) | ((v0_unsigned << 24) & 0xFF0000000000) |
+                                  ((v0_unsigned << 40) & 0xFF000000000000) | ((v0_unsigned << 56) & 0xFF00000000000000);
+                    return T(v0_unsigned);
+                }
+                else
+                {
+                    break; // unknown primitive
+                }
+
             default:
                 break;
         }
