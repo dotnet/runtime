@@ -6112,7 +6112,6 @@ void Debugger::SendDataBreakpoint(Thread *thread, CONTEXT *context,
 
     // Send a breakpoint event to the Right Side
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
-    memcpy(&(ipce->DataBreakpointData.context), context, sizeof(CONTEXT));
     InitIPCEvent(ipce,
         DB_IPCE_DATA_BREAKPOINT,
         thread,
