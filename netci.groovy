@@ -2261,12 +2261,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${arch} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath}"
 
                                 // Archive and process (only) the test results
-                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
-                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
+                                Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
 
                                 //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
                                 Utilities.addArchival(newJob, "SetStressModes.bat", "", true, false)
-                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**", "", true, false)
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/testhost/**", "", true, false)
                             }
                         }
                         else if (isGcReliabilityFramework(scenario)) {
@@ -2346,8 +2346,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "python -u %WORKSPACE%\\tests\\scripts\\run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${envScriptPath} -no_run_tests"
 
                         // Zip up the CoreFx runtime and tests. We don't need the CoreCLR binaries; they have been copied to the CoreFX tree.
-                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}', '${workspaceRelativeFxRootWin}\\fxruntime.zip')\"";
-                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\bin\\tests', '${workspaceRelativeFxRootWin}\\fxtests.zip')\"";
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\artifacts\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}', '${workspaceRelativeFxRootWin}\\fxruntime.zip')\"";
+                        buildCommands += "powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::CreateFromDirectory('${workspaceRelativeFxRootWin}\\artifacts\\bin\\tests', '${workspaceRelativeFxRootWin}\\fxtests.zip')\"";
 
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxruntime.zip")
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxtests.zip")
@@ -2476,8 +2476,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${scriptFileName}"
 
                             // Archive and process (only) the test results
-                            Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
-                            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+                            Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
+                            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/artifacts/bin/**/testResults.xml")
                         }
                     }
                     break
@@ -2548,8 +2548,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "${dockerCmd}python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${scriptFileName} -no_run_tests"
 
                         // Docker creates files with root permission, so we need to zip in docker also, or else we'll get permission errors.
-                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeFxRootLinux}/fxruntime.zip ${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture}"
-                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeFxRootLinux}/fxtests.zip ${workspaceRelativeFxRootLinux}/bin/tests"
+                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeFxRootLinux}/fxruntime.zip ${workspaceRelativeFxRootLinux}/artifacts/bin/testhost/netcoreapp-Linux-Release-${architecture}"
+                        buildCommands += "${dockerCmd}zip -r ${workspaceRelativeFxRootLinux}/fxtests.zip ${workspaceRelativeFxRootLinux}/artifacts/bin/tests"
 
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxruntime.zip")
                         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/fxtests.zip")
@@ -3065,14 +3065,14 @@ def static CreateWindowsArmTestJob(def dslFactory, def project, def architecture
                 assert architecture == 'arm' || architecture == 'arm64'
 
                 // Unzip CoreFx runtime
-                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxruntime.zip', '_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}')\"")
+                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxruntime.zip', '_\\fx\\artifacts\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}')\"")
 
                 // Unzip CoreFx tests.
-                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxtests.zip', '_\\fx\\bin\\tests')\"")
+                batchFile("powershell -NoProfile -Command \"Add-Type -Assembly 'System.IO.Compression.FileSystem'; [System.IO.Compression.ZipFile]::ExtractToDirectory('_\\fx\\fxtests.zip', '_\\fx\\artifacts\\bin\\tests')\"")
 
                 // Add the script to run the corefx tests
-                def corefx_runtime_path   = "%WORKSPACE%\\_\\fx\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}"
-                def corefx_tests_dir      = "%WORKSPACE%\\_\\fx\\bin\\tests"
+                def corefx_runtime_path   = "%WORKSPACE%\\_\\fx\\artifacts\\bin\\testhost\\netcoreapp-Windows_NT-Release-${architecture}"
+                def corefx_tests_dir      = "%WORKSPACE%\\_\\fx\\artifacts\\bin\\tests"
                 def corefx_exclusion_file = "%WORKSPACE%\\tests\\${architecture}\\corefx_test_exclusions.txt"
                 batchFile("call %WORKSPACE%\\tests\\scripts\\run-corefx-tests.bat ${corefx_runtime_path} ${corefx_tests_dir} ${corefx_exclusion_file} ${architecture}")
 
@@ -3450,7 +3450,7 @@ python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci
             }
             else if (doCoreFxTesting) {
                 shell("""\
-\${WORKSPACE}/tests/scripts/run-corefx-tests.sh --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/bin --configurationGroup Release""")
+\${WORKSPACE}/tests/scripts/run-corefx-tests.sh --test-exclude-file \${WORKSPACE}/tests/${architecture}/corefx_linux_test_exclusions.txt --runtime \${WORKSPACE}/${workspaceRelativeFxRootLinux}/artifacts/bin/testhost/netcoreapp-Linux-Release-${architecture} --arch ${architecture} --corefx-tests \${WORKSPACE}/${workspaceRelativeFxRootLinux}/artifacts/bin --configurationGroup Release""")
             }
             else {
                 def runScript = "${dockerCmd}./tests/runtest.sh"
@@ -3491,7 +3491,7 @@ ${runScript} \\
         Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.zip")
     }
     else if (doCoreFxTesting) {
-        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+        Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/artifacts/bin/**/testResults.xml")
         if ((os == "Ubuntu") && (architecture == 'arm')) {
             // We have a problem with the xunit plug-in, where it is consistently failing on Ubuntu arm32 test result uploading with this error:
             //
@@ -3501,7 +3501,7 @@ ${runScript} \\
             // This is tracked by: https://github.com/dotnet/coreclr/issues/19447.
         }
         else {
-            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/bin/**/testResults.xml")
+            Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRootLinux}/artifacts/bin/**/testResults.xml")
         }
     }
     else {
