@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text;
 using Internal.Runtime.CompilerServices;
 
 namespace System
@@ -20,33 +21,95 @@ namespace System
 
         internal unsafe ref struct NumberBuffer
         {
-            public int Precision;
+            public int DigitsCount;
             public int Scale;
-            public bool Sign;
+            public bool IsNegative;
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
-            public Span<char> Digits;
+            public Span<byte> Digits;
 
-            public NumberBuffer(NumberBufferKind kind, char* digits, int digitsLength)
+            public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength)
             {
-                Debug.Assert(kind == NumberBufferKind.Integer
-                    || kind == NumberBufferKind.Decimal
-                    || kind == NumberBufferKind.FloatingPoint);
                 Debug.Assert(digits != null);
                 Debug.Assert(digitsLength > 0);
 
-                Precision = 0;
+                DigitsCount = 0;
                 Scale = 0;
-                Sign = false;
+                IsNegative = false;
                 HasNonZeroTail = false;
                 Kind = kind;
-                Digits = new Span<char>(digits, digitsLength);
+                Digits = new Span<byte>(digits, digitsLength);
+
+#if DEBUG
+                Digits.Fill(0xCC);
+#endif
+
+                Digits[0] = (byte)('\0');
+                CheckConsistency();
             }
 
-            public char* GetDigitsPointer()
+            [Conditional("DEBUG")]
+            public void CheckConsistency()
+            {
+#if DEBUG
+                Debug.Assert((Kind == NumberBufferKind.Integer) || (Kind == NumberBufferKind.Decimal) || (Kind == NumberBufferKind.FloatingPoint));
+                Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in a Number");
+
+                int numDigits;
+                for (numDigits = 0; numDigits < Digits.Length; numDigits++)
+                {
+                    byte digit = Digits[numDigits];
+
+                    if (digit == 0)
+                    {
+                        break;
+                    }
+
+                    Debug.Assert((digit >= '0') && (digit <= '9'), "Unexpected character found in Number");
+                }
+
+                Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");
+                Debug.Assert(numDigits < Digits.Length, "Null terminator not found in Number");
+#endif // DEBUG
+            }
+
+            public byte* GetDigitsPointer()
             {
                 // This is safe to do since we are a ref struct
-                return (char*)(Unsafe.AsPointer(ref Digits[0]));
+                return (byte*)(Unsafe.AsPointer(ref Digits[0]));
+            }
+
+            //
+            // Code coverage note: This only exists so that Number displays nicely in the VS watch window. So yes, I know it works.
+            //
+            public override string ToString()
+            {
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append('[');
+                sb.Append('"');
+
+                for (int i = 0; i < Digits.Length; i++)
+                {
+                    byte digit = Digits[i];
+
+                    if (digit == 0)
+                    {
+                        break;
+                    }
+
+                    sb.Append((char)(digit));
+                }
+
+                sb.Append('"');
+                sb.Append(", Length = " + DigitsCount);
+                sb.Append(", Scale = " + Scale);
+                sb.Append(", IsNegative = " + IsNegative);
+                sb.Append(", HasNonZeroTail = " + HasNonZeroTail);
+                sb.Append(", Kind = " + Kind);
+                sb.Append(']');
+
+                return sb.ToString();
             }
         }
 
