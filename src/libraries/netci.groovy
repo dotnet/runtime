@@ -323,8 +323,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Set up triggers
                 if (isPR) {
                     // We run Tizen Debug and Linux Release as default PR builds
-                    if (//(osName == "Tizen" && configurationGroup == "Debug") || 
-                        (osName == "Linux" && configurationGroup == "Release")) {
+                    if ((osName == "Tizen" && configurationGroup == "Debug") || (osName == "Linux" && configurationGroup == "Release")) {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build")
                     }
                     else {
