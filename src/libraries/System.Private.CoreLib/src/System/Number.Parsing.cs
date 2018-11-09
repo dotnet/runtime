@@ -54,12 +54,14 @@ namespace System
 
         private static unsafe bool TryNumberToInt32(ref NumberBuffer number, ref int value)
         {
+            number.CheckConsistency();
+
             int i = number.Scale;
-            if (i > Int32Precision || i < number.Precision)
+            if (i > Int32Precision || i < number.DigitsCount)
             {
                 return false;
             }
-            char* p = number.GetDigitsPointer();
+            byte* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             int n = 0;
             while (--i >= 0)
@@ -74,7 +76,7 @@ namespace System
                     n += (*p++ - '0');
                 }
             }
-            if (number.Sign)
+            if (number.IsNegative)
             {
                 n = -n;
                 if (n > 0)
@@ -95,12 +97,14 @@ namespace System
 
         private static unsafe bool TryNumberToInt64(ref NumberBuffer number, ref long value)
         {
+            number.CheckConsistency();
+
             int i = number.Scale;
-            if (i > Int64Precision || i < number.Precision)
+            if (i > Int64Precision || i < number.DigitsCount)
             {
                 return false;
             }
-            char* p = number.GetDigitsPointer();
+            byte* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             long n = 0;
             while (--i >= 0)
@@ -115,7 +119,7 @@ namespace System
                     n += (*p++ - '0');
                 }
             }
-            if (number.Sign)
+            if (number.IsNegative)
             {
                 n = -n;
                 if (n > 0)
@@ -136,12 +140,14 @@ namespace System
 
         private static unsafe bool TryNumberToUInt32(ref NumberBuffer number, ref uint value)
         {
+            number.CheckConsistency();
+
             int i = number.Scale;
-            if (i > UInt32Precision || i < number.Precision || number.Sign)
+            if (i > UInt32Precision || i < number.DigitsCount || number.IsNegative)
             {
                 return false;
             }
-            char* p = number.GetDigitsPointer();
+            byte* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             uint n = 0;
             while (--i >= 0)
@@ -168,12 +174,14 @@ namespace System
 
         private static unsafe bool TryNumberToUInt64(ref NumberBuffer number, ref ulong value)
         {
+            number.CheckConsistency();
+
             int i = number.Scale;
-            if (i > UInt64Precision || i < number.Precision || number.Sign)
+            if (i > UInt64Precision || i < number.DigitsCount || number.IsNegative)
             {
                 return false;
             }
-            char* p = number.GetDigitsPointer();
+            byte* p = number.GetDigitsPointer();
             Debug.Assert(p != null);
             ulong n = 0;
             while (--i >= 0)
@@ -252,11 +260,12 @@ namespace System
             const int StateDecimal = 0x0010;
             const int StateCurrency = 0x0020;
 
-            Debug.Assert(number.Precision == 0);
+            Debug.Assert(number.DigitsCount == 0);
             Debug.Assert(number.Scale == 0);
-            Debug.Assert(number.Sign == false);
+            Debug.Assert(number.IsNegative == false);
             Debug.Assert(number.HasNonZeroTail == false);
-            Debug.Assert(number.Kind != NumberBufferKind.Unknown);
+
+            number.CheckConsistency();
 
             string decSep;                  // decimal separator from NumberFormatInfo.
             string groupSep;                // group separator from NumberFormatInfo.
@@ -290,7 +299,7 @@ namespace System
                 // "-Kr 1231.47" is legal but "- 1231.47" is not.
                 if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && info.NumberNegativePattern != 2)))
                 {
-                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchChars(p, strEnd, info.NegativeSign)) != null && (number.Sign = true))))
+                    if ((((styles & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || ((next = MatchChars(p, strEnd, info.NegativeSign)) != null && (number.IsNegative = true))))
                     {
                         state |= StateSign;
                         p = next - 1;
@@ -298,7 +307,7 @@ namespace System
                     else if (ch == '(' && ((styles & NumberStyles.AllowParentheses) != 0) && ((state & StateSign) == 0))
                     {
                         state |= StateSign | StateParens;
-                        number.Sign = true;
+                        number.IsNegative = true;
                     }
                     else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
                     {
@@ -330,7 +339,7 @@ namespace System
                     {
                         if (digCount < maxDigCount)
                         {
-                            number.Digits[digCount++] = ch;
+                            number.Digits[digCount++] = (byte)(ch);
                             if ((ch != '0') || (number.Kind != NumberBufferKind.Integer))
                             {
                                 digEnd = digCount;
@@ -376,8 +385,8 @@ namespace System
             }
 
             bool negExp = false;
-            number.Precision = digEnd;
-            number.Digits[digEnd] = '\0';
+            number.DigitsCount = digEnd;
+            number.Digits[digEnd] = (byte)('\0');
             if ((state & StateDigits) != 0)
             {
                 if ((ch == 'E' || ch == 'e') && ((styles & NumberStyles.AllowExponent) != 0))
@@ -425,7 +434,7 @@ namespace System
                 {
                     if (!IsWhite(ch) || (styles & NumberStyles.AllowTrailingWhite) == 0)
                     {
-                        if (((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchChars(p, strEnd, info.NegativeSign)) != null) && (number.Sign = true))))
+                        if (((styles & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, strEnd, info.PositiveSign)) != null || (((next = MatchChars(p, strEnd, info.NegativeSign)) != null) && (number.IsNegative = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -456,7 +465,7 @@ namespace System
                         }
                         if ((state & StateDecimal) == 0)
                         {
-                            number.Sign = false;
+                            number.IsNegative = false;
                         }
                     }
                     str = p;
@@ -483,7 +492,7 @@ namespace System
                 return TryParseUInt32HexNumberStyle(value, styles, out Unsafe.As<int, uint>(ref result), ref failureIsOverflow);
             }
 
-            char* pDigits = stackalloc char[Int32NumberBufferLength];
+            byte* pDigits = stackalloc byte[Int32NumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int32NumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
@@ -859,7 +868,7 @@ namespace System
                 return TryParseUInt64HexNumberStyle(value, styles, out Unsafe.As<long, ulong>(ref result), ref failureIsOverflow);
             }
 
-            char* pDigits = stackalloc char[Int64NumberBufferLength];
+            byte* pDigits = stackalloc byte[Int64NumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, Int64NumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
@@ -892,14 +901,13 @@ namespace System
                 return TryParseUInt32HexNumberStyle(value, styles, out result, ref failureIsOverflow);
             }
 
-            char* pDigits = stackalloc char[UInt32NumberBufferLength];
+            byte* pDigits = stackalloc byte[UInt32NumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt32NumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
                 return false;
             }
-
 
             if (!TryNumberToUInt32(ref number, ref result))
             {
@@ -1214,14 +1222,13 @@ namespace System
                 return TryParseUInt64HexNumberStyle(value, styles, out result, ref failureIsOverflow);
             }
 
-            char* pDigits = stackalloc char[UInt64NumberBufferLength];
+            byte* pDigits = stackalloc byte[UInt64NumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, pDigits, UInt64NumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
                 return false;
             }
-
 
             if (!TryNumberToUInt64(ref number, ref result))
             {
@@ -1532,9 +1539,11 @@ namespace System
 
         private static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
-            char* p = number.GetDigitsPointer();
+            number.CheckConsistency();
+
+            byte* p = number.GetDigitsPointer();
             int e = number.Scale;
-            bool sign = number.Sign;
+            bool sign = number.IsNegative;
             uint c = *p;
             if (c == 0)
             {
@@ -1655,7 +1664,7 @@ namespace System
 
         internal static unsafe bool TryParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out decimal result, out bool failureIsOverflow)
         {
-            char* pDigits = stackalloc char[DecimalNumberBufferLength];
+            byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, pDigits, DecimalNumberBufferLength);
 
             result = 0;
@@ -1677,7 +1686,7 @@ namespace System
 
         internal static unsafe bool TryParseDouble(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out double result)
         {
-            char* pDigits = stackalloc char[DoubleNumberBufferLength];
+            byte* pDigits = stackalloc byte[DoubleNumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, DoubleNumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
@@ -1712,7 +1721,7 @@ namespace System
 
         internal static unsafe bool TryParseSingle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out float result)
         {
-            char* pDigits = stackalloc char[SingleNumberBufferLength];
+            byte* pDigits = stackalloc byte[SingleNumberBufferLength];
             NumberBuffer number = new NumberBuffer(NumberBufferKind.FloatingPoint, pDigits, SingleNumberBufferLength);
 
             if (!TryStringToNumber(value, styles, ref number, info))
@@ -1762,10 +1771,12 @@ namespace System
                 if (!TryParseNumber(ref p, p + value.Length, styles, ref number, info)
                     || (p - stringPointer < value.Length && !TrailingZeros(value, (int)(p - stringPointer))))
                 {
+                    number.CheckConsistency();
                     return false;
                 }
             }
 
+            number.CheckConsistency();
             return true;
         }
 
@@ -1825,16 +1836,20 @@ namespace System
 
         private static double NumberToDouble(ref NumberBuffer number)
         {
+            number.CheckConsistency();
+
             ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
             double result = BitConverter.Int64BitsToDouble((long)(bits));
-            return number.Sign ? -result : result;
+            return number.IsNegative ? -result : result;
         }
 
         private static float NumberToSingle(ref NumberBuffer number)
         {
+            number.CheckConsistency();
+
             uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
             float result = BitConverter.Int32BitsToSingle((int)(bits));
-            return number.Sign ? -result : result;
+            return number.IsNegative ? -result : result;
         }
     }
 }

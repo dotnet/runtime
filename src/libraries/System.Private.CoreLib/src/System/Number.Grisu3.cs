@@ -341,11 +341,11 @@ namespace System
                 if (double.IsNegative(value))
                 {
                     value = -value;
-                    number.Sign = true;
+                    number.IsNegative = true;
                 }
                 else
                 {
-                    number.Sign = false;
+                    number.IsNegative = false;
                 }
 
                 // Step 1: Determine the normalized DiyFp w.
@@ -370,7 +370,7 @@ namespace System
 
                 if (isSuccess)
                 {
-                    number.Digits[precision] = '\0';
+                    number.Digits[precision] = (byte)('\0');
                     number.Scale = (length - decimalExponent + kappa);
                 }
 
@@ -549,7 +549,7 @@ namespace System
                 decimalExponent = s_CachedPowerDecimalExponents[index];
             }
 
-            private static bool DigitGen(ref DiyFp mp, int precision, char* digits, out int length, out int k)
+            private static bool DigitGen(ref DiyFp mp, int precision, byte* digits, out int length, out int k)
             {
                 // Split the input mp to two parts. Part 1 is integral. Part 2 can be used to calculate
                 // fractional.
@@ -604,7 +604,7 @@ namespace System
                 while (kappa > 0)
                 {
                     int d = (int)(Math.DivRem(p1, div, out p1));
-                    digits[index] = (char)('0' + d);
+                    digits[index] = (byte)('0' + d);
 
                     index++;
                     precision--;
@@ -643,7 +643,7 @@ namespace System
                     p2 *= 10;
 
                     int d = (int)(p2 >> oneNegE);
-                    digits[index] = (char)('0' + d);
+                    digits[index] = (byte)('0' + d);
 
                     index++;
                     precision--;
@@ -673,7 +673,7 @@ namespace System
                 return (int)(Math.Ceiling((Alpha - e + DiyFp.SignificandLength - 1) * D1Log210));
             }
 
-            private static bool RoundWeed(char* buffer, int len, ulong rest, ulong tenKappa, ulong ulp, ref int kappa)
+            private static bool RoundWeed(byte* buffer, int len, ulong rest, ulong tenKappa, ulong ulp, ref int kappa)
             {
                 Debug.Assert(rest < tenKappa);
 
@@ -700,14 +700,14 @@ namespace System
                     buffer[len - 1]++;
                     for (int i = len - 1; i > 0; i--)
                     {
-                        if (buffer[i] != (char)('0' + 10))
+                        if (buffer[i] != (byte)('0' + 10))
                         {
                             // We end up a number less than 9.
                             break;
                         }
 
                         // Current number becomes 0 and add the promotion to the next number.
-                        buffer[i] = '0';
+                        buffer[i] = (byte)('0');
                         buffer[i - 1]++;
                     }
 
@@ -715,7 +715,7 @@ namespace System
                     {
                         // First number is '0' + 10 means all numbers are 9.
                         // We simply make the first number to 1 and increase the kappa.
-                        buffer[0] = '1';
+                        buffer[0] = (byte)('1');
                         kappa++;
                     }
 

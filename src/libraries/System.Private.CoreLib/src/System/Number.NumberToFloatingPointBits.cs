@@ -110,7 +110,7 @@ namespace System
         {
             result = new BigInteger(0);
 
-            char* src = number.GetDigitsPointer() + firstIndex;
+            byte* src = number.GetDigitsPointer() + firstIndex;
             uint remaining = lastIndex - firstIndex;
 
             while (remaining != 0)
@@ -298,11 +298,11 @@ namespace System
         }
 
         // get 32-bit integer from at most 9 digits
-        private static uint DigitsToUInt32(char* p, int count)
+        private static uint DigitsToUInt32(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 9));
 
-            char* end = (p + count);
+            byte* end = (p + count);
             uint res = (uint)(p[0] - '0');
 
             for (p++; p < end; p++)
@@ -314,11 +314,11 @@ namespace System
         }
 
         // get 64-bit integer from at most 19 digits
-        private static ulong DigitsToUInt64(char* p, int count)
+        private static ulong DigitsToUInt64(byte* p, int count)
         {
             Debug.Assert((1 <= count) && (count <= 19));
 
-            char* end = (p + count);
+            byte* end = (p + count);
             ulong res = (ulong)(p[0] - '0');
 
             for (p++; p < end; p++)
@@ -341,7 +341,7 @@ namespace System
             // If the exponent is zero or negative, then the integer part is empty.  In
             // either case, the remaining digits form the fractional part of the mantissa.
 
-            uint totalDigits = (uint)(number.Precision);
+            uint totalDigits = (uint)(number.DigitsCount);
             uint positiveExponent = (uint)(Math.Max(0, number.Scale));
 
             uint integerDigitsPresent = Math.Min(positiveExponent, totalDigits);
@@ -358,7 +358,7 @@ namespace System
             // computed to the infinitely precise result and then rounded, which means that
             // we can rely on it to produce the correct result when both inputs are exact.
 
-            char* src = number.GetDigitsPointer();
+            byte* src = number.GetDigitsPointer();
 
             if (totalDigits == 0)
             {
@@ -422,7 +422,7 @@ namespace System
             // have and we don't need to round).
             uint requiredBitsOfPrecision = (uint)(info.NormalMantissaBits + 1);
 
-            uint totalDigits = (uint)(number.Precision);
+            uint totalDigits = (uint)(number.DigitsCount);
             uint integerDigitsMissing = positiveExponent - integerDigitsPresent;
 
             uint integerFirstIndex = 0;
