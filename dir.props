@@ -236,6 +236,7 @@
     <OutputRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
   <PropertyGroup>
