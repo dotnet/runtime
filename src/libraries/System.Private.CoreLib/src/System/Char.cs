@@ -37,7 +37,7 @@ namespace System
         public const char MinValue = (char)0x00;
 
         // Unicode category values from Unicode U+0000 ~ U+00FF. Store them in byte[] array to save space.
-        private static readonly byte[] s_categoryForLatin1 = {
+        private static ReadOnlySpan<byte> CategoryForLatin1 => new byte[] { // uses C# compiler's optimization for static byte[] data
             (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control,    // 0000 - 0007
             (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control,    // 0008 - 000F
             (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control, (byte)UnicodeCategory.Control,    // 0010 - 0017
@@ -75,20 +75,20 @@ namespace System
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
         private static bool IsLatin1(char ch)
         {
-            return (ch <= '\x00ff');
+            return (uint)ch <= '\x00ff';
         }
 
         // Return true for all characters below or equal U+007f, which is ASCII.
         private static bool IsAscii(char ch)
         {
-            return (ch <= '\x007f');
+            return (uint)ch <= '\x007f';
         }
 
         // Return the Unicode category for Unicode character <= 0x00ff.      
         private static UnicodeCategory GetLatin1UnicodeCategory(char ch)
         {
             Debug.Assert(IsLatin1(ch), "char.GetLatin1UnicodeCategory(): ch should be <= 007f");
-            return (UnicodeCategory)(s_categoryForLatin1[(int)ch]);
+            return (UnicodeCategory)CategoryForLatin1[(int)ch];
         }
 
         //
@@ -209,27 +209,21 @@ namespace System
         {
             if (IsLatin1(c))
             {
-                return (c >= '0' && c <= '9');
+                return IsInRange(c, '0', '9');
             }
             return (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.DecimalDigitNumber);
         }
 
+        private static bool IsInRange(char c, char min, char max) => (uint)(c - min) <= (uint)(max - min);
+
+        private static bool IsInRange(UnicodeCategory c, UnicodeCategory min, UnicodeCategory max) => (uint)(c - min) <= (uint)(max - min);
 
         /*=================================CheckLetter=====================================
         ** Check if the specified UnicodeCategory belongs to the letter categories.
         ==============================================================================*/
         internal static bool CheckLetter(UnicodeCategory uc)
         {
-            switch (uc)
-            {
-                case (UnicodeCategory.UppercaseLetter):
-                case (UnicodeCategory.LowercaseLetter):
-                case (UnicodeCategory.TitlecaseLetter):
-                case (UnicodeCategory.ModifierLetter):
-                case (UnicodeCategory.OtherLetter):
-                    return (true);
-            }
-            return (false);
+            return IsInRange(uc, UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
         }
 
         /*=================================ISLETTER=====================================
@@ -244,7 +238,7 @@ namespace System
                 if (IsAscii(c))
                 {
                     c |= (char)0x20;
-                    return ((c >= 'a' && c <= 'z'));
+                    return IsInRange(c, 'a', 'z');
                 }
                 return (CheckLetter(GetLatin1UnicodeCategory(c)));
             }
@@ -296,7 +290,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return (c >= 'A' && c <= 'Z');
+                    return IsInRange(c, 'A', 'Z');
                 }
                 return (GetLatin1UnicodeCategory(c) == UnicodeCategory.UppercaseLetter);
             }
@@ -314,7 +308,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return (c >= 'a' && c <= 'z');
+                    return IsInRange(c, 'a', 'z');
                 }
                 return (GetLatin1UnicodeCategory(c) == UnicodeCategory.LowercaseLetter);
             }
@@ -323,18 +317,7 @@ namespace System
 
         internal static bool CheckPunctuation(UnicodeCategory uc)
         {
-            switch (uc)
-            {
-                case UnicodeCategory.ConnectorPunctuation:
-                case UnicodeCategory.DashPunctuation:
-                case UnicodeCategory.OpenPunctuation:
-                case UnicodeCategory.ClosePunctuation:
-                case UnicodeCategory.InitialQuotePunctuation:
-                case UnicodeCategory.FinalQuotePunctuation:
-                case UnicodeCategory.OtherPunctuation:
-                    return (true);
-            }
-            return (false);
+            return IsInRange(uc, UnicodeCategory.ConnectorPunctuation, UnicodeCategory.OtherPunctuation);
         }
 
 
@@ -357,17 +340,7 @@ namespace System
         ==============================================================================*/
         internal static bool CheckLetterOrDigit(UnicodeCategory uc)
         {
-            switch (uc)
-            {
-                case UnicodeCategory.UppercaseLetter:
-                case UnicodeCategory.LowercaseLetter:
-                case UnicodeCategory.TitlecaseLetter:
-                case UnicodeCategory.ModifierLetter:
-                case UnicodeCategory.OtherLetter:
-                case UnicodeCategory.DecimalDigitNumber:
-                    return (true);
-            }
-            return (false);
+            return CheckLetter(uc) || uc == UnicodeCategory.DecimalDigitNumber;
         }
 
         // Determines whether a character is a letter or a digit.
@@ -563,7 +536,7 @@ namespace System
             char c = s[index];
             if (IsLatin1(c))
             {
-                return (c >= '0' && c <= '9');
+                return IsInRange(c, '0', '9');
             }
             return (CharUnicodeInfo.GetUnicodeCategory(s, index) == UnicodeCategory.DecimalDigitNumber);
         }
@@ -582,7 +555,7 @@ namespace System
                 if (IsAscii(c))
                 {
                     c |= (char)0x20;
-                    return ((c >= 'a' && c <= 'z'));
+                    return IsInRange(c, 'a', 'z');
                 }
                 return (CheckLetter(GetLatin1UnicodeCategory(c)));
             }
@@ -618,7 +591,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return (c >= 'a' && c <= 'z');
+                    return IsInRange(c, 'a', 'z');
                 }
                 return (GetLatin1UnicodeCategory(c) == UnicodeCategory.LowercaseLetter);
             }
@@ -632,14 +605,7 @@ namespace System
 
         internal static bool CheckNumber(UnicodeCategory uc)
         {
-            switch (uc)
-            {
-                case (UnicodeCategory.DecimalDigitNumber):
-                case (UnicodeCategory.LetterNumber):
-                case (UnicodeCategory.OtherNumber):
-                    return (true);
-            }
-            return (false);
+            return IsInRange(uc, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.OtherNumber);
         }
 
         public static bool IsNumber(char c)
@@ -648,7 +614,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return (c >= '0' && c <= '9');
+                    return IsInRange(c, '0', '9');
                 }
                 return (CheckNumber(GetLatin1UnicodeCategory(c)));
             }
@@ -668,7 +634,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return (c >= '0' && c <= '9');
+                    return IsInRange(c, '0', '9');
                 }
                 return (CheckNumber(GetLatin1UnicodeCategory(c)));
             }
@@ -706,14 +672,7 @@ namespace System
 
         internal static bool CheckSeparator(UnicodeCategory uc)
         {
-            switch (uc)
-            {
-                case UnicodeCategory.SpaceSeparator:
-                case UnicodeCategory.LineSeparator:
-                case UnicodeCategory.ParagraphSeparator:
-                    return (true);
-            }
-            return (false);
+            return IsInRange(uc, UnicodeCategory.SpaceSeparator, UnicodeCategory.ParagraphSeparator);
         }
 
         private static bool IsSeparatorLatin1(char c)
@@ -750,7 +709,7 @@ namespace System
 
         public static bool IsSurrogate(char c)
         {
-            return (c >= HIGH_SURROGATE_START && c <= LOW_SURROGATE_END);
+            return IsInRange(c, CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
         }
 
         public static bool IsSurrogate(string s, int index)
@@ -772,15 +731,7 @@ namespace System
 
         internal static bool CheckSymbol(UnicodeCategory uc)
         {
-            switch (uc)
-            {
-                case (UnicodeCategory.MathSymbol):
-                case (UnicodeCategory.CurrencySymbol):
-                case (UnicodeCategory.ModifierSymbol):
-                case (UnicodeCategory.OtherSymbol):
-                    return (true);
-            }
-            return (false);
+            return IsInRange(uc, UnicodeCategory.MathSymbol, UnicodeCategory.OtherSymbol);
         }
 
         public static bool IsSymbol(char c)
@@ -822,7 +773,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return (c >= 'A' && c <= 'Z');
+                    return IsInRange(c, 'A', 'Z');
                 }
                 return (GetLatin1UnicodeCategory(c) == UnicodeCategory.UppercaseLetter);
             }
@@ -893,7 +844,7 @@ namespace System
          ==============================================================================*/
         public static bool IsHighSurrogate(char c)
         {
-            return ((c >= CharUnicodeInfo.HIGH_SURROGATE_START) && (c <= CharUnicodeInfo.HIGH_SURROGATE_END));
+            return IsInRange(c, CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.HIGH_SURROGATE_END);
         }
 
         public static bool IsHighSurrogate(string s, int index)
@@ -914,7 +865,7 @@ namespace System
          ==============================================================================*/
         public static bool IsLowSurrogate(char c)
         {
-            return ((c >= CharUnicodeInfo.LOW_SURROGATE_START) && (c <= CharUnicodeInfo.LOW_SURROGATE_END));
+            return IsInRange(c, CharUnicodeInfo.LOW_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
         }
 
         public static bool IsLowSurrogate(string s, int index)
@@ -952,8 +903,7 @@ namespace System
 
         public static bool IsSurrogatePair(char highSurrogate, char lowSurrogate)
         {
-            return ((highSurrogate >= CharUnicodeInfo.HIGH_SURROGATE_START && highSurrogate <= CharUnicodeInfo.HIGH_SURROGATE_END) &&
-                    (lowSurrogate >= CharUnicodeInfo.LOW_SURROGATE_START && lowSurrogate <= CharUnicodeInfo.LOW_SURROGATE_END));
+            return IsHighSurrogate(highSurrogate) && IsLowSurrogate(lowSurrogate);
         }
 
         internal const int UNICODE_PLANE00_END = 0x00ffff;
@@ -962,9 +912,6 @@ namespace System
         // The end codepoint for Unicode plane 16.  This is the maximum code point value allowed for Unicode.
         // Plane 16 contains 0x100000 ~ 0x10ffff.
         internal const int UNICODE_PLANE16_END = 0x10ffff;
-
-        internal const int HIGH_SURROGATE_START = 0x00d800;
-        internal const int LOW_SURROGATE_END = 0x00dfff;
 
 
 
@@ -976,7 +923,7 @@ namespace System
         {
             // For UTF32 values from U+00D800 ~ U+00DFFF, we should throw.  They
             // are considered as irregular code unit sequence, but they are not illegal.
-            if ((utf32 < 0 || utf32 > UNICODE_PLANE16_END) || (utf32 >= HIGH_SURROGATE_START && utf32 <= LOW_SURROGATE_END))
+            if (((uint)utf32 > UNICODE_PLANE16_END) || (utf32 >= CharUnicodeInfo.HIGH_SURROGATE_START && utf32 <= CharUnicodeInfo.LOW_SURROGATE_END))
             {
                 throw new ArgumentOutOfRangeException(nameof(utf32), SR.ArgumentOutOfRange_InvalidUTF32);
             }
