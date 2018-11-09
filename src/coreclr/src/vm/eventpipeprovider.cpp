@@ -111,7 +111,7 @@ bool EventPipeProvider::EventEnabled(INT64 keywords, EventPipeEventLevel eventLe
         ((eventLevel == EventPipeEventLevel::LogAlways) || (m_providerLevel >= eventLevel)));
 }
 
-void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel)
+void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData)
 {
     CONTRACTL
     {
@@ -127,7 +127,7 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     m_providerLevel = providerLevel;
 
     RefreshAllEvents();
-    InvokeCallback();
+    InvokeCallback(pFilterData);
 }
 
 EventPipeEvent* EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, BYTE *pMetadata, unsigned int metadataLength)
@@ -186,7 +186,7 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     event.RefreshState();
 }
 
-void EventPipeProvider::InvokeCallback()
+void EventPipeProvider::InvokeCallback(LPCWSTR pFilterData)
 {
     CONTRACTL
     {
@@ -197,6 +197,33 @@ void EventPipeProvider::InvokeCallback()
     }
     CONTRACTL_END;
 
+
+    bool isEventFilterDescriptorInitialized = false;
+    EventFilterDescriptor eventFilterDescriptor{};
+    CQuickArrayBase<char> buffer;
+    buffer.Init();
+
+    if (pFilterData != NULL)
+    {
+        // The callback is expecting that filter data to be a concatenated list
+        // of pairs of null terminated strings. The first member of the pair is
+        // the key and the second is the value.
+        // To convert to this format we need to convert all '=' and ';'
+        // characters to '\0'.
+        SString dstBuffer;
+        SString(pFilterData).ConvertToUTF8(dstBuffer);
+
+        const COUNT_T BUFFER_SIZE = dstBuffer.GetCount() + 1;
+        buffer.AllocThrows(BUFFER_SIZE);
+        for (COUNT_T i = 0; i < BUFFER_SIZE; ++i)
+            buffer[i] = (dstBuffer[i] == '=' || dstBuffer[i] == ';') ? '\0' : dstBuffer[i];
+
+        eventFilterDescriptor.Ptr = reinterpret_cast<ULONGLONG>(buffer.Ptr());
+        eventFilterDescriptor.Size = static_cast<ULONG>(BUFFER_SIZE);
+        eventFilterDescriptor.Type = 0; // EventProvider.cs: `internal enum ControllerCommand.Update`
+        isEventFilterDescriptorInitialized = true;
+    }
+
     if(m_pCallbackFunction != NULL && !g_fEEShutDown)
     {
         (*m_pCallbackFunction)(
@@ -205,9 +232,11 @@ void EventPipeProvider::InvokeCallback()
             (UCHAR) m_providerLevel,
             m_keywords,
             0 /* matchAllKeywords */,
-            NULL /* FilterData */,
+            isEventFilterDescriptorInitialized ? &eventFilterDescriptor : NULL,
             m_pCallbackData /* CallbackContext */);
     }
+
+    buffer.Destroy();
 }
 
 bool EventPipeProvider::GetDeleteDeferred() const

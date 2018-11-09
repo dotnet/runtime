@@ -40,10 +40,14 @@ namespace System.Diagnostics.Tracing
         private ulong m_keywords;
         private uint m_loggingLevel;
 
+        [MarshalAs(UnmanagedType.LPWStr)]
+        private readonly string m_filterData;
+
         internal EventPipeProviderConfiguration(
             string providerName,
             ulong keywords,
-            uint loggingLevel)
+            uint loggingLevel,
+            string filterData)
         {
             if(string.IsNullOrEmpty(providerName))
             {
@@ -56,6 +60,7 @@ namespace System.Diagnostics.Tracing
             m_providerName = providerName;
             m_keywords = keywords;
             m_loggingLevel = loggingLevel;
+            m_filterData = filterData;
         }
 
         internal string ProviderName
@@ -72,6 +77,8 @@ namespace System.Diagnostics.Tracing
         {
             get { return m_loggingLevel; }
         }
+
+        internal string FilterData => m_filterData;
     }
 
     internal sealed class EventPipeConfiguration
@@ -127,10 +134,16 @@ namespace System.Diagnostics.Tracing
 
         internal void EnableProvider(string providerName, ulong keywords, uint loggingLevel)
         {
+            EnableProviderWithFilter(providerName, keywords, loggingLevel, null);
+        }
+
+        internal void EnableProviderWithFilter(string providerName, ulong keywords, uint loggingLevel, string filterData)
+        {
             m_providers.Add(new EventPipeProviderConfiguration(
                 providerName,
                 keywords,
-                loggingLevel));
+                loggingLevel,
+                filterData));
         }
 
         private void EnableProviderConfiguration(EventPipeProviderConfiguration providerConfig)

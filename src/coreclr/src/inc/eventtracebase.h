@@ -10,7 +10,7 @@
 //
 
 //
-// 
+//
 // #EventTracing
 // Windows
 // ETW (Event Tracing for Windows) is a high-performance, low overhead and highly scalable
@@ -35,7 +35,7 @@ void InitializeEventTracing();
 // The flags must match those in the ETW manifest exactly
 // !!!!!!! NOTE !!!!!!!!
 
-// These flags need to be defined either when FEATURE_EVENT_TRACE is enabled or the 
+// These flags need to be defined either when FEATURE_EVENT_TRACE is enabled or the
 // PROFILING_SUPPORTED is set, since they are used both by event tracing and profiling.
 
 enum EtwTypeFlags
@@ -106,7 +106,7 @@ enum EtwThreadFlags
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
-#define ETW_INLINE  
+#define ETW_INLINE
 #define ETWOnStartup(StartEventName, EndEventName)
 #define ETWFireEvent(EventName)
 
@@ -242,13 +242,15 @@ public:
 
 #if defined(FEATURE_EVENT_TRACE)
 
+struct EventFilterDescriptor;
+
 VOID EventPipeEtwCallbackDotNETRuntimeStress(
     _In_ LPCGUID SourceId,
     _In_ ULONG ControlCode,
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
 VOID EventPipeEtwCallbackDotNETRuntime(
@@ -257,7 +259,7 @@ VOID EventPipeEtwCallbackDotNETRuntime(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
 VOID EventPipeEtwCallbackDotNETRuntimeRundown(
@@ -266,7 +268,7 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
 VOID EventPipeEtwCallbackDotNETRuntimePrivate(
@@ -275,7 +277,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext);
 
 #ifndef  FEATURE_PAL
@@ -332,7 +334,7 @@ extern "C" {
 
 #include "clretwallmain.h"
 
-#endif // FEATURE_EVENT_TRACE 
+#endif // FEATURE_EVENT_TRACE
 
 /**************************/
 /* CLR ETW infrastructure */
@@ -351,7 +353,7 @@ extern "C" {
 // has started, one may want to do something useful when that happens (e.g enumerate all the loaded modules
 // in the system). To enable this, we have to implement a callback routine.
 // file:../VM/eventtrace.cpp#EtwCallback is CLR's implementation of the callback.
-// 
+//
 
 #include "daccess.h"
 class Module;
@@ -379,7 +381,7 @@ namespace ETW
 {
     // Class to wrap the ETW infrastructure logic
 #if  !defined(FEATURE_PAL)
-    class CEtwTracer 
+    class CEtwTracer
     {
 #if defined(FEATURE_EVENT_TRACE)
         ULONG RegGuids(LPCGUID ProviderId, PENABLECALLBACK EnableCallback, PVOID CallbackContext, PREGHANDLE RegHandle);
@@ -391,7 +393,7 @@ namespace ETW
         HRESULT Register();
 
         // Unregisters all the Event Tracing providers
-        HRESULT UnRegister();        
+        HRESULT UnRegister();
 #else
         HRESULT Register()
         {
@@ -406,7 +408,7 @@ namespace ETW
 #endif // !defined(FEATURE_PAL)
 
     class LoaderLog;
-    class MethodLog;   
+    class MethodLog;
     // Class to wrap all the enumeration logic for ETW
     class EnumerationLog
     {
@@ -447,7 +449,7 @@ namespace ETW
                 MethodDCEndILToNativeMap=           0x00020000,
                 JitMethodILToNativeMap=             0x00040000,
                 TypeUnload=                         0x00080000,
-                
+
                 // Helpers
                 ModuleRangeEnabledAny = ModuleRangeLoad | ModuleRangeDCStart | ModuleRangeDCEnd | ModuleRangeLoadPrivate,
                 JitMethodLoadOrDCStartAny = JitMethodLoad | JitMethodDCStart | MethodDCStartILToNativeMap,
@@ -475,7 +477,7 @@ namespace ETW
     {
 #if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
     public:
-        typedef enum _EtwStackWalkStatus 
+        typedef enum _EtwStackWalkStatus
         {
             Completed = 0,
             UnInitialized = 1,
@@ -492,7 +494,7 @@ namespace ETW
         EtwStackWalkStatus GetCurrentThreadsCallStack(UINT32 *frameCount, PVOID **Stack);
 #endif // FEATURE_EVENT_TRACE && !defined(FEATURE_PAL)
     };
-    
+
     // Class to wrap all Loader logic for ETW
     class LoaderLog
     {
@@ -537,9 +539,9 @@ namespace ETW
             }RangeFlags;
 
         }LoaderStructs;
-        
+
         static VOID DomainLoadReal(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName=NULL);
-        
+
         static VOID DomainLoad(BaseDomain *pDomain, __in_opt LPWSTR wszFriendlyName = NULL)
         {
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
@@ -733,7 +735,7 @@ namespace ETW
     {
     public:
         typedef union _BinderStructs {
-            typedef  enum _NGENBINDREJECT_REASON { 
+            typedef  enum _NGENBINDREJECT_REASON {
                 NGEN_BIND_START_BIND = 0,
                 NGEN_BIND_NO_INDEX = 1,
                 NGEN_BIND_SYSTEM_ASSEMBLY_NOT_AVAILABLE = 2,
@@ -797,19 +799,19 @@ namespace ETW
                 IsCLSCompliant=0x10
             }ExceptionThrownFlags;
         }ExceptionStructs;
-    };    
+    };
     // Class to wrap all Contention logic for ETW
     class ContentionLog
     {
     public:
-        typedef union _ContentionStructs 
+        typedef union _ContentionStructs
         {
-            typedef  enum _ContentionFlags { 
+            typedef  enum _ContentionFlags {
                 ManagedContention=0,
                 NativeContention=1
             } ContentionFlags;
         } ContentionStructs;
-    };    
+    };
     // Class to wrap all Interop logic for ETW
     class InteropLog
     {
@@ -820,7 +822,7 @@ namespace ETW
     class InfoLog
     {
     public:
-        typedef union _InfoStructs 
+        typedef union _InfoStructs
         {
             typedef enum _StartupMode
             {
@@ -961,7 +963,7 @@ public:
 // "mc.exe -MOF" already generates this block for XP-suported builds inside ClrEtwAll.h;
 // on Vista+ builds, mc is run without -MOF, and we still have code that depends on it, so
 // we manually place it here.
-FORCEINLINE 
+FORCEINLINE
 BOOLEAN __stdcall
 McGenEventTracingEnabled(
     __in PMCGEN_TRACE_CONTEXT EnableInfo,
@@ -1056,7 +1058,7 @@ struct CallStackFrame
 #endif // FEATURE_EVENT_TRACE
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PAL)
-FORCEINLINE 
+FORCEINLINE
 BOOLEAN __stdcall
 McGenEventProviderEnabled(
     __in PMCGEN_TRACE_CONTEXT Context,
