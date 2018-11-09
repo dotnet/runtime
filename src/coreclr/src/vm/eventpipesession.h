@@ -26,7 +26,7 @@ private:
 
     // The configured size of the circular buffer.
     size_t m_circularBufferSizeInBytes;
-    
+
     // True if rundown is enabled.
     Volatile<bool> m_rundownEnabled;
 
@@ -154,12 +154,16 @@ private:
     // The loging level.
     EventPipeEventLevel m_loggingLevel;
 
+    // The filter data.
+    WCHAR *m_pFilterData;
+
 public:
 
     EventPipeSessionProvider(
         LPCWSTR providerName,
         UINT64 keywords,
-        EventPipeEventLevel loggingLevel);
+        EventPipeEventLevel loggingLevel,
+        LPCWSTR filterData);
     ~EventPipeSessionProvider();
 
     LPCWSTR GetProviderName() const;
@@ -167,6 +171,8 @@ public:
     UINT64 GetKeywords() const;
 
     EventPipeEventLevel GetLevel() const;
+
+    LPCWSTR GetFilterData() const;
 };
 
 #endif // FEATURE_PERFTRACING

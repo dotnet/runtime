@@ -93,7 +93,8 @@ void EventPipeEventSource::Enable(EventPipeSession *pSession)
     EventPipeSessionProvider *pSessionProvider = new EventPipeSessionProvider(
         s_pProviderName,
         -1,
-        EventPipeEventLevel::LogAlways);
+        EventPipeEventLevel::LogAlways,
+        NULL);
     pSession->AddSessionProvider(pSessionProvider);
 }
 
