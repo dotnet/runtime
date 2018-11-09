@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{13CE5E71-D373-4EA6-B3CB-166FF089A42A}</ProjectGuid>
     <SkipIncludeNewtonsoftJson>true</SkipIncludeNewtonsoftJson>
-    <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -36,6 +36,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="BinaryFormatterTests.rd.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.Text.Json" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

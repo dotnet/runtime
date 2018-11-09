@@ -4,12 +4,33 @@
     <AssemblyName>System.Text.Json</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Text\Json\ConsumeNumberResult.cs" />
+    <Compile Include="System\Text\Json\ConsumeTokenResult.cs" />
+    <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
+    <Compile Include="System\Text\Json\JsonConstants.cs" />
+    <Compile Include="System\Text\Json\JsonReaderException.cs" />
+    <Compile Include="System\Text\Json\JsonReaderHelper.cs" />
+    <Compile Include="System\Text\Json\JsonReaderOptions.cs" />
+    <Compile Include="System\Text\Json\JsonReaderState.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
+    <Compile Include="System\Text\Json\ThrowHelper.cs" />
+    <Compile Include="System\Text\Json\Utf8JsonReader.cs" />
+    <Compile Include="System\Text\Json\Utf8JsonReader.TryGet.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Runtime" />
+    <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
+    <ProjectReference Include="..\..\System.Memory\src\System.Memory.csproj" />
+    <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
+    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Text.Encoding.Extensions\src\System.Text.Encoding.Extensions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
 </Project>
