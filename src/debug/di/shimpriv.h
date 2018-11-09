@@ -222,7 +222,7 @@ public:
     COM_METHOD ShimProxyCallback::AfterGarbageCollection(ICorDebugProcess* pProcess);
 
     // Implementation of ICorDebugManagedCallback4::DataBreakpoint
-    COM_METHOD ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread, BYTE* pContext, ULONG32 contextSize);
+    COM_METHOD ShimProxyCallback::DataBreakpoint(ICorDebugProcess* pProcess, ICorDebugThread* pThread);
 };
 
 
