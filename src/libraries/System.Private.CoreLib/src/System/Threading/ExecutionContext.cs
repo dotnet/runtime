@@ -12,6 +12,7 @@
 ===========================================================*/
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
 
@@ -136,6 +137,11 @@ namespace System.Threading
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
             ExecutionContext previousExecutionCtx0 = currentThread0.ExecutionContext;
+            if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
+            {
+                // Default is a null ExecutionContext internally
+                previousExecutionCtx0 = null;
+            }
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".
             // This allows us to restore them and undo any Context changes made in callback.Invoke
@@ -215,6 +221,11 @@ namespace System.Threading
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
             ExecutionContext previousExecutionCtx0 = currentThread0.ExecutionContext;
+            if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
+            {
+                // Default is a null ExecutionContext internally
+                previousExecutionCtx0 = null;
+            }
 
             // Store current ExecutionContext and SynchronizationContext as "previousXxx".
             // This allows us to restore them and undo any Context changes made in callback.Invoke
@@ -280,6 +291,115 @@ namespace System.Threading
 
             // If exception was thrown by callback, rethrow it now original contexts are restored
             edi?.Throw();
+        }
+
+        internal static void RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, object state)
+        {
+            Debug.Assert(threadPoolThread == Thread.CurrentThread);
+            CheckThreadPoolAndContextsAreDefault();
+            // ThreadPool starts on Default Context so we don't need to save the "previous" state as we know it is Default (null)
+
+            if (executionContext != null && executionContext.m_isDefault)
+            {
+                // Default is a null ExecutionContext internally
+                executionContext = null;
+            }
+            else if (executionContext != null)
+            {
+                // Non-Default context to restore
+                threadPoolThread.ExecutionContext = executionContext;
+                if (executionContext.HasChangeNotifications)
+                {
+                    // There are change notifications; trigger any affected
+                    OnValuesChanged(previousExecutionCtx: null, executionContext);
+                }
+            }
+
+            ExceptionDispatchInfo edi = null;
+            try
+            {
+                callback.Invoke(state);
+            }
+            catch (Exception ex)
+            {
+                // Note: we have a "catch" rather than a "finally" because we want
+                // to stop the first pass of EH here.  That way we can restore the previous
+                // context before any of our callers' EH filters run.
+                edi = ExceptionDispatchInfo.Capture(ex);
+            }
+
+            // Enregister threadPoolThread as it crossed EH, and use enregistered variable
+            Thread currentThread = threadPoolThread;
+
+            ExecutionContext currentExecutionCtx = currentThread.ExecutionContext;
+
+            // Restore changed SynchronizationContext back to Default
+            currentThread.SynchronizationContext = null;
+            if (currentExecutionCtx != null)
+            {
+                // The EC always needs to be reset for this overload, as it will flow back to the caller if it performs 
+                // extra work prior to returning to the Dispatch loop. For example for Task-likes it will flow out of await points
+
+                // Restore to Default before Notifications, as the change can be observed in the handler.
+                currentThread.ExecutionContext = null;
+                if (currentExecutionCtx.HasChangeNotifications)
+                {
+                    // There are change notifications; trigger any affected
+                    OnValuesChanged(currentExecutionCtx, nextExecutionCtx: null);
+                }
+            }
+
+            // If exception was thrown by callback, rethrow it now original contexts are restored
+            edi?.Throw();
+        }
+
+        internal static void RunForThreadPoolUnsafe<TState>(ExecutionContext executionContext, Action<TState> callback, in TState state)
+        {
+            // We aren't running in try/catch as if an exception is directly thrown on the ThreadPool either process 
+            // will crash or its a ThreadAbortException. 
+
+            CheckThreadPoolAndContextsAreDefault();
+            Debug.Assert(executionContext != null && !executionContext.m_isDefault, "ExecutionContext argument is Default.");
+
+            Thread currentThread = Thread.CurrentThread;
+            // Restore Non-Default context
+            currentThread.ExecutionContext = executionContext;
+            if (executionContext.HasChangeNotifications)
+            {
+                OnValuesChanged(previousExecutionCtx: null, executionContext);
+            }
+
+            callback.Invoke(state);
+
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
+        }
+
+        // Inline as only called in one place and always called
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ResetThreadPoolThread(Thread currentThread)
+        {
+            ExecutionContext currentExecutionCtx = currentThread.ExecutionContext;
+
+            // Reset to defaults
+            currentThread.SynchronizationContext = null;
+            currentThread.ExecutionContext = null;
+
+            if (currentExecutionCtx != null && currentExecutionCtx.HasChangeNotifications)
+            {
+                OnValuesChanged(currentExecutionCtx, nextExecutionCtx: null);
+
+                // Reset to defaults again without change notifications in case the Change handler changed the contexts
+                currentThread.SynchronizationContext = null;
+                currentThread.ExecutionContext = null;
+            }
+        }
+
+        [System.Diagnostics.Conditional("DEBUG")]
+        internal static void CheckThreadPoolAndContextsAreDefault()
+        {
+            Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
+            Debug.Assert(Thread.CurrentThread.ExecutionContext == null, "ThreadPool thread not on Default ExecutionContext.");
+            Debug.Assert(Thread.CurrentThread.SynchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }
 
         internal static void OnValuesChanged(ExecutionContext previousExecutionCtx, ExecutionContext nextExecutionCtx)
