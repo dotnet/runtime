@@ -411,8 +411,8 @@ void EventPipe::Disable(EventPipeSessionID id)
                 const unsigned int numRundownProviders = 2;
                 EventPipeProviderConfiguration rundownProviders[] =
                 {
-                    { W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) }, // Public provider.
-                    { W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose) } // Rundown provider.
+                    { W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose), NULL }, // Public provider.
+                    { W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose), NULL } // Rundown provider.
                 };
                 // The circular buffer size doesn't matter because all events are written synchronously during rundown.
                 s_pSession = s_pConfig->CreateSession(EventPipeSessionType::File, 1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
@@ -1098,7 +1098,7 @@ INT_PTR QCALLTYPE EventPipeInternal::GetProvider(
     EventPipeProvider *pProvider = NULL;
 
     BEGIN_QCALL;
-    
+
     pProvider = EventPipe::GetProvider(providerName);
 
     END_QCALL;
@@ -1243,6 +1243,6 @@ bool QCALLTYPE EventPipeInternal::GetNextEvent(
 
     END_QCALL;
     return pNextInstance != NULL;
-} 
+}
 
 #endif // FEATURE_PERFTRACING

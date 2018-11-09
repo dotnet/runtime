@@ -13,16 +13,6 @@
 
 class EventPipeEvent;
 
-// Define the event pipe callback to match the ETW callback signature.
-typedef void (*EventPipeCallback)(
-    LPCGUID SourceID,
-    ULONG IsEnabled,
-    UCHAR Level,
-    ULONGLONG MatchAnyKeywords,
-    ULONGLONG MatchAllKeywords,
-    void *FilterData,
-    void *CallbackContext);
-
 class EventPipeProvider
 {
     // Declare friends.
@@ -96,13 +86,13 @@ public:
 
     // Set the provider configuration (enable and disable sets of events).
     // This is called by EventPipeConfiguration.
-    void SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel);
+    void SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData);
 
     // Refresh the runtime state of all events.
     void RefreshAllEvents();
 
     // Invoke the provider callback.
-    void InvokeCallback();
+    void InvokeCallback(LPCWSTR pFilterData);
 
     // Specifies whether or not the provider was deleted, but that deletion
     // was deferred until after tracing is stopped.
