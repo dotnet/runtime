@@ -773,7 +773,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
             def testBin = "%WORKSPACE%\\bin\\tests\\${os}.${architecture}.${configuration}"
             def coreRoot = "${testBin}\\Tests\\Core_Root"
             def benchViewTools = "%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools"
-            def python = "C:\\Python35\\python.exe"
+            def python = "C:\\python3.7.0\\python.exe"
 
             steps {
                 // Install nuget and get BenchView tools
@@ -847,7 +847,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
                         label('Windows.Amd64.ClientRS4.DevEx.15.8.Perf')
 
                         def testEnv = ""
-                        def python = "C:\\Python35\\python.exe"
+                        def python = "C:\\python3.7.0\\python.exe"
                         wrappers {
                             credentialsBinding {
                                 string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
