@@ -4244,7 +4244,7 @@ VOID EventPipeEtwCallbackDotNETRuntimeStress(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -4258,7 +4258,7 @@ VOID EventPipeEtwCallbackDotNETRuntime(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -4272,7 +4272,7 @@ VOID EventPipeEtwCallbackDotNETRuntimeRundown(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -4286,7 +4286,7 @@ VOID EventPipeEtwCallbackDotNETRuntimePrivate(
     _In_ UCHAR Level,
     _In_ ULONGLONG MatchAnyKeyword,
     _In_ ULONGLONG MatchAllKeyword,
-    _In_opt_ PVOID FilterData,
+    _In_opt_ EventFilterDescriptor* FilterData,
     _Inout_opt_ PVOID CallbackContext)
 {
     WRAPPER_NO_CONTRACT;

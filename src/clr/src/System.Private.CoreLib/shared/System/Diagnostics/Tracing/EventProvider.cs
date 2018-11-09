@@ -283,6 +283,19 @@ namespace System.Diagnostics.Tracing
                     m_allKeywordMask = allKeyword;
 
                     List<Tuple<SessionInfo, bool>> sessionsChanged = GetSessions();
+
+                    // The GetSessions() logic was here to support the idea that different ETW sessions
+                    // could have different user-defined filters.   (I believe it is currently broken but that is another matter.)
+                    // However in particular GetSessions() does not support EventPipe, only ETW, which is
+                    // the immediate problem.   We work-around establishing the invariant that we always get a
+                    // OnControllerCallback under all circumstances, even if we can't find a delta in the
+                    // ETW logic.  This fixes things for the EventPipe case.
+                    //
+                    // All this session based logic should be reviewed and likely removed, but that is a larger
+                    // change that needs more careful staging.
+                    if (sessionsChanged.Count == 0)
+                        sessionsChanged.Add(new Tuple<SessionInfo, bool>(new SessionInfo(0, 0), true));
+
                     foreach (var session in sessionsChanged)
                     {
                         int sessionChanged = session.Item1.sessionIdBit;
