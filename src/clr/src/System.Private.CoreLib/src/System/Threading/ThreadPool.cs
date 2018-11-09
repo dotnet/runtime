@@ -500,7 +500,7 @@ namespace System.Threading
 
         internal static bool Dispatch()
         {
-            var workQueue = ThreadPoolGlobals.workQueue;
+            ThreadPoolWorkQueue outerWorkQueue = ThreadPoolGlobals.workQueue;
             //
             // The clock is ticking!  We have ThreadPoolGlobals.TP_QUANTUM milliseconds to get some work done, and then
             // we need to return to the VM.
@@ -515,23 +515,30 @@ namespace System.Threading
             // Note that if this thread is aborted before we get a chance to request another one, the VM will
             // record a thread request on our behalf.  So we don't need to worry about getting aborted right here.
             //
-            workQueue.MarkThreadRequestSatisfied();
+            outerWorkQueue.MarkThreadRequestSatisfied();
 
             // Has the desire for logging changed since the last time we entered?
-            workQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
+            outerWorkQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
 
             //
             // Assume that we're going to need another thread if this one returns to the VM.  We'll set this to 
             // false later, but only if we're absolutely certain that the queue is empty.
             //
             bool needAnotherThread = true;
-            object workItem = null;
+            object outerWorkItem = null;
             try
             {
                 //
                 // Set up our thread-local data
                 //
+                // Use operate on workQueue local to try block so it can be enregistered 
+                ThreadPoolWorkQueue workQueue = outerWorkQueue;
                 ThreadPoolWorkQueueThreadLocals tl = workQueue.EnsureCurrentThreadHasQueue();
+                Thread currentThread = tl.currentThread;
+
+                // Start on clean ExecutionContext and SynchronizationContext
+                currentThread.ExecutionContext = null;
+                currentThread.SynchronizationContext = null;
 
                 //
                 // Loop until our quantum expires.
@@ -539,7 +546,8 @@ namespace System.Threading
                 while ((Environment.TickCount - quantumStartTime) < ThreadPoolGlobals.TP_QUANTUM)
                 {
                     bool missedSteal = false;
-                    workItem = workQueue.Dequeue(tl, ref missedSteal);
+                    // Use operate on workItem local to try block so it can be enregistered 
+                    object workItem = outerWorkItem = workQueue.Dequeue(tl, ref missedSteal);
 
                     if (workItem == null)
                     {
@@ -578,7 +586,7 @@ namespace System.Threading
                             reportedStatus = true;
                             if (workItem is Task task)
                             {
-                                task.ExecuteFromThreadPool();
+                                task.ExecuteFromThreadPool(currentThread);
                             }
                             else
                             {
@@ -598,14 +606,19 @@ namespace System.Threading
                         // for Task and then Unsafe.As for the interface, rather than
                         // vice versa, in particular when the object implements a bunch
                         // of interfaces.
-                        task.ExecuteFromThreadPool();
+                        task.ExecuteFromThreadPool(currentThread);
                     }
                     else
                     {
                         Debug.Assert(workItem is IThreadPoolWorkItem);
                         Unsafe.As<IThreadPoolWorkItem>(workItem).Execute();
                     }
-                    workItem = null;
+
+                    // Release refs
+                    outerWorkItem = workItem = null;
+
+                    // Return to clean ExecutionContext and SynchronizationContext
+                    ExecutionContext.ResetThreadPoolThread(currentThread);
 
                     // 
                     // Notify the VM that we executed this workitem.  This is also our opportunity to ask whether Hill Climbing wants
@@ -626,7 +639,7 @@ namespace System.Threading
                 // it was executed or not (in debug builds only).  Task uses this to communicate the ThreadAbortException to anyone
                 // who waits for the task to complete.
                 //
-                if (workItem is Task task)
+                if (outerWorkItem is Task task)
                 {
                     task.MarkAbortedFromThreadPool(tae);
                 }
@@ -643,7 +656,7 @@ namespace System.Threading
                 // thread to pick up where we left off.
                 //
                 if (needAnotherThread)
-                    workQueue.EnsureThreadRequested();
+                    outerWorkQueue.EnsureThreadRequested();
             }
 
             // we can never reach this point, but the C# compiler doesn't know that, because it doesn't know the ThreadAbortException will be reraised above.
@@ -685,6 +698,7 @@ namespace System.Threading
 
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
+        public readonly Thread currentThread;
         public FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId); // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
@@ -692,6 +706,7 @@ namespace System.Threading
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
             ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
+            currentThread = Thread.CurrentThread;
         }
 
         private void CleanUp()
@@ -937,17 +952,18 @@ namespace System.Threading
         private readonly object _state;
         private readonly ExecutionContext _context;
 
-        internal static readonly ContextCallback s_executionContextShim = state =>
+        private static readonly Action<QueueUserWorkItemCallback> s_executionContextShim = quwi =>
         {
-            var obj = (QueueUserWorkItemCallback)state;
-            WaitCallback c = obj._callback;
-            Debug.Assert(c != null);
-            obj._callback = null;
-            c(obj._state);
+            WaitCallback callback = quwi._callback;
+            quwi._callback = null;
+
+            callback(quwi._state);
         };
 
         internal QueueUserWorkItemCallback(WaitCallback callback, object state, ExecutionContext context)
         {
+            Debug.Assert(context != null);
+
             _callback = callback;
             _state = state;
             _context = context;
@@ -956,17 +972,8 @@ namespace System.Threading
         public override void Execute()
         {
             base.Execute();
-            ExecutionContext context = _context;
-            if (context == null)
-            {
-                WaitCallback c = _callback;
-                _callback = null;
-                c(_state);
-            }
-            else
-            {
-                ExecutionContext.RunInternal(context, s_executionContextShim, this);
-            }
+
+            ExecutionContext.RunForThreadPoolUnsafe(_context, s_executionContextShim, this);
         }
     }
 
@@ -976,17 +983,10 @@ namespace System.Threading
         private readonly TState _state;
         private readonly ExecutionContext _context;
 
-        internal static readonly ContextCallback s_executionContextShim = state =>
-        {
-            var obj = (QueueUserWorkItemCallback<TState>)state;
-            Action<TState> c = obj._callback;
-            Debug.Assert(c != null);
-            obj._callback = null;
-            c(obj._state);
-        };
-
         internal QueueUserWorkItemCallback(Action<TState> callback, TState state, ExecutionContext context)
         {
+            Debug.Assert(callback != null);
+
             _callback = callback;
             _state = state;
             _context = context;
@@ -995,17 +995,11 @@ namespace System.Threading
         public override void Execute()
         {
             base.Execute();
-            ExecutionContext context = _context;
-            if (context == null)
-            {
-                Action<TState> c = _callback;
-                _callback = null;
-                c(_state);
-            }
-            else
-            {
-                ExecutionContext.RunInternal(context, s_executionContextShim, this);
-            }
+
+            Action<TState> callback = _callback;
+            _callback = null;
+
+            ExecutionContext.RunForThreadPoolUnsafe(_context, callback, in _state);
         }
     }
 
@@ -1014,25 +1008,25 @@ namespace System.Threading
         private WaitCallback _callback; // SOS's ThreadPool command depends on this name
         private readonly object _state;
 
-        internal static readonly ContextCallback s_executionContextShim = state =>
-        {
-            var obj = (QueueUserWorkItemCallbackDefaultContext)state;
-            WaitCallback c = obj._callback;
-            Debug.Assert(c != null);
-            obj._callback = null;
-            c(obj._state);
-        };
-
         internal QueueUserWorkItemCallbackDefaultContext(WaitCallback callback, object state)
         {
+            Debug.Assert(callback != null);
+
             _callback = callback;
             _state = state;
         }
 
         public override void Execute()
         {
+            ExecutionContext.CheckThreadPoolAndContextsAreDefault();
             base.Execute();
-            ExecutionContext.RunInternal(executionContext: null, s_executionContextShim, this); // null executionContext on RunInternal is Default context
+
+            WaitCallback callback = _callback;
+            _callback = null;
+
+            callback(_state);
+
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
     }
 
@@ -1041,25 +1035,25 @@ namespace System.Threading
         private Action<TState> _callback; // SOS's ThreadPool command depends on this name
         private readonly TState _state;
 
-        internal static readonly ContextCallback s_executionContextShim = state =>
-        {
-            var obj = (QueueUserWorkItemCallbackDefaultContext<TState>)state;
-            Action<TState> c = obj._callback;
-            Debug.Assert(c != null);
-            obj._callback = null;
-            c(obj._state);
-        };
-
         internal QueueUserWorkItemCallbackDefaultContext(Action<TState> callback, TState state)
         {
+            Debug.Assert(callback != null);
+
             _callback = callback;
             _state = state;
         }
 
         public override void Execute()
         {
+            ExecutionContext.CheckThreadPoolAndContextsAreDefault();
             base.Execute();
-            ExecutionContext.RunInternal(executionContext: null, s_executionContextShim, this); // null executionContext on RunInternal is Default context
+
+            Action<TState> callback = _callback;
+            _callback = null;
+
+            callback(_state);
+
+            // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
     }
 
@@ -1303,7 +1297,7 @@ namespace System.Threading
 
             ExecutionContext context = ExecutionContext.Capture();
 
-            object tpcallBack = (context != null && context.IsDefault) ?
+            object tpcallBack = (context == null || context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext(callBack, state) :
                 (object)new QueueUserWorkItemCallback(callBack, state, context);
 
@@ -1323,7 +1317,7 @@ namespace System.Threading
 
             ExecutionContext context = ExecutionContext.Capture();
 
-            object tpcallBack = (context != null && context.IsDefault) ?
+            object tpcallBack = (context == null || context.IsDefault) ?
                 new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state) :
                 (object)new QueueUserWorkItemCallback<TState>(callBack, state, context);
 
@@ -1343,7 +1337,7 @@ namespace System.Threading
             EnsureVMInitialized();
 
             ThreadPoolGlobals.workQueue.Enqueue(
-                new QueueUserWorkItemCallback<TState>(callBack, state, null), forceGlobal: !preferLocal);
+                new QueueUserWorkItemCallbackDefaultContext<TState>(callBack, state), forceGlobal: !preferLocal);
 
             return true;
         }
@@ -1357,7 +1351,7 @@ namespace System.Threading
 
             EnsureVMInitialized();
 
-            object tpcallBack = new QueueUserWorkItemCallback(callBack, state, null);
+            object tpcallBack = new QueueUserWorkItemCallbackDefaultContext(callBack, state);
 
             ThreadPoolGlobals.workQueue.Enqueue(tpcallBack, forceGlobal: true);
 

@@ -33,7 +33,7 @@ namespace System.Threading.Tasks
         }
 
         // static delegate for threads allocated to handle LongRunning tasks.
-        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s => ((Task)s).ExecuteEntryUnsafe();
+        private static readonly ParameterizedThreadStart s_longRunningThreadWork = s => ((Task)s).ExecuteEntryUnsafe(threadPoolThread: null);
 
         /// <summary>
         /// Schedules a task to the ThreadPool.
@@ -73,7 +73,7 @@ namespace System.Threading.Tasks
 
             try
             {
-                task.ExecuteEntryUnsafe(); // handles switching Task.Current etc.
+                task.ExecuteEntryUnsafe(threadPoolThread: null); // handles switching Task.Current etc.
             }
             finally
             {
