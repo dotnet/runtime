@@ -25,6 +25,27 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
                 DSATestData.Dsa512Parameters);
         }
 
+        [ConditionalFact(nameof(SupportsFips186_3))]
+        public static void ReadWriteDsa2048DeficientXPkcs8()
+        {
+            ReadWriteBase64Pkcs8(
+                @"
+MIICZAIBADCCAjkGByqGSM44BAEwggIsAoIBAQCU0+SznxcnPo8nsyaS98NNNWGL
+0nlUi0c2k5wrpOcpEWyurGAB6VcFwn188MMIvKcCu0cS1LtEihB4tjEVDqtFXJFn
+imHFHC03HgK7rHDpwsbadXtXgg7I/QluEF7DbAeKT9fdhyTSddMAf5TxL/lhZyk8
+ZntGdwfx3Jp8CzS8T8R1sV1RJAp4mlOla2TWnB4Ct8o600GztvbJhvHgZb/mgNh9
+7m2VkdjjjlfDesKYOyeUvq/+LHtbbKSbmBJIczJcYd5vggQRAYvpcj/ivagzLBMI
+iqMqCG0U1vACAQE/UWeGQ/MqzABSXbIvACDZL5wvQIi401oedk3Ni3DAs9LrAiEA
+23CgOhWOnMudk9v3Z5bL68pFqHA+gqRYAViO5LaYWrMCggEAPPDxRLcKu9RCYNks
+TgMq3wpZjmgyPiVK/4cQyejqm+GdDSr5OaoN7HbSB7bqzveCTjZldTVjAcpfmF74
+/3r1UYuN8IhaasVw/i5cWVYXDnHydAGUAYyKCkp7D5z5av1+JQJvqAuflya2xN/L
+xBBeuYaHyml/eXlAwTNbFEMR1H/yHk1cQ8AFhHhrwarkrYWKwGM1HuRCNHC+URVS
+hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
+4Hlo5vcH71YU6D5hEm9qXzk54HZzdFRL4yJcxPjzxQHVolJve7ZNZWp7vf5+cssW
+1x6KOAQiAiAAyHG344loXbl9k03XAR+rB2/yfsQoL7AMDWRtKdXk5Q==",
+                DSATestData.Dsa2048DeficientXParameters);
+        }
+
         [Fact]
         public static void ReadWriteDsa512EncryptedPkcs8()
         {
@@ -134,6 +155,33 @@ EDVKgNkAxxCnPVjTUalttxCxTv7FC/vxfN7ulB2uKzicegsf6t/nS6i2dpJjUYDF
                     HashAlgorithmName.SHA1,
                     0x0202),
                 DSATestData.GetDSA2048Params());
+        }
+
+        [ConditionalFact(nameof(SupportsFips186_3))]
+        public static void ReadWriteDsa2048DeficientXEncryptedPkcs8()
+        {
+            ReadBase64EncryptedPkcs8(
+                @"
+MIICkjAcBgoqhkiG9w0BDAEDMA4ECIE+VJLKiCq5AgIIAASCAnDa5K+uH8d1SVg6
+NUGrayJH9pJ//k8Y8vP6/t7iZBsNnhcBXcntM9CuiXlFGi11utbhW9WLhUEzx9rL
+qNb09aC0axeUko4JZC27fvr4IrifNURrMXB1D1QOwzZZNggaqsoIsZ/VSdgr6MSL
+ek8D7YQ9sA0Zjex63H+XN2fiO98doD7foOIM0LbfSc2uue3MS0HYY8GkSIlbbcSq
+Mk+GjYKRF0kHUOvRVei3CYaFM54X/RbYCV+9JXzRN9Rx33JH/0QqBBmdsE4UTLiZ
+TUNhu/d/qRZusOVDix+5UiAaQ4juxuvT/rHdLaM/5W65yyH9ARK1qSiQWOYV9cgr
+bDo3rWwxSAxKmMJt1BfiiN+Zhg9m50lkdLNen2xOJrkvjb1/XJRaqYGFTpWnCcRc
+iQVhTB+7navPKuUjCPNhhR61ev7zLoahzmqVaRsSxsaBWUyWWysi1RnBZ/Om7xer
+idEK+c8u8DYBXXzEe/DGzYL7O4pwk6CiszlwQKbLrdS4hb7OpD3ApZsxY+fI5gf1
+qpyisiOqbpfk51m8MekT+NyKh24RIa7uCgEm6hP3RN4YHwk+GtW+FLT7Dy095A85
+LMW+AUTTx0nzbTr0JrF/xHDYjjR5sxYx7oETgVKaglsErc8GGtiZLJT0mzV7hJ6T
+RMCochA67WSoCIkJxwvSWyH6c2+9c7SP/Zi7pQqSMgV9KfWker5cFmwvbJGUOHvA
+BcNFpff98LJz3xpSE8iHr5iynJ4mOfkmMMzRczyVE+xblz1zcTwS5JBDyVRch1Tj
+dOwrkyNhKY+C3S3Hrg+1jGkxn95eJRPX7giU2GBUdc535JhKZH4=",
+                "watchX",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
+                    HashAlgorithmName.SHA1, 
+                    0x0101),
+                DSATestData.Dsa2048DeficientXParameters);
         }
 
         [Fact]
