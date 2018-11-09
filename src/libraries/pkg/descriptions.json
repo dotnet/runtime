@@ -747,7 +747,7 @@
       "System.Drawing.Design.PropertyValueUIItem",
       "System.Drawing.Design.PropertyValueUIItemInvokeHandler",
       "System.Drawing.Design.PaintValueEventArgs",
-      "System.Drawing.Design.UITypeEditor"
+      "System.Drawing.Design.UITypeEditor",
       "System.Drawing.Design.UITypeEditorEditStyle"
     ]
   },
@@ -1245,6 +1245,16 @@
     "Description": "Provides the System.Net.WebSockets.ClientWebSocket class, which implements the client role of the WebSockets protocol (RFC 6455).",
     "CommonTypes": [
       "System.Net.WebSockets.ClientWebSocket"
+    ]
+  },
+  {
+    "Name": "System.Numerics.Tensors",
+    "Description": "Tensor class which represents and extends multi-dimensional arrays.",
+    "CommonTypes": [
+      "System.Numerics.Tensors.Tensor<T>",
+      "System.Numerics.Tensors.CompressedSparseTensor<T>",
+      "System.Numerics.Tensors.DenseTensor<T>",
+      "System.Numerics.Tensors.SparseTensor<T>"
     ]
   },
   {
