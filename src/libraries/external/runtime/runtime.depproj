@@ -64,25 +64,7 @@
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)ni</RuntimePath>
     </AdditionalBinPlaceConfiguration>
   </ItemGroup>
-  
-  <Target Name="WorkaroundNETNativeTFM" Condition="'$(TargetsAOT)'=='true'" AfterTargets="AfterResolveReferences">
-    <!-- NETNative's targeting pack still uses uap10.1 moniker, but also includes netcore50 so we cannot use AssetTargetFallback
-         Replace the netcore50 assets with those from uap10.1 directory -->
-    <ItemGroup>
-      <_coreLib Include="@(Reference)"  Condition="'%(Reference.FileName)' == 'System.Private.CoreLib'" />
-    </ItemGroup>
-    <PropertyGroup>
-      <_coreLibPath>%(_coreLib.RootDir)%(_coreLib.Directory)..\uap10.1</_coreLibPath>
-      <_coreLibPackage>%(_coreLib.NuGetPackageId)</_coreLibPackage>
-      <_coreLibPackageVersion>%(_coreLib.NuGetPackageVersion)</_coreLibPackageVersion>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(_coreLibPath)')" Text="'$(_coreLibPath)' doesn't exist: can this workaround target be removed?" />
-    <ItemGroup>
-      <Reference Remove="@(Reference)" Condition="'%(NuGetPackageId)' == '$(_coreLibPackage)'" />
-      <Reference Include="$(_coreLibPath)\*.*" NuGetPackageId="$(_coreLibPackage)" NuGetPackageVersion="$(_coreLibPackageVersion)" />
-    </ItemGroup>
-  </Target>
-  
+
   <!-- Setup the testing shared framework host -->
   <Target Name="SetupTestingHost" AfterTargets="AfterResolveReferences" Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
 
