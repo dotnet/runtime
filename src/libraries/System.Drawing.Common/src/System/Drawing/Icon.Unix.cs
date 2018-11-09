@@ -44,11 +44,15 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
+#if netcoreapp
+    [System.ComponentModel.TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
+#else
 #if !NETCORE
 #if !MONOTOUCH
     [Editor("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof(System.Drawing.Design.UITypeEditor))]
 #endif
     [TypeConverter(typeof(IconConverter))]
+#endif
 #endif
     [Serializable]
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable

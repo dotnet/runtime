@@ -2,9 +2,26 @@
   <PropertyGroup>
     <ProjectGuid>{AC1A1515-70D8-42E4-9B19-A72F739E974C}</ProjectGuid>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+    <TestDataPackageVersion>1.0.0</TestDataPackageVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="X509Certificate2UITests.cs" />
     <Compile Include="X509Certificate2UIManualTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+      <Link>Common\System\Drawing\Helpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Drawing\FontConverterTests.cs" />
+    <Compile Include="System\Drawing\IconConverterTests.cs" />
+    <Compile Include="System\Drawing\ImageConverterTests.cs" />
+    <Compile Include="System\Drawing\ImageFormatConverterTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(TestDataPackageVersion)\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
   </ItemGroup>
 </Project>
