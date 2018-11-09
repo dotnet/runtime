@@ -3096,6 +3096,12 @@
         "xamarinwatchos10": "Any"
       }
     },
+    "System.Numerics.Tensors": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "0.1.0.0": "0.1.0"
+      }
+    },
     "System.Numerics.Vectors": {
       "StableVersions": [
         "4.0.0",
