@@ -4,7 +4,6 @@
 
 using Internal.Cryptography;
 using System.Diagnostics;
-using Internal.NativeCrypto;
 
 using static Interop.BCrypt;
 using static Interop.NCrypt;
@@ -58,54 +57,6 @@ namespace System.Security.Cryptography
                 }
 
                 ImportKeyBlob(blob, hasPrivateKey);
-            }
-
-            public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
-            {
-                CngPkcs8.Pkcs8Response response = CngPkcs8.ImportPkcs8PrivateKey(source, out int localRead);
-
-                ProcessPkcs8Response(response);
-                bytesRead = localRead;
-            }
-
-            public override void ImportEncryptedPkcs8PrivateKey(
-                ReadOnlySpan<byte> passwordBytes,
-                ReadOnlySpan<byte> source,
-                out int bytesRead)
-            {
-                CngPkcs8.Pkcs8Response response = CngPkcs8.ImportEncryptedPkcs8PrivateKey(
-                    passwordBytes,
-                    source,
-                    out int localRead);
-
-                ProcessPkcs8Response(response);
-                bytesRead = localRead;
-            }
-
-            public override void ImportEncryptedPkcs8PrivateKey(
-                ReadOnlySpan<char> password,
-                ReadOnlySpan<byte> source,
-                out int bytesRead)
-            {
-                CngPkcs8.Pkcs8Response response = CngPkcs8.ImportEncryptedPkcs8PrivateKey(
-                    password,
-                    source,
-                    out int localRead);
-
-                ProcessPkcs8Response(response);
-                bytesRead = localRead;
-            }
-
-            private void ProcessPkcs8Response(CngPkcs8.Pkcs8Response response)
-            {
-                // Wrong algorithm?
-                if (response.GetAlgorithmGroup() != BCryptNative.AlgorithmName.DSA)
-                {
-                    response.FreeKey();
-                    throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey);
-                }
-
-                AcceptImport(response);
             }
 
             public override byte[] ExportEncryptedPkcs8PrivateKey(
