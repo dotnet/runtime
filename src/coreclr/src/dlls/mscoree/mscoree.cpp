@@ -59,7 +59,7 @@ extern "C" BOOL WINAPI _CRT_INIT(HANDLE hInstance, DWORD dwReason, LPVOID lpRese
 extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved);
 
 // For the CoreClr, this is the real DLL entrypoint. We make ourselves the first entrypoint as
-// we need to capture coreclr's hInstance before the C runtine initializes. This function
+// we need to capture coreclr's hInstance before the C runtime initializes. This function
 // will capture hInstance, let the C runtime initialize and then invoke the "classic"
 // DllMain that initializes everything else.
 extern "C" BOOL WINAPI CoreDllMain(HANDLE hInstance, DWORD dwReason, LPVOID lpReserved)
