@@ -36,7 +36,6 @@
     <Compile Include="ListChangedEventArgsTests.cs" />
     <Compile Include="LicenseProviderAttributeTests.cs" />
     <Compile Include="LicenseExceptionTests.cs" />
-    <Compile Include="InvalidAsynchronousStateExceptionTests.cs" />
     <Compile Include="ExtenderProvidedPropertyAttributeTests.cs" />
     <Compile Include="InstanceCreationEditorTests.cs" />
     <Compile Include="InstallerTypeAttributeTests.cs" />
@@ -156,6 +155,11 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(TestDataPackageVersion)\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\TestResx.resx">
