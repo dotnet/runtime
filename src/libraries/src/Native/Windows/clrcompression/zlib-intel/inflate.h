@@ -132,7 +132,7 @@ struct inflate_state {
 
 
 static inline void inf_crc_copy(z_streamp strm, unsigned char FAR *const dst,
-        const unsigned char FAR *const src, size_t len)
+        const unsigned char FAR *const src, uInt len)
 {
     struct inflate_state *const state = (struct inflate_state *const)strm->state;
 
@@ -159,7 +159,7 @@ static inline void window_output_flush(z_streamp strm)
     struct inflate_state *const state = (struct inflate_state *const)strm->state;
 
     size_t woff, roff, copysz;
-    size_t nexto_len;
+    uInt nexto_len;
 
     if (state->wnext > strm->avail_out) {
         nexto_len = strm->avail_out;
