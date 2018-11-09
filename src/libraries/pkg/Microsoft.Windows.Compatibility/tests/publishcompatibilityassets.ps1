@@ -14,30 +14,35 @@ function _getPackageVersion($packageName)
 		Exit;
 	}
 
-	if (!((get-item $searchPattern).FullName -match '([0-9].[0-9].[0-9][-a-z0-9]*)'))
+	if (!([string]((get-item $searchPattern).FullName) -match '([0-9].[0-9].[0-9][-a-z]*.[0-9]*.[0-9]*)'))
 	{
 		Write-Error -Message "Package name is invalid"
 		Exit;
 	}
 
-	return $matches[0]
+	if (!$matches)
+	{
+		Write-Error -Message (-join("Couldn't get package version for: ", $packageName))
+		Exit;
+	}
+	return $matches[1]
 }
 
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 1
 
 $repoRoot = ((get-item $PSScriptRoot).parent.parent.parent.FullName)
-$dotnetPath = -join($repoRoot, "\Tools\dotnetcli\dotnet.exe")
+$dotnetPath = -join($repoRoot, "\.dotnet\dotnet.exe")
 $csprojPath = -join($PSScriptRoot, "\", (Get-ChildItem $PSScriptRoot"\*.csproj" | Select-Object -ExpandProperty Name))
 $packagesCachePath = -join($repoRoot, "\packages")
-$localPackageSourcePath = -join($repoRoot, "\bin\packages\Debug\")
+$localPackageSourcePath = -join($repoRoot, "\artifacts\packages\Debug\")
 $targetFramework = -join("netcoreapp", $frameworkVersion)
 
 if (!(Test-Path $localPackageSourcePath))
 {
-	$localPackageSourcePath = -join($repoRoot, "\bin\packages\Release\")
+	$localPackageSourcePath = -join($repoRoot, "\artifacts\packages\Release\")
 	if (!(Test-Path $localPackageSourcePath))
 	{
-		Write-Error -Message "Local package source must exist.";
+		Write-Error -Message (-join('Local package source must exist ', $localPackageSourcePath))
 		Exit;
 	}
 }
@@ -63,7 +68,7 @@ if (!(Test-Path $outputPath))
 
 Write-Output (-join("Published succedded for: ", $targetFramework))
 
-$refPath = -join($repoRoot, "\bin\ref\", $refDirName)
+$refPath = -join($repoRoot, "\artifacts\bin\ref\", $refDirName)
 
 if (Test-Path $refPath)
 {
