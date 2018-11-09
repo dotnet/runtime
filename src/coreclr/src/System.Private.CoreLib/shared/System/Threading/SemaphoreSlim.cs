@@ -80,7 +80,7 @@ namespace System.Threading
             internal TaskNode Prev, Next;
             internal TaskNode() : base() { }
 
-            internal override void ExecuteFromThreadPool()
+            internal override void ExecuteFromThreadPool(Thread threadPoolThread)
             {
                 bool setSuccessfully = TrySetResult(true);
                 Debug.Assert(setSuccessfully, "Should have been able to complete task");
