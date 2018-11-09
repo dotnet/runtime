@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System.Drawing.Imaging
 {
     /// <summary>
     /// Specifies the format of the image.
     /// </summary>
+#if netcoreapp
+    [TypeConverter("System.Drawing.ImageFormatConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
+#endif
     public sealed class ImageFormat
     {
         // Format IDs

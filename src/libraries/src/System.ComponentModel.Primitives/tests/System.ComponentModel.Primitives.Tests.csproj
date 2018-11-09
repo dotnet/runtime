@@ -4,6 +4,7 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="InvalidAsynchronousStateExceptionTests.cs" />
     <Compile Include="InvalidEnumArgumentExceptionTests.cs" />
     <Compile Include="BrowsableAttributeTests.cs" />
     <Compile Include="ComponentCollectionTests.cs" />
