@@ -26,57 +26,57 @@
   </ItemGroup>
   <!-- Utf8 Formatter/Parser -->
   <ItemGroup>
-    <Compile Include="System\Buffers\StandardFormat.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Constants.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Boolean.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.G.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Float.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Guid.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.D.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.Default.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.N.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.D.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.Default.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.N.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.X.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Formatter\Utf8Formatter.TimeSpan.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\ParserHelpers.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Boolean.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Default.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.G.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Helpers.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.O.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Date.R.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Decimal.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Float.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Guid.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.D.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.N.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.D.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.N.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.X.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.Number.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.BigG.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.C.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
-    <Compile Include="System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\StandardFormat.cs" Link="System\Buffers\StandardFormat.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Constants.cs" Link = "System\Buffers\Text\Utf8Constants.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" Link = "System\Buffers\Text\Utf8Formatter\FormattingHelpers.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Boolean.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Boolean.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.G.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.G.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Float.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Float.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Guid.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Guid.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.D.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.D.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.Default.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.Default.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.N.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Signed.N.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.D.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.D.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.Default.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.Default.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.N.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.N.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.X.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.Integer.Unsigned.X.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Formatter\Utf8Formatter.TimeSpan.cs" Link = "System\Buffers\Text\Utf8Formatter\Utf8Formatter.TimeSpan.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\ParserHelpers.cs" Link = "System\Buffers\Text\Utf8Parser\ParserHelpers.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Boolean.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Boolean.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Date.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Date.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Default.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Default.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Date.G.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Date.G.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Helpers.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Date.Helpers.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Date.O.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Date.O.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Date.R.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Date.R.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Decimal.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Decimal.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Float.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Float.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Guid.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Guid.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.D.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.D.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.N.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Signed.N.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.D.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.D.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.N.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.N.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.X.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Integer.Unsigned.X.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.Number.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.Number.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.BigG.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.BigG.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.C.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.C.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" Link = "System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" Link = "System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
   </ItemGroup>
   <!-- Double/Decimal format/parser logic copied (almost verbatim) over from CoreRT -->
   <ItemGroup>
