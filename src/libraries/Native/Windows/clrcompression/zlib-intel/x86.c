@@ -46,7 +46,7 @@ void x86_check_features(void)
     once = 1;
 
 #ifdef _MSC_VER
-    __cpuid(&regs, 1);
+    __cpuid(regs, 1);
 #else
     __cpuid(1, regs[A], regs[B], regs[C], regs[D]);
 #endif

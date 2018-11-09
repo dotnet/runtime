@@ -99,7 +99,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
         }
         
         if (out >= end) {
-            state->wnext = out - (state->window + state->wsize);
+            state->wnext = (unsigned)(out - (state->window + state->wsize));
             window_output_flush(strm);
             out = state->window + state->wsize + state->wnext;
             if (strm->avail_out == 0)
@@ -233,7 +233,7 @@ unsigned start;         /* inflate()'s starting value for strm->avail_out */
     strm->next_in = in;
     strm->avail_in = (unsigned)(in < last ? 5 + (last - in) : 5 - (in - last));
 
-    state->wnext = out - (state->window + state->wsize);
+    state->wnext = (unsigned)(out - (state->window + state->wsize));
 
     state->hold = hold;
     state->bits = bits;
