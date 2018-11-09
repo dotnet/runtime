@@ -28,7 +28,7 @@ internal class NodeFactory
             case NodeType.Not:
                 return this.Conditional(condition.Child, falseBranch, trueBranch);  // <-- tail recursion
         }
-        return falseBranch;  //<- should return the orignal trueBranch
+        return falseBranch;  //<- should return the original trueBranch
     }
 
     private class Test
