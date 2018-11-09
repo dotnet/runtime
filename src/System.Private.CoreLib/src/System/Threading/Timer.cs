@@ -674,9 +674,9 @@ namespace System.Threading
             }
         }
 
-        void IThreadPoolWorkItem.Execute() => Fire();
+        void IThreadPoolWorkItem.Execute() => Fire(isThreadPool: true);
 
-        internal void Fire()
+        internal void Fire(bool isThreadPool = false)
         {
             bool canceled = false;
 
@@ -690,7 +690,7 @@ namespace System.Threading
             if (canceled)
                 return;
 
-            CallCallback();
+            CallCallback(isThreadPool);
 
             bool shouldSignal = false;
             lock (m_associatedTimerQueue)
@@ -719,7 +719,7 @@ namespace System.Threading
             }
         }
 
-        internal void CallCallback()
+        internal void CallCallback(bool isThreadPool)
         {
             if (FrameworkEventSource.IsInitialized && FrameworkEventSource.Log.IsEnabled(EventLevel.Informational, FrameworkEventSource.Keywords.ThreadTransfer))
                 FrameworkEventSource.Log.ThreadTransferReceiveObj(this, 1, string.Empty);
@@ -732,7 +732,14 @@ namespace System.Threading
             }
             else
             {
-                ExecutionContext.RunInternal(context, s_callCallbackInContext, this);
+                if (isThreadPool)
+                {
+                    ExecutionContext.RunFromThreadPoolDispatchLoop(Thread.CurrentThread, context, s_callCallbackInContext, this);
+                }
+                else
+                {
+                    ExecutionContext.RunInternal(context, s_callCallbackInContext, this);
+                }
             }
         }
 
