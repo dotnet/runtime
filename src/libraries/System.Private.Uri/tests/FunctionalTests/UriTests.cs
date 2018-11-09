@@ -892,5 +892,90 @@ namespace System.PrivateUri.Tests
             string largeString = new string('a', 1_000_000) + ":"; // 2MB is large enough to cause a stack overflow if we stackalloc the scheme buffer.
             Assert.Throws<UriFormatException>(() => new Uri(largeString));
         }
+
+        [Fact]
+        public static void Uri_HostTrailingSpaces_SpacesTrimmed()
+        {
+            string host = "www.contoso.com";
+            Uri u = new Uri($"http://{host}     ");
+
+            Assert.Equal($"http://{host}/", u.AbsoluteUri);
+            Assert.Equal(host, u.Host);
+        }
+
+        [Theory]
+        [InlineData("1234")]
+        [InlineData("01234")]
+        [InlineData("12340")]
+        [InlineData("012340")]
+        [InlineData("99")]
+        [InlineData("09")]
+        [InlineData("90")]
+        [InlineData("0")]
+        [InlineData("000")]
+        [InlineData("65535")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Uri_PortTrailingSpaces_SpacesTrimmed(string portString)
+        {
+            Uri u = new Uri($"http://www.contoso.com:{portString}     ");
+
+            int port = Int32.Parse(portString);
+            Assert.Equal($"http://www.contoso.com:{port}/", u.AbsoluteUri);
+            Assert.Equal(port, u.Port);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Uri_EmptyPortTrailingSpaces_UsesDefaultPortSpacesTrimmed()
+        {
+            Uri u = new Uri($"http://www.contoso.com:     ");
+
+            Assert.Equal($"http://www.contoso.com/", u.AbsoluteUri);
+            Assert.Equal(80, u.Port);
+        }
+
+        [Fact]
+        public static void Uri_PathTrailingSpaces_SpacesTrimmed()
+        {
+            string path = "/path/";
+            Uri u = new Uri($"http://www.contoso.com{path}     ");
+
+            Assert.Equal($"http://www.contoso.com{path}", u.AbsoluteUri);
+            Assert.Equal(path, u.AbsolutePath);
+        }
+
+        [Fact]
+        public static void Uri_QueryTrailingSpaces_SpacesTrimmed()
+        {
+            string query = "?query";
+            Uri u = new Uri($"http://www.contoso.com/{query}     ");
+
+            Assert.Equal($"http://www.contoso.com/{query}", u.AbsoluteUri);
+            Assert.Equal(query, u.Query);
+        }
+
+        [Theory]
+        [InlineData(" 80")]
+        [InlineData("8 0")]
+        [InlineData("80a")]
+        [InlineData("65536")]
+        [InlineData("100000")]
+        [InlineData("10000000000")]
+        public static void Uri_InvalidPort_ThrowsUriFormatException(string portString)
+        {
+            Assert.Throws<UriFormatException>( () =>
+            {
+                Uri u = new Uri($"http://www.contoso.com:{portString}");
+            });
+        }
+
+        [Fact]
+        public static void Uri_EmptyPort_UsesDefaultPort()
+        {
+            Uri u = new Uri($"http://www.contoso.com:");
+
+            Assert.Equal($"http://www.contoso.com/", u.AbsoluteUri);
+            Assert.Equal(80, u.Port);
+        }
     }
 }
