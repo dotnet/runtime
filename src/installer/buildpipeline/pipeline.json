@@ -109,6 +109,20 @@
           }
         },
         {
+          "Name": "Core-Setup-FreeBSD-BT",
+          "Parameters": {
+            "PB_AdditionalBuildArguments": "-PortableBuild=true -strip-symbols -SkipTests=$(PB_SkipTests)",
+            "PB_AdditionalMSBuildArguments": "/p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "FreeBSD",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
           "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
             "PB_AdditionalMSBuildArguments": "/p:SkipTests=true /p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
