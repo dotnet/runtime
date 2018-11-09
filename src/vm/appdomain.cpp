@@ -6447,7 +6447,7 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
             // the adding of the result to fail. Checking for already chached specs
             // is not an option as it would introduce another race window.
             // The binder does a re-fetch of the
-            // orignal binding spec and therefore will not cause inconsistency here.
+            // original binding spec and therefore will not cause inconsistency here.
             // For the purposes of the resolve event, failure to add to the cache still is a success.
             AddFileToCache(pPrePolicySpec, result, TRUE /* fAllowFailure */);
             if (*ppFailedSpec != pPrePolicySpec && pPostPolicySpec->CanUseWithBindingCache())
