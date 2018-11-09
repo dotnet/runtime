@@ -1385,15 +1385,13 @@ interface ICorDebugManagedCallback4 : IUnknown
     // Callback indicating a data breakpoint is hit
     // 
     // Parameters
-    //   pProcess    - the process that hits the data breakpoint
-    //   pThread     - the thread that hits the data breakpoint
-    //   pContext    - a pointer to the CONTEXT structure
-    //   contextSize - the size of the CONTEXT structure
+    //   pProcess - the process that hits the data breakpoint
+    //   pThread  - the thread that hits the data breakpoint
     // 
     // Returns
     //   S_OK - on success
     //
-    HRESULT DataBreakpoint([in] ICorDebugProcess* pProcess, [in] ICorDebugThread* pThread, [in] BYTE* pContext, [in] ULONG32 contextSize);
+    HRESULT DataBreakpoint([in] ICorDebugProcess* pProcess, [in] ICorDebugThread* pThread);
 }
 
 #pragma warning(disable:28718)	/* disable warning 28718 for interface ICorDebugManagedCallback2 */
