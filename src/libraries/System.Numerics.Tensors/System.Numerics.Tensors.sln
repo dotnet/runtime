@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28224.57
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{87920B79-6C7A-4815-89F4-1DA09FAFF411}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D221B689-1AF1-4595-B37B-85D478B94EAD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{559061C0-F6A9-4522-992E-3C95AAF852DB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{7CCC80FC-70B2-4026-BE52-FA2451FAA83D}"
+	ProjectSection(SolutionItems) = preProject
+		pkg\System.Numerics.Tensors.pkgproj = pkg\System.Numerics.Tensors.pkgproj
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "ref\System.Numerics.Tensors.csproj", "{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "src\System.Numerics.Tensors.csproj", "{34B7B42D-ADE0-419D-A636-80180244875D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors.Tests", "tests\System.Numerics.Tensors.Tests.csproj", "{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{34B7B42D-ADE0-419D-A636-80180244875D}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{34B7B42D-ADE0-419D-A636-80180244875D}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{34B7B42D-ADE0-419D-A636-80180244875D}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{34B7B42D-ADE0-419D-A636-80180244875D}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8} = {87920B79-6C7A-4815-89F4-1DA09FAFF411}
+		{34B7B42D-ADE0-419D-A636-80180244875D} = {D221B689-1AF1-4595-B37B-85D478B94EAD}
+		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37} = {559061C0-F6A9-4522-992E-3C95AAF852DB}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {13D12508-D252-4FD4-A8AA-1DD44F666914}
+	EndGlobalSection
+EndGlobal

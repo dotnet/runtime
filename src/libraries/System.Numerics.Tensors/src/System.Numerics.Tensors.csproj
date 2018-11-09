@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;</Configurations>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+    <RootNamespace>System.Numerics.Tensors</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
+    <Compile Include="System\Numerics\Tensors\ArrayTensorExtensions.cs" />
+    <Compile Include="System\Numerics\Tensors\ArrayUtilities.cs" />
+    <Compile Include="System\Numerics\Tensors\CompressedSparseTensor.cs" />
+    <Compile Include="System\Numerics\Tensors\DenseTensor.cs" />
+    <Compile Include="System\Numerics\Tensors\SparseTensor.cs" />
+    <Compile Include="System\Numerics\Tensors\Tensor.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Linq" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+</Project>
