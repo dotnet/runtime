@@ -238,7 +238,7 @@ namespace System.Resources
                     // the abbreviated ones emitted by InternalResGen.
                     if (CanUseDefaultResourceClasses(readerTypeName, resSetTypeName))
                     {
-                        return new RuntimeResourceSet(store);
+                        return new RuntimeResourceSet(store, permitDeserialization: true);
                     }
                     else
                     {
@@ -276,7 +276,7 @@ namespace System.Resources
 
             if (_mediator.UserResourceSet == null)
             {
-                return new RuntimeResourceSet(store);
+                return new RuntimeResourceSet(store, permitDeserialization:true);
             }
             else
             {

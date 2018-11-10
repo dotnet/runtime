@@ -195,14 +195,14 @@ namespace System.Resources
         {
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
             Stream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
-            _defaultReader = new ResourceReader(stream, _resCache);
+            _defaultReader = new ResourceReader(stream, _resCache, false);
             Reader = _defaultReader;
         }
 
-        internal RuntimeResourceSet(Stream stream) : base(false)
+        internal RuntimeResourceSet(Stream stream, bool permitDeserialization = false) : base(false)
         {
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
-            _defaultReader = new ResourceReader(stream, _resCache);
+            _defaultReader = new ResourceReader(stream, _resCache, permitDeserialization);
             Reader = _defaultReader;
         }
 

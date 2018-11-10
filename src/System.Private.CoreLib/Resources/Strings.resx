@@ -1933,6 +1933,9 @@
   <data name="BadImageFormat_ParameterSignatureMismatch" xml:space="preserve">
     <value>The parameters and the signature of the method don't match.</value>
   </data>
+  <data name="BadImageFormat_ResType_SerBlobMismatch" xml:space="preserve">
+    <value>The type serialized in the .resources file was not the same type that the .resources file said it contained. Expected '{0}' but read '{1}'.</value>
+  </data>
   <data name="BadImageFormat_ResourceDataLengthInvalid" xml:space="preserve">
     <value>Corrupt .resources file.  The specified data length '{0}' is not a valid position in the stream.</value>
   </data>
