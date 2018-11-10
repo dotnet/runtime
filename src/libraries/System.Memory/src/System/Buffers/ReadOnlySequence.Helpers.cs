@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers
@@ -466,6 +467,82 @@ namespace System.Buffers
 
             // Equivalent to: return (start <= value && value <= start)
             return (value - start) <= (end - start);
+        }
+
+        /// <summary>
+        /// Helper to efficiently prepare the <see cref="SequenceReader{T}"/>
+        /// </summary>
+        /// <param name="first">The first span in the sequence.</param>
+        /// <param name="next">The next position.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void GetFirstSpan(out ReadOnlySpan<T> first, out SequencePosition next)
+        {
+            first = default;
+            next = default;
+            SequencePosition start = Start;
+            int startIndex = start.GetInteger();
+            object startObject = start.GetObject();
+
+            if (startObject != null)
+            {
+                SequencePosition end = End;
+                int endIndex = end.GetInteger();
+                bool hasMultipleSegments = startObject != end.GetObject();
+
+                if (startIndex >= 0)
+                {
+                    if (endIndex >= 0)
+                    {
+                        // Positive start and end index == ReadOnlySequenceSegment<T>
+                        ReadOnlySequenceSegment<T> segment = (ReadOnlySequenceSegment<T>)startObject;
+                        next = new SequencePosition(segment.Next, 0);
+                        first = segment.Memory.Span;
+                        if (hasMultipleSegments)
+                        {
+                            first = first.Slice(startIndex);
+                        }
+                        else
+                        {
+                            first = first.Slice(startIndex, endIndex - startIndex);
+                        }
+                    }
+                    else
+                    {
+                        // Positive start and negative end index == T[]
+                        if (hasMultipleSegments)
+                            ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+                        first = new ReadOnlySpan<T>((T[])startObject, startIndex, (endIndex & ReadOnlySequence.IndexBitMask) - startIndex);
+                    }
+                }
+                else
+                {
+                    first = GetFirstSpanSlow(startObject, startIndex, endIndex, hasMultipleSegments);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static ReadOnlySpan<T> GetFirstSpanSlow(object startObject, int startIndex, int endIndex, bool hasMultipleSegments)
+        {
+            Debug.Assert(startIndex < 0);
+            if (hasMultipleSegments)
+                ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+            // The type == char check here is redundant. However, we still have it to allow
+            // the JIT to see when that the code is unreachable and eliminate it.
+            if (typeof(T) == typeof(char) && endIndex < 0)
+            {
+                // Negative start and negative end index == string
+                ReadOnlySpan<char> spanOfChar = ((string)startObject).AsSpan(startIndex & ReadOnlySequence.IndexBitMask, endIndex - startIndex);
+                return MemoryMarshal.CreateSpan(ref Unsafe.As<char, T>(ref MemoryMarshal.GetReference(spanOfChar)), spanOfChar.Length);
+            }
+            else
+            {
+                // Negative start and positive end index == MemoryManager<T>
+                startIndex &= ReadOnlySequence.IndexBitMask;
+                return ((MemoryManager<T>)startObject).Memory.Span.Slice(startIndex, endIndex - startIndex);
+            }
         }
     }
 }
