@@ -91,7 +91,7 @@ void CallFinalizer(Object* obj)
         {
 
             _ASSERTE(obj->GetMethodTable() == pMT);
-            _ASSERTE(pMT->HasFinalizer() || pMT->IsTransparentProxy());
+            _ASSERTE(pMT->HasFinalizer());
 
             LogFinalization(obj);
             MethodTable::CallFinalizer(obj);

@@ -88,8 +88,6 @@ void AcquireSafeHandleFromWaitHandle(WAITHANDLEREF wh)
         PRECONDITION(wh != NULL);
     } CONTRACTL_END;
 
-    _ASSERTE(!wh->IsTransparentProxy());
-
     SAFEHANDLEREF sh = wh->GetSafeHandle();
     if (sh == NULL)
         COMPlusThrow(kObjectDisposedException);

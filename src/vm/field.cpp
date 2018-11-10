@@ -386,12 +386,6 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     }
     CONTRACTL_END
 
-
-    // Check whether we are setting a field value on a proxy or a marshalbyref
-    // class. If so, then ask remoting services to set the value on the 
-    // instance
-
-
 #ifdef _DEBUG
     //
     // assert that o is derived from MT of enclosing class

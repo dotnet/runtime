@@ -488,12 +488,6 @@ BOOL TypeHandle::IsAbstract() const
     return GetMethodTable()->IsAbstract();
 }
 
-DWORD TypeHandle::IsTransparentProxy() const
-{
-    WRAPPER_NO_CONTRACT;
-    return FALSE;
-}
-
 bool TypeHandle::IsHFA() const
 {
     WRAPPER_NO_CONTRACT;
@@ -732,9 +726,6 @@ BOOL TypeHandle::CanCastTo(TypeHandle type, TypeHandlePairList *pVisited)  const
     if (type.IsTypeDesc())
         return(false);
 
-    if (AsMethodTable()->IsTransparentProxy())
-        return (false);
-        
     return AsMethodTable()->CanCastToClassOrInterface(type.AsMethodTable(), pVisited);
 }
 
@@ -752,9 +743,6 @@ TypeHandle::CastResult TypeHandle::CanCastToNoGC(TypeHandle type)  const
     if (type.IsTypeDesc())
         return(CannotCast);
 
-    if (AsMethodTable()->IsTransparentProxy())
-        return (CannotCast);
-        
     return AsMethodTable()->CanCastToClassOrInterfaceNoGC(type.AsMethodTable());
 }
 #include <optdefault.h>
@@ -1254,7 +1242,6 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
 
     if (!IsTypeDesc())
     {
-        _ASSERT(AsMethodTable()->IsTransparentProxy() == false);
         return AsMethodTable()->GetManagedClassObject();
     }
     else

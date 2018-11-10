@@ -702,7 +702,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     // performance gain in some reflection emit scenarios.
     MethodTable::AllowMethodDataCaching();
 
-    TypeHandle targetType((gc.target != NULL) ? gc.target->GetTrueMethodTable() : NULL);
+    TypeHandle targetType((gc.target != NULL) ? gc.target->GetMethodTable() : NULL);
     // get the invoke of the delegate
     MethodTable * pDelegateType = gc.refThis->GetMethodTable();
     MethodDesc* pInvokeMeth = COMDelegate::FindDelegateInvokeMethod(pDelegateType);
@@ -1630,13 +1630,10 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
 
     _ASSERTE(refThis);
     _ASSERTE(method);
-    
-    MethodTable *pRealMT = target->GetTrueMethodTable();
 
     MethodTable *pMT = target->GetMethodTable();
-    _ASSERTE((NULL == pMT) || pMT->IsTransparentProxy() || !pRealMT->IsContextful());
 
-    MethodDesc *pMeth = Entry2MethodDesc(method, pRealMT);
+    MethodDesc *pMeth = Entry2MethodDesc(method, pMT);
     _ASSERTE(pMeth);
     _ASSERTE(!pMeth->IsStatic());
 
@@ -1650,45 +1647,42 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
     isComObject = pMTTarg->IsComObjectType();
 #endif // FEATURE_COMINTEROP
     
-    if (!pMT->IsTransparentProxy())
-    {
-        MethodDesc *pCorrectedMethod = pMeth;
+    MethodDesc *pCorrectedMethod = pMeth;
 
-        if (pMTMeth != pMTTarg)
+    if (pMTMeth != pMTTarg)
+    {
+        //They cast to an interface before creating the delegate, so we now need 
+        //to figure out where this actually lives before we continue.
+        //<TODO>@perf:  Grovelling with a signature is really slow.  Speed this up.</TODO>
+        if (pCorrectedMethod->IsInterface())
         {
-            //They cast to an interface before creating the delegate, so we now need 
-            //to figure out where this actually lives before we continue.
-            //<TODO>@perf:  Grovelling with a signature is really slow.  Speed this up.</TODO>
-            if (pCorrectedMethod->IsInterface())
+            // No need to resolve the interface based method desc to a class based
+            // one for COM objects because we invoke directly thru the interface MT.
+            if (!isComObject)
             {
-                // No need to resolve the interface based method desc to a class based
-                // one for COM objects because we invoke directly thru the interface MT.
-                if (!isComObject)
-                {
-                    // <TODO>it looks like we need to pass an ownerType in here.
-                    //  Why can we take a delegate to an interface method anyway?  </TODO>
-                    // 
-                    pCorrectedMethod = pMTTarg->FindDispatchSlotForInterfaceMD(pCorrectedMethod).GetMethodDesc();
-                    _ASSERTE(pCorrectedMethod != NULL);
-                }
+                // <TODO>it looks like we need to pass an ownerType in here.
+                //  Why can we take a delegate to an interface method anyway?  </TODO>
+                // 
+                pCorrectedMethod = pMTTarg->FindDispatchSlotForInterfaceMD(pCorrectedMethod).GetMethodDesc();
+                _ASSERTE(pCorrectedMethod != NULL);
             }
         }
+    }
 
-        // Use the Unboxing stub for value class methods, since the value
-        // class is constructed using the boxed instance.
-        if (pMTTarg->IsValueType() && !pCorrectedMethod->IsUnboxingStub())
-        {
-            // those should have been ruled out at jit time (code:COMDelegate::GetDelegateCtor)
-            _ASSERTE((pMTMeth != g_pValueTypeClass) && (pMTMeth != g_pObjectClass));
-            pCorrectedMethod->CheckRestore();
-            pCorrectedMethod = pMTTarg->GetBoxedEntryPointMD(pCorrectedMethod);
-            _ASSERTE(pCorrectedMethod != NULL);
-        }
+    // Use the Unboxing stub for value class methods, since the value
+    // class is constructed using the boxed instance.
+    if (pMTTarg->IsValueType() && !pCorrectedMethod->IsUnboxingStub())
+    {
+        // those should have been ruled out at jit time (code:COMDelegate::GetDelegateCtor)
+        _ASSERTE((pMTMeth != g_pValueTypeClass) && (pMTMeth != g_pObjectClass));
+        pCorrectedMethod->CheckRestore();
+        pCorrectedMethod = pMTTarg->GetBoxedEntryPointMD(pCorrectedMethod);
+        _ASSERTE(pCorrectedMethod != NULL);
+    }
         
-        if (pMeth != pCorrectedMethod)
-        {
-            method = pCorrectedMethod->GetMultiCallableAddrOfCode();
-        }
+    if (pMeth != pCorrectedMethod)
+    {
+        method = pCorrectedMethod->GetMultiCallableAddrOfCode();
     }
     HELPER_METHOD_FRAME_END();
 
@@ -1733,21 +1727,14 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     _ASSERTE(isMemoryReadable(method, 1));
     
     MethodTable *pMTTarg = NULL;
-    MethodTable *pRealMT = NULL;
 
     if (gc.target != NULL)
     {
         pMTTarg = gc.target->GetMethodTable();
-        pRealMT = gc.target->GetTrueMethodTable();
     }
 
-    MethodDesc *pMethOrig = Entry2MethodDesc(method, pRealMT);
+    MethodDesc *pMethOrig = Entry2MethodDesc(method, pMTTarg);
     MethodDesc *pMeth = pMethOrig;
-
-    //
-    // If target is a contextful class, then it must be a proxy
-    //    
-    _ASSERTE((NULL == pMTTarg) || pMTTarg->IsTransparentProxy() || !pRealMT->IsContextful());
 
     MethodTable* pDelMT = gc.refThis->GetMethodTable();
 
@@ -1816,7 +1803,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         {
             gc.refThis->SetMethodPtrAux(method);
         }
-
     }
     else 
     {
@@ -1834,75 +1820,72 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
 #ifdef FEATURE_COMINTEROP
                 isComObject = pMTTarg->IsComObjectType();
 #endif // FEATURE_COMINTEROP
-            
-                if (!pMTTarg->IsTransparentProxy())
-                {
-                    if (pMTMeth != pMTTarg)
-                    {
-                        // They cast to an interface before creating the delegate, so we now need 
-                        // to figure out where this actually lives before we continue.
-                        // <TODO>@perf:  We whould never be using this path to invoke on an interface - 
-                        // that should always be resolved when we are creating the delegate </TODO>
-                        if (pMeth->IsInterface())
-                        {
-                            // No need to resolve the interface based method desc to a class based
-                            // one for COM objects because we invoke directly thru the interface MT.
-                            if (!isComObject)
-                            {
-                                // <TODO>it looks like we need to pass an ownerType in here.
-                                //  Why can we take a delegate to an interface method anyway?  </TODO>
-                                // 
-                                MethodDesc * pDispatchSlotMD = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth).GetMethodDesc();
-                                if (pDispatchSlotMD == NULL)
-                                {
-                                    COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
-                                }
 
-                                if (pMeth->HasMethodInstantiation())
-                                {
-                                    pMeth = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                                        pDispatchSlotMD,
-                                        pMTTarg,
-                                        (!pDispatchSlotMD->IsStatic() && pMTTarg->IsValueType()),
-                                        pMeth->GetMethodInstantiation(),
-                                        FALSE /* allowInstParam */);
-                                }
-                                else
-                                {
-                                    pMeth = pDispatchSlotMD;
-                                }
+                if (pMTMeth != pMTTarg)
+                {
+                    // They cast to an interface before creating the delegate, so we now need 
+                    // to figure out where this actually lives before we continue.
+                    // <TODO>@perf:  We whould never be using this path to invoke on an interface - 
+                    // that should always be resolved when we are creating the delegate </TODO>
+                    if (pMeth->IsInterface())
+                    {
+                        // No need to resolve the interface based method desc to a class based
+                        // one for COM objects because we invoke directly thru the interface MT.
+                        if (!isComObject)
+                        {
+                            // <TODO>it looks like we need to pass an ownerType in here.
+                            //  Why can we take a delegate to an interface method anyway?  </TODO>
+                            // 
+                            MethodDesc * pDispatchSlotMD = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth).GetMethodDesc();
+                            if (pDispatchSlotMD == NULL)
+                            {
+                                COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
+                            }
+
+                            if (pMeth->HasMethodInstantiation())
+                            {
+                                pMeth = MethodDesc::FindOrCreateAssociatedMethodDesc(
+                                    pDispatchSlotMD,
+                                    pMTTarg,
+                                    (!pDispatchSlotMD->IsStatic() && pMTTarg->IsValueType()),
+                                    pMeth->GetMethodInstantiation(),
+                                    FALSE /* allowInstParam */);
+                            }
+                            else
+                            {
+                                pMeth = pDispatchSlotMD;
                             }
                         }
                     }
+                }
 
-                    g_IBCLogger.LogMethodTableAccess(pMTTarg);
+                g_IBCLogger.LogMethodTableAccess(pMTTarg);
 
-                    // Use the Unboxing stub for value class methods, since the value
-                    // class is constructed using the boxed instance.
-                    //
-                    // <NICE> We could get the JIT to recognise all delegate creation sequences and
-                    // ensure the thing is always an BoxedEntryPointStub anyway </NICE>
+                // Use the Unboxing stub for value class methods, since the value
+                // class is constructed using the boxed instance.
+                //
+                // <NICE> We could get the JIT to recognise all delegate creation sequences and
+                // ensure the thing is always an BoxedEntryPointStub anyway </NICE>
 
-                    if (pMTMeth->IsValueType() && !pMeth->IsUnboxingStub())
+                if (pMTMeth->IsValueType() && !pMeth->IsUnboxingStub())
+                {
+                    // If these are Object/ValueType.ToString().. etc,
+                    // don't need an unboxing Stub.
+
+                    if ((pMTMeth != g_pValueTypeClass) 
+                        && (pMTMeth != g_pObjectClass))
                     {
-                        // If these are Object/ValueType.ToString().. etc,
-                        // don't need an unboxing Stub.
-
-                        if ((pMTMeth != g_pValueTypeClass) 
-                            && (pMTMeth != g_pObjectClass))
-                        {
-                            pMeth->CheckRestore();
-                            pMeth = pMTTarg->GetBoxedEntryPointMD(pMeth);
-                            _ASSERTE(pMeth != NULL);
-                        }
+                        pMeth->CheckRestore();
+                        pMeth = pMTTarg->GetBoxedEntryPointMD(pMeth);
+                        _ASSERTE(pMeth != NULL);
                     }
-                    // Only update the code address if we've decided to go to a different target...
-                    // <NICE> We should make sure the code address that the JIT provided to us is always the right one anyway,
-                    // so we don't have to do all this mucking about. </NICE>
-                    if (pMeth != pMethOrig)
-                    {
-                        method = pMeth->GetMultiCallableAddrOfCode();
-                    }
+                }
+                // Only update the code address if we've decided to go to a different target...
+                // <NICE> We should make sure the code address that the JIT provided to us is always the right one anyway,
+                // so we don't have to do all this mucking about. </NICE>
+                if (pMeth != pMethOrig)
+                {
+                    method = pMeth->GetMultiCallableAddrOfCode();
                 }
             }
 
@@ -1997,7 +1980,7 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
             OBJECTREF orThis = thisDel->GetTarget();
             if (orThis!=NULL)
             {
-                pMT = orThis->GetTrueMethodTable();
+                pMT = orThis->GetMethodTable();
             }
 
             pMethodHandle = Entry2MethodDesc(code, pMT);

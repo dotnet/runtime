@@ -54,7 +54,6 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define USE_INDIRECT_CODEHEADER                 // use CodeHeader, RealCodeHeader construct
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
-//#define HAS_REMOTING_PRECODE                  1    // TODO: Implement
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1
 #define FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS 1

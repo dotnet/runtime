@@ -457,16 +457,6 @@ TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable
 // Build a WinRT URI for a given raw URI
 ABI::Windows::Foundation::IUriRuntimeClass *CreateWinRTUri(LPCWSTR wszUri, INT32 cchUri);
 
-// Global process GUID to identify the process
-BSTR GetProcessGUID();
-
-//--------------------------------------------------------------------------
- // switch objects for this wrapper
-// used by JIT&ObjectPooling to ensure a deactivated CCW can point to a new object
-// during reactivate
-//--------------------------------------------------------------------------
-BOOL ReconnectWrapper(OBJECTREF* pOldRef, OBJECTREF* pNewRef);
-
 // Generates GUIDs for parameterized WinRT types.
 class WinRTGuidGenerator
 {

@@ -1305,8 +1305,6 @@ public:
 
     ULONG GetRVA();
 
-    BOOL IsClassConstructorTriggeredViaPrestub();
-
 public:
 
     // Returns preimplemented code of the method if method has one.

@@ -6577,31 +6577,6 @@ void NDirectImportPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
 
-#ifdef HAS_REMOTING_PRECODE
-
-void RemotingPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator /* = NULL */)
-{
-    WRAPPER_NO_CONTRACT;
-
-    IN_WIN64(m_movR10 = X86_INSTR_MOV_R10_IMM64);   // mov r10, pMethodDesc
-    IN_WIN32(m_movEAX = X86_INSTR_MOV_EAX_IMM32);   // mov eax, pMethodDesc
-    m_pMethodDesc = (TADDR)pMD;
-    m_type = PRECODE_REMOTING;          // nop
-    m_call = X86_INSTR_CALL_REL32;
-    m_jmp = X86_INSTR_JMP_REL32;        // jmp rel32
-
-    if (pLoaderAllocator != NULL)
-    {
-        m_callRel32 = rel32UsingJumpStub(&m_callRel32,
-            GetEEFuncEntryPoint(PrecodeRemotingThunk), NULL /* pMD */, pLoaderAllocator);
-        m_rel32 = rel32UsingJumpStub(&m_rel32,
-            GetPreStubEntryPoint(), NULL /* pMD */, pLoaderAllocator);
-    }
-}
-
-#endif // HAS_REMOTING_PRECODE
-
-
 #ifdef HAS_FIXUP_PRECODE
 void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int iMethodDescChunkIndex /*=0*/, int iPrecodeChunkIndex /*=0*/)
 {

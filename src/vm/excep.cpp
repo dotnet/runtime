@@ -2265,7 +2265,7 @@ void StackTraceInfo::SaveStackTrace(BOOL bAllowAllocMem, OBJECTHANDLE hThrowable
     _ASSERTE(! bSkipLastElement || ! bReplaceStack);
 
     bool         fSuccess = false;
-    MethodTable* pMT      = ObjectFromHandle(hThrowable)->GetTrueMethodTable();
+    MethodTable* pMT      = ObjectFromHandle(hThrowable)->GetMethodTable();
 
     // Check if the flag indicating foreign exception raise has been setup or not,
     // and then reset it so that subsequent processing of managed frames proceeds
@@ -2751,7 +2751,7 @@ VOID DECLSPEC_NORETURN RaiseTheException(OBJECTREF throwable, BOOL rethrow
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
     LOG((LF_EH, LL_INFO100, "RealCOMPlusThrow throwing %s\n",
-        throwable->GetTrueMethodTable()->GetDebugClassName()));
+        throwable->GetMethodTable()->GetDebugClassName()));
 
     if (throwable == NULL)
     {
@@ -2837,7 +2837,7 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
     STATIC_CONTRACT_MODE_ANY;
 
     HRESULT    hr  = E_FAIL;
-    MethodTable *pMT = throwable->GetTrueMethodTable();
+    MethodTable *pMT = throwable->GetMethodTable();
 
     // Only Exception objects have a HResult field
     // So don't fetch the field unless we have an exception
@@ -2909,7 +2909,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
 #ifdef _DEBUG
     // If ThreadAbort exception is thrown, the thread should be marked with AbortRequest.
     // If not, we may see unhandled exception.
-    if (param.throwable->GetTrueMethodTable() == g_pThreadAbortExceptionClass)
+    if (param.throwable->GetMethodTable() == g_pThreadAbortExceptionClass)
     {
         _ASSERTE(GetThread()->IsAbortRequested()
 #ifdef _TARGET_X86_
@@ -3821,7 +3821,7 @@ BOOL IsExceptionOfType(RuntimeExceptionKind reKind, OBJECTREF *pThrowable)
     if (*pThrowable == NULL)
         return FALSE;
 
-    MethodTable *pThrowableMT = (*pThrowable)->GetTrueMethodTable();
+    MethodTable *pThrowableMT = (*pThrowable)->GetMethodTable();
 
     // IsExceptionOfType is supported for mscorlib exception types only
     _ASSERTE(reKind <= kLastExceptionInMscorlib);
@@ -4767,7 +4767,7 @@ BOOL UpdateCurrentThrowable(PEXCEPTION_RECORD pExceptionRecord)
             //        to inspect the thread to see what the throwable is on an unhandled
             //        exception.. (but clearly it needs to be fixed asap)
             //        We have the same problem in EEPolicy::LogFatalError().
-            LOG((LF_EH, LL_INFO100, "UpdateCurrentThrowable: setting throwable to %s\n", (oThrowable == NULL) ? "NULL" : oThrowable->GetTrueMethodTable()->GetDebugClassName()));
+            LOG((LF_EH, LL_INFO100, "UpdateCurrentThrowable: setting throwable to %s\n", (oThrowable == NULL) ? "NULL" : oThrowable->GetMethodTable()->GetDebugClassName()));
             pThread->SafeSetThrowables(oThrowable);
 #endif // WIN64EXCEPTIONS
         }
@@ -5557,8 +5557,8 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
 #endif
 
     GCPROTECT_BEGIN(throwable);
-    //BOOL IsStackOverflow = (throwable->GetTrueMethodTable() == g_pStackOverflowExceptionClass);
-    BOOL IsOutOfMemory = (throwable->GetTrueMethodTable() == g_pOutOfMemoryExceptionClass);
+    //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
+    BOOL IsOutOfMemory = (throwable->GetMethodTable() == g_pOutOfMemoryExceptionClass);
 
     // Notify the AppDomain that we have taken an unhandled exception.  Can't notify of stack overflow -- guard
     // page is not yet reset.
@@ -5765,7 +5765,7 @@ BOOL NotifyAppDomainsOfUnhandledException(
 #endif
 
     GCPROTECT_BEGIN(throwable);
-    //BOOL IsStackOverflow = (throwable->GetTrueMethodTable() == g_pStackOverflowExceptionClass);
+    //BOOL IsStackOverflow = (throwable->GetMethodTable() == g_pStackOverflowExceptionClass);
 
     // Notify the AppDomain that we have taken an unhandled exception.  Can't notify of stack overflow -- guard
     // page is not yet reset.

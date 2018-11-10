@@ -191,16 +191,6 @@ public:
         return m_ProfileSession;
     }
 
-    // Once multicore JIT is enabled in an AppDomain, do not allow Cctors to run during JITting for consistency
-    // Called from CEEInfo::initClass
-    inline bool AllowCCtorsToRunDuringJITing() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fSetProfileRootCalled == 0;
-    }
-
-
     // Check for environment variable to automatically start multicore JIT
     void AutoStartProfile(AppDomain * pDomain);
 
