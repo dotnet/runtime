@@ -312,26 +312,6 @@ HRESULT __stdcall Marshal_DisconnectObject (IMarshal* pMarsh, ULONG dwReserved);
 
 
 //------------------------------------------------------------------------------------------
-//      IManagedObject methods for COM+ objects
-
-interface IManagedObject;
-
-
-HRESULT __stdcall ManagedObject_RemoteDispatchAutoDone(IManagedObject *pManaged, BSTR bstr,
-                                                   BSTR* pBStrRet);
-                                                   
-HRESULT __stdcall ManagedObject_RemoteDispatchNotAutoDone(IManagedObject *pManaged, BSTR bstr,
-                                                   BSTR* pBStrRet);
-                                                   
-HRESULT __stdcall ManagedObject_GetObjectIdentity(IManagedObject *pManaged, 
-                                    BSTR* pBSTRGUID, DWORD* pAppDomainID,
-                                    void** pCCW); 
-
-
-HRESULT __stdcall ManagedObject_GetSerializedBuffer(IManagedObject *pManaged,
-                                    BSTR* pBStr);
-
-//------------------------------------------------------------------------------------------
 //      IConnectionPointContainer methods for COM+ objects
 
 interface IEnumConnectionPoints;

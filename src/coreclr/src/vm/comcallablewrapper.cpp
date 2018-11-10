@@ -1811,11 +1811,6 @@ inline bool IsIDispatch(REFIID riid)
     IS_KNOWN_INTERFACE_CONTRACT(IID_IDispatch);
     RETURN IS_EQUAL_GUID(riid, 0x00020400,0x0000,0x0000,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,0x46);
 }
-inline bool IsIManagedObject(REFIID riid)
-{
-    IS_KNOWN_INTERFACE_CONTRACT(IID_IManagedObject);
-    RETURN IS_EQUAL_GUID(riid, 0xC3FCC19E,0xA970,0x11D2,0x8B,0x5A,0x00,0xA0,0xC9,0xB7,0xC9,0xC4);
-}
 inline bool IsGUID_NULL(REFIID riid)
 {
     IS_KNOWN_INTERFACE_CONTRACT(GUID_NULL);
@@ -1854,7 +1849,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
     // IID_IDispatchEx                 A6EF9860-C720-11d0-9337-00A0C90DCAA9
     // IID_IProvideClassInfo           B196B283-BAB4-101A-B69C-00AA00341D07
     // IID_IConnectionPointContainer   B196B284-BAB4-101A-B69C-00AA00341D07
-    // IID_IManagedObject              c3fcc19e-a970-11d2-8b5a-00a0c9b7c9c4
     // IID_IObjectSafety               CB5BDC81-93C1-11cf-8F20-00805F2CD064
     // IID_ISupportErrorInfo           DF0B3D60-548F-101B-8E65-08002B2BD119
     // IID_IStringable.................96369F54-8EB6-48f0-ABCE-C1B211E627C3
@@ -1897,17 +1891,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
             // respond only if this type implements a WinRT interface
             if (m_pTemplate->SupportsIInspectable())
                 RETURN QIStandardInterface(enum_IWeakReferenceSource);
-        }
-        break;
-
-    CASE_IID_INLINE(  enum_IManagedObject           ,0xc3fcc19e,0xa970,0x11d2,0x8b,0x5a,0x00,0xa0,0xc9,0xb7,0xc9,0xc4)  // hit2, below, !=
-        {
-            // Check whether the type of the object wrapped by this CCW is exported to WinRT. This is the only
-            // case where we are sure that it's not a classic COM interop scenario and we can fail the QI for
-            // IManagedObject. Otherwise check the AppDomain setting.
-            MethodTable *pClassMT = GetMethodTable();
-            if (!pClassMT->IsExportedToWinRT() && !pClassMT->IsWinRTObjectType() && GetAppDomain()->GetPreferComInsteadOfManagedRemoting() == FALSE)
-                RETURN QIStandardInterface(enum_IManagedObject);
         }
         break;
 
@@ -2873,7 +2856,7 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
     //  when QIing for IUnknown or IDispatch.
     // Whidbey Tactics has decided to make this opt-in rather than
     // opt-out for now.  Remove the check for the legacy switch.
-    if ((g_pConfig == NULL || !g_pConfig->NewComVTableLayout()) && GetComCallWrapperTemplate()->SupportsIClassX())
+    if (GetComCallWrapperTemplate()->SupportsIClassX())
         RETURN GetIClassXIP(inspectionOnly);
     
     ComCallWrapper *pWrap = this;
@@ -3335,7 +3318,7 @@ MethodTable * ComCallWrapper::GetMethodTableOfObjectRef()
     CONTRACTL_END;
 
     GCX_COOP();
-    return GetObjectRef()->GetTrueMethodTable();
+    return GetObjectRef()->GetMethodTable();
 }
 
 // static
@@ -3485,22 +3468,6 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
 
         // We don't do visibility checks on IUnknown.
         RETURN pWrap->GetIDispatchIP();
-    }
-    if (IsIManagedObject(riid))
-    {
-        // If we are aggregated and somehow the aggregator delegated a QI on
-        // IManagedObject to us, fail the request so we don't accidently get a
-        // COM+ caller linked directly to us.
-        if (!pWrap->IsObjectTP() && pWrap->GetSimpleWrapper()->GetOuter() != NULL)
-            RETURN NULL;
-                            
-        if (pIntfMT == NULL)
-        {
-            SimpleComCallWrapper* pSimpleWrap = pWrap->GetSimpleWrapper();
-            IUnknown * pIntf = pSimpleWrap->QIStandardInterface(riid);
-            if (pIntf)
-                RETURN pIntf;
-        }
     }
 
     signed imapIndex = -1;
@@ -5495,10 +5462,10 @@ BOOL ComCallWrapperTemplate::IsSafeTypeForMarshalling()
 {
     CONTRACTL
     {
-    NOTHROW;
-    GC_TRIGGERS;
-    MODE_PREEMPTIVE;
-}
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
     CONTRACTL_END;
 
     if (m_flags & enum_IsSafeTypeForMarshalling)
@@ -6428,23 +6395,19 @@ void ComCallWrapperTemplate::DetermineComVisibility()
 
     m_flags &= (~enum_InvisibleParent);
 
-    // If the config switch is set, we ignore this.
-    if ((g_pConfig == NULL) || (g_pConfig->LegacyComHierarchyVisibility() == FALSE))
-    {
-        // If there are no parents...leave it as false.
-        if (m_pParent == NULL)
-            return;
+    // If there are no parents...leave it as false.
+    if (m_pParent == NULL)
+        return;
 
-        // If our parent has an invisible parent
-        if (m_pParent->HasInvisibleParent())
-        {
-            m_flags |= enum_InvisibleParent;
-        }
-        // If our parent is invisible
-        else if (!IsTypeVisibleFromCom(m_pParent->m_thClass))
-        {
-            m_flags |= enum_InvisibleParent;
-        }
+    // If our parent has an invisible parent
+    if (m_pParent->HasInvisibleParent())
+    {
+        m_flags |= enum_InvisibleParent;
+    }
+    // If our parent is invisible
+    else if (!IsTypeVisibleFromCom(m_pParent->m_thClass))
+    {
+        m_flags |= enum_InvisibleParent;
     }
 }
 

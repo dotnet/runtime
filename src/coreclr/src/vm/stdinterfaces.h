@@ -80,7 +80,6 @@ enum Enum_StdInterfaces
     enum_IMarshal,
     enum_ISupportsErrorInfo,
     enum_IErrorInfo,
-    enum_IManagedObject,
     enum_IConnectionPointContainer,
     enum_IObjectSafety,
     enum_IDispatchEx,
@@ -134,7 +133,6 @@ extern const StdInterfaceDesc<4>  g_IProvideClassInfo;
 extern const StdInterfaceDesc<9>  g_IMarshal;         
 extern const StdInterfaceDesc<4>  g_ISupportsErrorInfo;
 extern const StdInterfaceDesc<8>  g_IErrorInfo;       
-extern const StdInterfaceDesc<5>  g_IManagedObject;   
 extern const StdInterfaceDesc<5>  g_IConnectionPointContainer;
 extern const StdInterfaceDesc<5>  g_IObjectSafety;
 extern const StdInterfaceDesc<15> g_IDispatchEx;
@@ -399,20 +397,6 @@ HRESULT __stdcall Marshal_UnmarshalInterface_Wrapper (
 HRESULT __stdcall Marshal_ReleaseMarshalData_Wrapper (IMarshal* pMarsh, LPSTREAM pStm);
 
 HRESULT __stdcall Marshal_DisconnectObject_Wrapper (IMarshal* pMarsh, ULONG dwReserved);
-
-
-//------------------------------------------------------------------------------------------
-//      IManagedObject methods for COM+ objects
-
-interface IManagedObject;
-
-HRESULT __stdcall ManagedObject_GetObjectIdentity_Wrapper(IManagedObject *pManaged,
-                                    BSTR* pBSTRGUID, DWORD* pAppDomainID,
-                                    void** pCCW);
-
-
-HRESULT __stdcall ManagedObject_GetSerializedBuffer_Wrapper(IManagedObject *pManaged,
-                                    BSTR* pBStr);
 
 
 //------------------------------------------------------------------------------------------

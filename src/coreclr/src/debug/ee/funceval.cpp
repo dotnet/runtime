@@ -2630,7 +2630,6 @@ void PackArgumentArray(DebuggerEval *pDE,
                 MethodTable *pMT = objPtr->GetMethodTable();
                 // <TODO> Do this check in the following cases as well... </TODO>
                 if (!pMT->IsArray() 
-                    && !pMT->IsTransparentProxy() 
                     && !pDE->m_md->IsSharedByGenericInstantiations())
                 {
                     TypeHandle thFrom = TypeHandle(pMT);

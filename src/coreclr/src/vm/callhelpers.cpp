@@ -660,7 +660,7 @@ void CallDefaultConstructor(OBJECTREF ref)
     }
     CONTRACTL_END;
 
-    MethodTable *pMT = ref->GetTrueMethodTable();
+    MethodTable *pMT = ref->GetMethodTable();
 
     PREFIX_ASSUME(pMT != NULL);
 

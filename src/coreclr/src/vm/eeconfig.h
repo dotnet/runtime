@@ -321,18 +321,11 @@ public:
     bool LegacyNullReferenceExceptionPolicy(void)   const {LIMITED_METHOD_CONTRACT;  return fLegacyNullReferenceExceptionPolicy; }
     bool LegacyUnhandledExceptionPolicy(void)       const {LIMITED_METHOD_CONTRACT;  return fLegacyUnhandledExceptionPolicy; }
 
-    bool LegacyComHierarchyVisibility(void)         const {LIMITED_METHOD_CONTRACT;  return fLegacyComHierarchyVisibility; }
-    bool LegacyComVTableLayout(void)                const {LIMITED_METHOD_CONTRACT;  return fLegacyComVTableLayout; }
-    bool NewComVTableLayout(void)                   const {LIMITED_METHOD_CONTRACT;  return fNewComVTableLayout; }
-
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // Returns a bool to indicate if the legacy CSE (pre-v4) behaviour is enabled or not
     bool LegacyCorruptedStateExceptionsPolicy(void) const {LIMITED_METHOD_CONTRACT;  return fLegacyCorruptedStateExceptionsPolicy; }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-#ifdef FEATURE_COMINTEROP
-    bool ComInsteadOfManagedRemoting()              const {LIMITED_METHOD_CONTRACT;  return m_fComInsteadOfManagedRemoting; } 
-#endif //FEATURE_COMINTEROP
     bool InteropValidatePinnedObjects()             const { LIMITED_METHOD_CONTRACT;  return m_fInteropValidatePinnedObjects; }
     bool InteropLogArguments()                      const { LIMITED_METHOD_CONTRACT;  return m_fInteropLogArguments; }
 
@@ -865,10 +858,6 @@ private: //----------------------------------------------------------------
     bool fLegacyCorruptedStateExceptionsPolicy;
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
-    bool fLegacyComHierarchyVisibility;       // Old behavior allowing QIs for classes with invisible parents
-    bool fLegacyComVTableLayout;              // Old behavior passing out IClassX interface for IUnknown and IDispatch.
-    bool fNewComVTableLayout;                 // New behavior passing out Basic interface for IUnknown and IDispatch.
-
     LPUTF8 pszBreakOnClassLoad;         // Halt just before loading this class
 
 #ifdef TEST_DATA_CONSISTENCY
@@ -879,9 +868,6 @@ private: //----------------------------------------------------------------
                                        // the environment variable TestDataConsistency
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    bool   m_fComInsteadOfManagedRemoting; // When communicating with a cross app domain CCW, use COM instead of managed remoting.
-#endif
     bool   m_fInteropValidatePinnedObjects; // After returning from a M->U interop call, validate GC heap around objects pinned by IL stubs.
     bool   m_fInteropLogArguments; // Log all pinned arguments passed to an interop call
 

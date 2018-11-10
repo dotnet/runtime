@@ -2441,8 +2441,6 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                     _ASSERTE(orUnwind != NULL);
                     VALIDATEOBJECTREF(orUnwind);
 
-                    _ASSERTE(!orUnwind->IsTransparentProxy());
-
                     if (orUnwind != NULL)
                     {
                         orUnwind->LeaveObjMonitorAtException();

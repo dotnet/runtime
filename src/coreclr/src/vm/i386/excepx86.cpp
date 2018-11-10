@@ -757,7 +757,7 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         const char * eClsName = "!EXCEPTION_COMPLUS";
         if (e != 0)
         {
-            eClsName = e->GetTrueMethodTable()->GetDebugClassName();
+            eClsName = e->GetMethodTable()->GetDebugClassName();
     }
         LOG((LF_EH, LL_INFO100, "CPFH_RealFirstPassHandler: exception: 0x%08X, class: '%s', IP: 0x%p\n",
              exceptionCode, eClsName, pContext ? GetIP(pContext) : NULL));
@@ -2516,7 +2516,7 @@ StackWalkAction COMPlusThrowCallback(       // SWA value
         if (throwable != NULL)
         {
             throwable = PossiblyUnwrapThrowable(throwable, pCf->GetAssembly());
-            thrownType = TypeHandle(throwable->GetTrueMethodTable());
+            thrownType = TypeHandle(throwable->GetMethodTable());
         }
     }
 
@@ -2893,7 +2893,7 @@ StackWalkAction COMPlusUnwindCallback (CrawlFrame *pCf, ThrowCallbackType *pData
         if (throwable != NULL)
         {
             throwable = PossiblyUnwrapThrowable(throwable, pCf->GetAssembly());
-            thrownType = TypeHandle(throwable->GetTrueMethodTable());
+            thrownType = TypeHandle(throwable->GetMethodTable());
         }
     }
 #ifdef DEBUGGING_SUPPORTED

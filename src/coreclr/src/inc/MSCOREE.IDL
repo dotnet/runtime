@@ -40,13 +40,6 @@ cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshal, 0x3F281000,0xE95A,0x11d2,0x88,0x6
 cpp_quote("EXTERN_GUID(CLSID_ComCallUnmarshalV4, 0x45fb4600,0xe6e8,0x4928,0xb2,0x5e,0x50,0x47,0x6f,0xf7,0x94,0x25);")
 #endif // FEATURE_COMINTEROP
 
-
-#ifdef FEATURE_COMINTEROP
-// IID IManagedObject : uuid(C3FCC19E-A970-11d2-8B5A-00A0C9B7C9C4)
-cpp_quote("EXTERN_GUID(IID_IManagedObject, 0xc3fcc19e, 0xa970, 0x11d2, 0x8b, 0x5a, 0x00, 0xa0, 0xc9, 0xb7, 0xc9, 0xc4);")
-#endif // FEATURE_COMINTEROP
-
-
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
 // IID ICLRAppDomainResourceMonitor: uuid(C62DE18C-2E23-4AEA-8423-B40C1FC59EAE)
 cpp_quote("EXTERN_GUID(IID_ICLRAppDomainResourceMonitor, 0XC62DE18C, 0X2E23, 0X4AEA, 0X84, 0X23, 0XB4, 0X0C, 0X1F, 0XC5, 0X9E, 0XAE);")
@@ -991,29 +984,6 @@ library mscoree
     #define CCW_PTR int *
     cpp_quote("#define CCW_PTR int *")
 #endif // WIN64
-
-#ifdef FEATURE_COMINTEROP
-    //*****************************************************************************
-    // Interface for controlling a managed object
-    //*****************************************************************************
-    [
-        object,
-        oleautomation,
-        uuid(C3FCC19E-A970-11d2-8B5A-00A0C9B7C9C4),
-        helpstring("Managed Object Interface"),
-        pointer_default(unique),
-        proxy
-    ]
-    interface IManagedObject : IUnknown
-    {
-        // helper to serialize the object and marshal it to the client
-        HRESULT GetSerializedBuffer( [out] BSTR *pBSTR);
-
-        // Object identity includes, process guid, appdomain id, ccw
-        HRESULT GetObjectIdentity([out] BSTR* pBSTRGUID, [out] int* AppDomainID, [out] CCW_PTR pCCW);
-    };
-#endif // FEATURE_COMINTEROP
-
 
 #ifdef FEATURE_COMINTEROP
     //*****************************************************************************

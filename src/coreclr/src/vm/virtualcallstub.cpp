@@ -1574,7 +1574,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetCallSite(NULL, (TADDR)callSite.GetIndirectCell());
 
     DispatchToken representativeToken(token);
-    MethodTable * pRepresentativeMT = pObj->GetTrueMethodTable();
+    MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
         pRepresentativeMT = CURRENT_THREAD->GetDomain()->LookupType(representativeToken.GetTypeID());
@@ -1802,8 +1802,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         patch = Resolver(objectType, token, protectedObj, &target);
 
 #if defined(_DEBUG) 
-        if ( !objectType->IsTransparentProxy() &&
-             !objectType->IsComObjectType() &&
+        if ( !objectType->IsComObjectType() &&
              !objectType->IsICastable())
         {
             CONSISTENCY_CHECK(!MethodTable::GetMethodDescForSlotAddress(target)->IsGenericMethodDefinition());
@@ -2429,11 +2428,6 @@ VirtualCallStubManager::GetTarget(
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pMT));
     } CONTRACTL_END
-
-    // ToDo: add this after checking that reflection
-    //       doesn't send us a TransparentProxy
-    //
-    // CONSISTENCY_CHECK(!pMT->IsTransparentProxy());
 
     g_external_call++;
 
@@ -4034,8 +4028,6 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
 
     // Do the full resolve
     size_t token = VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk);
-
-    CONSISTENCY_CHECK(!pMT->IsTransparentProxy());
 
     PCODE target = NULL;
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects

@@ -4229,80 +4229,9 @@ CorInfoInitClassResult CEEInfo::initClass(
         result = CORINFO_INITCLASS_INITIALIZED;
         goto exit;
     }
-
-#ifdef FEATURE_MULTICOREJIT
-    // Once multicore JIT is enabled in an AppDomain by calling SetProfileRoot, always use helper function to call class init, for consistency
-    if (! GetAppDomain()->GetMulticoreJitManager().AllowCCtorsToRunDuringJITing())
-    {
-        result = CORINFO_INITCLASS_USE_HELPER;
-
-        goto exit;
-    }
-#endif
-
-    // To preserve consistent behavior between ngen and not-ngenned states, do not eagerly
-    // run class constructors for autongennable code.
-    if (pTypeToInitMT->RunCCTorAsIfNGenImageExists())
-    {
-        result = CORINFO_INITCLASS_USE_HELPER;
-        goto exit;
-    }
-
-    if (!pTypeToInitMT->GetClass()->IsBeforeFieldInit())
-    {
-        // Do not inline the access if we cannot initialize the class. Chances are that the class will get
-        // initialized by the time the access is jitted.
-        result = CORINFO_INITCLASS_USE_HELPER | CORINFO_INITCLASS_DONT_INLINE;
-        goto exit;
-    }
-
-    if (speculative)
-    {
-        // Tell the JIT that we may be able to initialize the class when asked to.
-        result = CORINFO_INITCLASS_SPECULATIVE;
-        goto exit;
-    }
-
-    //
-    // We cannot run the class constructor without first activating the
-    // module containing the class.  However, since the current module
-    // we are compiling inside is not active, we don't want to do this.
-    //
-    // This should be an unusal case since normally the method's module should
-    // be active during jitting.
-    //
-    // @TODO: We should check IsActivating() instead of IsActive() since we may
-    // be running the Module::.cctor(). The assembly is not marked as active
-    // until then.
-    if (!methodBeingCompiled->GetLoaderModule()->GetDomainFile()->IsActive())
-    {
-        result = CORINFO_INITCLASS_USE_HELPER;
-        goto exit;
-    }
-
-    //
-    // Run the .cctor
-    //
-
-    EX_TRY
-    {
-        pTypeToInitMT->CheckRunClassInitThrowing();
-    }
-    EX_CATCH
-    {
-    } EX_END_CATCH(SwallowAllExceptions);
-
-    if (pTypeToInitMT->IsClassInited())
-    {
-        result = CORINFO_INITCLASS_INITIALIZED;
-        goto exit;
-    }
 #endif // CROSSGEN_COMPILE
 
-    // Do not inline the access if we were unable to initialize the class. Chances are that the class will get
-    // initialized by the time the access is jitted.
-    result = (CORINFO_INITCLASS_USE_HELPER | CORINFO_INITCLASS_DONT_INLINE);
-
+    result = CORINFO_INITCLASS_USE_HELPER;
     }
 exit: ;
     EE_TO_JIT_TRANSITION();

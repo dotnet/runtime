@@ -3556,7 +3556,7 @@ MethodDesc *RCW::GetGetEnumeratorMethod()
         MethodTable *pClsMT;
         {
             GCX_COOP();
-            pClsMT = GetExposedObject()->GetTrueMethodTable();
+            pClsMT = GetExposedObject()->GetMethodTable();
         }
 
         SetGetEnumeratorMethod(pClsMT);
@@ -3929,7 +3929,7 @@ HRESULT RCW::CallQueryInterfaceUsingVariance(MethodTable *pMT, IUnknown **ppUnk)
         
         {
             GCX_COOP();
-            pClassMT = GetExposedObject()->GetTrueMethodTable();
+            pClassMT = GetExposedObject()->GetMethodTable();
         }
         
         // Try interfaces that we know about from metadata

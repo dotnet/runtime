@@ -791,7 +791,7 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
         PRECONDITION(CheckPointer(pFD));
     } CONTRACTL_END;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldAddr_Framed, obj, pFD);
@@ -835,7 +835,7 @@ HCIMPL2(INT8, JIT_GetField8, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT8>, obj, pFD);
@@ -851,7 +851,7 @@ HCIMPL2(INT16, JIT_GetField16, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT16>, obj, pFD);
@@ -867,7 +867,7 @@ HCIMPL2(INT32, JIT_GetField32, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT32>, obj, pFD);
@@ -883,7 +883,7 @@ HCIMPL2(INT64, JIT_GetField64, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT64>, obj, pFD);
@@ -899,7 +899,7 @@ HCIMPL2(FLOAT, JIT_GetFieldFloat, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<FLOAT>, obj, pFD);
@@ -916,7 +916,7 @@ HCIMPL2(DOUBLE, JIT_GetFieldDouble, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<DOUBLE>, obj, pFD);
@@ -960,7 +960,7 @@ HCIMPL3(VOID, JIT_SetField8, Object *obj, FieldDesc *pFD, INT8 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT8>, obj, pFD, val);
@@ -975,7 +975,7 @@ HCIMPL3(VOID, JIT_SetField16, Object *obj, FieldDesc *pFD, INT16 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT16>, obj, pFD, val);
@@ -990,7 +990,7 @@ HCIMPL3(VOID, JIT_SetField32, Object *obj, FieldDesc *pFD, INT32 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT32>, obj, pFD, val);
@@ -1005,7 +1005,7 @@ HCIMPL3(VOID, JIT_SetField64, Object *obj, FieldDesc *pFD, INT64 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT64>, obj, pFD, val);
@@ -1020,7 +1020,7 @@ HCIMPL3(VOID, JIT_SetFieldFloat, Object *obj, FieldDesc *pFD, FLOAT val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<FLOAT>, obj, pFD, val);
@@ -1035,7 +1035,7 @@ HCIMPL3(VOID, JIT_SetFieldDouble, Object *obj, FieldDesc *pFD, DOUBLE val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<DOUBLE>, obj, pFD, val);
@@ -1080,7 +1080,7 @@ HCIMPL2(Object*, JIT_GetFieldObj, Object *obj, FieldDesc *pFD)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldObj_Framed, obj, pFD);
@@ -1124,7 +1124,7 @@ HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetFieldObj_Framed, obj, pFD, value);
@@ -1182,7 +1182,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, M
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_GetFieldStruct_Framed, retBuff, obj, pFD, pFieldMT);
@@ -1236,7 +1236,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFie
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || obj->IsTransparentProxy() || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_SetFieldStruct_Framed, obj, pFD, pFieldMT, valuePtr);
@@ -2276,10 +2276,8 @@ TypeHandle::CastResult STDCALL ObjIsInstanceOfNoGC(Object *pObject, TypeHandle t
     if (TypeHandle(pMT) == toTypeHnd)
         return TypeHandle::CanCast;
 
-    if (pMT->IsTransparentProxy() ||
-           (toTypeHnd.IsInterface() && ( pMT->IsComObjectType() || pMT->IsICastable() ))
-       )
-    {      
+    if ((toTypeHnd.IsInterface() && ( pMT->IsComObjectType() || pMT->IsICastable())))
+    {
         return TypeHandle::MaybeCast;
     }
 
@@ -4133,13 +4131,9 @@ NOINLINE HCIMPL3(CORINFO_MethodPtr, JIT_VirtualFunctionPointer_Framed, Object * 
         addr = (CORINFO_MethodPtr) pStaticMD->GetMultiCallableAddrOfVirtualizedCode(&objRef, staticTH);
         _ASSERTE(addr);
 
-        // The cache can be used only if MethodTable is a real one
-        if (!objRef->IsTransparentProxy())
-        {
-            // This is not a critical entry - no need to specify appdomain affinity
-            JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
-            AddToGenericHandleCache(&key, (HashDatum)addr);
-        }
+        // This is not a critical entry - no need to specify appdomain affinity
+        JitGenericHandleCacheKey key(objRef->GetMethodTable(), classHnd, methodHnd);
+        AddToGenericHandleCache(&key, (HashDatum)addr);
     }
 
     HELPER_METHOD_FRAME_END();

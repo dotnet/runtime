@@ -79,7 +79,6 @@ inline PTR_EEClass MethodTable::GetClass()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    _ASSERTE_IMPL(!IsAsyncPinType());
     _ASSERTE_IMPL(GetClass_NoLogging() != NULL);
 
     g_IBCLogger.LogEEClassAndMethodTableAccess(this);
@@ -323,13 +322,6 @@ inline DWORD MethodTable::GetAttrClass()
 }
 
 //==========================================================================================
-inline BOOL MethodTable::IsSerializable()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetClass()->IsSerializable();
-}
-
-//==========================================================================================
 inline BOOL MethodTable::SupportsGenericInterop(TypeHandle::InteropKind interopKind,
                         MethodTable::Mode mode /*= modeAll*/)
 {
@@ -361,24 +353,6 @@ inline BOOL MethodTable::HasFieldsWhichMustBeInited()
 {
     WRAPPER_NO_CONTRACT;
     return GetClass()->HasFieldsWhichMustBeInited();
-}
-
-//==========================================================================================
-inline BOOL MethodTable::SupportsAutoNGen()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-//==========================================================================================
-inline BOOL MethodTable::RunCCTorAsIfNGenImageExists()
-{
-    LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_CORESYSTEM
-    return TRUE; // On our coresystem builds we will always be using triton in the customer scenario.
-#else
-    return FALSE;
-#endif
 }
 
 //==========================================================================================
@@ -482,28 +456,7 @@ inline BOOL MethodTable::GetGuidForWinRT(GUID *pGuid)
     return bRes;
 }
 
-
 #endif // FEATURE_COMINTEROP
-
-//==========================================================================================
-// The following two methods produce correct results only if this type is
-// marked Serializable (verified by assert in checked builds) and the field
-// in question was introduced in this type (the index is the FieldDesc
-// index).
-inline BOOL MethodTable::IsFieldNotSerialized(DWORD dwFieldIndex)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(IsSerializable());
-    return FALSE;
-}
-
-//==========================================================================================
-inline BOOL MethodTable::IsFieldOptionallySerialized(DWORD dwFieldIndex)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(IsSerializable());
-    return FALSE;
-}
 
 //==========================================================================================
 // Is pParentMT System.Enum? (Cannot be called before System.Enum is loaded.)

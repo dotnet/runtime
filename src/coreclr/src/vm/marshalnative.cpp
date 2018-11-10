@@ -1049,7 +1049,7 @@ FCIMPL1(IUnknown*, MarshalNative::GetRawIUnknownForComObjectNoAddRef, Object* or
     if(!oref)
         COMPlusThrowArgumentNull(W("o"));
 
-    MethodTable* pMT = oref->GetTrueMethodTable();
+    MethodTable* pMT = oref->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);    
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
@@ -1288,7 +1288,7 @@ FCIMPL2(IUnknown*, MarshalNative::CreateAggregatedObject, IUnknown* pOuter, Obje
     if (oref == NULL)
         COMPlusThrowArgumentNull(W("o"));
 
-    MethodTable *pMT = oref->GetTrueMethodTable();
+    MethodTable *pMT = oref->GetMethodTable();
     if (pMT->IsWinRTObjectType() || pMT->IsExportedToWinRT())
         COMPlusThrowArgumentException(W("o"), W("Argument_ObjIsWinRTObject"));
 
@@ -1363,7 +1363,7 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsComObject, Object* objUNSAFE)
     if(!obj)
         COMPlusThrowArgumentNull(W("o"));
 
-    MethodTable* pMT = obj->GetTrueMethodTable();
+    MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);
     retVal = pMT->IsComObjectType();
 
@@ -1388,7 +1388,7 @@ FCIMPL1(INT32, MarshalNative::ReleaseComObject, Object* objUNSAFE)
     if(!obj)
         COMPlusThrowArgumentNull(W("o"));
 
-    MethodTable* pMT = obj->GetTrueMethodTable();
+    MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);    
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
@@ -1415,7 +1415,7 @@ FCIMPL1(void, MarshalNative::FinalReleaseComObject, Object* objUNSAFE)
     if(!obj)
         COMPlusThrowArgumentNull(W("o"));
 
-    MethodTable* pMT = obj->GetTrueMethodTable();
+    MethodTable* pMT = obj->GetMethodTable();
     PREFIX_ASSUME(pMT != NULL);    
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
@@ -2206,39 +2206,6 @@ FCIMPL1(Object*, MarshalNative::WrapIUnknownWithComObject, IUnknown* pUnk)
 }
 FCIMPLEND
 
-//+----------------------------------------------------------------------------
-//
-//  Method:     CLR_BOOL __stdcall MarshalNative::SwitchCCW(switchCCWArgs* pArgs)
-//
-//  Synopsis:   switch the wrapper from oldtp to newtp
-//
-
-//
-//+----------------------------------------------------------------------------
-
-FCIMPL2(FC_BOOL_RET, MarshalNative::SwitchCCW, Object* oldtpUNSAFE, Object* newtpUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL retVal = FALSE;
-    OBJECTREF oldtp = (OBJECTREF) oldtpUNSAFE;
-    OBJECTREF newtp = (OBJECTREF) newtpUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_2(oldtp, newtp);
-
-    if (oldtp == NULL)
-        COMPlusThrowArgumentNull(W("oldtp"));
-    if (newtp == NULL)
-        COMPlusThrowArgumentNull(W("newtp"));
-
-    // defined in interoputil.cpp
-    retVal = ReconnectWrapper(&oldtp, &newtp);
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
-}
-FCIMPLEND
-
-
 FCIMPL2(void, MarshalNative::ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak)
 {
     FCALL_CONTRACT;
@@ -2388,7 +2355,7 @@ void QCALLTYPE MarshalNative::GetInspectableIIDs(
         if(orComObject == NULL)
             COMPlusThrowArgumentNull(W("obj"));
 
-        MethodTable* pMT = orComObject->GetTrueMethodTable();
+        MethodTable* pMT = orComObject->GetMethodTable();
         PREFIX_ASSUME(pMT != NULL);
         if(!pMT->IsComObjectType())
             COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
@@ -2453,7 +2420,7 @@ void QCALLTYPE MarshalNative::GetCachedWinRTTypes(
         // Validation: hadObj represents a non-NULL System.AppDomain instance
         if(orDomain != NULL)
         {
-            MethodTable* pMT = orDomain->GetTrueMethodTable();
+            MethodTable* pMT = orDomain->GetMethodTable();
             PREFIX_ASSUME(pMT != NULL);
             if (!pMT->CanCastToClass(MscorlibBinder::GetClass(CLASS__APP_DOMAIN)))
                 // TODO: find better resource string
@@ -2507,7 +2474,7 @@ void QCALLTYPE MarshalNative::GetCachedWinRTTypeByIID(
         // Validation: hadObj represents a non-NULL System.AppDomain instance
         if(orDomain != NULL)
         {
-            MethodTable* pMT = orDomain->GetTrueMethodTable();
+            MethodTable* pMT = orDomain->GetMethodTable();
             PREFIX_ASSUME(pMT != NULL);
             if (!pMT->CanCastToClass(MscorlibBinder::GetClass(CLASS__APP_DOMAIN)))
                 // TODO: find better resource string

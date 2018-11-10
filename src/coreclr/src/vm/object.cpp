@@ -140,24 +140,6 @@ BOOL Object::ValidateObjectWithPossibleAV()
 
 #ifndef DACCESS_COMPILE
 
-MethodTable *Object::GetTrueMethodTable()
-{
-    CONTRACT(MethodTable*)
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER;
-        NOTHROW;
-        SO_TOLERANT;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    MethodTable *mt = GetMethodTable();
-
-
-    RETURN mt;
-}
-
 TypeHandle Object::GetTrueTypeHandle()
 {
     CONTRACTL
@@ -172,7 +154,7 @@ TypeHandle Object::GetTrueTypeHandle()
     if (m_pMethTab->IsArray())
         return ((ArrayBase*) this)->GetTypeHandle();
     else
-        return TypeHandle(GetTrueMethodTable());
+        return TypeHandle(GetMethodTable());
 }
 
 // There are cases where it is not possible to get a type handle during a GC.
@@ -268,7 +250,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pInterfaceMT));
-        PRECONDITION(pObj->GetTrueMethodTable()->IsRestored_NoLogging());
+        PRECONDITION(pObj->GetMethodTable()->IsRestored_NoLogging());
         PRECONDITION(pInterfaceMT->IsInterface());
     }
     CONTRACTL_END
@@ -281,7 +263,7 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
         pInterfaceMT->CheckRestore();
 
         // Check to see if the static class definition indicates we implement the interface.
-        MethodTable * pMT = pObj->GetTrueMethodTable();
+        MethodTable * pMT = pObj->GetMethodTable();
         if (pMT->CanCastToInterface(pInterfaceMT))
         {
             bSupportsItf = TRUE;

@@ -971,7 +971,7 @@ FCIMPL2(IInspectable *, StubHelpers::GetOuterInspectable, Object *pThisUNSAFE, M
 
     OBJECTREF pThis = ObjectToOBJECTREF(pThisUNSAFE);
 
-    if (pThis->GetTrueMethodTable() != pCtorMD->GetMethodTable())
+    if (pThis->GetMethodTable() != pCtorMD->GetMethodTable())
     {
         // this is a composition scenario
         HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);

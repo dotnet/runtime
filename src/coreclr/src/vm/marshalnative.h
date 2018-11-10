@@ -222,7 +222,6 @@ public:
 
     static FCDECL1(int, GetComSlotForMethodInfo, ReflectMethodObject* pMethodUNSAFE);
 
-    static FCDECL2(FC_BOOL_RET, SwitchCCW, Object* oldtpUNSAFE, Object* newtpUNSAFE);
     static FCDECL1(Object*, WrapIUnknownWithComObject, IUnknown* pUnk);
 
     static FCDECL2(void, ChangeWrapperHandleStrength, Object* orefUNSAFE, CLR_BOOL fIsWeak);

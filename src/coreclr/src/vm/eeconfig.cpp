@@ -222,9 +222,6 @@ HRESULT EEConfig::Init()
 
     fLegacyNullReferenceExceptionPolicy = false;
     fLegacyUnhandledExceptionPolicy = false;
-    fLegacyComHierarchyVisibility = false;
-    fLegacyComVTableLayout = false;
-    fNewComVTableLayout = false;
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
     // By default, there is not pre-V4 CSE policy
@@ -347,9 +344,6 @@ HRESULT EEConfig::Init()
     testThreadAbort = 0;
 #endif
 
-#ifdef FEATURE_COMINTEROP
-    m_fComInsteadOfManagedRemoting = false;
-#endif
     m_fInteropValidatePinnedObjects = false;
     m_fInteropLogArguments = false;
 
@@ -1177,9 +1171,6 @@ HRESULT EEConfig::sync()
 
 #endif //_DEBUG
 
-#ifdef FEATURE_COMINTEROP
-    m_fComInsteadOfManagedRemoting = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ComInsteadOfManagedRemoting) != 0);
-#endif // FEATURE_COMINTEROP
     m_fInteropValidatePinnedObjects = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_InteropValidatePinnedObjects) != 0);
     m_fInteropLogArguments = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_InteropLogArguments) != 0);
 
