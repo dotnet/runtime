@@ -230,9 +230,10 @@ namespace System.Buffers
             if (log.IsEnabled())
                 log.BufferTrimPoll(milliseconds, (int)pressure);
 
-            foreach (PerCoreLockedStacks bucket in _buckets)
+            PerCoreLockedStacks[] perCoreBuckets = _buckets;
+            for (int i = 0; i < perCoreBuckets.Length; i++)
             {
-                bucket?.Trim((uint)milliseconds, Id, pressure, _bucketArraySizes);
+                perCoreBuckets[i]?.Trim((uint)milliseconds, Id, pressure, _bucketArraySizes[i]);
             }
 
             if (pressure == MemoryPressure.High)
@@ -370,14 +371,13 @@ namespace System.Buffers
                 return null;
             }
 
-            public bool Trim(uint tickCount, int id, MemoryPressure pressure, int[] bucketSizes)
+            public void Trim(uint tickCount, int id, MemoryPressure pressure, int bucketSize)
             {
                 LockedStack[] stacks = _perCoreStacks;
                 for (int i = 0; i < stacks.Length; i++)
                 {
-                    stacks[i].Trim(tickCount, id, pressure, bucketSizes[i]);
+                    stacks[i].Trim(tickCount, id, pressure, bucketSize);
                 }
-                return true;
             }
         }
 
