@@ -71,7 +71,7 @@
       },
       "inputs": {
         "filename": "bash",
-        "arguments": "-c \"export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar && $(PB_SourcesDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) -- $(PB_AdditionalMSBuildArguments) \"",
+        "arguments": "-c \"export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar && $(PB_SourcesDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) -ConfigurationGroup=$(BuildConfiguration) -PortableBuild=true -strip-symbols -SkipTests=true -- $(PB_AdditionalMSBuildArguments) \"",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
