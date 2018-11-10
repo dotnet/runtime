@@ -154,6 +154,24 @@ namespace System
 #endif
         }
 
+        public ref readonly T this[Index index]
+        {
+            get
+            {
+                return ref this [index.FromEnd ? _length - index.Value : index.Value];
+            }
+        }
+
+        public ReadOnlySpan<T> this[Range range]
+        {
+            get
+            {
+                int start = range.Start.FromEnd ? _length - range.Start.Value : range.Start.Value;
+                int end = range.End.FromEnd ? _length - range.End.Value : range.End.Value;
+                return Slice(start, end - start);
+            }
+        }
+
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns null reference.
         /// It can be used for pinning and is required to support the use of span within a fixed statement.
