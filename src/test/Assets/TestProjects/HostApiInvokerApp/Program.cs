@@ -62,6 +62,10 @@ namespace HostApiInvokerApp
             {
                 return;
             }
+            else if (HostPolicy.RunTest(apiToTest, args))
+            {
+                return;
+            }
             else
             {
                 throw new ArgumentException($"Invalid API to test passed as args[0]): {apiToTest}");

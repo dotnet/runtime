@@ -23,6 +23,13 @@ const pal::string_t ManifestListMessage = _X(
     "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
     "    %s");
 
+const pal::string_t DuplicateAssemblyWithDifferentExtensionMessage = _X(
+    "Error:\n"
+    "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
+    "    package: '%s', version: '%s'\n"
+    "    path: '%s'\n"
+    "    previously found assembly: '%s'");
+
 namespace
 {
 // -----------------------------------------------------------------------------
@@ -171,7 +178,6 @@ void deps_resolver_t::get_dir_assemblies(
 }
 
 void deps_resolver_t::setup_shared_store_probes(
-    const hostpolicy_init_t& init,
     const arguments_t& args)
 {
     for (const auto& shared : args.env_shared_store)
@@ -215,7 +221,6 @@ pal::string_t deps_resolver_t::get_lookup_probe_directories()
 }
 
 void deps_resolver_t::setup_probe_config(
-    const hostpolicy_init_t& init,
     const arguments_t& args)
 {
     if (pal::directory_exists(args.core_servicing))
@@ -239,15 +244,15 @@ void deps_resolver_t::setup_probe_config(
     m_probes.push_back(probe_config_t::published_deps_dir());
 
     // The framework locations, starting with highest level framework.
-    for (int i = 1; i < init.fx_definitions.size(); ++i)
+    for (int i = 1; i < m_fx_definitions.size(); ++i)
     {
-        if (pal::directory_exists(init.fx_definitions[i]->get_dir()))
+        if (pal::directory_exists(m_fx_definitions[i]->get_dir()))
         {
-            m_probes.push_back(probe_config_t::fx(init.fx_definitions[i]->get_dir(), &init.fx_definitions[i]->get_deps(), i));
+            m_probes.push_back(probe_config_t::fx(m_fx_definitions[i]->get_dir(), &m_fx_definitions[i]->get_deps(), i));
         }
     }
 
-    setup_shared_store_probes(init, args);
+    setup_shared_store_probes(args);
 
     for (const auto& probe : m_additional_probes)
     {
@@ -446,12 +451,8 @@ bool deps_resolver_t::resolve_tpa_list(
             // Verify the extension is the same as the previous verified entry
             if (get_deps_filename(entry.asset.relative_path) != get_filename(existing->second.resolved_path))
             {
-                trace::error(_X(
-                    "Error:\n"
-                    "  An assembly specified in the application dependencies manifest (%s) has already been found but with a different file extension:\n"
-                    "    package: '%s', version: '%s'\n"
-                    "    path: '%s'\n"
-                    "    previously found assembly: '%s'"),
+                trace::error(
+                    DuplicateAssemblyWithDifferentExtensionMessage.c_str(),
                     entry.deps_file.c_str(),
                     entry.library_name.c_str(),
                     entry.library_version.c_str(),
@@ -584,7 +585,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
+void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const deps_json_t::rid_fallback_graph_t& rid_fallback_graph)
 {
     if (!m_is_framework_dependent)
     {
@@ -597,7 +598,7 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
         return;
     }
 
-    pal::string_t additional_deps_serialized = init.additional_deps_serialized;
+    pal::string_t additional_deps_serialized = args.additional_deps_serialized;
 
     if (additional_deps_serialized.empty())
     {
@@ -684,11 +685,10 @@ void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
         }
     }
 
-    auto rids = get_root_framework(m_fx_definitions).get_deps().get_rid_fallback_graph();
     for (pal::string_t json_file : m_additional_deps_files)
     {
         m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-            new deps_json_t(true, json_file, rids)));
+            new deps_json_t(true, json_file, rid_fallback_graph)));
     }
 }
 
