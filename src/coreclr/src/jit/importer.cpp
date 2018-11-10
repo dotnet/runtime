@@ -785,7 +785,7 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
         val->gtType = lvaTable[tmpNum].lvType;
 
         GenTree* dst = gtNewLclvNode(tmpNum, val->gtType);
-        asg          = impAssignStruct(dst, val, structType, curLevel, pAfterStmt, block);
+        asg          = impAssignStruct(dst, val, structType, curLevel, pAfterStmt, ilOffset, block);
     }
     else
     {
@@ -1013,23 +1013,39 @@ GenTreeArgList* Compiler::impPopRevList(unsigned count, CORINFO_SIG_INFO* sig, u
     }
 }
 
-/*****************************************************************************
-   Assign (copy) the structure from 'src' to 'dest'.  The structure is a value
-   class of type 'clsHnd'.  It returns the tree that should be appended to the
-   statement list that represents the assignment.
-   Temp assignments may be appended to impTreeList if spilling is necessary.
-   curLevel is the stack level for which a spill may be being done.
- */
+//------------------------------------------------------------------------
+// impAssignStruct: Assign (copy) the structure from 'src' to 'dest'.
+//
+// Arguments:
+//    dest         - destination of the assignment
+//    src          - source of the assignment
+//    structHnd    - handle representing the struct type
+//    curLevel     - stack level for which a spill may be being done
+//    pAfterStmt   - statement to insert any additional statements after
+//    ilOffset     - il offset for new statements
+//    block        - block to insert any additional statements in
+//
+// Return Value:
+//    The tree that should be appended to the statement list that represents the assignment.
+//
+// Notes:
+//    Temp assignments may be appended to impTreeList if spilling is necessary.
 
 GenTree* Compiler::impAssignStruct(GenTree*             dest,
                                    GenTree*             src,
                                    CORINFO_CLASS_HANDLE structHnd,
                                    unsigned             curLevel,
-                                   GenTree**            pAfterStmt, /* = NULL */
-                                   BasicBlock*          block       /* = NULL */
+                                   GenTree**            pAfterStmt, /* = nullptr */
+                                   IL_OFFSETX           ilOffset,   /* = BAD_IL_OFFSET */
+                                   BasicBlock*          block       /* = nullptr */
                                    )
 {
     assert(varTypeIsStruct(dest));
+
+    if (ilOffset == BAD_IL_OFFSET)
+    {
+        ilOffset = impCurStmtOffs;
+    }
 
     while (dest->gtOper == GT_COMMA)
     {
@@ -1038,11 +1054,11 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
         if (pAfterStmt)
         {
-            *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(dest->gtOp.gtOp1, impCurStmtOffs));
+            *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(dest->gtOp.gtOp1, ilOffset));
         }
         else
         {
-            impAppendTree(dest->gtOp.gtOp1, curLevel, impCurStmtOffs); // do the side effect
+            impAppendTree(dest->gtOp.gtOp1, curLevel, ilOffset); // do the side effect
         }
 
         // set dest to the second thing
@@ -1072,22 +1088,44 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
         destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
     }
 
-    return (impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, block));
+    return (impAssignStructPtr(destAddr, src, structHnd, curLevel, pAfterStmt, ilOffset, block));
 }
 
-/*****************************************************************************/
+//------------------------------------------------------------------------
+// impAssignStructPtr: Assign (copy) the structure from 'src' to 'destAddr'.
+//
+// Arguments:
+//    destAddr     - address of the destination of the assignment
+//    src          - source of the assignment
+//    structHnd    - handle representing the struct type
+//    curLevel     - stack level for which a spill may be being done
+//    pAfterStmt   - statement to insert any additional statements after
+//    ilOffset     - il offset for new statements
+//    block        - block to insert any additional statements in
+//
+// Return Value:
+//    The tree that should be appended to the statement list that represents the assignment.
+//
+// Notes:
+//    Temp assignments may be appended to impTreeList if spilling is necessary.
 
 GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       GenTree*             src,
                                       CORINFO_CLASS_HANDLE structHnd,
                                       unsigned             curLevel,
                                       GenTree**            pAfterStmt, /* = NULL */
+                                      IL_OFFSETX           ilOffset,   /* = BAD_IL_OFFSET */
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
     var_types destType;
     GenTree*  dest      = nullptr;
     unsigned  destFlags = 0;
+
+    if (ilOffset == BAD_IL_OFFSET)
+    {
+        ilOffset = impCurStmtOffs;
+    }
 
 #if defined(UNIX_AMD64_ABI)
     assert(varTypeIsStruct(src) || (src->gtOper == GT_ADDR && src->TypeGet() == TYP_BYREF));
@@ -1281,11 +1319,11 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         GenTree* asg = gtNewAssignNode(ptrSlot, src->gtOp.gtOp1);
         if (pAfterStmt)
         {
-            *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(asg, impCurStmtOffs));
+            *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(asg, ilOffset));
         }
         else
         {
-            impAppendTree(asg, curLevel, impCurStmtOffs);
+            impAppendTree(asg, curLevel, ilOffset);
         }
 
         // return the assign of the type value, to be appended
@@ -1297,15 +1335,15 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         assert(varTypeIsStruct(src->gtOp.gtOp2) || src->gtOp.gtOp2->gtType == TYP_BYREF);
         if (pAfterStmt)
         {
-            *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(src->gtOp.gtOp1, impCurStmtOffs));
+            *pAfterStmt = fgInsertStmtAfter(block, *pAfterStmt, gtNewStmt(src->gtOp.gtOp1, ilOffset));
         }
         else
         {
-            impAppendTree(src->gtOp.gtOp1, curLevel, impCurStmtOffs); // do the side effect
+            impAppendTree(src->gtOp.gtOp1, curLevel, ilOffset); // do the side effect
         }
 
         // Evaluate the second thing using recursion.
-        return impAssignStructPtr(destAddr, src->gtOp.gtOp2, structHnd, curLevel, pAfterStmt, block);
+        return impAssignStructPtr(destAddr, src->gtOp.gtOp2, structHnd, curLevel, pAfterStmt, ilOffset, block);
     }
     else if (src->IsLocal())
     {
