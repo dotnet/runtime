@@ -39,48 +39,6 @@ ProfilingAPIAttachDetach::AttachThreadingMode ProfilingAPIAttachDetach::s_attach
     ProfilingAPIAttachDetach::kUninitialized;
 BOOL ProfilingAPIAttachDetach::s_fInitializeCalled = FALSE;
 
-// Both the trigger (via code:ProfilingAPIAttachClient) and the target profilee (via
-// code:ProfilingAPIAttachServer) use this constant to identify their own version.
-const VersionBlock ProfilingAPIAttachDetach::kCurrentProcessVersion(
-    CLR_MAJOR_VERSION,
-    CLR_MINOR_VERSION,
-    CLR_BUILD_VERSION,
-    CLR_BUILD_VERSION_QFE);
-
-// Note that the following two VersionBlocks are initialized with static numerals rather
-// than using the VER_* preproc defines, as we don't want these VersionBlocks to change
-// on us from version to version unless we explicitly make a choice to begin breaking
-// compatibility between triggers and profilees (and hopefully we won't need to do this
-// ever!).
-
-// A profilee compiled into this mscorwks.dll states that it can only interoperate with
-// triggers (i.e., AttachProfiler() implementations (pipe clients)) whose runtime version
-// is >= this constant.
-// 
-// This value should not change as new runtimes are released unless
-// code:ProfilingAPIAttachServer is modified to accept newer requests or send newer
-// response messages in a way incompatible with older code:ProfilingAPIAttachClient
-// objects implementing AttachProfiler(). And that is generally discouraged anyway.
-const VersionBlock ProfilingAPIAttachDetach::kMinimumAllowableTriggerVersion(
-    4,
-    0,
-    0,
-    0);
-
-// An AttachProfiler() implementation compiled into this mscorwks.dll, and called within
-// a trigger process, can only interoperate with target profilee apps (pipe servers)
-// whose runtime version is >= this constant.
-// 
-// This value should not change as new runtimes are released unless
-// code:ProfilingAPIAttachClient is modified to send newer request or interpret newer
-// response messages in a way incompatible with older code:ProfilingAPIAttachServer
-// objects implementing the pipe server. And that is generally discouraged anyway.
-const VersionBlock ProfilingAPIAttachDetach::kMinimumAllowableProfileeVersion(
-    4,
-    0,
-    0,
-    0);
-
 
 // ----------------------------------------------------------------------------
 // ProfilingAPIAttachDetach::OverlappedResultHolder implementation.  See 
@@ -731,7 +689,6 @@ HRESULT ProfilingAPIAttachDetach::Initialize()
 // Description: 
 //    Debug-only function that asserts if there appear to be changes to structures that
 //    are not allowed to change (for backward-compatibility reasons).  In particular:
-//         * VersionBlock must not change
 //         * BaseRequestMessage must not change
 //
 
@@ -739,14 +696,6 @@ HRESULT ProfilingAPIAttachDetach::Initialize()
 void ProfilingAPIAttachDetach::VerifyMessageStructureLayout()
 {
     LIMITED_METHOD_CONTRACT;
-
-    // If any of these asserts fire, then VersionBlock is changing its binary
-    // layout in an incompatible way. Bad!
-    _ASSERTE(sizeof(VersionBlock) == 16);
-    _ASSERTE(offsetof(VersionBlock, m_dwMajor) == 0);
-    _ASSERTE(offsetof(VersionBlock, m_dwMinor) == 4);
-    _ASSERTE(offsetof(VersionBlock, m_dwBuild) == 8);
-    _ASSERTE(offsetof(VersionBlock, m_dwQFE) == 12);
 
     // If any of these asserts fire, then GetVersionRequestMessage is changing its binary
     // layout in an incompatible way. Bad!
@@ -756,10 +705,10 @@ void ProfilingAPIAttachDetach::VerifyMessageStructureLayout()
 
     // If any of these asserts fire, then GetVersionResponseMessage is changing its binary
     // layout in an incompatible way. Bad!
-    _ASSERTE(sizeof(GetVersionResponseMessage) == 36);
+    _ASSERTE(sizeof(GetVersionResponseMessage) == 12);
     _ASSERTE(offsetof(GetVersionResponseMessage, m_hr) == 0);
     _ASSERTE(offsetof(GetVersionResponseMessage, m_profileeVersion) == 4);
-    _ASSERTE(offsetof(GetVersionResponseMessage, m_minimumAllowableTriggerVersion) == 20);
+    _ASSERTE(offsetof(GetVersionResponseMessage, m_minimumAllowableTriggerVersion) == 8);
 }
 
 #endif //_DEBUG

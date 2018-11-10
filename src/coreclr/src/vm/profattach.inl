@@ -15,113 +15,6 @@
 #ifndef __PROF_ATTACH_INL__
 #define __PROF_ATTACH_INL__
 
-
-// ----------------------------------------------------------------------------
-// VersionBlock::VersionBlock
-//
-// Description: 
-//    VersionBlock constructor with no arguments; just zeroes out fields
-//
-
-inline VersionBlock::VersionBlock()
-{
-    LIMITED_METHOD_CONTRACT;
-    memset(this, 0, sizeof(*this)); 
-}
-
-// ----------------------------------------------------------------------------
-// VersionBlock::VersionBlock
-//
-// Description: 
-//    VersionBlock constructor with version number parameters
-//
-// Arguments:
-//    * dwMajor - Major version number
-//    * dwMinor - Minor version number
-//    * dwBuild - Product build number
-//    * dwQFE - Product build QFE number
-//
-
-inline VersionBlock::VersionBlock(
-    DWORD dwMajor,
-    DWORD dwMinor,
-    DWORD dwBuild,
-    DWORD dwQFE) :
-        m_dwMajor(dwMajor),
-        m_dwMinor(dwMinor),
-        m_dwBuild(dwBuild),
-        m_dwQFE(dwQFE)
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-// ----------------------------------------------------------------------------
-// VersionBlock::operator <
-// 
-// Description:
-//    Allows for in-fix comparison operator between two VersionBlocks. Compares fields
-//    from most-significant to least-significant: m_dwMajor, m_dwMinor, m_dwBuild,
-//    m_dwQFE
-//    
-// Arguments:
-//    * otherVersionBlock - VersionBlock to compare against this (shown on RHS of <
-//        operator)
-//        
-// Return Value:
-//    Nonzero if this is strictly before otherVersionBlock, else 0.
-//    
-
-inline BOOL VersionBlock::operator <(const VersionBlock & otherVersionBlock) const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // COMPARE MAJOR
-    if (m_dwMajor < otherVersionBlock.m_dwMajor)
-    {
-        return TRUE;
-    }
-    if (m_dwMajor > otherVersionBlock.m_dwMajor)
-    {
-        return FALSE;
-    }
-    _ASSERTE(m_dwMajor == otherVersionBlock.m_dwMajor);
-
-    // COMPARE MINOR
-    if (m_dwMinor < otherVersionBlock.m_dwMinor)
-    {
-        return TRUE;
-    }
-    if (m_dwMinor > otherVersionBlock.m_dwMinor)
-    {
-        return FALSE;
-    }
-    _ASSERTE(m_dwMinor == otherVersionBlock.m_dwMinor);
-
-    // COMPARE BUILD
-    if (m_dwBuild < otherVersionBlock.m_dwBuild)
-    {
-        return TRUE;
-    }
-    if (m_dwBuild > otherVersionBlock.m_dwBuild)
-    {
-        return FALSE;
-    }
-    _ASSERTE(m_dwBuild == otherVersionBlock.m_dwBuild);
-
-    // COMPARE QFE
-    if (m_dwQFE < otherVersionBlock.m_dwQFE)
-    {
-        return TRUE;
-    }
-    if (m_dwQFE > otherVersionBlock.m_dwQFE)
-    {
-        return FALSE;
-    }
-    _ASSERTE(m_dwQFE == otherVersionBlock.m_dwQFE);
-
-    return FALSE;
-}
-
 // ----------------------------------------------------------------------------
 // BaseRequestMessage::BaseRequestMessage
 // 
@@ -167,7 +60,7 @@ inline GetVersionRequestMessage::GetVersionRequestMessage()
 // Arguments:
 //    * cbMessage - Size, in bytes, of the entire request message (including size of
 //        derived type, client data, etc., if present in the message)
-//    * triggerVersion - VersionBlock representing runtime version used by trigger
+//    * triggerVersion - Uint representing profiler attach interface version used by trigger
 //    * pClsidProfiler - CLSID of profiler to attach
 //    * wszProfilerPath - path to profiler DLL 
 //    * dwClientDataStartOffset - see code:AttachRequestMessage
@@ -176,19 +69,19 @@ inline GetVersionRequestMessage::GetVersionRequestMessage()
 
 inline AttachRequestMessage::AttachRequestMessage(
     DWORD cbMessage, 
-    const VersionBlock & triggerVersion,
+    const UINT & triggerVersion,
     const CLSID * pClsidProfiler,
     LPCWSTR wszProfilerPath,
     DWORD dwClientDataStartOffset,
     DWORD cbClientDataLength) :
         BaseRequestMessage(cbMessage, kMsgAttach),
-        m_triggerVersion(triggerVersion),
         m_dwClientDataStartOffset(dwClientDataStartOffset),
         m_cbClientDataLength(cbClientDataLength)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERT(cbMessage >= sizeof(AttachRequestMessage) + cbClientDataLength);
     memcpy(&m_clsidProfiler, pClsidProfiler, sizeof(m_clsidProfiler));
+    m_triggerVersion = triggerVersion;
     if (wszProfilerPath != NULL)
     {
         _ASSERTE(wcslen(wszProfilerPath) < _countof(m_wszProfilerPath));
@@ -210,7 +103,7 @@ inline AttachRequestMessage::AttachRequestMessage(
 // Arguments:
 //    * cbMessage - Size, in bytes, of the entire request message (including size of
 //        derived type, client data, etc., if present in the message)
-//    * triggerVersion - VersionBlock representing runtime version used by trigger
+//    * triggerVersion - Uint representing profiler attach interface version used by trigger
 //    * pClsidProfiler - CLSID of profiler to attach
 //    * wszProfilerPath - path to profiler DLL 
 //    * dwClientDataStartOffset - see code:AttachRequestMessage
@@ -220,7 +113,7 @@ inline AttachRequestMessage::AttachRequestMessage(
 //
 inline AttachRequestMessageV2::AttachRequestMessageV2(
     DWORD cbMessage, 
-    const VersionBlock & triggerVersion,
+    const UINT & triggerVersion,
     const CLSID * pClsidProfiler,
     LPCWSTR wszProfilerPath,
     DWORD dwClientDataStartOffset,
@@ -301,13 +194,13 @@ inline BaseResponseMessage::BaseResponseMessage() :
 
 inline GetVersionResponseMessage::GetVersionResponseMessage(
     HRESULT hr,
-    const VersionBlock & profileeVersion,
-    const VersionBlock & minimumAllowableTriggerVersion) :
-        BaseResponseMessage(hr),
-        m_profileeVersion(profileeVersion),
-        m_minimumAllowableTriggerVersion(minimumAllowableTriggerVersion)
+    const UINT & profileeVersion,
+    const UINT & minimumAllowableTriggerVersion) :
+        BaseResponseMessage(hr)
 {
     LIMITED_METHOD_CONTRACT;
+    m_profileeVersion = profileeVersion;
+    m_minimumAllowableTriggerVersion = minimumAllowableTriggerVersion;
 }
 
 // ----------------------------------------------------------------------------
@@ -409,7 +302,7 @@ inline void ProfilingAPIAttachDetach::GetAttachEventNameForPidAndVersion(HANDLE 
         {
             // App container to app container or the current process is the profilee process
             // In any case, use a local name
-            pAttachEventName->Printf(L"CPFATE_%d_%s", dwProfileeProcessPid, strRuntimeVersion.GetUnicode());        
+            pAttachEventName->Printf(L"NCPFATE_%d_%s", dwProfileeProcessPid, strRuntimeVersion.GetUnicode());        
         }
         else
         {
@@ -427,14 +320,14 @@ inline void ProfilingAPIAttachDetach::GetAttachEventNameForPidAndVersion(HANDLE 
                 COMPlusThrowHR(HRESULT_FROM_GetLastError());
             }
 
-            pAttachEventName->Printf(L"Session\\%d\\%s\\CPFATE_%d_%s", dwSessionId, wszObjectPath, dwProfileeProcessPid, strRuntimeVersion.GetUnicode());        
+            pAttachEventName->Printf(L"Session\\%d\\%s\\NCPFATE_%d_%s", dwSessionId, wszObjectPath, dwProfileeProcessPid, strRuntimeVersion.GetUnicode());        
         }        
     }
     else
     {
         // Non-app conatiner scenario
         // Create in global namespace
-        pAttachEventName->Printf(L"Global\\CPFATE_%d_%s", dwProfileeProcessPid, strRuntimeVersion.GetUnicode());
+        pAttachEventName->Printf(L"Global\\NCPFATE_%d_%s", dwProfileeProcessPid, strRuntimeVersion.GetUnicode());
     }
 }
 
@@ -493,11 +386,11 @@ inline void ProfilingAPIAttachDetach::GetAttachPipeNameForPidAndVersion(HANDLE h
             COMPlusThrowHR(HRESULT_FROM_GetLastError());
         }
             
-        pAttachPipeName->Printf(L"\\\\.\\pipe\\Sessions\\%d\\%s\\CPFATP_%d_%s", dwSessionId, wszObjectPath, dwProfileeProcessPid, strRuntimeVersion.GetUnicode());    
+        pAttachPipeName->Printf(L"\\\\.\\pipe\\Sessions\\%d\\%s\\NCPFATP_%d_%s", dwSessionId, wszObjectPath, dwProfileeProcessPid, strRuntimeVersion.GetUnicode());    
     }
     else
     {
-        pAttachPipeName->Printf(L"\\\\.\\pipe\\CPFATP_%d_%s", dwProfileeProcessPid, strRuntimeVersion.GetUnicode());    
+        pAttachPipeName->Printf(L"\\\\.\\pipe\\NCPFATP_%d_%s", dwProfileeProcessPid, strRuntimeVersion.GetUnicode());    
     }    
 }
 
