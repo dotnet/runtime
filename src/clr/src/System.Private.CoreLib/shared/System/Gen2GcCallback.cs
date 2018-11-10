@@ -64,6 +64,10 @@ namespace System
             catch
             {
                 // Ensure that we still get a chance to resurrect this object, even if the callback throws an exception.
+#if DEBUG
+                // Except in DEBUG, as we really shouldn't be hitting any exceptions here.
+                throw;
+#endif
             }
 
             // Resurrect ourselves by re-registering for finalization.
