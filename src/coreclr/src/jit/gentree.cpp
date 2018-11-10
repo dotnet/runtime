@@ -14235,8 +14235,11 @@ DONE:
 // gtNewTempAssign: Create an assignment of the given value to a temp.
 //
 // Arguments:
-//    tmp - local number for a compiler temp
-//    val - value to assign to the temp
+//    tmp         - local number for a compiler temp
+//    val         - value to assign to the temp
+//    pAfterStmt  - statement to insert any additional statements after
+//    ilOffset    - il offset for new statements
+//    block       - block to insert any additional statements in
 //
 // Return Value:
 //    Normally a new assignment node.
@@ -14248,9 +14251,9 @@ DONE:
 //    May update the type of the temp, if it was previously unknown.
 //
 //    May set compFloatingPointUsed.
-//
 
-GenTree* Compiler::gtNewTempAssign(unsigned tmp, GenTree* val)
+GenTree* Compiler::gtNewTempAssign(
+    unsigned tmp, GenTree* val, GenTree** pAfterStmt, IL_OFFSETX ilOffset, BasicBlock* block)
 {
     // Self-assignment is a nop.
     if (val->OperGet() == GT_LCL_VAR && val->gtLclVarCommon.gtLclNum == tmp)
@@ -14346,7 +14349,7 @@ GenTree* Compiler::gtNewTempAssign(unsigned tmp, GenTree* val)
         }
         dest->gtFlags |= GTF_DONT_CSE;
         valx->gtFlags |= GTF_DONT_CSE;
-        asg = impAssignStruct(dest, val, structHnd, (unsigned)CHECK_SPILL_NONE);
+        asg = impAssignStruct(dest, val, structHnd, (unsigned)CHECK_SPILL_NONE, pAfterStmt, ilOffset, block);
     }
     else
     {
