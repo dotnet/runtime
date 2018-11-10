@@ -20,31 +20,6 @@
 #include "internalunknownimpl.h"
 #include "corprof.h"
 
-//---------------------------------------------------------------------------------------
-// Structure representing the runtime's version.  Used to negotiate versions between the
-// trigger and profilee.
-// 
-// **** COMPATIBILITY WARNING ***
-// 
-// You are not allowed to change the binary layout of this structure, or else the
-// trigger & profilee will be unable to negotiate version information.  Asserts in
-// code:ProfilingAPIAttachDetach::VerifyMessageStructureLayout attempt to enforce this.
-// 
-// **** COMPATIBILITY WARNING ***
-// 
-struct VersionBlock
-{
-public:
-    DWORD   m_dwMajor;
-    DWORD   m_dwMinor;
-    DWORD   m_dwBuild;
-    DWORD   m_dwQFE;
-
-    VersionBlock(DWORD dwMajor, DWORD dwMinor, DWORD dwBuild, DWORD dwQFE);
-    VersionBlock();
-    BOOL operator <(const VersionBlock & otherVersionBlock) const;
-};
-
 
 //---------------------------------------------------------------------------------------
 // Types of request messages that may be sent from trigger across the pipe
@@ -120,7 +95,7 @@ struct AttachRequestMessage : public BaseRequestMessage
 public:
     // Trigger sends its version info here.  This allows the target profilee to
     // customize its response for the format expected by the trigger.
-    VersionBlock    m_triggerVersion;
+    UINT    m_triggerVersion;
 
     // The GUID of the profiler's COM object to load
     CLSID           m_clsidProfiler;
@@ -144,7 +119,7 @@ public:
 
     AttachRequestMessage(
         DWORD cbMessage,
-        const VersionBlock & triggerVersion,
+        const UINT & triggerVersion,
         const CLSID * pClsidProfiler,
         LPCWSTR wszProfilerPath,
         DWORD dwClientDataStartOffset,
@@ -170,7 +145,7 @@ public :
 public :
     AttachRequestMessageV2(
         DWORD cbMessage,
-        const VersionBlock & triggerVersion,
+        const UINT & triggerVersion,
         const CLSID * pClsidProfiler,
         LPCWSTR wszProfilerPath,
         DWORD dwClientDataStartOffset,
@@ -232,17 +207,17 @@ public:
     
     // Target profilee provides its version info here.  If trigger determines that
     // this number is too small, then trigger refuses the profilee as being too old.
-    VersionBlock m_profileeVersion;
+    UINT m_profileeVersion;
 
     // Target profilee provides here the oldest version of a trigger process that it
     // can communicate with.  If trigger determines that this number is too big,
     // then trigger refuses the profilee as being too new.
-    VersionBlock m_minimumAllowableTriggerVersion;
+    UINT m_minimumAllowableTriggerVersion;
 
     GetVersionResponseMessage(
         HRESULT hr,
-        const VersionBlock & profileeVersion,
-        const VersionBlock & minimumAllowableTriggerVersion);
+        const UINT & profileeVersion,
+        const UINT & minimumAllowableTriggerVersion);
 
     GetVersionResponseMessage();
 };
@@ -313,9 +288,9 @@ public:
             DWORD * pcbReceived);
     };
 
-    static const VersionBlock kCurrentProcessVersion;
-    static const VersionBlock kMinimumAllowableTriggerVersion;
-    static const VersionBlock kMinimumAllowableProfileeVersion;
+    static const UINT kCurrentProcessVersion = 1;
+    static const UINT kMinimumAllowableTriggerVersion = 1;
+    static const UINT kMinimumAllowableProfileeVersion = 1;
 
     static DWORD WINAPI ProfilingAPIAttachThreadStart(LPVOID lpParameter);
     static void ProcessSignaledAttachEvent();
