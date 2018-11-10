@@ -29,6 +29,7 @@ namespace System.Resources
     using System.Runtime.Versioning;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
+    using System.Threading;
 
     // Provides the default implementation of IResourceReader, reading
     // .resources file from the system default binary format.  This class
@@ -96,7 +97,16 @@ namespace System.Resources
         private unsafe int* _namePositionsPtr;  // If we're using UnmanagedMemoryStream
         private Type[] _typeTable;    // Lazy array of Types for resource values.
         private int[] _typeNamePositions;  // To delay initialize type table
-        private int _numResources;    // Num of resources files, in case arrays aren't allocated.        
+        private int _numResources;    // Num of resources files, in case arrays aren't allocated.
+
+        private readonly bool _permitDeserialization;  // can deserialize BinaryFormatted resources
+        private object _binaryFormatter; // binary formatter instance to use for deserializing
+
+        // statics used to dynamically call into BinaryFormatter
+        // When successfully located s_binaryFormatterType will point to the BinaryFormatter type
+        // and s_deserializeMethod will point to an unbound delegate to the deserialize method.
+        private static Type s_binaryFormatterType;
+        private static Func<object, Stream, object> s_deserializeMethod;
 
         // We'll include a separate code path that uses UnmanagedMemoryStream to
         // avoid allocating String objects and the like.
@@ -141,7 +151,7 @@ namespace System.Resources
         // passing in the stream to read from and the RuntimeResourceSet's 
         // internal hash table (hash table of names with file offsets
         // and values, coupled to this ResourceReader).
-        internal ResourceReader(Stream stream, Dictionary<string, ResourceLocator> resCache)
+        internal ResourceReader(Stream stream, Dictionary<string, ResourceLocator> resCache, bool permitDeserialization)
         {
             Debug.Assert(stream != null, "Need a stream!");
             Debug.Assert(stream.CanRead, "Stream should be readable!");
@@ -151,6 +161,8 @@ namespace System.Resources
             _store = new BinaryReader(stream, Encoding.UTF8);
 
             _ums = stream as UnmanagedMemoryStream;
+
+            _permitDeserialization = permitDeserialization;
 
             ReadResources();
         }
@@ -591,7 +603,7 @@ namespace System.Resources
             }
             else
             {
-                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+                return DeserializeObject(typeIndex);
             }
         }
 
@@ -743,7 +755,61 @@ namespace System.Resources
             }
 
             // Normal serialized objects
-            throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+            int typeIndex = typeCode - ResourceTypeCode.StartOfUserTypes;
+            return DeserializeObject(typeIndex);
+        }
+
+        private object DeserializeObject(int typeIndex)
+        {
+            if (!_permitDeserialization)
+            {
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+            }
+
+            if (_binaryFormatter == null)
+            {
+                InitializeBinaryFormatter();
+            }
+
+            Type type = FindType(typeIndex);
+  
+            object graph = s_deserializeMethod(_binaryFormatter, _store.BaseStream);
+            
+            // guard against corrupted resources
+            if (graph.GetType() != type)
+                throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResType_SerBlobMismatch, type.FullName, graph.GetType().FullName));
+ 
+            return graph;
+        }
+
+        private void InitializeBinaryFormatter()
+        {
+            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
+                Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                throwOnError: true));
+
+            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, () =>
+               {
+                   MethodInfo binaryFormatterDeserialize = s_binaryFormatterType.GetMethod("Deserialize", new Type[] { typeof(Stream) });
+
+                    // create an unbound delegate that can accept a BinaryFormatter instance as object
+                    return (Func<object, Stream, object>)typeof(ResourceReader)
+                            .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)
+                            .MakeGenericMethod(s_binaryFormatterType)
+                            .Invoke(null, new object[] { binaryFormatterDeserialize });
+               });
+
+            _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType);
+        }
+
+        // generic method that we specialize at runtime once we've loaded the BinaryFormatter type
+        // permits creating an unbound delegate so that we can avoid reflection after the initial
+        // lightup code completes.
+        private static Func<object, Stream, object> CreateUntypedDelegate<TInstance>(MethodInfo method)
+        {
+            Func<TInstance, Stream, object> typedDelegate = (Func<TInstance, Stream, object>)Delegate.CreateDelegate(typeof(Func<TInstance, Stream, object>), null, method);
+
+            return (obj, stream) => typedDelegate((TInstance)obj, stream);
         }
 
         // Reads in the header information for a .resources file.  Verifies some
