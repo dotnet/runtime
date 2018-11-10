@@ -111,19 +111,6 @@ enum ComIpType
 
 
 //--------------------------------------------------------------------------------
-// GetIUnknownForMarshalByRefInServerDomain
-// setup a CCW for Transparent proxy/marshalbyref in the server domain
-// either the object is in-proc & the domains match, or its out-of proc
-// and we don't care about appdomains
-IUnknown* GetIUnknownForMarshalByRefInServerDomain(OBJECTREF* poref);
-
-//--------------------------------------------------------------------------------
-// GetIUnknownForTransparentProxy
-// delegates the call to the managed implementation in the real proxy
-
-IUnknown* GetIUnknownForTransparentProxy(OBJECTREF* poref, BOOL fIsBeingMarshalled);
-
-//--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...);
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
 IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bSecurityCheck = TRUE, BOOL bEnableCustomizedQueryInterface = TRUE);

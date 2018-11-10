@@ -1528,7 +1528,7 @@ extern "C" PCODE STDCALL PreStubWorker(TransitionBlock * pTransitionBlock, Metho
 
         if (curobj != NULL) // Check for virtual function called non-virtually on a NULL object
         {
-            pDispatchingMT = curobj->GetTrueMethodTable();
+            pDispatchingMT = curobj->GetMethodTable();
 
 #ifdef FEATURE_ICASTABLE
             if (pDispatchingMT->IsICastable())
@@ -1729,15 +1729,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     {
         pThread->HandleThreadAbort();
     }
-
-    /**************************   CLASS CONSTRUCTOR   ********************/
-    // Make sure .cctor has been run
-
-    if (IsClassConstructorTriggeredViaPrestub())
-    {
-        pMT->CheckRunClassInitThrowing();
-    }
-
 
     /***************************   CALL COUNTER    ***********************/
     // If we are counting calls for tiered compilation, leave the prestub
@@ -2376,7 +2367,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_VIRTUAL_I
     _ASSERTE(pThisPtr != NULL);
     VALIDATEOBJECT(pThisPtr);
 
-    MethodTable * pMT = pThisPtr->GetTrueMethodTable();
+    MethodTable * pMT = pThisPtr->GetMethodTable();
 
     WORD slotNumber = pThunk->slotNum;
     _ASSERTE(slotNumber != (WORD)-1);

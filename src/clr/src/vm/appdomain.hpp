@@ -75,17 +75,7 @@ extern INT64 g_PauseTime;  // Total time in millisecond the CLR has been paused
 #ifdef FEATURE_COMINTEROP
 class ComCallWrapperCache;
 struct SimpleComCallWrapper;
-
 class RCWRefCache;
-
-// This enum is used to specify whether user want COM or remoting
-enum COMorRemotingFlag {
-    COMorRemoting_NotInitialized = 0,
-    COMorRemoting_COM            = 1, // COM will be used both cross-domain and cross-runtime
-    COMorRemoting_Remoting       = 2, // Remoting will be used cross-domain; cross-runtime will use Remoting only if it looks like it's expected (default)
-    COMorRemoting_LegacyMode     = 3  // Remoting will be used both cross-domain and cross-runtime
-};
-
 #endif // FEATURE_COMINTEROP
 
 #ifdef _MSC_VER
@@ -2575,8 +2565,6 @@ public:
     void RemoveWinRTFactoryObjects(LPVOID pCtxCookie);
 
     MethodTable *LoadCOMClass(GUID clsid, BOOL bLoadRecord = FALSE, BOOL* pfAssemblyInReg = NULL);
-    COMorRemotingFlag GetComOrRemotingFlag();
-    BOOL GetPreferComInsteadOfManagedRemoting();
     OBJECTREF GetMissingObject();    // DispatchInfo will call function to retrieve the Missing.Value object.
 #endif // FEATURE_COMINTEROP
 
@@ -3020,7 +3008,6 @@ private:
     EEClassFactoryInfoHashTable *m_pRefClassFactHash;   // Hash table that maps a class factory info to a COM comp.
 #ifdef FEATURE_COMINTEROP
     DispIDCache *m_pRefDispIDCache;
-    COMorRemotingFlag m_COMorRemotingFlag;
     OBJECTHANDLE  m_hndMissing;     //Handle points to Missing.Value Object which is used for [Optional] arg scenario during IDispatch CCW Call
 
     MethodTable* m_rpCLRTypes[WinMDAdapter::RedirectedTypeIndex_Count];
@@ -3176,7 +3163,6 @@ private:
     EEClassFactoryInfoHashTable* SetupClassFactHash();
 #ifdef FEATURE_COMINTEROP
     DispIDCache* SetupRefDispIDCache();
-    COMorRemotingFlag GetPreferComInsteadOfManagedRemotingFromConfigFile();
 #endif // FEATURE_COMINTEROP
 
     void InitializeDefaultDomainManager ();

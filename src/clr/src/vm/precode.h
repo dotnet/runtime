@@ -22,9 +22,6 @@ enum PrecodeType {
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
     PRECODE_NDIRECT_IMPORT  = NDirectImportPrecode::Type,
 #endif // HAS_NDIRECT_IMPORT_PRECODE
-#ifdef HAS_REMOTING_PRECODE
-    PRECODE_REMOTING        = RemotingPrecode::Type,
-#endif // HAS_REMOTING_PRECODE
 #ifdef HAS_FIXUP_PRECODE
     PRECODE_FIXUP           = FixupPrecode::Type,
 #endif // HAS_FIXUP_PRECODE
@@ -62,16 +59,6 @@ public:
 
 private:
 #endif // HAS_NDIRECT_IMPORT_PRECODE
-
-#ifdef HAS_REMOTING_PRECODE
-    RemotingPrecode* AsRemotingPrecode()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-
-        return dac_cast<PTR_RemotingPrecode>(this);
-    }
-#endif // HAS_REMOTING_PRECODE
 
 #ifdef HAS_FIXUP_PRECODE
     FixupPrecode* AsFixupPrecode()
@@ -219,12 +206,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-
-#ifdef HAS_REMOTING_PRECODE
-        // Remoting precode is special case
-        if (GetType() == PRECODE_REMOTING)
-            return FALSE;
-#endif
 
         return IsPointingTo(GetTarget(), pNativeCode);
     }

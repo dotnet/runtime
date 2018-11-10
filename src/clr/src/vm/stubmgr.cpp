@@ -1060,17 +1060,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
             return TRUE;
 #endif // HAS_NDIRECT_IMPORT_PRECODE
 
-#ifdef HAS_REMOTING_PRECODE
-        case PRECODE_REMOTING:
-#ifndef DACCESS_COMPILE
-            trace->InitForManagerPush(GetEEFuncEntryPoint(PrecodeRemotingThunk), this);
-#else
-            trace->InitForOther(NULL);
-#endif
-            LOG_TRACE_DESTINATION(trace, stubStartAddress, "PrecodeStubManager::DoTraceStub - remoting");
-            return TRUE;
-#endif // HAS_REMOTING_PRECODE
-
 #ifdef HAS_FIXUP_PRECODE
         case PRECODE_FIXUP:
             break;
@@ -1136,64 +1125,8 @@ BOOL PrecodeStubManager::TraceManager(Thread *thread,
     }
     CONTRACTL_END;
 
-    BOOL bRet = FALSE;
-
-#ifdef HAS_REMOTING_PRECODE
-    PCODE ip = GetIP(pContext);
-
-    if (ip == GetEEFuncEntryPoint(PrecodeRemotingThunk))
-    {
-        BYTE** pStack = (BYTE**)GetSP(pContext);
-
-        // Aligning down will handle differences in layout of virtual and nonvirtual remoting precodes
-#ifdef _TARGET_ARM_
-        // The offset here is Lr-7.  6 for the size of the Precode struct, 1 for THUMB_CODE alignment.
-        Precode* pPrecode = (Precode*)(pContext->Lr - 7);
-
-        _ASSERTE(pPrecode->GetType() == PRECODE_REMOTING);
-
-        // We need to tell the debugger where we're returning to just in case 
-        // the debugger can't continue on.
-        *pRetAddr = pStack[1];
-
-        Object* pThis = (Object*)(size_t)pContext->R0;
-#else
-        Precode* pPrecode = (Precode*)ALIGN_DOWN(pStack[0] - sizeof(INT32) 
-                - offsetof(RemotingPrecode,m_callRel32),
-            PRECODE_ALIGNMENT);
-
-        _ASSERTE(pPrecode->GetType() == PRECODE_REMOTING);
-
-        // We need to tell the debugger where we're returning to just in case 
-        // the debugger can't continue on.
-        *pRetAddr = pStack[1];
-
-        Object* pThis = (Object*)(size_t)pContext->Ecx;
-#endif
-
-        if (pThis != NULL && pThis->IsTransparentProxy())
-        {
-            // We have proxy in the way.
-#ifdef DACCESS_COMPILE
-            DacNotImpl();
-#else
-            trace->InitForFramePush(GetEEFuncEntryPoint(TransparentProxyStubPatchLabel));
-#endif
-        }
-        else
-        {
-            // No proxy in the way. Follow the target.
-            trace->InitForStub(pPrecode->GetTarget());
-        }
-        bRet = TRUE;
-    }
-    else
-#endif // HAS_REMOTING_PRECODE
-    {
-        _ASSERTE(!"Unexpected call to PrecodeStubManager::TraceManager");
-    }
-
-    return bRet;
+    _ASSERTE(!"Unexpected call to PrecodeStubManager::TraceManager");
+    return FALSE;
 }
 #endif
 

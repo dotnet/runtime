@@ -863,7 +863,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
     _ASSERTE(pThisPtr != NULL);
     VALIDATEOBJECT(pThisPtr);
 
-    MethodTable * pMT = pThisPtr->GetTrueMethodTable();
+    MethodTable * pMT = pThisPtr->GetMethodTable();
 
     WORD slotNumber = pThunk->slotNum;
     _ASSERTE(slotNumber != (WORD)-1);

@@ -1333,64 +1333,6 @@ struct ThisPtrRetBufPrecode {
 typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
 
 
-#ifdef HAS_REMOTING_PRECODE
-
-// Precode with embedded remoting interceptor
-struct RemotingPrecode {
-
-    static const int Type = 0x02;
-
-    // push {r1,lr}
-    // ldr r1, [pc, #16]    ; =m_pPrecodeRemotingThunk
-    // blx r1
-    // pop {r1,lr}
-    // ldr pc, [pc, #12]    ; =m_pLocalTarget
-    // nop                  ; padding for alignment
-    // dcd m_pMethodDesc
-    // dcd m_pPrecodeRemotingThunk
-    // dcd m_pLocalTarget
-    WORD    m_rgCode[8];
-    TADDR   m_pMethodDesc;
-    TADDR   m_pPrecodeRemotingThunk;
-    TADDR   m_pLocalTarget;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator = NULL);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT; 
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    { 
-        LIMITED_METHOD_DAC_CONTRACT; 
-        return m_pLocalTarget;
-    }
-
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-        }
-        CONTRACTL_END;
-
-        EnsureWritableExecutablePages(&m_pLocalTarget);
-        return FastInterlockCompareExchange((LONG*)&m_pLocalTarget, (LONG)target, (LONG)expected) == (LONG)expected;
-    }
-
-#ifdef FEATURE_PREJIT
-    void Fixup(DataImage *image, ZapNode *pCodeNode);
-#endif
-};
-typedef DPTR(RemotingPrecode) PTR_RemotingPrecode;
-
-EXTERN_C void PrecodeRemotingThunk();
-
-#endif // HAS_REMOTING_PRECODE
-
 //**********************************************************************
 // Miscellaneous
 //**********************************************************************

@@ -1081,13 +1081,6 @@ Object* GetTypesInner(Module* pModule)
         pMT = curClass.GetMethodTable();
         PREFIX_ASSUME(pMT != NULL);
 
-        if (pMT->IsTransparentProxy())
-        {
-            // Don't expose transparent proxy
-            _ASSERTE(bSystemAssembly);
-            continue;
-        }
-
         // Get the COM+ Class object
         OBJECTREF refCurClass = pMT->GetManagedClassObject();
         _ASSERTE("GetManagedClassObject failed." && refCurClass != NULL);

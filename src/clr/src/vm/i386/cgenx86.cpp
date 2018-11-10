@@ -1553,7 +1553,7 @@ EXTERN_C PVOID STDCALL VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_V
     _ASSERTE(pThisPtr != NULL);
     VALIDATEOBJECT(pThisPtr);
 
-    MethodTable * pMT = pThisPtr->GetTrueMethodTable();
+    MethodTable * pMT = pThisPtr->GetMethodTable();
 
     WORD slotNumber = pThunk->slotNum;
     _ASSERTE(slotNumber != (WORD)-1);

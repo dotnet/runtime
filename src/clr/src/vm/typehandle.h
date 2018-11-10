@@ -364,8 +364,6 @@ public:
         return *this == TypeHandle(g_pObjectClass);
     }
 
-    DWORD IsTransparentProxy() const;
-
     // Retrieve the key corresponding to this handle
     TypeKey GetTypeKey() const;
 

@@ -722,10 +722,6 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventNameFilter, W("EventNameFilter"), "")
 /// Interop
 ///
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_ExposeExceptionsInCOM, W("ExposeExceptionsInCOM"), "")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ComInsteadOfManagedRemoting, W("PreferComInsteadOfManagedRemoting"), 0, "When communicating with a cross app domain CCW, use COM instead of managed remoting.")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_legacyComHierarchyVisibility, W("legacyComHierarchyVisibility"), "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_legacyComVTableLayout, W("legacyComVTableLayout"), "")
-RETAIL_CONFIG_DWORD_INFO_DIRECT_ACCESS(EXTERNAL_newComVTableLayout, W("newComVTableLayout"), "")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PInvokeInline, W("PInvokeInline"), "", CLRConfig::REGUTIL_default)
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_InteropValidatePinnedObjects, W("InteropValidatePinnedObjects"), 0, "After returning from a managed-to-unmanaged interop call, validate GC heap around objects pinned by IL stubs.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_InteropLogArguments, W("InteropLogArguments"), 0, "Log all pinned arguments passed to an interop call")
