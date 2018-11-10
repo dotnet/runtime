@@ -21,42 +21,6 @@
 #include "winrttypenameconverter.h"
 #include "typestring.h"
 
-struct MshlPacket
-{
-    DWORD size;
-};
-
-// if the object we are creating is a proxy to another appdomain, want to create the wrapper for the
-// new object in the appdomain of the proxy target
-IUnknown* GetIUnknownForMarshalByRefInServerDomain(OBJECTREF* poref)
-{
-    CONTRACT (IUnknown*)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(poref));
-        PRECONDITION((*poref)->GetTrueMethodTable()->IsMarshaledByRef());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-    
-    Context *pContext = NULL;
-
-
-    if (pContext == NULL)
-        pContext = GetCurrentContext();
-    
-    _ASSERTE(pContext->GetDomain() == GetCurrentContext()->GetDomain());
-
-    CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(poref);      
-
-    IUnknown* pUnk = ComCallWrapper::GetComIPFromCCW(pWrap, IID_IUnknown, NULL);
-
-    RETURN pUnk;
-}
-
-
 //--------------------------------------------------------------------------------
 // IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, ...)
 // Convert ObjectRef to a COM IP, based on MethodTable* pMT.
@@ -595,7 +559,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
                 StackSString ssObjClsName;
                 StackSString ssDestClsName;
 
-                (*pObjOut)->GetTrueMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
+                (*pObjOut)->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
                 pMTClass->_GetFullyQualifiedNameForClass(ssDestClsName);
 
                 COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,

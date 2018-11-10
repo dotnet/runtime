@@ -84,7 +84,6 @@ const SLOT * const g_rgStdVtables[] =
     (SLOT*)&g_IMarshal.m_vtable,
     (SLOT*)&g_ISupportsErrorInfo.m_vtable, 
     (SLOT*)&g_IErrorInfo.m_vtable,
-    (SLOT*)&g_IManagedObject.m_vtable,
     (SLOT*)&g_IConnectionPointContainer.m_vtable,
     (SLOT*)&g_IObjectSafety.m_vtable,
     (SLOT*)&g_IDispatchEx.m_vtable,
@@ -2660,94 +2659,6 @@ HRESULT __stdcall Marshal_DisconnectObject (IMarshal* pMarsh, ULONG dwReserved)
     // access this server, so the server shouldn't go away until the client
     // Release()'s it.
     return S_OK;
-}
-
-//------------------------------------------------------------------------------------------
-//      IManagedObject methods for COM+ objects
-//------------------------------------------------------------------------------------------                                                   
-HRESULT __stdcall ManagedObject_GetObjectIdentity(IManagedObject *pManaged, 
-                                                  BSTR* pBSTRGUID, DWORD* pAppDomainID,
-                                                  void** pCCW)
-{
-    // NOTE: THIS METHOD CAN BE CALLED FROM ANY APP DOMAIN
-
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
-        PRECONDITION(CheckPointer(pManaged));
-        PRECONDITION(IsSimpleTearOff(pManaged));
-        PRECONDITION(CheckPointer(pBSTRGUID, NULL_OK));
-        PRECONDITION(CheckPointer(pAppDomainID, NULL_OK));
-        PRECONDITION(CheckPointer(pCCW, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    if (pBSTRGUID == NULL || pAppDomainID == NULL || pCCW == NULL)
-        return E_POINTER;
-
-    HRESULT hr = S_OK;
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr) 
-    {
-        *pCCW = 0;
-        *pAppDomainID = 0;
-
-        BSTR bstrProcGUID = GetProcessGUID();
-        BSTR bstrRetGUID = ::SysAllocString((WCHAR *)bstrProcGUID);
-
-        if (bstrRetGUID == NULL)
-            ThrowOutOfMemory();
-
-        *pBSTRGUID = bstrRetGUID;
-
-        SimpleComCallWrapper *pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pManaged);
-        _ASSERTE(GET_THREAD()->GetDomain()->GetId() == pSimpleWrap->GetDomainID());
-
-        ComCallWrapper* pComCallWrap = pSimpleWrap->GetMainWrapper();
-        _ASSERTE(pComCallWrap);    
-
-        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-        {
-            OBJECTREF oref = pComCallWrap->GetObjectRef();
-
-            // The parameter is typed as void** but due to the potential cross process (cross bitness)
-            // nature of this call, only the lower 32-bits of the returned value are guaranteed to be
-            // received by the caller. Instead of a CCW pointer which was the original intended use of
-            // this parameter, we'll pass a syncblock index which is always DWORD sized. The parameter 
-            // is protocol-documented to be "implementation-specific, opaque value that helps identify
-            // the managed object" so we can pass whatever we want without legal consequences.
-            *pCCW = (void *)oref->GetSyncBlockIndex();
-        }
-
-        AppDomain* pDomain = GET_THREAD()->GetDomain();
-        _ASSERTE(pDomain != NULL);
-
-        *pAppDomainID = pDomain->GetId().m_dwId;
-    }
-    END_EXTERNAL_ENTRYPOINT;
-
-    return hr;
-}
-
-
-HRESULT __stdcall ManagedObject_GetSerializedBuffer(IManagedObject *pManaged,
-                                                    BSTR* pBStr)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pManaged));
-        PRECONDITION(IsSimpleTearOff(pManaged));
-        PRECONDITION(CheckPointer(pBStr, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!"NYI");
-    return E_NOTIMPL;
 }
 
 //------------------------------------------------------------------------------------------

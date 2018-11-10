@@ -266,7 +266,7 @@ STDMETHODIMP CLRServicesImpl::CreateManagedReference(IUnknown *pTarget, ICCW **p
             //
             // Figure out the right IVector<T1>/IVectorView<T2>
             //
-            MethodTable *pMT = gc.TargetObj->GetTrueMethodTable();
+            MethodTable *pMT = gc.TargetObj->GetMethodTable();
 
             TypeHandle thArgs[2];
             

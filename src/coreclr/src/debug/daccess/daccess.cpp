@@ -5858,9 +5858,6 @@ ClrDataAccess::RawGetMethodName(
 #ifdef HAS_THISPTR_RETBUF_PRECODE
             maxPrecodeSize = max(maxPrecodeSize, sizeof(ThisPtrRetBufPrecode));
 #endif
-#ifdef HAS_REMOTING_PRECODE
-            maxPrecodeSize = max(maxPrecodeSize, sizeof(RemotingPrecode));
-#endif
 
             for (SIZE_T i = 0; i < maxPrecodeSize / PRECODE_ALIGNMENT; i++)
             {

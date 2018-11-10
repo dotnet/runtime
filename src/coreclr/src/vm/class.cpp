@@ -174,11 +174,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
         delete pDelegateEEClass->m_pUMThunkMarshInfo;
     }
 
-    // We should never get here for thunking proxy because we do not destroy
-    // default appdomain and mscorlib.dll module during shutdown
-    _ASSERTE(!pOwningMT->IsTransparentProxy());
-
-  
 #ifdef FEATURE_COMINTEROP 
     if (GetSparseCOMInteropVTableMap() != NULL && !pOwningMT->IsZapped())
         delete GetSparseCOMInteropVTableMap();

@@ -5,12 +5,6 @@
 // File: methodtable.h
 //
 
-
-//
-
-//
-// ============================================================================
-
 #ifndef _METHODTABLE_H_
 #define _METHODTABLE_H_
 
@@ -312,10 +306,7 @@ struct MethodTableWriteableData
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORRECT INITIAL FLAGS.
     
-        enum_flag_RemotingConfigChecked     = 0x00000001,
-        enum_flag_RequiresManagedActivation = 0x00000002,
         enum_flag_Unrestored                = 0x00000004,
-        enum_flag_CriticalTypePrepared      = 0x00000008,     // CriticalFinalizerObject derived type has had backout routines prepared
         enum_flag_HasApproxParent           = 0x00000010,
         enum_flag_UnrestoredTypeKey         = 0x00000020,     
         enum_flag_IsNotFullyLoaded          = 0x00000040,
@@ -449,38 +440,6 @@ public:
     }
 #endif // FEATURE_PREJIT
 
-    inline BOOL IsRemotingConfigChecked() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & enum_flag_RemotingConfigChecked;
-    }
-    inline void SetRemotingConfigChecked()
-    {
-        WRAPPER_NO_CONTRACT;
-        // remembers that we went through the rigorous
-        // checks to decide whether this class should be
-        // activated locally or remote
-        FastInterlockOr(EnsureWritablePages((ULONG *)&m_dwFlags), enum_flag_RemotingConfigChecked);
-    }
-    inline void TrySetRemotingConfigChecked()
-    {
-        WRAPPER_NO_CONTRACT;
-        // remembers that we went through the rigorous
-        // checks to decide whether this class should be
-        // activated locally or remote
-        if (EnsureWritablePagesNoThrow(&m_dwFlags, sizeof(m_dwFlags)))
-            FastInterlockOr((ULONG *)&m_dwFlags, enum_flag_RemotingConfigChecked);
-    }
-    inline BOOL RequiresManagedActivation() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & enum_flag_RequiresManagedActivation;
-    }
-    inline void SetRequiresManagedActivation()
-    {
-        WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages((ULONG *) &m_dwFlags), enum_flag_RequiresManagedActivation|enum_flag_RemotingConfigChecked);
-    }
 
     inline LOADERHANDLE GetExposedClassObjectHandle() const
     {
@@ -517,19 +476,6 @@ public:
                        MethodTableWriteableData::enum_flag_Unrestored |
                        MethodTableWriteableData::enum_flag_IsNotFullyLoaded |
                        MethodTableWriteableData::enum_flag_HasApproxParent);
-    }
-
-    // Have the backout methods (Finalizer, Dispose, ReleaseHandle etc.) been prepared for this type? This currently only happens
-    // for types derived from CriticalFinalizerObject.
-    inline BOOL CriticalTypeHasBeenPrepared() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwFlags & enum_flag_CriticalTypePrepared;
-    }
-    inline void SetCriticalTypeHasBeenPrepared()
-    {
-        WRAPPER_NO_CONTRACT;
-        FastInterlockOr(EnsureWritablePages((ULONG*)&m_dwFlags), enum_flag_CriticalTypePrepared);
     }
 
     inline CrossModuleGenericsStaticsInfo * GetCrossModuleGenericsStaticsInfo()
@@ -984,8 +930,6 @@ public:
 
     // uniquely identifes this type in the Domain table
     DWORD GetClassIndex();
-
-    bool ClassRequiresUnmanagedCodeCheck();
 
 private:
 
@@ -1712,7 +1656,7 @@ public:
     unsigned GetNumParentVirtuals()
     {
         LIMITED_METHOD_CONTRACT;
-        if (IsInterface() || IsTransparentProxy()) {
+        if (IsInterface()) {
             return 0;
         }
         MethodTable *pMTParent = GetParentMethodTable();
@@ -1939,20 +1883,6 @@ public:
     PTR_FieldDesc GetFieldDescByIndex(DWORD fieldIndex);
 
     DWORD GetIndexForFieldDesc(FieldDesc *pField);
-
-    //-------------------------------------------------------------------
-    // REMOTING and THUNKING.  
-    //
-    // We find a lot of information from the VTable.  But sometimes the VTable is a
-    // thunking layer rather than the true type's VTable.  For instance, context
-    // proxies use a single VTable for proxies to all the types we've loaded.
-    // The following service adjusts a MethodTable based on the supplied instance.  As
-    // we add new thunking layers, we just need to teach this service how to navigate
-    // through them.
-    inline BOOL IsTransparentProxy()
-    {
-        return FALSE;
-    }
 
     BOOL IsMarshaledByRef()
     {
@@ -2604,29 +2534,6 @@ public:
         return GetFlag(enum_flag_HasCriticalFinalizer);
     }
 
-    // Have the backout methods (Finalizer, Dispose, ReleaseHandle etc.) been prepared for this type? This currently only happens
-    // for types derived from CriticalFinalizerObject.
-    BOOL CriticalTypeHasBeenPrepared()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalFinalizer());
-        return GetWriteableData()->CriticalTypeHasBeenPrepared();
-    }
-
-    void SetCriticalTypeHasBeenPrepared()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        _ASSERTE(HasCriticalFinalizer());
-        GetWriteableDataForWrite()->SetCriticalTypeHasBeenPrepared();
-    }
-
     //-------------------------------------------------------------------
     // STATIC FIELDS
     //
@@ -2986,13 +2893,6 @@ public:
     BOOL HasRCWPerTypeData();
 #endif // FEATURE_COMINTEROP
 
-    // The following two methods produce correct results only if this type is
-    // marked Serializable (verified by assert in checked builds) and the field
-    // in question was introduced in this type (the index is the FieldDesc
-    // index).
-    BOOL IsFieldNotSerialized(DWORD dwFieldIndex);
-    BOOL IsFieldOptionallySerialized(DWORD dwFieldIndex);
-
     //-------------------------------------------------------------------
     // DICTIONARIES FOR GENERIC INSTANTIATIONS
     //
@@ -3131,27 +3031,7 @@ public:
 
     inline DWORD GetAttrClass();
 
-    inline BOOL IsSerializable();
     inline BOOL HasFieldsWhichMustBeInited();
-    inline BOOL SupportsAutoNGen();
-    inline BOOL RunCCTorAsIfNGenImageExists();
-
-    //-------------------------------------------------------------------
-    // SECURITY SEMANTICS 
-    //
-
-    void SetIsAsyncPinType()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(GetFlag(enum_flag_Category_Mask) == 0);
-        SetFlag(enum_flag_Category_AsyncPin);
-    }
-
-    BOOL IsAsyncPinType()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_AsyncPin;
-    }
 
     inline BOOL IsPreRestored() const
     {
@@ -3213,65 +3093,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return ReadPointer(this, &MethodTable::m_pWriteableData);
-    }
-
-    //-------------------------------------------------------------------
-    // Remoting related
-    // 
-    inline BOOL IsRemotingConfigChecked()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetWriteableData()->IsRemotingConfigChecked();
-    }
-    inline void SetRemotingConfigChecked()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        GetWriteableDataForWrite()->SetRemotingConfigChecked();
-    }
-    inline void TrySetRemotingConfigChecked()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            SO_TOLERANT;
-        }
-        CONTRACTL_END;
-
-        GetWriteableDataForWrite()->TrySetRemotingConfigChecked();
-    }
-    inline BOOL RequiresManagedActivation()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetWriteableData()->RequiresManagedActivation();
-    }
-    inline void SetRequiresManagedActivation()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        GetWriteableDataForWrite()->SetRequiresManagedActivation();
-    }
-
-    // Determines whether the type may require managed activation. The actual answer is known later
-    // once the remoting config is checked.
-    inline BOOL MayRequireManagedActivation()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return IsMarshaledByRef();
     }
 
     //-------------------------------------------------------------------
@@ -3898,10 +3719,8 @@ private:
 
         enum_flag_Category_Class            = 0x00000000,
         enum_flag_Category_Unused_1         = 0x00010000,
-
-        enum_flag_Category_MarshalByRef_Mask= 0x000E0000,
-        enum_flag_Category_MarshalByRef     = 0x00020000,
-        enum_flag_Category_Contextful       = 0x00030000, // sub-category of MarshalByRef
+        enum_flag_Category_Unused_2         = 0x00020000,
+        enum_flag_Category_Unused_3         = 0x00030000,
 
         enum_flag_Category_ValueType        = 0x00040000,
         enum_flag_Category_ValueType_Mask   = 0x000C0000,
@@ -3915,9 +3734,9 @@ private:
         enum_flag_Category_IfArrayThenSzArray                   = 0x00020000, // sub-category of Array
 
         enum_flag_Category_Interface        = 0x000C0000,
-        enum_flag_Category_Unused_2         = 0x000D0000,
-        enum_flag_Category_TransparentProxy = 0x000E0000,
-        enum_flag_Category_AsyncPin         = 0x000F0000,
+        enum_flag_Category_Unused_4         = 0x000D0000,
+        enum_flag_Category_Unused_5         = 0x000E0000,
+        enum_flag_Category_Unused_6         = 0x000F0000,
 
         enum_flag_Category_ElementTypeMask  = 0x000E0000, // bits that matter for element type mask
 

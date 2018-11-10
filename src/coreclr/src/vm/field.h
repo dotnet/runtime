@@ -759,34 +759,6 @@ public:
         return IsFdPrivate(GetFieldProtection());
     }
 
-    BOOL IsNotSerialized()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            SO_TOLERANT;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        MethodTable *pMT = GetApproxEnclosingMethodTable();
-        if (pMT->IsSerializable() && !IsStatic())
-            return pMT->IsFieldNotSerialized(pMT->GetIndexForFieldDesc(this));
-        return IsFdNotSerialized(GetAttributes());
-    }
-
-    // Only safe to call this for non-static fields on serializable types.
-    BOOL IsOptionallySerialized()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        _ASSERTE(!IsStatic() && GetApproxEnclosingMethodTable()->IsSerializable());
-
-        MethodTable *pMT = GetApproxEnclosingMethodTable();
-        return pMT->IsFieldOptionallySerialized(pMT->GetIndexForFieldDesc(this));
-    }
-
     IMDInternalImport *GetMDImport()
     {
         LIMITED_METHOD_DAC_CONTRACT;

@@ -368,14 +368,6 @@ HCIMPL1(Object*, AllocObjectWrapper, MethodTable *pMT)
 HCIMPLEND
 
 /*********************************************************************/
-// This is a frameless helper for allocating an object whose type derives
-// from marshalbyref. We check quickly to see if it is configured to
-// have remote activation. If not, we use the superfast allocator to
-// allocate the object. Otherwise, we take the slow path of allocating
-// the object via remoting services.
-
-
-/*********************************************************************/
 extern "C" void* g_TailCallFrameVptr;
 void* g_TailCallFrameVptr;
 

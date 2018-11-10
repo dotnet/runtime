@@ -235,11 +235,6 @@ ClassID TypeHandleToClassID(TypeHandle th)
 // Stubed-out implementations of functions that can do anything useful only when we are actually running managed code
 //
 
-MethodTable *Object::GetTrueMethodTable()
-{
-    UNREACHABLE();
-}
-
 FuncPtrStubs::FuncPtrStubs()
     : m_hashTableCrst(CrstFuncPtrStubs, CRST_UNSAFE_ANYMODE)
 {

@@ -2882,7 +2882,7 @@ HRESULT ProfToEEInterfaceImpl::GetArrayObjectInfoHelper(Object * pObj,
     CONTRACTL_END;
 
     // Must have an array.
-    MethodTable * pMT = pObj->GetTrueMethodTable();
+    MethodTable * pMT = pObj->GetMethodTable();
     if (!pMT->IsArray())
     {
         return E_INVALIDARG;

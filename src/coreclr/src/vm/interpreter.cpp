@@ -7563,9 +7563,6 @@ void Interpreter::StFld()
         }
         else
         {
-#ifdef _DEBUG
-            if (obj->IsTransparentProxy()) NYI_INTERP("Stores to thunking objects.");
-#endif
             BYTE* fldStart = dac_cast<PTR_BYTE>(OBJECTREFToObject(obj)) + sizeof(Object) + fldOffset;
             // fldStart is now a vulnerable byref
             GCX_FORBID();           
@@ -9788,7 +9785,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
             pCode = methToCall->GetMultiCallableAddrOfVirtualizedCode(&objRef, methToCall->GetMethodTable());
             GCPROTECT_END();
 
-            exactMethToCall = Entry2MethodDesc(pCode, objRef->GetTrueMethodTable());
+            exactMethToCall = Entry2MethodDesc(pCode, objRef->GetMethodTable());
         }
 
         // Compile the target in advance of calling.

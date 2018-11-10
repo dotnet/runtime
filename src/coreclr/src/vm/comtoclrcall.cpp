@@ -356,8 +356,8 @@ OBJECTREF COMToCLRGetObjectAndTarget_Virtual(ComCallWrapper * pWrap, MethodDesc 
     OBJECTREF pObject = pWrap->GetObjectRef();
 
     MethodTable *pMT = pObject->GetMethodTable();
-        
-    if (pMT->IsTransparentProxy() || pRealMD->IsInterface())
+
+    if (pRealMD->IsInterface())
     {
         // For transparent proxies, we need to call on the interface method desc if
         // this method represents an interface method and not an IClassX method.           

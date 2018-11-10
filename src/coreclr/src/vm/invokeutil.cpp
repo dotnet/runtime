@@ -745,7 +745,7 @@ OBJECTREF InvokeUtil::CreateClassLoadExcept(OBJECTREF* classes, OBJECTREF* excep
     // Retrieve the resource string.
     ResMgrGetString(W("ReflectionTypeLoad_LoadFailed"), &gc.str);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.o->GetTrueMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(gc.o->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_ArrType_ArrException_Str_RetVoid);
 
     if (!pMD)
@@ -792,7 +792,7 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     GCPROTECT_BEGIN(o);
     ARG_SLOT args[2];
 
-    MethodDesc* pMD = MemberLoader::FindMethod(o->GetTrueMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(o->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Exception_RetVoid);
     
     if (!pMD)

@@ -184,14 +184,6 @@ class Object
     }
 #endif //!DACCESS_COMPILE
 
-    // An object might be a proxy of some sort, with a thunking VTable.  If so, we can
-    // advance to the true method table or class.
-    BOOL            IsTransparentProxy()                        
-    { 
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
-
 #define MARKED_BIT 0x1
 
     PTR_MethodTable GetMethodTable() const              
@@ -218,8 +210,6 @@ class Object
         return dac_cast<DPTR(PTR_MethodTable)>(PTR_HOST_MEMBER_TADDR(Object, this, m_pMethTab));
     }
 
-    MethodTable    *GetTrueMethodTable();
-    
     TypeHandle      GetTypeHandle();
     TypeHandle      GetTrueTypeHandle();
 

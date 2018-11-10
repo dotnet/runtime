@@ -1538,7 +1538,7 @@ OBJECTREF EEArgumentException::CreateThrowable()
     MethodTable *pMT = MscorlibBinder::GetException(m_kind);
     prot.pThrowable = AllocateObject(pMT);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(prot.pThrowable->GetTrueMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(prot.pThrowable->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_RetVoid);
 
     if (!pMD)
@@ -1685,7 +1685,7 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 
     gc.pNewException = AllocateObject(pMT);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetTrueMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Str_Int_RetVoid);
 
     if (!pMD)
@@ -1879,7 +1879,7 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     gc.pFusLogString = StringObject::NewString(logText);
     gc.pNewException = AllocateObject(MscorlibBinder::GetException(m_kind));
 
-    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetTrueMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(gc.pNewException->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_Int_RetVoid);
 
     if (!pMD)
