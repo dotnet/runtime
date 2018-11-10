@@ -272,18 +272,24 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return depsjson;
         }
 
-        public static void AddReferenceToDepsJson(string jsonFile, string fxNamewWithVersion, string testPackage, string testPackageVersion, JObject testAssemblyVersionInfo = null)
+        public static void AddReferenceToDepsJson(
+            string jsonFile, 
+            string fxNameWithVersion, 
+            string testPackage, 
+            string testPackageVersion, 
+            JObject testAssemblyVersionInfo = null,
+            string testAssembly = null)
         {
             JObject depsjson = JObject.Parse(File.ReadAllText(jsonFile));
 
             string testPackageWithVersion = testPackage + "/" + testPackageVersion;
-            string testAssembly = testPackage + ".dll";
+            testAssembly = testAssembly ?? (testPackage + ".dll");
 
             JProperty targetsProperty = (JProperty)depsjson["targets"].First;
             JObject targetsValue = (JObject)targetsProperty.Value;
 
             var assembly = new JProperty(testPackage, testPackageVersion);
-            JObject packageDependencies = (JObject)targetsValue[fxNamewWithVersion]["dependencies"];
+            JObject packageDependencies = (JObject)targetsValue[fxNameWithVersion]["dependencies"];
             packageDependencies.Add(assembly);
 
             if (testAssemblyVersionInfo == null)

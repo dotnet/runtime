@@ -188,25 +188,6 @@ bool hostpolicy_exists_in_svc(const pal::string_t& version, pal::string_t* resol
 }
 
 /**
-* Given path to app binary, say app.dll or app.exe, retrieve the app.deps.json.
-*/
-pal::string_t get_deps_from_app_binary(const pal::string_t& app)
-{
-    assert(app.find(DIR_SEPARATOR) != pal::string_t::npos);
-    assert(ends_with(app, _X(".dll"), false) || ends_with(app, _X(".exe"), false));
-
-    // First append directory.
-    pal::string_t deps_file;
-    deps_file.assign(get_directory(app));
-
-    // Then the app name and the file extension
-    pal::string_t app_name = get_filename(app);
-    deps_file.append(app_name, 0, app_name.find_last_of(_X(".")));
-    deps_file.append(_X(".deps.json"));
-    return deps_file;
-}
-
-/**
 * Given a version and probing paths, find if package layout
 *    directory containing hostpolicy exists.
 */
@@ -261,7 +242,7 @@ pal::string_t get_deps_file(
     else
     {
         // Self-contained app's hostpolicy is from specified deps or from app deps.
-        return !specified_deps_file.empty() ? specified_deps_file : get_deps_from_app_binary(app_candidate);
+        return !specified_deps_file.empty() ? specified_deps_file : get_deps_from_app_binary(get_directory(app_candidate), app_candidate);
     }
 }
 

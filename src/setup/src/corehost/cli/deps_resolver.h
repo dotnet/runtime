@@ -39,16 +39,28 @@ typedef std::unordered_map<pal::string_t, deps_resolved_asset_t> name_to_resolve
 class deps_resolver_t
 {
 public:
-    deps_resolver_t(hostpolicy_init_t& init, const arguments_t& args)
-        : m_fx_definitions(init.fx_definitions)
+    // if root_framework_rid_fallback_graph is specified it is assumed that the fx_definitions
+    // doesn't contain the root framework at all.
+    deps_resolver_t(
+        const arguments_t& args,
+        fx_definition_vector_t& fx_definitions,
+        const deps_json_t::rid_fallback_graph_t* root_framework_rid_fallback_graph,
+        bool is_framework_dependent)
+        : m_fx_definitions(fx_definitions)
         , m_app_dir(args.app_root)
         , m_managed_app(args.managed_application)
-        , m_is_framework_dependent(init.is_framework_dependent)
+        , m_is_framework_dependent(is_framework_dependent)
         , m_core_servicing(args.core_servicing)
     {
-        int root_framework = m_fx_definitions.size() - 1;
+        int lowest_framework = m_fx_definitions.size() - 1;
+        int root_framework = -1;
+        if (root_framework_rid_fallback_graph == nullptr)
+        {
+            root_framework = lowest_framework;
+            root_framework_rid_fallback_graph = &m_fx_definitions[root_framework]->get_deps().get_rid_fallback_graph();
+        }
 
-        for (int i = root_framework; i >= 0; --i)
+        for (int i = lowest_framework; i >= 0; --i)
         {
             if (i == 0)
             {
@@ -69,14 +81,14 @@ public:
             else
             {
                 // The rid graph is obtained from the root framework
-                m_fx_definitions[i]->parse_deps(m_fx_definitions[root_framework]->get_deps().get_rid_fallback_graph());
+                m_fx_definitions[i]->parse_deps(*root_framework_rid_fallback_graph);
             }
         }
 
-        resolve_additional_deps(init);
+        resolve_additional_deps(args, *root_framework_rid_fallback_graph);
 
         setup_additional_probes(args.probe_paths);
-        setup_probe_config(init, args);
+        setup_probe_config(args);
     }
 
     bool valid(pal::string_t* errors)
@@ -114,13 +126,11 @@ public:
     }
 
     void setup_shared_store_probes(
-        const hostpolicy_init_t& init,
         const arguments_t& args);
 
     pal::string_t get_lookup_probe_directories();
 
     void setup_probe_config(
-        const hostpolicy_init_t& init,
         const arguments_t& args);
 
     void setup_additional_probes(
@@ -135,7 +145,8 @@ public:
         const pal::string_t& path);
 
     void resolve_additional_deps(
-        const hostpolicy_init_t& init);
+        const arguments_t& args,
+        const deps_json_t::rid_fallback_graph_t& rid_fallback_graph);
 
     const deps_json_t& get_deps() const
     {
