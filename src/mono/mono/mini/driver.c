@@ -347,26 +347,24 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 	if (strncmp (method->name, "test_", 5) != 0)
 		return FALSE;
 
-	if (interp) {
-		static gboolean filter_method_init = FALSE;
-		static const char *filter_method = NULL;
+	static gboolean filter_method_init = FALSE;
+	static const char *filter_method = NULL;
 
-		if (!filter_method_init) {
-			filter_method = g_getenv ("INTERP_FILTER_METHOD");
-			filter_method_init = TRUE;
-		}
+	if (!filter_method_init) {
+		filter_method = g_getenv ("REGRESSION_FILTER_METHOD");
+		filter_method_init = TRUE;
+	}
 
-		if (filter_method) {
-			const char *name = filter_method;
+	if (filter_method) {
+		const char *name = filter_method;
 
-			if ((strchr (name, '.') > name) || strchr (name, ':')) {
-				MonoMethodDesc *desc = mono_method_desc_new (name, TRUE);
-				gboolean res = mono_method_desc_full_match (desc, method);
-				mono_method_desc_free (desc);
-				return res;
-			} else {
-				return strcmp (method->name, name) == 0;
-			}
+		if ((strchr (name, '.') > name) || strchr (name, ':')) {
+			MonoMethodDesc *desc = mono_method_desc_new (name, TRUE);
+			gboolean res = mono_method_desc_full_match (desc, method);
+			mono_method_desc_free (desc);
+			return res;
+		} else {
+			return strcmp (method->name, name) == 0;
 		}
 	}
 
