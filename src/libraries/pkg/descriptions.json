@@ -1050,6 +1050,7 @@
         "System.ReadOnlyMemory",
         "System.Buffers.MemoryPool",
         "System.Buffers.ReadOnlySequence",
+        "System.Buffers.SequenceReader",
         "System.Buffers.Text.Utf8Parser",
         "System.Buffers.Text.Utf8Formatter"
     ]

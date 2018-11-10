@@ -152,6 +152,7 @@ namespace System
         endIndex,
         array,
         culture,
-        manager
+        manager,
+        count
     }
 }
