@@ -382,3 +382,22 @@ pal::string_t get_dotnet_root_env_var_name()
 
     return pal::string_t(_X("DOTNET_ROOT"));
 }
+
+/**
+* Given path to app binary, say app.dll or app.exe, retrieve the app.deps.json.
+*/
+pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app)
+{
+    pal::string_t deps_file;
+    auto app_name = get_filename(app);
+    deps_file.reserve(app_base.length() + 1 + app_name.length() + 5);
+    deps_file.append(app_base);
+
+    if (!app_base.empty() && app_base.back() != DIR_SEPARATOR)
+    {
+        deps_file.push_back(DIR_SEPARATOR);
+    }
+    deps_file.append(app_name, 0, app_name.find_last_of(_X(".")));
+    deps_file.append(_X(".deps.json"));
+    return deps_file;
+}

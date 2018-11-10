@@ -99,12 +99,14 @@ struct arguments_t
     std::vector<pal::string_t> global_shared_stores;
     pal::string_t dotnet_shared_store;
     std::vector<pal::string_t> env_shared_store;
+    pal::string_t additional_deps_serialized;
+
     int app_argc;
     const pal::char_t** app_argv;
 
     arguments_t();
 
-    inline void print()
+    inline void trace()
     {
         if (trace::is_enabled())
         {
@@ -129,6 +131,16 @@ struct arguments_t
 
 bool parse_arguments(
     const hostpolicy_init_t& init,
-    const int argc, const pal::char_t* argv[], arguments_t* arg_out);
+    const int argc, const pal::char_t* argv[],
+    arguments_t& arg);
+bool init_arguments(
+    const pal::string_t& managed_application_path,
+    const host_startup_info_t& host_info,
+    const pal::string_t& tfm,
+    host_mode_t host_mode,
+    const pal::string_t& additional_deps_serialized,
+    const pal::string_t& deps_file,
+    const std::vector<pal::string_t>& probe_paths,
+    arguments_t& args);
 
 #endif // ARGS_H

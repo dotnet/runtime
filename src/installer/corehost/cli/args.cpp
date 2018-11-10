@@ -28,42 +28,40 @@ arguments_t::arguments_t() :
  *      Windows: C:\Program Files (x86) or
  *      Unix: directory of dotnet on the path.\<arch>\<tfm>
  */
-void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
+void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,const pal::string_t& own_dir, arguments_t* args)
 {
-    if (init.tfm.empty())
+    if (tfm.empty())
     {
         // Old (MNA < 1.1.*) "runtimeconfig.json" files do not contain TFM property.
         return;
     }
 
     // Environment variable DOTNET_SHARED_STORE
-    (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), init.tfm);
+    (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), tfm);
 
     // "dotnet.exe" relative shared store folder
-    if (init.host_mode == host_mode_t::muxer)
+    if (host_mode == host_mode_t::muxer)
     {
         args->dotnet_shared_store = own_dir;
         append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
         append_path(&args->dotnet_shared_store, get_arch());
-        append_path(&args->dotnet_shared_store, init.tfm.c_str());
+        append_path(&args->dotnet_shared_store, tfm.c_str());
     }
 
     // Global shared store dir
     bool multilevel_lookup = multilevel_lookup_enabled();
     if (multilevel_lookup)
     {
-        get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), init.tfm);
+        get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), tfm);
     }
 }
 
 bool parse_arguments(
     const hostpolicy_init_t& init,
-    const int argc, const pal::char_t* argv[], arguments_t* arg_out)
+    const int argc, const pal::char_t* argv[], 
+    arguments_t& args)
 {
-    arguments_t& args = *arg_out;
-
-    args.host_path = init.host_info.host_path;
-
+    pal::string_t managed_application_path;
     if (init.host_mode != host_mode_t::apphost)
     {
         // First argument is managed app
@@ -71,60 +69,72 @@ bool parse_arguments(
         {
             return false;
         }
-        args.managed_application = pal::string_t(argv[1]);
-        if (!pal::realpath(&args.managed_application))
-        {
-            trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
-            return false;
-        }
-        args.app_root = get_directory(args.managed_application);
+
+        managed_application_path = pal::string_t(argv[1]);
+
         args.app_argc = argc - 2;
         args.app_argv = &argv[2];
     }
     else
     {
         // Find the managed app in the same directory
-        args.managed_application = init.host_info.app_path;
-        if (!pal::realpath(&args.managed_application))
-        {
-            trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
-            return false;
-        }
-        args.app_root = get_directory(init.host_info.app_path);
+        managed_application_path = init.host_info.app_path;
+
         args.app_argv = &argv[1];
         args.app_argc = argc - 1;
     }
 
-    if (!init.deps_file.empty())
+    return init_arguments(
+        managed_application_path,
+        init.host_info,
+        init.tfm,
+        init.host_mode,
+        init.additional_deps_serialized,
+        init.deps_file,
+        init.probe_paths,
+        args);
+}
+
+bool init_arguments(
+    const pal::string_t& managed_application_path,
+    const host_startup_info_t& host_info,
+    const pal::string_t& tfm,
+    host_mode_t host_mode,
+    const pal::string_t& additional_deps_serialized,
+    const pal::string_t& deps_file,
+    const std::vector<pal::string_t>& probe_paths,
+    arguments_t& args)
+{
+    args.host_path = host_info.host_path;
+    args.additional_deps_serialized = additional_deps_serialized;
+
+    args.managed_application = managed_application_path;
+    if (!pal::realpath(&args.managed_application))
     {
-        args.deps_path = init.deps_file;
+        trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
+        return false;
+    }
+    args.app_root = get_directory(args.managed_application);
+
+    if (!deps_file.empty())
+    {
+        args.deps_path = deps_file;
         args.app_root = get_directory(args.deps_path);
     }
 
-    for (const auto& probe : init.probe_paths)
+    for (const auto& probe : probe_paths)
     {
         args.probe_paths.push_back(probe);
     }
-    
+
     if (args.deps_path.empty())
     {
-        const auto& app_base = args.app_root;
-        auto app_name = get_filename(args.managed_application);
-
-        args.deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
-        args.deps_path.append(app_base);
-
-        if (!app_base.empty() && app_base.back() != DIR_SEPARATOR)
-        {
-            args.deps_path.push_back(DIR_SEPARATOR);
-        }
-        args.deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
-        args.deps_path.append(_X(".deps.json"));
+        args.deps_path = get_deps_from_app_binary(args.app_root, args.managed_application);
     }
 
     pal::get_default_servicing_directory(&args.core_servicing);
 
-    setup_shared_store_paths(init, get_directory(args.host_path), &args);
+    setup_shared_store_paths(tfm, host_mode, get_directory(args.host_path), &args);
 
     return true;
 }
