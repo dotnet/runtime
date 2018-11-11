@@ -221,12 +221,14 @@
     <Compile Include="System\FormattableStringTests.netcoreapp.cs" />
     <Compile Include="System\GCTests.netcoreapp.cs" />
     <Compile Include="System\GuidTests.netcoreapp.cs" />
+    <Compile Include="System\IndexTests.cs" />
     <Compile Include="System\Int16Tests.netcoreapp.cs" />
     <Compile Include="System\Int32Tests.netcoreapp.cs" />
     <Compile Include="System\Int64Tests.netcoreapp.cs" />
     <Compile Include="System\IntPtrTests.netcoreapp.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.netcoreapp.cs" />
     <Compile Include="System\LazyTests.netcoreapp.cs" />
+    <Compile Include="System\RangeTests.cs" />
     <Compile Include="System\SByteTests.netcoreapp.cs" />
     <Compile Include="System\StringComparerTests.netcoreapp.cs" />
     <Compile Include="System\StringGetHashCodeTests.netcoreapp.cs" />
