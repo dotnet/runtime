@@ -8,6 +8,8 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <!-- System.Memory version has been bumped so we expect validation to fail until we ingest the new core-setup which contains that change -->
+    <IgnoredReference Include="System.Memory" Version="4.2.0.0" />
     <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
   </ItemGroup>
 
