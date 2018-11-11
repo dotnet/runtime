@@ -2167,7 +2167,7 @@ void NDirectStubLinker::NeedsCleanupList()
         SetCleanupNeeded();
 
         // we setup a new local that will hold the cleanup work list
-        LocalDesc desc(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST));
+        LocalDesc desc(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
         m_dwCleanupWorkListLocalNum = NewLocal(desc);
     }
 }
