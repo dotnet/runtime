@@ -200,9 +200,6 @@
     "PB_PackageVersionPropsUrl": {
       "value": ""
     },
-    "PB_SkipTests": {
-      "value": "true"
-    },
     "PACKAGEVERSIONPROPSURL": {
       "value": "$(PB_PackageVersionPropsUrl)"
     }
