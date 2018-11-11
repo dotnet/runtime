@@ -1,0 +1,5 @@
+Compat issues with assembly System.Memory:
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract. 
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.

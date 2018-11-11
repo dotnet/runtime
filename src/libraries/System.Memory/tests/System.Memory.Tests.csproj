@@ -239,6 +239,10 @@
     <Compile Include="ParsersAndFormatters\TestData.cs" />
     <Compile Include="ParsersAndFormatters\TestUtils.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="Span\Indexer.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Base64\Base64DecoderUnitTests.cs" />
     <Compile Include="Base64\Base64EncoderUnitTests.cs" />
