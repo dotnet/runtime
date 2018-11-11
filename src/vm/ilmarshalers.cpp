@@ -1125,17 +1125,8 @@ void ILValueClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     pslILEmit->EmitLDTOKEN(managedVCToken); // pMT
     pslILEmit->EmitCALL(METHOD__RT_TYPE_HANDLE__GETVALUEINTERNAL, 1, 1); // Convert RTH to IntPtr
 
-    if (IsCLRToNative(m_dwMarshalFlags))
-    {
-        // this should only be needed in CLR-to-native scenarios for the SafeHandle field marshaler
-        m_pslNDirect->LoadCleanupWorkList(pslILEmit);
-    }
-    else
-    {
-        pslILEmit->EmitLoadNullPtr();
-    }
-
-    pslILEmit->EmitCALL(METHOD__VALUECLASSMARSHALER__CONVERT_TO_NATIVE, 4, 0);        // void ConvertToNative(IntPtr dst, IntPtr src, IntPtr pMT, ref CleanupWorkList pCleanupWorkList)
+    m_pslNDirect->LoadCleanupWorkList(pslILEmit);
+    pslILEmit->EmitCALL(METHOD__VALUECLASSMARSHALER__CONVERT_TO_NATIVE, 4, 0);        // void ConvertToNative(IntPtr dst, IntPtr src, IntPtr pMT, ref CleanupWorkListElement pCleanupWorkList)
 }
 
 void ILValueClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
@@ -2410,19 +2401,7 @@ void ILLayoutClassPtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
 
-    if (IsCLRToNative(m_dwMarshalFlags))
-    {
-        m_pslNDirect->LoadCleanupWorkList(pslILEmit);
-    }
-    else
-    {
-        //
-        // The assertion here is as follows:
-        //      1) the only field marshaler that requires the CleanupWorkList is FieldMarshaler_SafeHandle 
-        //      2) SafeHandle marshaling is disallowed in the native-to-CLR direction, so we'll never see it..
-        //
-        pslILEmit->EmitLDNULL();  // pass a NULL CleanupWorkList in the native-to-CLR case
-    }
+    m_pslNDirect->LoadCleanupWorkList(pslILEmit);
 
     // static void FmtClassUpdateNativeInternal(object obj, byte* pNative, IntPtr pOptionalCleanupList);
 
@@ -2778,7 +2757,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
                 pslIL->EmitLDLOC(dwInputHandleLocal);
 
                 // This is realiable, i.e. the cleanup will happen if and only if the SH was actually AddRef'ed.
-                pslIL->EmitCALL(METHOD__STUBHELPERS__ADD_TO_CLEANUP_LIST, 2, 1);
+                pslIL->EmitCALL(METHOD__STUBHELPERS__ADD_TO_CLEANUP_LIST_SAFEHANDLE, 2, 1);
 
                 pslIL->EmitSTLOC(dwNativeHandleLocal);
 
