@@ -20,6 +20,9 @@ class AsDefaultTest
     [DllImport("PInvoke_Delegate_AsField")]
     extern static bool TakeDelegateAsFieldInClass_Seq(Class2_FuncPtrAsField3_Seq s);
 
+    [DllImport("PInvoke_Delegate_AsField", EntryPoint = "TakeDelegateAsFieldInClass_Seq")]
+    extern static bool TakeDelegateAsFieldInPreMarshalledClass_Seq(IntPtr ptr);
+
     [DllImport("PInvoke_Delegate_AsField")]
     extern static bool TakeDelegateAsFieldInClass_Exp(Class2_FuncPtrAsField4_Exp s);
 
@@ -47,13 +50,23 @@ class AsDefaultTest
             c3.dele = new Dele(CommonMethod);
             Assert.IsTrue(TakeDelegateAsFieldInClass_Seq(c3), "Delegate marshaled as field in class with Sequential.");
 
+            Console.WriteLine("\n\nScenario 4: Delegate marshaled as field in pre-marshalled class with Sequential.");
+            Class2_FuncPtrAsField3_Seq c4 = new Class2_FuncPtrAsField3_Seq();
+            c4.verification = true;
+            c4.dele = new Dele(CommonMethod);
+            IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<Class2_FuncPtrAsField3_Seq>());
+            Marshal.StructureToPtr(c4, ptr, false);
+            Assert.IsTrue(TakeDelegateAsFieldInPreMarshalledClass_Seq(ptr), "Delegate marshaled as field in pre-marshalled class with Sequential.");
+            Marshal.FreeHGlobal(ptr);
+            GC.KeepAlive(c4);
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Console.WriteLine("\n\nScenario 4 : Delegate marshaled as field in class with Explicit.");
-                Class2_FuncPtrAsField4_Exp c4 = new Class2_FuncPtrAsField4_Exp();
-                c4.verification = true;
-                c4.dele = new Dele(CommonMethod);
-                Assert.IsTrue(TakeDelegateAsFieldInClass_Exp(c4), "Delegate marshaled as field in class with Explicit.");
+                Console.WriteLine("\n\nScenario 5 : Delegate marshaled as field in class with Explicit.");
+                Class2_FuncPtrAsField4_Exp c5 = new Class2_FuncPtrAsField4_Exp();
+                c5.verification = true;
+                c5.dele = new Dele(CommonMethod);
+                Assert.IsTrue(TakeDelegateAsFieldInClass_Exp(c5), "Delegate marshaled as field in class with Explicit.");
             }
             return 100;
         } catch (Exception e){
