@@ -803,6 +803,8 @@ cpu-riscv64.h: cpu-riscv64.md
 testi: mono test.exe
 	$(MINI_RUNTIME) -v -v --ncompile 1 --compile Test:$(mtest) test.exe
 
+test-local: $(regtests)
+
 # ensure the tests are actually correct
 checktests: $(regtests)
 	for i in $(regtests); do $(MINI_RUNTIME) $$i; done

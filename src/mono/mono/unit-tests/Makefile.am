@@ -109,6 +109,8 @@ TESTS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashta
 
 AM_TESTS_ENVIRONMENT = export MONO_PATH=$(mcs_topdir)/class/lib/build;
 
+test-local: $(check_PROGRAMS)
+
 .NOTPARALLEL:
 
 check-local:

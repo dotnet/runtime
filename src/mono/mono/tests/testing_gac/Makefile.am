@@ -96,9 +96,9 @@ EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS)
 
 ### Test cases
 
-.PHONY: runtest compile-tests prereqs
+.PHONY: run-test test-local prereqs
 
-runtest:
+run-test:
 	true
 if !FULL_AOT_TESTS
 if !HYBRID_AOT_TESTS
@@ -111,7 +111,7 @@ if !HYBRID_AOT_TESTS
 endif
 endif
 
-compile-tests: prereqs $(APP_SIGNED_V1_EXE) $(APP_BOTH_EXE) $(APP_SIGNED_V1_AOT)
+test-local: prereqs $(APP_SIGNED_V1_EXE) $(APP_BOTH_EXE) $(APP_SIGNED_V1_AOT)
 
 prereqs: $(GACTESTLIB_DLLS) $(GACTESTLIB_DLLS_AOT)
 	$(MAKE) gacinstall

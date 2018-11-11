@@ -66,7 +66,7 @@ EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS)
 
 ### Test cases
 
-.PHONY: runtest compile-tests
+.PHONY: run-test test-local
 
 TESTS_CS = \
 	samedir/LoadFromMain.cs \
@@ -113,12 +113,12 @@ DISABLED_TESTS+= \
 	separatedir/LoadFileMain.exe
 endif
 
-runtest:
+run-test:
 	true
 	$(MAKE) run-assembly-load-reference-tests
 
 
-compile-tests: compile-samedir compile-separatedir compile-mainanddep
+test-local: compile-samedir compile-separatedir compile-mainanddep
 
 compile-samedir: samedir/LoadFromMain.exe samedir/LoadFileMain.exe samedir/Dep.dll samedir/Mid.dll
 
