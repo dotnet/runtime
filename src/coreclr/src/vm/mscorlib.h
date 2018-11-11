@@ -95,7 +95,7 @@ DEFINE_METHOD(APP_DOMAIN,           ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNam
 DEFINE_METHOD(APP_DOMAIN,           SETUP_DOMAIN,           SetupDomain,                IM_Bool_Str_Str_ArrStr_ArrStr_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 
-DEFINE_CLASS(CLEANUP_WORK_LIST,     StubHelpers,            CleanupWorkList)
+DEFINE_CLASS(CLEANUP_WORK_LIST_ELEMENT,     StubHelpers,            CleanupWorkListElement)
 
 #ifdef FEATURE_COMINTEROP
 // Define earlier in mscorlib.h to avoid BinderClassID to const BYTE truncation warning
@@ -1017,14 +1017,15 @@ DEFINE_METHOD(STUBHELPERS,          SET_LAST_ERROR,         SetLastError,       
 DEFINE_METHOD(STUBHELPERS,          CLEAR_LAST_ERROR,       ClearLastError,             SM_RetVoid)
 
 DEFINE_METHOD(STUBHELPERS,          THROW_INTEROP_PARAM_EXCEPTION, ThrowInteropParamException,   SM_Int_Int_RetVoid)
-DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST,    AddToCleanupList,           SM_RefCleanupWorkList_SafeHandle_RetIntPtr)
-DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkList_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_SAFEHANDLE,    AddToCleanupList,           SM_RefCleanupWorkListElement_SafeHandle_RetIntPtr)
+DEFINE_METHOD(STUBHELPERS,          ADD_TO_CLEANUP_LIST_DELEGATE,    AddToCleanupList,             SM_RefCleanupWorkListElement_Delegate_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          DESTROY_CLEANUP_LIST,   DestroyCleanupList,         SM_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          GET_HR_EXCEPTION_OBJECT, GetHRExceptionObject,      SM_Int_RetException)
 DEFINE_METHOD(STUBHELPERS,          CREATE_CUSTOM_MARSHALER_HELPER, CreateCustomMarshalerHelper, SM_IntPtr_Int_IntPtr_RetIntPtr)
 
 DEFINE_METHOD(STUBHELPERS,          CHECK_STRING_LENGTH,    CheckStringLength,          SM_Int_RetVoid)
 
-DEFINE_METHOD(STUBHELPERS,          FMT_CLASS_UPDATE_NATIVE_INTERNAL,   FmtClassUpdateNativeInternal,   SM_Obj_PtrByte_RefCleanupWorkList_RetVoid)
+DEFINE_METHOD(STUBHELPERS,          FMT_CLASS_UPDATE_NATIVE_INTERNAL,   FmtClassUpdateNativeInternal,   SM_Obj_PtrByte_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          FMT_CLASS_UPDATE_CLR_INTERNAL,      FmtClassUpdateCLRInternal,      SM_Obj_PtrByte_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          LAYOUT_DESTROY_NATIVE_INTERNAL,     LayoutDestroyNativeInternal,    SM_PtrByte_IntPtr_RetVoid)
 DEFINE_METHOD(STUBHELPERS,          ALLOCATE_INTERNAL,                  AllocateInternal,               SM_IntPtr_RetObj)
@@ -1161,7 +1162,7 @@ DEFINE_METHOD(HRESULTEXCEPTIONMARSHALER,  CONVERT_TO_MANAGED,    ConvertToManage
 #endif // FEATURE_COMINTEROP
 
 DEFINE_CLASS(VALUECLASSMARSHALER,   StubHelpers,            ValueClassMarshaler)
-DEFINE_METHOD(VALUECLASSMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,            SM_IntPtrIntPtrIntPtr_RefCleanupWorkList_RetVoid)
+DEFINE_METHOD(VALUECLASSMARSHALER,  CONVERT_TO_NATIVE,      ConvertToNative,            SM_IntPtrIntPtrIntPtr_RefCleanupWorkListElement_RetVoid)
 DEFINE_METHOD(VALUECLASSMARSHALER,  CONVERT_TO_MANAGED,     ConvertToManaged,           SM_IntPtrIntPtrIntPtr_RetVoid)
 DEFINE_METHOD(VALUECLASSMARSHALER,  CLEAR_NATIVE,           ClearNative,                SM_IntPtr_IntPtr_RetVoid)
 
