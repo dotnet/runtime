@@ -94,7 +94,7 @@ namespace System.Buffers.Text
                     return TryParseDateTimeG(source, out value, out _, out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
 
@@ -139,7 +139,7 @@ namespace System.Buffers.Text
                     return TryParseDateTimeG(source, out DateTime _, out value, out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
 

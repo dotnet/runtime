@@ -120,7 +120,7 @@ namespace System.Buffers.Text
                     return TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten);
 
                 default:
-                    return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
+                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
             }
         }
 
@@ -164,7 +164,7 @@ namespace System.Buffers.Text
                     return TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten);
 
                 default:
-                    return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
+                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
             }
         }
     }

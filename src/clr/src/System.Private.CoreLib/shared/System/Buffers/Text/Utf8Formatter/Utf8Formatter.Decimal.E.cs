@@ -8,7 +8,7 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatDecimalE(ref NumberBuffer number, Span<byte> destination, out int bytesWritten, byte precision, byte exponentSymbol)
+        private static bool TryFormatDecimalE(ref Number.NumberBuffer number, Span<byte> destination, out int bytesWritten, byte precision, byte exponentSymbol)
         {
             const int NumExponentDigits = 3;
 
@@ -89,7 +89,7 @@ namespace System.Buffers.Text
                 exponent = -exponent;
             }
 
-            Debug.Assert(exponent < Number.DECIMAL_PRECISION, "If you're trying to reuse this routine for double/float, you'll need to review the code carefully for Decimal-specific assumptions.");
+            Debug.Assert(exponent < Number.DecimalPrecision, "If you're trying to reuse this routine for double/float, you'll need to review the code carefully for Decimal-specific assumptions.");
 
             // Emit exactly three digits for the exponent.
             destination[dstIndex++] = (byte)'0'; // The exponent for Decimal can never exceed 28 (let alone 99)

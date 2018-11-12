@@ -1537,7 +1537,7 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
+        internal static unsafe bool TryNumberToDecimal(ref NumberBuffer number, ref decimal value)
         {
             number.CheckConsistency();
 
@@ -1834,7 +1834,7 @@ namespace System
                (Exception)new FormatException(SR.Format_InvalidString);
         }
 
-        private static double NumberToDouble(ref NumberBuffer number)
+        internal static double NumberToDouble(ref NumberBuffer number)
         {
             number.CheckConsistency();
 
@@ -1843,7 +1843,7 @@ namespace System
             return number.IsNegative ? -result : result;
         }
 
-        private static float NumberToSingle(ref NumberBuffer number)
+        internal static float NumberToSingle(ref NumberBuffer number)
         {
             number.CheckConsistency();
 
