@@ -846,7 +846,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set(VM_SOURCES_DAC_ARCH
-    gcinfodecoder.cpp
     exceptionhandling.cpp
 )
 
