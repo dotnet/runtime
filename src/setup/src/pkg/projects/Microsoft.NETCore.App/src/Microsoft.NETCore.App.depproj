@@ -69,7 +69,6 @@
     <PropertyGroup>
       <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">/x86_arm</_crossDir>
       <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">/x64_arm</_crossDir>
-      <_obsoleteCrossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">/x86_arm</_obsoleteCrossDir>
       <_crossDir Condition="'$(TargetArchitecture)' == 'arm64'">/x64_arm64</_crossDir>
     </PropertyGroup>
 
@@ -164,10 +163,6 @@
       </FilesToPackage>
       <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackagePath)/runtimes$(_crossDir)/native/*.*">
         <TargetPath>runtimes$(_crossDir)/native</TargetPath>
-        <IsNative>true</IsNative>
-      </FilesToPackage>
-      <FilesToPackage Condition="'$(_obsoleteCrossDir)' != ''" Include="$(_jitPackagePath)/runtimes$(_obsoleteCrossDir)/native/*.*">
-        <TargetPath>runtimes$(_obsoleteCrossDir)/native</TargetPath>
         <IsNative>true</IsNative>
       </FilesToPackage>
     </ItemGroup>
