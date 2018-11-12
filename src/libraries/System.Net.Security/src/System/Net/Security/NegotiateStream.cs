@@ -527,6 +527,18 @@ namespace System.Net.Security
 #endif
         }
 
+        public override async ValueTask DisposeAsync()
+        {
+            try
+            {
+                _negoState.Close();
+            }
+            finally
+            {
+                await base.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
         public override int Read(byte[] buffer, int offset, int count)
         {
 #if DEBUG

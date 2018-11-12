@@ -23,6 +23,8 @@ namespace System.Net.Test.Common
             _isServer = isServer;
         }
 
+        public bool Disposed { get; private set; }
+
         public override bool CanRead
         {
             get
@@ -161,6 +163,7 @@ namespace System.Net.Test.Common
         {
             if (disposing)
             {
+                Disposed = true;
                 _network.BreakConnection();
             }
 
