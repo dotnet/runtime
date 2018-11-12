@@ -119,15 +119,14 @@
 #  if !defined(__PIE__)
 // This only works if libmono is linked into the application
 #   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
-						__asm__ ("basr  %%r1,0\n\t"			\
-							 "j     0f\n\t"				\
-							 ".quad " #var "@TLSGD\n"		\
-							 "0:\n\t"				\
-							 "lg    %%r2,4(%%r1)\n\t"		\
-							 "brasl	%%r14,__tls_get_offset@PLT:tls_gdcall:"#var"\n\t" \
-							 "lgr	%0,%%r2\n\t"			\
-							: "=r" (foo) : 				\
-							: "1", "2", "14", "cc");		\
+						void *x = &var;					\
+						__asm__ ("ear   %%r1,%%a0\n"			\
+							 "sllg  %%r1,%%r1,32\n"			\
+							 "ear   %%r1,%%a1\n"			\
+							 "lgr   %0,%1\n"			\
+							 "sgr   %0,%%r1\n"			\
+							: "=r" (foo) : "r" (x)			\
+							: "1", "cc");				\
 						offset = foo; } while (0)
 #  elif __PIE__ == 1
 #   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  					\
