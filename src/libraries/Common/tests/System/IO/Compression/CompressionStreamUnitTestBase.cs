@@ -12,6 +12,8 @@ namespace System.IO.Compression
 {
     public abstract class CompressionStreamUnitTestBase : CompressionStreamTestBase
     {
+        private const int TaskTimeout = 30 * 1000; // Generous timeout for official test runs
+
         [Fact]
         public virtual void FlushAsync_DuringWriteAsync()
         {
@@ -41,7 +43,7 @@ namespace System.IO.Compression
                     // Unblock Async operations
                     writeStream.manualResetEvent.Set();
                     // The original WriteAsync should be able to complete
-                    Assert.True(task.Wait(10 * 500), "Original WriteAsync Task did not complete in time");
+                    Assert.True(task.Wait(TaskTimeout), "Original WriteAsync Task did not complete in time");
                     Assert.True(writeStream.WriteHit, "BaseStream Write function was not called");
                 }
             }
@@ -71,7 +73,7 @@ namespace System.IO.Compression
                     // Unblock Async operations
                     readStream.manualResetEvent.Set();
                     // The original ReadAsync should be able to complete
-                    Assert.True(task.Wait(10 * 500), "Original ReadAsync Task did not complete in time");
+                    Assert.True(task.Wait(TaskTimeout), "Original ReadAsync Task did not complete in time");
                 }
             }
         }
@@ -112,7 +114,7 @@ namespace System.IO.Compression
                     // Unblock Async operations
                     writeStream.manualResetEvent.Set();
                     // The original WriteAsync should be able to complete
-                    Assert.True(task.Wait(5000), "Original write Task did not complete in time");
+                    Assert.True(task.Wait(TaskTimeout), "Original write Task did not complete in time");
                     Assert.True(writeStream.WriteHit, "Underlying Writesync function was not called.");
 
                 }
@@ -146,7 +148,7 @@ namespace System.IO.Compression
                     // Unblock Async operations
                     writeStream.manualResetEvent.Set();
                     // The original WriteAsync should be able to complete
-                    Assert.True(task.Wait(10 * 500), "Original WriteAsync Task did not complete in time");
+                    Assert.True(task.Wait(TaskTimeout), "Original WriteAsync Task did not complete in time");
                     Assert.True(writeStream.WriteHit, "BaseStream Write function was not called");
                 }
             }
@@ -171,7 +173,7 @@ namespace System.IO.Compression
                     // Unblock Async operations
                     readStream.manualResetEvent.Set();
                     // The original ReadAsync should be able to complete
-                    Assert.True(task.Wait(10 * 500), "The original ReadAsync should be able to complete");
+                    Assert.True(task.Wait(TaskTimeout), "The original ReadAsync should be able to complete");
                     Assert.True(readStream.ReadHit, "BaseStream ReadAsync should have been called");
                 }
             }
@@ -190,7 +192,7 @@ namespace System.IO.Compression
                 Task task = decompressor.ReadAsync(uncompressedBytes, 0, uncompressedBytes.Length);
                 decompressor.Dispose();
                 readStream.manualResetEvent.Set();
-                Assert.Throws<AggregateException>(() => task.Wait(1000));
+                Assert.Throws<AggregateException>(() => task.Wait(TaskTimeout));
             }
         }
 
