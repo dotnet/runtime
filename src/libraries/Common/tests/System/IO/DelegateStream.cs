@@ -24,6 +24,7 @@ namespace System.IO
         private readonly Action<long> _setLengthFunc;
         private readonly Action<byte[], int, int> _writeFunc;
         private readonly Func<byte[], int, int, CancellationToken, Task> _writeAsyncFunc;
+        private readonly Action<bool> _disposeFunc;
 
         public DelegateStream(
             Func<bool> canReadFunc = null,
@@ -39,7 +40,8 @@ namespace System.IO
             Func<long, SeekOrigin, long> seekFunc = null,
             Action<long> setLengthFunc = null,
             Action<byte[], int, int> writeFunc = null,
-            Func<byte[], int, int, CancellationToken, Task> writeAsyncFunc = null)
+            Func<byte[], int, int, CancellationToken, Task> writeAsyncFunc = null,
+            Action<bool> disposeFunc = null)
         {
             _canReadFunc = canReadFunc ?? (() => false);
             _canSeekFunc = canSeekFunc ?? (() => false);
@@ -60,6 +62,8 @@ namespace System.IO
 
             _writeFunc = writeFunc;
             _writeAsyncFunc = writeAsyncFunc ?? ((buffer, offset, count, token) => base.WriteAsync(buffer, offset, count, token));
+
+            _disposeFunc = disposeFunc;
         }
 
         public override bool CanRead { get { return _canReadFunc(); } }
@@ -80,5 +84,7 @@ namespace System.IO
 
         public override void Write(byte[] buffer, int offset, int count) { _writeFunc(buffer, offset, count); }
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { return _writeAsyncFunc(buffer, offset, count, cancellationToken); }
+
+        protected override void Dispose(bool disposing) { _disposeFunc?.Invoke(disposing); }
     }
 }

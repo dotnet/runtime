@@ -5200,6 +5200,7 @@ namespace System.IO
         protected virtual System.Threading.WaitHandle CreateWaitHandle() { throw null; }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public virtual int EndRead(System.IAsyncResult asyncResult) { throw null; }
         public virtual void EndWrite(System.IAsyncResult asyncResult) { }
         public abstract void Flush();
