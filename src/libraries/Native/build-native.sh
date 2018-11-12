@@ -40,8 +40,11 @@ initHostDistroRid()
                __HostDistroRid="rhel.6-$__HostArch"
             fi
         fi
+    elif  [ "$__HostOS" == "OSX" ]; then
+        _osx_version=`sw_vers -productVersion | cut -f1-2 -d'.'`
+        __HostDistroRid="osx.$_osx_version-x64"
     elif [ "$__HostOS" == "FreeBSD" ]; then
-      __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'.'`
+      __freebsd_version=`sysctl -n kern.osrelease | cut -f1 -d'-'`
       __HostDistroRid="freebsd.$__freebsd_version-x64"
     fi
 
