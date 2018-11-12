@@ -877,6 +877,9 @@ unsigned getClassDomainID(CORINFO_CLASS_HANDLE cls, void** ppIndirection = NULL)
 // return the data's address (for static fields only)
 void* getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection = NULL);
 
+// return the class handle for the current value of a static field
+CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool *pIsSpeculative);
+
 // registers a vararg sig & returns a VM cookie for it (which can contain other stuff)
 CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection = NULL);
 

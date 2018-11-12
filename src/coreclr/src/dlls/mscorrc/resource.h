@@ -716,3 +716,5 @@
 #define IDS_EE_ERROR_COM                           0x2641
 
 #define IDS_INVOKE_NULLREF_RETURNED             0x2642
+
+#define IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD    0x2643

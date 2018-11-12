@@ -417,6 +417,9 @@ public:
 
     void * getFieldAddress(CORINFO_FIELD_HANDLE field,
                                     void **ppIndirection);
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
+                                                    bool* pIsSpeculative);
+
     DWORD getFieldThreadLocalStoreID (CORINFO_FIELD_HANDLE field,
                                                 void **ppIndirection);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO *sig,
