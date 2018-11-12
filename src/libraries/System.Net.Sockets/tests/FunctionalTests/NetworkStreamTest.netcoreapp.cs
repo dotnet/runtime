@@ -349,6 +349,25 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [Fact]
+        public async Task DisposeAsync_ClosesStream()
+        {
+            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
+            { 
+                Assert.True(client.DisposeAsync().IsCompletedSuccessfully);
+                Assert.True(server.DisposeAsync().IsCompletedSuccessfully);
+
+                await client.DisposeAsync();
+                await server.DisposeAsync();
+
+                Assert.False(server.CanRead);
+                Assert.False(server.CanWrite);
+
+                Assert.False(client.CanRead);
+                Assert.False(client.CanWrite);
+            });
+        }
+
         private sealed class CustomSynchronizationContext : SynchronizationContext
         {
             public override void Post(SendOrPostCallback d, object state)
