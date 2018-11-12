@@ -8,11 +8,11 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatDecimalG(ref NumberBuffer number, Span<byte> destination, out int bytesWritten)
+        private static bool TryFormatDecimalG(ref Number.NumberBuffer number, Span<byte> destination, out int bytesWritten)
         {
             int scale = number.Scale;
             ReadOnlySpan<byte> digits = number.Digits;
-            int numDigits = number.NumDigits;
+            int numDigits = number.DigitsCount;
 
             bool isFraction = scale < numDigits;
             int numBytesNeeded;

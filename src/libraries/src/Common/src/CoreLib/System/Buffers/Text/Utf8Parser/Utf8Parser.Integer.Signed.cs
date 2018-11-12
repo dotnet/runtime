@@ -54,7 +54,7 @@ namespace System.Buffers.Text
                     return TryParseByteX(source, out Unsafe.As<sbyte, byte>(ref value), out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
 
@@ -100,7 +100,7 @@ namespace System.Buffers.Text
                     return TryParseUInt16X(source, out Unsafe.As<short, ushort>(ref value), out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
 
@@ -146,7 +146,7 @@ namespace System.Buffers.Text
                     return TryParseUInt32X(source, out Unsafe.As<int, uint>(ref value), out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
 
@@ -192,7 +192,7 @@ namespace System.Buffers.Text
                     return TryParseUInt64X(source, out Unsafe.As<long, ulong>(ref value), out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
     }
