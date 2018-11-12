@@ -1303,6 +1303,7 @@ namespace System.IO
         public virtual System.IO.Stream BaseStream { get { throw null; } }
         public virtual void Close() { }
         public void Dispose() { }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual void Dispose(bool disposing) { }
         public virtual void Flush() { }
         public virtual long Seek(int offset, System.IO.SeekOrigin origin) { throw null; }
