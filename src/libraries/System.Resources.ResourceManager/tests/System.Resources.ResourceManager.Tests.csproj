@@ -34,6 +34,9 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <SupplementalTestData Include="Resources\TestResx.netstandard17.resources" />
+    <SupplementalTestData Include="Resources\bitmap.bmp" />
+    <SupplementalTestData Include="Resources\icon.ico" />
   </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221
