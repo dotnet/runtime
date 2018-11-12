@@ -818,5 +818,102 @@ namespace System.Buffers.Text.Tests
                 }
             }
         }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
+        private static void ByteSpanToDecimal()
+        {
+            byte[] utf8ByteArray = Encoding.UTF8.GetBytes("1.23456789E+5");
+            ReadOnlySpan<byte> utf8ByteSpan = utf8ByteArray;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Utf8Parser.TryParse(utf8ByteSpan, out decimal value, out int bytesConsumed);
+                        TestHelpers.DoNotIgnore(value, bytesConsumed);
+                    }
+                }
+            }
+        }
+
+        // Reenable commented out test cases when https://github.com/xunit/xunit/issues/1822 is fixed.
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData("-Infinity")]                   // Negative Infinity
+        [InlineData("-1.7976931348623157E+308")]    // Min Negative Normal
+        [InlineData("-3.1415926535897931")]         // Negative pi
+        [InlineData("-2.7182818284590451")]         // Negative e
+        [InlineData("-1")]                          // Negative One
+        // [InlineData("-2.2250738585072014E-308")]    // Max Negative Normal
+        [InlineData("-2.2250738585072009E-308")]   // Min Negative Subnormal
+        [InlineData("-4.94065645841247E-324")]     // Max Negative Subnormal (Negative Epsilon)
+        [InlineData("-0.0")]                       // Negative Zero
+        [InlineData("NaN")]                        // NaN
+        [InlineData("0")]                          // Positive Zero
+        [InlineData("4.94065645841247E-324")]      // Min Positive Subnormal (Positive Epsilon)
+        [InlineData("2.2250738585072009E-308")]    // Max Positive Subnormal
+        // [InlineData("2.2250738585072014E-308")]     // Min Positive Normal
+        [InlineData("1")]                          // Positive One
+        [InlineData("2.7182818284590451")]         // Positive e
+        [InlineData("3.1415926535897931")]         // Positive pi
+        [InlineData("1.7976931348623157E+308")]    // Max Positive Normal
+        [InlineData("Infinity")]                   // Positive Infinity
+        private static void ByteSpanToDouble(string text)
+        {
+            byte[] utf8ByteArray = Encoding.UTF8.GetBytes(text);
+            ReadOnlySpan<byte> utf8ByteSpan = utf8ByteArray;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Utf8Parser.TryParse(utf8ByteSpan, out double value, out int bytesConsumed);
+                        TestHelpers.DoNotIgnore(value, bytesConsumed);
+                    }
+                }
+            }
+        }
+
+        // Reenable commented out test cases when https://github.com/xunit/xunit/issues/1822 is fixed.
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData("-Infinity")]           // Negative Infinity
+        [InlineData("-3.40282347E+38")]     // Min Negative Normal
+        [InlineData("-3.14159274")]         // Negative pi
+        [InlineData("-2.71828175")]         // Negative e
+        [InlineData("-1")]                  // Negative One
+        // [InlineData("-1.17549435E-38")]     // Max Negative Normal
+        [InlineData("-1.17549421E-38")]     // Min Negative Subnormal
+        [InlineData("-1.401298E-45")]       // Max Negative Subnormal (Negative Epsilon)
+        [InlineData("-0.0")]                // Negative Zero
+        [InlineData("NaN")]                 // NaN
+        [InlineData("0")]                   // Positive Zero
+        [InlineData("1.401298E-45")]        // Min Positive Subnormal (Positive Epsilon)
+        [InlineData("1.17549421E-38")]      // Max Positive Subnormal
+        // [InlineData("1.17549435E-38")]      // Min Positive Normal
+        [InlineData("1")]                   // Positive One
+        [InlineData("2.71828175")]          // Positive e
+        [InlineData("3.14159274")]          // Positive pi
+        [InlineData("3.40282347E+38")]      // Max Positive Normal
+        [InlineData("Infinity")]            // Positive Infinity
+        private static void ByteSpanToSingle(string text)
+        {
+            byte[] utf8ByteArray = Encoding.UTF8.GetBytes(text);
+            ReadOnlySpan<byte> utf8ByteSpan = utf8ByteArray;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Utf8Parser.TryParse(utf8ByteSpan, out float value, out int bytesConsumed);
+                        TestHelpers.DoNotIgnore(value, bytesConsumed);
+                    }
+                }
+            }
+        }
     }
 }
