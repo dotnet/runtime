@@ -21,6 +21,7 @@
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="CryptoStream.netcoreapp.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
     <Compile Include="PbeParametersTests.cs" />

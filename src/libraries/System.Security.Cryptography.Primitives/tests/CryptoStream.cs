@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
 {
-    public static class CryptoStreamTests
+    public static partial class CryptoStreamTests
     {
         [Fact]
         public static void Ctor()
