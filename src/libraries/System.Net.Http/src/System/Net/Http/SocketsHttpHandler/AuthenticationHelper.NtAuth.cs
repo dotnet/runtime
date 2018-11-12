@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,7 +78,28 @@ namespace System.Net.Http
 
                         string challengeData = challenge.ChallengeData;
 
-                        string spn = "HTTP/" + authUri.IdnHost;
+                        // Need to use FQDN normalized host so that CNAME's are traversed.
+                        // Use DNS to do the forward lookup to an A (host) record.
+                        // But skip DNS lookup on IP literals. Otherwise, we would end up
+                        // doing an unintended reverse DNS lookup.
+                        string spn;
+                        UriHostNameType hnt = authUri.HostNameType;
+                        if (hnt == UriHostNameType.IPv6 || hnt == UriHostNameType.IPv4)
+                        {
+                            spn = authUri.IdnHost;
+                        }
+                        else
+                        {
+                            IPHostEntry result = await Dns.GetHostEntryAsync(authUri.IdnHost).ConfigureAwait(false);
+                            spn = result.HostName;
+                        }
+                        spn = "HTTP/" + spn;
+
+                        if (NetEventSource.IsEnabled)
+                        {
+                            NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, Host: {authUri.IdnHost}, SPN: {spn}");
+                        }
+
                         ChannelBinding channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
                         NTAuthentication authContext = new NTAuthentication(isServer:false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
                         try

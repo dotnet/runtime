@@ -599,6 +599,9 @@
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="uap\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Reference Include="System.Net.NameResolution" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netcoreappaot' OR '$(TargetGroup)' == 'uap'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Buffers" />
