@@ -7,6 +7,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStreamTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32Unix.cs">
