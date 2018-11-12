@@ -128,7 +128,7 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate(tests[i].x, tests[i].y, tests[i].z, tests[i].expected, tests[i].variance);
+        validate(tests[i].value, tests[i].expected, tests[i].variance);
     }
 
     validate_isnan(PAL_NEGINF);

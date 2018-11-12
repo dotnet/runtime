@@ -525,6 +525,30 @@
                     "name": "System.Tests.ConvertToSingleTests.FromString",
                     "reason": "https://github.com/dotnet/coreclr/pull/20707"
                 },
+                {
+                    "name": "System.Tests.MathTests.Max_Double",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20912"
+                },
+                {
+                    "name": "System.Tests.MathTests.Max_Single",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20912"
+                },
+                {
+                    "name": "System.Tests.MathTests.Min_Double",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20912"
+                },
+                {
+                    "name": "System.Tests.MathTests.Min_Single",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20912"
+                },
+                {
+                    "name": "System.Tests.MathFTests.Max",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20912"
+                },
+                {
+                    "name": "System.Tests.MathFTests.Min",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20912"
+                },
             ]
         }
     },
