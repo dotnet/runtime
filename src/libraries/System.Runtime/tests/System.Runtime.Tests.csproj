@@ -257,6 +257,7 @@
     <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />
     <Compile Include="System\Type\TypePropertyTests.netcoreapp.cs" />
     <Compile Include="System\Type\TypeTests.netcoreapp.cs" />
+    <Compile Include="System\ArgIteratorTests.netcoreapp.cs" />
     <Compile Include="System\DoubleTests.netcoreapp.cs" />
     <Compile Include="System\SingleTests.netcoreapp.cs" />
   </ItemGroup>
