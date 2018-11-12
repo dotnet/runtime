@@ -166,24 +166,4 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         TrueUnorderedSignaling = 31,
     }
-
-    public enum StringComparisonMode : byte {
-        EqualAny = 0x00,
-        Ranges = 0x04,
-        EqualEach = 0x08,
-        EqualOrdered = 0x0c,
-        NegativePolarity = 0x10,
-        MaskedNegativePolarity = 0x30,
-        LeastSignificant = 0x00,
-        MostSignificant = 0x40,
-    }
-
-
-    public enum ResultsFlag : byte {
-        CFlag = 0,
-        NotCFlagAndNotZFlag = 1,
-        OFlag = 2,
-        SFlag = 3,
-        ZFlag = 4,
-    }
 }
