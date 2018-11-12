@@ -114,6 +114,23 @@ namespace System
         public ApplicationException(string message) { }
         public ApplicationException(string message, System.Exception innerException) { }
     }
+    public ref partial struct ArgIterator
+    {
+        private int _dummyPrimitive;
+        public ArgIterator(System.RuntimeArgumentHandle arglist) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe ArgIterator(System.RuntimeArgumentHandle arglist, void* ptr) { throw null; }
+        public void End() { }
+        public override bool Equals(object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.TypedReference GetNextArg() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth) { throw null; }
+        public System.RuntimeTypeHandle GetNextArgType() { throw null; }
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
+        public int GetRemainingCount() { throw null; }
+    }
     public partial class ArgumentException : System.SystemException
     {
         public ArgumentException() { }

@@ -158,7 +158,6 @@ MembersMustExist : Member 'System.Activator.CreateInstanceFrom(System.String, Sy
 MembersMustExist : Member 'System.Activator.CreateInstanceFrom(System.String, System.String, System.Object[])' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AppDomainManager' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AppDomainSetup' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Split(System.Char)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Split(System.String)' does not exist in the implementation but it does exist in the contract.
 CannotMakeTypeAbstract : Type 'System.Diagnostics.Debugger' is abstract in the implementation but is not abstract in the contract.
