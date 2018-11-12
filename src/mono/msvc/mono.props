@@ -23,6 +23,8 @@
     <MONO_EXTERNAL_LLVM_CONFIG></MONO_EXTERNAL_LLVM_CONFIG>
     <!-- When true, ported mono projects will build using C++ instead of C compiler. When false, all project will be build using the default compiler.  -->
     <MONO_COMPILE_AS_CPP>false</MONO_COMPILE_AS_CPP>
+    <!-- When true, mono binaries will link and include BTLS. When false, mono binaries will not link and include BTLS.  -->
+    <MONO_ENABLE_BTLS>false</MONO_ENABLE_BTLS>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
@@ -81,9 +83,6 @@
     <BuildMacro Include="MONO_INSTALL_DIR_PREFIX">
       <Value>$(MONO_INSTALL_DIR_PREFIX)</Value>
     </BuildMacro>
-    <BuildMacro Include="MONO_LLVM_INSTALL_DIR_PREFIX">
-      <Value>$(MONO_LLVM_INSTALL_DIR_PREFIX)</Value>
-    </BuildMacro>
     <BuildMacro Include="MONO_TARGET_GC">
       <Value>$(MONO_TARGET_GC)</Value>
     </BuildMacro>
@@ -107,6 +106,9 @@
     </BuildMacro>
     <BuildMacro Include="MONO_COMPILE_AS_CPP">
       <Value>$(MONO_COMPILE_AS_CPP)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_ENABLE_BTLS">
+      <Value>$(MONO_ENABLE_BTLS)</Value>
     </BuildMacro>
   </ItemGroup>
   <PropertyGroup Label="MonoDefaultPreprocessorDefinitions">

@@ -81,7 +81,7 @@ if "%VS_TARGET%" == "" (
     set VS_TARGET=Build
 )
 
-if not exist %LLVM_DIR% (
+if not exist "%LLVM_DIR%" (
     echo Could not find "%LLVM_DIR%".
     goto ON_ERROR
 )
@@ -172,7 +172,7 @@ if "%GIT%" == "" (
 
 :: Make sure llvm submodule is up to date.
 pushd
-cd %LLVM_DIR%
+cd "%LLVM_DIR%"
 echo Updating llvm submodule.
 "%GIT%" submodule update --init
 if not ERRORLEVEL == 0 (

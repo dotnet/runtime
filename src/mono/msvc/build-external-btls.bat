@@ -4,14 +4,15 @@
 :: When executed from withing Visual Studio build environment current
 :: build environment will be inherited by script.
 ::
-:: %1 Mono source root directory.
-:: %2 Mono build root directory.
-:: %3 Mono distribution root directory.
-:: %4 VS CFLAGS.
-:: %5 VS platform (Win32/x64)
-:: %6 VS configuration (Debug/Release)
-:: %7 VS target
-:: %8 MsBuild bin path, if used.
+:: %1 Mono BTLS source root directory.
+:: %2 BTLS source root directory.
+:: %3 BTLS build root directory.
+:: %4 Mono distribution root directory.
+:: %5 VS CFLAGS.
+:: %6 VS platform (Win32/x64)
+:: %7 VS configuration (Debug/Release)
+:: %8 VS target
+:: %9 MsBuild bin path, if used.
 :: --------------------------------------------------
 
 @echo off
@@ -28,14 +29,15 @@ set NINJA_BIN_NAME=ninja.exe
 set PERL_BIN_NAME=perl.exe
 set YASM_BIN_NAME=yasm.exe
 
-set MONO_DIR=%~1
-set MONO_BUILD_DIR=%~2
-set MONO_DIST_DIR=%~3
-set VS_CFLAGS=%~4
-set VS_PLATFORM=%~5
-set VS_CONFIGURATION=%~6
-set VS_TARGET=%~7
-set MSBUILD_BIN_PATH=%~8
+set MONO_BTLS_DIR=%~1
+set BTLS_DIR=%~2
+set BTLS_BUILD_DIR=%~3
+set MONO_DIST_DIR=%~4
+set VS_CFLAGS=%~5
+set VS_PLATFORM=%~6
+set VS_CONFIGURATION=%~7
+set VS_TARGET=%~8
+set MSBUILD_BIN_PATH=%~9
 
 :: Setup toolchain.
 :: set GIT=
@@ -43,13 +45,18 @@ set MSBUILD_BIN_PATH=%~8
 :: set NINJA=
 set MSBUILD=%MSBUILD_BIN_PATH%msbuild.exe
 
-if "%MONO_DIR%" == "" (
-    echo Missing mono source directory argument.
+if "%MONO_BTLS_DIR%" == "" (
+    echo Missing mono BTLS source directory argument.
     goto ECHO_USAGE
 )
 
-if "%MONO_BUILD_DIR%" == "" (
-    echo Missing mono build directory argument.
+if "%BTLS_DIR%" == "" (
+    echo Missing BTLS source directory argument.
+    goto ECHO_USAGE
+)
+
+if "%BTLS_BUILD_DIR%" == "" (
+    echo Missing BTLS build directory argument.
     goto ECHO_USAGE
 )
 
@@ -75,20 +82,13 @@ if "%VS_TARGET%" == "" (
     set VS_TARGET=Build
 )
 
-if not exist %MONO_DIR% (
-    echo Could not find "%MONO_DIR%".
+if not exist "%MONO_BTLS_DIR%" (
+    echo Could not find "%MONO_BTLS_DIR%".
     goto ON_ERROR
 )
 
-set BTLS_ROOT_PATH=%MONO_DIR%\external\boringssl
-if not exist %BTLS_ROOT_PATH% (
-    echo Could not find "%BTLS_ROOT_PATH%".
-    goto ON_ERROR
-)
-
-set MONO_BTLS_ROOT_PATH=%MONO_DIR%\mono\btls
-if not exist %MONO_BTLS_ROOT_PATH% (
-    echo Could not find "%MONO_BTLS_ROOT_PATH%".
+if not exist "%BTLS_DIR%" (
+    echo Could not find "%BTLS_DIR%".
     goto ON_ERROR
 )
 
@@ -99,7 +99,6 @@ if /i "%VS_PLATFORM%" == "win32" (
 )
 
 set BTLS_NO_ASM_SUPPORT=1
-set BTLS_BUILD_DIR=%MONO_BUILD_DIR%
 
 :: Check if executed from VS2015/VS2017 build environment.
 if "%VisualStudioVersion%" == "14.0" (
@@ -181,7 +180,7 @@ if "%GIT%" == "" (
 
 :: Make sure boringssl submodule is up to date.
 pushd
-cd %MONO_BTLS_ROOT_PATH%
+cd "%BTLS_DIR%"
 echo Updating boringssl submodule.
 "%GIT%" submodule update --init
 if not ERRORLEVEL == 0 (
@@ -210,15 +209,15 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
 
 :: Run cmake.
 "%CMAKE%" ^
--D BTLS_ROOT:PATH="%BTLS_ROOT_PATH%" ^
--D SRC_DIR:PATH="%MONO_BTLS_ROOT_PATH%" ^
+-D BTLS_ROOT:PATH="%BTLS_DIR%" ^
+-D SRC_DIR:PATH="%MONO_BTLS_DIR%" ^
 -D BTLS_CFLAGS="%BTLS_CFLAGS%" ^
 -D OPENSSL_NO_ASM=%BTLS_NO_ASM_SUPPORT% ^
 -D BTLS_ARCH="%BTLS_ARCH%" ^
 -D BUILD_SHARED_LIBS=1 ^
 %BTLS_BUILD_TYPE% ^
 -G "%CMAKE_GENERATOR%" ^
-"%MONO_BTLS_ROOT_PATH%"
+"%MONO_BTLS_DIR%"
 
 if not ERRORLEVEL == 0 (
     goto ON_ERROR
@@ -231,7 +230,7 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
     )
 ) else (
     :: Build BTLS using msbuild build system.
-    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% || (
+    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /m:4 || (
         goto ON_ERROR
     )
 )
@@ -244,7 +243,7 @@ if not exist "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.dll" (
 )
 
 :: Make sure build output folder exists.
-if not exist %MONO_DIST_DIR% (
+if not exist "%MONO_DIST_DIR%" (
     echo Could not find "%MONO_DIST_DIR%", creating folder for build output.
     mkdir "%MONO_DIST_DIR%"
 )
@@ -279,7 +278,7 @@ set BUILD_RESULT=0
 goto ON_EXIT
 
 :ECHO_USAGE:
-    ECHO Usage: build-btls.bat [mono_src_dir] [mono_build_dir] [mono_dist_dir] [vs_cflags] [vs_plaform] [vs_configuration].
+    ECHO Usage: build-btls.bat [mono_btls_src_dir] [btls_src_dir] [btls_build_dir] [mono_dist_dir] [vs_cflags] [vs_plaform] [vs_configuration].
 
 :ON_ERROR
     echo Failed to build BTLS.

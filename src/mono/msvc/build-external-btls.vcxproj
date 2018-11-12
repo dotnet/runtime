@@ -152,7 +152,7 @@
     <_BtlsCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," "))</_BtlsCFlags>
     <_BtlsCFlags>$(_BtlsCFlags.Trim())</_BtlsCFlags>
     <_BtlsCFlags Condition="'$(_BtlsCFlags)' != ''">-D$(_BtlsCFlags.Replace(" "," -D"))</_BtlsCFlags>
-    <_BtlsBuildCommand>build-external-btls.bat &quot;$(MONO_DIR)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(OutDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
+    <_BtlsBuildCommand>build-external-btls.bat &quot;$(_MonoBtlsSourceDir)&quot; &quot;$(_BtlsSourceDir)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
   </PropertyGroup>
   <Target Name="_AfterBuildExternalBtls" Condition="'$(MONO_ENABLE_BTLS)' == 'true'">
     <Exec Command="$(_BtlsBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
