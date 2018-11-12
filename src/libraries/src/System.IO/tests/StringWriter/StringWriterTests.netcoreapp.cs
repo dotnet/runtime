@@ -93,5 +93,17 @@ namespace System.IO.Tests
             cts.Cancel();
             Assert.Equal(TaskStatus.Canceled, sw.WriteLineAsync(sb, cts.Token).Status);
         }
+
+        [Fact]
+        public void DisposeAsync_ClosesWriterAndLeavesBuilderAvailable()
+        {
+            var sb = new StringBuilder();
+            var sw = new StringWriter(sb);
+            sw.Write("hello");
+            Assert.True(sw.DisposeAsync().IsCompletedSuccessfully);
+            Assert.True(sw.DisposeAsync().IsCompletedSuccessfully);
+            Assert.Throws<ObjectDisposedException>(() => sw.Write(42));
+            Assert.Equal("hello", sb.ToString());
+        }
     }
 }
