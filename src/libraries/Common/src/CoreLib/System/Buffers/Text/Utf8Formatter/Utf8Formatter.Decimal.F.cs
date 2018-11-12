@@ -8,7 +8,7 @@ namespace System.Buffers.Text
 {
     public static partial class Utf8Formatter
     {
-        private static bool TryFormatDecimalF(ref NumberBuffer number, Span<byte> destination, out int bytesWritten, byte precision)
+        private static bool TryFormatDecimalF(ref Number.NumberBuffer number, Span<byte> destination, out int bytesWritten, byte precision)
         {
             int scale = number.Scale;
             ReadOnlySpan<byte> digits = number.Digits;

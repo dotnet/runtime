@@ -242,5 +242,15 @@ namespace System.Buffers.Text
         }
 
         #endregion Math Helper methods
+
+        //
+        // Enable use of ThrowHelper from TryFormat() routines without introducing dozens of non-code-coveraged "bytesWritten = 0; return false" boilerplate.
+        //
+        public static bool TryFormatThrowFormatException(out int bytesWritten)
+        {
+            bytesWritten = 0;
+            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+            return false;
+        }
     }
 }
