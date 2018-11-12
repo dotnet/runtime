@@ -21,6 +21,7 @@ AM_INIT_AUTOMAKE([1.9 dist-bzip2 tar-ustar no-dist-gzip foreign subdir-objects]
 AC_CONFIG_HEADERS([config.h])
 AM_MAINTAINER_MODE
 AM_EXTRA_RECURSIVE_TARGETS([test])
+AM_EXTRA_RECURSIVE_TARGETS([test-bundle])
 
 API_VER=2.0
 AC_SUBST(API_VER)

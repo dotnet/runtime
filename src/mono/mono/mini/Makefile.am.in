@@ -805,6 +805,16 @@ testi: mono test.exe
 
 test-local: $(regtests)
 
+test-bundle-local:
+	mkdir -p $(TEST_BUNDLE_PATH)/tests/mini
+	cp -L $(regtests) TestDriver.dll MemoryIntrinsics.dll generics-variant-types.dll $(TEST_BUNDLE_PATH)/tests/mini/
+	cp -L mono-sgen $(TEST_BUNDLE_PATH)/
+	chmod +x $(TEST_BUNDLE_PATH)/mono-sgen
+if SUPPORT_BOEHM
+	cp -L mono-boehm $(TEST_BUNDLE_PATH)/
+	chmod +x $(TEST_BUNDLE_PATH)/mono-boehm
+endif
+
 # ensure the tests are actually correct
 checktests: $(regtests)
 	for i in $(regtests); do $(MINI_RUNTIME) $$i; done

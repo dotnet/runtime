@@ -115,4 +115,6 @@ libmono_native_unified_la_LDFLAGS = $(MONO_NATIVE_UNIFIED_LDFLAGS)
 
 libmono_native_unified_la_LIBADD = $(MONO_NATIVE_LIBADD)
 
-
+test-bundle-local:
+	mkdir -p $(TEST_BUNDLE_PATH)
+	cp -L .libs/libmono-native$(libsuffix) $(TEST_BUNDLE_PATH)/

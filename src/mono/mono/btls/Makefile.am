@@ -80,3 +80,7 @@ if HOST_WIN32
 else
 	$(install_sh) build-shared/libmono-btls-shared.* "$(DESTDIR)$(libdir)"
 endif
+
+test-bundle-local:
+	mkdir -p $(TEST_BUNDLE_PATH)
+	cp -L build-shared/libmono-btls-shared$(libsuffix) $(TEST_BUNDLE_PATH)/

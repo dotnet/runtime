@@ -161,6 +161,14 @@ MCS = $(TOOLS_RUNTIME) $(CSC) -lib:$(CLASS) -unsafe -nologo -noconfig -nowarn:01
 
 test-local: $(PLOG_TESTS)
 
+test-bundle-local:
+	mkdir -p $(TEST_BUNDLE_PATH)/tests/profiler/
+	cp -L .libs/libmono-profiler-log$(libsuffix) $(TEST_BUNDLE_PATH)/
+	cp -L $(PLOG_TESTS) $(TEST_BUNDLE_PATH)/tests/profiler/
+	cp -L ptestrunner.pl $(TEST_BUNDLE_PATH)/tests/profiler/
+	cp -L mprof-report $(TEST_BUNDLE_PATH)/
+	chmod +x $(TEST_BUNDLE_PATH)/mprof-report
+
 run-test: test
 	MONO_PATH=$(CLASS) perl $(srcdir)/ptestrunner.pl $(top_builddir) nunit TestResult-profiler.xml
 
