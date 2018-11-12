@@ -2603,15 +2603,17 @@ public:
     // Get the handle, and assert if not found.
     CORINFO_CLASS_HANDLE gtGetStructHandle(GenTree* tree);
     // Get the handle for a ref type.
-    CORINFO_CLASS_HANDLE gtGetClassHandle(GenTree* tree, bool* isExact, bool* isNonNull);
+    CORINFO_CLASS_HANDLE gtGetClassHandle(GenTree* tree, bool* pIsExact, bool* pIsNonNull);
     // Get the class handle for an helper call
-    CORINFO_CLASS_HANDLE gtGetHelperCallClassHandle(GenTreeCall* call, bool* isExact, bool* isNonNull);
+    CORINFO_CLASS_HANDLE gtGetHelperCallClassHandle(GenTreeCall* call, bool* pIsExact, bool* pIsNonNull);
     // Get the element handle for an array of ref type.
     CORINFO_CLASS_HANDLE gtGetArrayElementClassHandle(GenTree* array);
     // Get a class handle from a helper call argument
     CORINFO_CLASS_HANDLE gtGetHelperArgClassHandle(GenTree*  array,
                                                    unsigned* runtimeLookupCount = nullptr,
                                                    GenTree** handleTree         = nullptr);
+    // Get the class handle for a field
+    CORINFO_CLASS_HANDLE gtGetFieldClassHandle(CORINFO_FIELD_HANDLE fieldHnd, bool* pIsExact, bool* pIsNonNull);
     // Check if this tree is a gc static base helper call
     bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 

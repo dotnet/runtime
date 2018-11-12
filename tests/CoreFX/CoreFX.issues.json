@@ -792,5 +792,19 @@
                 },
             ]
         }
-    },
+    },    
+    {
+        "name": "System.Linq.Expressions.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Linq.Expressions.Tests.BindTests.StaticReadonlyField",
+                    "reason": "https://github.com/dotnet/coreclr/pull/20886 and https://github.com/dotnet/corefx/pull/33413"
+                }
+            ]
+        }
+    }
 ]

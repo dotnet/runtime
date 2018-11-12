@@ -339,6 +339,22 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
 
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
 
+    // Verify we're not trying to set the value of a static initonly field
+    // once the class has been initialized.
+    if (pFieldDesc->IsStatic())
+    {
+        MethodTable* pEnclosingMT = pFieldDesc->GetEnclosingMethodTable();
+        if (pEnclosingMT->IsClassInited() && IsFdInitOnly(pFieldDesc->GetAttributes()))
+        {
+            DefineFullyQualifiedNameForClassW();
+            SString ssFieldName(SString::Utf8, pFieldDesc->GetName());
+            COMPlusThrow(kFieldAccessException,
+                IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
+                ssFieldName.GetUnicode(),
+                GetFullyQualifiedNameForClassW(pEnclosingMT));
+        }
+    }
+
     //TODO: cleanup this function
     InvokeUtil::SetValidField(fieldType.GetSignatureCorElementType(), fieldType, pFieldDesc, &gc.target, &gc.value, declaringType, pDomainInitialized);
 
@@ -1709,10 +1725,17 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
         // Verify that the value passed can be widened into the target
         InvokeUtil::ValidField(fieldType, &gc.oValue);
 
-        // Verify that this is not a Final Field
-        DWORD attr = pField->GetAttributes(); // should we cache?
-        if (IsFdLiteral(attr))
-            COMPlusThrow(kFieldAccessException,W("Acc_ReadOnly"));
+        // Verify we're not trying to set the value of a static initonly field
+        // once the class has been initialized.
+        if (pField->IsStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(pField->GetAttributes()))
+        {
+            DefineFullyQualifiedNameForClassW();
+            SString ssFieldName(SString::Utf8, pField->GetName());
+            COMPlusThrow(kFieldAccessException,
+                IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD,
+                ssFieldName.GetUnicode(),
+                GetFullyQualifiedNameForClassW(pEnclosingMT));
+        }
 
         // Verify the callee/caller access
         if (!pField->IsPublic() || (pEnclosingMT != NULL && !pEnclosingMT->IsExternallyVisible())) 
