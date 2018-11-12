@@ -147,6 +147,15 @@ namespace System.IO.Tests
             Assert.True(s.ReadArrayInvoked);
         }
 
+        [Fact]
+        public void DisposeAsync_ClosesStream()
+        {
+            var ms = new MemoryStream();
+            Assert.True(ms.DisposeAsync().IsCompletedSuccessfully);
+            Assert.True(ms.DisposeAsync().IsCompletedSuccessfully);
+            Assert.Throws<ObjectDisposedException>(() => ms.Position);
+        }
+
         private class ReadWriteOverridingMemoryStream : MemoryStream
         {
             public bool ReadArrayInvoked, WriteArrayInvoked;
