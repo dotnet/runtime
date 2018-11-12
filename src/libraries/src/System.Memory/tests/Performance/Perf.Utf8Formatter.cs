@@ -145,6 +145,105 @@ namespace System.Buffers.Text.Tests
         }
 
         [Benchmark(InnerIterationCount = InnerCount)]
+        private static void FormatterDecimal()
+        {
+            decimal value = new decimal(1.23456789E+5);
+
+            byte[] utf8ByteArray = new byte[40];
+            Span<byte> utf8ByteSpan = utf8ByteArray;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Utf8Formatter.TryFormat(value, utf8ByteSpan, out int bytesWritten);
+                        TestHelpers.DoNotIgnore(value, bytesWritten);
+                    }
+                }
+            }
+        }
+
+        // Reenable commented out test cases when https://github.com/xunit/xunit/issues/1822 is fixed.
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(double.NegativeInfinity)]   // Negative Infinity
+        [InlineData(double.MinValue)]           // Min Negative Normal
+        [InlineData(-3.14159265358979324)]      // Negative pi
+        [InlineData(-2.71828182845904524)]      // Negative e
+        [InlineData(-1.0)]                      // Negative One
+        // [InlineData(-2.2250738585072014E-308)]  // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308)]  // Min Negative Subnormal
+        [InlineData(-double.Epsilon)]           // Max Negative Subnormal (Negative Epsilon)
+        [InlineData(-0.0)]                      // Negative Zero
+        [InlineData(double.NaN)]                // NaN
+        [InlineData(0.0)]                       // Positive Zero
+        [InlineData(double.Epsilon)]            // Min Positive Subnormal (Positive Epsilon)
+        [InlineData(2.2250738585072009E-308)]   // Max Positive Subnormal
+        // [InlineData(2.2250738585072014E-308)]   // Min Positive Normal
+        [InlineData(1.0)]                       // Positive One
+        [InlineData(2.71828182845904524)]       // Positive e
+        [InlineData(3.14159265358979324)]       // Positive pi
+        [InlineData(double.MaxValue)]           // Max Positive Normal
+        [InlineData(double.PositiveInfinity)]   // Positive Infinity
+        private static void FormatterDouble(double value)
+        {
+            byte[] utf8ByteArray = new byte[40];
+            Span<byte> utf8ByteSpan = utf8ByteArray;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Utf8Formatter.TryFormat(value, utf8ByteSpan, out int bytesWritten);
+                        TestHelpers.DoNotIgnore(value, bytesWritten);
+                    }
+                }
+            }
+        }
+
+        // Reenable commented out test cases when https://github.com/xunit/xunit/issues/1822 is fixed.
+        [Benchmark(InnerIterationCount = InnerCount)]
+        [InlineData(float.NegativeInfinity)]    // Negative Infinity
+        [InlineData(float.MinValue)]            // Min Negative Normal
+        [InlineData(-3.14159265f)]              // Negative pi
+        [InlineData(-2.71828183f)]              // Negative e
+        [InlineData(-1.0f)]                     // Negative One
+        // [InlineData(-1.17549435E-38f)]       // Max Negative Normal
+        [InlineData(-1.17549421E-38f)]          // Min Negative Subnormal
+        [InlineData(-float.Epsilon)]            // Max Negative Subnormal (Negative Epsilon)
+        [InlineData(-0.0f)]                     // Negative Zero
+        [InlineData(float.NaN)]                 // NaN
+        [InlineData(0.0f)]                      // Positive Zero
+        [InlineData(float.Epsilon)]             // Min Positive Subnormal (Positive Epsilon)
+        [InlineData(1.17549421E-38f)]           // Max Positive Subnormal
+        // [InlineData(1.17549435E-38f)]           // Min Positive Normal
+        [InlineData(1.0f)]                      // Positive One
+        [InlineData(2.71828183f)]               // Positive e
+        [InlineData(3.14159265f)]               // Positive pi
+        [InlineData(float.MaxValue)]            // Max Positive Normal
+        [InlineData(float.PositiveInfinity)]    // Positive Infinity
+        private static void FormatterSingle(float value)
+        {
+            byte[] utf8ByteArray = new byte[40];
+            Span<byte> utf8ByteSpan = utf8ByteArray;
+
+            foreach (BenchmarkIteration iteration in Benchmark.Iterations)
+            {
+                using (iteration.StartMeasurement())
+                {
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        Utf8Formatter.TryFormat(value, utf8ByteSpan, out int bytesWritten);
+                        TestHelpers.DoNotIgnore(value, bytesWritten);
+                    }
+                }
+            }
+        }
+
+        [Benchmark(InnerIterationCount = InnerCount)]
         private static void FormatterDateTimeOffsetNow()
         {
             DateTimeOffset value = new DateTimeOffset(year: 2017, month: 12, day: 30, hour: 3, minute: 45, second: 22, millisecond: 950, offset: new TimeSpan(hours: -8, minutes: 0, seconds: 0));
