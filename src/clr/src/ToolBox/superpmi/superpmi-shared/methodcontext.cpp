@@ -3466,6 +3466,37 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
+void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool isSpeculative, CORINFO_CLASS_HANDLE result)
+{
+    if (GetStaticFieldCurrentClass == nullptr)
+        GetStaticFieldCurrentClass = new LightWeightMap<DWORDLONG, Agnostic_GetStaticFieldCurrentClass>();
+
+    Agnostic_GetStaticFieldCurrentClass value;
+    
+    value.classHandle = (DWORDLONG)result;
+    value.isSpeculative = isSpeculative;
+
+    GetStaticFieldCurrentClass->Add((DWORDLONG)field, value);
+    DEBUG_REC(dmpGetFieldAddress((DWORDLONG)field, value));
+}
+void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value)
+{
+    printf("GetStaticFieldCurrentClass key fld-%016llX, value clsHnd-%016llX isSpeculative-%u", key, value.classHandle, value.isSpeculative);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
+{
+    Agnostic_GetStaticFieldCurrentClass value = GetStaticFieldCurrentClass->Get((DWORDLONG) field);
+
+    if (pIsSpeculative != nullptr)
+    {
+        *pIsSpeculative = value.isSpeculative;
+    }
+
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE) value.classHandle;
+    DEBUG_REP(dmpGetStaticFieldCurrentValue((DWORDLONG)field, value));
+    return result;
+}
+
 void MethodContext::recGetClassGClayout(CORINFO_CLASS_HANDLE cls, BYTE* gcPtrs, unsigned len, unsigned result)
 {
     if (GetClassGClayout == nullptr)
