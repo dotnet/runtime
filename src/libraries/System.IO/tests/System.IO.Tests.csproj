@@ -18,6 +18,7 @@
     <Compile Include="StreamWriter\StreamWriter.cs" />
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
     <Compile Include="Stream\Stream.APMMethodsTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.DisposeAsync.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
