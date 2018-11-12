@@ -59,7 +59,7 @@ namespace System
         public static extern float FusedMultiplyAdd(float x, float y, float z);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int IlogB(float x);
+        public static extern int ILogB(float x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Log(float x);

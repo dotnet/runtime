@@ -833,6 +833,32 @@ check_cxx_source_runs("
 #include <stdlib.h>
 
 int main(void) {
+  if (FP_ILOGB0 != -2147483648) {
+    exit(1);
+  }
+
+  exit(0);
+}" HAVE_COMPATIBLE_ILOGB0)
+set(CMAKE_REQUIRED_LIBRARIES)
+set(CMAKE_REQUIRED_LIBRARIES m)
+check_cxx_source_runs("
+#include <math.h>
+#include <stdlib.h>
+
+int main(void) {
+  if (FP_ILOGBNAN != 2147483647) {
+    exit(1);
+  }
+
+  exit(0);
+}" HAVE_COMPATIBLE_ILOGBNAN)
+set(CMAKE_REQUIRED_LIBRARIES)
+set(CMAKE_REQUIRED_LIBRARIES m)
+check_cxx_source_runs("
+#include <math.h>
+#include <stdlib.h>
+
+int main(void) {
   if (!isnan(log(-10000))) {
     exit(1);
   }
