@@ -37,5 +37,12 @@ namespace System.IO.Tests
             Assert.Equal(copy, buffer); // Make sure Write doesn't modify the buffer
             Assert.Equal(0, source.Position);
         }
+
+        [Fact]
+        public void DisposeAsync_Nop()
+        {
+            Assert.True(Stream.Null.DisposeAsync().IsCompletedSuccessfully);
+            Stream.Null.Write(new byte[42]); // still usable
+        }
     }
 }
