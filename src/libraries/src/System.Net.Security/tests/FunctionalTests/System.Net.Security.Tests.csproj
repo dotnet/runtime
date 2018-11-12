@@ -92,6 +92,7 @@
     <Compile Include="SslStreamAlertsTest.cs" />
     <Compile Include="SslStreamAllowRenegotiationTests.cs" />
     <Compile Include="SslStreamAlpnTests.cs" />
+    <Compile Include="SslStreamDisposeTest.cs" />
     <Compile Include="SslStreamSniTest.cs" />
     <Compile Include="SslStreamEKUTest.cs" />
     <Compile Include="SslStreamSchSendAuxRecordTest.cs" />

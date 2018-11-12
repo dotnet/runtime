@@ -680,6 +680,18 @@ namespace System.Net.Security
             }
         }
 
+        public override async ValueTask DisposeAsync()
+        {
+            try
+            {
+                _sslState.Close();
+            }
+            finally
+            {
+                await base.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+
         public override int ReadByte()
         {
             return _sslState.SecureStream.ReadByte();
