@@ -32,11 +32,11 @@ struct test
  */
 void __cdecl validate(float value, int expected)
 {
-    float result = ilogbf(value);
+    int result = ilogbf(value);
 
     if (result != expected)
     {
-        Fail("ilogbf(%g) returned %10.10g when it should have returned %10.10g",
+        Fail("ilogbf(%g) returned %d when it should have returned %d",
              value, result, expected);
     }
 }
@@ -51,23 +51,23 @@ int __cdecl main(int argc, char **argv)
     struct test tests[] = 
     {
         /* value                expected */
-        {  PAL_NEGINF,          0x80000000 },
-        {  0,                   0x80000000 },
-        {  PAL_POSINF,          0x80000000 },
-        {  0.113314732f,       -3          },   // expected: -(pi)
-        {  0.151955223f,       -2          },   // expected: -(e)
-        {  0.202699566f,       -2          },   // expected: -(ln(10))
-        {  0.336622537f,       -1          },   // expected: -(pi / 2)
-        {  0.367879441f,       -1          },   // expected: -(log2(e))
-        {  0.375214227f,       -1          },   // expected: -(sqrt(2))
-        {  0.457429347f,       -1          },   // expected: -(2 / sqrt(pi))
+        {  PAL_NEGINF,          2147483647 },
+        {  0,                  -2147483648 },
+        {  PAL_POSINF,          2147483647 },
+        {  0.113314732f,       -4          },   // expected: -(pi)
+        {  0.151955223f,       -3          },   // expected: -(e)
+        {  0.202699566f,       -3          },   // expected: -(ln(10))
+        {  0.336622537f,       -2          },   // expected: -(pi / 2)
+        {  0.367879441f,       -2          },   // expected: -(log2(e))
+        {  0.375214227f,       -2          },   // expected: -(sqrt(2))
+        {  0.457429347f,       -2          },   // expected: -(2 / sqrt(pi))
         {  0.5f,               -1          },   // expected: -(1)
-        {  0.580191810f,        0          },   // expected: -(pi / 4)
-        {  0.612547327f,        0          },   // expected: -(1 / sqrt(2))
-        {  0.618503138f,        0          },   // expected: -(ln(2))
-        {  0.643218242f,        0          },   // expected: -(2 / pi)
-        {  0.740055574f,        0          },   // expected: -(log10(e))
-        {  0.802008879f,        0          },   // expected: -(1 / pi)
+        {  0.580191810f,       -1          },   // expected: -(pi / 4)
+        {  0.612547327f,       -1          },   // expected: -(1 / sqrt(2))
+        {  0.618503138f,       -1          },   // expected: -(ln(2))
+        {  0.643218242f,       -1          },   // expected: -(2 / pi)
+        {  0.740055574f,       -1          },   // expected: -(log10(e))
+        {  0.802008879f,       -1          },   // expected: -(1 / pi)
         {  1,                   0          },
         {  1.24686899f,         0          },   // expected:  1 / pi
         {  1.35124987f,         0          },   // expected:  log10(e)

@@ -212,7 +212,7 @@ FCIMPLEND
 /*=====================================Ilog2====================================
 **
 ==============================================================================*/
-FCIMPL1_V(int, COMDouble::IlogB, double x)
+FCIMPL1_V(int, COMDouble::ILogB, double x)
     FCALL_CONTRACT;
 
     return (int)ilogb(x);

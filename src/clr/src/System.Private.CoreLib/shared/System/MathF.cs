@@ -190,7 +190,31 @@ namespace System
 
         public static float MaxMagnitude(float x, float y)
         {
-            return Max(Abs(x), Abs(y));
+            // When x and y are both finite or infinite, return the larger magnitude
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
+
+            if (float.IsNaN(x))
+            {
+                return y;
+            }
+
+            if (float.IsNaN(y))
+            {
+                return x;
+            }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (x < y) first could get transformed into (y >= x) by the JIT which would
+            //   then return an incorrect value
+
+            if (x == y)
+            {
+                return float.IsNegative(x) ? y : x;
+            }
+
+            return (Abs(x) < Abs(y)) ? y : x;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -201,7 +225,31 @@ namespace System
 
         public static float MinMagnitude(float x, float y)
         {
-            return Min(Abs(x), Abs(y));
+            // When x and y are both finite or infinite, return the smaller magnitude
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
+
+            if (float.IsNaN(x))
+            {
+                return y;
+            }
+
+            if (float.IsNaN(y))
+            {
+                return x;
+            }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (x < y) first could get transformed into (y >= x) by the JIT which would
+            //   then return an incorrect value
+
+            if (x == y)
+            {
+                return float.IsNegative(x) ? x : y;
+            }
+
+            return (Abs(x) < Abs(y)) ? x : y;
         }
 
         [Intrinsic]

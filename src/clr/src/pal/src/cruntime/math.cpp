@@ -340,7 +340,25 @@ PALIMPORT int __cdecl PAL_ilogb(double x)
     PERF_ENTRY(ilogb);
     ENTRY("ilogb (x=%f)\n", x);
 
-    ret = ilogb(x);
+#if !HAVE_COMPATIBLE_ILOGB0
+    if (x == 0.0)
+    {
+        ret = -2147483648;
+    }
+    else 
+#endif // !HAVE_COMPATIBLE_ILOGB0
+
+#if !HAVE_COMPATIBLE_ILOGBNAN
+    if (isnan(x))
+    {
+        ret = 2147483647;
+    }
+    else
+#endif // !HAVE_COMPATIBLE_ILOGBNAN
+
+    {
+        ret = ilogb(x);
+    }
 
     LOGEXIT("ilogb returns int %d\n", ret);
     PERF_EXIT(ilogb);
@@ -855,7 +873,25 @@ PALIMPORT int __cdecl PAL_ilogbf(float x)
     PERF_ENTRY(ilogbf);
     ENTRY("ilogbf (x=%f)\n", x);
 
-    ret = ilogbf(x);
+#if !HAVE_COMPATIBLE_ILOGB0
+    if (x == 0.0f)
+    {
+        ret = -2147483648;
+    }
+    else 
+#endif // !HAVE_COMPATIBLE_ILOGB0
+
+#if !HAVE_COMPATIBLE_ILOGBNAN
+    if (isnan(x))
+    {
+        ret = 2147483647;
+    }
+    else
+#endif // !HAVE_COMPATIBLE_ILOGBNAN
+
+    {
+        ret = ilogbf(x);
+    }
 
     LOGEXIT("ilogbf returns int %d\n", ret);
     PERF_EXIT(ilogbf);
