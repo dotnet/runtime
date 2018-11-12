@@ -99,7 +99,7 @@ namespace System.Buffers.Text
             return false;
 
         BadFormat:
-            return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
+            return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
         }
     }
 }
