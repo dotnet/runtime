@@ -961,6 +961,8 @@ BEGIN
     IDS_E_TYPEACCESS                        "Attempt by method '%1' to access type '%2' failed.%3"
 
     IDS_INVOKE_NULLREF_RETURNED             "The target method returned a null reference."
+
+    IDS_EE_CANNOT_SET_INITONLY_STATIC_FIELD "Cannot set initonly static field '%1%' after type '%2' is initialized."
 END
 
 // These strings are used for Event Log Entry

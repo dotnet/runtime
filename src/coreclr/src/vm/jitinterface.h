@@ -853,6 +853,8 @@ public:
 
     void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
 
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
+
     // ICorDebugInfo stuff
     void * allocateArray(ULONG cBytes);
     void freeArray(void *array);
@@ -1492,6 +1494,7 @@ public:
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue);
     InfoAccessType emptyStringLiteral(void ** ppValue);
     void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection);
+    CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection);
 
     void BackoutJitData(EEJitManager * jitMgr);

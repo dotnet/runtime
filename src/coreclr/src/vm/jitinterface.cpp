@@ -11756,6 +11756,94 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
+/*********************************************************************/
+CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
+                                                            bool* pIsSpeculative)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    if (pIsSpeculative != NULL)
+    {
+        *pIsSpeculative = true;
+    }
+
+    // Only examine the field's value if we are producing jitted code.
+    if (isVerifyOnly() || IsCompilingForNGen() || IsReadyToRunCompilation())
+    {
+        return result;
+    }
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*) fieldHnd;
+    bool isClassInitialized = false;
+
+    // We're only interested in ref class typed static fields
+    // where the field handle specifies a unique location.
+    if (field->IsStatic() && field->IsObjRef() && !field->IsThreadStatic())
+    {
+        MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
+
+        if (!pEnclosingMT->IsSharedByGenericInstantiations())
+        {
+            // Allocate space for the local class if necessary, but don't trigger
+            // class construction.
+            DomainLocalModule *pLocalModule = pEnclosingMT->GetDomainLocalModule();
+            pLocalModule->PopulateClass(pEnclosingMT);
+            
+            GCX_COOP();
+            
+            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+            VALIDATEOBJECTREF(fieldObj);
+
+            // Check for initialization before looking at the value
+            isClassInitialized = !!pEnclosingMT->IsClassInited();
+
+            if (fieldObj != NULL)
+            {
+                MethodTable *pObjMT = fieldObj->GetMethodTable();
+                
+                // TODO: Check if the jit is allowed to embed this handle in jitted code.
+                // Note for the initonly cases it probably won't embed.
+                result = (CORINFO_CLASS_HANDLE) pObjMT;
+            }
+        }
+    }
+
+    // Did we find a class?
+    if (result != NULL)
+    {
+        // Figure out what to report back.
+        bool isResultImmutable = isClassInitialized && IsFdInitOnly(field->GetAttributes());
+
+        if (pIsSpeculative != NULL)
+        {
+            // Caller is ok with potentially mutable results.
+            *pIsSpeculative = !isResultImmutable;
+        }
+        else
+        {
+            // Caller only wants to see immutable results.
+            if (!isResultImmutable)
+            {
+                result = NULL;
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
+/*********************************************************************/
 static void *GetClassSync(MethodTable *pMT)
 {
     STANDARD_VM_CONTRACT;
@@ -13863,6 +13951,16 @@ void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
     return (void *)0x10;
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
+                                                         bool* pIsSpeculative)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(isVerifyOnly());
+    if (pIsSpeculative != NULL)
+        *pIsSpeculative = true;
+    return NULL;
 }
 
 void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
