@@ -1058,7 +1058,7 @@ int32_t SystemNative_SetIPv6MulticastOption(intptr_t socket, int32_t multicastOp
 }
 
 #if defined(__APPLE__) && __APPLE__
-static int32_t GetMaxLingerTime()
+static int32_t GetMaxLingerTime(void)
 {
     static volatile int32_t MaxLingerTime = -1;
     c_static_assert(sizeof_member(xsocket, so_linger) == 2);
@@ -1084,7 +1084,7 @@ static int32_t GetMaxLingerTime()
     return maxLingerTime;
 }
 #else
-static int32_t GetMaxLingerTime()
+static int32_t GetMaxLingerTime(void)
 {
     // On other platforms, the maximum linger time is locked to the smaller of
     // 65535 (the maximum time for winsock) and the maximum signed value that
