@@ -37,6 +37,8 @@ namespace System
         public static bool IsNotArmProcess => !IsArmProcess;
         public static bool IsArm64Process => RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
         public static bool IsNotArm64Process => !IsArm64Process;
+        public static bool IsArgIteratorSupported => IsWindows && (IsNotArmProcess || IsArm64Process);
+        public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
 
         public static bool IsNotInAppContainer => !IsInAppContainer;
         public static bool IsWinRTSupported => IsWindows && !IsWindows7;

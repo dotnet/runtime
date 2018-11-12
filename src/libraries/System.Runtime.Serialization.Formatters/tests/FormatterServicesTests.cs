@@ -105,17 +105,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             yield return new object[] { typeof(TypedReference) };
 
-            // These types are stubs on .NET Native and thus not byref-like
-            if (!PlatformDetection.IsNetNative)
-            {
-                yield return new object[] { typeof(RuntimeArgumentHandle) };
+            yield return new object[] { typeof(RuntimeArgumentHandle) };
 
-                // .NET Standard 2.0 doesn't have ArgIterator, but .NET Core 2.0 does
-                Type argIterator = typeof(object).Assembly.GetType("System.ArgIterator");
-                if (argIterator != null)
-                {
-                    yield return new object[] { argIterator };
-                }
+            // .NET Standard 2.0 doesn't have ArgIterator, but .NET Core 2.0 does
+            Type argIterator = typeof(object).Assembly.GetType("System.ArgIterator");
+            if (argIterator != null)
+            {
+                yield return new object[] { argIterator };
             }
         }
 
