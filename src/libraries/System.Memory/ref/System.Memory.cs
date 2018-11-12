@@ -97,6 +97,7 @@ namespace System
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public SequencePosition(object @object, int integer) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.SequencePosition other) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
@@ -194,7 +195,7 @@ namespace System.Buffers
     }
     public ref partial struct SequenceReader<T> where T : unmanaged, System.IEquatable<T>
     {
-        public SequenceReader(System.Buffers.ReadOnlySequence<T> buffer) { throw null; }
+        public SequenceReader(System.Buffers.ReadOnlySequence<T> sequence) { throw null; }
         public long Consumed { get { throw null; } }
         public System.ReadOnlySpan<T> CurrentSpan { get { throw null; } }
         public int CurrentSpanIndex { get { throw null; } }
