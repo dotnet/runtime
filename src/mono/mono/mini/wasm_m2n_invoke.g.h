@@ -226,6 +226,16 @@ wasm_invoke_dd (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_ddi (void *target_func, InterpMethodArguments *margs)
+{
+	typedef double (*T)(double arg_0, int arg_1);
+	T func = (T)target_func;
+	double res = func (margs->fargs [FIDX (0)], (int)margs->iargs [0]);
+	*(double*)margs->retval = res;
+
+}
+
+static void
 wasm_invoke_ddd (void *target_func, InterpMethodArguments *margs)
 {
 	typedef double (*T)(double arg_0, double arg_1);
@@ -496,6 +506,8 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 		wasm_invoke_lilii (target_func, margs);
 	else if (!strcmp ("DD", cookie))
 		wasm_invoke_dd (target_func, margs);
+	else if (!strcmp ("DDI", cookie))
+		wasm_invoke_ddi (target_func, margs);
 	else if (!strcmp ("DDD", cookie))
 		wasm_invoke_ddd (target_func, margs);
 	else if (!strcmp ("VIF", cookie))

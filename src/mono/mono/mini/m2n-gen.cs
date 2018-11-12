@@ -49,6 +49,7 @@ class Driver {
 		"LIL",
 		"LILII",
 		"DD",
+		"DDI",
 		"DDD",
 		"VIF",
 		"VIFF",
