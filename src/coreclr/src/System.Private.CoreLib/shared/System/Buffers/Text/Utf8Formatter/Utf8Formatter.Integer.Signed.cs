@@ -45,7 +45,7 @@ namespace System.Buffers.Text
                     return TryFormatUInt64X((ulong)value & mask, format.Precision, false, destination, out bytesWritten);
 
                 default:
-                    return ThrowHelper.TryFormatThrowFormatException(out bytesWritten);
+                    return FormattingHelpers.TryFormatThrowFormatException(out bytesWritten);
             }
         }
     }

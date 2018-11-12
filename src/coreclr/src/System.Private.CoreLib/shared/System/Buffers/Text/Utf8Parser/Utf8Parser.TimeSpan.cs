@@ -45,7 +45,7 @@ namespace System.Buffers.Text
                     return TryParseTimeSpanLittleG(source, out value, out bytesConsumed);
 
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out value, out bytesConsumed);
             }
         }
 

@@ -26,11 +26,14 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
+        public static unsafe bool TryParse(ReadOnlySpan<byte> source, out float value, out int bytesConsumed, char standardFormat = default)
         {
-            if (TryParseNormalAsFloatingPoint(source, out double d, out bytesConsumed, standardFormat))
+            byte* pDigits = stackalloc byte[Number.SingleNumberBufferLength];
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits, Number.SingleNumberBufferLength);
+
+            if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
             {
-                value = (float)(d);
+                value = Number.NumberToSingle(ref number);
                 return true;
             }
 
@@ -57,10 +60,16 @@ namespace System.Buffers.Text
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
         /// </exceptions>
-        public static bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
+        public static unsafe bool TryParse(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat = default)
         {
-            if (TryParseNormalAsFloatingPoint(source, out value, out bytesConsumed, standardFormat))
+            byte* pDigits = stackalloc byte[Number.DoubleNumberBufferLength];
+            Number.NumberBuffer number = new Number.NumberBuffer(Number.NumberBufferKind.FloatingPoint, pDigits, Number.DoubleNumberBufferLength);
+
+            if (TryParseNormalAsFloatingPoint(source, ref number, out bytesConsumed, standardFormat))
+            {
+                value = Number.NumberToDouble(ref number);
                 return true;
+            }
 
             return TryParseAsSpecialFloatingPoint(source, double.PositiveInfinity, double.NegativeInfinity, double.NaN, out value, out bytesConsumed);
         }
@@ -68,7 +77,7 @@ namespace System.Buffers.Text
         //
         // Attempt to parse the regular floating points (the ones without names like "Infinity" and "NaN")
         //
-        private static bool TryParseNormalAsFloatingPoint(ReadOnlySpan<byte> source, out double value, out int bytesConsumed, char standardFormat)
+        private static bool TryParseNormalAsFloatingPoint(ReadOnlySpan<byte> source, ref Number.NumberBuffer number, out int bytesConsumed, char standardFormat)
         {
             ParseNumberOptions options;
             switch (standardFormat)
@@ -80,31 +89,22 @@ namespace System.Buffers.Text
                 case 'e':
                     options = ParseNumberOptions.AllowExponent;
                     break;
-
                 case 'F':
                 case 'f':
                     options = default;
                     break;
-
                 default:
-                    return ThrowHelper.TryParseThrowFormatException(out value, out bytesConsumed);
+                    return ParserHelpers.TryParseThrowFormatException(out bytesConsumed);
             }
-
-            NumberBuffer number = default;
             if (!TryParseNumber(source, ref number, out bytesConsumed, options, out bool textUsedExponentNotation))
             {
-                value = default;
                 return false;
             }
-
             if ((!textUsedExponentNotation) && (standardFormat == 'E' || standardFormat == 'e'))
             {
-                value = default;
                 bytesConsumed = 0;
                 return false;
             }
-
-            value = Number.NumberBufferToDouble(ref number);
             return true;
         }
 
