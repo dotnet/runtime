@@ -103,6 +103,7 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
 
     if (certref != NULL)
     {
+        CFRelease(cfData);
         CFRelease(certref);
         return PAL_Certificate;
     }
@@ -118,6 +119,7 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     {
         if (actualType == itemType && actualFormat == dataFormat)
         {
+            CFRelease(cfData);
             return PAL_Pkcs7;
         }
     }
@@ -152,6 +154,7 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     {
         if (actualType == itemType && actualFormat == dataFormat)
         {
+            CFRelease(cfData);
             return PAL_Pkcs12;
         }
     }
@@ -167,10 +170,12 @@ PAL_X509ContentType AppleCryptoNative_X509GetContentType(uint8_t* pbData, int32_
     {
         if (actualType == itemType && actualFormat == dataFormat)
         {
+            CFRelease(cfData);
             return PAL_Certificate;
         }
     }
 
+    CFRelease(cfData);
     return PAL_X509Unknown;
 }
 
