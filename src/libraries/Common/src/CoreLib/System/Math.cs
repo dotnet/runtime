@@ -538,17 +538,31 @@ namespace System
 
         public static double Max(double val1, double val2)
         {
-            if (val1 > val2)
-            {
-                return val1;
-            }
+            // When val1 and val2 are both finite or infinite, return the larger
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
             if (double.IsNaN(val1))
             {
+                return val2;
+            }
+
+            if (double.IsNaN(val2))
+            {
                 return val1;
             }
 
-            return val2;
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
+
+            if (val1 == val2)
+            {
+                return double.IsNegative(val1) ? val2 : val1;
+            }
+
+            return (val1 < val2) ? val2 : val1;
         }
 
         [NonVersionable]
@@ -578,17 +592,31 @@ namespace System
         
         public static float Max(float val1, float val2)
         {
-            if (val1 > val2)
-            {
-                return val1;
-            }
+            // When val1 and val2 are both finite or infinite, return the larger
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
             if (float.IsNaN(val1))
             {
+                return val2;
+            }
+
+            if (float.IsNaN(val2))
+            {
                 return val1;
             }
 
-            return val2;
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
+
+            if (val1 == val2)
+            {
+                return float.IsNegative(val1) ? val2 : val1;
+            }
+
+            return (val1 < val2) ? val2 : val1;
         }
 
         [CLSCompliant(false)]
@@ -614,7 +642,31 @@ namespace System
 
         public static double MaxMagnitude(double x, double y)
         {
-            return Max(Abs(x), Abs(y));
+            // When x and y are both finite or infinite, return the larger magnitude
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
+
+            if (double.IsNaN(x))
+            {
+                return y;
+            }
+
+            if (double.IsNaN(y))
+            {
+                return x;
+            }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (x < y) first could get transformed into (y >= x) by the JIT which would
+            //   then return an incorrect value
+
+            if (x == y)
+            {
+                return double.IsNegative(x) ? y : x;
+            }
+
+            return (Abs(x) < Abs(y)) ? y : x;
         }
 
         [NonVersionable]
@@ -631,17 +683,31 @@ namespace System
 
         public static double Min(double val1, double val2)
         {
-            if (val1 < val2)
-            {
-                return val1;
-            }
+            // When val1 and val2 are both finite or infinite, return the smaller
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
             if (double.IsNaN(val1))
             {
+                return val2;
+            }
+
+            if (double.IsNaN(val2))
+            {
                 return val1;
             }
 
-            return val2;
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
+
+            if (val1 == val2)
+            {
+                return double.IsNegative(val1) ? val1 : val2;
+            }
+
+            return (val1 < val2) ? val1 : val2;
         }
 
         [NonVersionable]
@@ -671,17 +737,31 @@ namespace System
 
         public static float Min(float val1, float val2)
         {
-            if (val1 < val2)
-            {
-                return val1;
-            }
+            // When val1 and val2 are both finite or infinite, return the smaller
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
             if (float.IsNaN(val1))
             {
+                return val2;
+            }
+
+            if (float.IsNaN(val2))
+            {
                 return val1;
             }
 
-            return val2;
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
+
+            if (val1 == val2)
+            {
+                return float.IsNegative(val1) ? val1 : val2;
+            }
+
+            return (val1 < val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
@@ -707,7 +787,31 @@ namespace System
 
         public static double MinMagnitude(double x, double y)
         {
-            return Min(Abs(x), Abs(y));
+            // When x and y are both finite or infinite, return the smaller magnitude
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
+
+            if (double.IsNaN(x))
+            {
+                return y;
+            }
+
+            if (double.IsNaN(y))
+            {
+                return x;
+            }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (x < y) first could get transformed into (y >= x) by the JIT which would
+            //   then return an incorrect value
+
+            if (x == y)
+            {
+                return double.IsNegative(x) ? x : y;
+            }
+
+            return (Abs(x) < Abs(y)) ? x : y;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
