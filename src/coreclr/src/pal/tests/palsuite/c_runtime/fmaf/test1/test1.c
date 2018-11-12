@@ -131,19 +131,14 @@ int __cdecl main(int argc, char **argv)
 
     // Returns NaN if (x * y) is infinite, and z is an infinite of the opposite sign
     validate_isnan(PAL_POSINF, PAL_POSINF, PAL_NEGINF);
-    validate_isnan(PAL_NEGINF, PAL_NEGINF, PAL_POSINF);
+    validate_isnan(PAL_NEGINF, PAL_NEGINF, PAL_NEGINF);
     validate_isnan(PAL_POSINF, PAL_NEGINF, PAL_POSINF);
     validate_isnan(PAL_NEGINF, PAL_POSINF, PAL_POSINF);
 
     validate_isnan(PAL_POSINF, 1, PAL_NEGINF);
     validate_isnan(PAL_NEGINF, 1, PAL_POSINF);
-    validate_isnan(PAL_POSINF, 1, PAL_POSINF);
-    validate_isnan(PAL_NEGINF, 1, PAL_POSINF);
-
     validate_isnan(1, PAL_POSINF, PAL_NEGINF);
     validate_isnan(1, PAL_NEGINF, PAL_POSINF);
-    validate_isnan(1, PAL_NEGINF, PAL_POSINF);
-    validate_isnan(1, PAL_POSINF, PAL_POSINF);
 
     PAL_Terminate();
     return PASS;

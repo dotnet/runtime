@@ -199,7 +199,7 @@ FCIMPLEND
 /*=====================================Ilog2====================================
 **
 ==============================================================================*/
-FCIMPL1_V(int, COMSingle::IlogB, float x)
+FCIMPL1_V(int, COMSingle::ILogB, float x)
     FCALL_CONTRACT;
 
     return (int)ilogbf(x);

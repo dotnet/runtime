@@ -160,6 +160,8 @@ c_runtime/fgets/test2,1
 c_runtime/fgets/test3,1
 c_runtime/floor/test1,1
 c_runtime/floorf/test1,1
+c_runtime/fma/test1,1
+c_runtime/fmaf/test1,1
 c_runtime/fmod/test1,1
 c_runtime/fmodf/test1,1
 c_runtime/fopen/test1,1
@@ -220,6 +222,8 @@ c_runtime/getc/test1,1
 c_runtime/getenv/test1,0
 c_runtime/getenv/test2,1
 c_runtime/getenv/test3,1
+c_runtime/ilogb/test1,1
+c_runtime/ilogbf/test1,1
 c_runtime/isalnum/test1,1
 c_runtime/isalpha/test1,1
 c_runtime/isdigit/test1,1
@@ -238,6 +242,8 @@ c_runtime/labs/test1,1
 c_runtime/llabs/test1,1
 c_runtime/localtime/test1,1
 c_runtime/log/test1,1
+c_runtime/log2/test1,1
+c_runtime/log2f/test1,1
 c_runtime/log10/test1,1
 c_runtime/log10f/test1,1
 c_runtime/logf/test1,1
@@ -273,6 +279,8 @@ c_runtime/qsort/test1,1
 c_runtime/qsort/test2,1
 c_runtime/rand_srand/test1,1
 c_runtime/realloc/test1,1
+c_runtime/scalbn/test1,1
+c_runtime/scalbnf/test1,1
 c_runtime/sin/test1,1
 c_runtime/sinf/test1,1
 c_runtime/sinh/test1,1

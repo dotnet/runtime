@@ -41,6 +41,8 @@ c_runtime/fgets/test2/paltest_fgets_test2
 c_runtime/fgets/test3/paltest_fgets_test3
 c_runtime/floor/test1/paltest_floor_test1
 c_runtime/floorf/test1/paltest_floorf_test1
+c_runtime/fma/test1/paltest_fma_test1
+c_runtime/fmaf/test1/paltest_fmaf_test1
 c_runtime/fmod/test1/paltest_fmod_test1
 c_runtime/fmodf/test1/paltest_fmodf_test1
 c_runtime/fopen/test1/paltest_fopen_test1
@@ -93,6 +95,8 @@ c_runtime/getc/test1/paltest_getc_test1
 c_runtime/getenv/test1/paltest_getenv_test1
 c_runtime/getenv/test2/paltest_getenv_test2
 c_runtime/getenv/test3/paltest_getenv_test3
+c_runtime/ilogb/test1/paltest_ilogb_test1
+c_runtime/ilogbf/test1/paltest_ilogbf_test1
 c_runtime/isalnum/test1/paltest_isalnum_test1
 c_runtime/isalpha/test1/paltest_isalpha_test1
 c_runtime/isdigit/test1/paltest_isdigit_test1
@@ -110,6 +114,8 @@ c_runtime/labs/test1/paltest_labs_test1
 c_runtime/llabs/test1/paltest_llabs_test1
 c_runtime/localtime/test1/paltest_localtime_test1
 c_runtime/log/test1/paltest_log_test1
+c_runtime/log2/test1/paltest_log2_test1
+c_runtime/log2f/test1/paltest_log2f_test1
 c_runtime/log10/test1/paltest_log10_test1
 c_runtime/log10f/test1/paltest_log10f_test1
 c_runtime/logf/test1/paltest_logf_test1
@@ -147,6 +153,8 @@ c_runtime/qsort/test1/paltest_qsort_test1
 c_runtime/qsort/test2/paltest_qsort_test2
 c_runtime/rand_srand/test1/paltest_rand_srand_test1
 c_runtime/realloc/test1/paltest_realloc_test1
+c_runtime/scalbn/test1/paltest_scalbn_test1
+c_runtime/scalbnf/test1/paltest_scalbnf_test1
 c_runtime/sin/test1/paltest_sin_test1
 c_runtime/sinf/test1/paltest_sinf_test1
 c_runtime/sinh/test1/paltest_sinh_test1

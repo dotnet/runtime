@@ -68,7 +68,7 @@ namespace System
         public static extern double FusedMultiplyAdd(double x, double y, double z);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int IlogB(double x);
+        public static extern int ILogB(double x);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Log(double d);
