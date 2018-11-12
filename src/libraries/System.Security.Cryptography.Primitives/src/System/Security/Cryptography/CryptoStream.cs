@@ -101,24 +101,46 @@ namespace System.Security.Cryptography
         // cs.FlushFinalBlock() // which can only be called once
         // byte[] ciphertext = ms.ToArray();
         // cs.Close();
-        public void FlushFinalBlock()
+        public void FlushFinalBlock() =>
+            FlushFinalBlockAsync(useAsync: false).GetAwaiter().GetResult();
+
+        private async Task FlushFinalBlockAsync(bool useAsync)
         {
             if (_finalBlockTransformed)
                 throw new NotSupportedException(SR.Cryptography_CryptoStream_FlushFinalBlockTwice);
+            
             // We have to process the last block here.  First, we have the final block in _InputBuffer, so transform it
 
             byte[] finalBytes = _transform.TransformFinalBlock(_inputBuffer, 0, _inputBufferIndex);
 
             _finalBlockTransformed = true;
-            // Now, write out anything sitting in the _OutputBuffer...
+
+            // Now, write out anything sitting in the _outputBuffer...
             if (_canWrite && _outputBufferIndex > 0)
             {
-                _stream.Write(_outputBuffer, 0, _outputBufferIndex);
+                if (useAsync)
+                {
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_outputBuffer, 0, _outputBufferIndex)).ConfigureAwait(false);
+                }
+                else
+                {
+                    _stream.Write(_outputBuffer, 0, _outputBufferIndex);
+                }
                 _outputBufferIndex = 0;
             }
+
             // Write out finalBytes
             if (_canWrite)
-                _stream.Write(finalBytes, 0, finalBytes.Length);
+            {
+                if (useAsync)
+                {
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes)).ConfigureAwait(false);
+                }
+                else
+                {
+                    _stream.Write(finalBytes, 0, finalBytes.Length);
+                }
+            }
 
             // If the inner stream is a CryptoStream, then we want to call FlushFinalBlock on it too, otherwise just Flush.
             CryptoStream innerCryptoStream = _stream as CryptoStream;
@@ -126,19 +148,26 @@ namespace System.Security.Cryptography
             {
                 if (!innerCryptoStream.HasFlushedFinalBlock)
                 {
-                    innerCryptoStream.FlushFinalBlock();
+                    await innerCryptoStream.FlushFinalBlockAsync(useAsync).ConfigureAwait(false);
                 }
             }
             else
             {
-                _stream.Flush();
+                if (useAsync)
+                {
+                    await _stream.FlushAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    _stream.Flush();
+                }
             }
+
             // zeroize plain text material before returning
             if (_inputBuffer != null)
                 Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
             if (_outputBuffer != null)
                 Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
-            return;
         }
 
         public override void Flush()
@@ -647,6 +676,52 @@ namespace System.Security.Cryptography
                 {
                     base.Dispose(disposing);
                 }
+            }
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            return GetType() != typeof(CryptoStream) ?
+                base.DisposeAsync() :
+                DisposeAsyncCore();
+        }
+
+        private async ValueTask DisposeAsyncCore()
+        {
+            // Same logic as in Dispose, but with async counterparts
+            try
+            {
+                if (!_finalBlockTransformed)
+                {
+                    await FlushFinalBlockAsync(useAsync: true).ConfigureAwait(false);
+                }
+
+                if (!_leaveOpen)
+                {
+                    await _stream.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+            finally
+            {
+                // Ensure we don't try to transform the final block again if we get disposed twice
+                // since it's null after this
+                _finalBlockTransformed = true;
+
+                // we need to clear all the internal buffers
+                if (_inputBuffer != null)
+                {
+                    Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
+                }
+
+                if (_outputBuffer != null)
+                {
+                    Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
+                }
+
+                _inputBuffer = null;
+                _outputBuffer = null;
+                _canRead = false;
+                _canWrite = false;
             }
         }
 
