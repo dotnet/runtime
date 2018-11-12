@@ -382,6 +382,14 @@ namespace System.Net.Http
                 }
             }
 
+            public override async ValueTask DisposeAsync()
+            {
+                foreach (Stream s in _streams)
+                {
+                    await s.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+
             public override bool CanRead => true;
             public override bool CanSeek => true;
             public override bool CanWrite => false;
