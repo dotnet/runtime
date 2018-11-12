@@ -76,6 +76,11 @@ namespace System.Net.Http
             base.Dispose(disposing);
         }
 
+        public override ValueTask DisposeAsync()
+        {
+            return _innerStream.DisposeAsync();
+        }
+
         #region Read
 
         public override long Seek(long offset, SeekOrigin origin)

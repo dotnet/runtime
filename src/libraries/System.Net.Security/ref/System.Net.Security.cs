@@ -24,6 +24,7 @@ namespace System.Net.Security
         public bool LeaveInnerStreamOpen { get { throw null; } }
         protected System.IO.Stream InnerStream { get { throw null; } }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
     public enum EncryptionPolicy
     {
@@ -83,6 +84,7 @@ namespace System.Net.Security
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public virtual void EndAuthenticateAsClient(System.IAsyncResult asyncResult) { }
         public virtual void EndAuthenticateAsServer(System.IAsyncResult asyncResult) { }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }
@@ -199,6 +201,7 @@ namespace System.Net.Security
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public virtual void EndAuthenticateAsClient(IAsyncResult asyncResult) { }
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) { }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }
