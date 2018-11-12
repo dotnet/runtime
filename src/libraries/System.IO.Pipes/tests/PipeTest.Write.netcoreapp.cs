@@ -80,5 +80,17 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<IOException>(() => { pair.writeablePipe.WriteAsync(new Memory<byte>(buffer)); });
             }
         }
+
+        [Fact]
+        public void DisposeAsync_NothingWrittenNeedsToBeFlushed_CompletesSynchronously()
+        {
+            ServerClientPair pair = CreateServerClientPair();
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.True(pair.readablePipe.DisposeAsync().IsCompletedSuccessfully);
+                Assert.True(pair.writeablePipe.DisposeAsync().IsCompletedSuccessfully);
+            }
+            Assert.Throws<ObjectDisposedException>(() => pair.writeablePipe.Write(new Span<byte>(new byte[1])));
+        }
     }
 }
