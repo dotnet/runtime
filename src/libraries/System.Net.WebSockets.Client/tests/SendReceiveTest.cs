@@ -139,6 +139,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [ActiveIssue(33401, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
