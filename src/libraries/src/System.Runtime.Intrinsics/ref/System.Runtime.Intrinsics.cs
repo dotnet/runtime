@@ -1179,25 +1179,6 @@ namespace System.Runtime.Intrinsics.X86
         GreaterThanOrderedNonSignaling = 30,
         TrueUnorderedSignaling = 31,
     }
-    public enum StringComparisonMode : byte
-    {
-        EqualAny = 0x00,
-        Ranges = 0x04,
-        EqualEach = 0x08,
-        EqualOrdered = 0x0c,
-        NegativePolarity = 0x10,
-        MaskedNegativePolarity = 0x30,
-        LeastSignificant = 0x00,
-        MostSignificant = 0x40,
-    }
-    public enum ResultsFlag : byte
-    {
-        CFlag = 0,
-        NotCFlagAndNotZFlag = 1,
-        OFlag = 2,
-        SFlag = 3,
-        ZFlag = 4,
-    }
     public abstract class Fma : Avx
     {
         internal Fma() { }
@@ -1919,38 +1900,6 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Sse42() { }
         public new static bool IsSupported { get { throw null; } }
-        public static bool CompareImplicitLength(Vector128<sbyte> left, Vector128<sbyte> right, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareImplicitLength(Vector128<byte> left, Vector128<byte> right, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareImplicitLength(Vector128<short> left, Vector128<short> right, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareImplicitLength(Vector128<ushort> left, Vector128<ushort> right, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareExplicitLength(Vector128<sbyte> left, byte leftLength, Vector128<sbyte> right, byte rightLength, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareExplicitLength(Vector128<byte> left, byte leftLength, Vector128<byte> right, byte rightLength, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareExplicitLength(Vector128<short> left, byte leftLength, Vector128<short> right, byte rightLength, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static bool CompareExplicitLength(Vector128<ushort> left, byte leftLength, Vector128<ushort> right, byte rightLength, ResultsFlag flag, StringComparisonMode mode) { throw null; }
-        public static int CompareImplicitLengthIndex(Vector128<sbyte> left, Vector128<sbyte> right, StringComparisonMode mode) { throw null; }
-        public static int CompareImplicitLengthIndex(Vector128<byte> left, Vector128<byte> right, StringComparisonMode mode) { throw null; }
-        public static int CompareImplicitLengthIndex(Vector128<short> left, Vector128<short> right, StringComparisonMode mode) { throw null; }
-        public static int CompareImplicitLengthIndex(Vector128<ushort> left, Vector128<ushort> right, StringComparisonMode mode) { throw null; }
-        public static int CompareExplicitLengthIndex(Vector128<sbyte> left, byte leftLength, Vector128<sbyte> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static int CompareExplicitLengthIndex(Vector128<byte> left, byte leftLength, Vector128<byte> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static int CompareExplicitLengthIndex(Vector128<short> left, byte leftLength, Vector128<short> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static int CompareExplicitLengthIndex(Vector128<ushort> left, byte leftLength, Vector128<ushort> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareImplicitLengthBitMask(Vector128<sbyte> left, Vector128<sbyte> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareImplicitLengthBitMask(Vector128<byte> left, Vector128<byte> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareImplicitLengthBitMask(Vector128<short> left, Vector128<short> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareImplicitLengthBitMask(Vector128<ushort> left, Vector128<ushort> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareImplicitLengthUnitMask(Vector128<sbyte> left, Vector128<sbyte> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareImplicitLengthUnitMask(Vector128<byte> left, Vector128<byte> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareImplicitLengthUnitMask(Vector128<short> left, Vector128<short> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareImplicitLengthUnitMask(Vector128<ushort> left, Vector128<ushort> right, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareExplicitLengthBitMask(Vector128<sbyte> left, byte leftLength, Vector128<sbyte> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareExplicitLengthBitMask(Vector128<byte> left, byte leftLength, Vector128<byte> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareExplicitLengthBitMask(Vector128<short> left, byte leftLength, Vector128<short> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareExplicitLengthBitMask(Vector128<ushort> left, byte leftLength, Vector128<ushort> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareExplicitLengthUnitMask(Vector128<sbyte> left, byte leftLength, Vector128<sbyte> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<byte> CompareExplicitLengthUnitMask(Vector128<byte> left, byte leftLength, Vector128<byte> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareExplicitLengthUnitMask(Vector128<short> left, byte leftLength, Vector128<short> right, byte rightLength, StringComparisonMode mode) { throw null; }
-        public static Vector128<ushort> CompareExplicitLengthUnitMask(Vector128<ushort> left, byte leftLength, Vector128<ushort> right, byte rightLength, StringComparisonMode mode) { throw null; }
         public static Vector128<long> CompareGreaterThan(Vector128<long> left, Vector128<long> right) { throw null; }
         public static uint Crc32(uint crc, byte data) { throw null; }
         public static uint Crc32(uint crc, ushort data) { throw null; }
