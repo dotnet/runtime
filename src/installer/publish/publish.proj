@@ -221,7 +221,7 @@
       <ConvertPortablePdbsToWindowsPdbs>true</ConvertPortablePdbsToWindowsPdbs>
     </PropertyGroup>
     <ItemGroup>
-      <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" />
+      <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" Exclude="$(DownloadDirectory)**\*freebsd*.nupkg" />
     </ItemGroup>
     <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
     <Message Importance="High" Text="Publishing @(SymbolPackagesToPublish) to $(SymbolServerPath)"/>
