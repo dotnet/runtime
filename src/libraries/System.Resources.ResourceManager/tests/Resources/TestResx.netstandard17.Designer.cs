@@ -98,5 +98,25 @@ namespace System.Resources.Tests.Resources {
                 return ((int)(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Point similar to {X=50,Y=60}.
+        /// </summary>
+        internal static System.Drawing.Point Point {
+            get {
+                object obj = ResourceManager.GetObject("Point", resourceCulture);
+                return ((System.Drawing.Point)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Size similar to {Width=20, Height=30}.
+        /// </summary>
+        internal static System.Drawing.Size Size {
+            get {
+                object obj = ResourceManager.GetObject("Size", resourceCulture);
+                return ((System.Drawing.Size)(obj));
+            }
+        }
     }
 }
