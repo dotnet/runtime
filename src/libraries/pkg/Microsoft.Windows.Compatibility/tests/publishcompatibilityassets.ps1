@@ -55,7 +55,7 @@ $privatePackageVersion = _getPackageVersion "Microsoft.Private.CoreFx.NETCoreApp
 Write-Output "Calling dotnet restore"
 & $dotnetPath restore --packages $packagesCachePath /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RuntimeIdentifiers=$rid $csprojPath
 
-$outputPath = -join($PSScriptRoot, "\bin\Debug\", $targetFramework, "\", $rid, "\publish\refs\")
+$outputPath = -join($PSScriptRoot, "\bin\Debug\", $targetFramework, "\", $rid, "\publish\")
 
 Write-Output "Calling dotnet publish"
 & $dotnetPath publish -r $rid -o $outputPath /p:NugetMonikerVersion=$frameworkVersion /p:RestoreSources="$restoreSources" /p:TargetFramework=$targetFramework /p:CompatibilityPackageVersion=$compatPackageVersion /p:RuntimeFrameworkVersion=$runtimeFramework /p:PrivateCorefxPackageVersion=$privatePackageVersion /p:RuntimeIdentifiers=$rid $csprojPath
@@ -77,4 +77,4 @@ if (Test-Path $refPath)
 
 New-Item $refPath -ItemType directory
 Remove-Item (-join($outputPath, "Microsoft.Windows.Compatibility.Validation.dll")) -force
-Copy-Item (-join($outputPath, "*.dll")) $refPath
+Copy-Item (-join($outputPath,"\refs\", "*.dll")) $refPath
