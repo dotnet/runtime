@@ -252,6 +252,29 @@ namespace System.IO
             }
         }
 
+        public override async ValueTask DisposeAsync()
+        {
+            try
+            {
+                if (_stream != null)
+                {
+                    try
+                    {
+                        await FlushAsync().ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        await _stream.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            finally
+            {
+                _stream = null;
+                _buffer = null;
+            }
+        }
+
         public override void Flush()
         {
             EnsureNotClosed();
