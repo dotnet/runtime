@@ -229,7 +229,7 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
     )
 ) else (
     :: Build BTLS using msbuild build system.
-    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo /m:4 || (
+    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo || (
         goto ON_ERROR
     )
 )
