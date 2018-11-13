@@ -19,11 +19,13 @@ namespace R2RDump
     {
         public bool Raw;
         public bool Normalize;
+        public bool Naked;
         public bool Header;
         public bool Disasm;
         public bool Unwind;
         public bool GC;
         public bool SectionContents;
+        public bool EntryPoints;
     }
 
     public abstract class Dumper
@@ -75,6 +77,7 @@ namespace R2RDump
         abstract internal void SkipLine();
         abstract internal void DumpHeader(bool dumpSections);
         abstract internal void DumpSection(R2RSection section, XmlNode parentNode = null);
+        abstract internal void DumpEntryPoints();
         abstract internal void DumpAllMethods();
         abstract internal void DumpMethod(R2RMethod method, XmlNode parentNode = null);
         abstract internal void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null);
@@ -125,6 +128,7 @@ namespace R2RDump
                 syntax.DefineOption("raw", ref _options.Raw, "Dump the raw bytes of each section or runtime function");
                 syntax.DefineOption("header", ref _options.Header, "Dump R2R header");
                 syntax.DefineOption("d|disasm", ref _options.Disasm, "Show disassembly of methods or runtime functions");
+                syntax.DefineOption("naked", ref _options.Naked, "Naked dump suppresses most compilation details like placement addresses");
                 syntax.DefineOptionList("q|query", ref _queries, "Query method by exact name, signature, row id or token");
                 syntax.DefineOptionList("k|keyword", ref _keywords, "Search method by keyword");
                 syntax.DefineOptionList("r|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
@@ -132,6 +136,7 @@ namespace R2RDump
                 syntax.DefineOption("unwind", ref _options.Unwind, "Dump unwindInfo");
                 syntax.DefineOption("gc", ref _options.GC, "Dump gcInfo and slot table");
                 syntax.DefineOption("sc", ref _options.SectionContents, "Dump section contents");
+                syntax.DefineOption("e|entrypoints", ref _options.EntryPoints, "Dump list of method / instance entrypoints in the R2R file");
                 syntax.DefineOption("n|normalize", ref _options.Normalize, "Normalize dump by sorting the various tables and methods (default = unsorted i.e. file order)");
                 syntax.DefineOption("v|verbose", ref verbose, "Dump disassembly, unwindInfo, gcInfo and section contents");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images");
@@ -144,6 +149,7 @@ namespace R2RDump
                 _options.Unwind = true;
                 _options.GC = true;
                 _options.SectionContents = true;
+                _options.EntryPoints = true;
             }
 
             return argSyntax;
@@ -261,15 +267,22 @@ namespace R2RDump
         /// <param name="r2r">The structure containing the info of the ReadyToRun image</param>
         public void Dump(R2RReader r2r)
         {
-
             _dumper.Begin();
 
             if (_queries.Count == 0 && _keywords.Count == 0 && _runtimeFunctions.Count == 0 && _sections.Count == 0) //dump all sections and methods if no queries specified
             {
-                _dumper.WriteDivider("R2R Header");
-                _dumper.DumpHeader(true);
+                if (_options.Header || !_options.EntryPoints)
+                {
+                    _dumper.WriteDivider("R2R Header");
+                    _dumper.DumpHeader(true);
+                }
                 
-                if (!_options.Header)
+                if (_options.EntryPoints)
+                {
+                    _dumper.DumpEntryPoints();
+                }
+
+                if (!_options.Header && !_options.EntryPoints)
                 {
                     _dumper.DumpAllMethods();
                 }
@@ -426,6 +439,11 @@ namespace R2RDump
                 if (_diff && _inputFilenames.Count < 2)
                     throw new ArgumentException("Need at least 2 input files in diff mode");
 
+                if (_options.Naked && _options.Raw)
+                {
+                    throw new ArgumentException("The option '--naked' is incompatible with '--raw'");
+                }
+
                 R2RReader previousReader = null;
 
                 foreach (string filename in _inputFilenames)
@@ -437,7 +455,7 @@ namespace R2RDump
                     {
                         if (r2r.InputArchitectureSupported() && r2r.DisassemblerArchitectureSupported())
                         {
-                            disassembler = new Disassembler(r2r);
+                            disassembler = new Disassembler(r2r, _options);
                         }
                         else
                         {

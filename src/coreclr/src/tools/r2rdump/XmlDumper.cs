@@ -114,6 +114,17 @@ namespace R2RDump
             }
         }
 
+        internal override void DumpEntryPoints()
+        {
+            XmlNode entryPointsNode = XmlDocument.CreateNode("element", "EntryPoints", "");
+            _rootNode.AppendChild(entryPointsNode);
+            AddXMLAttribute(entryPointsNode, "Count", _r2r.R2RMethods.Count.ToString());
+            foreach (R2RMethod method in NormalizedMethods())
+            {
+                DumpMethod(method, entryPointsNode);
+            }
+        }
+
         internal override void DumpAllMethods()
         {
             XmlNode methodsNode = XmlDocument.CreateNode("element", "Methods", "");
