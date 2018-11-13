@@ -81,7 +81,7 @@ namespace System.IO.Compression
                 WriteAsyncMemoryCore(buffer, cancellationToken));
         }
 
-        private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        private async Task WriteAsyncMemoryCore(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken, bool isFinalBlock = false)
         {
             AsyncOperationStarting();
             try
@@ -92,7 +92,7 @@ namespace System.IO.Compression
                     Memory<byte> output = new Memory<byte>(_buffer);
                     int bytesConsumed = 0;
                     int bytesWritten = 0;
-                    lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock: false);
+                    lastResult = _encoder.Compress(buffer, output, out bytesConsumed, out bytesWritten, isFinalBlock);
                     if (lastResult == OperationStatus.InvalidData)
                         throw new InvalidOperationException(SR.BrotliStream_Compress_InvalidData);
                     if (bytesConsumed > 0)

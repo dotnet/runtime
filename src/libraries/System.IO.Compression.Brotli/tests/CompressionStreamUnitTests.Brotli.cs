@@ -33,6 +33,27 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_Flushes(bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var bs = new BrotliStream(ms, CompressionMode.Compress, leaveOpen);
+            bs.WriteByte(1);
+            Assert.Equal(0, ms.Position);
+            await bs.DisposeAsync();
+            Assert.InRange(ms.ToArray().Length, 1, int.MaxValue);
+            if (leaveOpen)
+            {
+                Assert.InRange(ms.Position, 1, int.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<ObjectDisposedException>(() => ms.Position);
+            }
+        }
+
         [Fact]
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
