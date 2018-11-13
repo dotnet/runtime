@@ -29,10 +29,14 @@ internal static partial class Interop
         public const int SP_PROT_TLS1_2_CLIENT = 0x00000800;
         public const int SP_PROT_TLS1_2 = (SP_PROT_TLS1_2_SERVER | SP_PROT_TLS1_2_CLIENT);
 
+        public const int SP_PROT_TLS1_3_SERVER = 0x00001000;
+        public const int SP_PROT_TLS1_3_CLIENT = 0x00002000;
+        public const int SP_PROT_TLS1_3 = (SP_PROT_TLS1_3_SERVER | SP_PROT_TLS1_3_CLIENT);
+
         public const int SP_PROT_NONE = 0;
 
         // These two constants are not taken from schannel.h. 
-        public const int ClientProtocolMask = (SP_PROT_SSL2_CLIENT | SP_PROT_SSL3_CLIENT | SP_PROT_TLS1_0_CLIENT | SP_PROT_TLS1_1_CLIENT | SP_PROT_TLS1_2_CLIENT);
-        public const int ServerProtocolMask = (SP_PROT_SSL2_SERVER | SP_PROT_SSL3_SERVER | SP_PROT_TLS1_0_SERVER | SP_PROT_TLS1_1_SERVER | SP_PROT_TLS1_2_SERVER);
+        public const int ClientProtocolMask = (SP_PROT_SSL2_CLIENT | SP_PROT_SSL3_CLIENT | SP_PROT_TLS1_0_CLIENT | SP_PROT_TLS1_1_CLIENT | SP_PROT_TLS1_2_CLIENT | SP_PROT_TLS1_3_CLIENT);
+        public const int ServerProtocolMask = (SP_PROT_SSL2_SERVER | SP_PROT_SSL3_SERVER | SP_PROT_TLS1_0_SERVER | SP_PROT_TLS1_1_SERVER | SP_PROT_TLS1_2_SERVER | SP_PROT_TLS1_3_SERVER);
     }
 }

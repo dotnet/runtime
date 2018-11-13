@@ -11,6 +11,9 @@
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net461'">
+    <DefineConstants>$(DefineConstants);netfx</DefineConstants>
+  </PropertyGroup>
   <Import Project="System.Net.Http.WinHttpHandler.msbuild" Condition="'$(TargetsWindows)' == 'true'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'net461'">
     <!-- Need to compile it here since the NET46 target here is building against System.Runtime whereas the

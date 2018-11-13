@@ -64,6 +64,27 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
+                // TLS 1.3 uses different ciphersuite restrictions than previous versions.
+                // It has no equivalent to a NoEncryption option.
+                if (policy == EncryptionPolicy.NoEncryption)
+                {
+                    if (protocols == SslProtocols.None)
+                    {
+                        protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                    }
+                    else
+                    {
+                        protocols &= ~SslProtocols.Tls13;
+
+                        if (protocols == SslProtocols.None)
+                        {
+                            throw new SslException(
+                                SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
+                        }
+                    }
+                }
+
+
                 // Configure allowed protocols. It's ok to use DangerousGetHandle here without AddRef/Release as we just
                 // create the handle, it's rooted by the using, no one else has a reference to it, etc.
                 Ssl.SetProtocolOptions(innerContext.DangerousGetHandle(), protocols);

@@ -29,6 +29,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls, true)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
         [InlineData(SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
+        [InlineData(SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false)]
+        [InlineData(SslProtocols.Tls13 | SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, true)]
         [InlineData(SslProtocols.None, false)]
         [InlineData(SslProtocols.None, true)]
         public async Task SetDelegate_ConnectionSucceeds(SslProtocols acceptedProtocol, bool requestOnlyThisProtocol)

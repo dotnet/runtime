@@ -16,6 +16,7 @@ namespace System.Security.Authentication
         Tls = Interop.SChannel.SP_PROT_TLS1_0,
         Tls11 = Interop.SChannel.SP_PROT_TLS1_1,
         Tls12 = Interop.SChannel.SP_PROT_TLS1_2,
+        Tls13 = Interop.SChannel.SP_PROT_TLS1_3,
         Default = Ssl3 | Tls
     }
 
