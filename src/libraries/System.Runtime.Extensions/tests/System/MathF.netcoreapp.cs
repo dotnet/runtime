@@ -914,24 +914,26 @@ namespace System.Tests
             AssertEqual(expectedResult, MathF.Log10(value), allowedVariance);
         }
 
-        [Fact]
-        public static void Max()
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        public static void Max(float x, float y, float expectedResult)
         {
-            Assert.Equal(3.0f, MathF.Max(3.0f, -2.0f));
-            Assert.Equal(float.MaxValue, MathF.Max(float.MinValue, float.MaxValue));
-            Assert.Equal(float.PositiveInfinity, MathF.Max(float.NegativeInfinity, float.PositiveInfinity));
-            Assert.Equal(float.NaN, MathF.Max(float.PositiveInfinity, float.NaN));
-            Assert.Equal(float.NaN, MathF.Max(float.NaN, float.NaN));
+            AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
         }
 
-        [Fact]
-        public static void Min()
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(3.0, -2.0, -2.0)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        public static void Min(float x, float y, float expectedResult)
         {
-            Assert.Equal(-2.0f, MathF.Min(3.0f, -2.0f));
-            Assert.Equal(float.MinValue, MathF.Min(float.MinValue, float.MaxValue));
-            Assert.Equal(float.NegativeInfinity, MathF.Min(float.NegativeInfinity, float.PositiveInfinity));
-            Assert.Equal(float.NaN, MathF.Min(float.NegativeInfinity, float.NaN));
-            Assert.Equal(float.NaN, MathF.Min(float.NaN, float.NaN));
+            AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
         }
 
         [Theory]
