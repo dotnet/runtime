@@ -2,16 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions.Internal;
-using Microsoft.Extensions.Logging.Console.Internal;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is ConsoleLoggerProvider.")]
-    public class ConsoleLogger : ILogger
+    internal class ConsoleLogger : ILogger
     {
         private static readonly string _loglevelPadding = ": ";
         private static readonly string _messagePadding;
@@ -20,8 +16,8 @@ namespace Microsoft.Extensions.Logging.Console
         // ConsoleColor does not have a value to specify the 'Default' color
         private readonly ConsoleColor? DefaultConsoleColor = null;
 
+        private readonly string _name;
         private readonly ConsoleLoggerProcessor _queueProcessor;
-        private Func<string, LogLevel, bool> _filter;
 
         [ThreadStatic]
         private static StringBuilder _logBuilder;
@@ -33,95 +29,20 @@ namespace Microsoft.Extensions.Logging.Console
             _newLineWithMessagePadding = Environment.NewLine + _messagePadding;
         }
 
-        public ConsoleLogger(string name, Func<string, LogLevel, bool> filter, bool includeScopes)
-            : this(name, filter, includeScopes ? new LoggerExternalScopeProvider() : null, new ConsoleLoggerProcessor())
-        {
-        }
-
-        public ConsoleLogger(string name, Func<string, LogLevel, bool> filter, IExternalScopeProvider scopeProvider)
-            : this(name, filter, scopeProvider, new ConsoleLoggerProcessor())
-        {
-        }
-
-        internal ConsoleLogger(string name, Func<string, LogLevel, bool> filter, IExternalScopeProvider scopeProvider, ConsoleLoggerProcessor loggerProcessor)
+        internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor)
         {
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            Name = name;
-            Filter = filter ?? ((category, logLevel) => true);
-            ScopeProvider = scopeProvider;
-            LogToStandardErrorThreshold = LogLevel.None;
+            _name = name;
             _queueProcessor = loggerProcessor;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                Console = new WindowsLogConsole();
-                ErrorConsole = new WindowsLogConsole(stdErr: true);
-            }
-            else
-            {
-                Console = new AnsiLogConsole(new AnsiSystemConsole());
-                ErrorConsole = new AnsiLogConsole(new AnsiSystemConsole(stdErr: true));
-            }
         }
-
-        public IConsole Console
-        {
-            get { return _queueProcessor.Console; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _queueProcessor.Console = value;
-            }
-        }
-
-        internal IConsole ErrorConsole
-        {
-            get { return _queueProcessor.ErrorConsole; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _queueProcessor.ErrorConsole = value;
-            }
-        }
-
-        public Func<string, LogLevel, bool> Filter
-        {
-            get { return _filter; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                _filter = value;
-            }
-        }
-
-        public string Name { get; }
-
-        [Obsolete("Changing this property has no effect. Use " + nameof(ConsoleLoggerOptions) + "." + nameof(ConsoleLoggerOptions.IncludeScopes) + " instead")]
-        public bool IncludeScopes { get; set; }
 
         internal IExternalScopeProvider ScopeProvider { get; set; }
 
-        public bool DisableColors { get; set; }
-
-        internal LogLevel LogToStandardErrorThreshold { get; set; }
-
-        internal string TimestampFormat { get; set; }
+        internal ConsoleLoggerOptions Options { get; set; }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
@@ -139,7 +60,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             if (!string.IsNullOrEmpty(message) || exception != null)
             {
-                WriteMessage(logLevel, Name, eventId.Id, message, exception);
+                WriteMessage(logLevel, _name, eventId.Id, message, exception);
             }
         }
 
@@ -153,15 +74,12 @@ namespace Microsoft.Extensions.Logging.Console
                 logBuilder = new StringBuilder();
             }
 
-            var logLevelColors = default(ConsoleColors);
-            var logLevelString = string.Empty;
-
             // Example:
             // INFO: ConsoleApp.Program[10]
             //       Request received
 
-            logLevelColors = GetLogLevelConsoleColors(logLevel);
-            logLevelString = GetLogLevelString(logLevel);
+            var logLevelColors = GetLogLevelConsoleColors(logLevel);
+            var logLevelString = GetLogLevelString(logLevel);
             // category and event id
             logBuilder.Append(_loglevelPadding);
             logBuilder.Append(logName);
@@ -191,19 +109,17 @@ namespace Microsoft.Extensions.Logging.Console
                 logBuilder.AppendLine(exception.ToString());
             }
 
-            var hasLevel = !string.IsNullOrEmpty(logLevelString);
-            var timestampFormat = TimestampFormat;
+            var timestampFormat = Options.TimestampFormat;
             // Queue log message
-            _queueProcessor.EnqueueMessage(new LogMessageEntry()
-            {
-                TimeStamp = timestampFormat != null ? DateTime.Now.ToString(timestampFormat) : null,
-                Message = logBuilder.ToString(),
-                MessageColor = DefaultConsoleColor,
-                LevelString = hasLevel ? logLevelString : null,
-                LevelBackground = hasLevel ? logLevelColors.Background : null,
-                LevelForeground = hasLevel ? logLevelColors.Foreground : null,
-                LogAsError = logLevel >= LogToStandardErrorThreshold
-            });
+            _queueProcessor.EnqueueMessage(new LogMessageEntry(
+                timeStamp: timestampFormat != null ? DateTime.Now.ToString(timestampFormat) : null,
+                levelString: logLevelString,
+                levelBackground: logLevelColors.Background,
+                levelForeground: logLevelColors.Foreground,
+                messageColor: DefaultConsoleColor,
+                message: logBuilder.ToString(),
+                logAsError: logLevel >= Options.LogToStandardErrorThreshold
+            ));
 
             logBuilder.Clear();
             if (logBuilder.Capacity > 1024)
@@ -215,12 +131,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            if (logLevel == LogLevel.None)
-            {
-                return false;
-            }
-
-            return Filter(Name, logLevel);
+            return logLevel != LogLevel.None;
         }
 
         public IDisposable BeginScope<TState>(TState state) => ScopeProvider?.Push(state) ?? NullScope.Instance;
@@ -248,7 +159,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private ConsoleColors GetLogLevelConsoleColors(LogLevel logLevel)
         {
-            if (DisableColors)
+            if (Options.DisableColors)
             {
                 return new ConsoleColors(null, null);
             }
@@ -277,7 +188,7 @@ namespace Microsoft.Extensions.Logging.Console
         private void GetScopeInformation(StringBuilder stringBuilder)
         {
             var scopeProvider = ScopeProvider;
-            if (scopeProvider != null)
+            if (Options.IncludeScopes && scopeProvider != null)
             {
                 var initialLength = stringBuilder.Length;
 
@@ -307,28 +218,6 @@ namespace Microsoft.Extensions.Logging.Console
             public ConsoleColor? Foreground { get; }
 
             public ConsoleColor? Background { get; }
-        }
-
-        private class AnsiSystemConsole : IAnsiSystemConsole
-        {
-
-            private readonly TextWriter _textWriter;
-
-            /// <inheritdoc />
-            public AnsiSystemConsole(bool stdErr = false)
-            {
-                _textWriter = stdErr? System.Console.Error : System.Console.Out;
-            }
-
-            public void Write(string message)
-            {
-                _textWriter.Write(message);
-            }
-
-            public void WriteLine(string message)
-            {
-                _textWriter.WriteLine(message);
-            }
         }
     }
 }
