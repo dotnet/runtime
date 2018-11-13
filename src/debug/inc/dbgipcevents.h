@@ -2012,6 +2012,15 @@ struct MSLAYOUT DebuggerIPCEvent
 
         struct MSLAYOUT
         {
+#ifdef FEATURE_DATABREAKPOINT
+            CONTEXT context;
+#else
+            int dummy;
+#endif
+        } DataBreakpointData;
+
+        struct MSLAYOUT
+        {
             LSPTR_STEPPER        stepperToken;
             VMPTR_Thread         vmThreadToken;
             FramePointer         frameToken;
