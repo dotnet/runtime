@@ -65,7 +65,7 @@ namespace System.Drawing
                 family = FontFamily.GenericSansSerif;
             }
 
-            setProperties(family, emSize, style, unit, charSet, isVertical);
+            Initialize(family, emSize, style, unit, charSet, isVertical);
             int status = Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);
 
             if (status == Gdip.FontStyleNotFound)
@@ -130,7 +130,25 @@ namespace System.Drawing
             }
         }
 
-        void setProperties(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte charSet, bool isVertical)
+        private void Initialize(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte charSet, bool isVertical)
+        {
+            _originalFontName = familyName;
+            FontFamily family;
+            // NOTE: If family name is null, empty or invalid,
+            // MS creates Microsoft Sans Serif font.
+            try
+            {
+                family = new FontFamily(familyName);
+            }
+            catch (Exception)
+            {
+                family = FontFamily.GenericSansSerif;
+            }
+
+            Initialize(family, emSize, style, unit, charSet, isVertical);
+        }
+
+        private void Initialize(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte charSet, bool isVertical)
         {
             _fontFamily = family;
             _fontSize = emSize;
@@ -205,25 +223,14 @@ namespace System.Drawing
 
         internal Font(IntPtr nativeFont, string familyName, FontStyle style, float size)
         {
-            FontFamily fontFamily;
-
-            try
-            {
-                fontFamily = new FontFamily(familyName);
-            }
-            catch (Exception)
-            {
-                fontFamily = FontFamily.GenericSansSerif;
-            }
-
-            setProperties(fontFamily, size, style, GraphicsUnit.Pixel, 0, false);
+            Initialize(familyName, size, style, GraphicsUnit.Pixel, 0, false);
             _nativeFont = nativeFont;
         }
 
         public Font(Font prototype, FontStyle newStyle)
         {
             // no null checks, MS throws a NullReferenceException if original is null
-            setProperties(prototype.FontFamily, prototype.Size, newStyle, prototype.Unit, prototype.GdiCharSet, prototype.GdiVerticalFont);
+            Initialize(prototype.FontFamily, prototype.Size, newStyle, prototype.Unit, prototype.GdiCharSet, prototype.GdiVerticalFont);
 
             int status = Gdip.GdipCreateFont(new HandleRef(_fontFamily, _fontFamily.NativeFamily), Size, Style, Unit, out _nativeFont);
             Gdip.CheckStatus(status);
@@ -266,7 +273,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(family));
 
             int status;
-            setProperties(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
+            Initialize(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
             status = Gdip.GdipCreateFont(new HandleRef(this, family.NativeFamily), emSize, style, unit, out _nativeFont);
             Gdip.CheckStatus(status);
         }
