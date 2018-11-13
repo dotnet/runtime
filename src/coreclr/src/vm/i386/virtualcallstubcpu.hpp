@@ -57,9 +57,9 @@ get quickly changed to point to another kind of stub.
 */
 struct LookupStub
 {
-    inline PCODE entryPoint()           { LIMITED_METHOD_CONTRACT; return (PCODE)&_entryPoint[0]; }
-    inline size_t token() { LIMITED_METHOD_CONTRACT; return _token; }
-    inline size_t       size()          { LIMITED_METHOD_CONTRACT; return sizeof(LookupStub); }
+    inline PCODE entryPoint()       { LIMITED_METHOD_CONTRACT; return (PCODE)&_entryPoint[0]; }
+    inline size_t token()           { LIMITED_METHOD_CONTRACT; return _token; }
+    inline size_t size()            { LIMITED_METHOD_CONTRACT; return sizeof(LookupStub); }
 
 private:
     friend struct LookupHolder;
@@ -357,6 +357,66 @@ private:
     BYTE pad[(sizeof(void*)-((sizeof(ResolveStub))%sizeof(void*))+offsetof(ResolveStub,_token))%sizeof(void*)];	//fill out DWORD
 //#endif
 };
+
+/*VTableCallStub**************************************************************************************
+These are jump stubs that perform a vtable-base virtual call. These stubs assume that an object is placed
+in the first argument register (this pointer). From there, the stub extracts the MethodTable pointer, followed by the
+vtable pointer, and finally jumps to the target method at a given slot in the vtable.
+*/
+struct VTableCallStub
+{
+    friend struct VTableCallHolder;
+
+    inline size_t size()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        BYTE* pStubCode = (BYTE *)this;
+
+        size_t cbSize = 2;                                      // First mov instruction
+        cbSize += (pStubCode[cbSize + 1] == 0x80 ? 6 : 3);      // Either 8B 80 or 8B 40: mov eax,[eax+offset]
+        cbSize += (pStubCode[cbSize + 1] == 0xa0 ? 6 : 3);      // Either FF A0 or FF 60: jmp dword ptr [eax+slot]
+        cbSize += 4;                                            // Slot value (data storage, not a real instruction)
+
+        return cbSize;
+    }
+
+    inline PCODE        entryPoint()        const { LIMITED_METHOD_CONTRACT;  return (PCODE)&_entryPoint[0]; }
+
+    inline size_t token()
+    {
+        LIMITED_METHOD_CONTRACT;
+        DWORD slot = *(DWORD*)(reinterpret_cast<BYTE*>(this) + size() - 4);
+        return DispatchToken::CreateDispatchToken(slot).To_SIZE_T();
+    }
+
+private:
+    BYTE    _entryPoint[0];         // Dynamically sized stub. See Initialize() for more details.
+};
+
+/* VTableCallHolders are the containers for VTableCallStubs, they provide for any alignment of
+stubs as necessary.  */
+struct VTableCallHolder
+{
+    void  Initialize(unsigned slot);
+
+    VTableCallStub* stub() { LIMITED_METHOD_CONTRACT;  return reinterpret_cast<VTableCallStub *>(this); }
+
+    static size_t GetHolderSize(unsigned slot)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
+        unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
+        return 2 + (offsetOfIndirection >= 0x80 ? 6 : 3) + (offsetAfterIndirection >= 0x80 ? 6 : 3) + 4;
+    }
+
+    static VTableCallHolder* VTableCallHolder::FromVTableCallEntry(PCODE entry) { LIMITED_METHOD_CONTRACT; return (VTableCallHolder*)entry; }
+
+private:
+    // VTableCallStub follows here. It is dynamically sized on allocation because it could 
+    // use short/long instruction sizes for the mov/jmp, depending on the slot value.
+};
+
 #include <poppack.h>
 
 
@@ -895,6 +955,49 @@ ResolveHolder* ResolveHolder::FromResolveEntry(PCODE resolveEntry)
     return resolveHolder;
 }
 
+void VTableCallHolder::Initialize(unsigned slot)
+{
+    unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
+    unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
+    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
+
+    VTableCallStub* pStub = stub();
+    BYTE* p = (BYTE*)pStub->entryPoint();
+
+    // mov eax,[ecx] : eax = MethodTable pointer
+    *(UINT16*)p = 0x018b; p += 2;
+
+    // mov eax,[eax+vtable offset] : eax = vtable pointer
+    if (offsetOfIndirection >= 0x80)
+    {
+        *(UINT16*)p = 0x808b; p += 2;
+        *(UINT32*)p = offsetOfIndirection; p += 4;
+    }
+    else
+    {
+        *(UINT16*)p = 0x408b; p += 2;
+        *p++ = (BYTE)offsetOfIndirection;
+    }
+
+    // jmp dword ptr [eax+slot]
+    if (offsetAfterIndirection >= 0x80)
+    {
+        *(UINT16*)p = 0xa0ff; p += 2;
+        *(UINT32*)p = offsetAfterIndirection; p += 4;
+    }
+    else
+    {
+        *(UINT16*)p = 0x60ff; p += 2;
+        *p++ = (BYTE)offsetAfterIndirection;
+    }
+
+    // Store the slot value here for convenience. Not a real instruction (unreachable anyways)
+    *(UINT32*)p = slot; p += 4;
+
+    _ASSERT(p == (BYTE*)stub()->entryPoint() + VTableCallHolder::GetHolderSize(slot));
+    _ASSERT(stub()->size() == VTableCallHolder::GetHolderSize(slot));
+}
+
 #endif // DACCESS_COMPILE
 
 VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE stubStartAddress)
@@ -931,6 +1034,10 @@ VirtualCallStubManager::StubKind VirtualCallStubManager::predictStubKind(PCODE s
         else if (firstWord == 0x8b50)
         {
             stubKind = SK_RESOLVE;
+        }
+        else if (firstWord == 0x018b)
+        {
+            stubKind = SK_VTABLECALL;
         }
         else
         {

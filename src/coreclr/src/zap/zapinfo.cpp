@@ -2145,29 +2145,28 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 return;
             }
 
-#ifdef FEATURE_READYTORUN_COMPILER
             if (IsReadyToRunCompilation())
             {
                 ZapImport * pImport = m_pImage->GetImportTable()->GetStubDispatchCell(pResolvedToken);
 
                 pResult->stubLookup.constLookup.accessType   = IAT_PVALUE;
                 pResult->stubLookup.constLookup.addr         = pImport;
-                break;
             }
-#endif
+            else
+            {
 
-            CORINFO_CLASS_HANDLE calleeOwner = pResolvedToken->hClass;
-            CORINFO_METHOD_HANDLE callee = pResolvedToken->hMethod;
-            _ASSERTE(callee == pResult->hMethod);
+                CORINFO_CLASS_HANDLE calleeOwner = pResolvedToken->hClass;
+                CORINFO_METHOD_HANDLE callee = pResolvedToken->hMethod;
+                _ASSERTE(callee == pResult->hMethod);
 
-            //
-            // Create the indirection cell
-            //
-            pTarget = m_pImage->GetImportTable()->GetStubDispatchCell(calleeOwner, callee);
+                //
+                // Create the indirection cell
+                //
+                pTarget = m_pImage->GetImportTable()->GetStubDispatchCell(calleeOwner, callee);
 
-            pResult->stubLookup.constLookup.accessType = IAT_PVALUE;
-
-            pResult->stubLookup.constLookup.addr = pTarget;
+                pResult->stubLookup.constLookup.accessType = IAT_PVALUE;
+                pResult->stubLookup.constLookup.addr = pTarget;
+            }
         }
         break;
 
@@ -2183,7 +2182,6 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         return;
 
     case CORINFO_CALL:
-#ifdef FEATURE_READYTORUN_COMPILER
         if (IsReadyToRunCompilation())
         {
             // Constrained token is not interesting with this transforms
@@ -2207,12 +2205,11 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
             pResult->codePointerLookup.constLookup.accessType   = IAT_PVALUE;
             pResult->codePointerLookup.constLookup.addr         = pImport;
         }
-#endif
         break;
 
     case CORINFO_VIRTUALCALL_VTABLE:
-        // READYTORUN: FUTURE: support for vtable-based calls (currently, only calls within the CoreLib version bubble is supported, and the codegen we generate
-        // is the same as the fragile NI (because CoreLib and the runtime will always be updated together anyways - this is a special case)
+        // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because 
+        // CoreLib and the runtime will always be updated together anyways - this is a special case)
         break;
 
     case CORINFO_VIRTUALCALL_LDVIRTFTN:
@@ -2240,7 +2237,6 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         break;
     }
 
-#ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation() && pResult->sig.hasTypeArg())
     {
         if (pResult->exactContextNeedsRuntimeLookup)
@@ -2272,8 +2268,8 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
             AppendConditionalImport(pImport);
         }
     }
-#endif
 }
+
 BOOL ZapInfo::canAccessFamily(CORINFO_METHOD_HANDLE hCaller,
                               CORINFO_CLASS_HANDLE hInstanceType)
 {
@@ -2284,7 +2280,6 @@ BOOL ZapInfo::isRIDClassDomainID (CORINFO_CLASS_HANDLE cls)
 {
     return m_pEEJitInfo->isRIDClassDomainID(cls);
 }
-
 
 unsigned ZapInfo::getClassDomainID (CORINFO_CLASS_HANDLE cls, void **ppIndirection)
 {
