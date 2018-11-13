@@ -9928,6 +9928,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 #ifdef MULTIPLE_HEAPS
     reserved_memory_limit = (segment_size + heap_size) * number_of_heaps;
     block_count = number_of_heaps;
+    n_heaps = number_of_heaps;
 #else //MULTIPLE_HEAPS
     reserved_memory_limit = segment_size + heap_size;
     block_count = 1;
@@ -9974,8 +9975,6 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     gc_started = FALSE;
 
 #ifdef MULTIPLE_HEAPS
-    n_heaps = number_of_heaps;
-
     g_heaps = new (nothrow) gc_heap* [number_of_heaps];
     if (!g_heaps)
         return E_OUTOFMEMORY;
