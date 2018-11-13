@@ -4915,18 +4915,19 @@ void CordbProcess::RawDispatchEvent(
             }
             break;
         }
-
+#ifdef FEATURE_DATABREAKPOINT
     case DB_IPCE_DATA_BREAKPOINT:
         {
             _ASSERTE(pThread != NULL);
         
             {
                 PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread);
+                pCallback4->DataBreakpoint(static_cast<ICorDebugProcess*>(this), pThread, reinterpret_cast<BYTE*>(&(pEvent->DataBreakpointData.context)), sizeof(CONTEXT));
             }
             break;
         }
         break;
+#endif
     case DB_IPCE_USER_BREAKPOINT:
         {
             STRESS_LOG1(LF_CORDB, LL_INFO1000, "[%x] RCET::DRCE: user breakpoint.\n",
