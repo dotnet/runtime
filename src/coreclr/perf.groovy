@@ -466,7 +466,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
                 def dockerImage = getDockerImageName(architecture, 'Ubuntu', true)
                 def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/${architecture} ${additionalOpts} ${dockerImage} "
 
-                buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh release ${architecture} cross crosscomponent"
+                buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh release ${architecture} cross"
 
                 steps {
                     buildCommands.each { buildCommand ->
