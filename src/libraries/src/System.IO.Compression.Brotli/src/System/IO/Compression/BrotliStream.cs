@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
@@ -71,6 +72,31 @@ namespace System.IO.Compression
                 _encoder.Dispose();
                 _decoder.Dispose();
                 base.Dispose(disposing);
+            }
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            try
+            {
+                if (_stream != null)
+                {
+                    if (_mode == CompressionMode.Compress)
+                    {
+                        await WriteAsyncMemoryCore(ReadOnlyMemory<byte>.Empty, CancellationToken.None, isFinalBlock: true).ConfigureAwait(false);
+                    }
+
+                    if (!_leaveOpen)
+                    {
+                        await _stream.DisposeAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+            finally
+            {
+                _stream = null;
+                _encoder.Dispose();
+                _decoder.Dispose();
             }
         }
 

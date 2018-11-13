@@ -193,6 +193,36 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, false)]
+        public async Task DisposeAsync_Flushes(bool derived, bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var gs = derived ?
+                new DerivedGZipStream(ms, CompressionMode.Compress, leaveOpen) :
+                new GZipStream(ms, CompressionMode.Compress, leaveOpen);
+            gs.WriteByte(1);
+            await gs.FlushAsync();
+
+            long pos = ms.Position;
+            gs.WriteByte(1);
+            Assert.Equal(pos, ms.Position);
+
+            await gs.DisposeAsync();
+            Assert.InRange(ms.ToArray().Length, pos + 1, int.MaxValue);
+            if (leaveOpen)
+            {
+                Assert.InRange(ms.Position, pos + 1, int.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<ObjectDisposedException>(() => ms.Position);
+            }
+        }
+
         private sealed class DerivedGZipStream : GZipStream
         {
             public bool ReadArrayInvoked = false, WriteArrayInvoked = false;
