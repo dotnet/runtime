@@ -223,6 +223,22 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, false)]
+        public async Task DisposeAsync_MultipleCallsAllowed(bool derived, bool leaveOpen)
+        {
+            using (var gs = derived ?
+                new DerivedGZipStream(new MemoryStream(), CompressionMode.Compress, leaveOpen) :
+                new GZipStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
+            {
+                await gs.DisposeAsync();
+                await gs.DisposeAsync();
+            }
+        }
+
         private sealed class DerivedGZipStream : GZipStream
         {
             public bool ReadArrayInvoked = false, WriteArrayInvoked = false;

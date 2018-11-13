@@ -102,6 +102,22 @@ namespace System.IO.Compression
             }
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, false)]
+        public async Task DisposeAsync_MultipleCallsAllowed(bool derived, bool leaveOpen)
+        {
+            using (var ds = derived ?
+                new DerivedDeflateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen) :
+                new DeflateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
+            {
+                await ds.DisposeAsync();
+                await ds.DisposeAsync();
+            }
+        }
+
         private sealed class DerivedDeflateStream : DeflateStream
         {
             public bool ReadArrayInvoked = false, WriteArrayInvoked = false;
