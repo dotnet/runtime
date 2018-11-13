@@ -158,8 +158,13 @@ namespace System.IO.Compression
             }
 
             DeflateStream ds = _deflateStream;
-            _deflateStream = null;
-            return ds.DisposeAsync();
+            if (ds != null)
+            {
+                _deflateStream = null;
+                return ds.DisposeAsync();
+            }
+
+            return default;
         }
 
         public Stream BaseStream => _deflateStream?.BaseStream;
