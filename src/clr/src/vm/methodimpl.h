@@ -24,7 +24,7 @@ class MethodImpl
     friend class NativeImageDumper;
 #endif
 
-    RelativePointer<PTR_DWORD>            pdwSlots;       // Maintains the slots in sorted order, the first entry is the size
+    RelativePointer<PTR_DWORD>            pdwSlots;       // Maintains the slots and tokens in sorted order, the first entry is the size
     RelativePointer<DPTR( RelativePointer<PTR_MethodDesc> )> pImplementedMD;
 
 public:
@@ -46,6 +46,8 @@ public:
             { WRAPPER_NO_CONTRACT; if (IsValid()) m_iCur++; }
         inline WORD GetSlot()
             { WRAPPER_NO_CONTRACT; CONSISTENCY_CHECK(IsValid()); _ASSERTE(FitsIn<WORD>(m_pImpl->GetSlots()[m_iCur])); return static_cast<WORD>(m_pImpl->GetSlots()[m_iCur]); }
+        inline mdToken GetToken()
+            { WRAPPER_NO_CONTRACT; CONSISTENCY_CHECK(IsValid()); return m_pImpl->GetTokens()[m_iCur]; }
         inline MethodDesc *GetMethodDesc()
             { WRAPPER_NO_CONTRACT; return m_pImpl->GetMethodDesc(m_iCur, (PTR_MethodDesc) m_pMD); }
     };
@@ -109,10 +111,26 @@ public:
 #ifndef DACCESS_COMPILE 
 
     ///////////////////////////////////////////////////////////////////////////////////////
+    inline mdToken* GetTokens()
+    {
+        CONTRACTL{
+            NOTHROW;
+            GC_NOTRIGGER;
+            PRECONDITION(CheckPointer(this));
+            SUPPORTS_DAC;
+        } CONTRACTL_END;
+
+        if (pdwSlots.IsNull())
+            return NULL;
+        else
+            return (mdToken*)(GetSlotsRawNonNull() + 1 + *GetSlotsRawNonNull());
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////
     void SetSize(LoaderHeap *pHeap, AllocMemTracker *pamTracker, DWORD size);
 
     ///////////////////////////////////////////////////////////////////////////////////////
-    void SetData(DWORD* slots, RelativePointer<MethodDesc*> * md);
+    void SetData(DWORD* slots, mdToken* tokens, RelativePointer<MethodDesc*> * md);
 
 #endif // !DACCESS_COMPILE
 
