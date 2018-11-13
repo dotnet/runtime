@@ -7,6 +7,7 @@ System.IO.FileSystem.Tests           # https://github.com/dotnet/coreclr/issues/
 System.IO.Ports.Tests                # https://github.com/dotnet/coreclr/issues/16001
 System.Linq.Expressions.Tests        # https://github.com/dotnet/corefx/issues/29421 -- timeout
 System.Management.Tests              # https://github.com/dotnet/coreclr/issues/16001
+System.Memory.Tests                  # https://github.com/dotnet/coreclr/issues/20958
 System.Net.Http.Functional.Tests     # https://github.com/dotnet/coreclr/issues/17739
 System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/17740
 System.Numerics.Vectors.Tests        # https://github.com/dotnet/coreclr/issues/19537
