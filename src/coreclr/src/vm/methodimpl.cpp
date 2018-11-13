@@ -164,7 +164,8 @@ void MethodImpl::SetSize(LoaderHeap *pHeap, AllocMemTracker *pamTracker, DWORD s
     if(size > 0) {
         // An array of DWORDs, the first entry representing count, and the rest representing slot numbers
         S_SIZE_T cbCountAndSlots = S_SIZE_T(sizeof(DWORD)) +        // DWORD for the total count of slots
-                                    S_SIZE_T(size) * S_SIZE_T(sizeof(DWORD)); // DWORD each for the slot numbers
+                                    S_SIZE_T(size) * S_SIZE_T(sizeof(DWORD)) + // DWORD each for the slot numbers
+                                    S_SIZE_T(size) * S_SIZE_T(sizeof(mdToken)); // Token each for the method tokens
 
         // MethodDesc* for each of the implemented methods
         S_SIZE_T cbMethodDescs = S_SIZE_T(size) * S_SIZE_T(sizeof(RelativePointer<MethodDesc *>));
@@ -190,7 +191,7 @@ void MethodImpl::SetSize(LoaderHeap *pHeap, AllocMemTracker *pamTracker, DWORD s
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
-void MethodImpl::SetData(DWORD* slots, RelativePointer<MethodDesc*>* md)
+void MethodImpl::SetData(DWORD* slots, mdToken* tokens, RelativePointer<MethodDesc*>* md)
 {
     CONTRACTL {
         NOTHROW;
@@ -202,6 +203,9 @@ void MethodImpl::SetData(DWORD* slots, RelativePointer<MethodDesc*>* md)
     DWORD *pdwSize = pdwSlots.GetValue();
     DWORD dwSize = *pdwSize;
     memcpy(&(pdwSize[1]), slots, dwSize*sizeof(DWORD));
+    
+    // Copy tokens that correspond to the slots above
+    memcpy(&(pdwSize[1 + dwSize]), tokens, dwSize*sizeof(mdToken));
 
     RelativePointer<MethodDesc *> *pImplMD = pImplementedMD.GetValue();
 
@@ -219,7 +223,7 @@ void MethodImpl::Save(DataImage *image)
     DWORD size = GetSize();
     _ASSERTE(size > 0);
 
-    image->StoreStructure(pdwSlots.GetValue(), (size+1)*sizeof(DWORD),
+    image->StoreStructure(pdwSlots.GetValue(), (size+1)*sizeof(DWORD)+size*sizeof(mdToken),
                                     DataImage::ITEM_METHOD_DESC_COLD,
                                     sizeof(DWORD));
     image->StoreStructure(pImplementedMD.GetValue(), size*sizeof(RelativePointer<MethodDesc*>),
@@ -277,7 +281,7 @@ MethodImpl::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         ULONG32 numSlots = GetSize();
         DacEnumMemoryRegion(dac_cast<TADDR>(GetSlotsRawNonNull()),
-                            (numSlots + 1) * sizeof(DWORD));
+                            (numSlots + 1) * sizeof(DWORD) + numSlots * sizeof(mdToken));
 
         if (GetImpMDs().IsValid())
         {
