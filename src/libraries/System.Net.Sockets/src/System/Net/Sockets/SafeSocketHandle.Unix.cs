@@ -205,9 +205,43 @@ namespace System.Net.Sockets
 
         internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
         {
+            private Interop.Error CloseHandle(IntPtr handle)
+            {
+                Interop.Error errorCode = Interop.Error.SUCCESS;
+                bool remappedError = false;
+
+                if (Interop.Sys.Close(handle) != 0)
+                {
+                    errorCode = Interop.Sys.GetLastError();
+                    if (errorCode == Interop.Error.ECONNRESET)
+                    {
+                        // Some Unix platforms (e.g. FreeBSD) non-compliantly return ECONNRESET from close().
+                        // For our purposes, we want to ignore such a "failure" and treat it as success.
+                        // In such a case, the file descriptor was still closed and there's no corrective
+                        // action to take.
+                        errorCode = Interop.Error.SUCCESS;
+                        remappedError = true;
+                    }
+                }
+
+                if (NetEventSource.IsEnabled)
+                {
+                    NetEventSource.Info(this, remappedError ?
+                        $"handle:{handle}, close():ECONNRESET, but treating it as SUCCESS" :
+                        $"handle:{handle}, close():{errorCode}");
+                }
+
+#if DEBUG
+                _closeSocketHandle = handle;
+                _closeSocketResult = SocketPal.GetSocketErrorForErrorCode(errorCode);
+#endif
+
+                return errorCode;
+            }
+
             private unsafe SocketError InnerReleaseHandle()
             {
-                int errorCode;
+                Interop.Error errorCode = Interop.Error.SUCCESS;
 
                 // If _blockable was set in BlockingRelease, it's safe to block here, which means
                 // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
@@ -216,69 +250,49 @@ namespace System.Net.Sockets
                 {
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'blockable' branch.");
 
-                    errorCode = Interop.Sys.Close(handle);
-                    if (errorCode == -1)
+                    // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
+                    errorCode = CloseHandle(handle);
+                    if (errorCode != Interop.Error.EWOULDBLOCK)
                     {
-                        errorCode = (int)Interop.Sys.GetLastError();
-                    }
-
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close()#1:{errorCode}");
-#if DEBUG
-                    _closeSocketHandle = handle;
-                    _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
-#endif
-
-                    // If it's not EWOULDBLOCK, there's no more recourse - we either succeeded or failed.
-                    if (errorCode != (int)Interop.Error.EWOULDBLOCK)
-                    {
-                        return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
+                        return SocketPal.GetSocketErrorForErrorCode(errorCode);
                     }
 
                     // The socket must be non-blocking with a linger timeout set.
                     // We have to set the socket to blocking.
-                    errorCode = Interop.Sys.Fcntl.DangerousSetIsNonBlocking(handle, 0);
-                    if (errorCode == 0)
+                    if (Interop.Sys.Fcntl.DangerousSetIsNonBlocking(handle, 0) == 0)
                     {
                         // The socket successfully made blocking; retry the close().
-                        errorCode = Interop.Sys.Close(handle);
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close()#2:{errorCode}");
-#if DEBUG
-                        _closeSocketHandle = handle;
-                        _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
-#endif
-                        return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
+                        return SocketPal.GetSocketErrorForErrorCode(CloseHandle(handle));
                     }
 
                     // The socket could not be made blocking; fall through to the regular abortive close.
                 }
 
                 // By default or if CloseAsIs() path failed, set linger timeout to zero to get an abortive close (RST).
-                var linger = new Interop.Sys.LingerOption {
+                var linger = new Interop.Sys.LingerOption
+                {
                     OnOff = 1,
                     Seconds = 0
                 };
 
-                errorCode = (int)Interop.Sys.SetLingerOption(handle, &linger);
+                errorCode = Interop.Sys.SetLingerOption(handle, &linger);
 #if DEBUG
-                _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
+                _closeSocketLinger = SocketPal.GetSocketErrorForErrorCode(errorCode);
 #endif
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, setsockopt():{errorCode}");
 
-                if (errorCode != 0 && errorCode != (int)Interop.Error.EINVAL && errorCode != (int)Interop.Error.ENOPROTOOPT)
+                switch (errorCode)
                 {
-                    // Too dangerous to try closesocket() - it might block!
-                    return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
+                    case Interop.Error.SUCCESS:
+                    case Interop.Error.EINVAL:
+                    case Interop.Error.ENOPROTOOPT:
+                        errorCode = CloseHandle(handle);
+                        break;
+
+                    // For other errors, it's too dangerous to try closesocket() - it might block!
                 }
 
-                errorCode = Interop.Sys.Close(handle);
-#if DEBUG
-                _closeSocketHandle = handle;
-                _closeSocketResult = SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
-#endif
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, close#3():{(errorCode == -1 ? (int)Interop.Sys.GetLastError() : errorCode)}");
-
-                return SocketPal.GetSocketErrorForErrorCode((Interop.Error)errorCode);
+                return SocketPal.GetSocketErrorForErrorCode(errorCode);
             }
 
             internal static InnerSafeCloseSocket CreateSocket(IntPtr fileDescriptor)
