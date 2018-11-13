@@ -181,7 +181,6 @@ if "%GIT%" == "" (
 :: Make sure boringssl submodule is up to date.
 pushd
 cd "%BTLS_DIR%"
-echo Updating boringssl submodule.
 "%GIT%" submodule update --init
 if not ERRORLEVEL == 0 (
    "%GIT%" submodule init
@@ -230,7 +229,7 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
     )
 ) else (
     :: Build BTLS using msbuild build system.
-    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /m:4 || (
+    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo /m:4 || (
         goto ON_ERROR
     )
 )
@@ -249,10 +248,10 @@ if not exist "%MONO_DIST_DIR%" (
 )
 
 :: Copy files into distribution directory.
-copy "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.dll" "%MONO_DIST_DIR%"
+copy /Y "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.dll" "%MONO_DIST_DIR%" >nul 2>&1
 
 if exist "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.pdb" (
-    copy "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.pdb" "%MONO_DIST_DIR%"
+    copy /Y "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.pdb" "%MONO_DIST_DIR%" >nul 2>&1
 )
 
 goto ON_SUCCESS
@@ -267,7 +266,7 @@ if exist "%BTLS_BUILD_DIR%\build.ninja" (
 )
 
 if exist "%BTLS_BUILD_DIR%\mono-btls.sln" (
-    "%MSBUILD%" "%BTLS_BUILD_DIR%\mono-btls.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean
+    "%MSBUILD%" "%BTLS_BUILD_DIR%\mono-btls.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean /v:m /nologo
 )
 
 goto ON_SUCCESS
@@ -326,7 +325,9 @@ if "%CMAKE%" == "" (
     goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 )
 
-echo Found CMake: %CMAKE%
+if /i "%VS_TARGET%" == "build" (
+    echo Found CMake: %CMAKE%
+)
 
 :: Check for optional cmake generate and build tools for full BTLS assembler supported build. NOTE, currently BTLS assembler build
 :: can't be done using Visual Studio and must use ninja build generator + yasm and perl.
@@ -340,7 +341,9 @@ if not "%NINJA%" == "" if not "%YASM%" == "" if not "%PERL%" == "" (
 
 :_SETUP_CMAKE_ENVIRONMENT_VS_GENERATOR
 
-echo Using Visual Studio build generator, disabling full assembler build.
+if /i "%VS_TARGET%" == "build" (
+    echo Using Visual Studio build generator, disabling full assembler build.
+)
 
 :: Detect VS version to use right cmake generator.
 set CMAKE_GENERATOR=Visual Studio 14 2015
@@ -358,8 +361,10 @@ goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 
 :_SETUP_CMAKE_ENVIRONMENT_NINJA_GENERATOR
 
-echo Found Ninja: %NINJA%
-echo Using Ninja build generator, enabling full assembler build.
+if /i "%VS_TARGET%" == "build" (
+    echo Found Ninja: %NINJA%
+    echo Using Ninja build generator, enabling full assembler build.
+)
 
 set CMAKE_GENERATOR=Ninja
 set BTLS_BUILD_OUTPUT_DIR=%BTLS_BUILD_DIR%

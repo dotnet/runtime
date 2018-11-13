@@ -173,7 +173,6 @@ if "%GIT%" == "" (
 :: Make sure llvm submodule is up to date.
 pushd
 cd "%LLVM_DIR%"
-echo Updating llvm submodule.
 "%GIT%" submodule update --init
 if not ERRORLEVEL == 0 (
    "%GIT%" submodule init
@@ -227,7 +226,7 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
     )
 ) else (
     :: Build LLVM using msbuild build system.
-    call "%MSBUILD%" llvm.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /m:4 || (
+    call "%MSBUILD%" llvm.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo /m:4 || (
         goto ON_ERROR
     )
 )
@@ -254,7 +253,7 @@ if exist "%LLVM_BUILD_DIR%\build.ninja" (
 )
 
 if exist "%LLVM_BUILD_DIR%\llvm.sln" (
-    "%MSBUILD%" "%LLVM_BUILD_DIR%\llvm.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Install
+    "%MSBUILD%" "%LLVM_BUILD_DIR%\llvm.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Install /v:m /nologo
 )
 
 if not exist "%LLVM_INSTALL_DIR%\bin\opt.exe" (
@@ -267,8 +266,8 @@ if not exist "%LLVM_INSTALL_DIR%\bin\llc.exe" (
     goto ON_ERROR
 )
 
-copy "%LLVM_INSTALL_DIR%\bin\opt.exe" "%MONO_DIST_DIR%"
-copy "%LLVM_INSTALL_DIR%\bin\llc.exe" "%MONO_DIST_DIR%"
+copy /Y "%LLVM_INSTALL_DIR%\bin\opt.exe" "%MONO_DIST_DIR%" >nul 2>&1
+copy /Y "%LLVM_INSTALL_DIR%\bin\llc.exe" "%MONO_DIST_DIR%" >nul 2>&1
 
 goto ON_SUCCESS
 
@@ -282,7 +281,7 @@ if exist "%LLVM_BUILD_DIR%\build.ninja" (
 )
 
 if exist "%LLVM_BUILD_DIR%\llvm.sln" (
-    "%MSBUILD%" "%LLVM_BUILD_DIR%\llvm.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean
+    "%MSBUILD%" "%LLVM_BUILD_DIR%\llvm.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean /v:m /nologo
 )
 
 goto ON_SUCCESS
@@ -341,10 +340,12 @@ if "%CMAKE%" == "" (
     goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 )
 
-echo Found CMake: %CMAKE%
+if /i "%VS_TARGET%" == "build" (
+    echo Found CMake: %CMAKE%
+)
 
 :: Check for optional cmake generate and build tools.
-call :FIND_PROGRAM "%NINJA%" "%NINJA_BIN_NAME%" NINJA
+:: call :FIND_PROGRAM "%NINJA%" "%NINJA_BIN_NAME%" NINJA
 
 if not "%NINJA%" == "" (
     goto _SETUP_CMAKE_ENVIRONMENT_NINJA_GENERATOR
@@ -352,7 +353,9 @@ if not "%NINJA%" == "" (
 
 :_SETUP_CMAKE_ENVIRONMENT_VS_GENERATOR
 
-echo Using Visual Studio build generator.
+if /i "%VS_TARGET%" == "build" (
+    echo Using Visual Studio build generator.
+)
 
 :: Detect VS version to use right cmake generator.
 set CMAKE_GENERATOR=Visual Studio 14 2015
@@ -370,8 +373,10 @@ goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 
 :_SETUP_CMAKE_ENVIRONMENT_NINJA_GENERATOR
 
-echo Found Ninja: %NINJA%
-echo Using Ninja build generator.
+if /i "%VS_TARGET%" == "build" (
+    echo Found Ninja: %NINJA%
+    echo Using Ninja build generator.
+)
 
 set CMAKE_GENERATOR=Ninja
 set LLVM_BUILD_OUTPUT_DIR=%LLVM_BUILD_DIR%
