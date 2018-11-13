@@ -9,7 +9,7 @@ namespace System.Net.NetworkInformation
 {
     internal class OsxIPGlobalProperties : UnixIPGlobalProperties
     {
-        public unsafe override TcpConnectionInformation[] GetActiveTcpConnections()
+        private unsafe TcpConnectionInformation[] GetTcpConnections(bool listeners)
         {
             int realCount = Interop.Sys.GetEstimatedTcpConnectionCount();
             int infoCount = realCount * 2;
@@ -20,10 +20,16 @@ namespace System.Net.NetworkInformation
             }
 
             TcpConnectionInformation[] connectionInformations = new TcpConnectionInformation[infoCount];
+            int nextResultIndex = 0;
             for (int i = 0; i < infoCount; i++)
             {
                 Interop.Sys.NativeTcpConnectionInformation nativeInfo = infos[i];
                 TcpState state = nativeInfo.State;
+
+                if (listeners != (state == TcpState.Listen))
+                {
+                    continue;
+                }
 
                 byte[] localBytes = new byte[nativeInfo.LocalEndPoint.NumAddressBytes];
                 fixed (byte* localBytesPtr = localBytes)
@@ -49,16 +55,25 @@ namespace System.Net.NetworkInformation
                 }
 
                 IPEndPoint remote = new IPEndPoint(remoteIPAddress, (int)nativeInfo.RemoteEndPoint.Port);
-                connectionInformations[i] = new SimpleTcpConnectionInformation(local, remote, state);
+                connectionInformations[nextResultIndex++] = new SimpleTcpConnectionInformation(local, remote, state);
+            }
+
+            if (nextResultIndex != connectionInformations.Length)
+            {
+                Array.Resize(ref connectionInformations, nextResultIndex);
             }
 
             return connectionInformations;
         }
+        public unsafe override TcpConnectionInformation[] GetActiveTcpConnections()
+        {
+            return GetTcpConnections(listeners:false);
+        }
 
         public override IPEndPoint[] GetActiveTcpListeners()
         {
-            TcpConnectionInformation[] allConnections = GetActiveTcpConnections();
-            return allConnections.Where(tci => tci.State != TcpState.Listen).Select(tci => tci.RemoteEndPoint).ToArray();
+            TcpConnectionInformation[] allConnections = GetTcpConnections(listeners:true);
+            return allConnections.Select(tci => tci.LocalEndPoint).ToArray();
         }
 
         public unsafe override IPEndPoint[] GetActiveUdpListeners()
@@ -122,7 +137,7 @@ namespace System.Net.NetworkInformation
         public override TcpStatistics GetTcpIPv4Statistics()
         {
             // OSX does not provide separated TCP-IPv4 and TCP-IPv6 stats.
-            throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
+            return new OsxTcpStatistics();
         }
 
         public override TcpStatistics GetTcpIPv6Statistics()

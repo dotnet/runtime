@@ -333,8 +333,8 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
             ntci->RemoteEndPoint.NumAddressBytes = 16;
         }
 
-        ntci->LocalEndPoint.Port = in_pcb.inp_lport;
-        ntci->RemoteEndPoint.Port = in_pcb.inp_fport;
+        ntci->LocalEndPoint.Port = ntohs(in_pcb.inp_lport);
+        ntci->RemoteEndPoint.Port = ntohs(in_pcb.inp_fport);
     }
 
     free(buffer);
@@ -422,7 +422,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
             iepi->NumAddressBytes = 16;
         }
 
-        iepi->Port = in_pcb.inp_lport;
+        iepi->Port = ntohs(in_pcb.inp_lport);
     }
 
     free(buffer);
