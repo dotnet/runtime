@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -372,28 +373,28 @@ namespace R2RDump
             SignatureString = sb.ToString();
         }
 
-        public override string ToString()
+        public void WriteTo(TextWriter writer, DumpOptions options)
         {
-            StringBuilder sb = new StringBuilder();
+            writer.WriteLine(SignatureString);
 
-            sb.AppendLine(SignatureString);
-
-            sb.AppendLine($"Handle: 0x{MetadataTokens.GetToken(R2RReader.MetadataReader, MethodHandle):X8}");
-            sb.AppendLine($"Rid: {MetadataTokens.GetRowNumber(R2RReader.MetadataReader, MethodHandle)}");
-            sb.AppendLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
-            sb.AppendLine($"Number of RuntimeFunctions: {RuntimeFunctions.Count}");
+            writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(R2RReader.MetadataReader, MethodHandle):X8}");
+            writer.WriteLine($"Rid: {MetadataTokens.GetRowNumber(R2RReader.MetadataReader, MethodHandle)}");
+            writer.WriteLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
+            writer.WriteLine($"Number of RuntimeFunctions: {RuntimeFunctions.Count}");
             if (Fixups != null)
             {
-                sb.AppendLine($"Number of fixups: {Fixups.Count()}");
-                foreach (FixupCell cell in Fixups)
+                writer.WriteLine($"Number of fixups: {Fixups.Count()}");
+                IEnumerable<FixupCell> fixups = Fixups;
+                if (options.Normalize)
                 {
-                    R2RImportSection importSection = R2RReader.ImportSections[(int)cell.TableIndex];
-                    R2RImportSection.ImportSectionEntry entry = importSection.Entries[(int)cell.CellOffset];
-                    sb.AppendLine($"    TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}: {entry.Signature}");
+                    fixups = fixups.OrderBy((fc) => fc.Signature);
+                }
+
+                foreach (FixupCell cell in fixups)
+                {
+                    writer.WriteLine($"    TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}: {cell.Signature}");
                 }
             }
-
-            return sb.ToString();
         }
     }
 }

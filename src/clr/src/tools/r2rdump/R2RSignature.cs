@@ -699,7 +699,8 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_PTR:
-                    builder.Append("ptr");
+                    ParseType(builder);
+                    builder.Append('*');
                     break;
 
                 case CorElementType.ELEMENT_TYPE_BYREF:
@@ -717,7 +718,51 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_ARRAY:
-                    builder.Append("array");
+                    ParseType(builder);
+                    {
+                        builder.Append('[');
+                        uint rank = ReadUInt();
+                        if (rank != 0)
+                        {
+                            uint sizeCount = ReadUInt(); // number of sizes
+                            uint[] sizes = new uint[sizeCount];
+                            for (uint sizeIndex = 0; sizeIndex < sizeCount; sizeIndex++)
+                            {
+                                sizes[sizeIndex] = ReadUInt();
+                            }
+                            uint lowerBoundCount = ReadUInt(); // number of lower bounds
+                            int[] lowerBounds = new int[sizeCount];
+                            for (uint lowerBoundIndex = 0; lowerBoundIndex < lowerBoundCount; lowerBoundIndex++)
+                            {
+                                lowerBounds[lowerBoundIndex] = ReadInt();
+                            }
+                            for (int index = 0; index < rank; index++)
+                            {
+                                if (index > 0)
+                                {
+                                    builder.Append(',');
+                                }
+                                if (lowerBoundCount > index && lowerBounds[index] != 0)
+                                {
+                                    builder.Append(lowerBounds[index]);
+                                    builder.Append("..");
+                                    if (sizeCount > index)
+                                    {
+                                        builder.Append(lowerBounds[index] + sizes[index] - 1);
+                                    }
+                                }
+                                else if (sizeCount > index)
+                                {
+                                    builder.Append(sizes[index]);
+                                }
+                                else if (rank == 1)
+                                {
+                                    builder.Append('*');
+                                }
+                            }
+                        }
+                        builder.Append(']');
+                    }
                     break;
 
                 case CorElementType.ELEMENT_TYPE_GENERICINST:
@@ -745,7 +790,8 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_SZARRAY:
-                    builder.Append("szarray");
+                    ParseType(builder);
+                    builder.Append("[]");
                     break;
 
                 case CorElementType.ELEMENT_TYPE_MVAR:
