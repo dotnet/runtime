@@ -59,6 +59,8 @@ namespace System.Net.Security
                     return SslProtocols.Tls11;
                 case "TLSv1.2":
                     return SslProtocols.Tls12;
+                case "TLSv1.3":
+                    return SslProtocols.Tls13;
                 default:
                     return SslProtocols.None;
             }

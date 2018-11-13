@@ -37,6 +37,13 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SslProtocols.Tls11 | SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls12)]
         [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
+#if !netstandard
+        [InlineData(SslProtocols.Tls13)]
+        [InlineData(SslProtocols.Tls11 | SslProtocols.Tls13)]
+        [InlineData(SslProtocols.Tls12 | SslProtocols.Tls13)]
+        [InlineData(SslProtocols.Tls | SslProtocols.Tls13)]
+        [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13)]
+#endif
         public void SetGetProtocols_Roundtrips(SslProtocols protocols)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -97,6 +104,14 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { SslProtocols.Ssl2, true };
             }
 #pragma warning restore 0618
+#if !netstandard
+            // These protocols are new, and might not be enabled everywhere yet
+            if (PlatformDetection.IsUbuntu1810OrHigher)
+            {
+                yield return new object[] { SslProtocols.Tls13, false };
+                yield return new object[] { SslProtocols.Tls13, true };
+            }
+#endif
         }
 
         [Theory]

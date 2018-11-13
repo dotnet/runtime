@@ -16,7 +16,8 @@ typedef enum
     PAL_SSL_SSL3 = 48,
     PAL_SSL_TLS = 192,
     PAL_SSL_TLS11 = 768,
-    PAL_SSL_TLS12 = 3072
+    PAL_SSL_TLS12 = 3072,
+    PAL_SSL_TLS13 = 12288,
 } SslProtocols;
 
 /*
