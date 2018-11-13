@@ -84,8 +84,9 @@ namespace System.Buffers.Text
             while (srcIndex != source.Length)
             {
                 c = source[srcIndex];
+                int value = (byte)(c - (byte)('0'));
 
-                if ((c -= (byte)('0')) > 9)
+                if (value > 9)
                 {
                     break;
                 }
@@ -102,7 +103,7 @@ namespace System.Buffers.Text
                     // for an input that falls evenly between two representable
                     // results.
 
-                    hasNonZeroTail |= c;
+                    hasNonZeroTail |= value;
                 }
             }
             number.HasNonZeroTail = (hasNonZeroTail != 0);
@@ -138,8 +139,9 @@ namespace System.Buffers.Text
                 while (srcIndex != source.Length)
                 {
                     c = source[srcIndex];
+                    int value = (byte)(c - (byte)('0'));
 
-                    if ((c -= (byte)('0')) > 9)
+                    if (value > 9)
                     {
                         break;
                     }
@@ -156,7 +158,7 @@ namespace System.Buffers.Text
                         // for an input that falls evenly between two representable
                         // results.
 
-                        hasNonZeroTail |= c;
+                        hasNonZeroTail |= value;
                     }
                 }
                 number.HasNonZeroTail = (hasNonZeroTail != 0);
