@@ -35,12 +35,23 @@ function GetCMakeInfo($regKey)
 function LocateCMake
 {
   $errorMsg = "CMake is a pre-requisite to build this repository but it was not found on the path. Please install CMake from http://www.cmake.org/download/ and ensure it is on your path."
-  $inPathPath = (get-command cmake.exe -ErrorAction SilentlyContinue).Path
+  $inPathPath = (get-command cmake.exe -ErrorAction SilentlyContinue)
   if ($inPathPath -ne $null) {
-    return $inPathPath
+    # Resolve the first version of CMake if multiple commands are found
+    if ($inPathPath.Length -gt 1) {
+      return $inPathPath[0].Path
+    }
+    return $inPathPath.Path
   }
   # Check the default installation directory
   $inDefaultDir = [System.IO.Path]::Combine(${Env:ProgramFiles(x86)}, "CMake\bin\cmake.exe")
+  if ([System.IO.File]::Exists($inDefaultDir)) {
+    return $inDefaultDir
+  }
+  # If we're running in an x86 process, and a 64-bit CMake is installed, but is not on the PATH, we also
+  # won't see its installation information in the registry (below). Check the default installation directory
+  # in the 64-bit Program Files location.
+  $inDefaultDir = [System.IO.Path]::Combine(${Env:ProgramW6432}, "CMake\bin\cmake.exe")
   if ([System.IO.File]::Exists($inDefaultDir)) {
     return $inDefaultDir
   }
@@ -48,7 +59,7 @@ function LocateCMake
   $validVersions = @()
   foreach ($regKey in GetCMakeVersions) {
     $info = GetCMakeInfo($regKey)
-    if ($info -ne $null) { 
+    if ($info -ne $null) {
       $validVersions += @($info)
     }
   }
