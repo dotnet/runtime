@@ -253,9 +253,9 @@ coreclr_code_coverage()
       exit 1
   fi
 
-  local coverageDir="$ProjectRoot/bin/Coverage"
-  local toolsDir="$ProjectRoot/bin/Coverage/tools"
-  local reportsDir="$ProjectRoot/bin/Coverage/reports"
+  local coverageDir="$ProjectRoot/artifacts/bin/Coverage"
+  local toolsDir="$coverageDir/tools"
+  local reportsDir="$coverageDir/reports"
   local packageName="unix-code-coverage-tools.1.0.0.nupkg"
   rm -rf $coverageDir
   mkdir -p $coverageDir
@@ -363,12 +363,12 @@ done
 
 if [ "$Runtime" == "" ]
 then
-    Runtime="$ProjectRoot/bin/testhost/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
+    Runtime="$ProjectRoot/artifacts/bin/testhost/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
 fi
 
 if [ "$CoreFxTests" == "" ]
 then
-    CoreFxTests="$ProjectRoot/bin"
+    CoreFxTests="$ProjectRoot/artifacts/bin"
 fi
 
 # Check parameters up front for valid values:
