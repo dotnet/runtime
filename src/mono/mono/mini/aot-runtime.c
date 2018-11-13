@@ -6353,6 +6353,15 @@ mono_aot_get_gsharedvt_arg_trampoline (gpointer arg, gpointer addr)
 	return NULL;
 }
 
+#ifdef MONO_ARCH_HAVE_FTNPTR_ARG_TRAMPOLINE
+gpointer
+mono_aot_get_ftnptr_arg_trampoline (gpointer arg, gpointer addr)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+#endif
+
 void
 mono_aot_set_make_unreadable (gboolean unreadable)
 {
