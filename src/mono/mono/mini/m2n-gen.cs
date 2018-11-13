@@ -43,6 +43,7 @@ class Driver {
 		"IIIIIIII",
 		"IIIIIIIII",
 		"IILIIII",
+		"ILI",
 		"L",
 		"LL",
 		"LI",
