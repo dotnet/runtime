@@ -36,6 +36,7 @@
     <Compile Include="DnsParsingTests.cs" />
     <Compile Include="ExceptionHelper.cs" />
     <Compile Include="FileUtil.cs" />
+    <Compile Include="IPGlobalPropertiesTest.cs" />
     <Compile Include="IPInterfacePropertiesTest_Linux.cs" />
     <Compile Include="IPInterfacePropertiesTest_OSX.cs" />
     <Compile Include="IPInterfacePropertiesTest_Windows.cs" />
