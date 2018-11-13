@@ -2086,16 +2086,20 @@ private:
         {
             bmtMethodHandle declMethod;
             bmtMDMethod *   pImplMethod;
+            mdToken         declToken;
 
             Entry(bmtMDMethod *   pImplMethodIn,
-                  bmtMethodHandle declMethodIn)
+                  bmtMethodHandle declMethodIn,
+                  mdToken declToken)
               : declMethod(declMethodIn),
-                pImplMethod(pImplMethodIn)
+                pImplMethod(pImplMethodIn),
+                declToken(declToken)
               {}
 
             Entry()
               : declMethod(),
-                pImplMethod(NULL)
+                pImplMethod(NULL),
+                declToken()
               {}
         };
 
@@ -2129,6 +2133,7 @@ private:
         AddMethodImpl(
             bmtMDMethod * pImplMethod,
             bmtMethodHandle declMethod,
+            mdToken declToken,
             StackingAllocator * pStackingAllocator);
 
         //-----------------------------------------------------------------------------------------
@@ -2137,6 +2142,13 @@ private:
         GetDeclarationMethod(
             DWORD i)
             { LIMITED_METHOD_CONTRACT; _ASSERTE(i < pIndex); return rgEntries[i].declMethod; }
+
+        //-----------------------------------------------------------------------------------------
+        // Get the decl method for a particular methodimpl entry.
+        mdToken
+        GetDeclarationToken(
+            DWORD i)
+            { LIMITED_METHOD_CONTRACT; _ASSERTE(i < pIndex); return rgEntries[i].declToken; }
 
         //-----------------------------------------------------------------------------------------
         // Get the impl method for a particular methodimpl entry.
@@ -2720,6 +2732,7 @@ private:
         bmtMDMethod *       pImplMethod,
         DWORD               cSlots,
         DWORD *             rgSlots,
+        mdToken *           rgTokens,
         RelativePointer<MethodDesc *> *       rgDeclMD);
 
     // --------------------------------------------------------------------------------------------
@@ -2837,7 +2850,7 @@ private:
     VOID HandleGCForValueClasses(
         MethodTable **);
 
-    BOOL HasDefaultInterfaceImplementation(MethodDesc *pIntfMD);
+    BOOL HasDefaultInterfaceImplementation(bmtRTType *pIntfType, MethodDesc *pIntfMD);
     VOID VerifyVirtualMethodsImplemented(MethodTable::MethodData * hMTData);
 
     VOID CheckForTypeEquivalence(
