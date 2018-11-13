@@ -36,6 +36,7 @@ UINT32 g_site_write_mono = 0;           //# of call site backpatch writes to poi
 UINT32 g_stub_lookup_counter = 0;       //# of lookup stubs
 UINT32 g_stub_mono_counter = 0;         //# of dispatch stubs
 UINT32 g_stub_poly_counter = 0;         //# of resolve stubs
+UINT32 g_stub_vtable_counter = 0;       //# of vtable call stubs
 UINT32 g_stub_space = 0;                //# of bytes of stubs
 
 UINT32 g_reclaim_counter = 0;           //# of times a ReclaimAll was performed
@@ -239,6 +240,8 @@ void VirtualCallStubManager::LoggingDump()
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_poly_counter", g_stub_poly_counter);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
+        sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_vtable_counter", g_stub_vtable_counter);
+        WriteFile(g_hStubLogFile, szPrintStr, (DWORD)strlen(szPrintStr), &dwWriteByte, NULL);
         sprintf_s(szPrintStr, COUNTOF(szPrintStr), OUTPUT_FORMAT_INT, "stub_space", g_stub_space);
         WriteFile (g_hStubLogFile, szPrintStr, (DWORD) strlen(szPrintStr), &dwWriteByte, NULL);
 
@@ -501,6 +504,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<BucketTable> resolvers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
     NewHolder<BucketTable> dispatchers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS*2));
     NewHolder<BucketTable> lookups_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
+    NewHolder<BucketTable> vtableCallers_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
     NewHolder<BucketTable> cache_entries_holder(new BucketTable(CALL_STUB_MIN_BUCKETS));
 
     //
@@ -521,6 +525,8 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     DWORD dispatch_heap_commit_size;
     DWORD resolve_heap_reserve_size;
     DWORD resolve_heap_commit_size;
+    DWORD vtable_heap_reserve_size;
+    DWORD vtable_heap_commit_size;
 
     //
     // Setup an expected number of items to commit and reserve
@@ -538,6 +544,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         lookup_heap_commit_size      = 24;        lookup_heap_reserve_size       =  250;
         dispatch_heap_commit_size    = 24;        dispatch_heap_reserve_size     =  600;
         resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  300;
+        vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  600;
     }
     else if (parentDomain->IsSharedDomain())
     {
@@ -550,6 +557,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         lookup_heap_commit_size      = 24;        lookup_heap_reserve_size       =  200;
         dispatch_heap_commit_size    = 24;        dispatch_heap_reserve_size     =  450;
         resolve_heap_commit_size     = 24;        resolve_heap_reserve_size      =  200;
+        vtable_heap_commit_size      = 24;        vtable_heap_reserve_size       =  450;
     }
     else
     {
@@ -559,6 +567,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         lookup_heap_commit_size      = 8;         lookup_heap_reserve_size       = 8;
         dispatch_heap_commit_size    = 8;         dispatch_heap_reserve_size     = 8;
         resolve_heap_commit_size     = 8;         resolve_heap_reserve_size      = 8;
+        vtable_heap_commit_size      = 8;         vtable_heap_reserve_size       = 8;
     }
 
 #ifdef _WIN64
@@ -571,7 +580,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
 #endif
 
     //
-    // Convert the number of items into a size in bytes to commit abd reserve
+    // Convert the number of items into a size in bytes to commit and reserve
     //
     indcell_heap_reserve_size       *= sizeof(void *);
     indcell_heap_commit_size        *= sizeof(void *);
@@ -593,6 +602,9 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     resolve_heap_reserve_size       *= sizeof(ResolveHolder);
     resolve_heap_commit_size        *= sizeof(ResolveHolder);
 
+    vtable_heap_reserve_size       *= static_cast<DWORD>(VTableCallHolder::GetHolderSize(0));
+    vtable_heap_commit_size        *= static_cast<DWORD>(VTableCallHolder::GetHolderSize(0));
+
     //
     // Align up all of the commit and reserve sizes
     //
@@ -611,6 +623,9 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     resolve_heap_reserve_size        = (DWORD) ALIGN_UP(resolve_heap_reserve_size,     GetOsPageSize());
     resolve_heap_commit_size         = (DWORD) ALIGN_UP(resolve_heap_commit_size,      GetOsPageSize());
 
+    vtable_heap_reserve_size         = (DWORD) ALIGN_UP(vtable_heap_reserve_size,      GetOsPageSize());
+    vtable_heap_commit_size          = (DWORD) ALIGN_UP(vtable_heap_commit_size,       GetOsPageSize());
+
     BYTE * initReservedMem = NULL;
 
     if (!isCollectible)
@@ -619,7 +634,8 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
                                            cache_entry_heap_reserve_size +
                                            lookup_heap_reserve_size      +
                                            dispatch_heap_reserve_size    +
-                                           resolve_heap_reserve_size;
+                                           resolve_heap_reserve_size     +
+                                           vtable_heap_reserve_size;
 
         DWORD dwTotalReserveMemSize = (DWORD) ALIGN_UP(dwTotalReserveMemSizeCalc, VIRTUAL_ALLOC_RESERVE_GRANULARITY);
 
@@ -629,13 +645,14 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
             if (dwWastedReserveMemSize != 0)
             {
                 DWORD cWastedPages = dwWastedReserveMemSize / GetOsPageSize();
-                DWORD cPagesPerHeap = cWastedPages / 5;
-                DWORD cPagesRemainder = cWastedPages % 5; // We'll throw this at the resolve heap
+                DWORD cPagesPerHeap = cWastedPages / 6;
+                DWORD cPagesRemainder = cWastedPages % 6; // We'll throw this at the resolve heap
 
                 indcell_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
                 cache_entry_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
                 lookup_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
                 dispatch_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
+                vtable_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
                 resolve_heap_reserve_size += cPagesPerHeap * GetOsPageSize();
                 resolve_heap_reserve_size += cPagesRemainder * GetOsPageSize();
             }
@@ -644,7 +661,8 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
                                cache_entry_heap_reserve_size +
                                lookup_heap_reserve_size      +
                                dispatch_heap_reserve_size    +
-                               resolve_heap_reserve_size)    == 
+                               resolve_heap_reserve_size     +
+                               vtable_heap_reserve_size)    == 
                               dwTotalReserveMemSize);
         }
 
@@ -672,12 +690,20 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
         resolve_heap_reserve_size        = GetOsPageSize();
         resolve_heap_commit_size         = GetOsPageSize();
 
+        // Heap for the collectible case is carefully tuned to sum up to 16 pages. Today, we only use the 
+        // vtable jump stubs in the R2R scenario, which is unlikely to be loaded in the collectible context,
+        // so we'll keep the heap numbers at zero for now. If we ever use vtable stubs in the collectible
+        // scenario, we'll just allocate the memory on demand.
+        vtable_heap_reserve_size         = 0;
+        vtable_heap_commit_size          = 0;
+
 #ifdef _DEBUG
         DWORD dwTotalReserveMemSizeCalc  = indcell_heap_reserve_size     +
                                            cache_entry_heap_reserve_size +
                                            lookup_heap_reserve_size      +
                                            dispatch_heap_reserve_size    +
-                                           resolve_heap_reserve_size;
+                                           resolve_heap_reserve_size     +
+                                           vtable_heap_reserve_size;
 #endif
 
         DWORD dwActualVSDSize = 0;
@@ -756,6 +782,19 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
 
     initReservedMem += resolve_heap_reserve_size;
 
+    // Hot  memory, Writable, Execute, write exactly once
+    NewHolder<LoaderHeap> vtable_heap_holder(
+                               new LoaderHeap(vtable_heap_reserve_size, vtable_heap_commit_size,
+                                              initReservedMem, vtable_heap_reserve_size,
+#ifdef ENABLE_PERF_COUNTERS
+                                              &(GetPerfCounters().m_Loading.cbLoaderHeapSize),
+#else
+                                              NULL,
+#endif                                              
+                                              &vtable_rangeList, TRUE));
+
+    initReservedMem += vtable_heap_reserve_size;
+
     // Allocate the initial counter block
     NewHolder<counter_block> m_counters_holder(new counter_block);
 
@@ -767,12 +806,13 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     lookup_heap      = lookup_heap_holder;      lookup_heap_holder.SuppressRelease();
     dispatch_heap    = dispatch_heap_holder;    dispatch_heap_holder.SuppressRelease();
     resolve_heap     = resolve_heap_holder;     resolve_heap_holder.SuppressRelease();
+    vtable_heap      = vtable_heap_holder;      vtable_heap_holder.SuppressRelease();
     cache_entry_heap = cache_entry_heap_holder; cache_entry_heap_holder.SuppressRelease();
 
     resolvers        = resolvers_holder;        resolvers_holder.SuppressRelease();
     dispatchers      = dispatchers_holder;      dispatchers_holder.SuppressRelease();
     lookups          = lookups_holder;          lookups_holder.SuppressRelease();
-
+    vtableCallers    = vtableCallers_holder;    vtableCallers_holder.SuppressRelease();
     cache_entries    = cache_entries_holder;    cache_entries_holder.SuppressRelease();
 
     m_counters       = m_counters_holder;       m_counters_holder.SuppressRelease();
@@ -832,11 +872,13 @@ VirtualCallStubManager::~VirtualCallStubManager()
     if (lookup_heap)      { delete lookup_heap;      lookup_heap      = NULL;}
     if (dispatch_heap)    { delete dispatch_heap;    dispatch_heap    = NULL;}
     if (resolve_heap)     { delete resolve_heap;     resolve_heap     = NULL;}
+    if (vtable_heap)      { delete vtable_heap;      vtable_heap      = NULL;}
     if (cache_entry_heap) { delete cache_entry_heap; cache_entry_heap = NULL;}
 
     if (resolvers)        { delete resolvers;        resolvers        = NULL;}
     if (dispatchers)      { delete dispatchers;      dispatchers      = NULL;}
     if (lookups)          { delete lookups;          lookups          = NULL;}
+    if (vtableCallers)    { delete vtableCallers;    vtableCallers    = NULL;}
     if (cache_entries)    { delete cache_entries;    cache_entries    = NULL;}
 
     // Now get rid of the memory taken by the counter_blocks
@@ -1075,6 +1117,8 @@ BOOL VirtualCallStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinatio
 {
     LIMITED_METHOD_CONTRACT;
 
+    LOG((LF_CORDB, LL_EVERYTHING, "VirtualCallStubManager::DoTraceStub called\n"));
+
     _ASSERTE(CheckIsStub_Internal(stubStartAddress));
 
 #ifdef FEATURE_PREJIT
@@ -1189,6 +1233,68 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
     stats.site_counter++;
 
     RETURN (stub);
+}
+
+PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
+{
+    CONTRACT(PCODE) {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
+        POSTCONDITION(RETVAL != NULL);
+    } CONTRACT_END;
+
+    GCX_COOP(); // This is necessary for BucketTable synchronization
+
+    PCODE stub = CALL_STUB_EMPTY_ENTRY;
+
+    VTableCallEntry entry;
+    Prober probe(&entry);
+    if (vtableCallers->SetUpProber(DispatchToken::CreateDispatchToken(slot).To_SIZE_T(), 0, &probe))
+    {
+        if ((stub = (PCODE)(vtableCallers->Find(&probe))) == CALL_STUB_EMPTY_ENTRY)
+        {
+            VTableCallHolder *pHolder = GenerateVTableCallStub(slot);
+            stub = (PCODE)(vtableCallers->Add((size_t)(pHolder->stub()->entryPoint()), &probe));
+        }
+    }
+
+    _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
+    RETURN(stub);
+}
+
+VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
+{
+    CONTRACT(VTableCallHolder*) {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(!MethodTable::VTableIndir_t::isRelative /* Not yet supported */);
+        POSTCONDITION(RETVAL != NULL);
+    } CONTRACT_END;
+
+    //allocate from the requisite heap and copy the template over it.
+    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(VTableCallHolder::GetHolderSize(slot), CODE_SIZE_ALIGN);
+
+    pHolder->Initialize(slot);
+    ClrFlushInstructionCache(pHolder->stub(), pHolder->stub()->size());
+
+    AddToCollectibleVSDRangeList(pHolder);
+
+    //incr our counters
+    stats.stub_vtable_counter++;
+    stats.stub_space += (UINT32)pHolder->stub()->size();
+    LOG((LF_STUBS, LL_INFO10000, "GenerateVTableCallStub for slot " FMT_ADDR "at" FMT_ADDR "\n",
+        DBG_ADDR(slot), DBG_ADDR(pHolder->stub())));
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size());
+#endif
+
+    RETURN(pHolder);
 }
 
 #ifdef FEATURE_PREJIT
@@ -1456,6 +1562,12 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
         _ASSERTE(pMgr->isLookupStub(stub));
         LookupHolder  * lookupHolder  = LookupHolder::FromLookupEntry(stub);
         return lookupHolder->stub()->token();
+    }
+    else if (kind == SK_VTABLECALL)
+    {
+        _ASSERTE(pMgr->isVTableCallStub(stub));
+        VTableCallStub * vtableStub = (VTableCallStub *)PCODEToPINSTR(stub);
+        return vtableStub->token();
     }
 
     _ASSERTE(!"Should not get here.");
@@ -3023,12 +3135,14 @@ void VirtualCallStubManager::LogStats()
     resolvers->LogStats();
     dispatchers->LogStats();
     lookups->LogStats();
+    vtableCallers->LogStats();
     cache_entries->LogStats();
 
     g_site_counter += stats.site_counter;
     g_stub_lookup_counter += stats.stub_lookup_counter;
     g_stub_poly_counter += stats.stub_poly_counter;
     g_stub_mono_counter += stats.stub_mono_counter;
+    g_stub_vtable_counter += stats.stub_vtable_counter;
     g_site_write += stats.site_write;
     g_site_write_poly += stats.site_write_poly;
     g_site_write_mono += stats.site_write_mono;
@@ -3043,6 +3157,7 @@ void VirtualCallStubManager::LogStats()
     stats.stub_lookup_counter = 0;
     stats.stub_poly_counter = 0;
     stats.stub_mono_counter = 0;
+    stats.stub_vtable_counter = 0;
     stats.site_write = 0;
     stats.site_write_poly = 0;
     stats.site_write_mono = 0;
@@ -3369,6 +3484,7 @@ void BucketTable::Reclaim()
 // dispatchers     token     the expected MT
 // resolver        token     the stub calling convention
 // cache_entries   token     the expected method table
+// vtableCallers   token     unused (zero)
 //
 BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
 {

@@ -2286,20 +2286,24 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
             // Get the stub manager for this module
             VirtualCallStubManager *pMgr = pModule->GetLoaderAllocator()->GetVirtualCallStubManager();
 
-            DispatchToken token;
-            if (pMT->IsInterface())
-                token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
-            else
-                token = DispatchToken::CreateDispatchToken(slot);
-
             OBJECTREF *protectedObj = pEMFrame->GetThisPtr();
             _ASSERTE(protectedObj != NULL);
             if (*protectedObj == NULL) {
                 COMPlusThrow(kNullReferenceException);
             }
-            
-            StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
-            pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
+
+            DispatchToken token;
+            if (pMT->IsInterface() || MethodTable::VTableIndir_t::isRelative)
+            {
+                token = pMT->GetLoaderAllocator()->GetDispatchToken(pMT->GetTypeID(), slot);
+                StubCallSite callSite(pIndirection, pEMFrame->GetReturnAddress());
+                pCode = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
+            }
+            else
+            {
+                pCode = pMgr->GetVTableCallStub(slot);
+                *EnsureWritableExecutablePages((TADDR *)pIndirection) = pCode;
+            }
             _ASSERTE(pCode != NULL);
         }
         else
