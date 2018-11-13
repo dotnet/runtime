@@ -32,6 +32,7 @@ namespace System.IO.Compression
         public override long Position { get { throw null; } set { } }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }
@@ -66,6 +67,7 @@ namespace System.IO.Compression
         public override void CopyTo(System.IO.Stream destination, int bufferSize) { }
         public override System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, int bufferSize, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override IAsyncResult BeginRead(byte[] array, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }

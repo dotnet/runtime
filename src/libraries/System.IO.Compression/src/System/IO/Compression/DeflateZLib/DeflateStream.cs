@@ -4,7 +4,6 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -628,6 +627,53 @@ namespace System.IO.Compression
             }
         }
 
+        private async Task PurgeBuffersAsync()
+        {
+            // Same logic as PurgeBuffers, except with async counterparts.
+
+            if (_stream == null)
+                return;
+
+            if (_mode != CompressionMode.Compress)
+                return;
+
+            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
+            // This round-trips and we should be ok with this, but our legacy managed deflater
+            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
+            // took dependencies on it. Thus, make sure to only "flush" when we actually had
+            // some input:
+            if (_wroteBytes)
+            {
+                // Compress any bytes left
+                await WriteDeflaterOutputAsync(default).ConfigureAwait(false);
+
+                // Pull out any bytes left inside deflater:
+                bool finished;
+                do
+                {
+                    int compressedBytes;
+                    finished = _deflater.Finish(_buffer, out compressedBytes);
+
+                    if (compressedBytes > 0)
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(_buffer, 0, compressedBytes)).ConfigureAwait(false);
+                } while (!finished);
+            }
+            else
+            {
+                // In case of zero length buffer, we still need to clean up the native created stream before
+                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
+                // the dispose operation and although it frees the stream but it return error code because the
+                // stream state was still marked as in use. The symptoms of this problem will not be seen except
+                // if running any diagnostic tools which check for disposing safe handle objects
+                bool finished;
+                do
+                {
+                    int compressedBytes;
+                    finished = _deflater.Finish(_buffer, out compressedBytes);
+                } while (!finished);
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
@@ -669,6 +715,58 @@ namespace System.IO.Compression
                         }
 
                         base.Dispose(disposing);
+                    }
+                }
+            }
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            return GetType() == typeof(DeflateStream) ?
+                DisposeAsyncCore() :
+                base.DisposeAsync();
+        }
+
+        private async ValueTask DisposeAsyncCore()
+        {
+            // Same logic as Dispose(true), except with async counterparts.
+            try
+            {
+                await PurgeBuffersAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                // Close the underlying stream even if PurgeBuffers threw.
+                // Stream.Close() may throw here (may or may not be due to the same error).
+                // In this case, we still need to clean up internal resources, hence the inner finally blocks.
+                Stream stream = _stream;
+                _stream = null;
+                try
+                {
+                    if (!_leaveOpen && stream != null)
+                        await stream.DisposeAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    try
+                    {
+                        _deflater?.Dispose();
+                        _inflater?.Dispose();
+                    }
+                    finally
+                    {
+                        _deflater = null;
+                        _inflater = null;
+
+                        byte[] buffer = _buffer;
+                        if (buffer != null)
+                        {
+                            _buffer = null;
+                            if (!AsyncOperationIsActive)
+                            {
+                                ArrayPool<byte>.Shared.Return(buffer);
+                            }
+                        }
                     }
                 }
             }

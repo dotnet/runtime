@@ -36,6 +36,7 @@ namespace System.IO.Compression
         public override long Length { get { throw null; } }
         public override long Position { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        public override System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public override void Flush() { }
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) { throw null; }
         public override int EndRead(IAsyncResult asyncResult) { throw null; }
