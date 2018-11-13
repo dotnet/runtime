@@ -345,7 +345,7 @@ if /i "%VS_TARGET%" == "build" (
 )
 
 :: Check for optional cmake generate and build tools.
-:: call :FIND_PROGRAM "%NINJA%" "%NINJA_BIN_NAME%" NINJA
+call :FIND_PROGRAM "%NINJA%" "%NINJA_BIN_NAME%" NINJA
 
 if not "%NINJA%" == "" (
     goto _SETUP_CMAKE_ENVIRONMENT_NINJA_GENERATOR
