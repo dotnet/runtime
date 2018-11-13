@@ -3387,6 +3387,16 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
 }
 #endif // FEATURE_COMINTEROP
 
+void MovRegImm(BYTE* p, int reg, TADDR imm)
+{
+    LIMITED_METHOD_CONTRACT;
+    *(WORD *)(p + 0) = 0xF240;
+    *(WORD *)(p + 2) = (UINT16)(reg << 8);
+    *(WORD *)(p + 4) = 0xF2C0;
+    *(WORD *)(p + 6) = (UINT16)(reg << 8);
+    PutThumb2Mov32((UINT16 *)p, imm);
+}
+
 #ifndef DACCESS_COMPILE
 
 #ifndef CROSSGEN_COMPILE
@@ -3410,16 +3420,6 @@ void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
     while (p < pStart + cbAligned) { *(WORD *)p = 0xdefe; p += 2; } \
     ClrFlushInstructionCache(pStart, cbAligned); \
     return (PCODE)((TADDR)pStart | THUMB_CODE)
-
-static void MovRegImm(BYTE* p, int reg, TADDR imm)
-{
-    LIMITED_METHOD_CONTRACT;
-    *(WORD *)(p + 0) = 0xF240;
-    *(WORD *)(p + 2) = (UINT16)(reg << 8);
-    *(WORD *)(p + 4) = 0xF2C0;
-    *(WORD *)(p + 6) = (UINT16)(reg << 8);
-    PutThumb2Mov32((UINT16 *)p, imm);
-}
 
 PCODE DynamicHelpers::CreateHelper(LoaderAllocator * pAllocator, TADDR arg, PCODE target)
 {

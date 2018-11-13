@@ -5155,6 +5155,8 @@ void CEEInfo::getCallInfo(
 
     INDEBUG(memset(pResult, 0xCC, sizeof(*pResult)));
 
+    pResult->stubLookup.lookupKind.needsRuntimeLookup = false;
+
     MethodDesc* pMD = (MethodDesc *)pResolvedToken->hMethod;
     TypeHandle th(pResolvedToken->hClass);
 
@@ -5460,13 +5462,18 @@ void CEEInfo::getCallInfo(
         pResult->nullInstanceCheck = TRUE;
     }
     // Non-interface dispatches go through the vtable.
-    // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode and generate fragile-NI-like callsites for improved performance. We
-    // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
-    // performance optimization.
-    else if (!pTargetMD->IsInterface() && (!IsReadyToRunCompilation() || CallerAndCalleeInSystemVersionBubble((MethodDesc*)callerHandle, pTargetMD)))
+    else if (!pTargetMD->IsInterface())
     {
         pResult->kind = CORINFO_VIRTUALCALL_VTABLE;
         pResult->nullInstanceCheck = TRUE;
+
+        // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
+        // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
+        // performance optimization.
+        if (IsReadyToRunCompilation() && !CallerAndCalleeInSystemVersionBubble((MethodDesc*)callerHandle, pTargetMD))
+        {
+            pResult->kind = CORINFO_VIRTUALCALL_STUB;
+        }
     }
     else
     {
@@ -5504,8 +5511,6 @@ void CEEInfo::getCallInfo(
         }
         else
         {
-            pResult->stubLookup.lookupKind.needsRuntimeLookup = false;
-
             BYTE * indcell = NULL;
 
             if (!(flags & CORINFO_CALLINFO_KINDONLY) && !isVerifyOnly())
