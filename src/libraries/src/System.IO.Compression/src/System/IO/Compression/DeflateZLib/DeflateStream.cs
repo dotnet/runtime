@@ -641,7 +641,7 @@ namespace System.IO.Compression
             // This round-trips and we should be ok with this, but our legacy managed deflater
             // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
             // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input:
+            // some input.
             if (_wroteBytes)
             {
                 // Compress any bytes left
@@ -662,9 +662,9 @@ namespace System.IO.Compression
             {
                 // In case of zero length buffer, we still need to clean up the native created stream before
                 // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
-                // the dispose operation and although it frees the stream but it return error code because the
+                // the dispose operation and although it frees the stream, it returns an error code because the
                 // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                // if running any diagnostic tools which check for disposing safe handle objects
+                // if running any diagnostic tools which check for disposing safe handle objects.
                 bool finished;
                 do
                 {
