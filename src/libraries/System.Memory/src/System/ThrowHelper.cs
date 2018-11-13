@@ -32,14 +32,6 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
 
-        internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge() { throw CreateArgumentOutOfRangeException_PrecisionTooLarge(); }
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentOutOfRangeException_PrecisionTooLarge() { return new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision)); }
-
-        internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit() { throw CreateArgumentOutOfRangeException_SymbolDoesNotFit(); }
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentOutOfRangeException_SymbolDoesNotFit() { return new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier); }
-
         internal static void ThrowInvalidOperationException() { throw CreateInvalidOperationException(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateInvalidOperationException() { return new InvalidOperationException(); }
@@ -59,31 +51,6 @@ namespace System
         internal static void ThrowObjectDisposedException_ArrayMemoryPoolBuffer() { throw CreateObjectDisposedException_ArrayMemoryPoolBuffer(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Exception CreateObjectDisposedException_ArrayMemoryPoolBuffer() { return new ObjectDisposedException("ArrayMemoryPoolBuffer"); }
-
-        internal static void ThrowFormatException_BadFormatSpecifier() { throw CreateFormatException_BadFormatSpecifier(); }
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateFormatException_BadFormatSpecifier() { return new FormatException(SR.Argument_BadFormatSpecifier); }
-
-        //
-        // Enable use of ThrowHelper from TryFormat() routines without introducing dozens of non-code-coveraged "bytesWritten = 0; return false" boilerplate.
-        //
-        public static bool TryFormatThrowFormatException(out int bytesWritten)
-        {
-            bytesWritten = 0;
-            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
-            return false;
-        }
-
-        //
-        // Enable use of ThrowHelper from TryParse() routines without introducing dozens of non-code-coveraged "value= default; bytesConsumed = 0; return false" boilerplate.
-        //
-        public static bool TryParseThrowFormatException<T>(out T value, out int bytesConsumed)
-        {
-            value = default;
-            bytesConsumed = 0;
-            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
-            return false;
-        }
 
         //
         // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
