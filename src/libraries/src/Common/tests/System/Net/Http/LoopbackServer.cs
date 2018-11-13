@@ -350,7 +350,11 @@ namespace System.Net.Test.Common
             public IPAddress Address { get; set; } = IPAddress.Loopback;
             public int ListenBacklog { get; set; } = 1;
             public bool UseSsl { get; set; } = false;
-            public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+            public SslProtocols SslProtocols { get; set; } =
+#if !netstandard
+                SslProtocols.Tls13 |
+#endif
+                SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
             public bool WebSocketEndpoint { get; set; } = false;
             public Func<Stream, Stream> StreamWrapper { get; set; }
             public string Username { get; set; }

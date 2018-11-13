@@ -36,7 +36,7 @@ namespace System.Net
 
         private static void ValidateSecurityProtocol(SecurityProtocolType value)
         {
-            SecurityProtocolType allowed = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            SecurityProtocolType allowed = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
             if ((value & ~allowed) != 0)
             {
                 throw new NotSupportedException(SR.net_securityprotocolnotsupported);

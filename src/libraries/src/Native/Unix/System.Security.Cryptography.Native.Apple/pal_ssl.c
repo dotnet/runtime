@@ -5,6 +5,9 @@
 #include "pal_ssl.h"
 #include <dlfcn.h>
 
+// TLS 1.3 is only defined with 10.13 headers, but we build on 10.12
+#define kTLSProtocol13_ForwardDef 10
+
 // 10.13.4 introduced public API but linking would fail on all prior versions.
 // For that reason we use function pointers instead of direct call.
 // This can be revisited after we drop support for 10.12.
@@ -31,6 +34,8 @@ static SSLProtocol PalSslProtocolToSslProtocol(PAL_SslProtocol palProtocolId)
 {
     switch (palProtocolId)
     {
+        case PAL_SslProtocol_Tls13:
+            return kTLSProtocol13_ForwardDef;
         case PAL_SslProtocol_Tls12:
             return kTLSProtocol12;
         case PAL_SslProtocol_Tls11:
@@ -419,7 +424,9 @@ int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_Ss
     {
         PAL_SslProtocol matchedProtocol = PAL_SslProtocol_None;
 
-        if (protocol == kTLSProtocol12)
+        if (protocol == kTLSProtocol13_ForwardDef)
+            matchedProtocol = PAL_SslProtocol_Tls13;
+        else if (protocol == kTLSProtocol12)
             matchedProtocol = PAL_SslProtocol_Tls12;
         else if (protocol == kTLSProtocol11)
             matchedProtocol = PAL_SslProtocol_Tls11;

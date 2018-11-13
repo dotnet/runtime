@@ -62,5 +62,6 @@ namespace System.Net
         Tls = System.Security.Authentication.SslProtocols.Tls,
         Tls11 = System.Security.Authentication.SslProtocols.Tls11,
         Tls12 = System.Security.Authentication.SslProtocols.Tls12,
+        Tls13 = System.Security.Authentication.SslProtocols.Tls13,
     }
 }
