@@ -17,6 +17,7 @@ namespace System.Drawing
 #if netcoreapp
     [TypeConverter("System.Drawing.FontConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
 #endif
+    [Serializable]
     public sealed partial class Font : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
         private IntPtr _nativeFont;
@@ -142,6 +143,27 @@ namespace System.Drawing
         /// Cleans up Windows resources for this <see cref='Font'/>.
         /// </summary>
         ~Font() => Dispose(false);
+
+        private Font(SerializationInfo info, StreamingContext context)
+        {
+            string name = info.GetString("Name"); // Do not rename (binary serialization)
+            FontStyle style = (FontStyle)info.GetValue("Style", typeof(FontStyle)); // Do not rename (binary serialization)
+            GraphicsUnit unit = (GraphicsUnit)info.GetValue("Unit", typeof(GraphicsUnit)); // Do not rename (binary serialization)
+            float size = info.GetSingle("Size"); // Do not rename (binary serialization)
+
+            Initialize(name, size, style, unit, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(name));
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
+        {
+            string name = string.IsNullOrEmpty(OriginalFontName) ? Name : OriginalFontName;
+            si.AddValue("Name", name); // Do not rename (binary serialization)
+            si.AddValue("Size", Size); // Do not rename (binary serialization)
+            si.AddValue("Style", Style); // Do not rename (binary serialization)
+            si.AddValue("Unit", Unit); // Do not rename (binary serialization)
+        }
+
+        private static bool IsVerticalName(string familyName) => familyName?.Length > 0 && familyName[0] == '@';
 
         /// <summary>
         /// Cleans up Windows resources for this <see cref='Font'/>.

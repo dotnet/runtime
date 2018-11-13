@@ -340,8 +340,6 @@ namespace System.Drawing
             GC.SuppressFinalize(_fontFamily);
         }
 
-        private static bool IsVerticalName(string familyName) => familyName?.Length > 0 && familyName[0] == '@';
-
         private static string StripVerticalName(string familyName)
         {
             if (familyName?.Length > 1 && familyName[0] == '@')
