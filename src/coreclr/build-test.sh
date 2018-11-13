@@ -528,8 +528,6 @@ usage()
     echo "clangx.y - optional argument to build using clang version x.y - supported version 3.5 - 6.0"
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
-    echo "crosscomponent - optional argument to build cross-architecture component,"
-    echo "               - will use CAC_ROOTFS_DIR environment variable if set."
     echo "portableLinux - build for Portable Linux Distribution"
     echo "portablebuild - Use portable build."
     echo "verbose - optional argument to enable verbose build output."
