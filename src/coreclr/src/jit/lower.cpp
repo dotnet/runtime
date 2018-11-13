@@ -1572,7 +1572,7 @@ void Lowering::LowerCall(GenTree* node)
     LowerArgsForCall(call);
 
     // note that everything generated from this point on runs AFTER the outgoing args are placed
-    GenTree* result = nullptr;
+    GenTree* controlExpr = nullptr;
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
@@ -1581,7 +1581,7 @@ void Lowering::LowerCall(GenTree* node)
     // an indirect call.
     if (call->IsDelegateInvoke())
     {
-        result = LowerDelegateInvoke(call);
+        controlExpr = LowerDelegateInvoke(call);
     }
     else
     {
@@ -1589,26 +1589,26 @@ void Lowering::LowerCall(GenTree* node)
         switch (call->gtFlags & GTF_CALL_VIRT_KIND_MASK)
         {
             case GTF_CALL_VIRT_STUB:
-                result = LowerVirtualStubCall(call);
+                controlExpr = LowerVirtualStubCall(call);
                 break;
 
             case GTF_CALL_VIRT_VTABLE:
                 // stub dispatching is off or this is not a virtual call (could be a tailcall)
-                result = LowerVirtualVtableCall(call);
+                controlExpr = LowerVirtualVtableCall(call);
                 break;
 
             case GTF_CALL_NONVIRT:
                 if (call->IsUnmanaged())
                 {
-                    result = LowerNonvirtPinvokeCall(call);
+                    controlExpr = LowerNonvirtPinvokeCall(call);
                 }
                 else if (call->gtCallType == CT_INDIRECT)
                 {
-                    result = LowerIndirectNonvirtCall(call);
+                    controlExpr = LowerIndirectNonvirtCall(call);
                 }
                 else
                 {
-                    result = LowerDirectCall(call);
+                    controlExpr = LowerDirectCall(call);
                 }
                 break;
 
@@ -1621,26 +1621,22 @@ void Lowering::LowerCall(GenTree* node)
     if (call->IsTailCallViaHelper())
     {
         // Either controlExpr or gtCallAddr must contain real call target.
-        if (result == nullptr)
+        if (controlExpr == nullptr)
         {
             assert(call->gtCallType == CT_INDIRECT);
             assert(call->gtCallAddr != nullptr);
-            result = call->gtCallAddr;
+            controlExpr = call->gtCallAddr;
         }
 
-        result = LowerTailCallViaHelper(call, result);
-    }
-    else if (call->IsFastTailCall())
-    {
-        LowerFastTailCall(call);
+        controlExpr = LowerTailCallViaHelper(call, controlExpr);
     }
 
-    if (result != nullptr)
+    if (controlExpr != nullptr)
     {
-        LIR::Range resultRange = LIR::SeqTree(comp, result);
+        LIR::Range controlExprRange = LIR::SeqTree(comp, controlExpr);
 
         JITDUMP("results of lowering call:\n");
-        DISPRANGE(resultRange);
+        DISPRANGE(controlExprRange);
 
         GenTree* insertionPoint = call;
         if (!call->IsTailCallViaHelper())
@@ -1671,10 +1667,21 @@ void Lowering::LowerCall(GenTree* node)
             }
         }
 
-        ContainCheckRange(resultRange);
-        BlockRange().InsertBefore(insertionPoint, std::move(resultRange));
+        ContainCheckRange(controlExprRange);
+        BlockRange().InsertBefore(insertionPoint, std::move(controlExprRange));
 
-        call->gtControlExpr = result;
+        call->gtControlExpr = controlExpr;
+    }
+    if (call->IsFastTailCall())
+    {
+        // Lower fast tail call can introduce new temps to set up args correctly for Callee.
+        // This involves patching LCL_VAR and LCL_VAR_ADDR nodes holding Caller stack args
+        // and replacing them with a new temp. Control expr also can contain nodes that need
+        // to be patched.
+        // Therefore lower fast tail call must be done after controlExpr is inserted into LIR.
+        // There is one side effect which is flipping the order of PME and control expression
+        // since LowerFastTailCall calls InsertPInvokeMethodEpilog.
+        LowerFastTailCall(call);
     }
 
     if (comp->opts.IsJit64Compat())
