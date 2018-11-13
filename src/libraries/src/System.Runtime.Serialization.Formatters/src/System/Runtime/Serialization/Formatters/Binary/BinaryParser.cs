@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Runtime.Serialization.Formatters.Binary
@@ -257,8 +258,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private static DateTime FromBinaryRaw(long dateData)
         {
+            // Use DateTime's public constructor to validate the input, but we
+            // can't return that result as it strips off the kind. To address
+            // that, store the value directly into a DateTime via an unsafe cast.
+            // See BinaryFormatterWriter.WriteDateTime for details.
             const long TicksMask = 0x3FFFFFFFFFFFFFFF;
-            return new DateTime(dateData & TicksMask);
+            new DateTime(dateData & TicksMask);
+            return MemoryMarshal.Cast<long, DateTime>(MemoryMarshal.CreateReadOnlySpan(ref dateData, 1))[0];
         }
 
         internal ushort ReadUInt16() => _dataReader.ReadUInt16();
