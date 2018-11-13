@@ -38,7 +38,7 @@ namespace Internal.Cryptography.Pal
 
             CRYPTOAPI_BLOB dataBlob;
             int cbData = 0;
-            bool deleteKeyContainer = Interop.crypt32.CertGetCertificateContextProperty(safeCertContextHandle, CertContextPropId.CERT_DELETE_KEYSET_PROP_ID, out dataBlob, ref cbData);
+            bool deleteKeyContainer = Interop.crypt32.CertGetCertificateContextProperty(safeCertContextHandle, CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, out dataBlob, ref cbData);
             return new CertificatePal(safeCertContextHandle, deleteKeyContainer);
         }
 
