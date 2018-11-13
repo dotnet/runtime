@@ -252,8 +252,8 @@ if exist "%LLVM_BUILD_DIR%\build.ninja" (
     popd
 )
 
-if exist "%LLVM_BUILD_DIR%\llvm.sln" (
-    "%MSBUILD%" "%LLVM_BUILD_DIR%\llvm.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Install /v:m /nologo
+if exist "%LLVM_BUILD_DIR%\install.vcxproj" (
+    "%MSBUILD%" "%LLVM_BUILD_DIR%\install.vcxproj" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /v:m /nologo
 )
 
 if not exist "%LLVM_INSTALL_DIR%\bin\opt.exe" (
