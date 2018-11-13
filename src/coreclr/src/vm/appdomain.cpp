@@ -116,6 +116,9 @@ SVAL_IMPL(BOOL, SystemDomain, s_fForceDebug);
 SVAL_IMPL(BOOL, SystemDomain, s_fForceProfiling);
 SVAL_IMPL(BOOL, SystemDomain, s_fForceInstrument);
 
+// The one and only AppDomain
+AppDomain* AppDomain::m_pTheAppDomain = NULL;
+
 #ifndef DACCESS_COMPILE
 
 // Base Domain Statics
@@ -2071,8 +2074,8 @@ void SystemDomain::Attach()
     // We need to initialize the memory pools etc. for the system domain.
     m_pSystemDomain->BaseDomain::Init(); // Setup the memory heaps
 
-    // Create the default domain
-    m_pSystemDomain->CreateDefaultDomain();
+    // Create the one and only app domain
+    AppDomain::Create();
     SharedDomain::Attach();
 
     // Each domain gets its own ReJitManager, and ReJitManager has its own static
@@ -2113,8 +2116,9 @@ void SystemDomain::DetachEnd()
     {
         GCX_PREEMP();
         m_pSystemDomain->ClearFusionContext();
-        if (m_pSystemDomain->m_pDefaultDomain)
-            m_pSystemDomain->m_pDefaultDomain->ClearFusionContext();
+        AppDomain* pAppDomain = GetAppDomain();
+        if (pAppDomain)
+            pAppDomain->ClearFusionContext();
     }
 }
 
@@ -3575,7 +3579,7 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
 extern CompilationDomain * theDomain;
 #endif
 
-void SystemDomain::CreateDefaultDomain()
+void AppDomain::Create()
 {
     STANDARD_VM_CONTRACT;
 
@@ -3585,25 +3589,25 @@ void SystemDomain::CreateDefaultDomain()
     AppDomainRefHolder pDomain(new AppDomain());
 #endif
 
-    SystemDomain::LockHolder lh;
     pDomain->Init();
 
     // need to make this assignment here since we'll be releasing
     // the lock before calling AddDomain. So any other thread
     // grabbing this lock after we release it will find that
     // the COM Domain has already been created
-    m_pDefaultDomain = pDomain;
     _ASSERTE (pDomain->GetId().m_dwId == DefaultADID);
 
     // allocate a Virtual Call Stub Manager for the default domain
-    m_pDefaultDomain->InitVSD();
+    pDomain->InitVSD();
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain.SuppressRelease();
 
+    m_pTheAppDomain = pDomain;
+
     LOG((LF_CLASSLOADER | LF_CORDB,
          LL_INFO10,
-         "Created default domain at %p\n", m_pDefaultDomain));
+         "Created the app domain at %p\n", m_pTheAppDomain));
 }
 
 #ifdef DEBUGGING_SUPPORTED
@@ -3957,7 +3961,6 @@ void AppDomain::Init()
     CONTRACTL
     {
         STANDARD_VM_CHECK;
-        PRECONDITION(SystemDomain::IsUnderDomainLock());
     }
     CONTRACTL_END;
 
@@ -9618,9 +9621,9 @@ SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         m_pSystemAssembly->EnumMemoryRegions(flags);
     }
-    if (m_pDefaultDomain.IsValid())
+    if (AppDomain::GetCurrentDomain())
     {
-        m_pDefaultDomain->EnumMemoryRegions(flags, true);
+        AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }
 
     m_appDomainIndexList.EnumMem();
