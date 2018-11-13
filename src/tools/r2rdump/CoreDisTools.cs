@@ -91,6 +91,11 @@ namespace R2RDump
         private readonly R2RReader _reader;
 
         /// <summary>
+        /// Dump options
+        /// </summary>
+        private readonly DumpOptions _options;
+
+        /// <summary>
         /// COM interface to the native disassembler in the CoreDisTools.dll library.
         /// </summary>
         private readonly IntPtr _disasm;
@@ -99,9 +104,10 @@ namespace R2RDump
         /// Store the R2R reader and construct the disassembler for the appropriate architecture.
         /// </summary>
         /// <param name="reader"></param>
-        public Disassembler(R2RReader reader)
+        public Disassembler(R2RReader reader, DumpOptions options)
         {
             _reader = reader;
+            _options = options;
             _disasm = CoreDisTools.GetDisasm(_reader.Machine);
         }
 
@@ -135,6 +141,32 @@ namespace R2RDump
             int instrSize = CoreDisTools.GetInstruction(_disasm, rtf, imageOffset, rtfOffset, _reader.Image, out instruction);
             instruction = instruction.Replace('\t', ' ');
 
+            if (_options.Naked)
+            {
+                StringBuilder nakedInstruction = new StringBuilder();
+                foreach (string line in instruction.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    int colon = line.IndexOf(':');
+                    if (colon >= 0)
+                    {
+                        colon += 2;
+                        while (colon + 3 <= line.Length &&
+                            IsXDigit(line[colon]) &&
+                            IsXDigit(line[colon + 1]) &&
+                            line[colon + 2] == ' ')
+                        {
+                            colon += 3;
+                        }
+                        nakedInstruction.AppendLine(new string(' ', 32) + line.Substring(colon).TrimStart());
+                    }
+                    else
+                    {
+                        nakedInstruction.AppendLine(line);
+                    }
+                }
+                instruction = nakedInstruction.ToString();
+            }
+
             switch (_reader.Machine)
             {
                 case Machine.Amd64:
@@ -161,6 +193,11 @@ namespace R2RDump
             return instrSize;
         }
 
+        private static bool IsXDigit(char c)
+        {
+            return Char.IsDigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+        }
+
         const string RelIPTag = "[rip ";
 
         /// <summary>
@@ -182,9 +219,24 @@ namespace R2RDump
                 int newline = instruction.LastIndexOf('\n');
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
-                translated.AppendFormat("[0x{0:x4}]", target);
+                if (_options.Naked)
+                {
+                    String targetName;
+                    if (_reader.ImportCellNames.TryGetValue(target, out targetName))
+                    {
+                        translated.AppendFormat("[{0}]", targetName);
+                    }
+                    else
+                    {
+                        translated.AppendFormat("[0x{0:x4}]", target);
+                    }
+                }
+                else
+                {
+                    translated.AppendFormat("[0x{0:x4}]", target);
 
-                AppendImportCellName(translated, target);
+                    AppendImportCellName(translated, target);
+                }
 
                 translated.Append(instruction, rightBracketPlusOne, newline - rightBracketPlusOne);
 
@@ -216,9 +268,24 @@ namespace R2RDump
 
                 StringBuilder translated = new StringBuilder();
                 translated.Append(instruction, 0, leftBracket);
-                translated.AppendFormat("[0x{0:x4}]", target);
+                if (_options.Naked)
+                {
+                    String targetName;
+                    if (_reader.ImportCellNames.TryGetValue(target, out targetName))
+                    {
+                        translated.AppendFormat("[{0}]", targetName);
+                    }
+                    else
+                    {
+                        translated.AppendFormat("[0x{0:x4}]", target);
+                    }
+                }
+                else
+                {
+                    translated.AppendFormat("[0x{0:x4}]", target);
 
-                AppendImportCellName(translated, target);
+                    AppendImportCellName(translated, target);
+                }
 
                 translated.Append(instruction, rightBracketPlusOne, instruction.Length - rightBracketPlusOne);
                 instruction = translated.ToString();
@@ -239,6 +306,11 @@ namespace R2RDump
         /// <param name="instruction">Textual representation of the instruction</param>
         private void ProbeCommonIntelQuirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
         {
+            if (_options.Naked)
+            {
+                // Don't relocate relative offsets in naked mode
+                return;
+            }
             if (instrSize == 2 && IsIntelJumpInstructionWithByteOffset(imageOffset + rtfOffset))
             {
                 sbyte offset = (sbyte)_reader.Image[imageOffset + rtfOffset + 1];

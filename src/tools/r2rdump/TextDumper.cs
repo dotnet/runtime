@@ -17,11 +17,14 @@ namespace R2RDump
 
         internal override void Begin()
         {
-            _writer.WriteLine($"Filename: {_r2r.Filename}");
-            _writer.WriteLine($"OS: {_r2r.OS}");
-            _writer.WriteLine($"Machine: {_r2r.Machine}");
-            _writer.WriteLine($"ImageBase: 0x{_r2r.ImageBase:X8}");
-            SkipLine();
+            if (!_options.Normalize)
+            {
+                _writer.WriteLine($"Filename: {_r2r.Filename}");
+                _writer.WriteLine($"OS: {_r2r.OS}");
+                _writer.WriteLine($"Machine: {_r2r.Machine}");
+                _writer.WriteLine($"ImageBase: 0x{_r2r.ImageBase:X8}");
+                SkipLine();
+            }
         }
 
         internal override void End()
@@ -94,6 +97,15 @@ namespace R2RDump
             }
         }
 
+        internal override void DumpEntryPoints()
+        {
+            WriteDivider($@"R2R Entry Points");
+            foreach (R2RMethod method in NormalizedMethods())
+            {
+                _writer.WriteLine(method.SignatureString);
+            }
+        }
+
         internal override void DumpAllMethods()
         {
             WriteDivider("R2R Methods");
@@ -111,7 +123,7 @@ namespace R2RDump
         internal override void DumpMethod(R2RMethod method, XmlNode parentNode = null)
         {
             WriteSubDivider();
-            _writer.WriteLine(method.ToString());
+            method.WriteTo(_writer, _options);
 
             if (_options.GC && method.GcInfo != null)
             {
@@ -247,10 +259,13 @@ namespace R2RDump
             switch (section.Type)
             {
                 case R2RSection.SectionType.READYTORUN_SECTION_AVAILABLE_TYPES:
-                    uint availableTypesSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
-                    NativeParser availableTypesParser = new NativeParser(_r2r.Image, availableTypesSectionOffset);
-                    NativeHashtable availableTypes = new NativeHashtable(_r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
-                    _writer.WriteLine(availableTypes.ToString());
+                    if (!_options.Naked)
+                    {
+                        uint availableTypesSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
+                        NativeParser availableTypesParser = new NativeParser(_r2r.Image, availableTypesSectionOffset);
+                        NativeHashtable availableTypes = new NativeHashtable(_r2r.Image, availableTypesParser, (uint)(availableTypesSectionOffset + section.Size));
+                        _writer.WriteLine(availableTypes.ToString());
+                    }
 
                     foreach (string name in _r2r.AvailableTypes)
                     {
@@ -258,15 +273,21 @@ namespace R2RDump
                     }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_METHODDEF_ENTRYPOINTS:
-                    NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
-                    _writer.Write(methodEntryPoints.ToString());
+                    if (!_options.Naked)
+                    {
+                        NativeArray methodEntryPoints = new NativeArray(_r2r.Image, (uint)_r2r.GetOffset(section.RelativeVirtualAddress));
+                        _writer.Write(methodEntryPoints.ToString());
+                    }
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS:
-                    uint instanceSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
-                    NativeParser instanceParser = new NativeParser(_r2r.Image, instanceSectionOffset);
-                    NativeHashtable instMethodEntryPoints = new NativeHashtable(_r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
-                    _writer.Write(instMethodEntryPoints.ToString());
-                    _writer.WriteLine();
+                    if (!_options.Naked)
+                    {
+                        uint instanceSectionOffset = (uint)_r2r.GetOffset(section.RelativeVirtualAddress);
+                        NativeParser instanceParser = new NativeParser(_r2r.Image, instanceSectionOffset);
+                        NativeHashtable instMethodEntryPoints = new NativeHashtable(_r2r.Image, instanceParser, (uint)(instanceSectionOffset + section.Size));
+                        _writer.Write(instMethodEntryPoints.ToString());
+                        _writer.WriteLine();
+                    }
                     foreach (InstanceMethod instanceMethod in _r2r.InstanceMethods)
                     {
                         _writer.WriteLine($@"0x{instanceMethod.Bucket:X2} -> {instanceMethod.Method.SignatureString}");
@@ -297,34 +318,58 @@ namespace R2RDump
                     _writer.WriteLine(_r2r.CompilerIdentifier);
                     break;
                 case R2RSection.SectionType.READYTORUN_SECTION_IMPORT_SECTIONS:
-                    foreach (R2RImportSection importSection in _r2r.ImportSections)
+                    if (_options.Naked)
                     {
-                        _writer.Write(importSection.ToString());
-                        if (_options.Raw && importSection.Entries.Count != 0)
+                        DumpNakedImportSections();
+                    }
+                    else
+                    {
+                        foreach (R2RImportSection importSection in _r2r.ImportSections)
                         {
-                            if (importSection.SectionRVA != 0)
+                            _writer.Write(importSection.ToString());
+                            if (_options.Raw && importSection.Entries.Count != 0)
                             {
-                                _writer.WriteLine("Section Bytes:");
-                                DumpBytes(importSection.SectionRVA, (uint)importSection.SectionSize);
+                                if (importSection.SectionRVA != 0)
+                                {
+                                    _writer.WriteLine("Section Bytes:");
+                                    DumpBytes(importSection.SectionRVA, (uint)importSection.SectionSize);
+                                }
+                                if (importSection.SignatureRVA != 0)
+                                {
+                                    _writer.WriteLine("Signature Bytes:");
+                                    DumpBytes(importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int));
+                                }
+                                if (importSection.AuxiliaryDataRVA != 0 && importSection.AuxiliaryData != null)
+                                {
+                                    _writer.WriteLine("AuxiliaryData Bytes:");
+                                    DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size);
+                                }
                             }
-                            if (importSection.SignatureRVA != 0)
+                            foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
                             {
-                                _writer.WriteLine("Signature Bytes:");
-                                DumpBytes(importSection.SignatureRVA, (uint)importSection.Entries.Count * sizeof(int));
+                                _writer.WriteLine(entry.ToString());
                             }
-                            if (importSection.AuxiliaryDataRVA != 0 && importSection.AuxiliaryData != null)
-                            {
-                                _writer.WriteLine("AuxiliaryData Bytes:");
-                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size);
-                            }
+                            _writer.WriteLine();
                         }
-                        foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
-                        {
-                            _writer.WriteLine(entry.ToString());
-                        }
-                        _writer.WriteLine();
                     }
                     break;
+            }
+        }
+
+        private void DumpNakedImportSections()
+        {
+            List<string> importSignatures = new List<string>();
+            foreach (R2RImportSection importSection in _r2r.ImportSections)
+            {
+                foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
+                {
+                    importSignatures.Add(entry.Signature);
+                }
+            }
+            importSignatures.Sort();
+            foreach (string sig in importSignatures)
+            {
+                _writer.WriteLine(sig);
             }
         }
 
