@@ -298,6 +298,10 @@
     <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssembly.cs" />
     <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction.cs" />
     <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
+    <Compile Include="References\AssemblyOnlyUsedByUsingWithCsc.cs" />
+    <Compile Include="References\AssemblyOnlyUsedByUsingWithMcs.cs" />
+    <Compile Include="References\Dependencies\AssemblyOnlyUsedByUsing_Copied.cs" />
+    <Compile Include="References\Dependencies\AssemblyOnlyUsedByUsing_Lib.cs" />
     <Compile Include="References\Individual\CanSkipUnresolved.cs" />
     <Compile Include="References\Individual\Dependencies\CanSkipUnresolved_Library.cs" />
     <Compile Include="References\Dependencies\UserAssembliesAreLinkedByDefault_Library1.cs" />
