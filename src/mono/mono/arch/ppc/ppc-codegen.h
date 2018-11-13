@@ -137,7 +137,7 @@ enum {
 
 /* Macros to load/store pointer sized quantities */
 
-#if defined(__mono_ppc64__) && !defined(__mono_ilp32__)
+#if defined(__mono_ppc64__) && !defined(MONO_ARCH_ILP32)
 
 #define ppc_ldptr(c,D,d,A)         ppc_ld   ((c), (D), (d), (A))
 #define ppc_ldptr_update(c,D,d,A)  ppc_ldu  ((c), (D), (d), (A))

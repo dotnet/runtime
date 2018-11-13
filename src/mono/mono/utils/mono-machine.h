@@ -21,9 +21,9 @@
 #include <glib.h>
 
 // __ILP32__ means integer, long, and pointers are 32bits, and nothing about registers.
-// __mono_ilp32__ means integer, long, and pointers are 32bits, and 64bit registers.
+// MONO_ARCH_ILP32 means integer, long, and pointers are 32bits, and 64bit registers.
 // This is for example x32, arm6432, mipsn32, Alpha/NT.
-#ifdef __mono_ilp32__
+#ifdef MONO_ARCH_ILP32
 typedef gint64 host_mgreg_t;
 typedef guint64 host_umgreg_t;
 #else

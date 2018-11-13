@@ -3961,7 +3961,7 @@ case "$host" in
 		TARGET=AMD64;
 		arch_target=amd64;
 		if test "x$ac_cv_sizeof_void_p" = "x4"; then
-			AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
+			AC_DEFINE(MONO_ARCH_ILP32, 1, [64 bit mode with 4 byte longs and pointers])
 			sizeof_register=8
 		fi
 		case $host_os in
@@ -4153,7 +4153,7 @@ if test "x$host" != "x$target"; then
 		# It would be better to just use TARGET_POWERPC64, but lots of code already
 		# uses this define
 		AC_DEFINE(__mono_ppc64__, 1, [...])
-		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
+		AC_DEFINE(MONO_ARCH_ILP32, 1, [64 bit mode with 4 byte longs and pointers])
 		sizeof_register=8
 		target_byte_order=G_BIG_ENDIAN
 		;;

@@ -2003,7 +2003,7 @@ arg_storage_to_load_membase (ArgStorage storage)
 {
 	switch (storage) {
 	case ArgInIReg:
-#if defined(__mono_ilp32__)
+#if defined(MONO_ARCH_ILP32)
 		return OP_LOADI8_MEMBASE;
 #else
 		return OP_LOAD_MEMBASE;
@@ -2756,13 +2756,13 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
-#if !defined(__mono_ilp32__)
+#if !defined(MONO_ARCH_ILP32)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 #endif
 			p->regs [slot] = PTR_TO_GREG(*(arg));
 			break;
-#if defined(__mono_ilp32__)
+#if defined(MONO_ARCH_ILP32)
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
 			p->regs [slot] = *(guint64*)(arg);
@@ -3383,7 +3383,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg2 = temp->dreg;
 			}
 			break;
-#ifndef __mono_ilp32__
+#ifndef MONO_ARCH_ILP32
 		case OP_LOAD_MEMBASE:
 #endif
 		case OP_LOADI8_MEMBASE:
@@ -3397,7 +3397,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->inst_indexreg = temp->dreg;
 			}
 			break;
-#ifndef __mono_ilp32__
+#ifndef MONO_ARCH_ILP32
 		case OP_STORE_MEMBASE_IMM:
 #endif
 		case OP_STOREI8_MEMBASE_IMM:
@@ -4000,7 +4000,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_membase_imm (code, ins->inst_destbasereg, ins->inst_offset, ins->inst_imm, 8);
 			break;
 		case OP_LOAD_MEM:
-#ifdef __mono_ilp32__
+#ifdef MONO_ARCH_ILP32
 			/* In ILP32, pointers are 4 bytes, so separate these */
 			/* cases, use literal 8 below where we really want 8 */
 			amd64_mov_reg_imm (code, ins->dreg, ins->inst_imm);
@@ -4102,7 +4102,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_alu_reg_reg (code, X86_CMP, ins->sreg1, ins->sreg2);
 			break;
 		case OP_COMPARE_IMM:
-#if defined(__mono_ilp32__)
+#if defined(MONO_ARCH_ILP32)
                         /* Comparison of pointer immediates should be 4 bytes to avoid sign-extend problems */
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_alu_reg_imm_size (code, X86_CMP, ins->sreg1, ins->inst_imm, 4);

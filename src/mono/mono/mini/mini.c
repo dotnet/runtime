@@ -3060,7 +3060,7 @@ init_backend (MonoBackend *backend)
 #else
 	backend->monitor_enter_adjustment = MONO_ARCH_MONITOR_ENTER_ADJUSTMENT;
 #endif
-#if defined(__mono_ilp32__)
+#if defined(MONO_ARCH_ILP32)
 	backend->ilp32 = 1;
 #endif
 #ifdef MONO_ARCH_NEED_DIV_CHECK

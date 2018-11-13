@@ -2069,7 +2069,7 @@ static int
 normalize_opcode (int opcode)
 {
 	switch (opcode) {
-#ifndef __mono_ilp32__
+#ifndef MONO_ARCH_ILP32
 	case MONO_PPC_32_64_CASE (OP_LOADI4_MEMBASE, OP_LOADI8_MEMBASE):
 		return OP_LOAD_MEMBASE;
 	case MONO_PPC_32_64_CASE (OP_LOADI4_MEMINDEX, OP_LOADI8_MEMINDEX):
@@ -3273,7 +3273,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
-#ifdef __mono_ilp32__
+#ifdef MONO_ARCH_ILP32
 		case OP_STOREI8_MEMBASE_REG:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_str (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
@@ -3378,7 +3378,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
-#ifdef __mono_ilp32__
+#ifdef MONO_ARCH_ILP32
 		case OP_LOADI8_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
 				ppc_ldr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
