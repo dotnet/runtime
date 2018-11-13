@@ -4,16 +4,16 @@
 using System;
 using System.IO;
 
-namespace Microsoft.Extensions.Logging.Console.Internal
+namespace Microsoft.Extensions.Logging.Console
 {
-    public class WindowsLogConsole : IConsole
+    internal class WindowsLogConsole : IConsole
     {
         private readonly TextWriter _textWriter;
 
         /// <inheritdoc />
         public WindowsLogConsole(bool stdErr = false)
         {
-            _textWriter = stdErr? System.Console.Error : System.Console.Out;
+            _textWriter = stdErr ? System.Console.Error : System.Console.Out;
         }
 
         private bool SetColor(ConsoleColor? background, ConsoleColor? foreground)

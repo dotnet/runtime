@@ -3,9 +3,9 @@
 
 using System;
 
-namespace Microsoft.Extensions.Logging.Console.Internal
+namespace Microsoft.Extensions.Logging.Console
 {
-    public interface IConsole
+    internal interface IConsole
     {
         void Write(string message, ConsoleColor? background, ConsoleColor? foreground);
         void WriteLine(string message, ConsoleColor? background, ConsoleColor? foreground);

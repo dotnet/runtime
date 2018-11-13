@@ -1,15 +1,15 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Text;
 
-namespace Microsoft.Extensions.Logging.Console.Internal
+namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
     /// For non-Windows platform consoles which understand the ANSI escape code sequences to represent color
     /// </summary>
-    public class AnsiLogConsole : IConsole
+    internal class AnsiLogConsole : IConsole
     {
         private readonly StringBuilder _outputBuilder;
         private readonly IAnsiSystemConsole _systemConsole;
