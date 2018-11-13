@@ -244,6 +244,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							case nameof (RemovedResourceInAssemblyAttribute):
 								VerifyRemovedResourceInAssembly (checkAttrInAssembly);
 								break;
+							case nameof (KeptReferencesInAssemblyAttribute):
+								VerifyKeptReferencesInAssembly (checkAttrInAssembly);
+								break;
 							default:
 								UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 								break;
@@ -504,6 +507,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 
 			return false;
+		}
+
+		void VerifyKeptReferencesInAssembly (CustomAttribute inAssemblyAttribute)
+		{
+			var assembly = ResolveLinkedAssembly (inAssemblyAttribute.ConstructorArguments [0].Value.ToString ());
+			var expectedReferenceNames = ((CustomAttributeArgument []) inAssemblyAttribute.ConstructorArguments [1].Value).Select (attr => (string) attr.Value);
+			Assert.That (assembly.MainModule.AssemblyReferences.Select (asm => asm.Name), Is.EquivalentTo (expectedReferenceNames));
 		}
 
 		void VerifyKeptResourceInAssembly (CustomAttribute inAssemblyAttribute)
