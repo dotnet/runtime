@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
@@ -51,49 +52,20 @@ namespace System.Net.WebSockets.Tests
                 bool secure = echoUri.Scheme == "wss";
                 client.Connect(echoUri.Host, secure ? 443 : 80);
 
-                Stream stream = new NetworkStream(client, ownsSocket: false);
-                if (secure)
+                using (Stream stream = await CreateWebSocketStream(echoUri, client, secure))
+                using (WebSocket socket = CreateFromStream(stream, false, null, TimeSpan.FromSeconds(10)))
                 {
-                    SslStream ssl = new SslStream(stream, leaveInnerStreamOpen: true, delegate { return true; });
-                    await ssl.AuthenticateAsClientAsync(echoUri.Host);
-                    stream = ssl;
-                }
+                    Assert.NotNull(socket);
+                    Assert.Equal(WebSocketState.Open, socket.State);
 
-                using (stream)
-                {
-                    using (var writer = new StreamWriter(stream, Encoding.ASCII, bufferSize: 1, leaveOpen: true))
-                    {
-                        await writer.WriteAsync($"GET {echoUri.PathAndQuery} HTTP/1.1\r\n");
-                        await writer.WriteAsync($"Host: {echoUri.Host}\r\n");
-                        await writer.WriteAsync($"Upgrade: websocket\r\n");
-                        await writer.WriteAsync($"Connection: Upgrade\r\n");
-                        await writer.WriteAsync($"Sec-WebSocket-Version: 13\r\n");
-                        await writer.WriteAsync($"Sec-WebSocket-Key: {Convert.ToBase64String(Guid.NewGuid().ToByteArray())}\r\n");
-                        await writer.WriteAsync($"\r\n");
-                    }
+                    string expected = "Hello World!";
+                    ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(expected));
+                    await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
 
-                    using (var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, bufferSize: 1, leaveOpen: true))
-                    {
-                        string statusLine = await reader.ReadLineAsync();
-                        Assert.NotEmpty(statusLine);
-                        Assert.Equal("HTTP/1.1 101 Switching Protocols", statusLine);
-                        while (!string.IsNullOrEmpty(await reader.ReadLineAsync())) ;
-                    }
+                    buffer = new ArraySegment<byte>(new byte[buffer.Count]);
+                    await socket.ReceiveAsync(buffer, CancellationToken.None);
 
-                    using (WebSocket socket = CreateFromStream(stream, false, null, TimeSpan.FromSeconds(10)))
-                    {
-                        Assert.NotNull(socket);
-                        Assert.Equal(WebSocketState.Open, socket.State);
-
-                        string expected = "Hello World!";
-                        ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(expected));
-                        await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
-
-                        buffer = new ArraySegment<byte>(new byte[buffer.Count]);
-                        await socket.ReceiveAsync(buffer, CancellationToken.None);
-
-                        Assert.Equal(expected, Encoding.UTF8.GetString(buffer.Array));
-                    }
+                    Assert.Equal(expected, Encoding.UTF8.GetString(buffer.Array));
                 }
             }
         }
@@ -178,7 +150,117 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
+        [OuterLoop] // Connects to external server.
+        [Theory]
+        [MemberData(nameof(EchoServersAndBoolean))]
+        public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncClosesStream(Uri echoUri, bool explicitCloseAsync)
+        {
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                bool secure = echoUri.Scheme == "wss";
+                client.Connect(echoUri.Host, secure ? 443 : 80);
+
+                using (Stream stream = await CreateWebSocketStream(echoUri, client, secure))
+                {
+                    using (WebSocket socket = CreateFromStream(stream, false, null, TimeSpan.FromSeconds(10)))
+                    {
+                        Assert.NotNull(socket);
+                        Assert.Equal(WebSocketState.Open, socket.State);
+
+                        Assert.True(stream.CanRead);
+                        Assert.True(stream.CanWrite);
+
+                        if (explicitCloseAsync) // make sure CloseAsync ends up disposing the stream
+                        {
+                            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None);
+                            Assert.False(stream.CanRead);
+                            Assert.False(stream.CanWrite);
+                        }
+                    }
+
+                    Assert.False(stream.CanRead);
+                    Assert.False(stream.CanWrite);
+                }
+            }
+        }
+
+        [OuterLoop] // Connects to external server.
+        [Theory]
+        [MemberData(nameof(EchoServersAndBoolean))]
+        public async Task WebSocketProtocol_CreateFromConnectedStream_CloseAsyncAfterCloseReceivedClosesStream(Uri echoUri, bool useCloseOutputAsync)
+        {
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                bool secure = echoUri.Scheme == "wss";
+                client.Connect(echoUri.Host, secure ? 443 : 80);
+
+                using (Stream stream = await CreateWebSocketStream(echoUri, client, secure))
+                using (WebSocket socket = CreateFromStream(stream, false, null, TimeSpan.FromSeconds(10)))
+                {
+                    Assert.NotNull(socket);
+                    Assert.Equal(WebSocketState.Open, socket.State);
+
+                    // Ask server to send us a close
+                    await socket.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(".close")), WebSocketMessageType.Text, true, default);
+
+                    // Verify received server-initiated close message.
+                    WebSocketReceiveResult recvResult = await socket.ReceiveAsync(new ArraySegment<byte>(new byte[256]), default);
+                    Assert.Equal(WebSocketCloseStatus.NormalClosure, recvResult.CloseStatus);
+                    Assert.Equal(WebSocketCloseStatus.NormalClosure, socket.CloseStatus);
+                    Assert.Equal(WebSocketState.CloseReceived, socket.State);
+
+                    Assert.True(stream.CanRead);
+                    Assert.True(stream.CanWrite);
+
+                    await (useCloseOutputAsync ?
+                        socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None) :
+                        socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None));
+
+                    Assert.False(stream.CanRead);
+                    Assert.False(stream.CanWrite);
+                }
+            }
+        }
+
+        private static async Task<Stream> CreateWebSocketStream(Uri echoUri, Socket client, bool secure)
+        {
+            Stream stream = new NetworkStream(client, ownsSocket: false);
+
+            if (secure)
+            {
+                var ssl = new SslStream(stream, leaveInnerStreamOpen: true, delegate { return true; });
+                await ssl.AuthenticateAsClientAsync(echoUri.Host);
+                stream = ssl;
+            }
+
+            using (var writer = new StreamWriter(stream, Encoding.ASCII, bufferSize: 1, leaveOpen: true))
+            {
+                await writer.WriteAsync($"GET {echoUri.PathAndQuery} HTTP/1.1\r\n");
+                await writer.WriteAsync($"Host: {echoUri.Host}\r\n");
+                await writer.WriteAsync($"Upgrade: websocket\r\n");
+                await writer.WriteAsync($"Connection: Upgrade\r\n");
+                await writer.WriteAsync($"Sec-WebSocket-Version: 13\r\n");
+                await writer.WriteAsync($"Sec-WebSocket-Key: {Convert.ToBase64String(Guid.NewGuid().ToByteArray())}\r\n");
+                await writer.WriteAsync($"\r\n");
+            }
+
+            using (var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, bufferSize: 1, leaveOpen: true))
+            {
+                string statusLine = await reader.ReadLineAsync();
+                Assert.NotEmpty(statusLine);
+                Assert.Equal("HTTP/1.1 101 Switching Protocols", statusLine);
+                while (!string.IsNullOrEmpty(await reader.ReadLineAsync()));
+            }
+
+            return stream;
+        }
+
         public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.WebSockets.EchoServers;
+        public static readonly object[][] EchoServersAndBoolean = EchoServers.SelectMany(o => new object[][]
+        {
+            new object[] { o[0], false },
+            new object[] { o[0], true }
+        }).ToArray();
 
         protected sealed class UnreadableStream : Stream
         {
