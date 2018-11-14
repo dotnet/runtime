@@ -8175,7 +8175,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     comp->m_inlineStrategy->DumpCsvData(fp);
 
-    fprintf(fp, "%Iu,", comp->info.compNativeCodeSize);
+    fprintf(fp, "%u,", comp->info.compNativeCodeSize);
     fprintf(fp, "%Iu,", comp->compInfoBlkSize);
     fprintf(fp, "%Iu,", comp->compGetArenaAllocator()->getTotalBytesAllocated());
     fprintf(fp, "%I64u,", m_info.m_totalCycles);
