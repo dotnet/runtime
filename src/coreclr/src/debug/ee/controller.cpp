@@ -9007,7 +9007,7 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
     if (hitDataBp)
     {
         CONTEXT contextToAdjust;
-        bool adjustedContext = false;
+        BOOL adjustedContext = FALSE;
         memcpy(&contextToAdjust, pContext, sizeof(CONTEXT));
         adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);        
         if (adjustedContext)
