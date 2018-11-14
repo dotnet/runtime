@@ -3652,6 +3652,9 @@
   <data name="Argument_MethodRedefined" xml:space="preserve">
     <value>Method has been already defined.</value>
   </data>
+  <data name="Argument_CannotExtractScalar" xml:space="preserve">
+    <value>Cannot extract a Unicode scalar value from the specified index in the input.</value>
+  </data>
   <data name="Argument_CannotParsePrecision" xml:space="preserve">
     <value>Characters following the format symbol must be a number of {0} or less.</value>
   </data>
