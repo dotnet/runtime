@@ -4968,7 +4968,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, unsig
 	}
 
 	/* Check if we use excessive stack space */
-	if (td->max_stack_height > header->max_stack * 3)
+	if (td->max_stack_height > header->max_stack * 3 && header->max_stack > 16)
 		g_warning ("Excessive stack space usage for method %s, %d/%d", method->name, td->max_stack_height, header->max_stack);
 
 	int code_len;
@@ -5165,7 +5165,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	}
 
 	g_assert ((signature->param_count + signature->hasthis) < 1000);
-	g_assert (header->max_stack < 10000);
 	/* intern the strings in the method. */
 	ip = header->code;
 	end = ip + header->code_size;
