@@ -9,16 +9,16 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>00c6269cccac9368c02bc7da887c9b4d4ed81cb3</CoreFxCurrentRef>
-    <CoreClrCurrentRef>00c6269cccac9368c02bc7da887c9b4d4ed81cb3</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>00c6269cccac9368c02bc7da887c9b4d4ed81cb3</CoreSetupCurrentRef>
+    <CoreFxCurrentRef>f1fd01350b856734ee61cf49807c45a12d05ed98</CoreFxCurrentRef>
+    <CoreClrCurrentRef>f1fd01350b856734ee61cf49807c45a12d05ed98</CoreClrCurrentRef>
+    <CoreSetupCurrentRef>f1fd01350b856734ee61cf49807c45a12d05ed98</CoreSetupCurrentRef>
     <ExternalCurrentRef>96dc7805f5df4a70a55783964ce69dcd91bfca80</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>00c6269cccac9368c02bc7da887c9b4d4ed81cb3</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>00c6269cccac9368c02bc7da887c9b4d4ed81cb3</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>f1fd01350b856734ee61cf49807c45a12d05ed98</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>f1fd01350b856734ee61cf49807c45a12d05ed98</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>9004703a1923e5c5582ceb8d79712df777412446</StandardCurrentRef>
     <BuildToolsCurrentRef>2f9cc14c9526d0f6c292b6ce49f57f4a59c05774</BuildToolsCurrentRef>
-    <CoreFxOptimizationDataCurrentRef>00c6269cccac9368c02bc7da887c9b4d4ed81cb3</CoreFxOptimizationDataCurrentRef>
+    <CoreFxOptimizationDataCurrentRef>f1fd01350b856734ee61cf49807c45a12d05ed98</CoreFxOptimizationDataCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -32,16 +32,16 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview.18563.1</CoreFxExpectedPrerelease>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18563.1</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27113-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview-27113-05</MicrosoftNetCoreIlasmPackageVersion>
-    <ProjectNTfsExpectedPrerelease>beta-27113-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27113-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27113-00</ProjectNTfsTestILCPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27112-04</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27112-04</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27112-04</MicrosoftNETCoreAppPackageVersion>
+    <CoreFxExpectedPrerelease>preview.18563.5</CoreFxExpectedPrerelease>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18563.5</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27113-06</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview-27113-06</MicrosoftNetCoreIlasmPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27114-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27114-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27114-00</ProjectNTfsTestILCPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview-27114-01</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview-27114-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27114-01</MicrosoftNETCoreAppPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -59,7 +59,7 @@
     <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
     <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
     <OptimizationDataVersion>2.0.0-rc-61101-17</OptimizationDataVersion>
-    <CoreFxOptimizationDataVersion>99.99.99-master-20181113-0044</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>99.99.99-master-20181114-0045</CoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Package versions used as toolsets -->
