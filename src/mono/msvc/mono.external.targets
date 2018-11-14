@@ -10,6 +10,9 @@
             <ConfPropertyFoundMatch ParameterType="System.String" Output="true" />
         </ParameterGroup>
         <Task>
+            <Using Namespace="System" />
+            <Using Namespace="System.Text.RegularExpressions" />
+            <Using Namespace="System.IO" />
             <Code Type="Fragment" Language="cs">
             <![CDATA[
 
@@ -17,30 +20,33 @@
                 ConfPropertyValue = "";
                 ConfPropertyFoundMatch = "false";
 
-                var regex = new System.Text.RegularExpressions.Regex (ConfRegEx);
-                using (StreamReader reader = new StreamReader(ConfFile))
+                if (File.Exists (ConfFile))
                 {
-                    string line;
-                    while ((line = reader.ReadLine ()) != null)
+                    var regex = new Regex (ConfRegEx);
+                    using (StreamReader reader = new StreamReader(ConfFile))
                     {
-                        var match = regex.Match (line);
-                        if (match != null && match.Success)
+                        string line;
+                        while ((line = reader.ReadLine ()) != null)
                         {
-                            if (match.Groups != null && match.Groups.Count == 1)
+                            var match = regex.Match (line);
+                            if (match != null && match.Success)
                             {
-                                var propertyLine = match.Groups[0].ToString ();
-                                if (!String.IsNullOrEmpty (propertyLine))
+                                if (match.Groups != null && match.Groups.Count == 1)
                                 {
-                                    var propertyLineItems = propertyLine.Split ('=');
-                                    if (propertyLineItems != null && propertyLineItems.Length == 2)
+                                    var propertyLine = match.Groups[0].ToString ();
+                                    if (!String.IsNullOrEmpty (propertyLine))
                                     {
-                                        ConfPropertyName = propertyLineItems[0].Trim ();
-                                        ConfPropertyValue = propertyLineItems[1].Trim ();
+                                        var propertyLineItems = propertyLine.Split ('=');
+                                        if (propertyLineItems != null && propertyLineItems.Length == 2)
+                                        {
+                                            ConfPropertyName = propertyLineItems[0].Trim ();
+                                            ConfPropertyValue = propertyLineItems[1].Trim ();
+                                        }
                                     }
                                 }
+                                ConfPropertyFoundMatch = "true";
+                                break;
                             }
-                            ConfPropertyFoundMatch = "true";
-                            break;
                         }
                     }
                 }
