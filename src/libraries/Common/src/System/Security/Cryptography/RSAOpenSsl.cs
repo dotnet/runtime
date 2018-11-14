@@ -71,15 +71,12 @@ namespace System.Security.Cryptography
         {
             get
             {
-                // OpenSSL seems to accept answers of all sizes.
-                // Choosing a non-multiple of 8 would make some calculations misalign
-                // (like assertions of (output.Length * 8) == KeySize).
-                // Choosing a number too small is insecure.
-                // Choosing a number too large will cause GenerateKey to take much
-                // longer than anyone would be willing to wait.
+                // While OpenSSL 1.0.x and 1.1.0 will generate RSA-384 keys,
+                // OpenSSL 1.1.1 has lifted the minimum to RSA-512.
                 //
-                // So, copying the values from RSACryptoServiceProvider
-                return new[] { new KeySizes(384, 16384, 8) };
+                // Rather than make the matrix even more complicated,
+                // the low limit now is 512 on all OpenSSL-based RSA.
+                return new[] { new KeySizes(512, 16384, 8) };
             }
         }
 
