@@ -225,7 +225,7 @@ namespace System.IO
 
             Init(originalPath: destDirName,
                  fullPath: destinationWithSeparator,
-                 fileName: _name,
+                 fileName: null,
                  isNormalized: true);
 
             // Flush any cached information about the directory.
