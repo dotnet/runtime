@@ -8,6 +8,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\ApplicationIdentity.cs" />
+    <Compile Include="System\Configuration\ConfigurationPermission.cs" />
+    <Compile Include="System\Configuration\ConfigurationPermissionAttribute.cs" />
     <Compile Include="System\Data\Common\DBDataPermission.cs" />
     <Compile Include="System\Data\Common\DBDataPermissionAttribute.cs" />
     <Compile Include="System\Data\Odbc\OdbcPermission.cs" />
@@ -59,6 +61,9 @@
     <Compile Include="System\Security\ISecurityPolicyEncodable.cs" />
     <Compile Include="System\Security\IStackWalk.cs" />
     <Compile Include="System\Security\NamedPermissionSet.cs" />
+    <Compile Include="System\Security\Permissions\DataProtectionPermission.cs" />
+    <Compile Include="System\Security\Permissions\DataProtectionPermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\DataProtectionPermissionFlags.cs" />
     <Compile Include="System\Security\Permissions\EnvironmentPermission.cs" />
     <Compile Include="System\Security\Permissions\EnvironmentPermissionAccess.cs" />
     <Compile Include="System\Security\Permissions\EnvironmentPermissionAttribute.cs" />
@@ -171,16 +176,23 @@
     <Compile Include="System\ServiceProcess\ServiceControllerPermissionEntryCollection.cs" />
     <Compile Include="System\Transactions\DistributedTransactionPermission.cs" />
     <Compile Include="System\Transactions\DistributedTransactionPermissionAttribute.cs" />
+    <Compile Include="System\Web\AspNetHostingPermission.cs" />
+    <Compile Include="System\Web\AspNetHostingPermissionAttribute.cs" />
+    <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.OracleClient" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Net" />
-    <Reference Include="System.Transactions" />
+    <Reference Include="System.Security" />
     <Reference Include="System.ServiceProcess" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
