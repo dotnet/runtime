@@ -119,6 +119,11 @@
     <Compile Include="System\DirectoryServices\ActiveDirectory\UnsafeNativeMethods.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\Utils.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\WellKnownDN.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermission.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAccess.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionAttribute.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntry.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionEntryCollection.cs" />
     <Compile Include="Interop\AdsAuthentication.cs" />
     <Compile Include="Interop\AdsOptions.cs" />
     <Compile Include="Interop\AdsPropertyOperation.cs" />

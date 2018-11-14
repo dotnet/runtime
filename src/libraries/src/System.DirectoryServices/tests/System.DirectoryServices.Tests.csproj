@@ -8,6 +8,7 @@
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\DomainControllerTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryServicesPermissionTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronizationTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryVirtualListViewContextTests.cs" />
