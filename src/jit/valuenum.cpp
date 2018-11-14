@@ -3087,28 +3087,72 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     }
 }
 
+//-----------------------------------------------------------------------------------
+// CanEvalForConstantArgs:  - Given a VNFunc value return true when we can perform
+//                            compile-time constant folding for the operation.
+//
+// Arguments:
+//    vnf        - The VNFunc that we are inquiring about
+//
+// Return Value:
+//               - Returns true if we can always compute a constant result
+//                 when given all constant args.
+//
+// Notes:        - When this method returns true, the logic to compute the
+//                 compile-time result must also be added to EvalOP,
+//                 EvalOpspecialized or EvalComparison
+//
 bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
 {
     if (vnf < VNF_Boundary)
     {
-        // We'll refine this as we get counterexamples.  But to
-        // a first approximation, VNFuncs that are genTreeOps should
-        // be things we can evaluate.
         genTreeOps oper = genTreeOps(vnf);
-        // Some exceptions...
+
         switch (oper)
         {
-            case GT_MKREFANY: // We can't evaluate these.
-            case GT_RETFILT:
-            case GT_LIST:
-            case GT_FIELD_LIST:
-            case GT_ARR_LENGTH:
-                return false;
-            case GT_MULHI:
-                assert(false && "Unexpected GT_MULHI node encountered before lowering");
-                return false;
-            default:
+            // Only return true for the node kinds that have code that supports
+            // them in EvalOP, EvalOpspecialized or EvalComparison
+
+            // Unary Ops
+            case GT_NEG:
+            case GT_NOT:
+            case GT_BSWAP16:
+            case GT_BSWAP:
+
+            // Binary Ops
+            case GT_ADD:
+            case GT_SUB:
+            case GT_MUL:
+            case GT_DIV:
+            case GT_MOD:
+
+            case GT_UDIV:
+            case GT_UMOD:
+
+            case GT_AND:
+            case GT_OR:
+            case GT_XOR:
+
+            case GT_LSH:
+            case GT_RSH:
+            case GT_RSZ:
+            case GT_ROL:
+            case GT_ROR:
+
+            // Equality Ops
+            case GT_EQ:
+            case GT_NE:
+            case GT_GT:
+            case GT_GE:
+            case GT_LT:
+            case GT_LE:
+
+                // We can evaluate these.
                 return true;
+
+            default:
+                // We can not evaluate these.
+                return false;
         }
     }
     else
@@ -3116,12 +3160,19 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
         // some VNF_ that we can evaluate
         switch (vnf)
         {
-            case VNF_Cast: // We can evaluate these.
+            // Consider adding:
+            //   case VNF_GT_UN:
+            //   case VNF_GE_UN:
+            //   case VNF_LT_UN:
+            //   case VNF_LE_UN:
+            //
+
+            case VNF_Cast:
+                // We can evaluate these.
                 return true;
 
-            case VNF_ObjGetType:
-                return false;
             default:
+                // We can not evaluate these.
                 return false;
         }
     }
