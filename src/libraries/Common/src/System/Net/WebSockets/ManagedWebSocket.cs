@@ -328,17 +328,24 @@ namespace System.Net.WebSockets
         public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
         {
             WebSocketValidate.ValidateCloseStatus(closeStatus, statusDescription);
+            return CloseOutputAsyncCore(closeStatus, statusDescription, cancellationToken);
+        }
 
-            try
-            {
-                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
-            }
-            catch (Exception exc)
-            {
-                return Task.FromException(exc);
-            }
+        private async Task CloseOutputAsyncCore(WebSocketCloseStatus closeStatus, string statusDescription, CancellationToken cancellationToken)
+        {
+            WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
 
-            return SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken);
+            await SendCloseFrameAsync(closeStatus, statusDescription, cancellationToken).ConfigureAwait(false);
+
+            // If we already received a close frame, since we've now also sent one, we're now closed.
+            lock (StateUpdateLock)
+            {
+                Debug.Assert(_sentCloseFrame);
+                if (_receivedCloseFrame)
+                {
+                    DisposeCore();
+                }
+            }
         }
 
         public override void Abort()
@@ -1102,10 +1109,6 @@ namespace System.Net.WebSockets
             lock (StateUpdateLock)
             {
                 DisposeCore();
-                if (_state < WebSocketState.Closed)
-                {
-                    _state = WebSocketState.Closed;
-                }
             }
         }
 
