@@ -159,8 +159,9 @@ namespace System.Security.Cryptography
             set { _impl.KeySize = value; }
         }
 
-        public override KeySizes[] LegalKeySizes => 
-            _impl.LegalKeySizes; // Csp Windows and RSAOpenSsl are the same (384, 16384, 8)
+        // RSAOpenSsl is (512, 16384, 8), RSASecurityTransforms is (1024, 16384, 8)
+        // Either way the minimum is lifted off of CAPI's 384, due to platform constraints.
+        public override KeySizes[] LegalKeySizes => _impl.LegalKeySizes;
 
         // PersistKeyInCsp has no effect in Unix
         public bool PersistKeyInCsp { get; set; }
