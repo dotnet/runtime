@@ -739,19 +739,6 @@
     ]
   },
   {
-    "Name": "System.Drawing.Design.Primitives",
-    "Description": "Contains classes that extend design-time user interface (UI) logic and drawing.",
-    "CommonTypes": [
-      "System.Drawing.Design.IPropertyValueUIService",
-      "System.Drawing.Design.PropertyValueUIHandler",
-      "System.Drawing.Design.PropertyValueUIItem",
-      "System.Drawing.Design.PropertyValueUIItemInvokeHandler",
-      "System.Drawing.Design.PaintValueEventArgs",
-      "System.Drawing.Design.UITypeEditor",
-      "System.Drawing.Design.UITypeEditorEditStyle"
-    ]
-  },
-  {
     "Name": "System.Dynamic.Runtime",
     "Description": "Provides classes and interfaces that support the Dynamic Language Runtime (DLR).",
     "CommonTypes": [
