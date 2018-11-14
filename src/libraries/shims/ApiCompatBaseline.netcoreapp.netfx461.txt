@@ -81,17 +81,11 @@ TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configu
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElement' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Authentication.ExtendedProtection.Configuration.ServiceNameElementCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Claims.DynamicRoleClaimProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Web.AspNetHostingPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Web.AspNetHostingPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Web.AspNetHostingPermissionLevel' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ComponentModel.DataAnnotations:
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.AssociatedMetadataTypeTypeDescriptionProvider' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.BindableTypeAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.MetadataTypeAttribute' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ComponentModel.DataAnnotations.ScaffoldTableAttribute' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Configuration:
-TypesMustExist : Type 'System.Configuration.ConfigurationPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Configuration.ConfigurationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Core:
 TypesMustExist : Type 'System.Diagnostics.EventSchemaTraceListener' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Diagnostics.TraceLogRetentionOption' does not exist in the implementation but it does exist in the contract.
@@ -288,11 +282,6 @@ TypesMustExist : Type 'System.Data.SqlTypes.TypeVarCharSchemaImporterExtension' 
 TypesMustExist : Type 'System.Data.SqlTypes.TypeVarImageSchemaImporterExtension' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.XmlDataDocument' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.DirectoryServices:
-TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAccess' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionEntry' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.DirectoryServices.DSDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.DirectoryServices.Protocols:
 MembersMustExist : Member 'System.DirectoryServices.Protocols.AddRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
@@ -427,9 +416,6 @@ MembersMustExist : Member 'System.Security.Cryptography.Pkcs.EnvelopedCms.Encryp
 TypesMustExist : Type 'System.Security.Cryptography.Pkcs.KeyAgreeKeyChoice' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509Certificate2UI' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.X509Certificates.X509SelectionFlag' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermission' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Permissions.DataProtectionPermissionFlags' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ServiceModel.Web:
 TypesMustExist : Type 'System.ServiceModel.WebHttpBinding' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ServiceModel.WebHttpSecurity' does not exist in the implementation but it does exist in the contract.

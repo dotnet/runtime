@@ -244,6 +244,52 @@ namespace System.DirectoryServices {
     public string ExtendedErrorMessage { get { return default(string); } }
     public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
   }
+  public sealed partial class DirectoryServicesPermission : System.Security.Permissions.ResourcePermissionBase
+  {
+      public DirectoryServicesPermission() { }
+      public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string path) { }
+      public DirectoryServicesPermission(System.DirectoryServices.DirectoryServicesPermissionEntry[] permissionAccessEntries) { }
+      public DirectoryServicesPermission(System.Security.Permissions.PermissionState state) { }
+      public System.DirectoryServices.DirectoryServicesPermissionEntryCollection PermissionEntries { get { throw null; } }
+  }
+  [System.FlagsAttribute]
+  public enum DirectoryServicesPermissionAccess
+  {
+      Browse = 2,
+      None = 0,
+      Write = 6,
+  }
+  [System.AttributeUsageAttribute((System.AttributeTargets)621, AllowMultiple = true, Inherited = false)]
+  public partial class DirectoryServicesPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+  {
+      public DirectoryServicesPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+      public string Path { get { throw null; } set { } }
+      public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } set { } }
+      public override System.Security.IPermission CreatePermission() { throw null; }
+  }
+  public partial class DirectoryServicesPermissionEntry
+  {
+      public DirectoryServicesPermissionEntry(System.DirectoryServices.DirectoryServicesPermissionAccess permissionAccess, string path) { }
+      public string Path { get { throw null; } }
+      public System.DirectoryServices.DirectoryServicesPermissionAccess PermissionAccess { get { throw null; } }
+  }
+  public partial class DirectoryServicesPermissionEntryCollection : System.Collections.CollectionBase
+  {
+      internal DirectoryServicesPermissionEntryCollection() { }
+      public System.DirectoryServices.DirectoryServicesPermissionEntry this[int index] { get { throw null; } set { } }
+      public int Add(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
+      public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntryCollection value) { }
+      public void AddRange(System.DirectoryServices.DirectoryServicesPermissionEntry[] value) { }
+      public bool Contains(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
+      public void CopyTo(System.DirectoryServices.DirectoryServicesPermissionEntry[] array, int index) { }
+      public int IndexOf(System.DirectoryServices.DirectoryServicesPermissionEntry value) { throw null; }
+      public void Insert(int index, System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
+      protected override void OnClear() { }
+      protected override void OnInsert(int index, object value) { }
+      protected override void OnRemove(int index, object value) { }
+      protected override void OnSet(int index, object oldValue, object newValue) { }
+      public void Remove(System.DirectoryServices.DirectoryServicesPermissionEntry value) { }
+  }
   public partial class DirectorySynchronization {
     public DirectorySynchronization() { }
     public DirectorySynchronization(byte[] cookie) { }
