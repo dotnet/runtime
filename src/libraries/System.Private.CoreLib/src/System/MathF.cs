@@ -206,15 +206,18 @@ namespace System
             }
 
             // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
-            // * Doing (x < y) first could get transformed into (y >= x) by the JIT which would
+            // * Doing (ax < ay) first could get transformed into (ay >= ax) by the JIT which would
             //   then return an incorrect value
 
-            if (x == y)
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if (ax == ay)
             {
                 return float.IsNegative(x) ? y : x;
             }
 
-            return (Abs(x) < Abs(y)) ? y : x;
+            return (ax < ay) ? y : x;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -241,15 +244,18 @@ namespace System
             }
 
             // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
-            // * Doing (x < y) first could get transformed into (y >= x) by the JIT which would
+            // * Doing (ax < ay) first could get transformed into (ay >= ax) by the JIT which would
             //   then return an incorrect value
 
-            if (x == y)
+            float ax = Abs(x);
+            float ay = Abs(y);
+
+            if (ax == ay)
             {
                 return float.IsNegative(x) ? x : y;
             }
 
-            return (Abs(x) < Abs(y)) ? x : y;
+            return (ax < ay) ? x : y;
         }
 
         [Intrinsic]
