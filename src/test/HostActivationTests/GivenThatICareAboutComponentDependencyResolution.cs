@@ -178,8 +178,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .Execute()
                 .StdErrAfter("corehost_resolve_component_dependencies = {")
                 .Should().Pass()
-                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Fail[0x8000808C]")
-                .And.HaveStdErrContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) was not found:");
+                .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining(
+                    $"corehost_resolve_component_dependencies assemblies:[" +
+                    $"{componentFixture.TestProject.AppDll}{Path.PathSeparator}" +
+                    $"{Path.Combine(componentFixture.TestProject.OutputDirectory, "Newtonsoft.Json.dll")}{Path.PathSeparator}]");
         }
 
         [Fact]

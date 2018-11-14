@@ -411,7 +411,8 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
  */
 bool deps_resolver_t::resolve_tpa_list(
         pal::string_t* output,
-        std::unordered_set<pal::string_t>* breadcrumb)
+        std::unordered_set<pal::string_t>* breadcrumb,
+        bool ignore_missing_assemblies)
 {
     const std::vector<deps_entry_t> empty(0);
     name_to_resolved_asset_map_t items;
@@ -444,7 +445,7 @@ bool deps_resolver_t::resolve_tpa_list(
                 return true;
             }
 
-            return report_missing_assembly_in_manifest(entry);
+            return report_missing_assembly_in_manifest(entry, ignore_missing_assemblies);
         }
         else
         {
@@ -827,17 +828,16 @@ bool deps_resolver_t::resolve_probe_dirs(
 // Entrypoint to resolve TPA, native and resources path ordering to pass to CoreCLR.
 //
 //  Parameters:
-//     app_root          - The application local directory
-//     package_dir       - The directory path to where packages are restored
-//     package_cache_dir - The directory path to secondary cache for packages
-//     clr_dir           - The directory where the host loads the CLR
 //     probe_paths       - Pointer to struct containing fields that will contain
 //                         resolved path ordering.
+//     breadcrumb        - set of breadcrumb paths - or null if no breadcrumbs should be collected.
+//     ignore_missing_assemblies - if set to true, resolving TPA assemblies will not fail if an assembly can't be found on disk
+//                                 instead such entry will simply be ignored.
 //
 //
-bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unordered_set<pal::string_t>* breadcrumb)
+bool deps_resolver_t::resolve_probe_paths(probe_paths_t* probe_paths, std::unordered_set<pal::string_t>* breadcrumb, bool ignore_missing_assemblies)
 {
-    if (!resolve_tpa_list(&probe_paths->tpa, breadcrumb))
+    if (!resolve_tpa_list(&probe_paths->tpa, breadcrumb, ignore_missing_assemblies))
     {
         return false;
     }
