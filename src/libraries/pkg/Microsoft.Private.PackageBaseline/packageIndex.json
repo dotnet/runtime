@@ -3092,6 +3092,9 @@
       }
     },
     "System.Numerics.Tensors": {
+      "StableVersions": [
+        "0.1.0",
+      ],
       "InboxOn": {},
       "AssemblyVersionInPackageVersion": {
         "0.1.0.0": "0.1.0"
