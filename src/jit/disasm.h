@@ -169,7 +169,12 @@ private:
     template <typename T>
     T dspAddr(T addr)
     {
+// silence warning of cast to greater size. It is easier to silence than construct code the compiler is happy with, and
+// it is safe in this case
+#pragma warning(push)
+#pragma warning(disable : 4312)
         return (addr == 0) ? 0 : (disDiffable ? T(0xD1FFAB1E) : addr);
+#pragma warning(pop)
     }
 
     /* Callbacks from msdis */

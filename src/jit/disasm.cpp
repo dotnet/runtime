@@ -185,7 +185,7 @@ size_t DisAssembler::disCchAddrMember(
                 const char* name           = disGetMethodFullName(absoluteTarget);
                 if (name != nullptr)
                 {
-                    swprintf_s(wz, cchMax, W("%p %S"), dspAddr(absoluteTarget), name);
+                    swprintf_s(wz, cchMax, W("%zx %S"), dspAddr(absoluteTarget), name);
                     retval = 1;
                     break;
                 }
@@ -270,7 +270,7 @@ size_t DisAssembler::disCchAddrMember(
                 const char* name           = disGetMethodFullName(absoluteTarget);
                 if (name != nullptr)
                 {
-                    swprintf_s(wz, cchMax, W("%p %S"), dspAddr(absoluteTarget), name);
+                    swprintf_s(wz, cchMax, W("%zx %S"), dspAddr(absoluteTarget), name);
                     retval = 1;
                     break;
                 }
@@ -428,7 +428,7 @@ size_t DisAssembler::disCchFixupMember(
                 const char* name = disGetMethodFullName(targetAddr);
                 if (name != nullptr)
                 {
-                    swprintf_s(wz, cchMax, W("%p %S"), dspAddr(targetAddr), name);
+                    swprintf_s(wz, cchMax, W("%zx %S"), dspAddr(targetAddr), name);
                     break;
                 }
             }
@@ -533,7 +533,7 @@ size_t DisAssembler::disCchFixupMember(
                 const char* name = disGetMethodFullName(targetAddr);
                 if (name != nullptr)
                 {
-                    swprintf_s(wz, cchMax, W("%p %S"), dspAddr(targetAddr), name);
+                    swprintf_s(wz, cchMax, W("%zx %S"), dspAddr(targetAddr), name);
                     break;
                 }
             }
