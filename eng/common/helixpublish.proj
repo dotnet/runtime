@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="WorkItem">
+    <HelixWorkItem Include="WorkItem" Condition="'$(WorkItemDirectory)' != ''">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand)</Command>
     </HelixWorkItem>
