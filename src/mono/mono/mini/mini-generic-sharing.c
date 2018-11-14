@@ -1311,7 +1311,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	}
 	/* Rgctx arg */
 	mono_mb_emit_ldarg (mb, sig->param_count + (sig->hasthis ? 1 : 0));
-	mono_mb_emit_icon (mb, sizeof (gpointer));
+	mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P);
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	/* Method to call */
@@ -1424,7 +1424,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	}
 	/* Rgctx arg */
 	mono_mb_emit_ldarg (mb, args_start + sig->param_count);
-	mono_mb_emit_icon (mb, sizeof (gpointer));
+	mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P);
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	/* Method to call */
@@ -1594,14 +1594,14 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		/* Collect arguments */
 		int args_var = mono_mb_add_local (mb, int_type);
 
-		mono_mb_emit_icon (mb, sizeof (gpointer) * sig->param_count);
+		mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P * sig->param_count);
 		mono_mb_emit_byte (mb, CEE_PREFIX1);
 		mono_mb_emit_byte (mb, CEE_LOCALLOC);
 		mono_mb_emit_stloc (mb, args_var);
 
 		for (i = 0; i < sig->param_count; i++) {
 			mono_mb_emit_ldloc (mb, args_var);
-			mono_mb_emit_icon (mb, sizeof (gpointer) * i);
+			mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P * i);
 			mono_mb_emit_byte (mb, CEE_ADD);
 			if (sig->params [i]->byref)
 				mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
@@ -1638,7 +1638,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	/* Extra arg */
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_GET_RGCTX_ARG);
-	mono_mb_emit_icon (mb, sizeof (gpointer));
+	mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P);
 	mono_mb_emit_byte (mb, CEE_ADD);
 	mono_mb_emit_byte (mb, CEE_LDIND_I);
 	/* Method to call */

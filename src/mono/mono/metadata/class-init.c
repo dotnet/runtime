@@ -1033,14 +1033,14 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->cast_class = mono_defaults.int16_class;
 		break;
 	case MONO_TYPE_U4:
-#if SIZEOF_VOID_P == 4
+#if TARGET_SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #endif
 		klass->cast_class = mono_defaults.int32_class;
 		break;
 	case MONO_TYPE_U8:
-#if SIZEOF_VOID_P == 8
+#if TARGET_SIZEOF_VOID_P == 8
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 #endif

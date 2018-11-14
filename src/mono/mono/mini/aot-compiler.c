@@ -6392,7 +6392,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	patches = g_ptr_array_new ();
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next)
 		g_ptr_array_add (patches, patch_info);
-	g_ptr_array_sort (patches, compare_patches);
+	if (!acfg->aot_opts.llvm_only)
+		g_ptr_array_sort (patches, compare_patches);
 
 	/**********************/
 	/* Encode method info */
