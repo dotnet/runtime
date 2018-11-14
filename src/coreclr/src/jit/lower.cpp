@@ -336,15 +336,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 #endif
 
-#ifndef _TARGET_ARM_
-        // TODO-ARM-CQ: We should contain this as long as the offset fits.
+#ifndef _TARGET_ARMARCH_
+        // TODO-ARMARCH-CQ: We should contain this as long as the offset fits.
         case GT_OBJ:
             if (node->AsObj()->Addr()->OperIsLocalAddr())
             {
                 node->AsObj()->Addr()->SetContained();
             }
             break;
-#endif // !_TARGET_ARM_
+#endif // !_TARGET_ARMARCH_
 
         default:
             break;
