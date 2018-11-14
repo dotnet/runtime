@@ -138,7 +138,8 @@ public:
 
     bool resolve_probe_paths(
         probe_paths_t* probe_paths,
-        std::unordered_set<pal::string_t>* breadcrumb);
+        std::unordered_set<pal::string_t>* breadcrumb,
+        bool ignore_missing_assemblies = false);
 
     void init_known_entry_path(
         const deps_entry_t& entry,
@@ -186,7 +187,8 @@ private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
         pal::string_t* output,
-        std::unordered_set<pal::string_t>* breadcrumb);
+        std::unordered_set<pal::string_t>* breadcrumb,
+        bool ignore_missing_assemblies);
 
     // Resolve order for culture and native DLL lookup.
     bool resolve_probe_dirs(
