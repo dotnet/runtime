@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoTests
+    public partial class CompareInfoTests
     {
         [Theory]
         [InlineData("")]
@@ -49,11 +49,16 @@ namespace System.Globalization.Tests
             }
         }
 
+        public static object[] GetHashCodeTestData => new[]
+        {
+            new object[] { "abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true },
+            new object[] { "abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false },
+            new object[] { "abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true },
+            new object[] { "abc", CompareOptions.None, "abc", CompareOptions.None, true },
+        };
+
         [Theory]
-        [InlineData("abc", CompareOptions.OrdinalIgnoreCase, "ABC", CompareOptions.OrdinalIgnoreCase, true)]
-        [InlineData("abc", CompareOptions.Ordinal, "ABC", CompareOptions.Ordinal, false)]
-        [InlineData("abc", CompareOptions.Ordinal, "abc", CompareOptions.Ordinal, true)]
-        [InlineData("abc", CompareOptions.None, "abc", CompareOptions.None, true)]
+        [MemberData(nameof(GetHashCodeTestData))]
         public void GetHashCode(string source1, CompareOptions options1, string source2, CompareOptions options2, bool expected)
         {
             CompareInfo invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
