@@ -7334,6 +7334,46 @@ ves_icall_System_IO_get_temp_path (MonoError *error)
 	return mono_string_new_handle (mono_domain_get (), g_get_tmp_dir (), error);
 }
 
+#if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH)
+
+G_EXTERN_C gpointer CreateZStream (gint32 compress, MonoBoolean gzip, gpointer feeder, gpointer data);
+G_EXTERN_C gint32   CloseZStream (gpointer stream);
+G_EXTERN_C gint32   Flush (gpointer stream);
+G_EXTERN_C gint32   ReadZStream (gpointer stream, gpointer buffer, gint32 length);
+G_EXTERN_C gint32   WriteZStream (gpointer stream, gpointer buffer, gint32 length);
+
+gpointer
+ves_icall_System_IO_Compression_DeflateStreamNative_CreateZStream (gint32 compress, MonoBoolean gzip, gpointer feeder, gpointer data)
+{
+	return CreateZStream (compress, gzip, feeder, data);
+}
+
+gint32
+ves_icall_System_IO_Compression_DeflateStreamNative_CloseZStream (gpointer stream)
+{
+	return CloseZStream (stream);
+}
+
+gint32
+ves_icall_System_IO_Compression_DeflateStreamNative_Flush (gpointer stream)
+{
+	return Flush (stream);
+}
+
+gint32
+ves_icall_System_IO_Compression_DeflateStreamNative_ReadZStream (gpointer stream, gpointer buffer, gint32 length)
+{
+	return ReadZStream (stream, buffer, length);
+}
+
+gint32
+ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer stream, gpointer buffer, gint32 length)
+{
+	return WriteZStream (stream, buffer, length);
+}
+
+#endif
+
 #ifndef PLATFORM_NO_DRIVEINFO
 MonoBoolean
 ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (MonoString *path_name, guint64 *free_bytes_avail,
@@ -8774,6 +8814,32 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 {
 	return mono_cpu_count ();
 }
+
+#if defined(ENABLE_MONODROID)
+
+G_EXTERN_C gint32 CreateNLSocket (void);
+G_EXTERN_C gint32 ReadEvents (gpointer sock, gpointer buffer, gint32 count, gint32 size);
+G_EXTERN_C gint32 CloseNLSocket (gpointer sock);
+
+gint32
+ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CreateNLSocket (void)
+{
+	return CreateNLSocket ();
+}
+
+gint32
+ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_ReadEvents (gpointer sock, gpointer buffer, gint32 count, gint32 size)
+{
+	return ReadEvents (sock, buffer, count, size);
+}
+
+gint32
+ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpointer sock)
+{
+	return CloseNLSocket (sock);
+}
+
+#endif
 
 // Generate wrappers.
 

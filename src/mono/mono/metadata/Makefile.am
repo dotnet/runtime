@@ -90,7 +90,45 @@ if !ENABLE_ILGEN
 ilgen_libraries = libmono-ilgen.la
 endif
 
-noinst_LTLIBRARIES = libmonoruntime-config.la $(boehm_libraries) $(sgen_libraries)
+support_sources=empty.c
+
+if ENABLE_MONOTOUCH
+support_sources += ../../support/zlib-helper.c
+else
+if ENABLE_MONODROID
+support_sources += \
+	../../support/nl.c \
+	../../support/zlib-helper.c
+if HAVE_ZLIB
+# See libmonoruntime_support_la_LDFLAGS
+else
+support_sources += \
+	../../support/adler32.c \
+	../../support/compress.c \
+	../../support/crc32.c \
+	../../support/crc32.h \
+	../../support/deflate.c \
+	../../support/deflate.h \
+	../../support/infback.c \
+	../../support/inffast.c \
+	../../support/inffast.h \
+	../../support/inffixed.h \
+	../../support/inflate.c \
+	../../support/inflate.h \
+	../../support/inftrees.c \
+	../../support/inftrees.h \
+	../../support/trees.c \
+	../../support/trees.h \
+	../../support/uncompr.c \
+	../../support/zconf.h \
+	../../support/zlib.h \
+	../../support/zutil.c \
+	../../support/zutil.h
+endif
+endif
+endif
+
+noinst_LTLIBRARIES = libmonoruntime-config.la libmonoruntime-support.la $(boehm_libraries) $(sgen_libraries)
 
 lib_LTLIBRARIES = $(icall_table_libraries) $(ilgen_libraries)
 
@@ -113,6 +151,16 @@ libmonoruntime_config_la_SOURCES = \
 	mono-config-dirs.h		\
 	mono-config-dirs.c
 libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" -DMONO_RELOC_LIBDIR=\"../$(reloc_libdir)\" @CXX_ADD_CFLAGS@
+
+#
+# This library is only used to compile the required support/ sources. We can't use them directly in platform_sources
+# because they aren't C++ compatible.
+#
+libmonoruntime_support_la_SOURCES = $(support_sources)
+libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
+if HAVE_ZLIB
+libmonoruntime_support_la_LDFLAGS = -lz
+endif
 
 #
 # This library contains the icall tables if the runtime was configured with --disable-icall-tables
@@ -379,12 +427,12 @@ CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
 libmonoruntime_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(null_gc_sources) $(boehm_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntime_la_CFLAGS = $(BOEHM_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntime_la_LIBADD = libmonoruntime-config.la
+libmonoruntime_la_LIBADD = libmonoruntime-config.la libmonoruntime-support.la
 
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(icall_tables_sources) $(ilgen_sources) $(gc_dependent_sources) $(sgen_sources)
 # Add CXX_ADD_CFLAGS per-library until/unless https://github.com/dotnet/corefx/pull/31342.
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
-libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la
+libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la libmonoruntime-support.la
 
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
