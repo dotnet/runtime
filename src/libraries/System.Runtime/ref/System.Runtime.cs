@@ -2347,6 +2347,8 @@ namespace System
         public System.CharEnumerator GetEnumerator() { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetHashCode(System.StringComparison comparisonType) { throw null; }
+        public static int GetHashCode(ReadOnlySpan<char> value) { throw null; }
+        public static int GetHashCode(ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         public int IndexOf(char value) { throw null; }
         public int IndexOf(char value, int startIndex) { throw null; }
@@ -4265,6 +4267,7 @@ namespace System.Globalization
         public static System.Globalization.CompareInfo GetCompareInfo(string name, System.Reflection.Assembly assembly) { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual int GetHashCode(string source, System.Globalization.CompareOptions options) { throw null; }
+        public int GetHashCode(ReadOnlySpan<char> source, System.Globalization.CompareOptions options) { throw null; }
         public virtual System.Globalization.SortKey GetSortKey(string source) { throw null; }
         public virtual System.Globalization.SortKey GetSortKey(string source, System.Globalization.CompareOptions options) { throw null; }
         public virtual int IndexOf(string source, char value) { throw null; }
