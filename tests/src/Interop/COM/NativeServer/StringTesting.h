@@ -225,8 +225,11 @@ public: // IStringTesting
         /*[in]*/ LPWSTR a,
         /*[out]*/ LPWSTR b)
     {
-        ReverseInplace(::wcslen(b), b);
-        return S_OK;
+        // Not possible to test from native server
+        // since the out string is a pointer to the
+        // actual CLR string and modifying it breaks
+        // the immutability invariant of CLR strings.
+        return S_FALSE;
     }
     DEF_FUNC(Reverse_SB_LPWStr)(
         /*[in,out]*/ LPWSTR a,
