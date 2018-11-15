@@ -14,6 +14,8 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CertificateAssetDownloader
     {
+        private static readonly Func<string, byte[]> s_downloadBytes = CreateDownloadBytesFunc();
+
         internal static X509Certificate2 DownloadCertificate(string uri, ref TimeSpan remainingDownloadTime)
         {
             byte[] data = DownloadAsset(uri, ref remainingDownloadTime);
@@ -53,7 +55,7 @@ namespace Internal.Cryptography.Pal
             using (SafeBioHandle bio = Interop.Crypto.CreateMemoryBio())
             {
                 Interop.Crypto.CheckValidOpenSslHandle(bio);
-                
+
                 Interop.Crypto.BioWrite(bio, data, data.Length);
 
                 handle = Interop.Crypto.PemReadBioX509Crl(bio);
@@ -73,37 +75,71 @@ namespace Internal.Cryptography.Pal
 
         private static byte[] DownloadAsset(string uri, ref TimeSpan remainingDownloadTime)
         {
-            if (remainingDownloadTime > TimeSpan.Zero)
+            if (s_downloadBytes != null && remainingDownloadTime > TimeSpan.Zero)
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                object httpClient = null;
                 try
                 {
-                    // Use reflection to access System.Net.Http:
-                    // Since System.Net.Http.dll explicitly depends on System.Security.Cryptography.X509Certificates.dll,
-                    // the latter can't in turn have an explicit dependency on the former.
-                    Type httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                    if (httpClientType != null)
-                    {
-                        MethodInfo getByteArrayAsync = httpClientType.GetMethod("GetByteArrayAsync", new Type[] { typeof(string) });
-                        if (getByteArrayAsync != null)
-                        {
-                            httpClient = Activator.CreateInstance(httpClientType);
-                            return ((Task<byte[]>)getByteArrayAsync.Invoke(httpClient, new object[] { uri })).GetAwaiter().GetResult();
-                        }
-                    }
+                    return s_downloadBytes(uri);
                 }
                 catch { }
                 finally
                 {
-                    (httpClient as IDisposable)?.Dispose();
-
                     // TimeSpan.Zero isn't a worrisome value on the subtraction, it only means "no limit" on the original input.
                     remainingDownloadTime -= stopwatch.Elapsed;
                 }
             }
 
             return null;
+        }
+
+        private static Func<string, byte[]> CreateDownloadBytesFunc()
+        {
+            try
+            {
+                // Use reflection to access System.Net.Http:
+                // Since System.Net.Http.dll explicitly depends on System.Security.Cryptography.X509Certificates.dll,
+                // the latter can't in turn have an explicit dependency on the former.
+
+                Type socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                if (socketsHttpHandlerType == null || httpClientType == null)
+                {
+                    return null;
+                }
+
+                PropertyInfo pooledConnectionIdleTimeoutProp = socketsHttpHandlerType.GetProperty("PooledConnectionIdleTimeout");
+                MethodInfo getByteArrayAsyncMethod = httpClientType.GetMethod("GetByteArrayAsync", new Type[] { typeof(string) });
+                if (pooledConnectionIdleTimeoutProp == null || getByteArrayAsyncMethod == null)
+                {
+                    return null;
+                }
+
+                // Only keep idle connections around briefly, as a compromise between resource leakage and port exhaustion.
+                const int PooledConnectionIdleTimeoutSeconds = 15;
+
+                // Equivalent of:
+                // var socketsHttpHandler = new SocketsHttpHandler();
+                // var httpClient = new HttpClient(socketsHttpHandler);
+                // socketsHttpHandler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds);
+                // Func<string, Task<byte[]>> getByteArrayAsync = httpClient.GetByteArrayAsync;
+                object socketsHttpHandler = Activator.CreateInstance(socketsHttpHandlerType);
+                object httpClient = Activator.CreateInstance(httpClientType, new object[] { socketsHttpHandler });
+                pooledConnectionIdleTimeoutProp.SetValue(socketsHttpHandler, TimeSpan.FromSeconds(PooledConnectionIdleTimeoutSeconds));
+                var getByteArrayAsync = (Func<string, Task<byte[]>>)getByteArrayAsyncMethod.CreateDelegate(
+                    typeof(Func<string, Task<byte[]>>),
+                    httpClient);
+
+                // Return a delegate for getting the byte[] for a uri.
+                // This delegate references the HttpClient object and thus
+                // all accesses will be through that singleton.
+                return uri => getByteArrayAsync(uri).GetAwaiter().GetResult();
+            }
+            catch
+            {
+                // We shouldn't have any exceptions, but if we do, ignore them all.
+                return null;
+            }
         }
     }
 }
