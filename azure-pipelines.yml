@@ -3,7 +3,10 @@ resources:
   # shared library repository
   - repository: arcade
     type: github
-    endpoint: DotNet-Bot GitHub Connection
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      endpoint: DotNet-Bot GitHub Internal Connection
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      endpoint: DotNet-Bot GitHub Connection
     name: dotnet/arcade
     ref: refs/heads/master
 
