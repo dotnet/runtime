@@ -98,6 +98,7 @@ REM tieredcompilation is on by default now, but setting this environment variabl
 if /i "%1" == "tieredcompilation"     (set COMPLUS_TieredCompilation=1&shift&goto Arg_Loop)
 if /i "%1" == "gcname"                (set COMPlus_GCName=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "timeout"               (set __TestTimeout=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "altjitarch"            (set __AltJitArch=%2&shift&shift&goto Arg_Loop)
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"         (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
@@ -206,6 +207,10 @@ if defined __DoCrossgen (
 
 if defined __PrintLastResultsOnly (
     set __RuntestPyArgs=%__RuntestPyArgs% --analyze_results_only
+)
+
+if defined __AltJitArch (
+    set __RuntestPyArgs=%__RuntestPyArgs% -altjit_arch %__AltJitArch%
 )
 
 REM __ProjectDir is poorly named, it is actually <projectDir>/tests
