@@ -116,8 +116,8 @@ namespace System.Net.Sockets
 
             const uint OnOff = 1u;
             bool written =
-                BitConverter.TryWriteBytes(buffer.AsSpan(), OnOff) |
-                BitConverter.TryWriteBytes(buffer.AsSpan(sizeof(uint)), _timeMs) |
+                BitConverter.TryWriteBytes(buffer.AsSpan(), OnOff) &
+                BitConverter.TryWriteBytes(buffer.AsSpan(sizeof(uint)), _timeMs) &
                 BitConverter.TryWriteBytes(buffer.AsSpan(sizeof(uint) * 2), _intervalMs);
             Debug.Assert(written);
         }
