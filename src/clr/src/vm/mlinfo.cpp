@@ -2133,7 +2133,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             }
                             m_type = MARSHAL_TYPE_BSTR;
                             break;
-#ifdef FEATURE_COMINTEROP     
+
                         case NATIVE_TYPE_ANSIBSTR:
                             if (builder)
                             {
@@ -2142,7 +2142,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             }
                             m_type = MARSHAL_TYPE_ANSIBSTR;
                             break;
-                           
+                            
                         case NATIVE_TYPE_TBSTR:
                         {
                             if (builder)
@@ -2156,6 +2156,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                             break;
                         }
 
+#ifdef FEATURE_COMINTEROP
                         case NATIVE_TYPE_BYVALSTR:
                         {
                             if (builder)
