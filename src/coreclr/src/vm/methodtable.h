@@ -2200,8 +2200,8 @@ public:
     BOOL ImplementsInterface(MethodTable *pInterface);
     BOOL ImplementsEquivalentInterface(MethodTable *pInterface);
 
-    MethodDesc *GetMethodDescForInterfaceMethod(TypeHandle ownerType, MethodDesc *pInterfaceMD);
-    MethodDesc *GetMethodDescForInterfaceMethod(MethodDesc *pInterfaceMD); // You can only use this one for non-generic interfaces
+    MethodDesc *GetMethodDescForInterfaceMethod(TypeHandle ownerType, MethodDesc *pInterfaceMD, BOOL throwOnConflict);
+    MethodDesc *GetMethodDescForInterfaceMethod(MethodDesc *pInterfaceMD, BOOL throwOnConflict); // You can only use this one for non-generic interfaces
     
     //-------------------------------------------------------------------
     // INTERFACE MAP.  
@@ -2453,26 +2453,28 @@ public:
     BOOL FindDispatchImpl(
         UINT32         typeID, 
         UINT32         slotNumber, 
-        DispatchSlot * pImplSlot);
+        DispatchSlot * pImplSlot,
+        BOOL           throwOnConflict);
 
 
 #ifndef DACCESS_COMPILE
     BOOL FindDefaultInterfaceImplementation(
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
-        MethodDesc **ppDefaultMethod);
+        MethodDesc **ppDefaultMethod,
+        BOOL throwOnConflict);
 #endif // DACCESS_COMPILE
 
-    DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber);
+    DispatchSlot FindDispatchSlot(UINT32 typeID, UINT32 slotNumber, BOOL throwOnConflict);
 
-    DispatchSlot FindDispatchSlot(DispatchToken tok);
+    DispatchSlot FindDispatchSlot(DispatchToken tok, BOOL throwOnConflict);
 
     // You must use the second of these two if there is any chance the pMD is a method
     // on a generic interface such as IComparable<T> (which it normally can be).  The 
     // ownerType is used to provide an exact qualification in the case the pMD is
     // a shared method descriptor.
-    DispatchSlot FindDispatchSlotForInterfaceMD(MethodDesc *pMD);
-    DispatchSlot FindDispatchSlotForInterfaceMD(TypeHandle ownerType, MethodDesc *pMD);
+    DispatchSlot FindDispatchSlotForInterfaceMD(MethodDesc *pMD, BOOL throwOnConflict);
+    DispatchSlot FindDispatchSlotForInterfaceMD(TypeHandle ownerType, MethodDesc *pMD, BOOL throwOnConflict);
 
     MethodDesc *ReverseInterfaceMDLookup(UINT32 slotNumber);
 
