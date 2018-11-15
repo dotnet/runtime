@@ -7624,6 +7624,63 @@ namespace System.Text
         FormKC = 5,
         FormKD = 6,
     }
+    public readonly struct Rune : IComparable<Rune>, IEquatable<Rune>
+    {
+        private readonly int _dummyPrimitive;
+        public Rune(char ch) { throw null; }
+        public Rune(int value) { throw null; }
+        [CLSCompliant(false)]
+        public Rune(uint value) { throw null; }
+        public static bool operator ==(Rune left, Rune right) { throw null; }
+        public static bool operator !=(Rune left, Rune right) { throw null; }
+        public static bool operator <(Rune left, Rune right) { throw null; }
+        public static bool operator <=(Rune left, Rune right) { throw null; }
+        public static bool operator >(Rune left, Rune right) { throw null; }
+        public static bool operator >=(Rune left, Rune right) { throw null; }
+        public static explicit operator Rune(char ch) { throw null; }
+        [CLSCompliant(false)]
+        public static explicit operator Rune(uint value) { throw null; }
+        public static explicit operator Rune(int value) { throw null; }
+        public bool IsAscii { get { throw null; } }
+        public bool IsBmp { get { throw null; } }
+        public int Plane { get { throw null; } }
+        public static Rune ReplacementChar { get { throw null; } }
+        public int Utf16SequenceLength { get { throw null; } }
+        public int Utf8SequenceLength { get { throw null; } }
+        public int Value { get { throw null; } }
+        public int CompareTo(Rune other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(Rune other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static Rune GetRuneAt(string input, int index) { throw null; }
+        public static bool IsValid(int value) { throw null; }
+        [CLSCompliant(false)]
+        public static bool IsValid(uint value) { throw null; }
+        public override string ToString() { throw null; }
+        public static bool TryCreate(char ch, out Rune result) { throw null; }
+        public static bool TryCreate(int value, out Rune result) { throw null; }
+        [CLSCompliant(false)]
+        public static bool TryCreate(uint value, out Rune result) { throw null; }
+        public bool TryEncode(Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryGetRuneAt(string input, int index, out Rune value) { throw null; }
+        public static double GetNumericValue(Rune value) { throw null; }
+        public static System.Globalization.UnicodeCategory GetUnicodeCategory(Rune value) { throw null; }
+        public static bool IsControl(Rune value) { throw null; }
+        public static bool IsDigit(Rune value) { throw null; }
+        public static bool IsLetter(Rune value) { throw null; }
+        public static bool IsLetterOrDigit(Rune value) { throw null; }
+        public static bool IsLower(Rune value) { throw null; }
+        public static bool IsNumber(Rune value) { throw null; }
+        public static bool IsPunctuation(Rune value) { throw null; }
+        public static bool IsSeparator(Rune value) { throw null; }
+        public static bool IsSymbol(Rune value) { throw null; }
+        public static bool IsUpper(Rune value) { throw null; }
+        public static bool IsWhiteSpace(Rune value) { throw null; }
+        public static Rune ToLower(Rune value, System.Globalization.CultureInfo culture) { throw null; }
+        public static Rune ToLowerInvariant(Rune value) { throw null; }
+        public static Rune ToUpper(Rune value, System.Globalization.CultureInfo culture) { throw null; }
+        public static Rune ToUpperInvariant(Rune value) { throw null; }
+    }
     public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable
     {
         public StringBuilder() { }
