@@ -7797,7 +7797,7 @@ void CompTimeSummaryInfo::Print(FILE* f)
         {
             fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
                        "%3.1f%% of total.\n\n",
-                    m_total.m_parentPhaseEndSlop / 1000000.0, fslop_ms);
+                    m_filtered.m_parentPhaseEndSlop / 1000000.0, fslop_ms);
         }
     }
 
