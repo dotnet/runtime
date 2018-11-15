@@ -8,6 +8,7 @@
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
+    <Compile Include="Perf.BitArray.cs" />
     <Compile Include="Perf.Dictionary.cs" />
     <Compile Include="Perf.HashSet.cs" />
     <Compile Include="Perf.List.cs" />
