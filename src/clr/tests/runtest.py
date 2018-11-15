@@ -103,6 +103,7 @@ parser.add_argument("-product_location", dest="product_location", nargs='?', def
 parser.add_argument("-coreclr_repo_location", dest="coreclr_repo_location", default=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 parser.add_argument("-test_env", dest="test_env", default=None)
 parser.add_argument("-crossgen_altjit", dest="crossgen_altjit", default=None)
+parser.add_argument("-altjit_arch", dest="altjit_arch", default=None)
 
 # Optional arguments which change execution.
 
@@ -1490,7 +1491,8 @@ def build_test_wrappers(host_os,
                         arch, 
                         build_type, 
                         coreclr_repo_location,
-                        test_location):
+                        test_location,
+                        altjit_arch=None):
     """ Build the coreclr test wrappers
 
     Args:
@@ -1543,6 +1545,9 @@ def build_test_wrappers(host_os,
                 "/p:__BuildArch=%s" % arch,
                 "/p:__BuildType=%s" % build_type,
                 "/p:__LogsDir=%s" % logs_dir]
+
+    if not altjit_arch is None:
+        command += ["/p:__AltJitArch=%s" % altjit_arch]
 
     print("Creating test wrappers...")
     print(" ".join(command))
@@ -2008,12 +2013,18 @@ def do_setup(host_os,
         # Line ending only need to be corrected if this is a cross build.
         correct_line_endings(host_os, test_location)
 
+    # If we are inside altjit scenario, we ought to re-build Xunit test wrappers to consider
+    # ExcludeList items in issues.targets for both build arch and altjit arch
+    is_altjit_scenario = not args.altjit_arch is None
+
     if unprocessed_args.build_test_wrappers:
         build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
     elif build_info is None:
         build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
     elif not (is_same_os and is_same_arch and is_same_build_type):
         build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location)
+    elif is_altjit_scenario:
+        build_test_wrappers(host_os, arch, build_type, coreclr_repo_location, test_location, args.altjit_arch)
 
     return run_tests(host_os, 
               arch,
