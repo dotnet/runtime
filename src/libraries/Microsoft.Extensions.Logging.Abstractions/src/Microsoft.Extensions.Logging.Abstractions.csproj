@@ -14,4 +14,8 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</Description>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+  </ItemGroup>
+
 </Project>

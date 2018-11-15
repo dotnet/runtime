@@ -1,8 +1,7 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Threading;
@@ -80,7 +79,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// This is public from an EventSource consumer point of view, but since these defintions
         /// are not needed outside this class
         /// </summary>
-        public class Keywords
+        public static class Keywords
         {
             /// <summary>
             /// Meta events are evnets about the LoggingEventSource itself (that is they did not come from ILogger

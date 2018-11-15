@@ -1,14 +1,14 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 
-namespace Microsoft.Extensions.Logging.Abstractions.Internal
+namespace Microsoft.Extensions.Logging
 {
     /// <summary>
     /// An empty scope without any logic
     /// </summary>
-    public class NullScope : IDisposable
+    internal class NullScope : IDisposable
     {
         public static NullScope Instance { get; } = new NullScope();
 

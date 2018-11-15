@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -11,52 +11,25 @@ using Newtonsoft.Json;
 using Xunit;
 using Microsoft.Extensions.DependencyInjection;
 
-// AddEventSourceLogger(ILoggerProvider) overload is obsolete
-#pragma warning disable CS0618 // Type or member is obsolete
-
 namespace Microsoft.Extensions.Logging.Test
 {
-    public abstract class EventSourceLoggerTest: IDisposable
+    public class EventSourceLoggerTest: IDisposable
     {
-        public class EventSourceLoggerFactoryTest: EventSourceLoggerTest
+        private ServiceProvider _serviceProvider;
+
+        protected ILoggerFactory CreateLoggerFactory()
         {
-            private LoggerFactory _factory;
+            _serviceProvider = new ServiceCollection()
+                .AddLogging(builder => builder.AddEventSourceLogger())
+                .BuildServiceProvider();
 
-            protected override ILoggerFactory CreateLoggerFactory()
-            {
-                _factory = new LoggerFactory();
-                _factory.AddEventSourceLogger();
-                return _factory;
-            }
-
-            public override void Dispose()
-            {
-                _factory.Dispose();
-            }
+            return _serviceProvider.GetRequiredService<ILoggerFactory>();
         }
 
-        public class EventSourceLoggerBuilderTest : EventSourceLoggerTest
+        public void Dispose()
         {
-            private ServiceProvider _serviceProvider;
-
-            protected override ILoggerFactory CreateLoggerFactory()
-            {
-                _serviceProvider = new ServiceCollection()
-                    .AddLogging(builder => builder.AddEventSourceLogger())
-                    .BuildServiceProvider();
-
-                return _serviceProvider.GetRequiredService<ILoggerFactory>();
-            }
-
-            public override void Dispose()
-            {
-                _serviceProvider?.Dispose();
-            }
+            _serviceProvider?.Dispose();
         }
-
-        protected abstract ILoggerFactory CreateLoggerFactory();
-
-        public abstract void Dispose();
 
         [Fact]
         public void IsEnabledReturnsCorrectValue()

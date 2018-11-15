@@ -1,8 +1,6 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
-
 namespace Microsoft.Extensions.Logging.EventLog
 {
     /// <summary>
@@ -35,10 +33,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            // EventLogLogger is obsolete
-#pragma warning disable CS0618 // Type or member is obsolete
-            return new EventLogLogger(name, _settings ?? new EventLogSettings());
-#pragma warning restore CS0618
+            return new EventLogLogger(name, _settings ?? new EventLogSettings(), _scopeProvider);
         }
 
         public void Dispose()

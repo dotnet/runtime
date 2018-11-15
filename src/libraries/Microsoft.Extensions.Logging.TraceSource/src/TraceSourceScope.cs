@@ -9,8 +9,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
     /// <summary>
     /// Provides an IDisposable that represents a logical operation scope based on System.Diagnostics LogicalOperationStack
     /// </summary>
-    [Obsolete("This type is obsolete and will be removed in a future version. This type is part of TraceSource logger implementation and shouldn't be used directly")]
-    public class TraceSourceScope : IDisposable
+    internal class TraceSourceScope : IDisposable
     {
         // To detect redundant calls
         private bool _isDisposed;
