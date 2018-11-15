@@ -1182,7 +1182,7 @@ create_sockaddr_from_handle (MonoObjectHandle saddr_obj, socklen_t *sa_size, gin
 		 * two bytes hold the SocketAddress family
 		 */
 		if (len - 2 >= sizeof (sock_un->sun_path)) {
-			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
+			mono_error_set_argument_out_of_range (error, "SocketAddress.Size");
 			mono_gchandle_free_internal (gchandle);
 			return NULL;
 		}
