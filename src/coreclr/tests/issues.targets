@@ -69,7 +69,7 @@
     </ItemGroup>
 
     <!-- Arm32 All OS -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm' or '$(AltJitArch)' == 'arm')">
         <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubTests/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -202,7 +202,7 @@
     </ItemGroup>
 
     <!-- Arm64 All OS -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm64'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm64' or '$(AltJitArch)' == 'arm64')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/cse/hugeexpr1/hugeexpr1/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -320,7 +320,7 @@
     </ItemGroup>
 
     <!-- Windows arm32 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm' and '$(TargetsWindows)' == 'true'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/NETClients/Primitives/NETClientPrimitives/*">
             <Issue>20682</Issue>
         </ExcludeList>
@@ -336,7 +336,7 @@
     </ItemGroup>
 
     <!-- Windows arm64 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm64' and '$(TargetsWindows)' == 'true'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm64' or '$(AltJitArch)' == 'arm64') and '$(TargetsWindows)' == 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/GC/Features/HeapExpansion/bestfit-threaded/*">
             <Issue>15016</Issue>
         </ExcludeList>
@@ -451,7 +451,7 @@
     </ItemGroup>
 
     <!-- arm32 All OS specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and  ('$(BuildArch)' == 'arm' or '$(AltJitArch)' == 'arm')">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/tailcall_v4/hijacking/*">
             <Issue>6217</Issue>
         </ExcludeList>
@@ -564,7 +564,7 @@
     </ItemGroup>
 
     <!-- Unix arm64 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm64' and '$(TargetsWindows)' != 'true' and '$(BuildTestsAgainstPackages)' != 'true'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm64' or '$(AltJitArch)' == 'arm64') and '$(TargetsWindows)' != 'true' and '$(BuildTestsAgainstPackages)' != 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinhandler/*">
             <Issue>Test times out</Issue>
         </ExcludeList>
@@ -592,7 +592,7 @@
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm' and '$(TargetsWindows)' != 'true' and '$(BuildTestsAgainstPackages)' != 'true'">
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(BuildArch)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' != 'true' and '$(BuildTestsAgainstPackages)' != 'true'">
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/runtimeeventsource/*">
             <Issue>19340</Issue>
         </ExcludeList>
