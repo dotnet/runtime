@@ -13,7 +13,7 @@ namespace System.Drawing.Tests
     public class Perf_Image_Load : RemoteExecutorTestBase
     {
         [Benchmark(InnerIterationCount = 100)]
-        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.GetGdiplusIsAvailable))]
+        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.IsDrawingSupported))]
         public void Bitmap_FromStream()
         {
             var files = CreateTestImageFiles();
@@ -40,7 +40,7 @@ namespace System.Drawing.Tests
         }
 
         [Benchmark(InnerIterationCount = 100)]
-        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.GetGdiplusIsAvailable))]
+        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.IsDrawingSupported))]
         public void Image_FromStream()
         {
             var files = CreateTestImageFiles();
@@ -67,7 +67,7 @@ namespace System.Drawing.Tests
         }
 
         [Benchmark(InnerIterationCount = 100)]
-        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.GetGdiplusIsAvailable))]
+        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.IsDrawingSupported))]
         public void Image_FromStream_NoValidation()
         {
             var files = CreateTestImageFiles();
@@ -94,7 +94,7 @@ namespace System.Drawing.Tests
         }
 
         [Benchmark(InnerIterationCount = 100)]
-        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.GetGdiplusIsAvailable))]
+        [ConditionalBenchmark(typeof(Helpers), nameof(Helpers.IsDrawingSupported))]
         public void Image_FromStream_NoValidation_Gif()
         {
             // GIF has extra logic looking for animated GIFs
