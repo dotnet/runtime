@@ -25,10 +25,11 @@ WARNING:   When setting properties based on their current state (for example:
   <ItemGroup>
     <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'true'" Include = "export RunCrossGen=1"/>
     <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'true'" Include = "set RunCrossGen=1"/>
+    <CLRTestBashEnvironmentVariable  Condition="'$(CrossGenTest)' == 'false'" Include = "unset RunCrossGen"/>
+    <CLRTestBatchEnvironmentVariable Condition="'$(CrossGenTest)' == 'false'" Include = "set RunCrossGen="/>
   </ItemGroup>
 
   <!--
-    Target: GetCrossgenBatctchcript
     This returns the portion of the execution script that generates the required lines to crossgen the test executable.
   -->
   <Target Name="GetCrossgenBashScript">
