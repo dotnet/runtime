@@ -42,7 +42,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_FileName_TestData))]
         public void Ctor_FileName(string fileName, Size size)
         {
@@ -62,7 +62,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(null, -1, -1)]
         [InlineData(typeof(ClassWithNoNamespace), -1, -1)]
         [InlineData(typeof(bitmap_173x183_indexed_8bit), 173, 183)]
@@ -84,7 +84,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(null, null, -1, -1)]
         [InlineData(null, "invalid.ico", -1, -1)]
         [InlineData(typeof(ClassWithNoNamespace), null, -1, -1)]
@@ -113,7 +113,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("bitmap_173x183_indexed_8bit.bmp", 173, 183)]
         [InlineData("48x48_multiple_entries_4bit.ico", 16, 16)]
         public void GetImage_TypeFileNameBool_ReturnsExpected(string fileName, int width, int height)
@@ -131,7 +131,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetImage_NullComponent_ReturnsNull()
         {
             var attribute = new ToolboxBitmapAttribute((string)null);
@@ -139,7 +139,7 @@ namespace System.Drawing.Tests
             Assert.Null(attribute.GetImage((object)null, true));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetImage_Component_ReturnsExpected()
         {
             ToolboxBitmapAttribute attribute = new ToolboxBitmapAttribute((string)null);
@@ -156,7 +156,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetImage_Default_ReturnsExpected()
         {
             ToolboxBitmapAttribute attribute = ToolboxBitmapAttribute.Default;
@@ -182,7 +182,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Other_ReturnsExpected(ToolboxBitmapAttribute attribute, object other, bool expected)
         {

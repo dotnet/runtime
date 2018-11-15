@@ -9,7 +9,7 @@ namespace System.ComponentModel.TypeConverterTests
 {
     public class FontNameConverterTest
     {
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestConvertFrom()
         {
             FontConverter.FontNameConverter converter = new FontConverter.FontNameConverter();
@@ -26,7 +26,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.False(converter.GetStandardValuesExclusive(), "standard values exclusive");
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ExTestConvertFrom_ThrowsNotSupportedException()
         {
             FontConverter.FontNameConverter converter = new FontConverter.FontNameConverter();

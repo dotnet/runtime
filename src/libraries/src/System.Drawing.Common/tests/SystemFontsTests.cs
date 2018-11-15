@@ -19,7 +19,7 @@ namespace System.Drawing.Tests
             yield return new object[] { (Func<Font>)(() => SystemFonts.StatusFont) };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SystemFonts_TestData))]
         public void SystemFont_Get_ReturnsExpected(Func<Font> getFont)
         {
@@ -54,7 +54,7 @@ namespace System.Drawing.Tests
         public static object[] Font(Func<Font> getFont, string systemFontName, string windowsFontName) => new object[] { getFont, systemFontName, windowsFontName };
 
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SystemFonts_WindowsNames_TestData))]
         public void SystemFont_Get_ReturnsExpected_WindowsNames(Func<Font> getFont, string systemFontName, string windowsFontName)
         {

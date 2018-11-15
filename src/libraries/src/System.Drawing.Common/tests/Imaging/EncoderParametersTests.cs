@@ -9,7 +9,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class EncoderParametersTests
     {
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Default()
         {
             EncoderParameters ep = new EncoderParameters();
@@ -17,7 +17,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(new EncoderParameter[1], ep.Param);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1)]
         public void Ctor_Count_Default(int count)
         {
@@ -36,7 +36,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Param_TestData))]
         public void Param_Success(EncoderParameter[] param)
         {
@@ -45,7 +45,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(param, ep.Param);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Param_TestData))]
         public void Dispose_Success(EncoderParameter[] param)
         {

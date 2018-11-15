@@ -80,14 +80,14 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ImageFormatGuidTestData))]
         public void Guid_ReturnsExpected(Guid expectedGuid, ImageFormat imageFormat)
         {
             Assert.Equal(expectedGuid, imageFormat.Guid);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ImageFormatToStringTestData))]
         public void ToString_ReturnsExpected(string expected, ImageFormat imageFormat)
         {
@@ -95,7 +95,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug fix in .NET Core that is not in NETFX yet, dotnet/corefx 16463")]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ImageFromFileToStringTestData))]
         public void Image_RawFormat_ToString(string path, string expected)
         {
@@ -103,14 +103,14 @@ namespace System.Drawing.Imaging.Tests
             Assert.Same(expected, img.RawFormat.ToString());
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ImageFormatEqualsTestData))]
         public void Equals_Object_ReturnsExpected(ImageFormat imageFormat, object obj, bool result)
         {
             Assert.Equal(result, imageFormat.Equals(obj));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHashCode_Success()
         {
             Guid guid = Guid.NewGuid();

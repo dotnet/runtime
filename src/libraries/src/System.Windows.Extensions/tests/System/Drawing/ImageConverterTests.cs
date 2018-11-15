@@ -33,7 +33,7 @@ namespace System.ComponentModel.TypeConverterTests
             _imgConvFrmTD = (ImageConverter)TypeDescriptor.GetConverter(_image);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestCanConvertFrom()
         {
             Assert.True(_imgConv.CanConvertFrom(typeof(byte[])), "byte[] (no context)");
@@ -63,7 +63,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.False(_imgConvFrmTD.CanConvertFrom(null, typeof(Metafile)), "TD Metafile");
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestCanConvertTo()
         {
             Assert.True(_imgConv.CanConvertTo(typeof(string)), "stirng (no context)");
@@ -95,7 +95,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.False(_imgConvFrmTD.CanConvertTo(null, typeof(int)), "TD int");
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ConvertFrom()
         {
             Image newImage = (Image)_imgConv.ConvertFrom(null, CultureInfo.InvariantCulture, _imageBytes);
@@ -111,7 +111,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(_image.Width, newImage.Width);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ConvertFrom_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => _imgConv.ConvertFrom("System.Drawing.String"));
@@ -129,7 +129,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Throws<NotSupportedException>(() => _imgConvFrmTD.ConvertFrom(null, CultureInfo.InvariantCulture, new object()));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ConvertTo_String()
         {
             Assert.Equal(_imageStr, (string)_imgConv.ConvertTo(null, CultureInfo.InvariantCulture, _image, typeof(string)));
@@ -138,7 +138,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(_imageStr, (string)_imgConvFrmTD.ConvertTo(_image, typeof(string)));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ConvertTo_ByteArray()
         {
             byte[] newImageBytes = (byte[])_imgConv.ConvertTo(null, CultureInfo.InvariantCulture, _image, _imageBytes.GetType());
@@ -151,7 +151,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Equal(_imageBytes, newImageBytes);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ConvertTo_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => _imgConv.ConvertTo(null, CultureInfo.InvariantCulture, _image, typeof(Rectangle)));
@@ -173,14 +173,14 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Throws<NotSupportedException>(() => _imgConvFrmTD.ConvertTo(null, CultureInfo.InvariantCulture, _image, typeof(int)));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestGetPropertiesSupported()
         {
             Assert.True(_imgConv.GetPropertiesSupported(), "GetPropertiesSupported()");
             Assert.True(_imgConv.GetPropertiesSupported(null), "GetPropertiesSupported(null)");
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestGetProperties()
         {
             const int allPropertiesCount = 14; // Count of all properties in Image class.

@@ -24,7 +24,7 @@ namespace System.Drawing.Tests
 
         public static object[] Icon(Func<Icon> getIcon) => new object[] { getIcon };
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(SystemIcons_TestData))]
         public void SystemIcons_Get_ReturnsExpected(Func<Icon> getIcon)
         {

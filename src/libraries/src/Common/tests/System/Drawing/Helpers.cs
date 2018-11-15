@@ -12,7 +12,7 @@ namespace System.Drawing
 {
     public static class Helpers
     {
-        public const string GdiplusIsAvailable = nameof(Helpers) + "." + nameof(IsDrawingSupported);
+        public const string IsDrawingSupported = nameof(Helpers) + "." + nameof(GetIsDrawingSupported);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
@@ -20,7 +20,7 @@ namespace System.Drawing
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
         public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
 
-        public static bool IsDrawingSupported() => PlatformDetection.IsDrawingSupported;
+        public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
@@ -34,7 +34,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return IsDrawingSupported();
+            return GetIsDrawingSupported();
         }
 
         public static bool GetGdiPlusIsAvailableNotRedhat73()
@@ -44,7 +44,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return IsDrawingSupported();
+            return GetIsDrawingSupported();
         }
 
         public static bool GetGdiPlusIsAvailableNotWindows7()
@@ -54,7 +54,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return IsDrawingSupported();
+            return GetIsDrawingSupported();
         }
 
         public static bool GetRecentGdiPlusIsAvailable()
@@ -65,7 +65,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return IsDrawingSupported();
+            return GetIsDrawingSupported();
         }
 
         public static bool IsAnyInstalledPrinters()
