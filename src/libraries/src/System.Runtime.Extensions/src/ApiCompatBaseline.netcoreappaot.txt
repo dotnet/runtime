@@ -1,0 +1,10 @@
+Compat issues with assembly System.Runtime.Extensions:
+MembersMustExist : Member 'System.Math.FusedMultiplyAdd(System.Double, System.Double, System.Double)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.ILogB(System.Double)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.Log2(System.Double)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Math.ScaleB(System.Double, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MathF.FusedMultiplyAdd(System.Single, System.Single, System.Single)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MathF.ILogB(System.Single)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MathF.Log2(System.Single)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.MathF.ScaleB(System.Single, System.Int32)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 8

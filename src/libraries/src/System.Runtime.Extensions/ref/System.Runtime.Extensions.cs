@@ -780,6 +780,8 @@ namespace System
         public static double Atan2(double y, double x) { throw null; }
         public static double Atanh(double d) { throw null; }
         public static long BigMul(int a, int b) { throw null; }
+        public static double BitDecrement(double x) { throw null; }
+        public static double BitIncrement(double x) { throw null; }
         public static double Cbrt(double d) { throw null; }
         public static decimal Ceiling(decimal d) { throw null; }
         public static double Ceiling(double a) { throw null; }
@@ -798,6 +800,7 @@ namespace System
         public static uint Clamp(uint value, uint min, uint max) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Clamp(ulong value, ulong min, ulong max) { throw null; }
+        public static double CopySign(double x, double y) { throw null; }
         public static double Cos(double d) { throw null; }
         public static double Cosh(double value) { throw null; }
         public static int DivRem(int a, int b, out int result) { throw null; }
@@ -805,9 +808,12 @@ namespace System
         public static double Exp(double d) { throw null; }
         public static decimal Floor(decimal d) { throw null; }
         public static double Floor(double d) { throw null; }
+        public static double FusedMultiplyAdd(double x, double y, double z) { throw null; }
         public static double IEEERemainder(double x, double y) { throw null; }
+        public static int ILogB(double x) { throw null; }
         public static double Log(double d) { throw null; }
         public static double Log(double a, double newBase) { throw null; }
+        public static double Log2(double x) { throw null; }
         public static double Log10(double d) { throw null; }
         public static byte Max(byte val1, byte val2) { throw null; }
         public static decimal Max(decimal val1, decimal val2) { throw null; }
@@ -824,6 +830,7 @@ namespace System
         public static uint Max(uint val1, uint val2) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Max(ulong val1, ulong val2) { throw null; }
+        public static double MaxMagnitude(double x, double y) { throw null; }
         public static byte Min(byte val1, byte val2) { throw null; }
         public static decimal Min(decimal val1, decimal val2) { throw null; }
         public static double Min(double val1, double val2) { throw null; }
@@ -839,6 +846,7 @@ namespace System
         public static uint Min(uint val1, uint val2) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Min(ulong val1, ulong val2) { throw null; }
+        public static double MinMagnitude(double x, double y) { throw null; }
         public static double Pow(double x, double y) { throw null; }
         public static decimal Round(decimal d) { throw null; }
         public static decimal Round(decimal d, int decimals) { throw null; }
@@ -848,6 +856,7 @@ namespace System
         public static double Round(double value, int digits) { throw null; }
         public static double Round(double value, int digits, System.MidpointRounding mode) { throw null; }
         public static double Round(double value, System.MidpointRounding mode) { throw null; }
+        public static double ScaleB(double x, int n) { throw null; }
         public static int Sign(decimal value) { throw null; }
         public static int Sign(double value) { throw null; }
         public static int Sign(short value) { throw null; }
@@ -874,23 +883,32 @@ namespace System
         public static float Atan(float x) { throw null; }
         public static float Atanh(float x) { throw null; }
         public static float Atan2(float y, float x) { throw null; }
+        public static float BitDecrement(float x) { throw null; }
+        public static float BitIncrement(float x) { throw null; }
         public static float Cbrt(float x) { throw null; }
         public static float Ceiling(float x) { throw null; }
+        public static float CopySign(float x, float y) { throw null; }
         public static float Cos(float x) { throw null; }
         public static float Cosh(float x) { throw null; }
         public static float Exp(float x) { throw null; }
         public static float Floor(float x) { throw null; }
+        public static float FusedMultiplyAdd(float x, float y, float z) { throw null; }
         public static float IEEERemainder(float x, float y) { throw null; }
+        public static int ILogB(float x) { throw null; }
         public static float Log(float x) { throw null; }
         public static float Log(float x, float y) { throw null; }
+        public static float Log2(float x) { throw null; }
         public static float Log10(float x) { throw null; }        
         public static float Max(float x, float y) { throw null; }
+        public static float MaxMagnitude(float x, float y) { throw null; }
         public static float Min(float x, float y) { throw null; }
+        public static float MinMagnitude(float x, float y) { throw null; }
         public static float Pow(float x, float y) { throw null; }
         public static float Round(float x) { throw null; }
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
         public static float Round(float x, System.MidpointRounding mode) { throw null; }
+        public static float ScaleB(float x, int n) { throw null; }
         public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
