@@ -4,7 +4,8 @@
 
 namespace System
 {
-    internal static partial class IPv4AddressHelper
+    internal static partial class IPv6AddressHelper
     {
+        private const int NumberOfLabels = 8;
     }
 }

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
     <AssemblyName>System.Private.Uri</AssemblyName>
@@ -18,7 +18,13 @@
     <Compile Include="System\DomainNameHelper.cs" />
     <Compile Include="System\GenericUriParser.cs" />
     <Compile Include="System\IPv4AddressHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\IPv4AddressHelper.Common.cs">
+      <Link>System\IPv4AddressHelper.Common.cs</Link>
+    </Compile>
     <Compile Include="System\IPv6AddressHelper.cs" />
+    <Compile Include="$(CommonPath)\System\Net\IPv6AddressHelper.Common.cs">
+      <Link>System\IPv6AddressHelper.Common.cs</Link>
+    </Compile>
     <Compile Include="System\IriHelper.cs" />
     <Compile Include="System\UncNameHelper.cs" />
     <Compile Include="System\Uri.cs" />
