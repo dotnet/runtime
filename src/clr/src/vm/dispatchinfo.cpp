@@ -2702,7 +2702,7 @@ MethodDesc* DispatchInfo::GetCustomAttrProviderMD(TypeHandle hndCustomAttrProvid
     CONTRACT_END;
 
     MethodTable *pMT = hndCustomAttrProvider.AsMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES));
+    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(METHOD__ICUSTOM_ATTR_PROVIDER__GET_CUSTOM_ATTRIBUTES), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
     RETURN pMD;
@@ -3542,7 +3542,7 @@ MethodDesc* DispatchExInfo::GetIReflectMD(BinderMethodID Method)
     CONTRACT_END;
 
     MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(Method));
+    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
     RETURN pMD;
@@ -3562,7 +3562,7 @@ MethodDesc* DispatchExInfo::GetIExpandoMD(BinderMethodID Method)
     CONTRACT_END;
 
     MethodTable *pMT = m_pSimpleWrapperOwner->GetMethodTable();
-    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(Method));
+    MethodDesc *pMD = pMT->GetMethodDescForInterfaceMethod(MscorlibBinder::GetMethod(Method), TRUE /* throwOnConflict */);
 
     // Return the specified method desc.
     RETURN pMD;

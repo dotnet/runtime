@@ -1663,7 +1663,7 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
                 // <TODO>it looks like we need to pass an ownerType in here.
                 //  Why can we take a delegate to an interface method anyway?  </TODO>
                 // 
-                pCorrectedMethod = pMTTarg->FindDispatchSlotForInterfaceMD(pCorrectedMethod).GetMethodDesc();
+                pCorrectedMethod = pMTTarg->FindDispatchSlotForInterfaceMD(pCorrectedMethod, TRUE /* throwOnConflict */).GetMethodDesc();
                 _ASSERTE(pCorrectedMethod != NULL);
             }
         }
@@ -1836,7 +1836,7 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
                             // <TODO>it looks like we need to pass an ownerType in here.
                             //  Why can we take a delegate to an interface method anyway?  </TODO>
                             // 
-                            MethodDesc * pDispatchSlotMD = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth).GetMethodDesc();
+                            MethodDesc * pDispatchSlotMD = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth, TRUE /* throwOnConflict */).GetMethodDesc();
                             if (pDispatchSlotMD == NULL)
                             {
                                 COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
