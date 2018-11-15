@@ -11,9 +11,9 @@
   - These APIs will be targeting .NET Core specifically as part of v1.
     Providing a netstandard implementation can be considered in the future.
 
-![Core Components Overview](images/diagram-1.png)
+![Core Components Overview](images/core-components.png)
 
-![Higher-level Components Overview](images/diagram-2.png)
+![Higher-level Components Overview](images/higher-level-components.png)
 
 ## Design Requirements
 
@@ -99,5 +99,5 @@
 
 ## API Discussions & Issues
 
-* [JsonReader API Review](https://github.com/ahsonkhan/apireviews/tree/JsonReaderReview/2018/System.Text.Json)
+* [JsonReader API Review](https://github.com/dotnet/apireviews/tree/master/2018/System.Text.Json)
 * Placeholder for future API proposal issues
