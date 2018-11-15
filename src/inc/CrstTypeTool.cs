@@ -173,7 +173,11 @@ class CrstTypeTool
         writer.WriteLine("int g_rgCrstLevelMap[] =");
         writer.WriteLine("{");
         foreach (CrstType crst in crsts)
-            writer.WriteLine("    " + crst.Level + ",\t\t\t// Crst" + crst.Name);
+        { 
+            string crstLine = "    " + crst.Level + ","; 
+            crstLine = crstLine + new string(' ', 16 - crstLine.Length); 
+            writer.WriteLine(crstLine + "// Crst" + crst.Name); 
+        }
         writer.WriteLine("};");
         writer.WriteLine();
 
