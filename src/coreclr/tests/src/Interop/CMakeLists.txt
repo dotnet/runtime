@@ -12,6 +12,7 @@ list(APPEND LINK_LIBRARIES_ADDITIONAL platformdefines)
 SET(CLR_INTEROP_TEST_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 include_directories(common)
+add_subdirectory(PInvoke/DllImportPath)
 add_subdirectory(PInvoke/BestFitMapping/Char)
 add_subdirectory(PInvoke/BestFitMapping/LPStr)
 add_subdirectory(PInvoke/Delegate/MarshalDelegateAsField)
