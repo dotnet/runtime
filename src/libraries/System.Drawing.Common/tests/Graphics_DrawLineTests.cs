@@ -8,7 +8,7 @@ namespace System.Drawing.Tests
     public class Graphics_DrawLineTests : DrawingTest
     {
         [ActiveIssue(30180, TestPlatforms.Linux)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Points()
         {
             using (Bitmap image = new Bitmap(100, 100))
@@ -24,7 +24,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(30683, TargetFrameworkMonikers.Netcoreapp)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_PointFs()
         {
             using (Bitmap image = new Bitmap(100, 100))
@@ -39,7 +39,7 @@ namespace System.Drawing.Tests
            }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -52,7 +52,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -69,7 +69,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -91,7 +91,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLine_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -107,7 +107,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -118,7 +118,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -132,7 +132,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -144,7 +144,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0)]
         [InlineData(1)]
         public void DrawLines_InvalidPointsLength_ThrowsArgumentException(int length)
@@ -159,7 +159,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -179,7 +179,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawLines_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))

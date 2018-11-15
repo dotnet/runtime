@@ -157,7 +157,7 @@ namespace System.Drawing.Tests
 
         public static object[] Brush(Func<Brush> getBrush, Color expectedColor) => new object[] { getBrush, expectedColor };
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Brushes_TestData))]
         public void Brushes_Get_ReturnsExpected(Func<Brush> getBrush, Color expectedColor)
         {

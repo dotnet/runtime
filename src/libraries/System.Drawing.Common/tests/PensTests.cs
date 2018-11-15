@@ -157,7 +157,7 @@ namespace System.Drawing.Tests
 
         public static object[] Pen(Func<Pen> getPen, Color expectedColor) => new object[] { getPen, expectedColor };
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Pens_TestData))]
         public void Pens_Get_ReturnsExpected(Func<Pen> getPen, Color expectedColor)
         {

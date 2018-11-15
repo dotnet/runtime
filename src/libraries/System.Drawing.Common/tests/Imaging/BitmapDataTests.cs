@@ -9,7 +9,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class BitmapDataTests
     {
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Default()
         {
             BitmapData bd = new BitmapData();
@@ -21,7 +21,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal((PixelFormat)0, bd.PixelFormat);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(int.MaxValue)]
         [InlineData(0)]
         [InlineData(int.MinValue)]
@@ -32,7 +32,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(value, bd.Height);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(int.MaxValue)]
         [InlineData(0)]
         [InlineData(int.MinValue)]
@@ -43,7 +43,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(value, bd.Width);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(int.MaxValue)]
         [InlineData(0)]
         [InlineData(int.MinValue)]
@@ -54,7 +54,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(value, bd.Reserved);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(int.MaxValue)]
         [InlineData(0)]
         [InlineData(int.MinValue)]
@@ -65,7 +65,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(new IntPtr(value), bd.Scan0);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(int.MaxValue)]
         [InlineData(0)]
         [InlineData(int.MinValue)]
@@ -76,7 +76,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(value, bd.Stride);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(PixelFormat.DontCare)]
         [InlineData(PixelFormat.Max)]
         [InlineData(PixelFormat.Indexed)]
@@ -107,7 +107,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PixelFormat_SetInvalid_ThrowsInvalidEnumException()
         {
             BitmapData bd = new BitmapData();

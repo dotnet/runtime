@@ -60,13 +60,13 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap8bitsFeatures_Gif89()
         {
             Bitmap8bitsFeatures(Helpers.GetTestBitmapPath("nature24bits.gif"));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap8bitsFeatures_Gif87()
         {
             Bitmap8bitsFeatures(Helpers.GetTestBitmapPath("nature24bits87.gif"));
@@ -96,19 +96,19 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap8bitsPixels_Gif89()
         {
             Bitmap8bitsPixels(Helpers.GetTestBitmapPath("nature24bits.gif"));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap8bitsPixels_Gif87()
         {
             Bitmap8bitsPixels(Helpers.GetTestBitmapPath("nature24bits87.gif"));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap8bitsData()
         {
             string sInFile = Helpers.GetTestBitmapPath("nature24bits.gif");
@@ -169,7 +169,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Interlaced()
         {
             string sInFile = Helpers.GetTestBitmapPath("81773-interlaced.gif");

@@ -40,7 +40,7 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Properties_TestData))]
         public void Properties_SetValues_ReturnsExpected(int id, int len, short type, byte[] value)
         {

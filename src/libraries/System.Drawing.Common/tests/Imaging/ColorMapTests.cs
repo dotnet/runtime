@@ -8,7 +8,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class ColorMapTests
     {
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Default()
         {
             ColorMap cm = new ColorMap();
@@ -16,7 +16,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(new Color(), cm.NewColor);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NewColor_SetValid_ReturnsExpected()
         {
             ColorMap cm = new ColorMap();
@@ -24,7 +24,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(Color.AliceBlue, cm.NewColor);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void OldColor_SetValid_ReturnsExpected()
         {
             ColorMap cm = new ColorMap();

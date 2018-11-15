@@ -9,7 +9,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class FrameDimensionTests
     {
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Guid()
         {
             Guid guid = Guid.NewGuid();
@@ -50,28 +50,28 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ImageFormatGuidTestData))]
         public void Guid_ReturnsExpected(Guid expected, FrameDimension frameDimension)
         {
             Assert.Equal(expected, frameDimension.Guid);
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(FrameDimensionEqualsTestData))]
         public void Equals_Object_ReturnsExpected(FrameDimension frameDimension, object obj, bool result)
         {
             Assert.Equal(result, frameDimension.Equals(obj));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHashCode_Success()
         {
             Guid guid = Guid.NewGuid();
             Assert.Equal(guid.GetHashCode(), new FrameDimension(guid).GetHashCode());
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(FrameDimensionToStringTestData))]
         public void ToString_ReturnsExpected(string expected, FrameDimension imageFormat)
         {

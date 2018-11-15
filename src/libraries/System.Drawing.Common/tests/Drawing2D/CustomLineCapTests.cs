@@ -42,7 +42,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Path_Path_LineCap_Float_TestData))]
         public void Ctor_Path_Path_LineCap_Float(GraphicsPath fillPath, GraphicsPath strokePath, LineCap baseCap, float baseInset, LineCap expectedCap)
         {
@@ -58,7 +58,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         // These values are outside the valid range of the LineCap enum.
         [InlineData(LineCap.Flat - 1)]
         [InlineData(LineCap.Custom + 1)]
@@ -73,7 +73,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_FillPath_Incomplete_ThrowsArgumentException()
         {
             using (GraphicsPath fillPath = new GraphicsPath())
@@ -84,7 +84,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_FillPath_DoesNotCrossYAxis_ThrowsNotImplementedException()
         {
             // Closed fillPath, but does not cross the Y-axis.
@@ -97,7 +97,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(LineCap.Square, LineCap.Square)]
         [InlineData(LineCap.Round, LineCap.Round)]
         [InlineData(LineCap.Triangle, LineCap.Triangle)]
@@ -115,7 +115,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(LineCap.SquareAnchor, LineCap.SquareAnchor)]
         [InlineData(LineCap.Custom, LineCap.Custom)]
         [InlineData(LineCap.Square, LineCap.Custom)]
@@ -136,7 +136,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(LineJoin.Miter)] // Default value
         [InlineData(LineJoin.Bevel)]
         [InlineData(LineJoin.Round)]
@@ -154,7 +154,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(LineCap.Flat)] // Default value
         [InlineData(LineCap.Square)]
         [InlineData(LineCap.Round)]
@@ -186,7 +186,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0f)]
         [InlineData(1f)]
         [InlineData(10f)]
@@ -209,7 +209,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0f)]
         [InlineData(1f)]
         [InlineData(10f)]
@@ -232,7 +232,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Disposed_MembersThrow()
         {
             using (GraphicsPath strokePath = new GraphicsPath())
