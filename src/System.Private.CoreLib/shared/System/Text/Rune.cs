@@ -250,6 +250,43 @@ namespace System.Text
         public static bool IsValid(uint value) => UnicodeUtility.IsValidUnicodeScalar(value);
 
         // returns a negative number on failure
+        internal static int ReadFirstRuneFromUtf16Buffer(ReadOnlySpan<char> input)
+        {
+            if (input.IsEmpty)
+            {
+                return -1;
+            }
+
+            // Optimistically assume input is within BMP.
+
+            uint returnValue = input[0];
+            if (UnicodeUtility.IsSurrogateCodePoint(returnValue))
+            {
+                if (!UnicodeUtility.IsHighSurrogateCodePoint(returnValue))
+                {
+                    return -1;
+                }
+
+                // Treat 'returnValue' as the high surrogate.
+
+                if (1 >= (uint)input.Length)
+                {
+                    return -1; // not an argument exception - just a "bad data" failure
+                }
+
+                uint potentialLowSurrogate = input[1];
+                if (!UnicodeUtility.IsLowSurrogateCodePoint(potentialLowSurrogate))
+                {
+                    return -1;
+                }
+
+                returnValue = UnicodeUtility.GetScalarFromUtf16SurrogatePair(returnValue, potentialLowSurrogate);
+            }
+
+            return (int)returnValue;
+        }
+
+        // returns a negative number on failure
         private static int ReadRuneFromString(string input, int index)
         {
             if (input is null)
