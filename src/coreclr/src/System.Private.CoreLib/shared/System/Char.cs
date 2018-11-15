@@ -275,7 +275,7 @@ namespace System
             {
                 return (IsWhiteSpaceLatin1(c));
             }
-            return CharUnicodeInfo.IsWhiteSpace(c);
+            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
 
@@ -795,7 +795,7 @@ namespace System
                 return IsWhiteSpaceLatin1(s[index]);
             }
 
-            return CharUnicodeInfo.IsWhiteSpace(s, index);
+            return CheckSeparator(CharUnicodeInfo.GetUnicodeCategory(s, index));
         }
 
         public static UnicodeCategory GetUnicodeCategory(char c)
