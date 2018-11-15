@@ -12,7 +12,7 @@ namespace System.Drawing
 {
     public static class Helpers
     {
-        public const string GdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetGdiplusIsAvailable);
+        public const string GdiplusIsAvailable = nameof(Helpers) + "." + nameof(IsDrawingSupported);
         public const string RecentGdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable);
         public const string RecentGdiplusIsAvailable2 = nameof(Helpers) + "." + nameof(GetRecentGdiPlusIsAvailable2);
         public const string GdiPlusIsAvailableNotRedhat73 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotRedhat73);
@@ -20,31 +20,7 @@ namespace System.Drawing
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
         public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
 
-        public static bool GetGdiplusIsAvailable()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return PlatformDetection.IsNotWindowsNanoServer && PlatformDetection.IsNotWindowsServerCore;
-            }
-            else
-            {
-                IntPtr nativeLib;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    nativeLib = dlopen("libgdiplus.dylib", RTLD_NOW);
-                }
-                else
-                {
-                    nativeLib = dlopen("libgdiplus.so", RTLD_NOW);
-                    if (nativeLib == IntPtr.Zero)
-                    {
-                        nativeLib = dlopen("libgdiplus.so.0", RTLD_NOW);
-                    }
-                }
-
-                return nativeLib != IntPtr.Zero;
-            }
-        }
+        public static bool IsDrawingSupported() => PlatformDetection.IsDrawingSupported;
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
@@ -58,7 +34,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return GetGdiplusIsAvailable();
+            return IsDrawingSupported();
         }
 
         public static bool GetGdiPlusIsAvailableNotRedhat73()
@@ -68,7 +44,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return GetGdiplusIsAvailable();
+            return IsDrawingSupported();
         }
 
         public static bool GetGdiPlusIsAvailableNotWindows7()
@@ -78,7 +54,7 @@ namespace System.Drawing
                 return false;
             }
 
-            return GetGdiplusIsAvailable();
+            return IsDrawingSupported();
         }
 
         public static bool GetRecentGdiPlusIsAvailable()
@@ -89,17 +65,13 @@ namespace System.Drawing
                 return false;
             }
 
-            return GetGdiplusIsAvailable();
+            return IsDrawingSupported();
         }
 
         public static bool IsAnyInstalledPrinters()
         {
             return PrinterSettings.InstalledPrinters.Count > 0;
         }
-
-        [DllImport("libdl")]
-        private static extern IntPtr dlopen(string libName, int flags);
-        public const int RTLD_NOW = 0x002;
 
         public static string GetTestBitmapPath(string fileName) => GetTestPath("bitmaps", fileName);
         public static string GetTestFontPath(string fileName) => GetTestPath("fonts", fileName);

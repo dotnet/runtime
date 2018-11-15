@@ -593,7 +593,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(printerSettings.Duplex, newPrinterSettings.Duplex);
         }
 
-        public static bool CanTestSetHdevmode_IntPtr_Success => Helpers.GetGdiplusIsAvailable() && GetNameOfTestPrinterSuitableForDevModeTesting() != null;
+        public static bool CanTestSetHdevmode_IntPtr_Success => Helpers.IsDrawingSupported() && GetNameOfTestPrinterSuitableForDevModeTesting() != null;
 
         private static string GetNameOfTestPrinterSuitableForDevModeTesting()
         {
