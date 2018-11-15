@@ -41,7 +41,7 @@ jobs:
       ${{ if eq(parameters.crossgen, 'false') }}:
         crossgenArg: ''
       ${{ if ne(parameters.scenarios, '') }}:
-        scenariosArg: ${{ format('/p:"Scenarios={0}"', parameters.scenarios) }}
+        scenariosArg: ${{ format('/p:Scenarios=\"{0}\"', parameters.scenarios) }}
       ${{ if eq(parameters.scenarios, '') }}:
         scenariosArg: ''
 
