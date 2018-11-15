@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 using Internal.Runtime.CompilerServices;
 
@@ -973,6 +974,28 @@ namespace System
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength),
                     ref MemoryMarshal.GetReference(value),
                     valueLength);
+        }
+
+        /// <summary>
+        /// Returns an enumeration of <see cref="Rune"/> from the provided span.
+        /// </summary>
+        /// <remarks>
+        /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
+        /// </remarks>
+        public static SpanRuneEnumerator EnumerateRunes(this ReadOnlySpan<char> span)
+        {
+            return new SpanRuneEnumerator(span);
+        }
+
+        /// <summary>
+        /// Returns an enumeration of <see cref="Rune"/> from the provided span.
+        /// </summary>
+        /// <remarks>
+        /// Invalid sequences will be represented in the enumeration by <see cref="Rune.ReplacementChar"/>.
+        /// </remarks>
+        public static SpanRuneEnumerator EnumerateRunes(this Span<char> span)
+        {
+            return new SpanRuneEnumerator(span);
         }
 
         /// <summary>
