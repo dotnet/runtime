@@ -1179,7 +1179,7 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(Enregi
         // with at least an abstract method. b19897_GetInterfaceMap_Abstract.exe tests this case.
         //@TODO:STUBDISPATCH: Don't need to track down the implementation, just the declaration, and this can
         //@TODO:              be done faster - just need to make a function FindDispatchDecl.
-        DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD));
+        DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, TRUE /* throwOnConflict */));
     if (!slot.IsNull())
             pResult = slot.GetMethodDesc();
 
