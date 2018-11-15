@@ -432,6 +432,10 @@ write_sleb128 (gint32 value, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
+/* leb128 uses a maximum of 5 bytes for a 32 bit value */
+#define LEB128_MAX_SIZE 5
+#define WRITE_VARIABLE_MAX_SIZE (5 * LEB128_MAX_SIZE + sizeof (gpointer))
+
 static void
 write_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 {
@@ -461,8 +465,23 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	table = lookup_data_table (domain);
 
-	max_size = (5 * 5) + 1 + (10 * jit->num_line_numbers) +
-		(25 + sizeof (gpointer)) * (1 + jit->num_params + jit->num_locals);
+	max_size = (5 * LEB128_MAX_SIZE) + 1 + (2 * LEB128_MAX_SIZE * jit->num_line_numbers);
+	if (jit->has_var_info) {
+		/* this */
+		max_size += 1;
+		if (jit->this_var)
+			max_size += WRITE_VARIABLE_MAX_SIZE;
+		/* params */
+		max_size += LEB128_MAX_SIZE;
+		max_size += jit->num_params * WRITE_VARIABLE_MAX_SIZE;
+		/* locals */
+		max_size += LEB128_MAX_SIZE;
+		max_size += jit->num_locals * WRITE_VARIABLE_MAX_SIZE;
+		/* gsharedvt */
+		max_size += 1;
+		if (jit->gsharedvt_info_var)
+			max_size += 2 * WRITE_VARIABLE_MAX_SIZE;
+	}
 
 	if (max_size > BUFSIZ)
 		ptr = oldptr = (guint8 *)g_malloc (max_size);
