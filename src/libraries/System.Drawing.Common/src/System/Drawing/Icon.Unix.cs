@@ -55,6 +55,7 @@ namespace System.Drawing
 #endif
 #endif
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
         // The PNG signature is specified at http://www.w3.org/TR/PNG/#5PNG-file-signature
