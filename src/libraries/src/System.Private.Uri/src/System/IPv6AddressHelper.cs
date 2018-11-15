@@ -9,12 +9,8 @@ namespace System
 {
     // The class designed as to keep minimal the working set of Uri class.
     // The idea is to stay with static helper methods and strings
-    internal static class IPv6AddressHelper
+    internal static partial class IPv6AddressHelper
     {
-        // fields
-
-        private const int NumberOfLabels = 8;
-
         // methods
 
         internal static unsafe string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string scopeId)

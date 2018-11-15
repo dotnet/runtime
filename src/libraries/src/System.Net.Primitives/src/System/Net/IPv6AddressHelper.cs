@@ -6,10 +6,8 @@ using System.Diagnostics;
 
 namespace System
 {
-    internal static class IPv6AddressHelper
+    internal static partial class IPv6AddressHelper
     {
-        private const int NumberOfLabels = 8;
-
         // RFC 5952 Section 4.2.3
         // Longest consecutive sequence of zero segments, minimum 2.
         // On equal, first sequence wins. <-1, -1> for no compression.
