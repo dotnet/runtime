@@ -126,37 +126,35 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 0));
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 0));
+                }
+                else
+                {
+                    // Unix's getsockopt is a nop when the buffer is of insufficient length
+                    socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, 0);
+                }
             }
         }
 
-        [Fact]
-        public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNull_Failure()
+        [Theory]
+        [InlineData(null)]
+        [InlineData(new byte[0])]
+        [InlineData(new byte[3] { 0, 0, 0 })]
+        public void Socket_Get_KeepAlive_Time_AsByteArray_BufferNullOrTooSmall_Failure(byte[] buffer)
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                byte[] bufferNull = null;
-                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferNull));
-            }
-        }
-
-        [Fact]
-        public void Socket_Get_KeepAlive_Time_AsByteArray_BufferLengthZero_Failure()
-        {
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                byte[] bufferLengthZero = new byte[0];
-                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferLengthZero));
-            }
-        }
-
-        [Fact]
-        public void Socket_Get_KeepAlive_Time_AsByteArray_BufferShort_Failure()
-        {
-            using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                byte[] bufferShort = new byte[1];
-                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferShort));
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, buffer));
+                }
+                else
+                {
+                    // Unix's getsockopt is a nop when the buffer is of insufficient length
+                    socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, buffer);
+                }
             }
         }
 
