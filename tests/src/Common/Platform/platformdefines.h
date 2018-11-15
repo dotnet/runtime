@@ -59,6 +59,8 @@ typedef unsigned long ULONG, *PULONG;
 #define E_INVALIDARG                     _HRESULT_TYPEDEF_(0x80070057L)
 #define UInt32x32To64(a, b) ((unsigned __int64)((ULONG)(a)) * (unsigned __int64)((ULONG)(b)))
 
+#define ARRAYSIZE(x) (sizeof(x)/sizeof(*x))
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -141,7 +143,7 @@ void TP_DebugBreak();
 DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer);
 
 typedef WCHAR* BSTR;
-BSTR TP_SysAllocStringByteLen(LPSTR psz, size_t len);
+BSTR TP_SysAllocStringByteLen(LPCSTR psz, size_t len);
 void TP_SysFreeString(BSTR bstr);
 size_t TP_SysStringByteLen(BSTR bstr);
 BSTR TP_SysAllocStringLen(LPWSTR psz, size_t len);

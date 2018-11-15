@@ -1879,7 +1879,6 @@ void ILBSTRMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit)
     EmitStoreManagedValue(pslILEmit);
 }
 
-#ifdef FEATURE_COMINTEROP
 LocalDesc ILAnsiBSTRMarshaler::GetNativeType()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1930,6 +1929,8 @@ void ILAnsiBSTRMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitCALL(METHOD__ANSIBSTRMARSHALER__CLEAR_NATIVE, 1, 0);
 }
+
+#ifdef FEATURE_COMINTEROP
 
 LocalDesc ILHSTRINGMarshaler::GetNativeType()
 {

@@ -46,7 +46,6 @@
 
 #else
     #include "types.h"
-
 #endif
 #include <wchar.h>
 

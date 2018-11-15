@@ -2647,7 +2647,6 @@ protected:
     virtual void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit);
 };
 
-#ifdef FEATURE_COMINTEROP
 class ILAnsiBSTRMarshaler : public ILMarshaler
 {
 public:
@@ -2666,7 +2665,6 @@ protected:
     virtual bool NeedsClearNative();
     virtual void EmitClearNative(ILCodeStream* pslILEmit);
 };
-#endif // FEATURE_COMINTEROP
 
 class ILLayoutClassPtrMarshalerBase : public ILMarshaler
 {
