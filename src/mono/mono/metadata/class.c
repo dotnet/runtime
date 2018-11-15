@@ -1648,7 +1648,6 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			return m_class_get_interface_offsets_packed (klass) [found];
 
 		for (i = 0; i < klass_interface_offsets_count; i++) {
-			// printf ("\t%s\n", mono_type_get_full_name (klass->interfaces_packed [i]));
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
 				found = i;
 				*non_exact_match = TRUE;

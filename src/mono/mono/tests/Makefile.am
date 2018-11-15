@@ -696,6 +696,7 @@ TESTS_CS_SRC=		\
 	verbose.cs \
 	generic-unmanaged-constraint.cs \
 	bug-10834.cs \
+	bug-10837.cs	\
 	bug-gh-9507.cs
 
 # some tests fail to compile on mcs

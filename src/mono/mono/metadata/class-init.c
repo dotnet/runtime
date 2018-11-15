@@ -53,6 +53,7 @@ static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd);
 static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
 static gboolean class_has_isbyreflike_attribute (MonoClass *klass);
+static void mono_class_setup_interface_id_internal (MonoClass *klass);
 
 /* This TLS variable points to a GSList of classes which have setup_fields () executing */
 static MonoNativeTlsKey setup_fields_tls_id;
@@ -1731,6 +1732,27 @@ mono_class_interface_match (const uint8_t *bitmap, int id)
 }
 #endif
 
+typedef struct {
+	MonoClass *ic;
+	int offset;
+	int insertion_order;
+} ClassAndOffset;
+
+static int
+compare_by_interface_id (const void *a, const void *b)
+{
+	const ClassAndOffset *ca = (const ClassAndOffset*)a;
+	const ClassAndOffset *cb = (const ClassAndOffset*)b;
+
+	/* Sort on interface_id, but keep equal elements in the same relative
+	 * order. */
+	int primary_order = ca->ic->interface_id - cb->ic->interface_id;
+	if (primary_order != 0)
+		return primary_order;
+	else
+		return ca->insertion_order - cb->insertion_order;
+}
+
 /*
  * Return -1 on failure and set klass->has_failure and store a MonoErrorBoxed with the details.
  * LOCKING: Acquires the loader lock.
@@ -1747,11 +1769,68 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 	GPtrArray *ifaces;
 	GPtrArray **ifaces_array = NULL;
 	int interface_offsets_count;
+	max_iid = 0;
+	num_ifaces = interface_offsets_count = 0;
 
 	mono_loader_lock ();
 
 	mono_class_setup_supertypes (klass);
 
+	if (mono_class_is_ginst (klass)) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+
+		interface_offsets_count = num_ifaces = gklass->interface_offsets_count;
+		interfaces_full = (MonoClass **)g_malloc (sizeof (MonoClass*) * num_ifaces);
+		interface_offsets_full = (int *)g_malloc (sizeof (int) * num_ifaces);
+		ClassAndOffset *co_pair = (ClassAndOffset *) g_malloc (sizeof (ClassAndOffset) * num_ifaces);
+
+		cur_slot = 0;
+		for (int i = 0; i < num_ifaces; ++i) {
+			MonoClass *gklass_ic = gklass->interfaces_packed [i];
+			MonoClass *inflated = mono_class_inflate_generic_class_checked (gklass_ic, mono_class_get_context(klass), error);
+			if (!is_ok (error)) {
+				char *name = mono_type_get_full_name (gklass_ic);
+				mono_class_set_type_load_failure (klass, "Error calculating interface offset of %s", name);
+				g_free (name);
+				cur_slot = -1;
+				goto end;
+			}
+
+			mono_class_setup_interface_id_internal (inflated);
+
+			co_pair [i].ic = inflated;
+			co_pair [i].offset = gklass->interface_offsets_packed [i];
+			co_pair [i].insertion_order = i;
+
+			int count = count_virtual_methods (inflated);
+			if (count == -1) {
+				char *name = mono_type_get_full_name (inflated);
+				mono_class_set_type_load_failure (klass, "Error calculating interface offset of %s", name);
+				g_free (name);
+				cur_slot = -1;
+				goto end;
+			}
+
+			cur_slot = MAX (cur_slot, interface_offsets_full [i] + count);
+			max_iid = MAX (max_iid, inflated->interface_id);
+		}
+
+		/* qsort() is not guaranteed to be a stable sort (elements with
+		 * equal keys stay in the same relative order).  In practice,
+		 * qsort from MSVC isn't stable.  So we add a
+		 * ClassAndOffset:insertion_order field and use it as a
+		 * secondary sorting key when the interface ids are equal. */
+		qsort (co_pair, num_ifaces, sizeof (ClassAndOffset), compare_by_interface_id);
+		for (int i = 0; i < num_ifaces; ++i) {
+			interfaces_full [i] = co_pair [i].ic;
+			interface_offsets_full [i] = co_pair [i].offset;
+
+			g_assert (i == 0 || interfaces_full [i]->interface_id >= interfaces_full [i - 1]->interface_id);
+		}
+		g_free (co_pair);
+
+		goto publish;
+	}
 	/* compute maximum number of slots and maximum interface id */
 	max_iid = 0;
 	num_ifaces = 0; /* this can include duplicated ones */
@@ -1765,7 +1844,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 
 			/* A gparam does not have any interface_id set. */
 			if (! mono_class_is_gparam (ic))
-				mono_class_init (ic);
+				mono_class_setup_interface_id_internal (ic);
 
 			if (max_iid < ic->interface_id)
 				max_iid = ic->interface_id;
@@ -1815,7 +1894,11 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 				
 				/*Force the sharing of interface offsets between parent and subtypes.*/
 				io = mono_class_interface_offset (k, ic);
-				g_assert (io >= 0);
+				g_assertf (io >= 0, "class %s parent %s has no offset for iface %s",
+					mono_type_get_full_name (klass),
+					mono_type_get_full_name (k),
+					mono_type_get_full_name (ic));
+
 				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, io, TRUE);
 			}
 		}
@@ -1849,6 +1932,7 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 			interface_offsets_count ++;
 	}
 
+publish:
 	/* Publish the data */
 	klass->max_interface_id = max_iid;
 	/*
@@ -1894,12 +1978,14 @@ end:
 
 	g_free (interfaces_full);
 	g_free (interface_offsets_full);
-	for (i = 0; i < klass->idepth; i++) {
-		ifaces = ifaces_array [i];
-		if (ifaces)
-			g_ptr_array_free (ifaces, TRUE);
+	if (ifaces_array) {
+		for (i = 0; i < klass->idepth; i++) {
+			ifaces = ifaces_array [i];
+			if (ifaces)
+				g_ptr_array_free (ifaces, TRUE);
+		}
+		g_free (ifaces_array);
 	}
-	g_free (ifaces_array);
 	
 	//printf ("JUST DONE: ");
 	//print_implemented_interfaces (klass);
@@ -4165,6 +4251,7 @@ mono_get_unique_iid (MonoClass *klass)
 
 	if (!global_interface_bitset) {
 		global_interface_bitset = mono_bitset_new (128, 0);
+		mono_bitset_set (global_interface_bitset, 0); //don't let 0 be a valid iid
 	}
 
 	iid = mono_bitset_find_first_unset (global_interface_bitset, -1);
@@ -4296,8 +4383,7 @@ mono_class_init (MonoClass *klass)
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic Type Definition failed to init"))
 			goto leave;
 
-		if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
-			mono_class_setup_interface_id (klass);
+		mono_class_setup_interface_id_internal (klass);
 	}
 
 	if (klass->parent && !klass->parent->inited)
@@ -4617,6 +4703,30 @@ mono_class_setup_parent (MonoClass *klass, MonoClass *parent)
 
 }
 
+/* Locking: must be called with the loader lock held. */
+static void
+mono_class_setup_interface_id_internal (MonoClass *klass)
+{
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (klass) || klass->interface_id)
+		return;
+	klass->interface_id = mono_get_unique_iid (klass);
+
+	if (mono_is_corlib_image (klass->image) && !strcmp (m_class_get_name_space (klass), "System.Collections.Generic")) {
+		//FIXME IEnumerator needs to be special because GetEnumerator uses magic under the hood
+	    /* FIXME: System.Array/InternalEnumerator don't need all this interface fabrication machinery.
+	    * MS returns diferrent types based on which instance is called. For example:
+	    * 	object obj = new byte[10][];
+	    *	Type a = ((IEnumerable<byte[]>)obj).GetEnumerator ().GetType ();
+	    *	Type b = ((IEnumerable<IList<byte>>)obj).GetEnumerator ().GetType ();
+	    * 	a != b ==> true
+		*/
+		const char *name = m_class_get_name (klass);
+		if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+			klass->is_array_special_interface = 1;
+	}
+}
+
+
 /*
  * LOCKING: this assumes the loader lock is held
  */
@@ -4741,22 +4851,7 @@ mono_class_setup_mono_type (MonoClass *klass)
 		klass->this_arg.type = (MonoTypeEnum)t;
 	}
 
-	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
-		klass->interface_id = mono_get_unique_iid (klass);
-
-		if (is_corlib && !strcmp (nspace, "System.Collections.Generic")) {
-			//FIXME IEnumerator needs to be special because GetEnumerator uses magic under the hood
-		    /* FIXME: System.Array/InternalEnumerator don't need all this interface fabrication machinery.
-		    * MS returns diferrent types based on which instance is called. For example:
-		    * 	object obj = new byte[10][];
-		    *	Type a = ((IEnumerable<byte[]>)obj).GetEnumerator ().GetType ();
-		    *	Type b = ((IEnumerable<IList<byte>>)obj).GetEnumerator ().GetType ();
-		    * 	a != b ==> true
-			*/
-			if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
-				klass->is_array_special_interface = 1;
-		}
-	}
+	mono_class_setup_interface_id_internal (klass);
 }
 
 static MonoMethod*
@@ -5236,8 +5331,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 {
 	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass));
 	mono_loader_lock ();
-	if (!klass->interface_id)
-		klass->interface_id = mono_get_unique_iid (klass);
+	mono_class_setup_interface_id_internal (klass);
 	mono_loader_unlock ();
 }
 
