@@ -130,7 +130,7 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
     g_jitInitialized = true;
 }
 
-void jitShutdown()
+void jitShutdown(bool processIsTerminating)
 {
     if (!g_jitInitialized)
     {
@@ -141,7 +141,13 @@ void jitShutdown()
 
     if (jitstdout != procstdout())
     {
-        fclose(jitstdout);
+        // When the process is terminating, the fclose call is unnecessary and is also prone to
+        // crashing since the UCRT itself often frees the backing memory earlier on in the
+        // termination sequence.
+        if (!processIsTerminating)
+        {
+            fclose(jitstdout);
+        }
     }
 
 #ifdef FEATURE_TRACELOGGING
@@ -162,7 +168,10 @@ extern "C" BOOL WINAPI DllMain(HANDLE hInstance, DWORD dwReason, LPVOID pvReserv
     }
     else if (dwReason == DLL_PROCESS_DETACH)
     {
-        jitShutdown();
+        // From MSDN: If fdwReason is DLL_PROCESS_DETACH, lpvReserved is NULL if FreeLibrary has
+        // been called or the DLL load failed and non-NULL if the process is terminating.
+        bool processIsTerminating = (pvReserved != nullptr);
+        jitShutdown(processIsTerminating);
     }
 
     return TRUE;
@@ -354,7 +363,7 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
         // Continue, by shutting down this JIT as well.
     }
 
-    jitShutdown();
+    jitShutdown(false);
 
     Compiler::ProcessShutdownWork(statInfo);
 }

@@ -2027,7 +2027,7 @@ AGAIN:
 
                 case GT_OBJ:
                 case GT_STORE_OBJ:
-                    hash ^= reinterpret_cast<unsigned>(tree->AsObj()->gtClass);
+                    hash ^= PtrToUlong(tree->AsObj()->gtClass);
                     break;
 
                 case GT_DYN_BLK:

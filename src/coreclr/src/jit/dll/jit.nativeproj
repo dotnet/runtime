@@ -27,6 +27,7 @@
     <DllEntryPoint>_DllMainCRTStartup</DllEntryPoint>
     <LinkSubsystem>windows</LinkSubsystem>
     <LibCLib Condition="'$(StaticLinkJit)'!='true'">$(ClrCrtLib)</LibCLib>
+    <LinkUseDefaultLib>false</LinkUseDefaultLib>
 
     <LinkModuleDefinitionFile>$(OutputName).def</LinkModuleDefinitionFile>
 
