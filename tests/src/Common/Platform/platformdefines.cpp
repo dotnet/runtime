@@ -208,8 +208,9 @@ error_t TP_itow_s(int num, LPWSTR buffer, size_t sizeInCharacters, int radix)
     // take care of the trivial case
     if (0 == num)
     {
-        buffer[0] = '\0';
+        buffer[0] = '0';
         buffer[1] = '\0';
+        return 0;
     }
 
     // get length of final string (dumb implementation)
@@ -229,6 +230,48 @@ error_t TP_itow_s(int num, LPWSTR buffer, size_t sizeInCharacters, int radix)
     {
         len--;
         buffer[len] = (WCHAR)((num % 10) + '0');
+        num /= 10;
+    }
+
+    return 0;
+}
+
+error_t TP_itoa_s(int num, LPSTR buffer, size_t sizeInCharacters, int radix)
+{
+    size_t len;
+    int tmpNum;
+
+    // only support radix == 10 and only positive numbers
+    if (10 != radix) return 1;
+    if (0 > num) return 2;
+    if (NULL == buffer) return 3;
+    if (2 > sizeInCharacters) return 4;
+
+    // take care of the trivial case
+    if (0 == num)
+    {
+        buffer[0] = '0';
+        buffer[1] = '\0';
+        return 0;
+    }
+
+    // get length of final string (dumb implementation)
+    len = 0;
+    tmpNum = num;
+    while (0 < tmpNum)
+    {
+        tmpNum /= 10;
+        len++;
+    }
+
+    if (len >= sizeInCharacters) return 5;
+
+    // convert num into a string (backwards)
+    buffer[len] = '\0';
+    while(0 < num && 0 < len)
+    {
+        len--;
+        buffer[len] = (char)((num % 10) + '0');
         num /= 10;
     }
 
