@@ -1022,6 +1022,13 @@ AC_ARG_ENABLE(cxx, [  --enable-cxx   compile some code as C++])
 CXXFLAGS_COMMON=' -std=gnu++0x -fno-exceptions -fno-rtti '
 # "c++0x" instead of C++11, for compat with Centos6/gcc4.4
 
+# -stdlib=libc++ is needed by clang for iOS 6.0 (-miphoneos-version-min=6.0)
+# to support C++11 headers but it does not seem to harm elsewhere, so over-approximate
+# and add it whenever we're running clang on Darwin.
+if test "x$mono_cv_clang" = xyes -a x$host_darwin = xyes; then
+	CXXFLAGS_COMMON="$CXXFLAGS_COMMON -stdlib=libc++"
+fi
+
 AC_SUBST(CXXFLAGS_COMMON)
 
 if test "x$enable_cxx" = "xyes"; then
