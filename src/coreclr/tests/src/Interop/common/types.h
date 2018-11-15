@@ -19,7 +19,7 @@ typedef char* LPSTR;
 typedef const char* LPCSTR;
 typedef void* FARPROC;
 typedef void* HMODULE;
-typedef unsigned error_t;
+typedef int error_t;
 typedef void* LPVOID;
 typedef unsigned char BYTE;
 typedef WCHAR OLECHAR;
