@@ -539,7 +539,8 @@ private:
     static BOOL Resolver(MethodTable   * pMT,
                          DispatchToken   token,
                          OBJECTREF     * protectedObj,
-                         PCODE         * ppTarget);
+                         PCODE         * ppTarget,
+                         BOOL          throwOnConflict);
 
     // This can be used to find a target without needing the ability to throw
     static BOOL TraceResolver(Object *pObj, DispatchToken token, TraceDestination *trace);
@@ -561,7 +562,7 @@ public:
     static PCODE CacheLookup(size_t token, UINT16 tokenHash, MethodTable *pMT);
 
     // Full exhaustive lookup. THROWS, GC_TRIGGERS
-    static PCODE GetTarget(DispatchToken token, MethodTable *pMT);
+    static PCODE GetTarget(DispatchToken token, MethodTable *pMT, BOOL throwOnConflict);
 
 private:
     // Given a dispatch token, return true if the token represents an interface, false if just a slot.

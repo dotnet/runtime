@@ -1911,7 +1911,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     if (target == NULL)
     {
         CONSISTENCY_CHECK(stub == CALL_STUB_EMPTY_ENTRY);
-        patch = Resolver(objectType, token, protectedObj, &target);
+        patch = Resolver(objectType, token, protectedObj, &target, TRUE /* throwOnConflict */);
 
 #if defined(_DEBUG) 
         if ( !objectType->IsComObjectType() &&
@@ -2196,7 +2196,8 @@ VirtualCallStubManager::Resolver(
     MethodTable * pMT, 
     DispatchToken token,
     OBJECTREF   * protectedObj, // this one can actually be NULL, consider using pMT is you don't need the object itself
-    PCODE *       ppTarget)
+    PCODE *       ppTarget,
+    BOOL          throwOnConflict)
 {
     CONTRACTL {
         THROWS;
@@ -2211,7 +2212,7 @@ VirtualCallStubManager::Resolver(
     if (token.IsTypedToken())
     {
         dbg_pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
-        dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(token.GetSlotNumber()).GetMethodDesc();
+        dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
     }
 #endif // _DEBUG
 
@@ -2226,7 +2227,7 @@ VirtualCallStubManager::Resolver(
 
     MethodDesc * pMD = NULL;
     BOOL fShouldPatch = FALSE;
-    DispatchSlot implSlot(pMT->FindDispatchSlot(token));
+    DispatchSlot implSlot(pMT->FindDispatchSlot(token, throwOnConflict));
 
     // If we found a target, then just figure out if we're allowed to create a stub around
     // this target and backpatch the callsite.
@@ -2310,7 +2311,7 @@ VirtualCallStubManager::Resolver(
     else if (pMT->IsComObjectType() && IsInterfaceToken(token))
     {
         MethodTable * pItfMT = GetTypeFromToken(token);
-        implSlot = pItfMT->FindDispatchSlot(token.GetSlotNumber());
+        implSlot = pItfMT->FindDispatchSlot(token.GetSlotNumber(), throwOnConflict);
 
         if (pItfMT->HasInstantiation())
         {
@@ -2370,7 +2371,7 @@ VirtualCallStubManager::Resolver(
         TypeHandle resulTypeHnd = resultTypeObj->GetType();
         MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
 
-        return Resolver(pResultMT, token, protectedObj, ppTarget);
+        return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }
 #endif // FEATURE_ICASTABLE
 
@@ -2381,7 +2382,7 @@ VirtualCallStubManager::Resolver(
         if (token.IsTypedToken())
         {
             pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
-            pTokenMD = pTokenMT->FindDispatchSlot(token.GetSlotNumber()).GetMethodDesc();
+            pTokenMD = pTokenMT->FindDispatchSlot(token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
         }
 
 #ifdef FEATURE_COMINTEROP
@@ -2395,6 +2396,13 @@ VirtualCallStubManager::Resolver(
         }
         else
 #endif // FEATURE_COMINTEROP
+        if (!throwOnConflict)
+        {
+            // Assume we got null because there was a default interface method conflict
+            *ppTarget = NULL;
+            return FALSE;
+        }
+        else
         {
             // Method not found, and this should never happen for anything but equivalent types
             CONSISTENCY_CHECK(!implSlot.IsNull() && "Valid method implementation was not found.");
@@ -2532,7 +2540,8 @@ PCODE VirtualCallStubManager::CacheLookup(size_t token, UINT16 tokenHash, Method
 PCODE
 VirtualCallStubManager::GetTarget(
     DispatchToken token, 
-    MethodTable * pMT)
+    MethodTable * pMT,
+    BOOL throwOnConflict)
 {
     CONTRACTL {
         THROWS;
@@ -2563,8 +2572,8 @@ VirtualCallStubManager::GetTarget(
 
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
     // We need to review if this is the case and refactor this code if we want ICastable to become officially supported    
-    fPatch = Resolver(pMT, token, NULL, &target);
-    _ASSERTE(target != NULL);
+    fPatch = Resolver(pMT, token, NULL, &target, throwOnConflict);
+    _ASSERTE(!throwOnConflict || target != NULL);
 
 #ifndef STUB_DISPATCH_PORTABLE
     if (fPatch)
@@ -2624,13 +2633,13 @@ VirtualCallStubManager::TraceResolver(
     CONSISTENCY_CHECK(CheckPointer(pMT));
 
 
-    DispatchSlot slot(pMT->FindDispatchSlot(token));
+    DispatchSlot slot(pMT->FindDispatchSlot(token, TRUE /* throwOnConflict */));
 
     if (slot.IsNull() && IsInterfaceToken(token) && pMT->IsComObjectType())
     {
         MethodDesc * pItfMD = GetInterfaceMethodDescFromToken(token);
         CONSISTENCY_CHECK(pItfMD->GetMethodTable()->GetSlot(pItfMD->GetSlot()) == pItfMD->GetMethodEntryPoint());
-        slot = pItfMD->GetMethodTable()->FindDispatchSlot(pItfMD->GetSlot());
+        slot = pItfMD->GetMethodTable()->FindDispatchSlot(pItfMD->GetSlot(), TRUE /* throwOnConflict */);
     }
 
     return (StubManager::TraceStub(slot.GetTarget(), trace));
@@ -4148,7 +4157,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     PCODE target = NULL;
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
     // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
-    VirtualCallStubManager::Resolver(pMT, token, NULL, &target);
+    VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);
 
     return pMT->GetMethodDescForSlotAddress(target);
 }

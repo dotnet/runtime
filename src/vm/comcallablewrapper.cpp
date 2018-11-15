@@ -4678,7 +4678,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         }
         else if (pClsMT != NULL)
         {
-            DispatchSlot impl(pClsMT->FindDispatchSlotForInterfaceMD(pIntfMD));
+            DispatchSlot impl(pClsMT->FindDispatchSlotForInterfaceMD(pIntfMD, FALSE /* throwOnConflict */));
             pClassMD = impl.GetMethodDesc();
         }
 
@@ -6494,7 +6494,8 @@ MethodDesc * ComCallWrapperTemplate::GetICustomQueryInterfaceGetInterfaceMD()
 
     if (m_pICustomQueryInterfaceGetInterfaceMD == NULL)
         m_pICustomQueryInterfaceGetInterfaceMD = m_thClass.GetMethodTable()->GetMethodDescForInterfaceMethod(
-           MscorlibBinder::GetMethod(METHOD__ICUSTOM_QUERYINTERFACE__GET_INTERFACE));
+           MscorlibBinder::GetMethod(METHOD__ICUSTOM_QUERYINTERFACE__GET_INTERFACE),
+           TRUE /* throwOnConflict */);
     RETURN m_pICustomQueryInterfaceGetInterfaceMD;
 }
 
