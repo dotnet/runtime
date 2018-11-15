@@ -27,8 +27,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             CategoryName = categoryName;
 
-            // Default is to turn off logging
-            Level = LogLevel.None;
+            // Default is to turn on all the logging
+            Level = LogLevel.Trace;
 
             _factoryID = factoryID;
             _eventSource = eventSource;
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (!IsEnabled(LogLevel.Critical))
             {
-                return NoopDisposable.Instance;
+                return NullScope.Instance;
             }
 
             var id = Interlocked.Increment(ref _activityIds);
@@ -163,15 +163,6 @@ namespace Microsoft.Extensions.Logging.EventSource
                 {
                     _eventSource.ActivityStop(_activityID, _factoryID, _categoryName);
                 }
-            }
-        }
-
-        private class NoopDisposable : IDisposable
-        {
-            public static readonly NoopDisposable Instance = new NoopDisposable();
-
-            public void Dispose()
-            {
             }
         }
 

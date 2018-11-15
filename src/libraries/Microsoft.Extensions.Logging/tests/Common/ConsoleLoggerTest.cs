@@ -11,9 +11,6 @@ using Microsoft.Extensions.Logging.Test.Console;
 using Microsoft.Extensions.Options;
 using Xunit;
 
-// ConsoleLogger is obsolete
-#pragma warning disable CS0618 // Type or member is obsolete
-
 namespace Microsoft.Extensions.Logging.Test
 {
     public class ConsoleLoggerTest
