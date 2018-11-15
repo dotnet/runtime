@@ -1154,7 +1154,7 @@ namespace System.Net.Sockets
         {
             fixed (byte* pinnedValue = optionValue)
             {
-                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
+                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue != null ? optionValue.Length : 0);
                 return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
             }
         }
