@@ -25,7 +25,7 @@ namespace System.Drawing.Text.Tests
             Assert.NotEmpty(fontCollection.Families);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_MultipleTimes_Nop()
         {
             var fontCollection = new InstalledFontCollection();

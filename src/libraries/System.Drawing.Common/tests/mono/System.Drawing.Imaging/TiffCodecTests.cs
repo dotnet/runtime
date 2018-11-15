@@ -40,7 +40,7 @@ namespace MonoTests.System.Drawing.Imaging
     public class TiffCodecTest
     {
         /* Checks bitmap features on a known 32bbp bitmap */
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap32bitsFeatures()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");
@@ -64,7 +64,7 @@ namespace MonoTests.System.Drawing.Imaging
         }
 
         /* Checks bitmap features on a known 32bbp bitmap */
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         public void Bitmap32bitsPixelFormat()
         {
@@ -76,7 +76,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap32bitsPixels()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");
@@ -122,7 +122,7 @@ namespace MonoTests.System.Drawing.Imaging
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Bitmap32bitsData()
         {
             string sInFile = Helpers.GetTestBitmapPath("almogaver32bits.tif");

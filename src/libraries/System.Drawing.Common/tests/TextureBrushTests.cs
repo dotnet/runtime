@@ -18,7 +18,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Bitmap_TestData))]
         public void Ctor_Bitmap(Image bitmap, PixelFormat expectedPixelFormat, Size expectedSize)
         {
@@ -42,7 +42,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_BitmapFromIconHandle_Success()
         {
             using (var icon = new Icon(Helpers.GetTestBitmapPath("10x16_one_entry_32bit.ico")))
@@ -65,7 +65,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_WrapMode_TestData))]
         public void Ctor_Image_WrapMode(Image image, WrapMode wrapMode, PixelFormat expectedPixelFormat, Size expectedSize)
         {
@@ -95,7 +95,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_TestData))]
         public void Ctor_Image_Rectangle(Image image, Rectangle rectangle)
         {
@@ -119,7 +119,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_TestData))]
         public void Ctor_Image_RectangleF(Image image, Rectangle rectangle)
         {
@@ -155,7 +155,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_WrapMode_Rectangle_TestData))]
         public void Ctor_Image_WrapMode_Rectangle(Image image, WrapMode wrapMode, Rectangle rectangle)
         {
@@ -179,7 +179,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_WrapMode_Rectangle_TestData))]
         public void Ctor_Image_WrapMode_RectangleF(Image image, WrapMode wrapMode, Rectangle rectangle)
         {
@@ -216,7 +216,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_ImageAttributes_TestData))]
         public void Ctor_Image_Rectangle_ImageAttributes(Image image, Rectangle rectangle, ImageAttributes attributes, WrapMode expectedWrapMode)
         {
@@ -241,7 +241,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_Image_Rectangle_ImageAttributes_TestData))]
         public void Ctor_Image_RectangleF_ImageAttributes(Image image, Rectangle rectangle, ImageAttributes attributes, WrapMode expectedWrapMode)
         {
@@ -265,7 +265,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullImage_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("image", () => new TextureBrush(null));
@@ -278,7 +278,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException>("image", () => new TextureBrush(null, WrapMode.Tile, Rectangle.Empty));
         }
         
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_DisposedImage_ThrowsArgumentException()
         {
             var image = new Bitmap(10, 10);
@@ -294,7 +294,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new TextureBrush(image, WrapMode.Tile, Rectangle.Empty));
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(WrapMode.Tile - 1)]
         [InlineData(WrapMode.Clamp + 1)]
         public void Ctor_InvalidWrapMode_ThrowsInvalidEnumArgumentException(WrapMode wrapMode)
@@ -307,7 +307,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1, 0, 1, 1)]
         [InlineData(10, 0, 1, 1)]
         [InlineData(5, 0, 6, 1)]
@@ -330,7 +330,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Invoke_Success()
         {
             using (var image = new Bitmap(10, 10))
@@ -344,7 +344,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -356,7 +356,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Image_GetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -376,7 +376,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Matrix(1, 2, 3, 4, 5, 6), new Matrix(2, 3, 4, 5, 6, 7), MatrixOrder.Append };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(MultiplyTransform_TestData))]
         public void MultiplyTransform_Matrix_SetsTransformToExpected(Matrix originalTransform, Matrix matrix, MatrixOrder matrixOrder)
         {
@@ -407,7 +407,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MultiplyTransform_NullMatrix_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -418,7 +418,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MultiplyTransform_NotInvertibleMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -430,7 +430,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MultiplyTransform_DisposedMatrix_Nop()
         {
             using (var image = new Bitmap(10, 10))
@@ -450,7 +450,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void MultiplyTransform_InvalidOrder_Nop(MatrixOrder matrixOrder)
@@ -467,7 +467,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MultiplyTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -481,7 +481,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ResetTransform_Invoke_SetsTransformToZero()
         {
             using (var image = new Bitmap(10, 10))
@@ -498,7 +498,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ResetTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -522,7 +522,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Matrix(1, 2, 3, 4, 5, 6), -45, MatrixOrder.Append };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(RotateTransform_TestData))]
         public void RotateTransform_Invoke_SetsTransformToExpected(Matrix originalTransform, float angle, MatrixOrder matrixOrder)
         {
@@ -552,7 +552,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void RotateTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder matrixOrder)
@@ -564,7 +564,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void RotateTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -592,7 +592,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Matrix(1, 2, 3, 4, 5, 6), 0.5, 0.75, MatrixOrder.Append };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ScaleTransform_TestData))]
         public void ScaleTransform_Invoke_SetsTransformToExpected(Matrix originalTransform, float scaleX, float scaleY, MatrixOrder matrixOrder)
         {
@@ -622,7 +622,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void ScaleTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder matrixOrder)
@@ -634,7 +634,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ScaleTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -648,7 +648,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_SetValid_GetReturnsExpected()
         {
             using (var image = new Bitmap(10, 10))
@@ -660,7 +660,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_SetNull_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -670,7 +670,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_SetDisposedMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -683,7 +683,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -711,7 +711,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Matrix(1, 2, 3, 4, 5, 6), 0.5, 0.75, MatrixOrder.Append };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(TranslateTransform_TestData))]
         public void TranslateTransform_Invoke_SetsTransformToExpected(Matrix originalTransform, float dX, float dY, MatrixOrder matrixOrder)
         {
@@ -741,7 +741,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void TranslateTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder matrixOrder)
@@ -753,7 +753,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TranslateTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -767,7 +767,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(WrapMode.Clamp)]
         [InlineData(WrapMode.Tile)]
         [InlineData(WrapMode.TileFlipX)]
@@ -783,7 +783,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(WrapMode.Tile - 1)]
         [InlineData(WrapMode.Clamp + 1)]
         public void WrapMode_SetInvalid_ThrowsInvalidEnumArgumentException(WrapMode wrapMode)
@@ -795,7 +795,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -808,7 +808,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_Clamp_ReturnsExpected()
         {
             // R|G|_|_
@@ -825,7 +825,7 @@ namespace System.Drawing.Tests
             });
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_Tile_ReturnsExpected()
         {
             // R|G|R|G
@@ -842,7 +842,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_TileFlipX_ReturnsExpected()
         {
             // R|G|G|R
@@ -859,7 +859,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_TileFlipY_ReturnsExpected()
         {
             // R|G|R|G
@@ -876,7 +876,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void WrapMode_TileFlipXY_ReturnsExpected()
         {
             // R|G|G|R

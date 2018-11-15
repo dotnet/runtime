@@ -33,7 +33,7 @@ namespace System.Drawing.Tests
     {
         private static readonly Graphics s_graphic = Graphics.FromImage(new Bitmap(1, 1));
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Default()
         {
             using (var region = new Region())
@@ -45,7 +45,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1, -2, -3, -4, true)]
         [InlineData(0, 0, 0, 0, true)]
         [InlineData(1, 2, 3, 4, false)]
@@ -62,7 +62,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1, 2, 3, float.NegativeInfinity, true)]
         [InlineData(-1, -2, -3, -4, true)]
         [InlineData(0, 0, 0, 0, true)]
@@ -87,7 +87,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Region(new Rectangle(1, 2, 3, 4)) };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Region_TestData))]
         public void Ctor_RegionData(Region region)
         {
@@ -106,7 +106,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_RegionDataOfRegionWithPath_Success()
         {
             using (var graphicsPath = new GraphicsPath())
@@ -116,7 +116,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_RegionDataOfRegionWithRegionData_Success()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -125,14 +125,14 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullRegionData_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("rgnData", () => new Region((RegionData)null));
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(7)]
@@ -148,7 +148,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_EmptyGraphicsPath_ThrowsExternalException()
         {
             using (var graphicsPath = new GraphicsPath())
@@ -159,7 +159,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullDataInRegionData_ThrowsNullReferenceException()
         {
             using (var region = new Region())
@@ -171,7 +171,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_GraphicsPath()
         {
             using (var graphicsPath = new GraphicsPath())
@@ -193,7 +193,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_EmptyGraphicsPath()
         {
             using (var graphicsPath = new GraphicsPath())
@@ -235,7 +235,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Ctor_InfiniteGraphicsPath_TestData))]
         public void Ctor_InfiniteGraphicsPath_IsInfinite(GraphicsPath path, bool isInfinite)
         {
@@ -252,7 +252,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_GraphicsPathTooLarge_SetsToEmpty()
         {
             using (var path = new GraphicsPath())
@@ -267,13 +267,13 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NullGraphicsPath_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => new Region((GraphicsPath)null));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_DisposedGraphicsPath_ThrowsArgumentException()
         {
             var path = new GraphicsPath();
@@ -282,7 +282,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Region(path));
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Region_TestData))]
         public void Clone(Region region)
         {
@@ -303,7 +303,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -368,7 +368,7 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Complement_TestData))]
         public void Complement_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -393,7 +393,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_UnionRegion_Success()
         {
             using (var region = new Region(new Rectangle(20, 20, 20, 20)))
@@ -411,7 +411,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_InfiniteAndWithIntersectRegion_Success()
         {
             using (var region = new Region())
@@ -430,7 +430,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_InfiniteRegion_Success()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -449,7 +449,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_NullRegion_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -458,7 +458,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_DisposedRegion_ThrowsArgumentException()
         {
             var region = new Region();
@@ -468,7 +468,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_SameRegion_ThrowsInvalidOperationException()
         {
             using (var region = new Region())
@@ -477,7 +477,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Complement_TestData))]
         public void Complement_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -499,7 +499,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Complement_TestData))]
         public void Complement_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -521,7 +521,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Complement_TestData))]
         public void Complement_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -541,7 +541,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(24525, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_GraphicsPathWithMultipleRectangles_Success()
         {
             Graphics graphics = Graphics.FromImage(new Bitmap(600, 800));
@@ -567,7 +567,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_EmptyPathWithInfiniteRegion_MakesEmpty()
         {
             using (var region = new Region())
@@ -578,7 +578,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_NullGraphicsPath_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -587,7 +587,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Complement_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -656,7 +656,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Valid_ReturnsExpected(Region region, Region other, bool expected)
         {
@@ -671,7 +671,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Equals_NullRegion_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -680,7 +680,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Equals_NullGraphics_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -689,7 +689,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Equals_DisposedGraphics_ThrowsArgumentException()
         {
             using (var region = new Region())
@@ -702,7 +702,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Equals_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -861,7 +861,7 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -879,7 +879,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_UnionRegion_Success()
         {
             using (var region = new Region(new RectangleF(20, 20, 20, 20)))
@@ -892,7 +892,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_InfiniteRegion_Success()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -904,7 +904,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_NullRegion_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -913,7 +913,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_DisposedRegion_ThrowsArgumentException()
         {
             var region = new Region();
@@ -923,7 +923,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_SameRegion_ThrowsInvalidOperationException()
         {
             using (var region = new Region())
@@ -933,7 +933,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -956,7 +956,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -979,7 +979,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -1005,7 +1005,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_EmptyPathWithInfiniteRegion_MakesInfinite()
         {
             using (var region = new Region())
@@ -1016,7 +1016,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_NullGraphicsPath_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1025,7 +1025,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Exclude_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1041,7 +1041,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHrgn_ValidHrgn_ReturnsExpected()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -1062,13 +1062,13 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void FromHrgn_ZeroHrgn_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Region.FromHrgn(IntPtr.Zero));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHrgn_Infinite_ReturnsZero()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -1082,7 +1082,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHrgn_Empty_ReturnsNonZero()
         {
             using (var region = new Region())
@@ -1097,7 +1097,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHrgn_NullGraphics_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1106,7 +1106,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetHrgn_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1115,7 +1115,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => region.GetHrgn(s_graphic));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ReleaseHrgn_ZeroHandle_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1124,7 +1124,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetBounds_NullGraphics_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1133,7 +1133,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetBounds_DisposedGraphics_ThrowsArgumentException()
         {
             using (var region = new Region())
@@ -1145,7 +1145,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetBounds_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1154,7 +1154,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => region.GetBounds(s_graphic));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionData_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1164,7 +1164,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionScans_CustomMatrix_TransformsRegionScans()
         {
             using (var matrix = new Matrix())
@@ -1179,7 +1179,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionScans_NullMatrix_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1188,7 +1188,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionScans_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1201,7 +1201,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetRegionScans_DisposedMatrix_ThrowsArgumentException()
         {
             using (var region = new Region())
@@ -1212,7 +1212,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_SmallerRect_Success()
         {
             using (var clipRegion = new Region())
@@ -1287,7 +1287,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -1309,7 +1309,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_InfiniteRegion_Success()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -1321,7 +1321,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_NullRegion_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1330,7 +1330,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_DisposedRegion_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1340,7 +1340,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_SameRegion_ThrowsInvalidOperationException()
         {
             using (var region = new Region())
@@ -1349,7 +1349,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -1371,7 +1371,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_InfiniteRegionWithSmallerRectangle_Success()
         {
             using (var region = new Region())
@@ -1385,7 +1385,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -1407,7 +1407,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_InfiniteRegionWithSmallerRectangleF_Success()
         {
             using (var region = new Region())
@@ -1422,7 +1422,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -1448,7 +1448,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_EmptyPathWithInfiniteRegion_MakesEmpty()
         {
             using (var region = new Region())
@@ -1459,7 +1459,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_NullGraphicsPath_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1468,7 +1468,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Intersect_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1484,7 +1484,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsEmpty_NullGraphics_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1493,7 +1493,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsEmpty_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1502,7 +1502,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => region.IsEmpty(s_graphic));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsInfinite_NullGraphics_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1511,7 +1511,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsInfinite_DisposedGraphics_ThrowsArgumentException()
         {
             using (var region = new Region())
@@ -1523,7 +1523,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsInfinite_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1554,7 +1554,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Region(new Rectangle(1, 1, 2, 1)), new Rectangle(3, 3, 1, 1), false };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(IsVisible_Rectangle_TestData))]
         public void IsVisible_Rectangle_ReturnsExpected(Region region, Rectangle rectangle, bool expected)
         {
@@ -1614,7 +1614,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Region(new Rectangle(1, 1, 2, 1)), new Point(3, 2), false };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(IsVisible_Point_TestData))]
         public void IsVisible_Point_ReturnsExpected(Region region, Point point, bool expected)
         {
@@ -1653,7 +1653,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1680,7 +1680,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, 3, 4, s_graphic));
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Region_TestData))]
         public void MakeEmpty_NonEmpty_Success(Region region)
         {
@@ -1705,7 +1705,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MakeEmpty_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1714,7 +1714,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => region.MakeEmpty());
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Region_TestData))]
         public void MakeInfinite_NonInfinity_Success(Region region)
         {
@@ -1735,7 +1735,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void MakeInfinite_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1935,7 +1935,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Union_TestData))]
         public void Union_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -1961,7 +1961,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_InfiniteRegion_Success()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -1974,7 +1974,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_NullRegion_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -1983,7 +1983,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_DisposedRegion_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1993,7 +1993,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_SameRegion_ThrowsInvalidOperationException()
         {
             using (var region = new Region())
@@ -2002,7 +2002,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Union_TestData))]
         public void Union_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2024,7 +2024,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Union_TestData))]
         public void Union_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2046,7 +2046,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Union_TestData))]
         public void Union_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2072,7 +2072,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_EmptyPathWithInfiniteRegion_MakesInfinite()
         {
             using (var region = new Region())
@@ -2083,7 +2083,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_NullGraphicsPath_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -2092,7 +2092,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Union_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -2108,7 +2108,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_EmptyMatrix_Nop()
         {
             using (var region = new Region(new RectangleF(1, 2, 3, 4)))
@@ -2119,7 +2119,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_CustomMatrix_Success()
         {
             using (var region = new Region(new RectangleF(1, 2, 3, 4)))
@@ -2134,7 +2134,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(1, 2, 0, 0, 0)]
         [InlineData(0, 0, 2, 2, 0)]
         [InlineData(0, 0, 0.5, 0.5, 0)]
@@ -2155,7 +2155,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Tranform_InfinityIntersectScale_Success()
         {
             using (var region = new Region())
@@ -2171,7 +2171,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Tranform_InfinityIntersectTransform_Success()
         {
             using (var region = new Region())
@@ -2186,7 +2186,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_NullMatrix_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -2195,7 +2195,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -2207,7 +2207,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(2, 3)]
         [InlineData(-2, -3)]
@@ -2221,7 +2221,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Translate_IntInfinityIntersect_Success()
         {
             using (var region = new Region())
@@ -2235,7 +2235,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(2, 3)]
         public void Translate_Float_Success(int dx, int dy)
@@ -2248,7 +2248,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Translate_FloatInfinityIntersect_Success()
         {
             using (var region = new Region())
@@ -2262,7 +2262,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Translate_Infinity_Nop()
         {
             using (var region = new Region())
@@ -2277,7 +2277,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(float.MaxValue)]
         [InlineData(float.MinValue)]
         [InlineData(float.NaN)]
@@ -2296,7 +2296,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Translate_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -2364,7 +2364,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2389,7 +2389,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_InfiniteRegion_Success()
         {
             using (var region = new Region(new Rectangle(1, 2, 3, 4)))
@@ -2408,7 +2408,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_NullRegion_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -2417,7 +2417,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_DisposedRegion_ThrowsArgumentException()
         {
             var region = new Region();
@@ -2427,7 +2427,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_SameRegion_ThrowsInvalidOperationException()
         {
             using (var region = new Region())
@@ -2437,7 +2437,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2460,7 +2460,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2483,7 +2483,7 @@ namespace System.Drawing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
@@ -2509,7 +2509,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_EmptyPathWithInfiniteRegion_MakesInfinite()
         {
             using (var region = new Region())
@@ -2520,7 +2520,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_NullGraphicsPath_ThrowsArgumentNullException()
         {
             using (var region = new Region())
@@ -2529,7 +2529,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Xor_Disposed_ThrowsArgumentException()
         {
             var region = new Region();

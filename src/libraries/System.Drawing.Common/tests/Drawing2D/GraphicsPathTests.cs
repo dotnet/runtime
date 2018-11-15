@@ -34,7 +34,7 @@ namespace System.Drawing.Drawing2D.Tests
         private const float Pi4 = (float)(Math.PI / 4);
         private const float Delta = 0.0003f;
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_Default_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -44,7 +44,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_FillMode_Success()
         {
             using (GraphicsPath gpa = new GraphicsPath(FillMode.Alternate))
@@ -57,7 +57,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_SamePoints_Success()
         {
             byte[] types = new byte[6] { 0, 1, 1, 1, 1, 1 };
@@ -88,7 +88,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_PointsNull_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pts", () => new GraphicsPath((Point[])null, new byte[1]));
@@ -100,7 +100,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { 2, 1 };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddCurve_PointsTypesLengthMismatch_TestData))]
         public void Ctor_PointsTypesLengthMismatch_ThrowsArgumentException(int pointsLength, int typesLength)
         {
@@ -108,7 +108,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath(new PointF[pointsLength], new byte[typesLength]));
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Clone_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -119,7 +119,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reset_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -131,7 +131,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GraphicsPath_FillModeChange()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -142,7 +142,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(FillMode.Alternate - 1)]
         [InlineData(FillMode.Winding + 1)]
         public void GraphicsPath_InvalidFillMode_ThrowsInvalidEnumArgumentException(FillMode fillMode)
@@ -153,7 +153,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PathData_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -163,7 +163,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PathData_CannotChange()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -178,7 +178,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PathPoints_CannotChange()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -193,7 +193,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PathPoints_EmptyPath_ThrowsArgumentException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -202,7 +202,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PathTypes_CannotChange()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -215,7 +215,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PathTypes_EmptyPath_ThrowsArgumentException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -224,7 +224,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetLastPoint_ReturnsExpected()
         {
             byte[] types = new byte[3] { 0, 1, 1 };
@@ -239,7 +239,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLine_Success()
         {
             using (GraphicsPath gpInt = new GraphicsPath())
@@ -262,7 +262,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLine_SamePoints_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -288,7 +288,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLines_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -302,7 +302,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLines_SinglePoint_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -318,7 +318,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLines_SamePoint_Success()
         {
             Point[] intPoints = new Point[]
@@ -357,7 +357,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLines_PointsNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -367,7 +367,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddLines_ZeroPoints_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new GraphicsPath().AddLines(new Point[0]));
@@ -375,7 +375,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddArc_Values_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -392,7 +392,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddArc_Rectangle_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -407,7 +407,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(1, 0)]
         [InlineData(0, 1)]
@@ -420,7 +420,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddBezier_Points_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -435,7 +435,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddBezier_SamePoints_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -459,7 +459,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddBezier_Values_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -473,7 +473,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddBeziers_Points_Success()
         {
             PointF[] points = new PointF[]
@@ -488,7 +488,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddBeziers_PointsNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -506,7 +506,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new PointF[3] { new PointF(1f, 1f), new PointF(2f, 2f), new PointF(3f, 3f) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddBeziers_InvalidFloatPointsLength_TestData))]
         public void AddBeziers_InvalidFloatPointsLength_ThrowsArgumentException(PointF[] points)
         {
@@ -517,7 +517,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_TwoPoints_Success()
         {
             Point[] intPoints = new Point[] { new Point(1, 1), new Point(2, 2) };
@@ -536,7 +536,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_TwoPointsWithTension_Success()
         {
             Point[] intPoints = new Point[] { new Point(1, 1), new Point(2, 2) };
@@ -553,7 +553,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_SamePoints_Success()
         {
             Point[] intPoints = new Point[] { new Point(1, 1), new Point(1, 1) };
@@ -574,7 +574,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_LargeTension_Success()
         {
             Point[] intPoints = new Point[] { new Point(1, 1), new Point(2, 2) };
@@ -591,7 +591,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_Success()
         {
             PointF[] points = new PointF[]
@@ -635,7 +635,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_PointsNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -651,7 +651,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new PointF[1] { new PointF(1f, 1f) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddCurve_InvalidFloatPointsLength_TestData))]
         public void AddCurve_InvalidFloatPointsLength_ThrowsArgumentException(PointF[] points)
         {
@@ -668,7 +668,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new Point[1] { new Point(1, 1) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddCurve_InvalidPointsLength_TestData))]
         public void AddCurve_InvalidPointsLength_ThrowsArgumentException(Point[] points)
         {
@@ -685,7 +685,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { -1 };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddCurve_InvalidSegment_TestData))]
         public void AddCurve_InvalidSegment_ThrowsArgumentException(int segment)
         {
@@ -699,7 +699,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddCurve_OffsetTooLarge_ThrowsArgumentException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -713,7 +713,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_Points_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -728,7 +728,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_SamePoints_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -747,7 +747,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_Tension_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -761,7 +761,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_PointsNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -778,7 +778,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new Point[2] { new Point(1, 1), new Point(2, 2) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddCurve_InvalidPointsLength_TestData))]
         public void AddClosedCurve_InvalidPointsLength_ThrowsArgumentException(Point[] points)
         {
@@ -795,7 +795,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new PointF[2] { new PointF(1f, 1f), new PointF(2f, 2f) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddClosedCurve_InvalidFloatPointsLength_TestData))]
         public void AddClosedCurve_InvalidFloatPointsLength_ThrowsArgumentException(PointF[] points)
         {
@@ -805,7 +805,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddRectangle_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -820,7 +820,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddRectangle_SameRectangles_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -849,7 +849,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(3, 0)]
         [InlineData(0, 4)]
@@ -866,7 +866,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddRectangles_Success()
         {
             Rectangle[] rectInt = new Rectangle[] { new Rectangle(1, 1, 2, 2), new Rectangle(3, 3, 4, 4) };
@@ -887,7 +887,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddRectangles_SamePoints_Success()
         {
             Rectangle[] rectInt = new Rectangle[]
@@ -919,7 +919,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddRectangles_RectangleNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -929,7 +929,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddEllipse_Rectangle_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -944,7 +944,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddEllipse_Values_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -958,7 +958,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(2, 0)]
         [InlineData(0, 2)]
@@ -976,7 +976,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPie_Rectangle_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -989,7 +989,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPie_Values_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1004,7 +1004,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(0, 0)]
         [InlineData(2, 0)]
         [InlineData(0, 2)]
@@ -1019,7 +1019,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPolygon_Points_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1035,7 +1035,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPolygon_SamePoints_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1075,7 +1075,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPolygon_PointsNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1092,7 +1092,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new PointF[2] { new PointF(1f, 1f), new PointF(2f, 2f) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddPolygon_InvalidFloadPointsLength_TestData))]
         public void AddPolygon_InvalidFloadPointsLength_ThrowsArgumentException(PointF[] points)
         {
@@ -1109,7 +1109,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { new Point[2] { new Point(1, 1), new Point(2, 2) } };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(AddPolygon_InvalidPointsLength_TestData))]
         public void AddPolygon_InvalidPointsLength_ThrowsArgumentException(Point[] points)
         {
@@ -1119,7 +1119,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPath_Success()
         {
             using (GraphicsPath inner = new GraphicsPath())
@@ -1131,7 +1131,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddPath_PathNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1141,7 +1141,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_Point_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1156,7 +1156,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_Rectangle_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1171,7 +1171,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_NegativeSize_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1194,7 +1194,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_StringFormat_Success()
         {
             using (GraphicsPath gp1 = new GraphicsPath())
@@ -1213,7 +1213,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_EmptyString_Success()
         {
             using (GraphicsPath gpi = new GraphicsPath())
@@ -1228,7 +1228,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_StringNull_ThrowsNullReferenceException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1244,7 +1244,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddString_FontFamilyNull_ThrowsArgumentException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1254,7 +1254,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1270,7 +1270,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_PathEmpty_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1282,7 +1282,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_MatrixNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1291,7 +1291,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetBounds_PathEmpty_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1300,7 +1300,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetBounds_Rectangle_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1315,7 +1315,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void GetBounds_Pie_ReturnsExpected()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1327,7 +1327,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Empty_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1338,7 +1338,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_MatrixNull_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1349,7 +1349,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_MatrixNullFloat_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1360,7 +1360,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Arc_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1372,7 +1372,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Bezier_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1384,7 +1384,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_ClosedCurve_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1401,7 +1401,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Curve_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1418,7 +1418,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Ellipse_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1430,7 +1430,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Line_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1442,7 +1442,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Pie_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1454,7 +1454,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Polygon_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1471,7 +1471,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Flatten_Rectangle_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1483,7 +1483,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Warp_DestinationPointsNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1492,7 +1492,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Warp_DestinationPointsZero_ThrowsArgumentException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1501,7 +1501,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Warp_PathEmpty_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1513,7 +1513,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Warp_WarpModeInvalid_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1526,7 +1526,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Warp_RectangleEmpty_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1538,7 +1538,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetMarkers_EmptyPath_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1547,7 +1547,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void SetMarkers_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1560,7 +1560,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearMarkers_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1576,7 +1576,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ClearMarkers_EmptyPath_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1585,7 +1585,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void CloseFigure_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1598,7 +1598,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void CloseFigure_EmptyPath_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1607,7 +1607,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void CloseAllFigures_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1624,7 +1624,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void CloseAllFigures_EmptyPath_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1633,7 +1633,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddArc()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1650,7 +1650,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddBezier()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1667,7 +1667,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddBeziers()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1690,7 +1690,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddClosedCurve()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1708,7 +1708,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddCurve()
         {
             GraphicsPath path = new GraphicsPath();
@@ -1723,7 +1723,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(1, types[path.PointCount - 1]);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddEllipse()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1741,7 +1741,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddLine()
         {
             GraphicsPath path = new GraphicsPath();
@@ -1756,7 +1756,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(1, types[path.PointCount - 1]);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddLines()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1773,7 +1773,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddPath_Connect()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1792,7 +1792,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddPath_NoConnect()
         {
             GraphicsPath inner = new GraphicsPath();
@@ -1809,7 +1809,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(1, types[path.PointCount - 1]);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddPie()
         {
             GraphicsPath path = new GraphicsPath();
@@ -1826,7 +1826,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(1, types[path.PointCount - 1]);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddPolygon()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1844,7 +1844,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddRectangle()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1862,7 +1862,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddRectangles()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1886,7 +1886,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void StartClose_AddString()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1905,7 +1905,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_Pen_Success()
         {
             PointF[] expectedPoints = new PointF[]
@@ -1930,7 +1930,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_EmptyPath_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1942,7 +1942,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_PenNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1954,7 +1954,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_MatrixNull_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1968,7 +1968,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Widen_MatrixEmpty_Success()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -1992,7 +1992,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Widen_PenSmallWidth_TestData))]
         public void Widen_Pen_SmallWidth_Succes(
             Rectangle rectangle, float penWidth, RectangleF expectedBounds)
@@ -2009,7 +2009,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_PenNull_ThrowsArgumentNullException()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2021,13 +2021,13 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_LineWithoutGraphics_ReturnsExpected()
         {
             AssertIsOutlineVisibleLine(null);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_LineInsideGraphics_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2037,7 +2037,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_LineOutsideGraphics_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(5, 5))
@@ -2047,7 +2047,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_LineWithGraphicsTransform_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2059,7 +2059,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_LineWithGraphicsPageUnit_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2070,7 +2070,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_LineWithGraphicsPageScale_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
@@ -2081,21 +2081,21 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsOutlineVisible_RectangleWithoutGraphics_ReturnsExpected()
         {
             AssertIsOutlineVisibleRectangle(null);
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_RectangleWithoutGraphics_ReturnsExpected()
         {
             AssertIsVisibleRectangle(null);
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_RectangleWithGraphics_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(40, 40))
@@ -2105,13 +2105,13 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_EllipseWithoutGraphics_ReturnsExpected()
         {
             AssertIsVisibleEllipse(null);
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void IsVisible_EllipseWithGraphics_ReturnsExpected()
         {
             using (Bitmap bitmap = new Bitmap(40, 40))
@@ -2121,7 +2121,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Arc_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2131,7 +2131,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Bezier_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2153,7 +2153,7 @@ namespace System.Drawing.Drawing2D.Tests
             };
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
         public void Reverse_Beziers_Succes(Point[] points)
         {
@@ -2164,7 +2164,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
         public void Reverse_ClosedCurve_Succes(Point[] points)
         {
@@ -2175,7 +2175,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
         public void Reverse_Curve_Succes(Point[] points)
         {
@@ -2186,7 +2186,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Ellipse_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2196,7 +2196,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Line_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2206,7 +2206,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_LineClosed_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2217,7 +2217,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
         public void Reverse_Lines_Succes(Point[] points)
         {
@@ -2228,7 +2228,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(Reverse_TestData))]
         public void Reverse_Polygon_Succes(Point[] points)
         {
@@ -2239,7 +2239,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Rectangle_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2249,7 +2249,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Rectangles_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2261,7 +2261,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Pie_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2272,7 +2272,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_ArcLineInnerPath_Succes()
         {
             using (GraphicsPath inner = new GraphicsPath())
@@ -2286,7 +2286,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_EllipseRectangle_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2299,7 +2299,7 @@ namespace System.Drawing.Drawing2D.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_String_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2328,7 +2328,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_Marker_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2340,7 +2340,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Reverse_SubpathMarker_Succes()
         {
             using (GraphicsPath gp = new GraphicsPath())
@@ -2366,7 +2366,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_PointsTypes_Succes()
         {
             int dX = 520;
