@@ -2081,7 +2081,7 @@ void* Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum,        /* IN  */
     else
     {
         // If we don't have a matched VM, we won't get valid results when asking for a helper function.
-        addr = UlongToPtr(0xCA11CA11); // "callcall" //markmil: TODO: review. Was formerly a straight void* cast
+        addr = UlongToPtr(0xCA11CA11); // "callcall"
     }
 
     return addr;
@@ -7795,9 +7795,9 @@ void CompTimeSummaryInfo::Print(FILE* f)
         double fslop_ms = m_filtered.m_parentPhaseEndSlop * 1000.0 / countsPerSec;
         if (fslop_ms > 1.0)
         {
-            fprintf(f,
-                    "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles.\n",
-                    fslop_ms);
+            fprintf(f, "\n  'End phase slop' should be very small (if not, there's unattributed time): %9.3f Mcycles = "
+                       "%3.1f%% of total.\n\n",
+                    m_total.m_parentPhaseEndSlop / 1000000.0, fslop_ms);
         }
     }
 
