@@ -18,6 +18,7 @@ namespace System
         public static bool IsWindows => false;
         public static bool IsWindows7 => false;
         public static bool IsWindows8x => false;
+        public static bool IsWindows8xOrLater => false;
         public static bool IsWindows10Version1607OrGreater => false;
         public static bool IsWindows10Version1703OrGreater => false;
         public static bool IsWindows10Version1709OrGreater => false;

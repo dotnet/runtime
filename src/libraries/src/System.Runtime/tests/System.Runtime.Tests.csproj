@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{B1BF7CE0-CAB5-4FA2-A39C-450B05D5DB1C}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -254,6 +254,8 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeatureTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.netcoreapp.cs" />
+    <Compile Include="System\Text\RuneTests.netcoreapp.cs" />
+    <Compile Include="System\Text\RuneTests.TestData.netcoreapp.cs" />
     <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />
     <Compile Include="System\Type\TypePropertyTests.netcoreapp.cs" />
     <Compile Include="System\Type\TypeTests.netcoreapp.cs" />
