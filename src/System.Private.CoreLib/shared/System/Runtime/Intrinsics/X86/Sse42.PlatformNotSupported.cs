@@ -52,10 +52,5 @@ namespace System.Runtime.Intrinsics.X86
         ///   CRC32 reg, reg/m32
         /// </summary>
         public static uint Crc32(uint crc, uint data) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
-        ///   CRC32 reg, reg/m64
-        /// </summary>
-        public static ulong Crc32(ulong crc, ulong data) { throw new PlatformNotSupportedException(); }
     }
 }
