@@ -12,8 +12,10 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -58,10 +60,10 @@ namespace System.Globalization
             if (index < s.Length - 1)
             {
                 int temp1 = (int)s[index] - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
+                if ((uint)temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
+                    if ((uint)temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
@@ -80,10 +82,10 @@ namespace System.Globalization
             if (index < s.Length - 1)
             {
                 int temp1 = c - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
+                if ((uint)temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
+                    if ((uint)temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         return ((temp1 * 0x400) + temp2 + UNICODE_PLANE01_START);
@@ -124,10 +126,10 @@ namespace System.Globalization
             if (index < s.Length - 1)
             {
                 int temp1 = (int)s[index] - HIGH_SURROGATE_START;
-                if (temp1 >= 0 && temp1 <= HIGH_SURROGATE_RANGE)
+                if ((uint)temp1 <= HIGH_SURROGATE_RANGE)
                 {
                     int temp2 = (int)s[index + 1] - LOW_SURROGATE_START;
-                    if (temp2 >= 0 && temp2 <= HIGH_SURROGATE_RANGE)
+                    if ((uint)temp2 <= HIGH_SURROGATE_RANGE)
                     {
                         // Convert the surrogate to UTF32 and get the result.
                         charLength++;
@@ -138,90 +140,47 @@ namespace System.Globalization
             return ((int)s[index]);
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        //
-        //  IsWhiteSpace
-        //
-        //  Determines if the given character is a white space character.
-        //
-        ////////////////////////////////////////////////////////////////////////
-
-        internal static bool IsWhiteSpace(string s, int index)
-        {
-            Debug.Assert(s != null, "s!=null");
-            Debug.Assert(index >= 0 && index < s.Length, "index >= 0 && index < s.Length");
-
-            UnicodeCategory uc = GetUnicodeCategory(s, index);
-            // In Unicode 3.0, U+2028 is the only character which is under the category "LineSeparator".
-            // And U+2029 is th eonly character which is under the category "ParagraphSeparator".
-            switch (uc)
-            {
-                case (UnicodeCategory.SpaceSeparator):
-                case (UnicodeCategory.LineSeparator):
-                case (UnicodeCategory.ParagraphSeparator):
-                    return (true);
-            }
-            return (false);
-        }
-
-
-        internal static bool IsWhiteSpace(char c)
-        {
-            UnicodeCategory uc = GetUnicodeCategory(c);
-            // In Unicode 3.0, U+2028 is the only character which is under the category "LineSeparator".
-            // And U+2029 is th eonly character which is under the category "ParagraphSeparator".
-            switch (uc)
-            {
-                case (UnicodeCategory.SpaceSeparator):
-                case (UnicodeCategory.LineSeparator):
-                case (UnicodeCategory.ParagraphSeparator):
-                    return (true);
-            }
-
-            return (false);
-        }
-
-
         //
         // This is called by the public char and string, index versions
         //
         // Note that for ch in the range D800-DFFF we just treat it as any other non-numeric character
         //
-        internal static unsafe double InternalGetNumericValue(int ch)
+        internal static double InternalGetNumericValue(int ch)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
-            ushort index = s_pNumericLevel1Index[ch >> 8];
-            // Get the level 2 WORD offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.
-            // The offset is referred to an float item in m_pNumericFloatData.
-            // Note that & has the lower precedence than addition, so don't forget the parathesis.
-            index = s_pNumericLevel1Index[index + ((ch >> 4) & 0x000f)];
-
-            fixed (ushort* pUshortPtr = &(s_pNumericLevel1Index[index]))
+            int index = ch >> 8;
+            if ((uint)index < (uint)NumericLevel1Index.Length)
             {
-                byte* pBytePtr = (byte*)pUshortPtr;
-                fixed (byte* pByteNum = s_pNumericValues)
-                {
-                    double* pDouble = (double*)pByteNum;
-                    return pDouble[pBytePtr[(ch & 0x000f)]];
-                }
+                index = NumericLevel1Index[index];
+                // Get the level 2 offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.
+                // Note that & has the lower precedence than addition, so don't forget the parathesis.
+                index = NumericLevel2Index[(index << 4) + ((ch >> 4) & 0x000f)];
+                index = NumericLevel3Index[(index << 4) + (ch & 0x000f)];
+                ref var value = ref Unsafe.AsRef(in NumericValues[index * 8]);
+
+                if (BitConverter.IsLittleEndian)
+                    return Unsafe.ReadUnaligned<double>(ref value);
+                return BitConverter.Int64BitsToDouble(BinaryPrimitives.ReverseEndianness(Unsafe.ReadUnaligned<long>(ref value)));
             }
+            return -1;
         }
 
-        internal static unsafe ushort InternalGetDigitValues(int ch)
+        internal static byte InternalGetDigitValues(int ch, int offset)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
             // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
-            ushort index = s_pNumericLevel1Index[ch >> 8];
-            // Get the level 2 WORD offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.
-            // Note that & has the lower precedence than addition, so don't forget the parathesis.
-            index = s_pNumericLevel1Index[index + ((ch >> 4) & 0x000f)];
-
-            fixed (ushort* pUshortPtr = &(s_pNumericLevel1Index[index]))
+            int index = ch >> 8;
+            if ((uint)index < (uint)NumericLevel1Index.Length)
             {
-                byte* pBytePtr = (byte*)pUshortPtr;
-                return s_pDigitValues[pBytePtr[(ch & 0x000f)]];
+                index = NumericLevel1Index[index];
+                // Get the level 2 offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.
+                // Note that & has the lower precedence than addition, so don't forget the parathesis.
+                index = NumericLevel2Index[(index << 4) + ((ch >> 4) & 0x000f)];
+                index = NumericLevel3Index[(index << 4) + (ch & 0x000f)];
+                return DigitValues[index * 2 + offset];
             }
+            return 0xff;
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -261,7 +220,7 @@ namespace System.Globalization
 
         public static int GetDecimalDigitValue(char ch)
         {
-            return (sbyte)(InternalGetDigitValues(ch) >> 8);
+            return (sbyte)InternalGetDigitValues(ch, 0);
         }
 
         public static int GetDecimalDigitValue(string s, int index)
@@ -276,12 +235,12 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            return (sbyte)(InternalGetDigitValues(InternalConvertToUtf32(s, index)) >> 8);
+            return (sbyte)InternalGetDigitValues(InternalConvertToUtf32(s, index), 0);
         }
 
         public static int GetDigitValue(char ch)
         {
-            return (sbyte)(InternalGetDigitValues(ch) & 0x00FF);
+            return (sbyte)InternalGetDigitValues(ch, 1);
         }
 
         public static int GetDigitValue(string s, int index)
@@ -296,7 +255,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
-            return (sbyte)(InternalGetDigitValues(InternalConvertToUtf32(s, index)) & 0x00FF);
+            return (sbyte)InternalGetDigitValues(InternalConvertToUtf32(s, index), 1);
         }
 
         public static UnicodeCategory GetUnicodeCategory(char ch)
@@ -335,28 +294,20 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static unsafe byte InternalGetCategoryValue(int ch, int offset)
+        internal static byte InternalGetCategoryValue(int ch, int offset)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
-            // Get the level 2 item from the highest 12 bit (8 - 19) of ch.
-            ushort index = s_pCategoryLevel1Index[ch >> 8];
-            // Get the level 2 WORD offset from the 4 - 7 bit of ch.  This provides the base offset of the level 3 table.
+            // Get the level 2 item from the highest 11 bits of ch.
+            int index = CategoryLevel1Index[ch >> 9];
+            // Get the level 2 WORD offset from the next 5 bits of ch.  This provides the base offset of the level 3 table.
             // Note that & has the lower precedence than addition, so don't forget the parathesis.
-            index = s_pCategoryLevel1Index[index + ((ch >> 4) & 0x000f)];
+            index = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AsRef(in CategoryLevel2Index[(index << 6) + ((ch >> 3) & 0b111110)]));
+            if (!BitConverter.IsLittleEndian)
+                index = BinaryPrimitives.ReverseEndianness((ushort)index);
 
-            fixed (ushort* pUshortPtr = &(s_pCategoryLevel1Index[index]))
-            {
-                byte* pBytePtr = (byte*)pUshortPtr;
-                // Get the result from the 0 -3 bit of ch.
-                byte valueIndex = pBytePtr[(ch & 0x000f)];
-                byte uc = s_pCategoriesValue[valueIndex * 2 + offset];
-                //
-                // Make sure that OtherNotAssigned is the last category in UnicodeCategory.
-                // If that changes, change the following assertion as well.
-                //
-                //Debug.Assert(uc >= 0 && uc <= UnicodeCategory.OtherNotAssigned, "Table returns incorrect Unicode category");
-                return (uc);
-            }
+            // Get the result from the 0 -3 bit of ch.
+            index = CategoryLevel3Index[(index << 4) + (ch & 0x000f)];
+            return CategoriesValue[index * 2 + offset];
         }
 
         ////////////////////////////////////////////////////////////////////////
