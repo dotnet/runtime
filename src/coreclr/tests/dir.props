@@ -64,6 +64,8 @@
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
     <CoreCLRBinDir>$(RootBinDir)Product\$(__BuildOS).$(__BuildArch).$(__BuildType)\</CoreCLRBinDir>
+
+    <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>
 
 <!-- Default Test platform to deploy the netstandard compiled tests to -->

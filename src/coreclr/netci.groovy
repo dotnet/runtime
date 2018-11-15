@@ -2219,9 +2219,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                             if (architecture == 'x86_arm_altjit') {
                                 buildCommandsStr += envScriptAppendExistingScript(os, "%WORKSPACE%\\tests\\x86_arm_altjit.cmd", envScriptPath)
+                                testOpts += " altjitarch arm"
                             }
                             else if (architecture == 'x64_arm64_altjit') {
                                 buildCommandsStr += envScriptAppendExistingScript(os, "%WORKSPACE%\\tests\\x64_arm64_altjit.cmd", envScriptPath)
+                                testOpts += " altjitarch arm64"
                             }
 
                             envScriptFinalize(os, envScriptPath)
@@ -2233,9 +2235,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }
                         else if (architecture == 'x86_arm_altjit') {
                             envScriptPath = "%WORKSPACE%\\tests\\x86_arm_altjit.cmd"
+                            testOpts += " altjitarch arm"
                         }
                         else if (architecture == 'x64_arm64_altjit') {
                             envScriptPath = "%WORKSPACE%\\tests\\x64_arm64_altjit.cmd"
+                            testOpts += " altjitarch arm64"
                         }
                         if (envScriptPath != '') {
                             testOpts += " TestEnv ${envScriptPath}"
