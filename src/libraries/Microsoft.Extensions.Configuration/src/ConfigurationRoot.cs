@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Configuration
             return _providers
                 .Aggregate(Enumerable.Empty<string>(),
                     (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(key => GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
         }
 
