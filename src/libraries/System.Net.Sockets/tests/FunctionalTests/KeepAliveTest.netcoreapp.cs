@@ -43,7 +43,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(KeepAliveTest), nameof(IsUnixOrWindowsAtLeast1703))]
+        [ConditionalFact(typeof(KeepAliveTest), nameof(IsUnixOrWindowsAtLeast1703))] // RetryCount not supported by earlier versions of Windows
         public void Socket_KeepAlive_RetryCount_Success()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -53,7 +53,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(KeepAliveTest), nameof(IsWindowsBelow1703))]
+        [ConditionalFact(typeof(KeepAliveTest), nameof(IsWindowsBelow1703))] // RetryCount not supported by earlier versions of Windows
         public void Socket_KeepAlive_RetryCount_Failure()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -83,7 +83,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalFact(typeof(KeepAliveTest), nameof(IsWindowsBelow1709))]
+        [PlatformSpecific(TestPlatforms.Windows)] // relies on Windows defaults
+        [Fact]
         public void Socket_KeepAlive_Time_And_Interval()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -100,8 +101,9 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal<int>(Interval, (int)socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveInterval));
             }
         }
-        
-        [ConditionalFact(typeof(KeepAliveTest), nameof(IsWindowsBelow1709))]
+
+        [PlatformSpecific(TestPlatforms.Windows)] // relies on Windows defaults
+        [Fact]
         public void Socket_KeepAlive_Interval_And_Time()
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -143,8 +145,8 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                byte[] bufferLenghtZero = new byte[0];
-                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferLenghtZero));
+                byte[] bufferLengthZero = new byte[0];
+                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferLengthZero));
             }
         }
 
@@ -173,8 +175,8 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                byte[] bufferLenghtZero = new byte[0];
-                Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferLenghtZero));
+                byte[] bufferLengthZero = new byte[0];
+                Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveTime, bufferLengthZero));
             }
         }
 

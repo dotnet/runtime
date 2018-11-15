@@ -492,8 +492,8 @@ namespace System.Net.Sockets
         {
             SocketError errorCode;
             if (optionLevel == SocketOptionLevel.Tcp &&
-                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval)
-                && IOControlKeepAlive.IsNeeded)
+                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
+                IOControlKeepAlive.IsNeeded)
             {
                 errorCode = IOControlKeepAlive.Set(handle, optionName, optionValue);
             }
@@ -513,10 +513,10 @@ namespace System.Net.Sockets
         {
             SocketError errorCode;
             if (optionLevel == SocketOptionLevel.Tcp &&
-                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval)
-                && IOControlKeepAlive.IsNeeded)
+                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
+                IOControlKeepAlive.IsNeeded)
             {
-                errorCode = IOControlKeepAlive.Set(handle, optionName, optionValue);
+                return IOControlKeepAlive.Set(handle, optionName, optionValue);
             }
             else
             {
@@ -526,8 +526,8 @@ namespace System.Net.Sockets
                     optionName,
                     optionValue,
                     optionValue != null ? optionValue.Length : 0);
+                return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
             }
-            return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
 
         public static void SetReceivingDualModeIPv4PacketInformation(Socket socket)
@@ -621,8 +621,8 @@ namespace System.Net.Sockets
         public static SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, out int optionValue)
         {
             if (optionLevel == SocketOptionLevel.Tcp &&
-                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval)
-                && IOControlKeepAlive.IsNeeded)
+                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
+                IOControlKeepAlive.IsNeeded)
             {
                 optionValue = IOControlKeepAlive.Get(handle, optionName);
                 return SocketError.Success;
@@ -641,11 +641,10 @@ namespace System.Net.Sockets
         public static SocketError GetSockOpt(SafeSocketHandle handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue, ref int optionLength)
         {
             if (optionLevel == SocketOptionLevel.Tcp &&
-                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval)
-                && IOControlKeepAlive.IsNeeded)
+                (optionName == SocketOptionName.TcpKeepAliveTime || optionName == SocketOptionName.TcpKeepAliveInterval) &&
+                IOControlKeepAlive.IsNeeded)
             {
-                IOControlKeepAlive.Get(handle, optionName, optionValue, ref optionLength);
-                return SocketError.Success;
+                return IOControlKeepAlive.Get(handle, optionName, optionValue, ref optionLength);
             }
 
             SocketError errorCode = Interop.Winsock.getsockopt(
