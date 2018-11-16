@@ -1343,7 +1343,7 @@ OBJECTREF ThreadBaseObject::GetManagedThreadCulture(BOOL bUICulture)
 
     if (pFD != NULL)
     {
-        pCurrentCulture = (OBJECTREF*)pThread->GetStaticFieldAddrNoCreate(pFD, NULL);
+        pCurrentCulture = (OBJECTREF*)pThread->GetStaticFieldAddrNoCreate(pFD);
         if (pCurrentCulture)
         {
             return *pCurrentCulture;
@@ -1418,7 +1418,7 @@ void ThreadBaseObject::ResetManagedThreadCulture(BOOL bUICulture)
     {
         OBJECTREF *pCulture = NULL;
         BEGIN_SO_INTOLERANT_CODE_NO_THROW_CHECK_THREAD(COMPlusThrowSO());
-        pCulture = (OBJECTREF*)pThread->GetStaticFieldAddrNoCreate(pFD, NULL);
+        pCulture = (OBJECTREF*)pThread->GetStaticFieldAddrNoCreate(pFD);
         if (pCulture) 
         {
             SetObjectReferenceUnchecked(pCulture, NULL);

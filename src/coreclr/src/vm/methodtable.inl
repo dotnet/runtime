@@ -1408,9 +1408,7 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
     
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLBIfExists(pThread, NULL);
-    if (pTLB == NULL)
-        return NULL;
+    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
     if (pTLM == NULL)
@@ -1436,9 +1434,7 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
     
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLBIfExists(pThread, NULL);
-    if (pTLB == NULL)
-        return NULL;
+    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
     if (pTLM == NULL)
@@ -1450,16 +1446,14 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
 #endif //!DACCESS_COMPILE
 
 //==========================================================================================
-inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread, PTR_AppDomain pDomain)
+inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
     
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLBIfExists(pThread, pDomain);
-    if (pTLB == NULL)
-        return NULL;
+    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
     if (pTLM == NULL)
@@ -1469,16 +1463,14 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread
 }
 
 //==========================================================================================
-inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread, PTR_AppDomain pDomain)
+inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     // Get the current module's ModuleIndex
     ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
     
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLBIfExists(pThread, pDomain);
-    if (pTLB == NULL)
-        return NULL;
+    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
 
     PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
     if (pTLM == NULL)

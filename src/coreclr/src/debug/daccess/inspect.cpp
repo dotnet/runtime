@@ -1431,7 +1431,7 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
         }
 
         baseAddr =
-            TO_CDADDR(tlsThread->GetStaticFieldAddrNoCreate(fieldDesc, NULL));
+            TO_CDADDR(tlsThread->GetStaticFieldAddrNoCreate(fieldDesc));
     }
     else if (fieldDesc->IsStatic())
     {
