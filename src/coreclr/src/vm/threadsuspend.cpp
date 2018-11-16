@@ -1370,9 +1370,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
     CONTRACTL_END;
 
     STRESS_LOG2(LF_SYNC | LF_APPDOMAIN, LL_INFO100, "UserAbort Thread %p Thread Id = %x\n", this, GetThreadId());
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
 
     BOOL fHoldingThreadStoreLock = ThreadStore::HoldingThreadStore();
 
@@ -2441,10 +2438,6 @@ void Thread::MarkThreadForAbort(ThreadAbortRequester requester, EEPolicy::Thread
 
         // The thread is asked for abort the first time
         SetAbortRequestBit();
-
-#ifdef _DEBUG
-        AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
     }
     STRESS_LOG4(LF_APPDOMAIN, LL_ALWAYS, "Mark Thread %p Thread Id = %x for abort from requester %d (type %d)\n", this, GetThreadId(), requester, abortType);
 }
@@ -2575,10 +2568,6 @@ void Thread::UnmarkThreadForAbort(ThreadAbortRequester requester, BOOL fForce)
         FastInterlockAnd((DWORD*)&m_State,~(TS_AbortInitiated));
         m_fRudeAbortInitiated = FALSE;
         ResetUserInterrupted();
-
-#ifdef _DEBUG
-        AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
     }
 
     STRESS_LOG3(LF_APPDOMAIN, LL_ALWAYS, "Unmark Thread %p Thread Id = %x for abort from requester %d\n", this, GetThreadId(), requester);
@@ -2597,9 +2586,6 @@ void Thread::InternalResetAbort(ThreadAbortRequester requester, BOOL fResetRudeA
 
     // managed code can not reset Rude thread abort
     UnmarkThreadForAbort(requester, fResetRudeAbort);
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
 }
 
 
@@ -2846,11 +2832,6 @@ void Thread::RareDisablePreemptiveGC()
     {
         goto Exit;
     }
-
-
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_GCMode);
-#endif
 
     // This should NEVER be called if the TSNC_UnsafeSkipEnterCooperative bit is set!
     _ASSERTE(!(m_StateNC & TSNC_UnsafeSkipEnterCooperative) && "DisablePreemptiveGC called while the TSNC_UnsafeSkipEnterCooperative bit is set");
@@ -3145,9 +3126,6 @@ void Thread::HandleThreadAbort (BOOL fForce)
             exceptObj = CLRException::GetThrowableFromException(&eeExcept);
         }
 
-#ifdef _DEBUG
-        AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
         RaiseTheExceptionInternalOnly(exceptObj, FALSE);
     }
     END_SO_INTOLERANT_CODE;
@@ -3281,10 +3259,6 @@ void Thread::RareEnablePreemptiveGC()
     // process and no coordination is necessary.
     if (IsAtProcessExit())
         return;
-
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_GCMode);
-#endif
 
     // EnablePreemptiveGC already set us to preemptive mode before triggering the Rare path.
     // Force other threads to see this update, since the Rare path implies that someone else
