@@ -23,8 +23,8 @@
 
     <Compile Condition="'$(ILEmitBackend)' == 'True'" Include="ServiceLookup\ILEmit\*.cs" />
 
-    <Compile Include="..\..\..\Shared\src\ParameterDefaultValue\*.cs" />
-    <Compile Include="..\..\..\Shared\src\TypeNameHelper\*.cs" />
+    <Compile Include="$(SharedSourceRoot)ParameterDefaultValue\*.cs" />
+    <Compile Include="$(SharedSourceRoot)TypeNameHelper\*.cs" />
   </ItemGroup>
 
 </Project>
