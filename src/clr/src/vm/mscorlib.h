@@ -603,9 +603,9 @@ DEFINE_CLASS(NULLABLE,              System,                 Nullable`1)
 
 DEFINE_CLASS(BYREFERENCE,           System,                 ByReference`1)
 DEFINE_CLASS(SPAN,                  System,                 Span`1)
-DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, NoSig)
+DEFINE_METHOD(SPAN,                 GET_ITEM,               get_Item, IM_Int_RetRefT)
 DEFINE_CLASS(READONLY_SPAN,         System,                 ReadOnlySpan`1)
-DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, NoSig)
+DEFINE_METHOD(READONLY_SPAN,        GET_ITEM,               get_Item, IM_Int_RetReadOnlyRefT)
 
 // Keep this in sync with System.Globalization.NumberFormatInfo
 DEFINE_CLASS_U(Globalization,       NumberFormatInfo,   NumberFormatInfo)
@@ -1445,6 +1445,8 @@ DEFINE_CLASS(LONG_ENUM_EQUALITYCOMPARER, CollectionsGeneric, LongEnumEqualityCom
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
 DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)
 DEFINE_CLASS(OBJECT_EQUALITYCOMPARER, CollectionsGeneric, ObjectEqualityComparer`1)
+
+DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD
