@@ -115,45 +115,10 @@ namespace System.Reflection
             return m.m_fieldHandle == m_fieldHandle;
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        internal void InternalSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture, ref StackCrawlMark stackMark)
-        {
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
-            RuntimeType declaringType = DeclaringType as RuntimeType;
-
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
-            {
-                if (declaringType != null && declaringType.ContainsGenericParameters)
-                    throw new InvalidOperationException(SR.Arg_UnboundGenField);
-
-                throw new FieldAccessException();
-            }
-
-            CheckConsistency(obj);
-
-            RuntimeType fieldType = (RuntimeType)FieldType;
-            value = fieldType.CheckValue(value, binder, culture, invokeAttr);
-
-            bool domainInitialized = false;
-            if (declaringType == null)
-            {
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
-            }
-            else
-            {
-                domainInitialized = declaringType.DomainInitialized;
-                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, declaringType, ref domainInitialized);
-                declaringType.DomainInitialized = domainInitialized;
-            }
-        }
-
         // UnsafeSetValue doesn't perform any consistency or visibility check.
         // It is the caller's responsibility to ensure the operation is safe.
-        // When the caller needs to perform visibility checks they should call
-        // InternalSetValue() instead. When the caller needs to perform
-        // consistency checks they should call CheckConsistency() before
-        // calling this method.
+        // When the caller needs to perform consistency checks they should 
+        // call CheckConsistency() before calling this method.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal void UnsafeSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
@@ -175,32 +140,10 @@ namespace System.Reflection
             }
         }
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        internal object InternalGetValue(object obj, ref StackCrawlMark stackMark)
-        {
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
-            RuntimeType declaringType = DeclaringType as RuntimeType;
-
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
-            {
-                if (declaringType != null && DeclaringType.ContainsGenericParameters)
-                    throw new InvalidOperationException(SR.Arg_UnboundGenField);
-
-                throw new FieldAccessException();
-            }
-
-            CheckConsistency(obj);
-
-            return UnsafeGetValue(obj);
-        }
-
         // UnsafeGetValue doesn't perform any consistency or visibility check.
         // It is the caller's responsibility to ensure the operation is safe.
-        // When the caller needs to perform visibility checks they should call
-        // InternalGetValue() instead. When the caller needs to perform
-        // consistency checks they should call CheckConsistency() before
-        // calling this method.
+        // When the caller needs to perform consistency checks they should 
+        // call CheckConsistency() before calling this method.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal object UnsafeGetValue(object obj)
@@ -258,10 +201,24 @@ namespace System.Reflection
         #endregion
 
         #region FieldInfo Overrides
+        [DebuggerStepThroughAttribute]
+        [Diagnostics.DebuggerHidden]
         public override object GetValue(object obj)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return InternalGetValue(obj, ref stackMark);
+            INVOCATION_FLAGS invocationFlags = InvocationFlags;
+            RuntimeType declaringType = DeclaringType as RuntimeType;
+
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
+            {
+                if (declaringType != null && DeclaringType.ContainsGenericParameters)
+                    throw new InvalidOperationException(SR.Arg_UnboundGenField);
+
+                throw new FieldAccessException();
+            }
+
+            CheckConsistency(obj);
+
+            return UnsafeGetValue(obj);
         }
 
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
@@ -284,8 +241,33 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            InternalSetValue(obj, value, invokeAttr, binder, culture, ref stackMark);
+            INVOCATION_FLAGS invocationFlags = InvocationFlags;
+            RuntimeType declaringType = DeclaringType as RuntimeType;
+
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
+            {
+                if (declaringType != null && declaringType.ContainsGenericParameters)
+                    throw new InvalidOperationException(SR.Arg_UnboundGenField);
+
+                throw new FieldAccessException();
+            }
+
+            CheckConsistency(obj);
+
+            RuntimeType fieldType = (RuntimeType)FieldType;
+            value = fieldType.CheckValue(value, binder, culture, invokeAttr);
+
+            bool domainInitialized = false;
+            if (declaringType == null)
+            {
+                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
+            }
+            else
+            {
+                domainInitialized = declaringType.DomainInitialized;
+                RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, declaringType, ref domainInitialized);
+                declaringType.DomainInitialized = domainInitialized;
+            }
         }
 
         [DebuggerStepThroughAttribute]
