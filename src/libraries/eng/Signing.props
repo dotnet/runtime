@@ -13,9 +13,11 @@
     <ItemsToSign Include="$(ArtifactsDir)packages\**\*.nupkg" Exclude="$(ArtifactsDir)packages\**\*symbols.nupkg" />
   </ItemGroup>
 
-  <Target Name="ValidateSignFileListIsNotEmpty" BeforeTargets="Sign">
-    <!-- we don't sign any files during our netfx build because we don't have any packages we produce there -->
-    <Error Condition="'@(ItemsToSign)' == '' and '$(TargetGroup)' != 'netfx'" Text="List of files to sign is empty. Ensure '$(ArtifactsDir)packages' contains nupkg files to sign." />
-    <Message Importance="High" Text="Attempting to sign %(ItemsToSign.Identity)" />
+  <Target Name="AllowEmptySignListForNetFx" BeforeTargets="Sign">
+    <PropertyGroup>
+      <!-- We do not build packages for NetFx.
+           This must be set in a target since the sign.proj sets this property statically -->
+      <AllowEmptySignList Condition="'$(TargetGroup)' == 'netfx'">true</AllowEmptySignList>
+    </PropertyGroup>
   </Target>
 </Project>
