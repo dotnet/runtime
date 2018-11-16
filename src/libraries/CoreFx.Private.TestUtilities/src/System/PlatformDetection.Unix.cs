@@ -62,7 +62,7 @@ namespace System
 
         public static Version OSXVersion { get; } = ToVersion(Microsoft.DotNet.PlatformAbstractions.RuntimeEnvironment.OperatingSystemVersion);
 
-        public static Version OpenSslVersion => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? GetOpenSslVersion() : throw new PlatformNotSupportedException();
+        public static Version OpenSslVersion => !RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? GetOpenSslVersion() : throw new PlatformNotSupportedException();
 
         public static string GetDistroVersionString()
         {
