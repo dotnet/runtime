@@ -6,7 +6,12 @@
         <SupportedFramework>net461;netcoreapp2.0;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.IO.Pipelines.csproj" />
-    <HarvestIncludePaths Include="ref/netstandard1.3;lib/netstandard1.3" />
+    <HarvestIncludePaths Include="lib/netstandard1.3" />
   </ItemGroup>
+  <PropertyGroup>
+    <!-- Excluding the reference assets on the package so that RAR will see the run-time conflicts at build time in order to
+    generate the right binding redirects when targeting Desktop. https://github.com/dotnet/corefx/issues/32457 -->
+    <ExcludeReferenceAssets>true</ExcludeReferenceAssets>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
