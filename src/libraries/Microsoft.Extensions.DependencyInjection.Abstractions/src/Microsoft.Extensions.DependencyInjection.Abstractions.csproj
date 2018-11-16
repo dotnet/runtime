@@ -11,8 +11,8 @@ Microsoft.Extensions.DependencyInjection.IServiceCollection</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\Shared\src\ParameterDefaultValue\*.cs" />
-    <Compile Include="..\..\..\Shared\src\ActivatorUtilities\*.cs" />
+    <Compile Include="$(SharedSourceRoot)ParameterDefaultValue\*.cs" />
+    <Compile Include="$(SharedSourceRoot)ActivatorUtilities\*.cs" />
   </ItemGroup>
 
 </Project>
