@@ -1085,6 +1085,9 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		} else if (!strcmp ("ToString", tm)) {
 			/* white list */
 			return FALSE;
+		} else if (!strcmp ("GetHashCode", tm)) {
+			/* white list */
+			return FALSE;
 		} else if (!strcmp ("IsNaN", tm) || !strcmp ("IsInfinity", tm) || !strcmp ("IsNegativeInfinity", tm) || !strcmp ("IsPositiveInfinity", tm)) {
 			g_assert (type_index == 2); // nfloat only
 			/* white list */
@@ -1419,6 +1422,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 #if DEBUG_INTERP
 		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
+		/* Intrinsics: Try again, it could be that `mono_get_method_constrained_with_method` resolves to a method that we can substitute */
+		if (target_method && interp_handle_intrinsics (td, target_method, csignature, readonly, &op))
+			return;
+
 		return_if_nok (error);
 		mono_class_setup_vtable (target_method->klass);
 

@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 
 public class BuiltinTests {
@@ -287,6 +288,37 @@ public class BuiltinTests {
 			return 2;
 		if (((nint) 0).Equals (null))
 			return 3;
+		return 0;
+	}
+
+	private sealed class MyGenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+	{
+		public sealed override bool Equals(T x, T y) {
+			if (x != null) {
+				if (y != null)
+					return x.Equals (y);
+				return false;
+			}
+			if (y != null)
+				return false;
+			return true;
+		}
+
+		public sealed override int GetHashCode(T obj)
+		{
+			if (obj == null)
+				return 0;
+			return obj.GetHashCode ();
+		}
+	}
+
+	static int test_0_nint_genequals ()
+	{
+		MyGenericEqualityComparer<nint> cmp = new MyGenericEqualityComparer<nint> ();
+		if (cmp.Equals ((nint) 1, (nint) 2))
+			return 1;
+		if (!cmp.Equals ((nint) 4, (nint) 4))
+			return 2;
 		return 0;
 	}
 
