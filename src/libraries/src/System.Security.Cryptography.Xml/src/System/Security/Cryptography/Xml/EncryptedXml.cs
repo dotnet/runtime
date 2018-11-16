@@ -185,7 +185,6 @@ namespace System.Security.Cryptography.Xml
             if (cipherData == null)
                 throw new ArgumentNullException(nameof(cipherData));
 
-            WebResponse response = null;
             Stream inputStream = null;
 
             if (cipherData.CipherValue != null)
@@ -242,8 +241,6 @@ namespace System.Security.Cryptography.Xml
                     Utils.Pump(decInputStream, ms);
                     cipherValue = ms.ToArray();
                     // Close the stream and return
-                    if (response != null)
-                        response.Close();
                     if (inputStream != null)
                         inputStream.Close();
                     decInputStream.Close();

@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Xml
                                 position++;
                                 if (node1 == result) break;
                             }
-                            if (result == null || (result != null && position != _signaturePosition))
+                            if (result == null || position != _signaturePosition)
                             {
                                 resultNodeList.Add(node);
                             }
