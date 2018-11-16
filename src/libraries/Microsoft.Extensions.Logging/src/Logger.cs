@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging.Abstractions.Internal;
 
 namespace Microsoft.Extensions.Logging
 {

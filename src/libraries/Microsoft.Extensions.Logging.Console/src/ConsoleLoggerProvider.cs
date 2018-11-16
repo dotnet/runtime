@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console

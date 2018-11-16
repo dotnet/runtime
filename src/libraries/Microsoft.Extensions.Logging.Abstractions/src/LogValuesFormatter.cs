@@ -8,12 +8,12 @@ using System.Linq;
 using System.Globalization;
 using System.Text;
 
-namespace Microsoft.Extensions.Logging.Internal
+namespace Microsoft.Extensions.Logging
 {
     /// <summary>
     /// Formatter to convert the named format items like {NamedformatItem} to <see cref="M:string.Format"/> format.
     /// </summary>
-    public class LogValuesFormatter
+    internal class LogValuesFormatter
     {
         private const string NullValue = "(null)";
         private static readonly object[] EmptyArray = new object[0];
@@ -34,9 +34,6 @@ namespace Microsoft.Extensions.Logging.Internal
                 var openBraceIndex = FindBraceIndex(format, '{', scanIndex, endIndex);
                 var closeBraceIndex = FindBraceIndex(format, '}', openBraceIndex, endIndex);
 
-                // Format item syntax : { index[,alignment][ :formatString] }.
-                var formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
-
                 if (closeBraceIndex == endIndex)
                 {
                     sb.Append(format, scanIndex, endIndex - scanIndex);
@@ -44,6 +41,9 @@ namespace Microsoft.Extensions.Logging.Internal
                 }
                 else
                 {
+                    // Format item syntax : { index[,alignment][ :formatString] }.
+                    var formatDelimiterIndex = FindIndexOfAny(format, FormatDelimiters, openBraceIndex, closeBraceIndex);
+
                     sb.Append(format, scanIndex, openBraceIndex - scanIndex + 1);
                     sb.Append(_valueNames.Count.ToString(CultureInfo.InvariantCulture));
                     _valueNames.Add(format.Substring(openBraceIndex + 1, formatDelimiterIndex - openBraceIndex - 1));
