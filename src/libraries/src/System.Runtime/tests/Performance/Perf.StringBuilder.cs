@@ -144,5 +144,47 @@ namespace System.Tests
                 }
             }
         }
+
+        [Benchmark(InnerIterationCount = 1000)]
+        [InlineData(20)]
+        [InlineData(200)]
+        [InlineData(1000)]
+        public void AppendMemoryAsMemory(int length)
+        {
+            PerfUtils utils = new PerfUtils();
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                // Setup - Create a string of the specified length
+                string builtString = utils.CreateString(length);
+                ReadOnlyMemory<char> memory = builtString.AsMemory();
+                StringBuilder empty = new StringBuilder();
+
+                // Actual perf testing
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        empty.Append(memory); // Appends a string of length "length" to an increasingly large StringBuilder
+            }
+        }
+
+        [Benchmark(InnerIterationCount = 1000)]
+        [InlineData(20)]
+        [InlineData(200)]
+        [InlineData(1000)]
+        public void AppendMemoryAsObject(int length)
+        {
+            PerfUtils utils = new PerfUtils();
+            foreach (var iteration in Benchmark.Iterations)
+            {
+                // Setup - Create a string of the specified length
+                string builtString = utils.CreateString(length);
+                object memoryObject = builtString.AsMemory(); // deliberately uses object to force use of memory.ToString() for comparison to AppendAsReadOnlyMemory
+                StringBuilder empty = new StringBuilder();
+
+                // Actual perf testing
+                using (iteration.StartMeasurement())
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                        empty.Append(memoryObject); 
+            }
+        }
     }
 }
