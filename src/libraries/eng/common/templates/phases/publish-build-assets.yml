@@ -11,7 +11,7 @@ phases:
     dependsOn: ${{ parameters.dependsOn }}
     queue: ${{ parameters.queue }}
     variables:
-      config: ${{ parameters.configuration }}
+      _BuildConfig: ${{ parameters.configuration }}
     steps:
       - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
         - task: DownloadBuildArtifacts@0
@@ -29,10 +29,18 @@ phases:
           condition: ${{ parameters.condition }}
           continueOnError: ${{ parameters.continueOnError }}
         - script: eng\common\publishbuildassets.cmd
+            -configuration $(_BuildConfig)
             /p:ManifestsPath='$(Build.StagingDirectory)/Download/AssetManifests'
             /p:BuildAssetRegistryToken=$(MaestroAccessToken)
             /p:MaestroApiEndpoint=https://maestro-prod.westus2.cloudapp.azure.com
-            /p:Configuration=$(config)
           displayName: Publish Build Assets
           condition: ${{ parameters.condition }}
           continueOnError: ${{ parameters.continueOnError }}
+        - task: PublishBuildArtifacts@1
+          displayName: Publish Logs to VSTS
+          inputs:
+            PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
+            PublishLocation: Container
+            ArtifactName: $(Agent.Os)_Asset_Registry_Publish
+          continueOnError: true
+          condition: always()
