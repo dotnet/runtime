@@ -109,6 +109,12 @@
       <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="rhel">
+      <Parent>linux</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>8;8.0</Versions>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="sles">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
