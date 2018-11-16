@@ -1624,6 +1624,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 			if (!*p) //XXX test
 				return 0;
 			if (*p  == ',' || *p == '*' || *p == ']') { //array
+				gboolean bounded = FALSE;
 				isptr = 0;
 				rank = 1;
 				while (*p) {
@@ -1632,13 +1633,19 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 					if (*p == ',')
 						rank++;
 					else if (*p == '*') /* '*' means unknown lower bound */
-						info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-2));
+						bounded = TRUE;
 					else
 						return 0;
 					++p;
 				}
 				if (*p++ != ']')
 					return 0;
+				/* bounded only allowed when rank == 1 */
+				if (bounded && rank > 1)
+					return 0;
+				/* n.b. bounded needs both modifiers: -2 == bounded, 1 == rank 1 array */
+				if (bounded)
+					info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-2));
 				info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (rank));
 			} else {
 				if (rank || isptr) /* generic args after array spec or ptr*/ //XXX test
