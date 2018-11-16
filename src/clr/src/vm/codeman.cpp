@@ -2311,11 +2311,6 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
     BEGIN_PRESERVE_LAST_ERROR;
 
 #ifdef ENABLE_CONTRACTS
-    // See comment in code:Thread::SwitchIn and SwitchOut.
-    Thread *pThread = GetThread();
-    if (!(pThread && pThread->HasThreadStateNC(Thread::TSNC_InTaskSwitch)))
-    {
-
     // Some 64-bit OOM tests use the hosting interface to re-enter the CLR via
     // RtlVirtualUnwind to track unique stacks at each failure point. RtlVirtualUnwind can
     // result in the EEJitManager taking a reader lock. This, in turn, results in a
@@ -2335,10 +2330,6 @@ extern "C" PT_RUNTIME_FUNCTION GetRuntimeFunctionCallback(IN ULONG     ControlPc
         prf = codeInfo.GetFunctionEntry();
 
     LOG((LF_EH, LL_INFO1000000, "GetRuntimeFunctionCallback(%p) returned %p\n", ControlPc, prf));
-
-#ifdef ENABLE_CONTRACTS
-    }
-#endif // ENABLE_CONTRACTS
 
     END_PRESERVE_LAST_ERROR;
 

@@ -2719,64 +2719,9 @@ ULONG STDMETHODCALLTYPE CExecutionEngine::Release()
 struct ClrTlsInfo
 {
     void* data[MAX_PREDEFINED_TLS_SLOT];
-    // When hosted, we may not be able to delete memory in DLL_THREAD_DETACH.
-    // We will chain this into a side list, and free these on Finalizer thread.
-    ClrTlsInfo *next;
 };
 
-#define DataToClrTlsInfo(a) (a)?(ClrTlsInfo*)((BYTE*)a - offsetof(ClrTlsInfo, data)):NULL
-
-
-#ifdef HAS_FLS_SUPPORT
-
-static BOOL fHasFlsSupport = FALSE;
-
-typedef DWORD (*Func_FlsAlloc)(PFLS_CALLBACK_FUNCTION lpCallback);
-typedef BOOL (*Func_FlsFree)(DWORD dwFlsIndex);
-typedef BOOL (*Func_FlsSetValue)(DWORD dwFlsIndex,PVOID lpFlsData);
-typedef PVOID (*Func_FlsGetValue)(DWORD dwFlsIndex);
-
-static DWORD FlsIndex = FLS_OUT_OF_INDEXES;
-static Func_FlsAlloc pFlsAlloc;
-static Func_FlsSetValue pFlsSetValue;
-static Func_FlsFree pFlsFree;
-static Func_FlsGetValue pFlsGetValue;
-static Volatile<BOOL> fFlsSetupDone = FALSE;
-
-VOID WINAPI FlsCallback(
-  PVOID lpFlsData
-)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE (pFlsGetValue);
-    if (pFlsGetValue(FlsIndex) != lpFlsData)
-    {
-        // The current running fiber is being destroyed.  We can not destroy the memory yet,
-        // because our DllMain function may still need the memory.
-        CExecutionEngine::ThreadDetaching((void **)lpFlsData);        
-    }
-    else
-    {
-        // The thread is being wound down.
-        // In hosting scenarios the host will have already called ICLRTask::ExitTask, which 
-        // ends up calling CExecutionEngine::SwitchOut, which will have reset the TLS at TlsIndex.
-        // 
-        // Unfortunately different OSes have different ordering of destroying FLS data and sending
-        // the DLL_THREAD_DETACH notification (pre-Vista FlsCallback is called after DllMain, while 
-        // in Vista and up, FlsCallback is called before DllMain).  Additionally, starting with 
-        // Vista SP1 and Win2k8, the OS will set the FLS slot to 0 after the call to FlsCallback, 
-        // effectively removing our last reference to this data. Since in EEDllMain we need to be 
-        // able to access the FLS data, we save lpFlsData in the TLS slot at TlsIndex, if needed.
-        if (CExecutionEngine::GetTlsData() == NULL)
-        {
-            CExecutionEngine::SetTlsData((void **)lpFlsData);
-        }
-    }
-}
-
-#endif // HAS_FLS_SUPPORT
-
+#define DataToClrTlsInfo(a) ((ClrTlsInfo*)a)
 
 void** CExecutionEngine::GetTlsData()
 {
@@ -2821,10 +2766,6 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    // !!! This function is called during Thread::SwitchIn and SwitchOut
-    // !!! It is extremely important that while executing this function, we will not
-    // !!! cause fiber switch.  This means we can not allocate memory, lock, etc...
-
     //<TODO> @TODO: Decide on an exception strategy for all the DLLs of the CLR, and then
     // enable all the exceptions out of this method.</TODO>
 
@@ -2833,67 +2774,8 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
 //    if (slot >= MAX_PREDEFINED_TLS_SLOT)
 //        COMPlusThrow(kArgumentOutOfRangeException);
 
-#ifdef HAS_FLS_SUPPORT
-    if (!fFlsSetupDone)
-    {
-        // Contract depends on Fls support.  Don't use contract here.
-        HMODULE hmod = GetModuleHandleA(WINDOWS_KERNEL32_DLLNAME_A);
-        if (hmod)
-        {
-            pFlsSetValue = (Func_FlsSetValue) GetProcAddress(hmod, "FlsSetValue");
-            pFlsGetValue = (Func_FlsGetValue) GetProcAddress(hmod, "FlsGetValue");
-            pFlsAlloc = (Func_FlsAlloc) GetProcAddress(hmod, "FlsAlloc");
-            pFlsFree = (Func_FlsFree) GetProcAddress(hmod, "FlsFree");
-
-            if (pFlsSetValue && pFlsGetValue && pFlsAlloc && pFlsFree )
-            {
-                fHasFlsSupport = TRUE;
-            }
-            else
-            {
-                // Since we didn't find them all, we shouldn't have found any
-                _ASSERTE( pFlsSetValue == NULL && pFlsGetValue == NULL && pFlsAlloc == NULL && pFlsFree == NULL);
-            }
-            fFlsSetupDone = TRUE;
-        }
-    }
-
-    if (fHasFlsSupport && FlsIndex == FLS_OUT_OF_INDEXES)
-    {
-        // PREFIX_ASSUME needs TLS.  If we use it here, we will loop forever
-#if defined(_PREFAST_) || defined(_PREFIX_) 
-        if (pFlsAlloc == NULL) __UNREACHABLE();
-#else
-        _ASSERTE(pFlsAlloc != NULL);
-#endif // _PREFAST_ || _PREFIX_
-
-        DWORD tryFlsIndex = pFlsAlloc(FlsCallback);
-        if (tryFlsIndex != FLS_OUT_OF_INDEXES)
-        {
-            if (FastInterlockCompareExchange((LONG*)&FlsIndex, tryFlsIndex, FLS_OUT_OF_INDEXES) != FLS_OUT_OF_INDEXES)
-            {
-                pFlsFree(tryFlsIndex);
-            }
-        }
-        if (FlsIndex == FLS_OUT_OF_INDEXES)
-        {
-            COMPlusThrowOM();
-        }
-    }
-#endif // HAS_FLS_SUPPORT
-
     void** pTlsData = CExecutionEngine::GetTlsData();
     BOOL fInTls = (pTlsData != NULL);
-
-#ifdef HAS_FLS_SUPPORT
-    if (fHasFlsSupport)
-    {
-        if (pTlsData == NULL)
-        {
-            pTlsData = (void **)pFlsGetValue(FlsIndex);
-        }
-    }
-#endif
 
     ClrTlsInfo *pTlsInfo = DataToClrTlsInfo(pTlsData);
     if (pTlsInfo == 0 && force)
@@ -2910,12 +2792,6 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
             goto LError;
         }
         memset (pTlsInfo, 0, sizeof(ClrTlsInfo));
-#ifdef HAS_FLS_SUPPORT
-        if (fHasFlsSupport && !pFlsSetValue(FlsIndex, pTlsInfo))
-        {
-            goto LError;
-        }
-#endif
         // We save the last intolerant marker on stack in this slot.  
         // -1 is the larget unsigned number, and therefore our marker is always smaller than it.
         pTlsInfo->data[TlsIdx_SOIntolerantTransitionHandler] = (void*)(-1);
@@ -2923,31 +2799,10 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
 
     if (!fInTls && pTlsInfo)
     {
-#ifdef HAS_FLS_SUPPORT
-        // If we have a thread object or are on a non-fiber thread, we are safe for fiber switching.
-        if (!fHasFlsSupport ||
-            GetThread() ||
-            (g_fEEStarted || g_fEEInit) ||
-            (((size_t)pTlsInfo->data[TlsIdx_ThreadType]) & (ThreadType_GC | ThreadType_Gate | ThreadType_Timer | ThreadType_DbgHelper)))
-        {
-#ifdef _DEBUG
-            Thread *pThread = GetThread();
-            if (pThread)
-            {
-                pThread->AddFiberInfo(Thread::ThreadTrackInfo_Lifetime);
-            }
-#endif
-            if (!CExecutionEngine::SetTlsData(pTlsInfo->data) && !fHasFlsSupport)
-            {
-                goto LError;
-            }
-        }
-#else
         if (!CExecutionEngine::SetTlsData(pTlsInfo->data))
         {
             goto LError;
         }
-#endif
     }
 
     return pTlsInfo?pTlsInfo->data:NULL;
@@ -2991,16 +2846,6 @@ void **CExecutionEngine::CheckThreadStateNoCreate(DWORD slot
 
     void **pTlsData = CExecutionEngine::GetTlsData();
 
-#ifdef HAS_FLS_SUPPORT
-    if (fHasFlsSupport)
-    {
-        if (pTlsData == NULL)
-        {
-            pTlsData = (void **)pFlsGetValue(FlsIndex);
-        }
-    }
-#endif
-
     ClrTlsInfo *pTlsInfo = DataToClrTlsInfo(pTlsData);
 
     return pTlsInfo?pTlsInfo->data:NULL;
@@ -3016,10 +2861,6 @@ void CExecutionEngine::SetupTLSForThread(Thread *pThread)
     STATIC_CONTRACT_SO_TOLERANT;
     STATIC_CONTRACT_MODE_ANY;
 
-#ifdef _DEBUG
-    if (pThread)
-        pThread->AddFiberInfo(Thread::ThreadTrackInfo_Lifetime);
-#endif
 #ifdef STRESS_LOG
     if (StressLog::StressLogOn(~0u, 0))
     {
@@ -3041,57 +2882,6 @@ void CExecutionEngine::SetupTLSForThread(Thread *pThread)
 #endif
 }
 
-void CExecutionEngine::SwitchIn()
-{
-    // No real contracts here.  This function is called by Thread::SwitchIn.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    // @TODO - doesn't look like we can probe here....
-
-#ifdef HAS_FLS_SUPPORT
-    if (fHasFlsSupport)
-    {
-        void **pTlsData = (void **)pFlsGetValue(FlsIndex);
-
-        BOOL fResult = CExecutionEngine::SetTlsData(pTlsData);
-        if (fResult)
-        {
-#ifdef STRESS_LOG
-            // We are in task transition period.  We can not call into host to create stress log.
-            if (ClrTlsGetValue(TlsIdx_StressLog) != NULL)
-            {
-                STRESS_LOG1(LF_SYNC, LL_INFO100, ThreadStressLog::TaskSwitchMsg(), ::GetCurrentThreadId());
-            }
-#endif
-        }
-        // It is OK for UnsafeTlsSetValue to fail here, since we can always go back to Fls to get value.
-    }
-#endif
-}
-
-void CExecutionEngine::SwitchOut()
-{
-    // No real contracts here.  This function is called by Thread::SwitchOut
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-#ifdef HAS_FLS_SUPPORT
-    // @TODO - doesn't look like we can probe here.
-    if (fHasFlsSupport && pFlsGetValue != NULL  && (void **)pFlsGetValue(FlsIndex) != NULL)
-    {
-        // Clear out TLS unless we're in the process of ThreadDetach 
-        // We establish that we're in ThreadDetach because fHasFlsSupport will
-        // be TRUE, but the FLS will not exist.
-        CExecutionEngine::SetTlsData(NULL);
-    }
-#endif // HAS_FLS_SUPPORT
-}
-
 static void ThreadDetachingHelper(PTLS_CALLBACK_FUNCTION callback, void* pData)
 {
     // Do not use contract.  We are freeing TLS blocks.
@@ -3099,8 +2889,8 @@ static void ThreadDetachingHelper(PTLS_CALLBACK_FUNCTION callback, void* pData)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-        callback(pData);
-    }
+    callback(pData);
+}
 
 // Called here from a thread detach or from destruction of a Thread object.  In
 // the detach case, we get our info from TLS.  In the destruct case, it comes from
@@ -3178,14 +2968,6 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
         ThreadDetachingHelper(Callbacks[TlsIdx_ClrDebugState], pData);
     }
 
-#ifdef _DEBUG
-    Thread *pThread = GetThread();
-    if (pThread)
-    {
-        pThread->AddFiberInfo(Thread::ThreadTrackInfo_Lifetime);
-    }
-#endif
-
     // NULL TLS and FLS entry so that we don't double free.
     // We may get two callback here on thread death
     // 1. From EEDllMain
@@ -3194,13 +2976,6 @@ void CExecutionEngine::DeleteTLS(void ** pTlsData)
     {
         CExecutionEngine::SetTlsData(0);
     }
-
-#ifdef HAS_FLS_SUPPORT
-    if (fHasFlsSupport && pFlsGetValue(FlsIndex) == pTlsData)
-    {
-        pFlsSetValue(FlsIndex, NULL);
-    }
-#endif
 
 #undef HeapFree
 #undef GetProcessHeap

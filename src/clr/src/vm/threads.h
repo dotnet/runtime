@@ -162,7 +162,6 @@ struct    HelperMethodFrameCallerList;
 class     ThreadLocalIBCInfo;
 class     EECodeInfo;
 class     DebuggerPatchSkip;
-class     MethodCallGraphPreparer;
 class     FaultingExceptionFrame;
 class     ContextTransitionFrame;
 enum      BinderMethodID : int;
@@ -205,22 +204,6 @@ public:
     Frame *IsRunningIn(AppDomain* pDomain, int *count) { return NULL; }
 
     StackingAllocator    m_MarshalAlloc;
-
-private:
-    MethodCallGraphPreparer * m_pCerPreparationState;
-
-public:
-    MethodCallGraphPreparer * GetCerPreparationState()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCerPreparationState;
-    }
-
-    void SetCerPreparationState(MethodCallGraphPreparer * pCerPreparationState)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pCerPreparationState = pCerPreparationState;
-    }
 
  private:
     LoadLevelLimiter *m_pLoadLimiter;
@@ -1189,7 +1172,7 @@ public:
         TSNC_OSAlertableWait            = 0x00001000, // Preparing abort.  This avoids recursive HandleThreadAbort call.
         TSNC_ADUnloadHelper             = 0x00002000, // This thread is AD Unload helper.
         TSNC_CreatingTypeInitException  = 0x00004000, // Thread is trying to create a TypeInitException
-        TSNC_InTaskSwitch               = 0x00008000, // A task is switching
+        // unused                       = 0x00008000,
         TSNC_AppDomainContainUnhandled  = 0x00010000, // Used to control how unhandled exception reporting occurs.
                                                       // See detailed explanation for this bit in threads.cpp
         TSNC_InRestoringSyncBlock       = 0x00020000, // The thread is restoring its SyncBlock for Object.Wait.
@@ -1246,14 +1229,6 @@ public:
         DAC_EMPTY_RET(0);
     STDMETHODIMP_(ULONG) Release(void)
         DAC_EMPTY_RET(0);
-    STDMETHODIMP SwitchIn(HANDLE threadHandle)
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP SwitchOut()
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP Reset (BOOL fFull)
-        DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP ExitTask()
-        DAC_EMPTY_RET(E_FAIL);
     STDMETHODIMP Abort()
         DAC_EMPTY_RET(E_FAIL);
     STDMETHODIMP RudeAbort()
@@ -1265,16 +1240,11 @@ public:
         DAC_EMPTY_RET(E_FAIL);
     STDMETHODIMP LocksHeld(SIZE_T *pLockCount)
         DAC_EMPTY_RET(E_FAIL);
-    STDMETHODIMP SetTaskIdentifier(TASKID asked)
-        DAC_EMPTY_RET(E_FAIL);
 
     STDMETHODIMP BeginPreventAsyncAbort()
         DAC_EMPTY_RET(E_FAIL);
     STDMETHODIMP EndPreventAsyncAbort()
         DAC_EMPTY_RET(E_FAIL);
-
-    STDMETHODIMP SetLocale(LCID lcid);
-    STDMETHODIMP SetUILocale(LCID lcid);
 
     void InternalReset (BOOL fFull, BOOL fNotFinalizerThread=FALSE, BOOL fThreadObjectResetNeeded=TRUE, BOOL fResetAbort=TRUE);
     INT32 ResetManagedThreadObject(INT32 nPriority); 
@@ -1284,8 +1254,6 @@ private:
     //Helpers for reset...
     void FullResetThread();
 public:
-    void InternalSwitchOut();
-
     HRESULT DetachThread(BOOL fDLLThreadDetach);
 
     void SetThreadState(ThreadState ts)
@@ -2722,24 +2690,6 @@ public:
         return m_OSThreadId;
     }
 
-    TASKID      GetTaskId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_TaskId;
-    }
-    CONNID      GetConnectionId()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwConnectionId;
-    }
-
-
-    void SetConnectionId(CONNID dwConnectionId)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_dwConnectionId = dwConnectionId;
-    }
-
     BOOL        IsThreadPoolThread()
     {
         LIMITED_METHOD_CONTRACT;
@@ -4012,11 +3962,6 @@ private:
     UINT_PTR             m_LastAllowableStackAddress;
 
 private:
-
-    // Save the domain when a task is switched out, and restore it when
-    // the task is switched in.
-    PTR_AppDomain m_pDomainAtTaskSwitch;
-
     //---------------------------------------------------------------
     // m_debuggerFilterContext holds the thread's "filter context" for the
     // debugger.  This filter context is used by the debugger to seed
@@ -4508,69 +4453,13 @@ public:
     size_t *m_pCleanedStackBase;
 #endif
 
-private:
-    PVOID      m_pFiberData;
-
-    TASKID     m_TaskId;
-    CONNID     m_dwConnectionId;
-
-public:
-    void SetupFiberData();
-
-#ifdef _DEBUG
-public:
-    void AddFiberInfo(DWORD type);
-    enum {
-        ThreadTrackInfo_Lifetime=0x1,   // creation, destruction, ref-count
-        ThreadTrackInfo_Schedule=0x2,   // switch in/out
-        ThreadTrackInfo_UM_M=0x4,       // Unmanaged <-> managed transtion
-        ThreadTrackInfo_Abort=0x8,      // Thread abort
-        ThreadTrackInfo_Affinity=0x10,  // Thread's affinity
-        ThreadTrackInfo_GCMode=0x20,
-        ThreadTrackInfo_Escalation=0x40,// escalation point
-        ThreadTrackInfo_SO=0x80,
-        ThreadTrackInfo_Max=8
-    };
-private:
-    static int MaxThreadRecord;
-    static int MaxStackDepth;
-    static const int MaxThreadTrackInfo;
-    struct FiberSwitchInfo
-    {
-        unsigned __int64 timeStamp;
-        DWORD threadID;
-        size_t callStack[1];
-    };
-    FiberSwitchInfo *m_pFiberInfo[ThreadTrackInfo_Max];
-    DWORD m_FiberInfoIndex[ThreadTrackInfo_Max];
-#endif
-
 #ifdef DACCESS_COMPILE
 public:
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     void EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags);
 #endif
 
-private:
-    // Head of a linked list of opaque records that record if and how the thread is currently preparing a
-    // graph of methods for CER usage. This is used to determine if a re-entrant preparation request should
-    // complete immediately as a no-op (because it would lead to an infinite recursion) or should proceed
-    // recursively.
-    MethodCallGraphPreparer * m_pCerPreparationState;
-
 public:
-    MethodCallGraphPreparer * GetCerPreparationState()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pCerPreparationState;
-    }
-
-    void SetCerPreparationState(MethodCallGraphPreparer * pCerPreparationState)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pCerPreparationState = pCerPreparationState;
-    }
-
     // Is the current thread currently executing within a constrained execution region?
     static BOOL IsExecutingWithinCer();
 
