@@ -142,6 +142,19 @@ namespace System.Text.Tests
         }
 
         [Theory]
+        [InlineData("Hello", new char[] { 'a' }, "Helloa")]
+        [InlineData("Hello", new char[] { 'b', 'c', 'd' }, "Hellobcd")]
+        [InlineData("Hello", new char[] { 'b', '\0', 'd' }, "Hellob\0d")]
+        [InlineData("", new char[] { 'e', 'f', 'g' }, "efg")]
+        [InlineData("Hello", new char[0], "Hello")]
+        public static void Append_CharMemory(string original, char[] value, string expected)
+        {
+            var builder = new StringBuilder(original);
+            builder.Append(value.AsMemory());
+            Assert.Equal(expected, builder.ToString());
+        }
+
+        [Theory]
         [InlineData(1)]
         [InlineData(10000)]
         public static void Clear_AppendAndInsertBeforeClearManyTimes_CapacityStaysWithinRange(int times)

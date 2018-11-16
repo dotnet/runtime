@@ -7708,6 +7708,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(int value) { throw null; }
         public System.Text.StringBuilder Append(long value) { throw null; }
         public System.Text.StringBuilder Append(object value) { throw null; }
+        public System.Text.StringBuilder Append(System.ReadOnlyMemory<char> value) { throw null; }
         public System.Text.StringBuilder Append(System.ReadOnlySpan<char> value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(sbyte value) { throw null; }
