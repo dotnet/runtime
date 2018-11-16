@@ -13,7 +13,7 @@ Microsoft.Extensions.Primitives.StringSegment</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Shared\src\HashCodeCombiner\**\*.cs" />
+    <Compile Include="$(SharedSourceRoot)HashCodeCombiner\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
