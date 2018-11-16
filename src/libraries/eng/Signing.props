@@ -13,11 +13,8 @@
     <ItemsToSign Include="$(ArtifactsDir)packages\**\*.nupkg" Exclude="$(ArtifactsDir)packages\**\*symbols.nupkg" />
   </ItemGroup>
 
-  <Target Name="AllowEmptySignListForNetFx" BeforeTargets="Sign">
-    <PropertyGroup>
-      <!-- We do not build packages for NetFx.
-           This must be set in a target since the sign.proj sets this property statically -->
-      <AllowEmptySignList Condition="'$(TargetGroup)' == 'netfx'">true</AllowEmptySignList>
-    </PropertyGroup>
-  </Target>
+  <PropertyGroup>
+    <!-- We do not build packages for NetFx. -->
+    <AllowEmptySignList Condition="'$(TargetGroup)' == 'netfx'">true</AllowEmptySignList>
+  </PropertyGroup>
 </Project>
