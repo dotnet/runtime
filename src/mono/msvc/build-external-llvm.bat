@@ -1,12 +1,12 @@
 :: --------------------------------------------------
-:: Run full BTLS build using msvc toolchain and available cmake generator.
+:: Run full LLVM build using msvc toolchain and available cmake generator.
 :: Script needs to be run from within a matching build environment, x86|x64.
 :: When executed from withing Visual Studio build environment current
 :: build environment will be inherited by script.
 ::
-:: %1 Mono BTLS source root directory.
-:: %2 BTLS source root directory.
-:: %3 BTLS build root directory.
+:: %1 LLVM source root directory.
+:: %2 LLVM build root directory.
+:: %3 LLVM install root directory.
 :: %4 Mono distribution root directory.
 :: %5 VS CFLAGS.
 :: %6 VS platform (Win32/x64)
@@ -26,12 +26,11 @@ set LINK_BIN_NAME=link.exe
 set GIT_BIN_NAME=git.exe
 set CMAKE_BIN_NAME=cmake.exe
 set NINJA_BIN_NAME=ninja.exe
-set PERL_BIN_NAME=perl.exe
-set YASM_BIN_NAME=yasm.exe
+set PYTHON_BIN_NAME=python.exe
 
-set MONO_BTLS_DIR=%~1
-set BTLS_DIR=%~2
-set BTLS_BUILD_DIR=%~3
+set LLVM_DIR=%~1
+set LLVM_BUILD_DIR=%~2
+set LLVM_INSTALL_DIR=%~3
 set MONO_DIST_DIR=%~4
 set VS_CFLAGS=%~5
 set VS_PLATFORM=%~6
@@ -45,23 +44,23 @@ set MSBUILD_BIN_PATH=%~9
 :: set NINJA=
 set MSBUILD=%MSBUILD_BIN_PATH%msbuild.exe
 
-if "%MONO_BTLS_DIR%" == "" (
-    echo Missing mono BTLS source directory argument.
+if "%LLVM_DIR%" == "" (
+    echo Missing LLVM source directory argument.
     goto ECHO_USAGE
 )
 
-if "%BTLS_DIR%" == "" (
-    echo Missing BTLS source directory argument.
+if "%LLVM_BUILD_DIR%" == "" (
+    echo Missing LLVM build directory argument.
     goto ECHO_USAGE
 )
 
-if "%BTLS_BUILD_DIR%" == "" (
-    echo Missing BTLS build directory argument.
+if "%LLVM_INSTALL_DIR%" == "" (
+    echo Missing LLVM install directory argument.
     goto ECHO_USAGE
 )
 
 if "%MONO_DIST_DIR%" == "" (
-    echo Missing mono install directory argument.
+    echo Missing Mono dist directory argument.
     goto ECHO_USAGE
 )
 
@@ -82,23 +81,16 @@ if "%VS_TARGET%" == "" (
     set VS_TARGET=Build
 )
 
-if not exist "%MONO_BTLS_DIR%" (
-    echo Could not find "%MONO_BTLS_DIR%".
+if not exist "%LLVM_DIR%" (
+    echo Could not find "%LLVM_DIR%".
     goto ON_ERROR
 )
 
-if not exist "%BTLS_DIR%" (
-    echo Could not find "%BTLS_DIR%".
-    goto ON_ERROR
-)
-
-set BTLS_CFLAGS=%VS_CFLAGS%
-set BTLS_ARCH=x86_64
+set LLVM_CFLAGS=%VS_CFLAGS%
+set LLVM_ARCH=x86_64
 if /i "%VS_PLATFORM%" == "win32" (
-    set BTLS_ARCH=i386
+    set LLVM_ARCH=i386
 )
-
-set BTLS_NO_ASM_SUPPORT=1
 
 :: Check if executed from VS2015/VS2017 build environment.
 if "%VisualStudioVersion%" == "14.0" (
@@ -158,18 +150,18 @@ if "%CMAKE_GENERATOR%" == "" (
 
 :: Check target.
 if /i "%VS_TARGET%" == "build" (
-    goto ON_BUILD_BTLS
+    goto ON_BUILD_LLVM
 )
 
 if /i "%VS_TARGET%" == "install" (
-    goto ON_INSTALL_BTLS
+    goto ON_INSTALL_LLVM
 )
 
 if /i "%VS_TARGET%" == "clean" (
-    goto ON_CLEAN_BTLS
+    goto ON_CLEAN_LLVM
 )
 
-:ON_BUILD_BTLS
+:ON_BUILD_LLVM
 
 :: If not set by caller, check environment for working git.exe.
 call :FIND_PROGRAM "%GIT%" "%GIT_BIN_NAME%" GIT
@@ -178,95 +170,118 @@ if "%GIT%" == "" (
     goto ON_ERROR
 )
 
-:: Make sure boringssl submodule is up to date.
+:: Make sure llvm submodule is up to date.
 pushd
-cd "%BTLS_DIR%"
+cd "%LLVM_DIR%"
 "%GIT%" submodule update --init
 if not ERRORLEVEL == 0 (
    "%GIT%" submodule init
     "%GIT%" submodule update
     if not ERRORLEVEL == 0 (
-        echo Git boringssl submodules failed to updated. You may experience compilation problems if some submodules are out of date.
+        echo Git llvm submodules failed to updated. You may experience compilation problems if some submodules are out of date.
     )
 )
 popd
 
-if not exist "%BTLS_BUILD_DIR%" (
-    mkdir "%BTLS_BUILD_DIR%"
+if not exist "%LLVM_BUILD_DIR%" (
+    mkdir "%LLVM_BUILD_DIR%"
 )
 
-cd "%BTLS_BUILD_DIR%"
+cd "%LLVM_BUILD_DIR%"
 
 :: Make sure cmake pick up msvc toolchain regardless of selected generator (Visual Studio|Ninja)
 set CC=%CL_BIN_NAME%
 set CXX=%CL_BIN_NAME%
 
-set BTLS_BUILD_TYPE=
+set CMAKE_GENERATOR_ARGS=
 if /i "%CMAKE_GENERATOR%" == "ninja" (
-    set BTLS_BUILD_TYPE=-D CMAKE_BUILD_TYPE=%VS_CONFIGURATION%
+    set CMAKE_GENERATOR_ARGS=-DCMAKE_BUILD_TYPE=%VS_CONFIGURATION%
+) else (
+    set CMAKE_GENERATOR_ARGS=-Thost=x64
 )
 
 :: Run cmake.
 "%CMAKE%" ^
--D BTLS_ROOT:PATH="%BTLS_DIR%" ^
--D SRC_DIR:PATH="%MONO_BTLS_DIR%" ^
--D BTLS_CFLAGS="%BTLS_CFLAGS%" ^
--D OPENSSL_NO_ASM=%BTLS_NO_ASM_SUPPORT% ^
--D BTLS_ARCH="%BTLS_ARCH%" ^
--D BUILD_SHARED_LIBS=1 ^
-%BTLS_BUILD_TYPE% ^
+-DCMAKE_INSTALL_PREFIX="%LLVM_INSTALL_DIR%" ^
+-DLLVM_TARGETS_TO_BUILD="X86" ^
+-DLLVM_BUILD_TESTS=Off ^
+-DLLVM_INCLUDE_TESTS=Off ^
+-DLLVM_BUILD_EXAMPLES=Off ^
+-DLLVM_INCLUDE_EXAMPLES=Off ^
+-DLLVM_TOOLS_TO_BUILD="opt;llc;llvm-config;llvm-dis;llvm-mc" ^
+-DLLVM_ENABLE_LIBXML2=Off ^
+-DCMAKE_SYSTEM_PROCESSOR="%LLVM_ARCH%" ^
+%CMAKE_GENERATOR_ARGS% ^
 -G "%CMAKE_GENERATOR%" ^
-"%MONO_BTLS_DIR%"
+"%LLVM_DIR%"
 
 if not ERRORLEVEL == 0 (
     goto ON_ERROR
 )
 
 if /i "%CMAKE_GENERATOR%" == "ninja" (
-    :: Build BTLS using ninja build system.
-    call "%NINJA%" || (
+    :: Build LLVM using ninja build system.
+    call "%NINJA%" -j4 || (
         goto ON_ERROR
     )
 ) else (
-    :: Build BTLS using msbuild build system.
-    call "%MSBUILD%" mono-btls.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo || (
+    :: Build LLVM using msbuild build system.
+    call "%MSBUILD%" llvm.sln /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:%VS_TARGET% /v:m /nologo || (
         goto ON_ERROR
     )
 )
 
-:ON_INSTALL_BTLS
+:ON_INSTALL_LLVM
 
-if not exist "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.dll" (
-    echo Missing btls build output, "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.dll"
-    goto ON_ERROR
+:: Make sure build install folder exists.
+if not exist "%LLVM_INSTALL_DIR%" (
+    echo Could not find "%LLVM_INSTALL_DIR%", creating folder for build output.
+    mkdir "%LLVM_INSTALL_DIR%"
 )
 
-:: Make sure build output folder exists.
+:: Make sure Mono dist folder exists.
 if not exist "%MONO_DIST_DIR%" (
     echo Could not find "%MONO_DIST_DIR%", creating folder for build output.
     mkdir "%MONO_DIST_DIR%"
 )
 
-:: Copy files into distribution directory.
-copy /Y "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.dll" "%MONO_DIST_DIR%" >nul 2>&1
-
-if exist "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.pdb" (
-    copy /Y "%BTLS_BUILD_OUTPUT_DIR%\libmono-btls-shared.pdb" "%MONO_DIST_DIR%" >nul 2>&1
+if exist "%LLVM_BUILD_DIR%\build.ninja" (
+    pushd
+    cd "%LLVM_BUILD_DIR%"
+    call "%NINJA%" install
+    popd
 )
+
+if exist "%LLVM_BUILD_DIR%\install.vcxproj" (
+    "%MSBUILD%" "%LLVM_BUILD_DIR%\install.vcxproj" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /v:m /nologo
+)
+
+if not exist "%LLVM_INSTALL_DIR%\bin\opt.exe" (
+    echo Missing LLVM build output, "%LLVM_INSTALL_DIR%\bin\opt.exe"
+    goto ON_ERROR
+)
+
+if not exist "%LLVM_INSTALL_DIR%\bin\llc.exe" (
+    echo Missing LLVM build output, "%LLVM_INSTALL_DIR%\bin\llc.exe"
+    goto ON_ERROR
+)
+
+copy /Y "%LLVM_INSTALL_DIR%\bin\opt.exe" "%MONO_DIST_DIR%" >nul 2>&1
+copy /Y "%LLVM_INSTALL_DIR%\bin\llc.exe" "%MONO_DIST_DIR%" >nul 2>&1
 
 goto ON_SUCCESS
 
-:ON_CLEAN_BTLS
+:ON_CLEAN_LLVM
 
-if exist "%BTLS_BUILD_DIR%\build.ninja" (
+if exist "%LLVM_BUILD_DIR%\build.ninja" (
     pushd
-    cd "%BTLS_BUILD_DIR%"
+    cd "%LLVM_BUILD_DIR%"
     call "%NINJA%" clean
     popd
 )
 
-if exist "%BTLS_BUILD_DIR%\mono-btls.sln" (
-    "%MSBUILD%" "%BTLS_BUILD_DIR%\mono-btls.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean /v:m /nologo
+if exist "%LLVM_BUILD_DIR%\llvm.sln" (
+    "%MSBUILD%" "%LLVM_BUILD_DIR%\llvm.sln" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /t:Clean /v:m /nologo
 )
 
 goto ON_SUCCESS
@@ -277,10 +292,10 @@ set BUILD_RESULT=0
 goto ON_EXIT
 
 :ECHO_USAGE:
-    ECHO Usage: build-btls.bat [mono_btls_src_dir] [btls_src_dir] [btls_build_dir] [mono_dist_dir] [vs_cflags] [vs_plaform] [vs_configuration].
+    ECHO Usage: build-external-llvm.bat [llvm_src_dir] [llvm_build_dir] [llvm_install_dir] [mono_dist_dir] [vs_cflags] [vs_plaform] [vs_configuration].
 
 :ON_ERROR
-    echo Failed to build BTLS.
+    echo Failed to build LLVM.
     goto ON_EXIT
 
 :ON_EXIT
@@ -329,20 +344,17 @@ if /i "%VS_TARGET%" == "build" (
     echo Found CMake: %CMAKE%
 )
 
-:: Check for optional cmake generate and build tools for full BTLS assembler supported build. NOTE, currently BTLS assembler build
-:: can't be done using Visual Studio and must use ninja build generator + yasm and perl.
+:: Check for optional cmake generate and build tools.
 call :FIND_PROGRAM "%NINJA%" "%NINJA_BIN_NAME%" NINJA
-call :FIND_PROGRAM "%YASM%" "%YASM_BIN_NAME%" YASM
-call :FIND_PROGRAM "%PERL%" "%PERL_BIN_NAME%" PERL
 
-if not "%NINJA%" == "" if not "%YASM%" == "" if not "%PERL%" == "" (
+if not "%NINJA%" == "" (
     goto _SETUP_CMAKE_ENVIRONMENT_NINJA_GENERATOR
 )
 
 :_SETUP_CMAKE_ENVIRONMENT_VS_GENERATOR
 
 if /i "%VS_TARGET%" == "build" (
-    echo Using Visual Studio build generator, disabling full assembler build.
+    echo Using Visual Studio build generator.
 )
 
 :: Detect VS version to use right cmake generator.
@@ -355,7 +367,7 @@ if /i "%VS_PLATFORM%" == "x64" (
     set CMAKE_GENERATOR=%CMAKE_GENERATOR% Win64
 )
 
-set BTLS_BUILD_OUTPUT_DIR=%BTLS_BUILD_DIR%\%VS_CONFIGURATION%
+set LLVM_BUILD_OUTPUT_DIR=%LLVM_BUILD_DIR%\%VS_CONFIGURATION%
 
 goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 
@@ -363,12 +375,11 @@ goto _SETUP_CMAKE_ENVIRONMENT_EXIT
 
 if /i "%VS_TARGET%" == "build" (
     echo Found Ninja: %NINJA%
-    echo Using Ninja build generator, enabling full assembler build.
+    echo Using Ninja build generator.
 )
 
 set CMAKE_GENERATOR=Ninja
-set BTLS_BUILD_OUTPUT_DIR=%BTLS_BUILD_DIR%
-set BTLS_NO_ASM_SUPPORT=0
+set LLVM_BUILD_OUTPUT_DIR=%LLVM_BUILD_DIR%
 
 :_SETUP_CMAKE_ENVIRONMENT_EXIT
 

@@ -18,13 +18,9 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\config.h" />
-    <ClInclude Include="..\winconfig.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{92AE7622-5F58-4234-9A26-9EC71876B3F4}</ProjectGuid>
-    <RootNamespace>buildinit</RootNamespace>
+    <ProjectGuid>{C3D4C623-55F8-4653-980D-61AA629B4E1D}</ProjectGuid>
+    <RootNamespace>buildexternalllvm</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -77,19 +73,19 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\lib\$(Configuration)\</OutDir>
+    <OutDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\bin\$(Configuration)\</OutDir>
     <IntDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\$(ProjectName)$(MONO_TARGET_SUFFIX)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -152,18 +148,22 @@
   <Import Project="mono.external.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-
-  <Target Name="AfterBuildWinSetup">
-    <PropertyGroup>
-      <_OptionalDefines Condition="'$(MONO_ENABLE_BTLS)' == 'true'">$(_OptionalDefines);HAVE_BTLS</_OptionalDefines>
-      <_OptionalDefines Condition="'$(MONO_ENABLE_LLVM)' == 'true'">$(_OptionalDefines);ENABLE_LLVM;ENABLE_LLVM_RUNTIME</_OptionalDefines>
-      <_OptionalDefines>$(_OptionalDefines.Trim(';'))</_OptionalDefines>
-    </PropertyGroup>
-    <Exec Command="winsetup.bat &quot;$(_OptionalDefines)&quot;">
-      <Output TaskParameter="ExitCode" PropertyName="WinSetupExitCode" />
+  <PropertyGroup>
+    <_LLVMCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," "))</_LLVMCFlags>
+    <_LLVMCFlags>$(_LLVMCFlags.Trim())</_LLVMCFlags>
+    <_LLVMCFlags Condition="'$(_LLVMCFlags)' != ''">-D$(_LLVMCFlags.Replace(" "," -D"))</_LLVMCFlags>
+    <_LLVMBuildCommand>build-external-llvm.bat &quot;$(_LLVMSourceDir)&quot; &quot;$(_LLVMBuildDir)&quot; &quot;$(_LLVMInstallDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_LLVMCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_LLVMBuildCommand>
+  </PropertyGroup>
+  <Target Name="_AfterBuildExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
+    <Exec Command="$(_LLVMBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
+      <Output TaskParameter="ExitCode" PropertyName="_BuildExternalLLVMExitCode" />
     </Exec>
-    <Error Text="Failed running winsetup.bat" Condition="$(WinSetupExitCode) != 0" />
   </Target>
-
-  <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup" />
+  <Target Name="_AfterCleanExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
+    <Exec Command="$(_LLVMBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot;">
+      <Output TaskParameter="ExitCode" PropertyName="_CleanExternalLLVMExitCode" />
+    </Exec>
+  </Target>
+  <Target Name="AfterBuild" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_AfterBuildExternalLLVM" />
+  <Target Name="AfterClean" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_AfterCleanExternalLLVM" />
 </Project>

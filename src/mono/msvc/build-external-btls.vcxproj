@@ -145,25 +145,15 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="mono.external.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
   <PropertyGroup>
     <_BtlsCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," "))</_BtlsCFlags>
     <_BtlsCFlags>$(_BtlsCFlags.Trim())</_BtlsCFlags>
     <_BtlsCFlags Condition="'$(_BtlsCFlags)' != ''">-D$(_BtlsCFlags.Replace(" "," -D"))</_BtlsCFlags>
-    <_BtlsBuildDir>$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\external\btls-build-shared\$(Configuration)</_BtlsBuildDir>
-    <_BtlsBuildCommand>build-external-btls.bat &quot;$(MONO_DIR)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(OutDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
-    <_BtlsCheckCommand>findstr /i /r /c:&quot;.*#define.*HAVE_BTLS.*1&quot; $(MONO_DIR)/cygconfig.h >nul 2>&amp;1</_BtlsCheckCommand>
+    <_BtlsBuildCommand>build-external-btls.bat &quot;$(_MonoBtlsSourceDir)&quot; &quot;$(_BtlsSourceDir)&quot; &quot;$(_BtlsBuildDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_BtlsCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_BtlsBuildCommand>
   </PropertyGroup>
-  <Target Name="_CheckEnableBtls" Condition="'$(MONO_ENABLE_BTLS)' == ''">
-    <Exec Command="$(_BtlsCheckCommand)" IgnoreExitCode="true" EchoOff="true">
-      <Output TaskParameter="ExitCode" PropertyName="_CheckEnableBtlsExitCode"/>
-    </Exec>
-    <PropertyGroup>
-      <MONO_ENABLE_BTLS Condition="'$(_CheckEnableBtlsExitCode)' == '0'">true</MONO_ENABLE_BTLS>
-      <MONO_ENABLE_BTLS Condition="'$(_CheckEnableBtlsExitCode)' == '1'">false</MONO_ENABLE_BTLS>
-    </PropertyGroup>
-  </Target>
   <Target Name="_AfterBuildExternalBtls" Condition="'$(MONO_ENABLE_BTLS)' == 'true'">
     <Exec Command="$(_BtlsBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
       <Output TaskParameter="ExitCode" PropertyName="_BuildExternalBtlsExitCode" />
@@ -174,6 +164,6 @@
       <Output TaskParameter="ExitCode" PropertyName="_CleanExternalBtlsExitCode" />
     </Exec>
   </Target>
-  <Target Name="AfterBuild" DependsOnTargets="_CheckEnableBtls;_AfterBuildExternalBtls" />
-  <Target Name="AfterClean" DependsOnTargets="_CheckEnableBtls;_AfterCleanExternalBtls" />
+  <Target Name="AfterBuild" DependsOnTargets="_ConfigureExternalMonoBTLSBuildEnvironment;_AfterBuildExternalBtls" />
+  <Target Name="AfterClean" DependsOnTargets="_ConfigureExternalMonoBTLSBuildEnvironment;_AfterCleanExternalBtls" />
 </Project>

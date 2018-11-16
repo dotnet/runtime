@@ -6,6 +6,7 @@ SET CYG_CONFIG_H="%~dp0..\cygconfig.h"
 SET WIN_CONFIG_H="%~dp0..\winconfig.h"
 SET CONFIGURE_AC="%~dp0..\configure.ac"
 SET VERSION_H="%~dp0..\mono\mini\version.h"
+SET OPTIONAL_DEFINES=%~1
 
 ECHO Setting up Mono configuration headers...
 
@@ -63,13 +64,11 @@ echo #define PACKAGE_VERSION "%MONO_VERSION%" >> %CONFIG_H_TEMP%
 echo #define VERSION "%MONO_VERSION%" >> %CONFIG_H_TEMP%
 echo #define MONO_CORLIB_VERSION "%MONO_CORLIB_VERSION%" >> %CONFIG_H_TEMP%
 
-:: Add dynamic configuration parameters set in original config.h affecting msvc build.
-for /f "tokens=*" %%a in ('findstr /i /r /c:".*#define.*HAVE_BTLS.*1" %CYG_CONFIG_H%') do (
-	echo #define HAVE_BTLS 1 >> %CONFIG_H_TEMP%
-)
-
-for /f "tokens=*" %%a in ('findstr /i /r /c:".*#define.*LLVM.*" %CYG_CONFIG_H%') do (
-	echo %%a >> %CONFIG_H_TEMP%
+:: Add dynamic configuration parameters affecting msvc build.
+for %%a in (%OPTIONAL_DEFINES%) do (
+	echo #ifndef %%a >> %CONFIG_H_TEMP%
+	echo #define %%a 1 >> %CONFIG_H_TEMP%
+	echo #endif >> %CONFIG_H_TEMP%
 )
 
 echo #endif >> %CONFIG_H_TEMP%
