@@ -164,8 +164,8 @@ if not exist "%__LogsDir%"                      md "%__LogsDir%"
 
 echo %__MsgPrefix%Checking prerequisites
 
-REM Eval the output from probe-win1.ps1
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\probe-win.ps1"""') do %%a
+REM Eval the output from set-cmake-path.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
 
 REM =========================================================================================
 REM ===
