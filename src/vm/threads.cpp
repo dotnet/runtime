@@ -745,10 +745,6 @@ Thread* SetupThread(BOOL fInternal)
 
     FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_FullyInitialized);
 
-#ifdef _DEBUG
-    pThread->AddFiberInfo(Thread::ThreadTrackInfo_Lifetime);
-#endif
-
 #ifdef DEBUGGING_SUPPORTED
     //
     // If we're debugging, let the debugger know that this
@@ -997,7 +993,24 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 
     END_CONTRACT_VIOLATION;
 
-    InternalSwitchOut();
+    HANDLE hThread = GetThreadHandle();
+    SetThreadHandle (SWITCHOUT_HANDLE_VALUE);
+    while (m_dwThreadHandleBeingUsed > 0)
+    {
+        // Another thread is using the handle now.
+#undef Sleep
+        // We can not call __SwitchToThread since we can not go back to host.
+        ::Sleep(10);
+#define Sleep(a) Dont_Use_Sleep(a)
+    }
+    if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
+    {
+        m_ThreadHandleForClose = hThread;
+    }
+
+    // We need to make sure that TLS are touched last here.
+    SetThread(NULL);
+    SetAppDomain(NULL);
 
 #ifdef ENABLE_CONTRACTS_DATA
     m_pClrDebugState = NULL;
@@ -1535,27 +1548,6 @@ Thread::Thread()
     m_dwAbortPoint = 0;
 #endif
 
-    m_pFiberData = NULL;
-
-    m_TaskId = INVALID_TASK_ID;
-    m_dwConnectionId = INVALID_CONNECTION_ID;
-
-#ifdef _DEBUG
-    DWORD_PTR *ttInfo = NULL;
-    size_t nBytes = MaxThreadRecord *
-                  (sizeof(FiberSwitchInfo)-sizeof(size_t)+MaxStackDepth*sizeof(size_t));
-    if (g_pConfig->SaveThreadInfo()) {
-        ttInfo = new DWORD_PTR[(nBytes/sizeof(DWORD_PTR))*ThreadTrackInfo_Max];
-        memset(ttInfo,0,nBytes*ThreadTrackInfo_Max);
-    }
-    for (DWORD i = 0; i < ThreadTrackInfo_Max; i ++)
-    {
-        m_FiberInfoIndex[i] = 0;
-        m_pFiberInfo[i] = (FiberSwitchInfo*)((DWORD_PTR)ttInfo + i*nBytes);
-    }
-    NewArrayHolder<DWORD_PTR> fiberInfoHolder(ttInfo);
-#endif
-
     m_OSContext = new CONTEXT();
     NewHolder<CONTEXT> contextHolder(m_OSContext);
 
@@ -1566,7 +1558,6 @@ Thread::Thread()
     m_pRCWStack = new RCWStackHeader();
 #endif
 
-    m_pCerPreparationState = NULL;
 #ifdef _DEBUG
     m_bGCStressing = FALSE;
     m_bUniqueStacking = FALSE;
@@ -1645,9 +1636,6 @@ Thread::Thread()
     strongHndToExposedObjectHolder.SuppressRelease();
 #if defined(_DEBUG) && defined(TRACK_SYNC)
     trackSyncHolder.SuppressRelease();
-#endif
-#ifdef _DEBUG
-    fiberInfoHolder.SuppressRelease();
 #endif
     contextHolder.SuppressRelease();
     savedRedirectContextHolder.SuppressRelease();
@@ -1931,10 +1919,6 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
         {
             ThrowOutOfMemory();
         }
-
-#ifdef _DEBUG
-        AddFiberInfo(Thread::ThreadTrackInfo_Lifetime);
-#endif
 
         SetupThreadForHost();
 
@@ -2531,9 +2515,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
             m_ExceptionState.FreeAllStackTraces();
             if (SelfDelete) {
                 SetThread(NULL);
-#ifdef _DEBUG
-                AddFiberInfo(ThreadTrackInfo_Lifetime);
-#endif
             }
             delete this;
         }
@@ -2739,12 +2720,6 @@ Thread::~Thread()
 #ifdef FEATURE_PREJIT
     if (m_pIBCInfo) {
         delete m_pIBCInfo;
-    }
-#endif
-
-#ifdef _DEBUG
-    if (m_pFiberInfo != NULL) {
-        delete [] (DWORD_PTR*)m_pFiberInfo[0];
     }
 #endif
 
@@ -4287,9 +4262,6 @@ void Thread::UserInterrupt(ThreadInterruptMode mode)
     if (HasValidThreadHandle() &&
         HasThreadState (TS_Interruptible))
     {
-#ifdef _DEBUG
-        AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
         Alert();
     }
 }
@@ -4413,9 +4385,6 @@ OBJECTREF Thread::GetExposedObject()
             // already hold the thread lock and IncExternalCount won't be able to take it.
             ULONG retVal = FastInterlockIncrement ((LONG*)&m_ExternalRefCount);
 
-#ifdef _DEBUG
-            AddFiberInfo(ThreadTrackInfo_Lifetime);
-#endif
             // Check to see if we need to store a strong pointer to the object.
             if (retVal > 1)
                 StoreObjectInHandle(m_StrongHndToExposedObject, (OBJECTREF) attempt);
@@ -5387,14 +5356,6 @@ void ThreadStore::InitThreadStore()
     ThreadSuspend::g_pGCSuspendEvent = new CLREvent();
     ThreadSuspend::g_pGCSuspendEvent->CreateManualEvent(FALSE);
 
-#ifdef _DEBUG
-    Thread::MaxThreadRecord = EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_MaxThreadRecord,Thread::MaxThreadRecord);
-    Thread::MaxStackDepth = EEConfig::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_MaxStackDepth,Thread::MaxStackDepth);
-    if (Thread::MaxStackDepth > 100) {
-        Thread::MaxStackDepth = 100;
-    }
-#endif
-
     s_pWaitForStackCrawlEvent = new CLREvent();
     s_pWaitForStackCrawlEvent->CreateManualEvent(FALSE);
 
@@ -6140,10 +6101,6 @@ void Thread::HandleThreadInterrupt (BOOL fWaitForADUnload)
     {
         ResetThreadState ((ThreadState)(TS_Interrupted | TS_Interruptible));
         FastInterlockAnd ((DWORD*)&m_UserInterrupt, ~TI_Interrupt);
-
-#ifdef _DEBUG
-        AddFiberInfo(ThreadTrackInfo_Abort);
-#endif
 
         COMPlusThrow(kThreadInterruptedException);
     }
@@ -9520,324 +9477,6 @@ BOOL ThreadStore::HoldingThreadStore(Thread *pThread)
     }
 }
 
-
-#ifdef _DEBUG
-
-int Thread::MaxThreadRecord = 20;
-int Thread::MaxStackDepth = 20;
-
-const int Thread::MaxThreadTrackInfo = Thread::ThreadTrackInfo_Max;
-
-void Thread::AddFiberInfo(DWORD type)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-    STATIC_CONTRACT_SO_TOLERANT;
-
-#ifndef FEATURE_PAL
-    
-    if (m_pFiberInfo[0] == NULL) {
-        return;
-    }
-
-    DWORD mask = g_pConfig->SaveThreadInfoMask();
-    if ((mask & type) == 0)
-    {
-        return;
-    }
-
-    int slot = -1;
-    while (type != 0)
-    {
-        type >>= 1;
-        slot ++;
-    }
-
-    _ASSERTE (slot < ThreadTrackInfo_Max);
-
-    // use try to force ebp frame.
-    PAL_TRY_NAKED {
-        ULONG index = FastInterlockIncrement((LONG*)&m_FiberInfoIndex[slot])-1;
-        index %= MaxThreadRecord;
-        size_t unitBytes = sizeof(FiberSwitchInfo)-sizeof(size_t)+MaxStackDepth*sizeof(size_t);
-        FiberSwitchInfo *pInfo = (FiberSwitchInfo*)((char*)m_pFiberInfo[slot] + index*unitBytes);
-        pInfo->timeStamp = getTimeStamp();
-        pInfo->threadID = GetCurrentThreadId();
-
-#ifdef FEATURE_HIJACK
-        // We can't crawl the stack of a thread that currently has a hijack pending
-        // (since the hijack routine won't be recognized by any code manager). So we
-        // undo any hijack, the EE will re-attempt it later.
-        // Stack crawl happens on the current thread, which may not be 'this' thread.
-        Thread* pCurrentThread = GetThread();
-        if (pCurrentThread != NULL && (pCurrentThread->m_State & TS_Hijacked)) 
-        {
-            pCurrentThread->UnhijackThread();
-        }
-#endif
-        
-        int count = UtilCaptureStackBackTrace (2,MaxStackDepth,(PVOID*)pInfo->callStack,NULL);
-        while (count < MaxStackDepth) {
-            pInfo->callStack[count++] = 0;
-        }
-    }
-    PAL_EXCEPT_NAKED (EXCEPTION_EXECUTE_HANDLER)
-    {
-    }
-    PAL_ENDTRY_NAKED;
-#endif // !FEATURE_PAL
-}
-
-#endif // _DEBUG
-
-HRESULT Thread::SwitchIn(HANDLE threadHandle)
-{
-    // can't have dynamic contracts because this method is going to mess with TLS
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
- 
-    //can't do heap allocation in this method
-    CantAllocHolder caHolder;
-
-    // !!! Can not use the following line, since it uses an object which .dctor calls
-    // !!! FLS_SETVALUE, and a new FLS is created after SwitchOut.
-    // CANNOTTHROWCOMPLUSEXCEPTION();
-
-    // Case Cookie to thread object and add to tls
-#ifdef _DEBUG
-    Thread *pThread = GetThread();
-    // If this is hit, we need to understand.
-    // Sometimes we see the assert but the memory does not match the assert.
-    if (pThread) {
-        DebugBreak();
-    }
-    //_ASSERT(GetThread() == NULL);
-#endif
-
-    if (GetThread() != NULL) {
-        return HOST_E_INVALIDOPERATION;
-    }
-
-    CExecutionEngine::SwitchIn();
-
-    // !!! no contract for this class.
-    // !!! We have not switched in tls block.
-    class EnsureTlsData
-    {
-    private:
-        Thread *m_pThread;
-        BOOL m_fNeedReset;
-    public:
-        EnsureTlsData(Thread* pThread){m_pThread = pThread; m_fNeedReset = TRUE;}
-        ~EnsureTlsData()
-        {
-            if (m_fNeedReset)
-            {
-                SetThread(NULL);
-                SetAppDomain(NULL);
-                CExecutionEngine::SwitchOut();
-            }
-        }
-        void SuppressRelease()
-        {
-            m_fNeedReset = FALSE;
-        }
-    };
-
-    EnsureTlsData ensure(this);
-
-    if (SetThread(this))
-    {
-        Thread *pThread = GetThread();
-        if (!pThread)
-            return E_OUTOFMEMORY;
-
-        // !!! make sure that we switchin TLS so that FLS is available for Contract etc.
-
-        // We redundantly keep the domain in its own TLS slot, for faster access from
-        // stubs
-        if (!SetAppDomain(m_pDomainAtTaskSwitch))
-        {
-            return E_OUTOFMEMORY;
-        }
-
-        CANNOTTHROWCOMPLUSEXCEPTION();
-#if 0
-        // We switch out a fiber only if the fiber is in preemptive gc mode.
-        _ASSERTE (!PreemptiveGCDisabled());
-#endif
-
-
-        // We have to be switched in on the same fiber
-        _ASSERTE (GetCachedStackBase() == GetStackUpperBound());
-
-        if (m_pFiberData)
-        {
-            // only set the m_OSThreadId to bad food in Fiber mode
-            m_OSThreadId = ::GetCurrentThreadId();
-#ifdef PROFILING_SUPPORTED
-            // If a profiler is present, then notify the profiler that a
-            // thread has been created.
-            {
-                BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
-                g_profControlBlock.pProfInterface->ThreadAssignedToOSThread(
-                    (ThreadID)this, m_OSThreadId);
-                END_PIN_PROFILER();
-            }
-#endif // PROFILING_SUPPORTED
-        }
-        SetThreadHandle(threadHandle);
-
-#ifndef FEATURE_PAL
-        m_pTEB = (struct _NT_TIB*)NtCurrentTeb();
-#endif // !FEATURE_PAL
-
-#if 0
-        if (g_TrapReturningThreads && m_fPreemptiveGCDisabled && this != ThreadSuspend::GetSuspensionThread()) {
-            WorkingOnThreadContextHolder workingOnThreadContext(this);
-            if (workingOnThreadContext.Acquired())
-            {
-                HandledJITCase(TRUE);
-            }
-        }
-#endif
-
-#ifdef _DEBUG
-        // For debugging purpose, we save callstack during task switch.  On Win64, the callstack
-        // is done within OS loader lock, and obtaining managed callstack may cause fiber switch.
-        SetThreadStateNC(TSNC_InTaskSwitch);
-        AddFiberInfo(ThreadTrackInfo_Schedule);
-        ResetThreadStateNC(TSNC_InTaskSwitch);
-#endif
-
-        ensure.SuppressRelease();
-        return S_OK;
-    }
-    else
-    {
-        return E_FAIL;
-    }
-}
-
-HRESULT Thread::SwitchOut()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return E_NOTIMPL;
-}
-
-void Thread::InternalSwitchOut()
-{
-    INDEBUG( BOOL fNoTLS = (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    {
-        // Can't do heap allocation in this method.
-        // We need to scope this holder because its destructor accesses FLS.
-    CantAllocHolder caHolder;
-    
-    // !!! Can not use the following line, since it uses an object which .dctor calls
-    // !!! FLS_SETVALUE, and a new FLS is created after SwitchOut.
-    // CANNOTTHROWCOMPLUSEXCEPTION();
-
-    _ASSERTE(GetThread() == this);
-
-    _ASSERTE (!fNoTLS ||
-              (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-
-#if 0
-    // workaround wwl: for SQL reschedule
-#ifndef _DEBUG
-        if (PreemptiveGCDisabled)
-        {
-        DebugBreak();
-    }
-#endif
-    _ASSERTE(!PreemptiveGCDisabled());
-#endif
-
-    // Can not assert here.  If a mutex is orphaned, the thread will have ThreadAffinity.
-    //_ASSERTE(!HasThreadAffinity());
-
-    _ASSERTE (!fNoTLS ||
-              (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-
-#ifdef _DEBUG
-    // For debugging purpose, we save callstack during task switch.  On Win64, the callstack
-    // is done within OS loader lock, and obtaining managed callstack may cause fiber switch.
-    SetThreadStateNC(TSNC_InTaskSwitch);
-    AddFiberInfo(ThreadTrackInfo_Schedule);
-    ResetThreadStateNC(TSNC_InTaskSwitch);
-#endif
-
-    _ASSERTE (!fNoTLS ||
-              (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-
-    m_pDomainAtTaskSwitch = GetAppDomain();
-
-    if (m_pFiberData)
-    {
-        // only set the m_OSThreadId to bad food in Fiber mode
-        m_OSThreadId = SWITCHED_OUT_FIBER_OSID;
-#ifdef PROFILING_SUPPORTED
-        // If a profiler is present, then notify the profiler that a
-        // thread has been created.
-        {
-            BEGIN_PIN_PROFILER(CORProfilerTrackThreads());
-            g_profControlBlock.pProfInterface->ThreadAssignedToOSThread(
-                (ThreadID)this, m_OSThreadId);
-            END_PIN_PROFILER();
-        }
-#endif // PROFILING_SUPPORTED
-    }
-
-    _ASSERTE (!fNoTLS ||
-              (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-
-    HANDLE hThread = GetThreadHandle();
-
-    SetThreadHandle (SWITCHOUT_HANDLE_VALUE);
-    while (m_dwThreadHandleBeingUsed > 0)
-    {
-        // Another thread is using the handle now.
-#undef Sleep
-        // We can not call __SwitchToThread since we can not go back to host.
-        ::Sleep(10);
-#define Sleep(a) Dont_Use_Sleep(a)
-    }
-
-        if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
-        {
-        m_ThreadHandleForClose = hThread;
-    }
-
-    _ASSERTE (!fNoTLS ||
-              (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-    }
-
-    CExecutionEngine::SwitchOut();
-
-    // We need to make sure that TLS are touched last here.
-    // Contract uses TLS.
-    SetThread(NULL);
-    SetAppDomain(NULL);
-
-    _ASSERTE (!fNoTLS ||
-              (CExecutionEngine::CheckThreadStateNoCreate(0) == NULL));
-}
-
-
-
 LONG Thread::GetTotalThreadPoolCompletionCount()
 {
     CONTRACTL
@@ -10014,149 +9653,6 @@ void Thread::InternalReset(BOOL fFull, BOOL fNotFinalizerThread, BOOL fThreadObj
     }
 }
 
-HRESULT Thread::Reset(BOOL fFull)
-{
-    // !!! Can not use non-static contract here.
-    // !!! Contract depends on Thread object for GC_TRIGGERS.
-    // !!! At the end of this function, we call InternalSwitchOut,
-    // !!! and then GetThread()=NULL, and dtor of contract does not work any more.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    if ( !g_fEEStarted)
-        return(E_FAIL);
-
-    HRESULT hr = S_OK;
-
-    BEGIN_SO_INTOLERANT_CODE_NOPROBE;
-
-#ifdef _DEBUG
-    _ASSERTE (GetThread() == this);
-#ifdef _TARGET_X86_
-    _ASSERTE (GetExceptionState()->GetContextRecord() == NULL);
-#endif
-#endif
-
-    if (GetThread() != this)
-    {
-        IfFailGo(E_UNEXPECTED);
-    }
-
-    _ASSERTE (!PreemptiveGCDisabled());
-    _ASSERTE (m_pFrame == FRAME_TOP);
-    // A host should not recycle a CLRTask if the task is created by us through CreateNewThread.
-    // We need to make Thread.Join work for this case.
-    if ((m_StateNC & (TSNC_CLRCreatedThread | TSNC_CannotRecycle)) != 0)
-    {
-        // Todo: wwl better returning code.
-        IfFailGo(E_UNEXPECTED);
-    }
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (IsCoInitialized())
-    {
-        // The current thread has done CoInitialize
-        IfFailGo(E_UNEXPECTED);
-    }
-#endif
-
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_Lifetime);
-#endif
-
-    SetThreadState(TS_TaskReset);
-
-    if (IsAbortRequested())
-    {
-        EEResetAbort(Thread::TAR_ALL);
-    }
-  
-    InternalReset(fFull);
-
-    if (PreemptiveGCDisabled())
-    {
-        EnablePreemptiveGC();
-    }
-
-    {
-
-#ifdef WIN64EXCEPTIONS
-    ExceptionTracker::PopTrackers((void*)-1);
-#endif // WIN64EXCEPTIONS
-
-        ResetThreadStateNC(TSNC_UnbalancedLocks);
-        m_dwLockCount = 0;
-
-    InternalSwitchOut();
-    m_OSThreadId = SWITCHED_OUT_FIBER_OSID;
-    }
-
-ErrExit:
-
-    END_SO_INTOLERANT_CODE_NOPROBE;
-
-#ifdef ENABLE_CONTRACTS_DATA
-    // Decouple our cache from the Task.
-    // Next time, the thread may be run on a different thread.
-    if (SUCCEEDED(hr))
-    {
-    m_pClrDebugState = NULL;
-    }
-#endif
-
-    return hr;
-}
-
-HRESULT Thread::ExitTask ()
-{
-    // !!! Can not use contract here.
-    // !!! Contract depends on Thread object for GC_TRIGGERS.
-    // !!! At the end of this function, we call InternalSwitchOut,
-    // !!! and then GetThread()=NULL, and dtor of contract does not work any more.
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_ENTRY_POINT;
-
-    if ( !g_fEEStarted)
-        return(E_FAIL);
-
-    HRESULT hr = S_OK;
-
-    // <TODO> We need to probe here, but can't introduce destructors etc.</TODO>
-    BEGIN_CONTRACT_VIOLATION(SOToleranceViolation);
-
-    //OnThreadTerminate(FALSE);
-    _ASSERTE (this == GetThread());
-    _ASSERTE (!PreemptiveGCDisabled());
-
-    // Can not assert the following.  SQL may call ExitTask after addref and abort a task.
-    //_ASSERTE (m_UnmanagedRefCount == 0);
-    if (this != GetThread())
-        IfFailGo(HOST_E_INVALIDOPERATION);
-
-#ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-    if (IsCoInitialized())
-    {
-        // This thread has used ole32.  We need to balance CoInitialize call on this thread.
-        // We also need to free any COM objects created on this thread.
-
-        // If we don't do this work, ole32 is going to do the same during its DLL_THREAD_DETACH,
-        // and may re-enter CLR.
-        CleanupCOMState();
-    }
-#endif
-    m_OSThreadId = SWITCHED_OUT_FIBER_OSID;
-    hr = DetachThread(FALSE);
-    // !!! Do not touch any field of Thread object.  The Thread object is subject to delete
-    // !!! after DetachThread call.
-ErrExit:;
-
-    END_CONTRACT_VIOLATION;
-
-    return hr;
-}
-
 HRESULT Thread::Abort ()
 {
     CONTRACTL
@@ -10230,15 +9726,6 @@ HRESULT Thread::LocksHeld(SIZE_T *pLockCount)
     return S_OK;
 }
 
-HRESULT Thread::SetTaskIdentifier(TASKID asked)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // @todo: Should be check for uniqueness?
-    m_TaskId = asked;
-    return S_OK;
-}
-
 HRESULT Thread::BeginPreventAsyncAbort()
 {
     WRAPPER_NO_CONTRACT;
@@ -10250,7 +9737,6 @@ HRESULT Thread::BeginPreventAsyncAbort()
 
 #ifdef _DEBUG
     ASSERT(count > 0);
-    AddFiberInfo(ThreadTrackInfo_Abort);
 
     FastInterlockIncrement((LONG*)&m_dwDisableAbortCheckCount);
 #endif
@@ -10269,7 +9755,6 @@ HRESULT Thread::EndPreventAsyncAbort()
 
 #ifdef _DEBUG
     ASSERT(count >= 0);
-    AddFiberInfo(ThreadTrackInfo_Abort);
 
     FastInterlockDecrement((LONG*)&m_dwDisableAbortCheckCount);
 #endif
@@ -10287,9 +9772,6 @@ ULONG Thread::AddRef()
     _ASSERTE (m_UnmanagedRefCount != (DWORD) -1);
     ULONG ref = FastInterlockIncrement((LONG*)&m_UnmanagedRefCount);
 
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_Lifetime);
-#endif
     return ref;
 }
 
@@ -10301,9 +9783,6 @@ ULONG Thread::Release()
     _ASSERTE (m_ExternalRefCount > 0);
     _ASSERTE (m_UnmanagedRefCount > 0);
     ULONG ref = FastInterlockDecrement((LONG*)&m_UnmanagedRefCount);
-#ifdef _DEBUG
-    AddFiberInfo(ThreadTrackInfo_Lifetime);
-#endif
     return ref;
 }
 
