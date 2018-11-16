@@ -518,6 +518,56 @@ If this turns to be a problem we should either implement [2] or make this an inv
 }
 
 /*
+Try to resume a suspended thread and atomically request that it suspend again.
+
+Returns one of the following values:
+- InitAsyncPulse: The thread is suspended with preemptive suspend and should be resumed.
+*/
+MonoPulseResult
+mono_threads_transition_request_pulse (MonoThreadInfo* info)
+{
+	int raw_state, cur_state, suspend_count;
+	gboolean no_safepoints;
+	g_assert (info != mono_thread_info_current ()); //One can't self pulse [3]
+
+retry_state_change:
+	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, no_safepoints, info);
+	switch (cur_state) {
+	case STATE_BLOCKING_ASYNC_SUSPENDED:
+		if (!(suspend_count == 1))
+			mono_fatal_with_history ("suspend_count = %d, but should be == 1", suspend_count);
+		if (no_safepoints)
+			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
+		if (mono_atomic_cas_i32 (&info->thread_state, STATE_BLOCKING_SUSPEND_REQUESTED, raw_state) != raw_state)
+			goto retry_state_change;
+		trace_state_change ("PULSE", info, raw_state, STATE_BLOCKING_SUSPEND_REQUESTED, no_safepoints, -1);
+		return PulseInitAsyncPulse; // Pulse worked and caller must do async pulse, thread pulses in BLOCKING
+/*
+
+STATE_RUNNING:
+STATE_BLOCKING:
+Only one suspend initiator at a time.  Current STW stopped the
+thread and now needs to resume it.  So thread must be in one of the suspended
+states if we get here.
+
+STATE_BLOCKING_SUSPEND_REQUESTED:
+STATE_ASYNC_SUSPEND_REQUESTED:
+Only one pulse operation can be in flight, so a pulse cannot witness an
+internal state of suspend
+
+STATE_ASYNC_SUSPENDED:
+Hybrid suspend shouldn't put GC Unsafe threads into async suspended state.
+
+STATE_BLOCKING_SELF_SUSPENDED:
+STATE_SELF_SUSPENDED:
+Don't expect these to be pulsed - they're not problematic.
+*/
+	default:
+		mono_fatal_with_history ("Cannot transition thread %p from %s with REQUEST_PULSE", mono_thread_info_get_tid (info), state_name (cur_state));
+	}
+}
+
+/*
 This performs the last step of preemptive suspend.
 
 Returns TRUE if the caller should wait for resume.

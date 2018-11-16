@@ -659,6 +659,10 @@ typedef enum {
 } MonoResumeResult;
 
 typedef enum {
+	PulseInitAsyncPulse,
+} MonoPulseResult;
+
+typedef enum {
 	SelfSuspendResumed,
 	SelfSuspendNotifyAndWait,
 } MonoSelfSupendResult;
@@ -694,6 +698,7 @@ gboolean mono_threads_transition_detach (THREAD_INFO_TYPE *info);
 MonoRequestSuspendResult mono_threads_transition_request_suspension (THREAD_INFO_TYPE *info);
 MonoSelfSupendResult mono_threads_transition_state_poll (THREAD_INFO_TYPE *info);
 MonoResumeResult mono_threads_transition_request_resume (THREAD_INFO_TYPE* info);
+MonoPulseResult mono_threads_transition_request_pulse (THREAD_INFO_TYPE* info);
 gboolean mono_threads_transition_finish_async_suspend (THREAD_INFO_TYPE* info);
 MonoDoBlockingResult mono_threads_transition_do_blocking (THREAD_INFO_TYPE* info, const char* func);
 MonoDoneBlockingResult mono_threads_transition_done_blocking (THREAD_INFO_TYPE* info, const char* func);
@@ -757,6 +762,9 @@ G_EXTERN_C // due to THREAD_INFO_TYPE varying
 MonoThreadBeginSuspendResult mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info, MonoThreadSuspendPhase phase);
 G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gboolean mono_thread_info_begin_resume (THREAD_INFO_TYPE *info);
+G_EXTERN_C // due to THREAD_INFO_TYPE varying
+gboolean mono_thread_info_begin_pulse_resume_and_request_suspension (THREAD_INFO_TYPE *info);
+
 
 void mono_threads_add_to_pending_operation_set (THREAD_INFO_TYPE* info); //XXX rename to something to reflect the fact that this is used for both suspend and resume
 gboolean mono_threads_wait_pending_operations (void);

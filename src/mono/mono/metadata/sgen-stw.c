@@ -332,7 +332,7 @@ sgen_unified_suspend_stop_world (void)
 			if (!(suspend_count == 1))
 				g_error ("[%p] suspend_count = %d, but should be 1", mono_thread_info_get_tid (info), suspend_count);
 
-			info->client_info.skip = !mono_thread_info_begin_resume (info);
+			info->client_info.skip = !mono_thread_info_begin_pulse_resume_and_request_suspension (info);
 			if (!info->client_info.skip)
 				restart_counter += 1;
 

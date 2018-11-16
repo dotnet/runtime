@@ -46,6 +46,13 @@ mono_threads_are_safepoints_enabled (void)
 	return mono_threads_is_cooperative_suspension_enabled () || mono_threads_is_hybrid_suspension_enabled ();
 }
 
+static inline gboolean
+mono_threads_is_multiphase_stw_enabled (void)
+{
+	/* So far, hybrid suspend is the only one using a multi-phase STW */
+	return mono_threads_is_hybrid_suspension_enabled ();
+}
+
 static inline void
 mono_threads_safepoint (void)
 {
