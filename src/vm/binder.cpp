@@ -315,6 +315,7 @@ bool MscorlibBinder::ConvertType(const BYTE*& pSig, SigBuilder * pSigBuilder)
 {
     bool bSomethingResolved = false;
 
+Again:
     CorElementType type = (CorElementType)*pSig++;
 
     switch (type)
@@ -342,6 +343,19 @@ bool MscorlibBinder::ConvertType(const BYTE*& pSig, SigBuilder * pSigBuilder)
             bSomethingResolved = true;
         break;
 
+    case ELEMENT_TYPE_CMOD_OPT:
+    case ELEMENT_TYPE_CMOD_REQD:
+        {
+            // The binder class id may overflow 1 byte. Use 2 bytes to encode it.
+            BinderClassID id = (BinderClassID)(*pSig + 0x100 * *(pSig + 1));
+            pSig += 2;
+
+            pSigBuilder->AppendElementType(type);
+            pSigBuilder->AppendToken(GetClassLocal(id)->GetCl());
+            bSomethingResolved = true;
+        }
+        goto Again;
+
     case ELEMENT_TYPE_CLASS:
     case ELEMENT_TYPE_VALUETYPE:
         {
@@ -352,6 +366,14 @@ bool MscorlibBinder::ConvertType(const BYTE*& pSig, SigBuilder * pSigBuilder)
             pSigBuilder->AppendElementType(type);
             pSigBuilder->AppendToken(GetClassLocal(id)->GetCl());
             bSomethingResolved = true;
+        }
+        break;
+
+    case ELEMENT_TYPE_VAR:
+    case ELEMENT_TYPE_MVAR:
+        {
+            pSigBuilder->AppendElementType(type);
+            pSigBuilder->AppendData(*pSig++);
         }
         break;
 
