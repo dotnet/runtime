@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging
                 return;
             }
 
-            options.CaptureScopes = _configuration.GetValue<bool>(nameof(options.CaptureScopes));
+            options.CaptureScopes = _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
 
             foreach (var configurationSection in _configuration.GetChildren())
             {
