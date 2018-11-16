@@ -26,7 +26,7 @@ steps:
       command: custom
       projects: eng/common/helixpublish.proj
       custom: msbuild
-      arguments: '/t:test /p:Language=msbuild /bl:$(Build.SourcesDirectory)\artifacts\log\$(_BuildConfig)\SendToHelix.binlog'
+      arguments: '/t:test /p:Language=msbuild /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog'
     displayName: Send job to Helix
     env:
       HelixSource: ${{ parameters.HelixSource }}
@@ -41,6 +41,7 @@ steps:
       CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
       XUnitProjects: ${{ parameters.XUnitProjects }}
       XUnitTargetFramework: ${{ parameters.XUnitTargetFramework }}
+      XUnitRunnerVersion: ${{ parameters.XUnitRunnerVersion }}
       IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
       DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
       DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
