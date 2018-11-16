@@ -58,6 +58,7 @@ add_subdirectory(DllImportAttribute/Simple)
 add_subdirectory(ExecInDefAppDom)
 
 if(WIN32)
+    add_subdirectory(PInvoke/Attributes/LCID)
     add_subdirectory(PInvoke/Variant)
     add_subdirectory(PInvoke/Varargs)
     add_subdirectory(PInvoke/SafeHandles)
