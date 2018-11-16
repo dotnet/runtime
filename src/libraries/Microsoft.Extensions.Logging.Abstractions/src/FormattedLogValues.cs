@@ -7,13 +7,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Microsoft.Extensions.Logging.Internal
+namespace Microsoft.Extensions.Logging
 {
     /// <summary>
     /// LogValues to enable formatting options supported by <see cref="M:string.Format"/>.
     /// This also enables using {NamedformatItem} in the format string.
     /// </summary>
-    public readonly struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object>>
+    internal readonly struct FormattedLogValues : IReadOnlyList<KeyValuePair<string, object>>
     {
         internal const int MaxCachedFormatters = 1024;
         private const string NullFormat = "[null]";

@@ -5,9 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace Microsoft.Extensions.Logging.Abstractions.Internal
+namespace Microsoft.Extensions.Logging
 {
-    public class TypeNameHelper
+    internal class TypeNameHelper
     {
         private static readonly Dictionary<Type, string> _builtInTypeNames = new Dictionary<Type, string>
             {
