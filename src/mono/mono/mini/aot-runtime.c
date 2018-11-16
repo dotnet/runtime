@@ -1863,7 +1863,7 @@ check_usable (MonoAssembly *assembly, MonoAotFileInfo *info, guint8 *blob, char 
 		msg = g_strdup_printf ("not compiled with --aot=llvm");
 		usable = FALSE;
 	}
-	if (mini_get_debug_options ()->mdb_optimizations && !(info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot) {
+	if (mini_get_debug_options ()->mdb_optimizations && !(info->flags & MONO_AOT_FILE_FLAG_DEBUG) && !full_aot && !interp) {
 		msg = g_strdup_printf ("not compiled for debugging");
 		usable = FALSE;
 	}
