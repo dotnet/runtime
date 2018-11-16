@@ -69,10 +69,6 @@ public:
     // Delete on TLS block
     static void DeleteTLS(void **pTlsData);
 
-    // Fiber switch notifications
-    static void SwitchIn();
-    static void SwitchOut();
-
     static void **CheckThreadState(DWORD slot, BOOL force = TRUE);
     static void **CheckThreadStateNoCreate(DWORD slot
 #ifdef _DEBUG

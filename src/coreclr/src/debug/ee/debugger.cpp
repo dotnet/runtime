@@ -11429,19 +11429,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     case DB_IPCE_GET_THREAD_FOR_TASKID:
         {
-             TASKID taskid = pEvent->GetThreadForTaskId.taskid;
-             Thread *pThread = ThreadStore::GetThreadList(NULL);
              Thread *pThreadRet = NULL;
-
-             while (pThread != NULL)
-             {
-                 if (pThread->GetTaskId() == taskid)
-                 {
-                     pThreadRet = pThread;
-                     break;
-                 }
-                 pThread = ThreadStore::GetThreadList(pThread);
-             }
 
              // This is a synchronous event (reply required)
              pEvent = m_pRCThread->GetIPCEventReceiveBuffer();

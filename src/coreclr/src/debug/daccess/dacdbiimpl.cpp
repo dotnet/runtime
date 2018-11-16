@@ -4667,8 +4667,7 @@ CONNID DacDbiInterfaceImpl::GetConnectionID(VMPTR_Thread vmThread)
 {
     DD_ENTER_MAY_THROW;
 
-    Thread * pThread = vmThread.GetDacPtr();
-    return pThread->GetConnectionId();
+    return INVALID_CONNECTION_ID;
 }
 
 // Return the task ID of the specified thread.
@@ -4676,8 +4675,7 @@ TASKID DacDbiInterfaceImpl::GetTaskID(VMPTR_Thread vmThread)
 {
     DD_ENTER_MAY_THROW;
 
-    Thread * pThread = vmThread.GetDacPtr();
-    return pThread->GetTaskId();
+    return INVALID_TASK_ID;
 }
 
 // Return the OS thread ID of the specified thread
