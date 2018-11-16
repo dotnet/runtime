@@ -3242,7 +3242,6 @@ private:
         while (lastStage !=stage) 
             lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
-    void ClearGCRoots();
     void UnwindThreads();
     // Return TRUE if EE is stopped
     // Return FALSE if more work is needed

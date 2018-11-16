@@ -3239,7 +3239,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetThreadStaticAddress(VMPTR_FieldDesc vmFiel
     // Find out whether the field is thread local and get its address.
     if (pFieldDesc->IsThreadStatic())
     {
-        fieldAddress = pRuntimeThread->GetStaticFieldAddrNoCreate(pFieldDesc, NULL);
+        fieldAddress = pRuntimeThread->GetStaticFieldAddrNoCreate(pFieldDesc);
     }
     else
     {
