@@ -513,9 +513,6 @@ namespace System.Security.Cryptography.Xml
 
             CanonicalXmlNodeList namespaces = new CanonicalXmlNodeList();
             XmlNode ancestorNode = elem;
-
-            if (ancestorNode == null) return null;
-
             bool bDefNamespaceToAdd = true;
 
             while (ancestorNode != null)
