@@ -173,4 +173,74 @@ extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_As_Out(/*[Out]*/bool boolVa
 	//Return
 	return true;
 }
+
+#ifdef _WIN32
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_ByValue_Variant(VARIANT_BOOL boolValue, bool expected)
+{
+    if (boolValue != (expected ? VARIANT_TRUE : VARIANT_FALSE))
+    {
+        printf("Error in function Marshal_ByValue_Variant(Native Client)\n");
+
+        printf("Expected %s ", expected ? "true" : "false");
+        printf("Actual %s (%hi)", boolValue == VARIANT_FALSE ? "false" : "(unknown variant value)", boolValue);
+
+        return false;
+    }
+
+    return true;
+}
+
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_Ref_Variant(VARIANT_BOOL* pBoolValue)
+{
+    if (*pBoolValue != (boolManaged ? VARIANT_TRUE : VARIANT_FALSE))
+    {
+        printf("Error in function Marshal_ByValue_Variant(Native Client)\n");
+
+        printf("Expected %s ", boolManaged ? "true" : "false");
+        printf("Actual %s (%hi)", *pBoolValue == VARIANT_FALSE ? "false" : "(unknown variant value)", *pBoolValue);
+
+        return false;
+    }
+
+    *pBoolValue = (boolNative ? VARIANT_TRUE : VARIANT_FALSE);
+    return true;
+}
+
+struct ContainsVariantBool
+{
+    VARIANT_BOOL value;
+};
+
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_ByValue_Struct_Variant(ContainsVariantBool value, bool expected)
+{
+    if (value.value != (expected ? VARIANT_TRUE : VARIANT_FALSE))
+    {
+        printf("Error in function Marshal_ByValue_Variant(Native Client)\n");
+
+        printf("Expected %s ", expected ? "true" : "false");
+        printf("Actual %s (%hi)", value.value == VARIANT_FALSE ? "false" : "(unknown variant value)", value.value);
+
+        return false;
+    }
+
+    return true;
+}
+
+extern "C" DLL_EXPORT bool STDMETHODCALLTYPE Marshal_Ref_Struct_Variant(ContainsVariantBool* pBoolValue)
+{
+    if (pBoolValue->value != (boolManaged ? VARIANT_TRUE : VARIANT_FALSE))
+    {
+        printf("Error in function Marshal_ByValue_Variant(Native Client)\n");
+
+        printf("Expected %s ", boolManaged ? "true" : "false");
+        printf("Actual %s (%hi)", pBoolValue->value == VARIANT_FALSE ? "false" : "(unknown variant value)", pBoolValue->value);
+
+        return false;
+    }
+
+    pBoolValue->value = (boolNative ? VARIANT_TRUE : VARIANT_FALSE);
+    return true;
+}
+
+#endif
 #pragma warning(pop)
