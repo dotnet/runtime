@@ -31,6 +31,7 @@
     <Compile Include="System\Data\DataColumnTest.cs" />
     <Compile Include="System\Data\DataColumnTest2.cs" />
     <Compile Include="System\Data\DataCommonEventSourceTest.cs" />
+    <Compile Include="System\Data\DataExceptionTest.cs" />
     <Compile Include="System\Data\DataRelationCollectionTest.cs" />
     <Compile Include="System\Data\DataRelationCollectionTest2.cs" />
     <Compile Include="System\Data\DataRelationTest.cs" />
