@@ -812,9 +812,6 @@ void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket)
 {
     WRAPPER_NO_CONTRACT;
 
-    // this check is because here we might be called from AppDomain::Terminate after AppDomain::ClearGCRoots,
-    // which calls Ref_RemoveHandleTableBucket itself
-
     Ref_RemoveHandleTableBucket(pBucket);
     for (int uCPUindex=0; uCPUindex < getNumberOfSlots(); uCPUindex++)
     {

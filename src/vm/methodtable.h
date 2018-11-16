@@ -2550,8 +2550,8 @@ public:
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
 #endif //!DACCESS_COMPILE
 
-    inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread, PTR_AppDomain pDomain);
-    inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread, PTR_AppDomain pDomain);
+    inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
+    inline PTR_BYTE GetGCThreadStaticsBasePointer(PTR_Thread pThread);
 
     inline DWORD IsDynamicStatics()
     {
