@@ -57,7 +57,7 @@
 //   G  --      -- Generic type variable
 //   M  --      -- Generic method variable
 //   GI --      -- Generic type instantiation
-//
+//   Q          -- modreq
 
 //#DEFINE_METASIG
 // Use DEFINE_METASIG for signatures that does not reference other types
@@ -138,6 +138,9 @@
 #ifndef g
 #define g(x) METASIG_ATOM(ELEMENT_TYPE_VALUETYPE) METASIG_ATOM(CLASS__ ## x % 0x100) METASIG_ATOM(CLASS__ ## x / 0x100)
 #endif
+#ifndef Q
+#define Q(x) METASIG_ATOM(ELEMENT_TYPE_CMOD_REQD) METASIG_ATOM(CLASS__ ## x % 0x100) METASIG_ATOM(CLASS__ ## x / 0x100)
+#endif
 
 #else
 
@@ -157,6 +160,8 @@
 #ifndef g
 #define g(x) METASIG_ATOM(ELEMENT_TYPE_VALUETYPE)
 #endif
+
+#define Q(x)
 
 #endif
 
@@ -594,6 +599,9 @@ DEFINE_METASIG_T(IM(ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult, a(b) i
 DEFINE_METASIG_T(IM(IAsyncResult_RetInt, C(IASYNCRESULT), i))
 DEFINE_METASIG_T(IM(IAsyncResult_RetVoid, C(IASYNCRESULT), v))
 
+DEFINE_METASIG(IM(Int_RetRefT, i, r(G(0))))
+DEFINE_METASIG_T(IM(Int_RetReadOnlyRefT, i, Q(INATTRIBUTE) r(G(0))))
+
 // Undefine macros in case we include the file again in the compilation unit
 
 #undef  DEFINE_METASIG
@@ -635,6 +643,7 @@ DEFINE_METASIG_T(IM(IAsyncResult_RetVoid, C(IASYNCRESULT), v))
 #undef G
 #undef M
 #undef GI
+#undef Q
 
 #undef _
 

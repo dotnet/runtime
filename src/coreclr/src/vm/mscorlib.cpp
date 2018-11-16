@@ -298,6 +298,7 @@ enum _gsigc {
 #define METASIG_RECURSE                 1
 #define C(x)                            1+
 #define g(x)                            1+
+#define Q(x)                            1+
 #include "metasig.h"
 
 //
@@ -313,6 +314,7 @@ enum _gsigc {
 #define METASIG_RECURSE                 1
 #define C(x)                            1+
 #define g(x)                            1+
+#define Q(x)                            1+
 #include "metasig.h"
 
 #endif
