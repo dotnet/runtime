@@ -1948,6 +1948,49 @@
     "any",
     "base"
   ],
+  "rhel.8": [
+    "rhel.8",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.8-x64": [
+    "rhel.8-x64",
+    "rhel.8",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.8.0": [
+    "rhel.8.0",
+    "rhel.8",
+    "rhel",
+    "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.8.0-x64": [
+    "rhel.8.0-x64",
+    "rhel.8.0",
+    "rhel.8-x64",
+    "rhel.8",
+    "rhel-x64",
+    "rhel",
+    "linux-x64",
+    "linux",
+    "unix-x64",
+    "unix",
+    "any",
+    "base"
+  ],
   "sles": [
     "sles",
     "linux",
