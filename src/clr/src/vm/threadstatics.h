@@ -517,94 +517,11 @@ struct TLMTableEntry
 typedef DPTR(struct ThreadLocalBlock) PTR_ThreadLocalBlock;
 typedef DPTR(PTR_ThreadLocalBlock) PTR_PTR_ThreadLocalBlock;
 
-struct ThreadLocalBlock
-{
-    friend class ClrDataAccess;
-
-private:
-    PTR_TLMTableEntry   m_pTLMTable;     // Table of ThreadLocalModules
-    SIZE_T              m_TLMTableSize;  // Current size of table
-    SpinLock            m_TLMTableLock;  // Spinlock used to synchronize growing the table and freeing TLM by other threads
-
-    // Each ThreadLocalBlock has its own ThreadStaticHandleTable. The ThreadStaticHandleTable works
-    // by allocating Object arrays on the GC heap and keeping them alive with pinning handles.
-    //
-    // We use the ThreadStaticHandleTable to allocate space for GC thread statics. A GC thread
-    // static is thread static that is either a reference type or a value type whose layout
-    // contains a pointer to a reference type.
-
-    ThreadStaticHandleTable * m_pThreadStaticHandleTable;
-
-    // Need to keep a list of the pinning handles we've created
-    // so they can be cleaned up when the thread dies
-    ObjectHandleList          m_PinningHandleList;
-
-public: 
-
-#ifndef DACCESS_COMPILE
-    void AddPinningHandleToList(OBJECTHANDLE oh);
-    void FreePinningHandles();
-    void AllocateThreadStaticHandles(Module * pModule, ThreadLocalModule * pThreadLocalModule);
-    OBJECTHANDLE AllocateStaticFieldObjRefPtrs(int nRequested, OBJECTHANDLE* ppLazyAllocate = NULL);
-    void InitThreadStaticHandleTable();
-
-    void AllocateThreadStaticBoxes(MethodTable* pMT);
-#endif
-
-public: // used by code generators
-    static SIZE_T GetOffsetOfModuleSlotsPointer() { return offsetof(ThreadLocalBlock, m_pTLMTable); }
-
-public:
-
-#ifndef DACCESS_COMPILE
-    ThreadLocalBlock()
-      : m_pTLMTable(NULL), m_TLMTableSize(0), m_pThreadStaticHandleTable(NULL) 
-    {
-        m_TLMTableLock.Init(LOCK_TYPE_DEFAULT);
-    }
-
-    void    FreeTLM(SIZE_T i, BOOL isThreadShuttingDown);
-
-    void    FreeTable();
-
-    void    EnsureModuleIndex(ModuleIndex index);
-
-#endif
-
-    void SetModuleSlot(ModuleIndex index, PTR_ThreadLocalModule pLocalModule);
-
-    FORCEINLINE PTR_ThreadLocalModule GetTLMIfExists(ModuleIndex index)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        if (index.m_dwIndex >= m_TLMTableSize)
-            return NULL;
-
-        return m_pTLMTable[index.m_dwIndex].pTLM;
-    }
-
-    FORCEINLINE PTR_ThreadLocalModule GetTLMIfExists(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        ModuleIndex index = pMT->GetModuleForStatics()->GetModuleIndex();
-        return GetTLMIfExists(index);
-    }
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-};
-
-
-
-
 class ThreadStatics
 {
   public:
 
 #ifndef DACCESS_COMPILE
-    static PTR_ThreadLocalBlock AllocateTLB(PTR_Thread pThread);
     static PTR_ThreadLocalModule AllocateTLM(Module * pModule);
     static PTR_ThreadLocalModule AllocateAndInitTLM(ModuleIndex index, PTR_ThreadLocalBlock pThreadLocalBlock, Module * pModule);
 
@@ -612,59 +529,35 @@ class ThreadStatics
     static PTR_ThreadLocalModule GetTLM(MethodTable * pMT);
 #endif
 
-#ifndef DACCESS_COMPILE
-    FORCEINLINE static PTR_ThreadLocalBlock GetCurrentTLBIfExists()
-    {
-        // Get the current thread
-        PTR_Thread pThread = GetThread();
-    
-        return pThread->m_pThreadLocalBlock;
-    }
-#endif
-
-    FORCEINLINE static PTR_ThreadLocalBlock GetCurrentTLBIfExists(PTR_Thread pThread, PTR_AppDomain pDomain)
+    FORCEINLINE static PTR_ThreadLocalBlock GetCurrentTLB(PTR_Thread pThread)
     {
         SUPPORTS_DAC;
 
-        PTR_ThreadLocalBlock pTLB = pThread->m_pThreadLocalBlock;
-
-        return pTLB;
+        return dac_cast<PTR_ThreadLocalBlock>(&pThread->m_ThreadLocalBlock);
     }
 
 #ifndef DACCESS_COMPILE
-    FORCEINLINE static PTR_ThreadLocalBlock GetCurrentTLB()
+    FORCEINLINE static ThreadLocalBlock* GetCurrentTLB()
     {
         // Get the current thread
         Thread * pThread = GetThread();
     
-        // If the current TLB pointer is NULL, search the TLB table
-        if (pThread->m_pThreadLocalBlock == NULL)
-        {
-            // Allocate the new ThreadLocalBlock.
-            // If the allocation fails this will throw.
-            return ThreadStatics::AllocateTLB(pThread);
-        }
-
-        return pThread->m_pThreadLocalBlock;       
+        return &pThread->m_ThreadLocalBlock;
     }
 
-    FORCEINLINE static PTR_ThreadLocalModule GetTLMIfExists(ModuleIndex index)
+    FORCEINLINE static ThreadLocalModule* GetTLMIfExists(ModuleIndex index)
     {
         // Get the current ThreadLocalBlock
-        PTR_ThreadLocalBlock pThreadLocalBlock = GetCurrentTLBIfExists();
-        if (pThreadLocalBlock == NULL)
-            return NULL;
+        PTR_ThreadLocalBlock pThreadLocalBlock = GetCurrentTLB();
 
         // Get the TLM from the ThreadLocalBlock's table
         return pThreadLocalBlock->GetTLMIfExists(index);
     }
 
-    FORCEINLINE static PTR_ThreadLocalModule GetTLMIfExists(MethodTable * pMT)
+    FORCEINLINE static ThreadLocalModule* GetTLMIfExists(MethodTable * pMT)
     {
         // Get the current ThreadLocalBlock
-        PTR_ThreadLocalBlock pThreadLocalBlock = GetCurrentTLBIfExists();
-        if (pThreadLocalBlock == NULL)
-            return NULL;
+        ThreadLocalBlock* pThreadLocalBlock = GetCurrentTLB();
 
         // Get the TLM from the ThreadLocalBlock's table
         return pThreadLocalBlock->GetTLMIfExists(pMT);

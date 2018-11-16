@@ -3513,7 +3513,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     //
     // Store the result and return
     //
-    PTR_VOID pAddress = (void *)(((Thread *)threadId)->GetStaticFieldAddrNoCreate(pFieldDesc, pAppDomain));
+    PTR_VOID pAddress = (void *)(((Thread *)threadId)->GetStaticFieldAddrNoCreate(pFieldDesc));
     if (pAddress == NULL)
     {
         return E_INVALIDARG;

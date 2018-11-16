@@ -62,6 +62,24 @@ SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
 CONTEXT *ThreadStore::s_pOSContext = NULL;
 CLREvent *ThreadStore::s_pWaitForStackCrawlEvent;
 
+PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(ModuleIndex index)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    if (index.m_dwIndex >= m_TLMTableSize)
+        return NULL;
+
+    return m_pTLMTable[index.m_dwIndex].pTLM;
+}
+
+PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
+{
+    WRAPPER_NO_CONTRACT;
+    ModuleIndex index = pMT->GetModuleForStatics()->GetModuleIndex();
+    return GetTLMIfExists(index);
+}
+
 #ifndef DACCESS_COMPILE
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
@@ -114,7 +132,6 @@ template<> void GCAssert<FALSE>::BeginGCAssert()
     STATIC_CONTRACT_MODE_PREEMPTIVE;
 }
 #endif
-
 
 // #define     NEW_TLS     1
 
@@ -1385,9 +1402,6 @@ Thread::Thread()
     m_pClrDebugState = NULL;
     m_ulEnablePreemptiveGCCount  = 0;
 #endif
-
-    // Initialize data members related to thread statics
-    m_pThreadLocalBlock = NULL;
 
     m_dwLockCount = 0;
     m_dwBeginLockCount = 0;
@@ -2713,9 +2727,6 @@ Thread::~Thread()
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
-
-    //Ensure DeleteThreadStaticData was executed
-    _ASSERTE(m_pThreadLocalBlock == NULL);
 
 #ifdef FEATURE_PREJIT
     if (m_pIBCInfo) {
@@ -7814,11 +7825,6 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
         }
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
         
-        // NULL out the Thread's pointer to the current ThreadLocalBlock. On the next
-        // access to thread static data, the Thread's pointer to the current ThreadLocalBlock
-        // will be updated correctly.
-        m_pThreadLocalBlock = NULL;
-
         m_pDomain = pDomain;
         SetAppDomain(m_pDomain);
     }
@@ -7934,11 +7940,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
         //_ASSERTE(!fLinkFrame || pThread->GetFrame() == pFrame);
 
         FlushIBCInfo();
-
-        // NULL out the Thread's pointer to the current ThreadLocalBlock. On the next
-        // access to thread static data, the Thread's pointer to the current ThreadLocalBlock
-        // will be updated correctly.
-        m_pThreadLocalBlock = NULL;
 
         m_pDomain = pReturnDomain;
         SetAppDomain(pReturnDomain);
@@ -8894,7 +8895,7 @@ LPVOID Thread::GetStaticFieldAddress(FieldDesc *pFD)
 // 
 //+----------------------------------------------------------------------------
 
-TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD, PTR_AppDomain pDomain)
+TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD)
 {
     CONTRACTL {
         NOTHROW;
@@ -8914,11 +8915,11 @@ TADDR Thread::GetStaticFieldAddrNoCreate(FieldDesc *pFD, PTR_AppDomain pDomain)
     if (pFD->GetFieldType() == ELEMENT_TYPE_CLASS ||
         pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
     {
-        base = pMT->GetGCThreadStaticsBasePointer(dac_cast<PTR_Thread>(this), pDomain);
+        base = pMT->GetGCThreadStaticsBasePointer(dac_cast<PTR_Thread>(this));
     }
     else
     {
-        base = pMT->GetNonGCThreadStaticsBasePointer(dac_cast<PTR_Thread>(this), pDomain);
+        base = pMT->GetNonGCThreadStaticsBasePointer(dac_cast<PTR_Thread>(this));
     }
     
     if (base == NULL)
@@ -9012,13 +9013,7 @@ void Thread::DeleteThreadStaticData()
     }
     CONTRACTL_END;
 
-    // Deallocate the memory used by the table of ThreadLocalBlocks
-    if (m_pThreadLocalBlock != NULL)
-    {
-        m_pThreadLocalBlock->FreeTable();
-        delete m_pThreadLocalBlock;
-        m_pThreadLocalBlock = NULL;
-    }
+    m_ThreadLocalBlock.FreeTable();
 }
 
 //+----------------------------------------------------------------------------
@@ -9033,46 +9028,8 @@ void Thread::DeleteThreadStaticData()
 
 void Thread::DeleteThreadStaticData(ModuleIndex index)
 {
-    if (m_pThreadLocalBlock != NULL)
-    {
-        m_pThreadLocalBlock->FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
-    }
+    m_ThreadLocalBlock.FreeTLM(index.m_dwIndex, FALSE /* isThreadShuttingDown */);
 }
-
-//+----------------------------------------------------------------------------
-//
-//  Method:     Thread::DeleteThreadStaticData   protected
-//
-//  Synopsis:   Delete the static data for the given appdomain. This is called
-//              when the appdomain unloads.
-//
-// 
-//+----------------------------------------------------------------------------
-
-void Thread::DeleteThreadStaticData(AppDomain *pDomain)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    // Look up the AppDomain index
-    SIZE_T index = pDomain->GetIndex().m_dwIndex;
-
-    ThreadLocalBlock * pTLB = m_pThreadLocalBlock;
-    m_pThreadLocalBlock = NULL;
-
-    if (pTLB != NULL)
-    {
-        // Since the AppDomain is being unloaded anyway, all the memory used by
-        // the TLB will be reclaimed, so we don't really have to call FreeTable()
-        pTLB->FreeTable();
-
-        delete pTLB;
-    }
-}
-
 
 void Thread::InitCultureAccessors()
 {
@@ -10219,10 +10176,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     m_ExceptionState.EnumChainMemoryRegions(flags);
 
-    // Like the old thread static implementation, we only enumerate
-    // the current TLB. Should we be enumerating all of the TLBs?
-    if (m_pThreadLocalBlock.IsValid())
-        m_pThreadLocalBlock->EnumMemoryRegions(flags);
+    m_ThreadLocalBlock.EnumMemoryRegions(flags);
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
     {

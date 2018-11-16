@@ -7807,61 +7807,6 @@ void AppDomain::UnwindThreads()
     while (TRUE) ;
 }
 
-void AppDomain::ClearGCRoots()
-{
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    Thread *pThread = NULL;
-    ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_APPDOMAIN_SHUTDOWN);
-
-    // Tell the JIT managers to delete any entries in their structures. All the cooperative mode threads are stopped at
-    // this point, so only need to synchronize the preemptive mode threads.
-    ExecutionManager::Unload(GetLoaderAllocator());
-
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        // Delete the thread local static store
-        pThread->DeleteThreadStaticData(this);
-
-        // <TODO>@TODO: A pre-allocated AppDomainUnloaded exception might be better.</TODO>
-        if (m_handleStore->ContainsHandle(pThread->m_LastThrownObjectHandle))
-        {
-            // Never delete a handle to a preallocated exception object.
-            if (!CLRException::IsPreallocatedExceptionHandle(pThread->m_LastThrownObjectHandle))
-            {
-                DestroyHandle(pThread->m_LastThrownObjectHandle);
-            }
-
-            pThread->m_LastThrownObjectHandle = NULL;
-        }
-
-        // Clear out the exceptions objects held by a thread.
-        pThread->GetExceptionState()->ClearThrowablesForUnload(m_handleStore);
-    }
-
-    //delete them while we still have the runtime suspended
-    // This must be deleted before the loader heaps are deleted.
-    if (m_pMarshalingData != NULL)
-    {
-        delete m_pMarshalingData;
-        m_pMarshalingData = NULL;
-    }
-
-    if (m_pLargeHeapHandleTable != NULL)
-    {
-        delete m_pLargeHeapHandleTable;
-        m_pLargeHeapHandleTable = NULL;
-    }
-
-    ThreadSuspend::RestartEE(FALSE, TRUE);
-}
-
 #ifdef _DEBUG
 
 void AppDomain::TrackADThreadEnter(Thread *pThread, Frame *pFrame)

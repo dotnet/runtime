@@ -801,6 +801,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
                         gc.handleTable = gc.loaderAllocator->GetHandleTable();
                     }
 
+                    slotsUsed = gc.loaderAllocator->GetSlotsUsed();
                     numComponents = gc.handleTable->GetNumComponents();
 
                     if (slotsUsed < numComponents)
