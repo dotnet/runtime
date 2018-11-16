@@ -2824,6 +2824,10 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
         }
     }
 #ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(indirTree))
+    {
+        SetContainsAVXFlags(true, genTypeSize(indirTree->TypeGet()));
+    }
     buildInternalRegisterUses();
 #endif // FEATURE_SIMD
 
