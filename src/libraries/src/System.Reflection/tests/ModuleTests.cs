@@ -64,11 +64,11 @@ namespace System.Reflection.Tests
         [InlineData("System.Nullable`1[System.Int32]", typeof(int?))]
         [InlineData("System.Int32*", typeof(int*))]
         [InlineData("System.Int32**", typeof(int**))]
-        [InlineData("Outside`1", typeof(Outside<>))]
-        [InlineData("Outside`1+Inside`1", typeof(Outside<>.Inside<>))]
-        [InlineData("Outside[]", typeof(Outside[]))]
-        [InlineData("Outside[,,]", typeof(Outside[,,]))]
-        [InlineData("Outside[][]", typeof(Outside[][]))]        
+        [InlineData("OutsideModuleTest`1", typeof(OutsideModuleTest<>))]
+        [InlineData("OutsideModuleTest`1+InsideModuleTest`1", typeof(OutsideModuleTest<>.InsideModuleTest<>))]
+        [InlineData("OutsideModuleTest[]", typeof(OutsideModuleTest[]))]
+        [InlineData("OutsideModuleTest[,,]", typeof(OutsideModuleTest[,,]))]
+        [InlineData("OutsideModuleTest[][]", typeof(OutsideModuleTest[][]))]        
         public void GetType(string className, Type expectedType)
         {
             Module module = expectedType.GetTypeInfo().Module;
@@ -91,10 +91,10 @@ namespace System.Reflection.Tests
             Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), new object()));
 
             Assert.Empty(typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "out*"));
-            Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "Out*").Length);
-            Assert.Empty(typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "outside"));
-            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "Outside").Length);
-            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "Inside").Length);
+            Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "OutsideMod*").Length);
+            Assert.Empty(typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "outsidemoduletest"));
+            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "OutsideModuleTest").Length);
+            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeName, "InsideModuleTest").Length);
 
             Assert.True(Module.FilterTypeName(typeof(string), "String"));
             Assert.True(Module.FilterTypeName(typeof(string), "*"));
@@ -120,11 +120,11 @@ namespace System.Reflection.Tests
             Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), null));
             Assert.Throws<InvalidFilterCriteriaException>(() => Module.FilterTypeName(GetType(), new object()));
 
-            Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "out*").Length);
-            Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "Out*").Length);
-            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "oUtside").Length);
-            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "Outside").Length);
-            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "inSIDE").Length);
+            Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "outsidemod*").Length);
+            Assert.Equal(2, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "Outsidemod*").Length);
+            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "ouTsidemoduLeTest").Length);
+            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "OutsideModuleTest").Length);
+            Assert.Equal(1, typeof(ModuleTest).GetTypeInfo().Module.FindTypes(Module.FilterTypeNameIgnoreCase, "insiDemoduLeTest").Length);
 
             Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "string"));
             Assert.True(Module.FilterTypeNameIgnoreCase(typeof(string), "*"));
@@ -142,12 +142,12 @@ namespace System.Reflection.Tests
     }
 }
 
-public class Outside
+public class OutsideModuleTest
 {
-    public class Inside { }
+    public class InsideModuleTest { }
 }
 
-public class Outside<T>
+public class OutsideModuleTest<T>
 {
-    public class Inside<U> { }
+    public class InsideModuleTest<U> { }
 }
