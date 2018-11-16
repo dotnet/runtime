@@ -7,6 +7,12 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     public class ClassWithOptionalArgsCtorWithStructs
     {
+        public ConsoleColor? Color { get; }
+        public ConsoleColor? ColorNull { get; }
+
+        public int? Integer { get; }
+        public int? IntegerNull { get; }
+
         public ClassWithOptionalArgsCtorWithStructs(
             DateTime dateTime = new DateTime(),
             DateTime dateTimeDefault = default(DateTime),
@@ -17,9 +23,17 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Guid guid = new Guid(),
             Guid guidDefault = default(Guid),
             CustomStruct customStruct = new CustomStruct(),
-            CustomStruct customStructDefault = default(CustomStruct)
+            CustomStruct customStructDefault = default(CustomStruct),
+            ConsoleColor? color = ConsoleColor.DarkGreen,
+            ConsoleColor? colorNull = null,
+            int? integer = 12,
+            int? integerNull = null
         )
         {
+            Color = color;
+            ColorNull = colorNull;
+            Integer = integer;
+            IntegerNull = integerNull;
         }
 
         public struct CustomStruct { }

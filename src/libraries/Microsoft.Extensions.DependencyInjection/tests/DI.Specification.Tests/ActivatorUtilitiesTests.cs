@@ -110,6 +110,10 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 
             // Assert
             Assert.NotNull(anotherClass);
+            Assert.Equal(ConsoleColor.DarkGreen, anotherClass.Color);
+            Assert.Equal(null, anotherClass.ColorNull);
+            Assert.Equal(12, anotherClass.Integer);
+            Assert.Equal(null, anotherClass.IntegerNull);
         }
 
         [Theory]
