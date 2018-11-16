@@ -9,21 +9,37 @@ namespace System.Data.Common.Tests
     public class DbExceptionTests
     {
         [Fact]
-        public void ArgumentsStored()
+        public void Ctor_Parameterless_UsesDefaults()
         {
-            Assert.Equal("test", new CustomDbException("test").Message);
-            Assert.Equal("another test", new CustomDbException("test", new Exception("another test")).InnerException.Message);
+            var defaultException = new CustomDbException();
+            Assert.False(string.IsNullOrWhiteSpace(defaultException.Message));
+            Assert.Null(defaultException.InnerException);
+            Assert.Equal(-2147467259, defaultException.ErrorCode);
         }
+
+        [Fact]
+        public void Ctor_ArgumentsRoundtrip()
+        {
+            var e = new CustomDbException("test");
+            Assert.Equal("test", e.Message);
+
+            var innerException = new Exception();
+            e = new CustomDbException("test", innerException);
+            Assert.Equal("test", e.Message);
+            Assert.Same(innerException, e.InnerException);
+
+            e = new CustomDbException("test", 4060);
+            Assert.Equal("test", e.Message);
+            Assert.Equal(4060, e.ErrorCode);
+        }
+
 
         private class CustomDbException : DbException
         {
-            public CustomDbException(string message) : base(message)
-            {
-            }
-
-            public CustomDbException(string message, Exception innerException) : base(message, innerException)
-            {
-            }
+            public CustomDbException() { }
+            public CustomDbException(string message) : base(message) { }
+            public CustomDbException(string message, int errorCode) : base(message, errorCode) { }
+            public CustomDbException(string message, Exception innerException) : base(message, innerException) { }
         }
     }
 }

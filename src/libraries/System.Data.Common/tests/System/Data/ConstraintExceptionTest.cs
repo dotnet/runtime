@@ -99,5 +99,16 @@ namespace System.Data.Tests
             // UniqueConstraint Exception - ds.EnforceConstraints 
             Assert.Throws<ConstraintException>(() => ds.EnforceConstraints = true);
         }
+
+        [Fact]
+        public void Ctor_ArgumentsRoundtrip()
+        {
+            var innerException = new Exception("inner exception");
+
+            var e = new ConstraintException("test", innerException);
+            Assert.Equal("test", e.Message);
+            Assert.Same(innerException, e.InnerException);
+            Assert.Equal(-2146232022, e.HResult);
+        }
     }
 }
