@@ -26,7 +26,21 @@
 #include <string.h>
 #include <sys/auxv.h>
 #elif defined(_AIX)
+
 #include <sys/systemcfg.h>
+
+#if !defined(POWER_4_ANDUP)
+#define POWER_4_ANDUP (POWER_4|POWER_5)
+#endif
+
+#if !defined(__power_4_andup)
+#define __power_4_andup() (_system_configuration.implementation & POWER_4_ANDUP)
+#endif
+
+#if !defined(__power_5_andup)
+#define __power_5_andup() (_system_configuration.implementation & POWER_5)
+#endif
+
 #endif
 
 void
