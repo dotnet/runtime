@@ -10,7 +10,7 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>965f64834de45e6c2c3864ad8926a053c21ab5f2</CoreFxCurrentRef>
-    <CoreClrCurrentRef>965f64834de45e6c2c3864ad8926a053c21ab5f2</CoreClrCurrentRef>
+    <CoreClrCurrentRef>b5cc5954492e04929333eb94d11c7e4b5374799f</CoreClrCurrentRef>
     <StandardCurrentRef>9beae4222a58a355e2107e99bdbcb8902c232c18</StandardCurrentRef>
     <BuildToolsCurrentRef>965f64834de45e6c2c3864ad8926a053c21ab5f2</BuildToolsCurrentRef>
   </PropertyGroup>
@@ -19,7 +19,7 @@
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18566.8</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.18566.8</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27116-03</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27116-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <NETStandardLibraryPackageVersion>2.0.3</NETStandardLibraryPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
     <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
