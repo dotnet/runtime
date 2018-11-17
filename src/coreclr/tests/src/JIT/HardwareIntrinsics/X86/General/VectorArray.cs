@@ -35,9 +35,9 @@ internal partial class IntelHardwareIntrinsicTest
             int elementCount = vectorSize / elementSize;
 
             for (int i = 0; i < v.Length; ++i)
-                v[i] = SetAllVector128<T>(GetValueFromInt<T>(i + 1));
+                v[i] = CreateVector128<T>(GetValueFromInt<T>(i + 1));
 
-            Vector128<T> delta = SetAllVector128<T>(GetValueFromInt<T>(1));
+            Vector128<T> delta = CreateVector128<T>(GetValueFromInt<T>(1));
             Move(v, ref delta);
 
             byte* buffer = stackalloc byte[vectorSize * v.Length];
@@ -75,9 +75,9 @@ internal partial class IntelHardwareIntrinsicTest
             int elementCount = vectorSize / elementSize;
 
             for (int i = 0; i < v.Length; ++i)
-                v[i] = Avx.SetAllVector256<T>((T)Convert.ChangeType(i + 1, typeof(T)));
+                v[i] = CreateVector256<T>((T)Convert.ChangeType(i + 1, typeof(T)));
 
-            Vector256<T> delta = Avx.SetAllVector256((T)Convert.ChangeType(1, typeof(T)));
+            Vector256<T> delta = CreateVector256((T)Convert.ChangeType(1, typeof(T)));
             Move(v, ref delta);
 
             byte* buffer = stackalloc byte[vectorSize * v.Length];

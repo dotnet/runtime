@@ -29,7 +29,7 @@ internal sealed class SpherePacket256 : ObjectPacket256
     {
         var eo = Centers - rayPacket256.Starts;
         var v = VectorPacket256.DotProduct(eo, rayPacket256.Dirs);
-        var zero = SetZeroVector256<float>();
+        var zero = Vector256<float>.Zero;
         var vLessZeroMask = Compare(v, zero, FloatComparisonMode.LessThanOrderedNonSignaling);
         var discs = Subtract(Multiply(Radiuses, Radiuses), Subtract(VectorPacket256.DotProduct(eo, eo), Multiply(v, v)));
         var discLessZeroMask = Compare(discs, zero, FloatComparisonMode.LessThanOrderedNonSignaling);
