@@ -15,6 +15,9 @@
     <OutputType>Exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
+	
+    <!-- Issue 21044, https://github.com/dotnet/coreclr/issues/21044 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
 
   <ItemGroup>
