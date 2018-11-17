@@ -711,6 +711,10 @@ echo sequential                - Run tests sequentially (no parallelism).
 echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
 echo crossgenaltjit ^<altjit^>   - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests, using the given altjit.
 echo link ^<ILlink^>             - Runs the tests after linking via the IL linker ^<ILlink^>.
+echo CoreFXTests               - Runs CoreFX tests
+echo CoreFXTestsAll            - Runs all CoreFX tests ^(no exclusions^)
+echo CoreFXTestList ^<file^>     - Specify a file containing a list of CoreFX tests to run, and runs them.
+echo PerfTests                 - Runs perf tests
 echo RunCrossgenTests          - Runs ReadytoRun tests
 echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n
@@ -730,9 +734,9 @@ echo tieredcompilation         - Run the tests with COMPlus_TieredCompilation=1
 echo gcname ^<name^>             - Runs the tests with COMPlus_GCName=name
 echo timeout ^<n^>               - Sets the per-test timeout in milliseconds ^(default is 10 minutes = 10 * 60 * 1000 = 600000^).
 echo                             Note: some options override this ^(gcstresslevel, longgc, gcsimulator^).
+echo printlastresultsonly      - Print the last test results without running tests.
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
 echo ^<CORE_ROOT^>               - Path to the runtime to test ^(if specified^).
-echo printlastresultsonly        - Print the last test results without running tests.
 echo.
 echo Note that arguments are not case-sensitive.
 echo.
