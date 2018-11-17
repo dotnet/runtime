@@ -1467,6 +1467,13 @@ def setup_core_root(host_os,
 
     return True
 
+if sys.version_info.major < 3:
+    def to_unicode(s):
+        return unicode(s, "utf-8")
+else:
+    def to_unicode(s):
+        return str(s, "utf-8")
+
 def delete_existing_wrappers(test_location):
     """ Delete the existing xunit wrappers
 
@@ -1511,7 +1518,7 @@ def build_test_wrappers(host_os,
     """
     global g_verbose
 
-    delete_existing_wrappers(test_location)
+    delete_existing_wrappers(to_unicode(test_location))
 
     # Setup the dotnetcli location
     dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
