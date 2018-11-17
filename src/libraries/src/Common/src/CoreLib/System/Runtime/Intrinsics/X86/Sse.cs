@@ -298,12 +298,6 @@ namespace System.Runtime.Intrinsics.X86
         public static long ConvertToInt64(Vector128<float> value) => ConvertToInt64(value);
 
         /// <summary>
-        /// float _mm_cvtss_f32 (__m128 a)
-        ///   HELPER: MOVSS
-        /// </summary>
-        public static float ConvertToSingle(Vector128<float> value) => ConvertToSingle(value);
-
-        /// <summary>
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
         ///   CVTSI2SS xmm, reg/m32
         /// </summary>
@@ -494,70 +488,6 @@ namespace System.Runtime.Intrinsics.X86
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> upper, Vector128<float> value) => ReciprocalSqrtScalar(upper, value);
-
-        /// <summary>
-        /// __m128 _mm_set1_ps (float a)
-        ///   HELPER
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector128<float> SetAllVector128(float value)
-        {
-            // Zero vector and load value et index 0
-            Vector128<float> vector = SetScalarVector128(value);
-            // Create { vl vl vl vl } and return result
-            return Shuffle(vector, vector, 0);
-        }
-
-        /// <summary>
-        /// __m128 _mm_set_ss (float a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<float> SetScalarVector128(float value) => SetScalarVector128(value);
-
-        /// <summary>
-        /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
-        /// </summary>
-        public static unsafe Vector128<float> SetVector128(float e3, float e2, float e1, float e0)
-        {
-            // TODO-CQ Optimize algorithm choice based on benchmarks
-
-            // Zero vector and load e2 et index 0
-            Vector128<float> e2Vector = SetScalarVector128(e2);
-            Vector128<float> e1Vector = SetScalarVector128(e1);
-            Vector128<float> e0Vector = SetScalarVector128(e0);
-            // Create { -- -- e2 e0 }
-            e0Vector = UnpackLow(e0Vector, e2Vector);
-            e2Vector = SetScalarVector128(e3);
-            // Create { -- -- e3 e1 }
-            e1Vector = UnpackLow(e1Vector, e2Vector);
-            // Create { e3 e2 e1 e0 } and return result
-            return UnpackLow(e0Vector, e1Vector);
-        }
-
-        /// <summary>
-        /// __m128d _mm_setzero_ps (void)
-        ///   HELPER - XORPS
-        /// </summary>
-        public static Vector128<float> SetZeroVector128() => SetZeroVector128();
-
-        /// <summary>
-        /// __m128 _mm_castpd_ps (__m128d a)
-        ///   HELPER - No Codegen
-        /// __m128i _mm_castpd_si128 (__m128d a)
-        ///   HELPER - No Codegen
-        /// __m128d _mm_castps_pd (__m128 a)
-        ///   HELPER - No Codegen
-        /// __m128i _mm_castps_si128 (__m128 a)
-        ///   HELPER - No Codegen
-        /// __m128d _mm_castsi128_pd (__m128i a)
-        ///   HELPER - No Codegen
-        /// __m128 _mm_castsi128_ps (__m128i a)
-        ///   HELPER - No Codegen
-        /// </summary>
-        public static Vector128<U> StaticCast<T, U>(Vector128<T> value) where T : struct where U : struct
-        {
-            return StaticCast<T, U>(value);
-        }
 
         /// <summary>
         /// __m128 _mm_shuffle_ps (__m128 a,  __m128 b, unsigned int control)
