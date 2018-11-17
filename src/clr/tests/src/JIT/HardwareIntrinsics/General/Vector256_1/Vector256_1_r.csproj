@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
+  <ItemGroup>
+    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
+      <Visible>False</Visible>
+    </CodeAnalysisDependentAssemblyPaths>
+  </ItemGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize></Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="As.Byte.cs" />
+    <Compile Include="As.Double.cs" />
+    <Compile Include="As.Int16.cs" />
+    <Compile Include="As.Int32.cs" />
+    <Compile Include="As.Int64.cs" />
+    <Compile Include="As.SByte.cs" />
+    <Compile Include="As.Single.cs" />
+    <Compile Include="As.UInt16.cs" />
+    <Compile Include="As.UInt32.cs" />
+    <Compile Include="As.UInt64.cs" />
+    <Compile Include="GetAndWithElement.Byte.0.cs" />
+    <Compile Include="GetAndWithElement.Byte.7.cs" />
+    <Compile Include="GetAndWithElement.Byte.15.cs" />
+    <Compile Include="GetAndWithElement.Byte.31.cs" />
+    <Compile Include="GetAndWithElement.Double.0.cs" />
+    <Compile Include="GetAndWithElement.Double.1.cs" />
+    <Compile Include="GetAndWithElement.Double.3.cs" />
+    <Compile Include="GetAndWithElement.Int16.0.cs" />
+    <Compile Include="GetAndWithElement.Int16.3.cs" />
+    <Compile Include="GetAndWithElement.Int16.7.cs" />
+    <Compile Include="GetAndWithElement.Int16.15.cs" />
+    <Compile Include="GetAndWithElement.Int32.0.cs" />
+    <Compile Include="GetAndWithElement.Int32.1.cs" />
+    <Compile Include="GetAndWithElement.Int32.3.cs" />
+    <Compile Include="GetAndWithElement.Int32.7.cs" />
+    <Compile Include="GetAndWithElement.Int64.0.cs" />
+    <Compile Include="GetAndWithElement.Int64.1.cs" />
+    <Compile Include="GetAndWithElement.Int64.3.cs" />
+    <Compile Include="GetAndWithElement.SByte.0.cs" />
+    <Compile Include="GetAndWithElement.SByte.7.cs" />
+    <Compile Include="GetAndWithElement.SByte.15.cs" />
+    <Compile Include="GetAndWithElement.SByte.31.cs" />
+    <Compile Include="GetAndWithElement.Single.0.cs" />
+    <Compile Include="GetAndWithElement.Single.1.cs" />
+    <Compile Include="GetAndWithElement.Single.3.cs" />
+    <Compile Include="GetAndWithElement.Single.7.cs" />
+    <Compile Include="GetAndWithElement.UInt16.0.cs" />
+    <Compile Include="GetAndWithElement.UInt16.3.cs" />
+    <Compile Include="GetAndWithElement.UInt16.7.cs" />
+    <Compile Include="GetAndWithElement.UInt16.15.cs" />
+    <Compile Include="GetAndWithElement.UInt32.0.cs" />
+    <Compile Include="GetAndWithElement.UInt32.1.cs" />
+    <Compile Include="GetAndWithElement.UInt32.3.cs" />
+    <Compile Include="GetAndWithElement.UInt32.7.cs" />
+    <Compile Include="GetAndWithElement.UInt64.0.cs" />
+    <Compile Include="GetAndWithElement.UInt64.1.cs" />
+    <Compile Include="GetAndWithElement.UInt64.3.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.Byte.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.Double.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.Int16.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.Int32.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.Int64.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.SByte.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.Single.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.UInt16.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.UInt32.cs" />
+    <Compile Include="GetAndWithLowerAndUpper.UInt64.cs" />
+    <Compile Include="ToScalar.Byte.cs" />
+    <Compile Include="ToScalar.Double.cs" />
+    <Compile Include="ToScalar.Int16.cs" />
+    <Compile Include="ToScalar.Int32.cs" />
+    <Compile Include="ToScalar.Int64.cs" />
+    <Compile Include="ToScalar.SByte.cs" />
+    <Compile Include="ToScalar.Single.cs" />
+    <Compile Include="ToScalar.UInt16.cs" />
+    <Compile Include="ToScalar.UInt32.cs" />
+    <Compile Include="ToScalar.UInt64.cs" />
+    <Compile Include="Zero.Byte.cs" />
+    <Compile Include="Zero.Double.cs" />
+    <Compile Include="Zero.Int16.cs" />
+    <Compile Include="Zero.Int32.cs" />
+    <Compile Include="Zero.Int64.cs" />
+    <Compile Include="Zero.SByte.cs" />
+    <Compile Include="Zero.Single.cs" />
+    <Compile Include="Zero.UInt16.cs" />
+    <Compile Include="Zero.UInt32.cs" />
+    <Compile Include="Zero.UInt64.cs" />
+    <Compile Include="Program.Vector256_1.cs" />
+    <Compile Include="..\Shared\Program.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
+</Project>

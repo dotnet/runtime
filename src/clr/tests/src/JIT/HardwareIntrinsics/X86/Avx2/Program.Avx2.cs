@@ -114,7 +114,6 @@ namespace JIT.HardwareIntrinsics.X86
                 ["CompareGreaterThan.Int32"] = CompareGreaterThanInt32,
                 ["CompareGreaterThan.Int64"] = CompareGreaterThanInt64,
                 ["CompareGreaterThan.SByte"] = CompareGreaterThanSByte,
-                ["ConvertToDouble.Double"] = ConvertToDoubleDouble,
                 ["ConvertToInt32.Int32"] = ConvertToInt32Int32,
                 ["ConvertToUInt32.UInt32"] = ConvertToUInt32UInt32,
                 ["ExtractVector128.Byte.1"] = ExtractVector128Byte1,

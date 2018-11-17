@@ -37,7 +37,7 @@ internal partial class IntelHardwareIntrinsicTest
 
         public VectorArg128 Change(float f)
         {
-            Vector128<float> t = Sse.SetAllVector128(f);
+            Vector128<float> t = Vector128.Create(f);
             return new VectorArg128(Sse.Add(t, _rgb));
         }
 
@@ -66,7 +66,7 @@ internal partial class IntelHardwareIntrinsicTest
 
         public VectorArg256 Change(float f)
         {
-            Vector256<float> t = Avx.SetAllVector256(f);
+            Vector256<float> t = Vector256.Create(f);
             return new VectorArg256(Avx.Add(t, _rgb));
         }
 
@@ -79,7 +79,7 @@ internal partial class IntelHardwareIntrinsicTest
 
         if (Sse41.IsSupported)
         {
-            Vector128<float> rgb = Sse.SetVector128(0, 1, 2, 3);
+            Vector128<float> rgb = Vector128.Create(3f, 2f, 1f, 0f);
             float x = 2f;
             VectorArg128 c1 = new VectorArg128(rgb);
             VectorArg128 c2 = c1.Change(x);
@@ -94,7 +94,7 @@ internal partial class IntelHardwareIntrinsicTest
 
         if (Avx.IsSupported)
         {
-            Vector256<float> rgb = Avx.SetVector256(0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f);
+            Vector256<float> rgb = Vector256.Create(7f, 6f, 5f, 4f, 3f, 2f, 1f, 0f);
             float x = 2f;
             VectorArg256 c1 = new VectorArg256(rgb);
             VectorArg256 c2 = c1.Change(x);

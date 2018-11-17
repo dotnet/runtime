@@ -11,33 +11,33 @@ using System;
 
 public static class VectorMath
 {
-    static readonly Vector256<float> MaxValue = SetAllVector256<float>(88.0f);
-    static readonly Vector256<float> MinValue = SetAllVector256<float>(-88.0f);
-    static readonly Vector256<float> Log2 = SetAllVector256<float>(1.44269502f);
-    static readonly Vector256<float> C1 = SetAllVector256<float>(0.693359375f);
-    static readonly Vector256<float> C2 = SetAllVector256<float>(-0.0002121944417f);
-    static readonly Vector256<float> P0 = SetAllVector256<float>(0.0001987569121f);
-    static readonly Vector256<float> P1 = SetAllVector256<float>(0.001398199936f);
-    static readonly Vector256<float> P2 = SetAllVector256<float>(0.008333452046f);
-    static readonly Vector256<float> P3 = SetAllVector256<float>(0.04166579619f);
-    static readonly Vector256<float> P4 = SetAllVector256<float>(0.1666666567f);
-    static readonly Vector256<float> LogP0 = SetAllVector256<float>(0.07037683576f);
-    static readonly Vector256<float> LogP1 = SetAllVector256<float>(-0.1151461005f);
-    static readonly Vector256<float> LogP2 = SetAllVector256<float>(0.1167699844f);
-    static readonly Vector256<float> LogP3 = SetAllVector256<float>(-0.1242014095f);
-    static readonly Vector256<float> LogP4 = SetAllVector256<float>(0.1424932331f);
-    static readonly Vector256<float> LogP5 = SetAllVector256<float>(-0.1666805744f);
-    static readonly Vector256<float> LogP6 = SetAllVector256<float>(0.2000071406f);
-    static readonly Vector256<float> LogP7 = SetAllVector256<float>(-0.2499999404f);
-    static readonly Vector256<float> LogP8 = SetAllVector256<float>(0.3333333135f);
-    static readonly Vector256<float> LogQ1 = SetAllVector256<float>(-0.0002121944417f);
-    static readonly Vector256<float> LogQ2 = SetAllVector256<float>(0.693359375f);
-    static readonly Vector256<float> Point5 = SetAllVector256<float>(0.5f);
-    static readonly Vector256<float> Sqrthf = SetAllVector256<float>(0.7071067691f);
-    static readonly Vector256<float> One = SetAllVector256<float>(1.0f);
-    static readonly Vector256<int> Ox7 = SetAllVector256<int>(127);
-    static readonly Vector256<int> MinNormPos = SetAllVector256<int>(8388608);
-    static readonly Vector256<int> MantMask = SetAllVector256<int>(-2139095041);
+    static readonly Vector256<float> MaxValue = Vector256.Create(88.0f);
+    static readonly Vector256<float> MinValue = Vector256.Create(-88.0f);
+    static readonly Vector256<float> Log2 = Vector256.Create(1.44269502f);
+    static readonly Vector256<float> C1 = Vector256.Create(0.693359375f);
+    static readonly Vector256<float> C2 = Vector256.Create(-0.0002121944417f);
+    static readonly Vector256<float> P0 = Vector256.Create(0.0001987569121f);
+    static readonly Vector256<float> P1 = Vector256.Create(0.001398199936f);
+    static readonly Vector256<float> P2 = Vector256.Create(0.008333452046f);
+    static readonly Vector256<float> P3 = Vector256.Create(0.04166579619f);
+    static readonly Vector256<float> P4 = Vector256.Create(0.1666666567f);
+    static readonly Vector256<float> LogP0 = Vector256.Create(0.07037683576f);
+    static readonly Vector256<float> LogP1 = Vector256.Create(-0.1151461005f);
+    static readonly Vector256<float> LogP2 = Vector256.Create(0.1167699844f);
+    static readonly Vector256<float> LogP3 = Vector256.Create(-0.1242014095f);
+    static readonly Vector256<float> LogP4 = Vector256.Create(0.1424932331f);
+    static readonly Vector256<float> LogP5 = Vector256.Create(-0.1666805744f);
+    static readonly Vector256<float> LogP6 = Vector256.Create(0.2000071406f);
+    static readonly Vector256<float> LogP7 = Vector256.Create(-0.2499999404f);
+    static readonly Vector256<float> LogP8 = Vector256.Create(0.3333333135f);
+    static readonly Vector256<float> LogQ1 = Vector256.Create(-0.0002121944417f);
+    static readonly Vector256<float> LogQ2 = Vector256.Create(0.693359375f);
+    static readonly Vector256<float> Point5 = Vector256.Create(0.5f);
+    static readonly Vector256<float> Sqrthf = Vector256.Create(0.7071067691f);
+    static readonly Vector256<float> One = Vector256.Create(1.0f);
+    static readonly Vector256<int> Ox7 = Vector256.Create(127);
+    static readonly Vector256<int> MinNormPos = Vector256.Create(8388608);
+    static readonly Vector256<int> MantMask = Vector256.Create(-2139095041);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<float> Pow(Vector256<float> left, Vector256<float> right)
@@ -70,16 +70,16 @@ public static class VectorMath
         pow2n = Avx2.Add(pow2n, Ox7);
         pow2n = Avx2.ShiftLeftLogical(pow2n, 23);
 
-        return Multiply(y, StaticCast<int, float>(pow2n));
+        return Multiply(y, pow2n.AsSingle());
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<float> Log(Vector256<float> value)
     {
-        Vector256<float> invalidMask = Compare(value, SetZeroVector256<float>(), FloatComparisonMode.LessThanOrEqualOrderedNonSignaling);
-        Vector256<float> x = Max(value, StaticCast<int, float>(MinNormPos));
-        Vector256<int> ei = Avx2.ShiftRightLogical(StaticCast<float, int>(x), 23);
-        x = Or(And(x, StaticCast<int, float>(MantMask)), Point5);
+        Vector256<float> invalidMask = Compare(value, Vector256<float>.Zero, FloatComparisonMode.LessThanOrEqualOrderedNonSignaling);
+        Vector256<float> x = Max(value, MinNormPos.AsSingle());
+        Vector256<int> ei = Avx2.ShiftRightLogical(x.AsInt32(), 23);
+        x = Or(And(x, MantMask.AsSingle()), Point5);
         ei = Avx2.Subtract(ei, Ox7);
         Vector256<float> e = Add(ConvertToVector256Single(ei), One);
         Vector256<float> mask = Compare(x, Sqrthf, FloatComparisonMode.LessThanOrderedNonSignaling);

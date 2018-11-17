@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 //using Microsoft.Xunit.Performance;
 
@@ -103,7 +104,7 @@ class Program
 
             // Determine the new position of the sphere based on the current time elapsed
             float dy2 = 0.8f * MathF.Abs(MathF.Sin((float)(totalTime.ElapsedMilliseconds * Math.PI / 3000)));
-            sphere2.Centers.Ys = Avx.Add(baseY, Avx.SetAllVector256(dy2));
+            sphere2.Centers.Ys = Avx.Add(baseY, Vector256.Create(dy2));
 
             // Render the scene
             renderingTime.Reset();

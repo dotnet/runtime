@@ -15,43 +15,43 @@ internal partial class IntelHardwareIntrinsicTest
     {
         if (typeof(T) == typeof(byte))
         {
-            return Sse.StaticCast<byte, T>(Sse2.Add(Sse.StaticCast<T, byte>(left), Sse.StaticCast<T, byte>(right)));
+            return Sse2.Add(left.AsByte(), right.AsByte()).As<T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Sse.StaticCast<sbyte, T>(Sse2.Add(Sse.StaticCast<T, sbyte>(left), Sse.StaticCast<T, sbyte>(right)));
+            return Sse2.Add(left.AsSByte(), right.AsSByte()).As<T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Sse.StaticCast<short, T>(Sse2.Add(Sse.StaticCast<T, short>(left), Sse.StaticCast<T, short>(right)));
+            return Sse2.Add(left.AsInt16(), right.AsInt16()).As<T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Sse.StaticCast<ushort, T>(Sse2.Add(Sse.StaticCast<T, ushort>(left), Sse.StaticCast<T, ushort>(right)));
+            return Sse2.Add(left.AsUInt16(), right.AsUInt16()).As<T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Sse.StaticCast<int, T>(Sse2.Add(Sse.StaticCast<T, int>(left), Sse.StaticCast<T, int>(right)));
+            return Sse2.Add(left.AsInt32(), right.AsInt32()).As<T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Sse.StaticCast<uint, T>(Sse2.Add(Sse.StaticCast<T, uint>(left), Sse.StaticCast<T, uint>(right)));
+            return Sse2.Add(left.AsUInt32(), right.AsUInt32()).As<T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Sse.StaticCast<long, T>(Sse2.Add(Sse.StaticCast<T, long>(left), Sse.StaticCast<T, long>(right)));
+            return Sse2.Add(left.AsInt64(), right.AsInt64()).As<T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Sse.StaticCast<ulong, T>(Sse2.Add(Sse.StaticCast<T, ulong>(left), Sse.StaticCast<T, ulong>(right)));
+            return Sse2.Add(left.AsUInt64(), right.AsUInt64()).As<T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Sse.StaticCast<float, T>(Sse.Add(Sse.StaticCast<T, float>(left), Sse.StaticCast<T, float>(right)));
+            return Sse.Add(left.AsSingle(), right.AsSingle()).As<T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Sse.StaticCast<double, T>(Sse2.Add(Sse.StaticCast<T, double>(left), Sse.StaticCast<T, double>(right)));
+            return Sse2.Add(left.AsDouble(), right.AsDouble()).As<T>();
         }
         else
         {
@@ -63,43 +63,43 @@ internal partial class IntelHardwareIntrinsicTest
     {
         if (typeof(T) == typeof(byte))
         {
-            return Avx.StaticCast<byte, T>(Avx2.Add(Avx.StaticCast<T, byte>(left), Avx.StaticCast<T, byte>(right)));
+            return Avx2.Add(left.AsByte(), right.AsByte()).As<T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Avx.StaticCast<sbyte, T>(Avx2.Add(Avx.StaticCast<T, sbyte>(left), Avx.StaticCast<T, sbyte>(right)));
+            return Avx2.Add(left.AsSByte(), right.AsSByte()).As<T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Avx.StaticCast<short, T>(Avx2.Add(Avx.StaticCast<T, short>(left), Avx.StaticCast<T, short>(right)));
+            return Avx2.Add(left.AsInt16(), right.AsInt16()).As<T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Avx.StaticCast<ushort, T>(Avx2.Add(Avx.StaticCast<T, ushort>(left), Avx.StaticCast<T, ushort>(right)));
+            return Avx2.Add(left.AsUInt16(), right.AsUInt16()).As<T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Avx.StaticCast<int, T>(Avx2.Add(Avx.StaticCast<T, int>(left), Avx.StaticCast<T, int>(right)));
+            return Avx2.Add(left.AsInt32(), right.AsInt32()).As<T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Avx.StaticCast<uint, T>(Avx2.Add(Avx.StaticCast<T, uint>(left), Avx.StaticCast<T, uint>(right)));
+            return Avx2.Add(left.AsUInt32(), right.AsUInt32()).As<T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Avx.StaticCast<long, T>(Avx2.Add(Avx.StaticCast<T, long>(left), Avx.StaticCast<T, long>(right)));
+            return Avx2.Add(left.AsInt64(), right.AsInt64()).As<T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Avx.StaticCast<ulong, T>(Avx2.Add(Avx.StaticCast<T, ulong>(left), Avx.StaticCast<T, ulong>(right)));
+            return Avx2.Add(left.AsUInt64(), right.AsUInt64()).As<T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Avx.StaticCast<float, T>(Avx.Add(Avx.StaticCast<T, float>(left), Avx.StaticCast<T, float>(right)));
+            return Avx.Add(left.AsSingle(), right.AsSingle()).As<T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Avx.StaticCast<double, T>(Avx.Add(Avx.StaticCast<T, double>(left), Avx.StaticCast<T, double>(right)));
+            return Avx.Add(left.AsDouble(), right.AsDouble()).As<T>();
         }
         else
         {
@@ -107,47 +107,47 @@ internal partial class IntelHardwareIntrinsicTest
         }
     }
 
-    public static Vector128<T> SetAllVector128<T>(T value) where T : struct
+    public static Vector128<T> CreateVector128<T>(T value) where T : struct
     {
         if (typeof(T) == typeof(byte))
         {
-            return Sse.StaticCast<byte, T>(Sse2.SetAllVector128(Convert.ToByte(value)));
+            return Vector128.Create(Convert.ToByte(value)).As<T>();
         }
         else if (typeof(T) == typeof(sbyte))
         {
-            return Sse.StaticCast<sbyte, T>(Sse2.SetAllVector128(Convert.ToSByte(value)));
+            return Vector128.Create(Convert.ToSByte(value)).As<T>();
         }
         else if (typeof(T) == typeof(short))
         {
-            return Sse.StaticCast<short, T>(Sse2.SetAllVector128(Convert.ToInt16(value)));
+            return Vector128.Create(Convert.ToInt16(value)).As<T>();
         }
         else if (typeof(T) == typeof(ushort))
         {
-            return Sse.StaticCast<ushort, T>(Sse2.SetAllVector128(Convert.ToUInt16(value)));
+            return Vector128.Create(Convert.ToUInt16(value)).As<T>();
         }
         else if (typeof(T) == typeof(int))
         {
-            return Sse.StaticCast<int, T>(Sse2.SetAllVector128(Convert.ToInt32(value)));
+            return Vector128.Create(Convert.ToInt32(value)).As<T>();
         }
         else if (typeof(T) == typeof(uint))
         {
-            return Sse.StaticCast<uint, T>(Sse2.SetAllVector128(Convert.ToUInt32(value)));
+            return Vector128.Create(Convert.ToUInt32(value)).As<T>();
         }
         else if (typeof(T) == typeof(long))
         {
-            return Sse.StaticCast<long, T>(Sse2.SetAllVector128(Convert.ToInt64(value)));
+            return Vector128.Create(Convert.ToInt64(value)).As<T>();
         }
         else if (typeof(T) == typeof(ulong))
         {
-            return Sse.StaticCast<ulong, T>(Sse2.SetAllVector128(Convert.ToUInt64(value)));
+            return Vector128.Create(Convert.ToUInt64(value)).As<T>();
         }
         else if (typeof(T) == typeof(float))
         {
-            return Sse.StaticCast<float, T>(Sse.SetAllVector128(Convert.ToSingle(value)));
+            return Vector128.Create(Convert.ToSingle(value)).As<T>();
         }
         else if (typeof(T) == typeof(double))
         {
-            return Sse.StaticCast<double, T>(Sse2.SetAllVector128(Convert.ToDouble(value)));
+            return Vector128.Create(Convert.ToDouble(value)).As<T>();
         }
         else
         {
@@ -155,27 +155,47 @@ internal partial class IntelHardwareIntrinsicTest
         }
     }
 
-    // These two helper functions are a workaround for the bug of Sse2.SetZeroVector128<float>
-    // https://github.com/dotnet/coreclr/pull/17691
-    public static Vector128<T> SetZeroVector128<T>() where T : struct
+    public static Vector256<T> CreateVector256<T>(T value) where T : struct
     {
-        if (typeof(T) == typeof(float))
+        if (typeof(T) == typeof(byte))
         {
-            return Sse.StaticCast<float, T>(Sse.SetZeroVector128());
+            return Vector256.Create(Convert.ToByte(value)).As<T>();
         }
-        else
+        else if (typeof(T) == typeof(sbyte))
         {
-            return Sse2SetZeroVector128<T>();
+            return Vector256.Create(Convert.ToSByte(value)).As<T>();
         }
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector128<T> Sse2SetZeroVector128<T>() where T : struct
-    {
-        if (typeof(T) == typeof(double) || typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte) || typeof(T) == typeof(short) ||
-            typeof(T) == typeof(ushort) || typeof(T) == typeof(int) || typeof(T) == typeof(uint) || typeof(T) == typeof(long) || typeof(T) == typeof(ulong))
+        else if (typeof(T) == typeof(short))
         {
-            return Sse2.SetZeroVector128<T>();
+            return Vector256.Create(Convert.ToInt16(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(ushort))
+        {
+            return Vector256.Create(Convert.ToUInt16(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(int))
+        {
+            return Vector256.Create(Convert.ToInt32(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(uint))
+        {
+            return Vector256.Create(Convert.ToUInt32(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(long))
+        {
+            return Vector256.Create(Convert.ToInt64(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(ulong))
+        {
+            return Vector256.Create(Convert.ToUInt64(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(float))
+        {
+            return Vector256.Create(Convert.ToSingle(value)).As<T>();
+        }
+        else if (typeof(T) == typeof(double))
+        {
+            return Vector256.Create(Convert.ToDouble(value)).As<T>();
         }
         else
         {

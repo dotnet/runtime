@@ -671,6 +671,26 @@
             "classes": null,
             "methods": [
                 {
+                    "name" : "System.Numerics.Tests.Matrix4x4Tests.Matrix4x4LerpTest",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/20994"
+                },
+                {
+                    "name" : "System.Numerics.Tests.Matrix4x4Tests.Matrix4x4MultiplyTest5",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/20994"
+                },
+                {
+                    "name" : "System.Numerics.Tests.Matrix4x4Tests.Matrix4x4MultiplyTest6",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/20994"
+                },
+                {
+                    "name" : "System.Numerics.Tests.Matrix4x4Tests.Matrix4x4NegateTest",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/20994"
+                },
+                {
+                    "name" : "System.Numerics.Tests.Matrix4x4Tests.Matrix4x4UnaryNegationTest",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/20994"
+                },
+                {
                     "name" : "System.Numerics.Tests.Vector2Tests.Vector2ClampTest",
                     "reason" : "outdated"
                 },

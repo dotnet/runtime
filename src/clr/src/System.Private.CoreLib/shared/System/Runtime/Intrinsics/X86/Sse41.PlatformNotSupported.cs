@@ -631,7 +631,8 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// int _mm_test_all_ones (__m128i a)
-        ///   HELPER
+        ///   PCMPEQD xmm, xmm/m128
+        ///   PTEST xmm, xmm/m128
         /// </summary>
         public static bool TestAllOnes(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         public static bool TestAllOnes(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
