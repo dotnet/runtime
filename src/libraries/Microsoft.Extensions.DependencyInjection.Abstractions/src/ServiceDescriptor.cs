@@ -107,6 +107,24 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public Func<IServiceProvider, object> ImplementationFactory { get; }
 
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            var lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
+
+            if (ImplementationType != null)
+            {
+                return lifetime + $"{nameof(ImplementationType)}: {ImplementationType}";
+            }
+
+            if (ImplementationFactory != null)
+            {
+                return lifetime + $"{nameof(ImplementationFactory)}: {ImplementationFactory.Method}";
+            }
+
+            return lifetime + $"{nameof(ImplementationInstance)}: {ImplementationInstance}";
+        }
+
         internal Type GetImplementationType()
         {
             if (ImplementationType != null)
