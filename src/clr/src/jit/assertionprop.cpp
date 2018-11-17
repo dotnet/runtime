@@ -2646,12 +2646,15 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc* curAssertion,
 #ifdef FEATURE_SIMD
                 if (varTypeIsSIMD(tree))
                 {
-                    var_types simdType = tree->TypeGet();
-                    tree->ChangeOperConst(GT_CNS_DBL);
-                    GenTree* initVal = tree;
-                    initVal->gtType  = TYP_FLOAT;
-                    newTree =
-                        gtNewSIMDNode(simdType, initVal, nullptr, SIMDIntrinsicInit, TYP_FLOAT, genTypeSize(simdType));
+                    LclVarDsc* varDsc   = lvaGetDesc(lclNum);
+                    var_types  simdType = tree->TypeGet();
+                    assert(varDsc->TypeGet() == simdType);
+                    var_types baseType = varDsc->lvBaseType;
+                    newTree            = gtGetSIMDZero(simdType, baseType, varDsc->lvVerTypeInfo.GetClassHandle());
+                    if (newTree == nullptr)
+                    {
+                        return nullptr;
+                    }
                 }
                 else
 #endif // FEATURE_SIMD
