@@ -24,6 +24,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 callback = this;
                 _callSiteValidator = new CallSiteValidator();
             }
+
             switch (options.Mode)
             {
                 case ServiceProviderMode.Dynamic:
@@ -42,6 +43,28 @@ namespace Microsoft.Extensions.DependencyInjection
                     break;
                 default:
                     throw new NotSupportedException(nameof(options.Mode));
+            }
+
+            if (options.ValidateOnBuild)
+            {
+                List<Exception> exceptions = null;
+                foreach (var serviceDescriptor in serviceDescriptors)
+                {
+                    try
+                    {
+                        _engine.ValidateService(serviceDescriptor);
+                    }
+                    catch (Exception e)
+                    {
+                        exceptions = exceptions ?? new List<Exception>();
+                        exceptions.Add(e);
+                    }
+                }
+
+                if (exceptions != null)
+                {
+                    throw new AggregateException("Some services are not able to be constructed", exceptions.ToArray());
+                }
             }
         }
 
