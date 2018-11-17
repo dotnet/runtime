@@ -198,6 +198,18 @@ int wmemcmp(LPCWSTR str1, LPCWSTR str2,size_t len)
     return wcsncmp(str1, str2, len);
 }
 
+#define DECIMAL_NEG ((BYTE)0x80)
+#define DECIMAL_SCALE(dec)       ((dec).u.u.scale)
+#define DECIMAL_SIGN(dec)        ((dec).u.u.sign)
+#define DECIMAL_SIGNSCALE(dec)   ((dec).u.signscale)
+#define DECIMAL_LO32(dec)        ((dec).v.v.Lo32)
+#define DECIMAL_MID32(dec)       ((dec).v.v.Mid32)
+#define DECIMAL_HI32(dec)        ((dec).Hi32)
+#define DECIMAL_LO64_GET(dec)    ((dec).v.Lo64)
+#define DECIMAL_LO64_SET(dec,value)   {(dec).v.Lo64 = value; }
+
+#define DECIMAL_SETZERO(dec) {DECIMAL_LO32(dec) = 0; DECIMAL_MID32(dec) = 0; DECIMAL_HI32(dec) = 0; DECIMAL_SIGNSCALE(dec) = 0;}
+
 #endif //!_Win32
 
 #endif // __XPLAT_H__
