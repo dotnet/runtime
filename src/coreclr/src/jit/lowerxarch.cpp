@@ -3088,7 +3088,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_Compare:
                         case NI_AVX_CompareScalar:
                         case NI_AVX_DotProduct:
-                        case NI_AVX_Insert:
                         case NI_AVX_Permute2x128:
                         case NI_AVX_Shuffle:
                         case NI_AVX2_Blend:

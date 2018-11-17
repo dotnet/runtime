@@ -80,18 +80,18 @@ namespace IntelHardwareIntrinsicTest
                     maski = Sse2.LoadVector128(iptr);
                     maskl = Sse2.LoadVector128(lptr);
 
-                    maskui = Sse.StaticCast<int, uint>(maski);
-                    maskul = Sse.StaticCast<long, ulong>(maskl);
-                    maskf = Sse.StaticCast<int, float>(maski);
-                    maskd = Sse.StaticCast<long, double>(maskl);
+                    maskui = maski.AsUInt32();
+                    maskul = maskl.AsUInt64();
+                    maskf = maski.AsSingle();
+                    maskd = maskl.AsDouble();
                 }
 
-                Vector128<int> sourcei = Sse2.SetZeroVector128<int>();
-                Vector128<uint> sourceui = Sse2.SetZeroVector128<uint>();
-                Vector128<long> sourcel = Sse2.SetZeroVector128<long>();
-                Vector128<ulong> sourceul = Sse2.SetZeroVector128<ulong>();
-                Vector128<float> sourcef = Sse.SetZeroVector128();
-                Vector128<double> sourced = Sse2.SetZeroVector128<double>();
+                Vector128<int> sourcei = Vector128<int>.Zero;
+                Vector128<uint> sourceui = Vector128<uint>.Zero;
+                Vector128<long> sourcel = Vector128<long>.Zero;
+                Vector128<ulong> sourceul = Vector128<ulong>.Zero;
+                Vector128<float> sourcef = Vector128<float>.Zero;
+                Vector128<double> sourced = Vector128<double>.Zero;
 
 
                 // public static unsafe Vector128<float> GatherMaskVector128(Vector128<float> source, float* baseAddress, Vector128<int> index, Vector128<float> mask, byte scale)

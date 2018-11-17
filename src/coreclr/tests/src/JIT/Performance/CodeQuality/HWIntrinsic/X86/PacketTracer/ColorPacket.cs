@@ -13,8 +13,8 @@ using ColorPacket256 = VectorPacket256;
 internal static class ColorPacket256Helper
 {
 
-    private static readonly Vector256<float> One = SetAllVector256<float>(1.0f);
-    private static readonly Vector256<float> Max = SetAllVector256<float>(255.0f);
+    private static readonly Vector256<float> One = Vector256.Create(1.0f);
+    private static readonly Vector256<float> Max = Vector256.Create(255.0f);
     public static Int32RGBPacket256 ConvertToIntRGB(this VectorPacket256 colors)
     {
 
@@ -39,8 +39,8 @@ internal static class ColorPacket256Helper
         return new VectorPacket256(Multiply(left.Xs, right.Xs), Multiply(left.Ys, right.Ys), Multiply(left.Zs, right.Zs));
     }
 
-    public static readonly ColorPacket256 BackgroundColor = new ColorPacket256(SetZeroVector256<float>());
-    public static readonly ColorPacket256 DefaultColor = new ColorPacket256(SetZeroVector256<float>());
+    public static readonly ColorPacket256 BackgroundColor = new ColorPacket256(Vector256<float>.Zero);
+    public static readonly ColorPacket256 DefaultColor = new ColorPacket256(Vector256<float>.Zero);
 }
 
 internal struct Int32RGBPacket256

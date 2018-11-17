@@ -38,9 +38,9 @@ internal struct VectorPacket256
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public VectorPacket256(float xs, float ys, float zs)
     {
-        Xs = SetAllVector256(xs);
-        Ys = SetAllVector256(ys);
-        Zs = SetAllVector256(zs);
+        Xs = Vector256.Create(xs);
+        Ys = Vector256.Create(ys);
+        Zs = Vector256.Create(zs);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -55,9 +55,9 @@ internal struct VectorPacket256
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public unsafe VectorPacket256(float* vectors)
     {
-        Vector256<float> m03 = ExtendToVector256<float>(LoadVector128(&vectors[0])); // load lower halves
-        Vector256<float> m14 = ExtendToVector256<float>(LoadVector128(&vectors[4]));
-        Vector256<float> m25 = ExtendToVector256<float>(LoadVector128(&vectors[8]));
+        Vector256<float> m03 = LoadVector128(&vectors[0]).ToVector256(); // load lower halves
+        Vector256<float> m14 = LoadVector128(&vectors[4]).ToVector256();
+        Vector256<float> m25 = LoadVector128(&vectors[8]).ToVector256();
         m03 = InsertVector128(m03, &vectors[12], 1);  // load higher halves
         m14 = InsertVector128(m14, &vectors[16], 1);
         m25 = InsertVector128(m25, &vectors[20], 1);
@@ -85,16 +85,16 @@ internal struct VectorPacket256
         var r14 = Shuffle(ryz, rxy, 3 << 6 | 1 << 4 | 2 << 2 | 0);
         var r25 = Shuffle(rzx, ryz, 3 << 6 | 1 << 4 | 3 << 2 | 1);
 
-        var m0 = GetLowerHalf<float>(r03);
-        var m1 = GetLowerHalf<float>(r14);
-        var m2 = GetLowerHalf<float>(r25);
+        var m0 = r03.GetLower();
+        var m1 = r14.GetLower();
+        var m2 = r25.GetLower();
         var m3 = ExtractVector128(r03, 1);
         var m4 = ExtractVector128(r14, 1);
         var m5 = ExtractVector128(r25, 1);
 
-        var _Xs = SetHighLow(m1, m0);
-        var _ys = SetHighLow(m3, m2);
-        var _Zs = SetHighLow(m5, m4);
+        var _Xs = Vector256.Create(m0, m1);
+        var _ys = Vector256.Create(m2, m3);
+        var _Zs = Vector256.Create(m4, m5);
 
         return new VectorPacket256(_Xs, _ys, _Zs);
     }

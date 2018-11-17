@@ -156,12 +156,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> CompareScalar(Vector128<float> left, Vector128<float> right, FloatComparisonMode mode) => CompareScalar(left, right, mode);
 
         /// <summary>
-        /// float _mm256_cvtss_f32 (__m256 a)
-        ///   HELPER: VMOVSS
-        /// </summary>
-        public static float ConvertToSingle(Vector256<float> value) => ConvertToSingle(value);
-
-        /// <summary>
         /// __m128i _mm256_cvtpd_epi32 (__m256d a)
         ///   VCVTPD2DQ xmm, ymm/m256
         /// </summary>
@@ -236,85 +230,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VMOVSHDUP ymm, ymm/m256
         /// </summary>
         public static Vector256<float> DuplicateOddIndexed(Vector256<float> value) => DuplicateOddIndexed(value);
-
-        /// <summary>
-        /// __int8 _mm256_extract_epi8 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static byte Extract(Vector256<byte> value, byte index)
-        {
-            if (!IsSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return Unsafe.Add<byte>(ref Unsafe.As<Vector256<byte>, byte>(ref value), index & 0x1F);
-        }
-
-
-        /// <summary>
-        /// __int16 _mm256_extract_epi16 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static ushort Extract(Vector256<ushort> value, byte index)
-        {
-            if (!IsSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return Unsafe.Add<ushort>(ref Unsafe.As<Vector256<ushort>, ushort>(ref value), index & 0xF);
-        }
-
-        /// <summary>
-        /// __int32 _mm256_extract_epi32 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static int Extract(Vector256<int> value, byte index)
-        {
-            if (!IsSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return Unsafe.Add<int>(ref Unsafe.As<Vector256<int>, int>(ref value), index & 0x7);
-        }
-
-        /// <summary>
-        /// __int32 _mm256_extract_epi32 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static uint Extract(Vector256<uint> value, byte index)
-        {
-            if (!IsSupported)
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return Unsafe.Add<uint>(ref Unsafe.As<Vector256<uint>, uint>(ref value), index & 0x7);
-        }
-
-        /// <summary>
-        /// __int64 _mm256_extract_epi64 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static long Extract(Vector256<long> value, byte index)
-        {
-            if (!IsSupported || (IntPtr.Size != 8))
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return Unsafe.Add<long>(ref Unsafe.As<Vector256<long>, long>(ref value), index & 0x3);
-        }
-
-        /// <summary>
-        /// __int64 _mm256_extract_epi64 (__m256i a, const int index)
-        ///   HELPER
-        /// </summary>
-        public static ulong Extract(Vector256<ulong> value, byte index)
-        {
-            if (!IsSupported || (IntPtr.Size != 8))
-            {
-                throw new PlatformNotSupportedException();
-            }
-            return Unsafe.Add<ulong>(ref Unsafe.As<Vector256<ulong>, ulong>(ref value), index & 0x3);
-        }
 
         /// <summary>
         /// __m128i _mm256_extractf128_si256 (__m256i a, const int imm8)
@@ -428,19 +343,6 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void ExtractVector128(double* address, Vector256<double> value, byte index) => ExtractVector128(address, value, index);
 
         /// <summary>
-        /// __m256d _mm256_castpd128_pd256 (__m128d a)
-        ///   HELPER - No Codegen
-        /// __m256 _mm256_castps128_ps256 (__m128 a)
-        ///   HELPER - No Codegen
-        /// __m256i _mm256_castsi128_si256 (__m128i a)
-        ///   HELPER - No Codegen
-        /// </summary>
-        public static Vector256<T> ExtendToVector256<T>(Vector128<T> value) where T : struct
-        {
-            return ExtendToVector256<T>(value);
-        }
-
-        /// <summary>
         /// __m256 _mm256_floor_ps (__m256 a)
         ///   VROUNDPS ymm, ymm/m256, imm8(9)
         /// </summary>
@@ -450,19 +352,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VROUNDPS ymm, ymm/m256, imm8(9)
         /// </summary>
         public static Vector256<double> Floor(Vector256<double> value) => Floor(value);
-
-        /// <summary>
-        /// __m128d _mm256_castpd256_pd128 (__m256d a)
-        ///   HELPER - No Codegen
-        /// __m128 _mm256_castps256_ps128 (__m256 a)
-        ///   HELPER - No Codegen
-        /// __m128i _mm256_castsi256_si128 (__m256i a)
-        ///   HELPER - No Codegen
-        /// </summary>
-        public static Vector128<T> GetLowerHalf<T>(Vector256<T> value) where T : struct
-        {
-            return GetLowerHalf<T>(value);
-        }
 
         /// <summary>
         /// __m256 _mm256_hadd_ps (__m256 a, __m256 b)
@@ -485,144 +374,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VHSUBPD ymm, ymm, ymm/m256
         /// </summary>
         public static Vector256<double> HorizontalSubtract(Vector256<double> left, Vector256<double> right) => HorizontalSubtract(left, right);
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi8 (__m256i a, __int8 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<sbyte> Insert(Vector256<sbyte> value, sbyte data, byte index)
-        {
-            unsafe
-            {
-                index &= 0x1F;
-                sbyte* buffer = stackalloc sbyte[32];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi8 (__m256i a, __int8 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<byte> Insert(Vector256<byte> value, byte data, byte index)
-        {
-            unsafe
-            {
-                index &= 0x1F;
-                byte* buffer = stackalloc byte[32];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<short> Insert(Vector256<short> value, short data, byte index)
-        {
-            unsafe
-            {
-                index &= 0xF;
-                short* buffer = stackalloc short[16];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi16 (__m256i a, __int16 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<ushort> Insert(Vector256<ushort> value, ushort data, byte index)
-        {
-            unsafe
-            {
-                index &= 0xF;
-                ushort* buffer = stackalloc ushort[16];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<int> Insert(Vector256<int> value, int data, byte index)
-        {
-            unsafe
-            {
-                index &= 0x7;
-                int* buffer = stackalloc int[8];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi32 (__m256i a, __int32 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<uint> Insert(Vector256<uint> value, uint data, byte index)
-        {
-            unsafe
-            {
-                index &= 0x7;
-                uint* buffer = stackalloc uint[8];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<long> Insert(Vector256<long> value, long data, byte index)
-        {
-            if (IntPtr.Size != 8)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            unsafe
-            {
-                index &= 0x3;
-                long* buffer = stackalloc long[4];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
-
-        /// <summary>
-        /// __m256i _mm256_insert_epi64 (__m256i a, __int64 i, const int index)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<ulong> Insert(Vector256<ulong> value, ulong data, byte index)
-        {
-            if (IntPtr.Size != 8)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            unsafe
-            {
-                index &= 0x3;
-                ulong* buffer = stackalloc ulong[4];
-                Store(buffer, value);
-                buffer[index] = data;
-                return LoadVector256(buffer);
-            }
-        }
 
         /// <summary>
         /// __m256i _mm256_insertf128_si256 (__m256i a, __m128i b, int imm8)
@@ -1144,102 +895,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<double> RoundCurrentDirection(Vector256<double> value) => RoundCurrentDirection(value);
 
         /// <summary>
-        /// __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<sbyte> SetVector256(sbyte e31, sbyte e30, sbyte e29, sbyte e28, sbyte e27, sbyte e26, sbyte e25, sbyte e24, sbyte e23, sbyte e22, sbyte e21, sbyte e20, sbyte e19, sbyte e18, sbyte e17, sbyte e16, sbyte e15, sbyte e14, sbyte e13, sbyte e12, sbyte e11, sbyte e10, sbyte e9, sbyte e8, sbyte e7, sbyte e6, sbyte e5, sbyte e4, sbyte e3, sbyte e2, sbyte e1, sbyte e0) => SetVector256(e31, e30, e29, e28, e27, e26, e25, e24, e23, e22, e21, e20, e19, e18, e17, e16, e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi8 (char e31, char e30, char e29, char e28, char e27, char e26, char e25, char e24, char e23, char e22, char e21, char e20, char e19, char e18, char e17, char e16, char e15, char e14, char e13, char e12, char e11, char e10, char e9, char e8, char e7, char e6, char e5, char e4, char e3, char e2, char e1, char e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<byte> SetVector256(byte e31, byte e30, byte e29, byte e28, byte e27, byte e26, byte e25, byte e24, byte e23, byte e22, byte e21, byte e20, byte e19, byte e18, byte e17, byte e16, byte e15, byte e14, byte e13, byte e12, byte e11, byte e10, byte e9, byte e8, byte e7, byte e6, byte e5, byte e4, byte e3, byte e2, byte e1, byte e0) => SetVector256(e31, e30, e29, e28, e27, e26, e25, e24, e23, e22, e21, e20, e19, e18, e17, e16, e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<short> SetVector256(short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0) => SetVector256(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi16 (short e15, short e14, short e13, short e12, short e11, short e10, short e9, short e8, short e7, short e6, short e5, short e4, short e3, short e2, short e1, short e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<ushort> SetVector256(ushort e15, ushort e14, ushort e13, ushort e12, ushort e11, ushort e10, ushort e9, ushort e8, ushort e7, ushort e6, ushort e5, ushort e4, ushort e3, ushort e2, ushort e1, ushort e0) => SetVector256(e15, e14, e13, e12, e11, e10, e9, e8, e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<int> SetVector256(int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0) => SetVector256(e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi32 (int e7, int e6, int e5, int e4, int e3, int e2, int e1, int e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<uint> SetVector256(uint e7, uint e6, uint e5, uint e4, uint e3, uint e2, uint e1, uint e0) => SetVector256(e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi64x (__int64 e3, __int64 e2, __int64 e1, __int64 e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<long> SetVector256(long e3, long e2, long e1, long e0) => SetVector256(e3, e2, e1, e0);
-        /// <summary>
-        /// __m256i _mm256_set_epi64x (__int64 e3, __int64 e2, __int64 e1, __int64 e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<ulong> SetVector256(ulong e3, ulong e2, ulong e1, ulong e0) => SetVector256(e3, e2, e1, e0);
-        /// <summary>
-        /// __m256 _mm256_set_ps (float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<float> SetVector256(float e7, float e6, float e5, float e4, float e3, float e2, float e1, float e0) => SetVector256(e7, e6, e5, e4, e3, e2, e1, e0);
-        /// <summary>
-        /// __m256d _mm256_set_pd (double e3, double e2, double e1, double e0)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<double> SetVector256(double e3, double e2, double e1, double e0) => SetVector256(e3, e2, e1, e0);
-
-        /// <summary>
-        /// __m256i _mm256_set1_epi8 (char a)
-        ///   HELPER
-        /// __m256i _mm256_set1_epi16 (short a)
-        ///   HELPER
-        /// __m256i _mm256_set1_epi32 (int a)
-        ///   HELPER
-        /// __m256i _mm256_set1_epi64x (long long a)
-        ///   HELPER
-        /// __m256 _mm256_set1_ps (float a)
-        ///   HELPER
-        /// __m256d _mm256_set1_pd (double a)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<T> SetAllVector256<T>(T value) where T : struct
-        {
-            return SetAllVector256<T>(value);
-        }
-
-        /// <summary>
-        /// __m256 _mm256_set_m128 (__m128 hi, __m128 lo)
-        ///   HELPER
-        /// __m256d _mm256_set_m128d (__m128d hi, __m128d lo)
-        ///   HELPER
-        /// __m256i _mm256_set_m128i (__m128i hi, __m128i lo)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<T> SetHighLow<T>(Vector128<T> hi, Vector128<T> lo) where T : struct
-        {
-            return SetHighLow<T>(hi, lo);
-        }
-
-        /// <summary>
-        /// __m256i _mm256_setzero_si256 (void)
-        ///   HELPER
-        /// __m256 _mm256_setzero_ps (void)
-        ///   HELPER
-        /// __m256d _mm256_setzero_pd (void)
-        ///   HELPER
-        /// </summary>
-        public static Vector256<T> SetZeroVector256<T>() where T : struct
-        {
-            return SetZeroVector256<T>();
-        }
-
-        /// <summary>
         /// __m256 _mm256_shuffle_ps (__m256 a, __m256 b, const int imm8)
         ///   VSHUFPS ymm, ymm, ymm/m256, imm8
         /// </summary>
@@ -1260,25 +915,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   VSQRTPD ymm, ymm/m256
         /// </summary>
         public static Vector256<double> Sqrt(Vector256<double> value) => Sqrt(value);
-
-        /// <summary>
-        /// __m256 _mm256_castpd_ps (__m256d a)
-        ///   HELPER - No Codegen
-        /// __m256i _mm256_castpd_si256 (__m256d a)
-        ///   HELPER - No Codegen
-        /// __m256d _mm256_castps_pd (__m256 a)
-        ///   HELPER - No Codegen
-        /// __m256i _mm256_castps_si256 (__m256 a)
-        ///   HELPER - No Codegen
-        /// __m256d _mm256_castsi256_pd (__m256i a)
-        ///   HELPER - No Codegen
-        /// __m256 _mm256_castsi256_ps (__m256i a)
-        ///   HELPER - No Codegen
-        /// </summary>
-        public static Vector256<U> StaticCast<T, U>(Vector256<T> value) where T : struct where U : struct
-        {
-            return StaticCast<T, U>(value);
-        }
 
         /// <summary>
         /// void _mm256_store_si256 (__m256i * mem_addr, __m256i a)

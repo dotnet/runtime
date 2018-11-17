@@ -80,18 +80,18 @@ namespace IntelHardwareIntrinsicTest
                     maski = Avx.LoadVector256(iptr);
                     maskl = Avx.LoadVector256(lptr);
 
-                    maskui = Avx.StaticCast<int, uint>(maski);
-                    maskul = Avx.StaticCast<long, ulong>(maskl);
-                    maskf = Avx.StaticCast<int, float>(maski);
-                    maskd = Avx.StaticCast<long, double>(maskl);
+                    maskui = maski.AsUInt32();
+                    maskul = maskl.AsUInt64();
+                    maskf = maski.AsSingle();
+                    maskd = maskl.AsDouble();
                 }
 
-                Vector256<int> sourcei = Avx.SetZeroVector256<int>();
-                Vector256<uint> sourceui = Avx.SetZeroVector256<uint>();
-                Vector256<long> sourcel = Avx.SetZeroVector256<long>();
-                Vector256<ulong> sourceul = Avx.SetZeroVector256<ulong>();
-                Vector256<float> sourcef = Avx.SetZeroVector256<float>();
-                Vector256<double> sourced = Avx.SetZeroVector256<double>();
+                Vector256<int> sourcei = Vector256<int>.Zero;
+                Vector256<uint> sourceui = Vector256<uint>.Zero;
+                Vector256<long> sourcel = Vector256<long>.Zero;
+                Vector256<ulong> sourceul = Vector256<ulong>.Zero;
+                Vector256<float> sourcef = Vector256<float>.Zero;
+                Vector256<double> sourced = Vector256<double>.Zero;
 
                 // public static unsafe Vector256<float> GatherMaskVector256(Vector256<float> source, float* baseAddress, Vector256<int> index, Vector256<float> mask, byte scale)
                 using (TestTable<float, int> floatTable = new TestTable<float, int>(floatSourceTable, new float[8]))

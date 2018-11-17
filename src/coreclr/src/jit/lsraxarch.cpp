@@ -2386,51 +2386,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
-            case NI_SSE_SetScalarVector128:
-            case NI_SSE2_SetScalarVector128:
-            {
-                buildInternalFloatRegisterDefForNode(intrinsicTree);
-                setInternalRegsDelayFree = true;
-                break;
-            }
-
-            case NI_SSE_ConvertToSingle:
-            case NI_SSE2_ConvertToDouble:
-            case NI_AVX_ExtendToVector256:
-            case NI_AVX_GetLowerHalf:
-            case NI_AVX2_ConvertToDouble:
-            {
-                assert(numArgs == 1);
-                assert(!isRMW);
-                assert(dstCount == 1);
-
-                if (!op1->isContained())
-                {
-                    tgtPrefUse = BuildUse(op1);
-                    srcCount   = 1;
-                }
-                else
-                {
-                    srcCount += BuildOperandUses(op1);
-                }
-
-                buildUses = false;
-                break;
-            }
-
-            case NI_AVX_SetAllVector256:
-            {
-                if (varTypeIsIntegral(baseType))
-                {
-                    buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
-                    if (!compiler->compSupports(InstructionSet_AVX2) && varTypeIsByte(baseType))
-                    {
-                        buildInternalFloatRegisterDefForNode(intrinsicTree, allSIMDRegs());
-                    }
-                }
-                break;
-            }
-
             case NI_SSE2_MaskMove:
             {
                 assert(numArgs == 3);
