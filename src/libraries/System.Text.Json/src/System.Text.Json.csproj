@@ -7,6 +7,7 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\JsonCommentHandling.cs" />

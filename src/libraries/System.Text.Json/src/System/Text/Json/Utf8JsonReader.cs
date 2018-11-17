@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -24,18 +23,16 @@ namespace System.Text.Json
 
         private bool _isFinalBlock;
 
-        private ulong _stackFreeContainer;
         private long _lineNumber;
         private long _bytePositionInLine;
         private int _consumed;
-        private int _currentDepth;
         private int _maxDepth;
         private bool _inObject;
         private bool _isNotPrimitive;
         private JsonTokenType _tokenType;
         private JsonTokenType _previousTokenType;
         private JsonReaderOptions _readerOptions;
-        private Stack<JsonTokenType> _stack;
+        private BitStack _bitStack;
 
         private long _totalConsumed;
         private bool _isLastSegment;
@@ -61,7 +58,7 @@ namespace System.Text.Json
         /// Tracks the recursive depth of the nested objects / arrays within the JSON text
         /// processed so far. This provides the depth of the current token.
         /// </summary>
-        public int CurrentDepth => _currentDepth;
+        public int CurrentDepth => _bitStack.CurrentDepth;
 
         /// <summary>
         /// Gets the type of the last processed JSON token in the UTF-8 encoded JSON text.
@@ -77,18 +74,16 @@ namespace System.Text.Json
         /// </summary>
         public JsonReaderState CurrentState => new JsonReaderState
         {
-            _stackFreeContainer = _stackFreeContainer,
             _lineNumber = _lineNumber,
             _bytePositionInLine = _bytePositionInLine,
             _bytesConsumed = BytesConsumed,
-            _currentDepth = _currentDepth,
             _maxDepth = _maxDepth,
             _inObject = _inObject,
             _isNotPrimitive = _isNotPrimitive,
             _tokenType = _tokenType,
             _previousTokenType = _previousTokenType,
             _readerOptions = _readerOptions,
-            _stack = _stack,
+            _bitStack = _bitStack,
         };
 
         /// <summary>
@@ -110,17 +105,15 @@ namespace System.Text.Json
             _isFinalBlock = isFinalBlock;
 
             // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
-            _stackFreeContainer = state._stackFreeContainer;
             _lineNumber = state._lineNumber;
             _bytePositionInLine = state._bytePositionInLine;
-            _currentDepth = state._currentDepth;
-            _maxDepth = state._maxDepth == 0 ? JsonReaderState.StackFreeMaxDepth : state._maxDepth; // If max depth is not set, revert to the default depth.
+            _maxDepth = state._maxDepth == 0 ? JsonReaderState.DefaultMaxDepth : state._maxDepth; // If max depth is not set, revert to the default depth.
             _inObject = state._inObject;
             _isNotPrimitive = state._isNotPrimitive;
             _tokenType = state._tokenType;
             _previousTokenType = state._previousTokenType;
             _readerOptions = state._readerOptions;
-            _stack = state._stack;
+            _bitStack = state._bitStack;
 
             _consumed = 0;
             _totalConsumed = 0;
@@ -142,106 +135,56 @@ namespace System.Text.Json
 
         private void StartObject()
         {
-            if (_currentDepth >= _maxDepth)
+            if (CurrentDepth >= _maxDepth)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ObjectDepthTooLarge);
 
-            _currentDepth++;
+            _bitStack.PushTrue();
+
             _consumed++;
             _bytePositionInLine++;
-
-            if (_currentDepth <= JsonReaderState.StackFreeMaxDepth)
-            {
-                _stackFreeContainer = (_stackFreeContainer << 1) | 1;
-            }
-            else
-            {
-                EnsureAndPushStack(JsonTokenType.StartObject);
-            }
-
             _tokenType = JsonTokenType.StartObject;
             _inObject = true;
         }
 
         private void EndObject()
         {
-            if (!_inObject || _currentDepth <= 0)
+            if (!_inObject || CurrentDepth <= 0)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.MismatchedObjectArray, JsonConstants.CloseBrace);
 
             _tokenType = JsonTokenType.EndObject;
 
-            UpdateStackOnEndToken();
+            UpdateBitStackOnEndToken();
         }
 
         private void StartArray()
         {
-            if (_currentDepth >= _maxDepth)
+            if (CurrentDepth >= _maxDepth)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ArrayDepthTooLarge);
 
-            _currentDepth++;
+            _bitStack.PushFalse();
+
             _consumed++;
             _bytePositionInLine++;
-
-            if (_currentDepth <= JsonReaderState.StackFreeMaxDepth)
-            {
-                _stackFreeContainer = _stackFreeContainer << 1;
-            }
-            else
-            {
-                EnsureAndPushStack(JsonTokenType.StartArray);
-            }
-
             _tokenType = JsonTokenType.StartArray;
             _inObject = false;
         }
 
         private void EndArray()
         {
-            if (_inObject || _currentDepth <= 0)
+            if (_inObject || CurrentDepth <= 0)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.MismatchedObjectArray, JsonConstants.CloseBracket);
 
             _tokenType = JsonTokenType.EndArray;
 
-            UpdateStackOnEndToken();
-        }
-
-        // Allocate the stack lazily only when it is absolutely necessary
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void EnsureAndPushStack(JsonTokenType tokenType)
-        {
-            Debug.Assert(tokenType == JsonTokenType.StartArray || tokenType == JsonTokenType.StartObject);
-            if (_stack == null)
-            {
-                _stack = new Stack<JsonTokenType>();
-            }
-            _stack.Push(tokenType);
+            UpdateBitStackOnEndToken();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void UpdateStackOnEndToken()
+        private void UpdateBitStackOnEndToken()
         {
             _consumed++;
             _bytePositionInLine++;
-
-            if (_currentDepth <= JsonReaderState.StackFreeMaxDepth)
-            {
-                _stackFreeContainer >>= 1;
-                _inObject = (_stackFreeContainer & 1) != 0;
-            }
-            else
-            {
-                Debug.Assert(_stack.Count > 0);
-                _stack.Pop();
-                if (_stack.Count == 0)
-                {
-                    _inObject = (_stackFreeContainer & 1) != 0;
-                }
-                else
-                {
-                    _inObject = _stack.Peek() != JsonTokenType.StartArray;
-                }
-            }
-
-            _currentDepth--;
+            _inObject = _bitStack.Pop();
         }
 
         private bool ReadSingleSegment()
@@ -348,7 +291,7 @@ namespace System.Text.Json
             {
                 if (_isNotPrimitive && IsLastSpan)
                 {
-                    if (_currentDepth != 0)
+                    if (CurrentDepth != 0)
                     {
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ZeroDepthAtEnd);
                     }
@@ -389,8 +332,7 @@ namespace System.Text.Json
         {
             if (first == JsonConstants.OpenBrace)
             {
-                _currentDepth++;
-                _stackFreeContainer = 1;
+                _bitStack.SetFirstBit();
                 _tokenType = JsonTokenType.StartObject;
                 _consumed++;
                 _bytePositionInLine++;
@@ -399,7 +341,7 @@ namespace System.Text.Json
             }
             else if (first == JsonConstants.OpenBracket)
             {
-                _currentDepth++;
+                _bitStack.ResetFirstBit();
                 _tokenType = JsonTokenType.StartArray;
                 _consumed++;
                 _bytePositionInLine++;
