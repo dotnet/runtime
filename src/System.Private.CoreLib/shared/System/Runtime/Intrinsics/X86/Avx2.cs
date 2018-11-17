@@ -659,11 +659,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<long> CompareGreaterThan(Vector256<long> left, Vector256<long> right) => CompareGreaterThan(left, right);
 
         /// <summary>
-        /// double _mm256_cvtsd_f64 (__m256d a)
-        ///   HELPER: MOVSD
-        /// </summary>
-        public static double ConvertToDouble(Vector256<double> value) => ConvertToDouble(value);
-        /// <summary>
         /// int _mm256_cvtsi256_si32 (__m256i a)
         ///   MOVD reg/m32, xmm
         /// </summary>

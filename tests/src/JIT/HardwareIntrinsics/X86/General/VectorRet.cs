@@ -50,12 +50,12 @@ internal partial class IntelHardwareIntrinsicTest
             s_v128_array = new Vector128<float>[10];
             for (int i = 0; i < 10; i++)
             {
-                s_v128_array[i] = Sse.SetAllVector128(random.Next(100));
+                s_v128_array[i] = Vector128.Create((float)random.Next(100));
             }
-            s_v128_0 = Sse.SetAllVector128((float)random.Next(100));
-            s_v128_1 = Sse.SetAllVector128((float)random.Next(100));
-            s_v128_2 = Sse.SetAllVector128((float)random.Next(100));
-            s_v128_3 = Sse.SetAllVector128((float)random.Next(100));
+            s_v128_0 = Vector128.Create((float)random.Next(100));
+            s_v128_1 = Vector128.Create((float)random.Next(100));
+            s_v128_2 = Vector128.Create((float)random.Next(100));
+            s_v128_3 = Vector128.Create((float)random.Next(100));
         }
 
         if (Sse2.IsSupported)
@@ -63,12 +63,12 @@ internal partial class IntelHardwareIntrinsicTest
             s_v128i_array = new Vector128<short>[10];
             for (int i = 0; i < 10; i++)
             {
-                s_v128i_array[i] = Sse2.SetAllVector128((short)random.Next(100));
+                s_v128i_array[i] = Vector128.Create((short)random.Next(100));
             }
-            s_v128i_0 = Sse2.SetAllVector128((short)random.Next(100));
-            s_v128i_1 = Sse2.SetAllVector128((short)random.Next(100));
-            s_v128i_2 = Sse2.SetAllVector128((short)random.Next(100));
-            s_v128i_3 = Sse2.SetAllVector128((short)random.Next(100));
+            s_v128i_0 = Vector128.Create((short)random.Next(100));
+            s_v128i_1 = Vector128.Create((short)random.Next(100));
+            s_v128i_2 = Vector128.Create((short)random.Next(100));
+            s_v128i_3 = Vector128.Create((short)random.Next(100));
         }
 
         if (Avx.IsSupported)
@@ -76,12 +76,12 @@ internal partial class IntelHardwareIntrinsicTest
             s_v256_array = new Vector256<float>[10];
             for (int i = 0; i < 10; i++)
             {
-                s_v256_array[i] = Avx.SetAllVector256((float)random.Next(100));
+                s_v256_array[i] = Vector256.Create((float)random.Next(100));
             }
-            s_v256_0 = Avx.SetAllVector256((float)random.Next(100));
-            s_v256_1 = Avx.SetAllVector256((float)random.Next(100));
-            s_v256_2 = Avx.SetAllVector256((float)random.Next(100));
-            s_v256_3 = Avx.SetAllVector256((float)random.Next(100));
+            s_v256_0 = Vector256.Create((float)random.Next(100));
+            s_v256_1 = Vector256.Create((float)random.Next(100));
+            s_v256_2 = Vector256.Create((float)random.Next(100));
+            s_v256_3 = Vector256.Create((float)random.Next(100));
         }
 
         if (Avx2.IsSupported)
@@ -89,12 +89,12 @@ internal partial class IntelHardwareIntrinsicTest
             s_v256i_array = new Vector256<byte>[10];
             for (int i = 0; i < 10; i++)
             {
-                s_v256i_array[i] = Avx.SetAllVector256((byte)random.Next(100));
+                s_v256i_array[i] = Vector256.Create((byte)random.Next(100));
             }
-            s_v256i_0 = Avx.SetAllVector256((byte)random.Next(100));
-            s_v256i_1 = Avx.SetAllVector256((byte)random.Next(100));
-            s_v256i_2 = Avx.SetAllVector256((byte)random.Next(100));
-            s_v256i_3 = Avx.SetAllVector256((byte)random.Next(100));
+            s_v256i_0 = Vector256.Create((byte)random.Next(100));
+            s_v256i_1 = Vector256.Create((byte)random.Next(100));
+            s_v256i_2 = Vector256.Create((byte)random.Next(100));
+            s_v256i_3 = Vector256.Create((byte)random.Next(100));
         }
     }
 
@@ -106,8 +106,8 @@ internal partial class IntelHardwareIntrinsicTest
         float t1 = 3 * ti * ti * t;
         float t2 = 3 * ti * t * t;
         float t3 = t * t * t;
-        Vector128<float> tmp1 = Sse.Add(Sse.Subtract(Sse.SetAllVector128(t0), s_v128_0), Sse.Subtract(Sse.SetAllVector128(t1), s_v128_1));
-        Vector128<float> tmp2 = Sse.Add(Sse.Subtract(Sse.SetAllVector128(t2), s_v128_2), Sse.Subtract(Sse.SetAllVector128(t3), s_v128_3));
+        Vector128<float> tmp1 = Sse.Add(Sse.Subtract(Vector128.Create(t0), s_v128_0), Sse.Subtract(Vector128.Create(t1), s_v128_1));
+        Vector128<float> tmp2 = Sse.Add(Sse.Subtract(Vector128.Create(t2), s_v128_2), Sse.Subtract(Vector128.Create(t3), s_v128_3));
         return Sse.Add(tmp1, tmp2);
     }
 
@@ -133,8 +133,8 @@ internal partial class IntelHardwareIntrinsicTest
         int t1 = 3 * ti * ti * t;
         int t2 = 3 * ti * t * t;
         int t3 = t * t * t;
-        Vector128<short> tmp1 = Sse2.Add(Sse2.Subtract(Sse2.SetAllVector128((short)t0), s_v128i_0), Sse2.Subtract(Sse2.SetAllVector128((short)t1), s_v128i_1));
-        Vector128<short> tmp2 = Sse2.Add(Sse2.Subtract(Sse2.SetAllVector128((short)t2), s_v128i_2), Sse2.Subtract(Sse2.SetAllVector128((short)t3), s_v128i_3));
+        Vector128<short> tmp1 = Sse2.Add(Sse2.Subtract(Vector128.Create((short)t0), s_v128i_0), Sse2.Subtract(Vector128.Create((short)t1), s_v128i_1));
+        Vector128<short> tmp2 = Sse2.Add(Sse2.Subtract(Vector128.Create((short)t2), s_v128i_2), Sse2.Subtract(Vector128.Create((short)t3), s_v128i_3));
         return Sse2.Add(tmp1, tmp2);
     }
 
@@ -160,8 +160,8 @@ internal partial class IntelHardwareIntrinsicTest
         float t1 = 3 * ti * ti * t;
         float t2 = 3 * ti * t * t;
         float t3 = t * t * t;
-        Vector256<float> tmp1 = Avx.Add(Avx.Subtract(Avx.SetAllVector256(t0), s_v256_0), Avx.Subtract(Avx.SetAllVector256(t1), s_v256_1));
-        Vector256<float> tmp2 = Avx.Add(Avx.Subtract(Avx.SetAllVector256(t2), s_v256_2), Avx.Subtract(Avx.SetAllVector256(t3), s_v256_3));
+        Vector256<float> tmp1 = Avx.Add(Avx.Subtract(Vector256.Create(t0), s_v256_0), Avx.Subtract(Vector256.Create(t1), s_v256_1));
+        Vector256<float> tmp2 = Avx.Add(Avx.Subtract(Vector256.Create(t2), s_v256_2), Avx.Subtract(Vector256.Create(t3), s_v256_3));
         return Avx.Add(tmp1, tmp2);
     }
 
@@ -187,8 +187,8 @@ internal partial class IntelHardwareIntrinsicTest
         int t1 = 3 * ti * ti * t;
         int t2 = 3 * ti * t * t;
         int t3 = t * t * t;
-        Vector256<byte> tmp1 = Avx2.Add(Avx2.Subtract(Avx.SetAllVector256((byte)t0), s_v256i_0), Avx2.Subtract(Avx.SetAllVector256((byte)t1), s_v256i_1));
-        Vector256<byte> tmp2 = Avx2.Add(Avx2.Subtract(Avx.SetAllVector256((byte)t2), s_v256i_2), Avx2.Subtract(Avx.SetAllVector256((byte)t3), s_v256i_3));
+        Vector256<byte> tmp1 = Avx2.Add(Avx2.Subtract(Vector256.Create((byte)t0), s_v256i_0), Avx2.Subtract(Vector256.Create((byte)t1), s_v256i_1));
+        Vector256<byte> tmp2 = Avx2.Add(Avx2.Subtract(Vector256.Create((byte)t2), s_v256i_2), Avx2.Subtract(Vector256.Create((byte)t3), s_v256i_3));
         return Avx2.Add(tmp1, tmp2);
     }
 
@@ -209,13 +209,13 @@ internal partial class IntelHardwareIntrinsicTest
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector128<T> Vector128One<T>() where T : struct
     {
-        return SetAllVector128(GetValueFromInt<T>(1));
+        return CreateVector128(GetValueFromInt<T>(1));
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector256<T> Vector256One<T>() where T : struct
     {
-        return Avx.SetAllVector256(GetValueFromInt<T>(1));
+        return CreateVector256(GetValueFromInt<T>(1));
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -234,7 +234,7 @@ internal partial class IntelHardwareIntrinsicTest
 
     public static unsafe int Vector128ReturnTest()
     {
-        Vector128<float> v1 = Sse.SetAllVector128(2.0f);
+        Vector128<float> v1 = Vector128.Create(2.0f);
         Vector128<float> vres1 = Vector128PlusOne<float>(v1);
 
         float* result1 = stackalloc float[4];
@@ -252,7 +252,7 @@ internal partial class IntelHardwareIntrinsicTest
         }
 
 
-        Vector128<int> v2 = Sse2.SetAllVector128((int)5);
+        Vector128<int> v2 = Vector128.Create((int)5);
         Vector128<int> vres2 = Vector128PlusOne<int>(v2);
 
         int* result2 = stackalloc int[4];
@@ -275,7 +275,7 @@ internal partial class IntelHardwareIntrinsicTest
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector128<short> GetVector128Int16One()
     {
-        return Sse2.SetAllVector128((short)1);
+        return Vector128.Create((short)1);
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -287,7 +287,7 @@ internal partial class IntelHardwareIntrinsicTest
 
     public static unsafe int Vector128Int16ReturnTest()
     {
-        Vector128<short> v1 = Sse2.SetVector128(10, 9, 8, 7, 6, 5, 4, 3);
+        Vector128<short> v1 = Vector128.Create(3, 4, 5, 6, 7, 8, 9, 10);
         Vector128<short> vres = GetVector128Int16PlusOne(v1);
 
         short* result = stackalloc short[8];
@@ -311,7 +311,7 @@ internal partial class IntelHardwareIntrinsicTest
 
     public static unsafe int Vector256ReturnTest()
     {
-        Vector256<float> v1 = Avx.SetAllVector256(2.0f);
+        Vector256<float> v1 = Vector256.Create(2.0f);
         Vector256<float> vres1 = Vector256PlusOne<float>(v1);
 
         float* result1 = stackalloc float[8];
@@ -329,7 +329,7 @@ internal partial class IntelHardwareIntrinsicTest
         }
 
 
-        Vector256<int> v2 = Avx.SetAllVector256((int)5);
+        Vector256<int> v2 = Vector256.Create((int)5);
         Vector256<int> vres2 = Vector256PlusOne<int>(v2);
 
         int* result2 = stackalloc int[8];
@@ -352,7 +352,7 @@ internal partial class IntelHardwareIntrinsicTest
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static Vector256<int> GetVector256Int32One()
     {
-        return Avx.SetAllVector256(1);
+        return Vector256.Create(1);
     }
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -364,7 +364,7 @@ internal partial class IntelHardwareIntrinsicTest
 
     public static unsafe int Vector256Int32ReturnTest()
     {
-        Vector256<int> v1 = Avx.SetVector256(10, 9, 8, 7, 6, 5, 4, 3);
+        Vector256<int> v1 = Vector256.Create(3, 4, 5, 6, 7, 8, 9, 10);
         Vector256<int> vres = GetVector256Int32PlusOne(v1);
 
         int* result = stackalloc int[8];

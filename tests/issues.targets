@@ -199,6 +199,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Matrix4x4_ro/*">
             <Issue>19537</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64/Vector64_ro/*">
+            <Issue>21064</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->
@@ -241,6 +244,18 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/R2RDumpTest/*">
             <Issue>19441</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/Vector64_1_r/*">
+            <Issue>21064</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector64_1/Vector64_1_ro/*">
+            <Issue>21064</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_r/*">
+            <Issue>21064</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/Vector128_1/Vector128_1_ro/*">
+            <Issue>21064</Issue>
         </ExcludeList>
     </ItemGroup>
 

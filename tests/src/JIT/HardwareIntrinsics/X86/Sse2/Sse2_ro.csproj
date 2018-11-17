@@ -109,7 +109,6 @@
     <Compile Include="CompareOrderedScalar.Double.cs" />
     <Compile Include="CompareUnordered.Double.cs" />
     <Compile Include="CompareUnorderedScalar.Double.cs" />
-    <Compile Include="ConvertToDouble.Vector128Double.cs" />
     <Compile Include="ConvertToInt32.Vector128Double.cs" />
     <Compile Include="ConvertToInt32.Vector128Int32.cs" />
     <Compile Include="ConvertToInt32WithTruncation.Vector128Double.cs" />
@@ -174,15 +173,6 @@
     <Compile Include="PackSignedSaturate.SByte.cs" />
     <Compile Include="PackUnsignedSaturate.Byte.cs" />
     <Compile Include="Program.Sse2.cs" />
-    <Compile Include="SetAllVector128.Byte.cs" />
-    <Compile Include="SetAllVector128.Double.cs" />
-    <Compile Include="SetAllVector128.Int16.cs" />
-    <Compile Include="SetAllVector128.Int32.cs" />
-    <Compile Include="SetAllVector128.Int64.cs" />
-    <Compile Include="SetAllVector128.SByte.cs" />
-    <Compile Include="SetAllVector128.UInt16.cs" />
-    <Compile Include="SetAllVector128.UInt32.cs" />
-    <Compile Include="SetAllVector128.UInt64.cs" />
     <Compile Include="ShiftLeftLogical.Int16.1.cs" />
     <Compile Include="ShiftLeftLogical.Int16.16.cs" />
     <Compile Include="ShiftLeftLogical.Int32.1.cs" />

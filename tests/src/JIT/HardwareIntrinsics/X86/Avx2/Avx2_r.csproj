@@ -129,7 +129,6 @@
     <Compile Include="CompareGreaterThan.Int32.cs" />
     <Compile Include="CompareGreaterThan.Int64.cs" />
     <Compile Include="CompareGreaterThan.SByte.cs" />
-    <Compile Include="ConvertToDouble.Double.cs" />
     <Compile Include="ConvertToInt32.Int32.cs" />
     <Compile Include="ConvertToUInt32.UInt32.cs" />
     <Compile Include="ExtractVector128.Byte.1.cs" />

@@ -26,7 +26,7 @@ internal class Scene
 
         for (int i = 0; i < Things.Length; i++)
         {
-            Vector256<float> mask = StaticCast<int, float>(CompareEqual(things, SetAllVector256<int>(i)));
+            Vector256<float> mask = CompareEqual(things, Vector256.Create(i)).AsSingle();
             var n = Things[i].Normals(pos);
             norms.Xs = BlendVariable(norms.Xs, n.Xs, mask);
             norms.Ys = BlendVariable(norms.Ys, n.Ys, mask);
@@ -39,10 +39,10 @@ internal class Scene
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Vector256<float> Reflect(Vector256<int> things, VectorPacket256 pos)
     {
-        Vector256<float> rfl = SetAllVector256<float>(1);
+        Vector256<float> rfl = Vector256.Create(1.0f);
         for (int i = 0; i < Things.Length; i++)
         {
-            Vector256<float> mask = StaticCast<int, float>(CompareEqual(things, SetAllVector256<int>(i)));
+            Vector256<float> mask = CompareEqual(things, Vector256.Create(i)).AsSingle();
             rfl = BlendVariable(rfl, Things[i].Surface.Reflect(pos), mask);
         }
         return rfl;
