@@ -564,6 +564,7 @@ check_c_source_compiles(
     "
     #include <sys/types.h>
     #include <sys/socketvar.h>
+    #include <netinet/in.h>
     #include <netinet/ip.h>
     #include <netinet/tcp.h>
     #include <netinet/tcp_var.h>
@@ -601,10 +602,19 @@ check_symbol_exists(
     HAVE_TCP_FSM_H
 )
 
-set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h net/route.h)
+set(CMAKE_EXTRA_INCLUDE_FILES sys/types.h sys/socket.h net/route.h)
 check_type_size(
     "struct rt_msghdr"
      HAVE_RT_MSGHDR
+     BUILTIN_TYPES_ONLY)
+check_type_size(
+    "struct rt_msghdr2"
+     HAVE_RT_MSGHDR2
+     BUILTIN_TYPES_ONLY)
+set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
+check_type_size(
+    "struct if_msghdr2"
+     HAVE_IF_MSGHDR2
      BUILTIN_TYPES_ONLY)
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 
@@ -613,7 +623,7 @@ check_include_files(
     HAVE_SYS_SYSCTL_H)
 
 check_include_files(
-    "net/if_media.h"
+    "stdint.h;net/if_media.h"
     HAVE_NET_IFMEDIA_H)
 
 check_include_files(
