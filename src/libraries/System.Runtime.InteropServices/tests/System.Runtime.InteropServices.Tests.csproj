@@ -131,6 +131,7 @@
     <Compile Include="System\Runtime\InteropServices\VariantWrapperTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\AutomationProxyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttributeTests.cs" />

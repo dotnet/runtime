@@ -13,4 +13,12 @@ namespace System.Runtime.CompilerServices
 
         public override object Value => new UnknownWrapper(null);
     }
+
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
+    public sealed partial class IDispatchConstantAttribute : CustomConstantAttribute
+    {
+        public IDispatchConstantAttribute() { }
+
+        public override object Value => new DispatchWrapper(null);
+    }
 }
