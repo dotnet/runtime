@@ -127,6 +127,12 @@ namespace System.Runtime.CompilerServices
         public IUnknownConstantAttribute() { }
         public override object Value { get { throw null; } }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(2304), Inherited = false)]
+    public sealed partial class IDispatchConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
+    {
+        public IDispatchConstantAttribute() { }
+        public override object Value { get { throw null; } }
+    }
 }
 namespace System.Runtime.InteropServices
 {
