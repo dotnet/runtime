@@ -20,7 +20,36 @@ set(MDCOMPILER_SOURCES
   verifylayouts.cpp
 )
 
+set(MDCOMPILER_HEADERS
+  ../../inc/corhdr.h
+  ../../inc/corpriv.h
+  ../../inc/mdcommon.h
+  ../../inc/metadata.h
+  ../../inc/posterror.h
+  ../../inc/strongname.h
+  ../../inc/sstring.h
+  ../../inc/switches.h
+  ../inc/cahlprinternal.h
+  ../inc/mdlog.h
+  ../inc/metamodelrw.h
+  ../inc/rwutil.h
+  ../inc/stgio.h
+  ../inc/verifylayouts.h
+  ../inc/VerifyLayouts.h
+  cacheload.h
+  classfactory.h
+  custattr.h
+  disp.h
+  filtermanager.h
+  importhelper.h
+  mdperf.h
+  mdsighelper.h
+  mdutil.h
+  regmeta.h
+)
+
 convert_to_absolute_path(MDCOMPILER_SOURCES ${MDCOMPILER_SOURCES})
+convert_to_absolute_path(MDCOMPILER_HEADERS ${MDCOMPILER_HEADERS})
 
 if(CLR_CMAKE_PLATFORM_UNIX)
     add_compile_options(-fPIC)
