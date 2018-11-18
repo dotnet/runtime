@@ -81,16 +81,7 @@ namespace Microsoft.Extensions.Configuration
         /// Gets the immediate children sub-sections.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<IConfigurationSection> GetChildren() => GetChildrenImplementation(null);
-
-        internal IEnumerable<IConfigurationSection> GetChildrenImplementation(string path)
-        {
-            return _providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(key => GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
-        }
+        public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
