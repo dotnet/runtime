@@ -1300,6 +1300,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static int ReleaseComObject(object o)
         {
+            if (o == null)
+            {
+                // Match .NET Framework behaviour.
+                throw new NullReferenceException();
+            }
             if (!(o is __ComObject co))
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
