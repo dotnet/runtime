@@ -2,7 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp-Unix;
+      netcoreapp-FreeBSD;
+      netcoreapp-Linux;
+      netcoreapp-OSX;
       netcoreapp-Windows_NT;
       uap-Windows_NT;
     </BuildConfigurations>
