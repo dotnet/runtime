@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 #if HAS_INTRINSICS
+using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
 
@@ -1817,7 +1818,7 @@ namespace System.Numerics
 #if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
-                var amountVec = Sse.SetAllVector128(amount);
+                Vector128<float> amountVec = Vector128.Create(amount);
                 Sse.Store(&matrix1.M11, VectorMath.Lerp(Sse.LoadVector128(&matrix1.M11), Sse.LoadVector128(&matrix2.M11), amountVec));
                 Sse.Store(&matrix1.M21, VectorMath.Lerp(Sse.LoadVector128(&matrix1.M21), Sse.LoadVector128(&matrix2.M21), amountVec));
                 Sse.Store(&matrix1.M31, VectorMath.Lerp(Sse.LoadVector128(&matrix1.M31), Sse.LoadVector128(&matrix2.M31), amountVec));
@@ -1903,7 +1904,7 @@ namespace System.Numerics
 #if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
-                var zero = Sse.SetZeroVector128();
+                Vector128<float> zero = Vector128<float>.Zero;
                 Sse.Store(&value.M11, Sse.Subtract(zero, Sse.LoadVector128(&value.M11)));
                 Sse.Store(&value.M21, Sse.Subtract(zero, Sse.LoadVector128(&value.M21)));
                 Sse.Store(&value.M31, Sse.Subtract(zero, Sse.LoadVector128(&value.M31)));
@@ -2098,7 +2099,7 @@ namespace System.Numerics
 #if HAS_INTRINSICS
             if (Sse.IsSupported)
             {
-                var value2Vec = Sse.SetAllVector128(value2);
+                Vector128<float> value2Vec = Vector128.Create(value2);
                 Sse.Store(&value1.M11, Sse.Multiply(Sse.LoadVector128(&value1.M11), value2Vec));
                 Sse.Store(&value1.M21, Sse.Multiply(Sse.LoadVector128(&value1.M21), value2Vec));
                 Sse.Store(&value1.M31, Sse.Multiply(Sse.LoadVector128(&value1.M31), value2Vec));
