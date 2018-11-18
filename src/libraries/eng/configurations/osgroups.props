@@ -9,7 +9,6 @@
     <OSGroups Include="Unix">
       <Imports>AnyOS</Imports>
       <TargetsUnix>true</TargetsUnix>
-      <TargetsLinux>true</TargetsLinux>
       <PackageTargetRuntime>unix</PackageTargetRuntime>
     </OSGroups>
     <OSGroups Include="Linux">

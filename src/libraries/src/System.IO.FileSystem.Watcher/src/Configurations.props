@@ -4,7 +4,7 @@
     <BuildConfigurations>
       netcoreapp-Linux;
       netcoreapp-OSX;
-      netcoreapp-Unix;
+      netcoreapp-FreeBSD;
       netcoreapp-Windows_NT;
       uap-Windows_NT;
     </BuildConfigurations>
