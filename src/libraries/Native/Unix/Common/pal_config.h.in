@@ -57,6 +57,8 @@
 #cmakedefine01 HAVE_IP_MREQN
 #cmakedefine01 HAVE_TCP_VAR_H
 #cmakedefine01 HAVE_RT_MSGHDR
+#cmakedefine01 HAVE_RT_MSGHDR2
+#cmakedefine01 HAVE_IF_MSGHDR2
 #cmakedefine01 HAVE_SYS_SYSCTL_H
 #cmakedefine01 HAVE_NET_IFMEDIA_H
 #cmakedefine01 HAVE_LINUX_RTNETLINK_H
