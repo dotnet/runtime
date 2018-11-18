@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <sys/socket.h>
 #include <net/route.h>
 #include <net/if.h>
 
@@ -31,6 +32,8 @@
 #include <sys/ioctl.h>
 #endif
 #include <sys/socketvar.h>
+#include <netinet/in.h>
+#include <netinet/in_pcb.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/ip_var.h>
@@ -138,6 +141,10 @@ int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
     retStats->IncomingDiscarded = systemStats.udps_noport;
     retStats->IncomingErrors = systemStats.udps_hdrops + systemStats.udps_badsum + systemStats.udps_badlen;
 
+#if defined(__FreeBSD__)
+    // FreeBSD does not have net.inet.udp.pcbcount
+    retStats->UdpListeners = 0;
+#else
     // This may contain both UDP4 and UDP6 listeners.
     oldlenp = sizeof(retStats->UdpListeners);
     if (sysctlbyname("net.inet.udp.pcbcount", &retStats->UdpListeners, &oldlenp, NULL, 0))
@@ -145,6 +152,7 @@ int32_t SystemNative_GetUdpGlobalStatistics(UdpGlobalStatistics* retStats)
         retStats->UdpListeners = 0;
         return -1;
     }
+#endif
 
     return 0;
 }
@@ -163,8 +171,8 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
         return -1;
     }
 
-    u_int32_t* inHist = systemStats.icps_inhist;
-    u_int32_t* outHist = systemStats.icps_outhist;
+    __typeof(systemStats.icps_inhist[0])* inHist = systemStats.icps_inhist;
+    __typeof(systemStats.icps_outhist[0])* outHist = systemStats.icps_outhist;
 
     retStats->AddressMaskRepliesReceived = inHist[ICMP_MASKREPLY];
     retStats->AddressMaskRepliesSent = outHist[ICMP_MASKREPLY];
@@ -438,8 +446,11 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
         // An invalid interface name was given (doesn't exist).
         return -1;
     }
-
+#if HAVE_IF_MSGHDR2
     int statisticsMib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST2, (int)interfaceIndex};
+#else
+    int statisticsMib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_IFLIST, (int)interfaceIndex};
+#endif
 
     size_t len;
     // Get estimated data length
@@ -468,12 +479,21 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
          headPtr += ((struct if_msghdr*)headPtr)->ifm_msglen)
     {
         struct if_msghdr* ifHdr = (struct if_msghdr*)headPtr;
+#if HAVE_IF_MSGHDR2
         if (ifHdr->ifm_index == interfaceIndex && ifHdr->ifm_type == RTM_IFINFO2)
         {
             struct if_msghdr2* ifHdr2 = (struct if_msghdr2*)ifHdr;
             retStats->SendQueueLength = (uint64_t)ifHdr2->ifm_snd_maxlen;
 
             struct if_data64 systemStats = ifHdr2->ifm_data;
+#else
+        if (ifHdr->ifm_index == interfaceIndex && ifHdr->ifm_type == RTM_IFINFO)
+        {
+            struct if_msghdr* ifHdr2 = (struct if_msghdr*)ifHdr;
+            retStats->SendQueueLength = 0;
+
+            struct if_data systemStats = ifHdr2->ifm_data;
+#endif
             retStats->Mtu = systemStats.ifi_mtu;
             retStats->Speed = systemStats.ifi_baudrate; // bits per second.
             retStats->InPackets = systemStats.ifi_ipackets;
@@ -504,7 +524,7 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
 
                     if (ioctl(fd, SIOCGIFMEDIA, (caddr_t)&ifmr) < 0)
                     {
-                        if (errno == EOPNOTSUPP)
+                        if (errno == EOPNOTSUPP || errno == EINVAL)
                         {
                             // Virtual interfaces like loopback do not have media.
                             // Assume they are up when administrative state is up.
@@ -548,9 +568,10 @@ int32_t SystemNative_GetNativeIPInterfaceStatistics(char* interfaceName, NativeI
     memset(retStats, 0, sizeof(NativeIPInterfaceStatistics));
     return -1;
 }
-
 int32_t SystemNative_GetNumRoutes()
 {
+    int32_t count = 0;
+#if HAVE_RT_MSGHDR2
     int routeDumpMib[] = {CTL_NET, PF_ROUTE, 0, 0, NET_RT_DUMP, 0};
 
     size_t len;
@@ -574,7 +595,6 @@ int32_t SystemNative_GetNumRoutes()
 
     uint8_t* headPtr = buffer;
     struct rt_msghdr2* rtmsg;
-    int32_t count = 0;
 
     for (size_t i = 0; i < len; i += rtmsg->rtm_msglen)
     {
@@ -588,7 +608,7 @@ int32_t SystemNative_GetNumRoutes()
     }
 
     free(buffer);
+#endif // HAVE_RT_MSGHDR2
     return count;
 }
-
 #endif // HAVE_TCP_VAR_H
