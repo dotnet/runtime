@@ -17,7 +17,7 @@ Performance test files (if present) are stored within a library's ```tests/Perfo
 
 **Note: Because test build runs tests concurrently, do not use it for executing performance tests. If you still want to run them concurrently you need to pass the flag `/p:Performance=true` to it: `build -test -release /p:Performance=true`.**
 
-The results files will be dropped in corefx/bin/tests/FLAVOR/TESTLIBRARY/TARGETFRAMEWORK.  The console output will also specify the location of these files.
+The results files will be dropped in corefx/artifacts/bin/tests/TESTLIBRARY/FLAVOR/.  The console output will also specify the location of these files.
 
 **Getting memory usage**
 
