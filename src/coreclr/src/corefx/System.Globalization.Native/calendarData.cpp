@@ -581,7 +581,8 @@ extern "C" int32_t GlobalizationNative_GetLatestJapaneseEra()
     if (U_FAILURE(err))
         return 0;
 
-    int32_t ret = ucal_getLimit(pCal, UCAL_ERA, UCAL_MAXIMUM, &err);
+    ucal_set(pCal, UCAL_EXTENDED_YEAR, 9999);
+    int32_t ret = ucal_get(pCal, UCAL_ERA, &err);
 
     return U_SUCCESS(err) ? ret : 0;
 }
