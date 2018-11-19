@@ -127,11 +127,12 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        private static string GetFileVersionLanguage(uint langid)
+        private static unsafe string GetFileVersionLanguage(uint langid)
         {
-            var lang = new StringBuilder(256);
-            Interop.Kernel32.VerLanguageName(langid, lang, (uint)lang.Capacity);
-            return lang.ToString();
+            const int MaxLength = 256;
+            char* lang = stackalloc char[MaxLength];
+            int charsWritten = Interop.Kernel32.VerLanguageName(langid, lang, MaxLength);
+            return new string(lang, 0, charsWritten);
         }
     }
 }

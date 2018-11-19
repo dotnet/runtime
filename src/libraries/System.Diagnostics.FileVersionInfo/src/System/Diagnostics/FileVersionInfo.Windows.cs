@@ -87,13 +87,14 @@ namespace System.Diagnostics
             return new Interop.Version.VS_FIXEDFILEINFO();
         }
 
-        private static string GetFileVersionLanguage(IntPtr memPtr)
+        private static unsafe string GetFileVersionLanguage(IntPtr memPtr)
         {
             uint langid = GetVarEntry(memPtr) >> 16;
 
-            var lang = new StringBuilder(256);
-            Interop.Kernel32.VerLanguageName(langid, lang, (uint)lang.Capacity);
-            return lang.ToString();
+            const int MaxLength = 256;
+            char* lang = stackalloc char[MaxLength];
+            int charsWritten = Interop.Kernel32.VerLanguageName(langid, lang, MaxLength);
+            return new string(lang, 0, charsWritten);
         }
 
         private static string GetFileVersionString(IntPtr memPtr, string name)
