@@ -47,7 +47,7 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static JsonReaderException GetJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
+        public static JsonReaderException GetJsonReaderException(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, ReadOnlySpan<byte> bytes)
         {
             string message = GetResourceString(ref json, resource, nextByte, Encoding.UTF8.GetString(bytes.ToArray(), 0, bytes.Length));
 
@@ -132,6 +132,12 @@ namespace System.Text.Json
                 case ExceptionResource.InvalidCharacterWithinString:
                     message = SR.Format(SR.InvalidCharacterWithinString, character);
                     break;
+                case ExceptionResource.InvalidCharacterAfterEscapeWithinString:
+                    message = SR.Format(SR.InvalidCharacterAfterEscapeWithinString, character);
+                    break;
+                case ExceptionResource.InvalidHexCharacterWithinString:
+                    message = SR.Format(SR.InvalidHexCharacterWithinString, character);
+                    break;
                 case ExceptionResource.EndOfCommentNotFound:
                     message = SR.EndOfCommentNotFound;
                     break;
@@ -168,6 +174,8 @@ namespace System.Text.Json
         ExpectedValueAfterPropertyNameNotFound,
         FoundInvalidCharacter,
         InvalidCharacterWithinString,
+        InvalidCharacterAfterEscapeWithinString,
+        InvalidHexCharacterWithinString,
         InvalidEndOfJsonNonPrimitive,
         MismatchedObjectArray,
         ObjectDepthTooLarge,

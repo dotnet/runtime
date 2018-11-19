@@ -35,14 +35,21 @@ namespace System.Text.Json.Tests
             }
 
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            SpanSequenceStatesAreEqual(dataUtf8);
+
             byte[] result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out int length);
             string actualStr = Encoding.UTF8.GetString(result.AsSpan(0, length));
+
+            byte[] resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length);
+            string actualStrSequence = Encoding.UTF8.GetString(resultSequence.AsSpan(0, length));
 
             Stream stream = new MemoryStream(dataUtf8);
             TextReader reader = new StreamReader(stream, Encoding.UTF8, false, 1024, true);
             string expectedStr = JsonTestHelper.NewtonsoftReturnStringHelper(reader);
 
             Assert.Equal(expectedStr, actualStr);
+            Assert.Equal(expectedStr, actualStrSequence);
 
             // Json payload contains numbers that are too large for .NET (need BigInteger+)
             if (type != TestCaseType.FullSchema1 && type != TestCaseType.BasicLargeNum)
@@ -56,13 +63,19 @@ namespace System.Text.Json.Tests
 
             result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Skip);
             actualStr = Encoding.UTF8.GetString(result.AsSpan(0, length));
+            resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Skip);
+            actualStrSequence = Encoding.UTF8.GetString(resultSequence.AsSpan(0, length));
 
             Assert.Equal(expectedStr, actualStr);
+            Assert.Equal(expectedStr, actualStrSequence);
 
             result = JsonTestHelper.ReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Allow);
             actualStr = Encoding.UTF8.GetString(result.AsSpan(0, length));
+            resultSequence = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, JsonCommentHandling.Allow);
+            actualStrSequence = Encoding.UTF8.GetString(resultSequence.AsSpan(0, length));
 
             Assert.Equal(expectedStr, actualStr);
+            Assert.Equal(expectedStr, actualStrSequence);
         }
 
         [Theory]
@@ -237,7 +250,7 @@ namespace System.Text.Json.Tests
         [InlineData(123, true, false)]
         [InlineData(124, true, false)]
         [InlineData(125, true, false)]
-        public static void TestPartialJsonReader(int depthPadding, bool padByObject, bool compactData)
+        public static void TestPartialJsonReaderWithDepthPadding(int depthPadding, bool padByObject, bool compactData)
         {
             var builderPrefix = new StringBuilder();
             var builderSuffix = new StringBuilder();
@@ -559,6 +572,11 @@ namespace System.Text.Json.Tests
 
             Assert.Equal(expectedStr, actualStr);
 
+            result = JsonTestHelper.SequenceReturnBytesHelper(dataUtf8, out length, commentHandling);
+            actualStr = Encoding.UTF8.GetString(result.AsSpan(0, length));
+
+            Assert.Equal(expectedStr, actualStr);
+
             object jsonValues = JsonTestHelper.ReturnObjectHelper(dataUtf8, commentHandling);
             string str = JsonTestHelper.ObjectToString(jsonValues);
             ReadOnlySpan<char> expectedSpan = expectedStr.AsSpan(0, expectedStr.Length - 2);
@@ -750,72 +768,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("\"", 0, 0)]
-        [InlineData("{]", 0, 1)]
-        [InlineData("[}", 0, 1)]
-        [InlineData("nul", 0, 3)]
-        [InlineData("tru", 0, 3)]
-        [InlineData("fals", 0, 4)]
-        [InlineData("\"a\u6F22\u5B57ge\":", 0, 11)]
-        [InlineData("{\"a\u6F22\u5B57ge\":", 0, 13)]
-        [InlineData("{\"name\":\"A\u6F22\u5B57hso", 0, 8)]
-        [InlineData("12345.1.", 0, 7)]
-        [InlineData("-", 0, 1)]
-        [InlineData("-f", 0, 1)]
-        [InlineData("1.f", 0, 2)]
-        [InlineData("0.", 0, 2)]
-        [InlineData("0.1f", 0, 3)]
-        [InlineData("0.1e1f", 0, 5)]
-        [InlineData("123,", 0, 3)]
-        [InlineData("false,", 0, 5)]
-        [InlineData("true,", 0, 4)]
-        [InlineData("null,", 0, 4)]
-        [InlineData("\"h\u6F22\u5B57ello\",", 0, 13)]
-        [InlineData("\"\\u12z3\"", 0, 5)]
-        [InlineData("\"\\u12]3\"", 0, 5)]
-        [InlineData("\"\\u12=3\"", 0, 5)]
-        [InlineData("\"\\u12$3\"", 0, 5)]
-        [InlineData("\"\\u12\"", 0, 5)]
-        [InlineData("\"\\u120\"", 0, 6)]
-        [InlineData("01", 0, 1)]
-        [InlineData("1a", 0, 1)]
-        [InlineData("-01", 0, 2)]
-        [InlineData("10.5e", 0, 5)]
-        [InlineData("10.5e-", 0, 6)]
-        [InlineData("10.5e-0.2", 0, 7)]
-        [InlineData("{\"age\":30, \"ints\":[1, 2, 3, 4, 5.1e7.3]}", 0, 36)]
-        [InlineData("{\"age\":30, \r\n \"num\":-0.e, \r\n \"ints\":[1, 2, 3, 4, 5]}", 1, 10)]
-        [InlineData("{ \"number\": 00", 0, 13)]
-        [InlineData("{{}}", 0, 1)]
-        [InlineData("[[]", 0, 3)]
-        [InlineData("[[{{}}]]", 0, 3)]
-        [InlineData("[1, 2, 3, ]", 0, 10)]
-        [InlineData("{\"ints\":[1, 2, 3, 4, 5", 0, 22)]
-        [InlineData("{\"s\u6F22\u5B57trings\":[\"a\u6F22\u5B57bc\", \"def\"", 0, 36)]
-        [InlineData("{\"age\":30, \"ints\":[1, 2, 3, 4, 5}}", 0, 32)]
-        [InlineData("{\"age\":30, \"name\":\"test}", 0, 18)]
-        [InlineData("{\r\n\"isActive\": false \"\r\n}", 1, 18)]
-        [InlineData("[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2\":[}]]]]}]]]]", 1, 28)]
-        [InlineData("[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2:[]}]]]]}]]]]", 1, 19)]
-        [InlineData("[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2\":[]},[}]]]]}]]]]", 1, 32)]
-        [InlineData("{\r\n\t\"isActive\": false,\r\n\t\"array\": [\r\n\t\t[{\r\n\t\t\t\"id\": 1\r\n\t\t}]\r\n\t]\r\n}", 3, 3, 3)]
-        [InlineData("{\"Here is a \u6F22\u5B57string: \\\"\\\"\":\"Here is \u6F22\u5B57a\",\"Here is a back slash\\\\\":[\"Multiline\\r\\n String\\r\\n\",\"\\tMul\\r\\ntiline String\",\"\\\"somequote\\\"\\tMu\\\"\\\"l\\r\\ntiline\\\"another\\\" String\\\\\"],\"str:\"\\\"\\\"\"}", 4, 35)]
-        [InlineData("\"hel\rlo\"", 0, 4)]
-        [InlineData("\"hel\nlo\"", 0, 4)]
-        [InlineData("\"hel\\uABCXlo\"", 0, 9)]
-        [InlineData("\"hel\\\tlo\"", 0, 5)]
-        [InlineData("\"hel\rlo\\\"\"", 0, 4)]
-        [InlineData("\"hel\nlo\\\"\"", 0, 4)]
-        [InlineData("\"hel\\uABCXlo\\\"\"", 0, 9)]
-        [InlineData("\"hel\\\tlo\\\"\"", 0, 5)]
-        [InlineData("\"he\\nl\rlo\\\"\"", 1, 1)]
-        [InlineData("\"he\\nl\nlo\\\"\"", 1, 1)]
-        [InlineData("\"he\\nl\\uABCXlo\\\"\"", 1, 6)]
-        [InlineData("\"he\\nl\\\tlo\\\"\"", 1, 2)]
-        [InlineData("\"he\\nl\rlo", 1, 1)]
-        [InlineData("\"he\\nl\nlo", 1, 1)]
-        [InlineData("\"he\\nl\\uABCXlo", 1, 6)]
-        [InlineData("\"he\\nl\\\tlo", 1, 2)]
+        [MemberData(nameof(InvalidJsonStrings))]
         public static void InvalidJson(string jsonString, int expectedlineNumber, int expectedBytePosition, int maxDepth = 64)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -840,64 +793,7 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [InlineData("\"", 0, 0)]
-        [InlineData("{]", 0, 1)]
-        [InlineData("[}", 0, 1)]
-        [InlineData("nul", 0, 3)]
-        [InlineData("tru", 0, 3)]
-        [InlineData("fals", 0, 4)]
-        [InlineData("\"a\u6F22\u5B57ge\":", 0, 11)]
-        [InlineData("{\"a\u6F22\u5B57ge\":", 0, 13)]
-        [InlineData("{\"name\":\"A\u6F22\u5B57hso", 0, 8)]
-        [InlineData("12345.1.", 0, 7)]
-        [InlineData("-", 0, 1)]
-        [InlineData("-f", 0, 1)]
-        [InlineData("1.f", 0, 2)]
-        [InlineData("0.", 0, 2)]
-        [InlineData("0.1f", 0, 3)]
-        [InlineData("0.1e1f", 0, 5)]
-        [InlineData("123,", 0, 3)]
-        [InlineData("false,", 0, 5)]
-        [InlineData("true,", 0, 4)]
-        [InlineData("null,", 0, 4)]
-        [InlineData("\"h\u6F22\u5B57ello\",", 0, 13)]
-        [InlineData("01", 0, 1)]
-        [InlineData("1a", 0, 1)]
-        [InlineData("-01", 0, 2)]
-        [InlineData("10.5e", 0, 5)]
-        [InlineData("10.5e-", 0, 6)]
-        [InlineData("10.5e-0.2", 0, 7)]
-        [InlineData("{\"age\":30, \"ints\":[1, 2, 3, 4, 5.1e7.3]}", 0, 36)]
-        [InlineData("{\"age\":30, \r\n \"num\":-0.e, \r\n \"ints\":[1, 2, 3, 4, 5]}", 1, 10)]
-        [InlineData("{{}}", 0, 1, 1)]
-        [InlineData("[[{{}}]]", 0, 3)]
-        [InlineData("[1, 2, 3, ]", 0, 10)]
-        [InlineData("{\"ints\":[1, 2, 3, 4, 5", 0, 22)]
-        [InlineData("{\"s\u6F22\u5B57trings\":[\"a\u6F22\u5B57bc\", \"def\"", 0, 36)]
-        [InlineData("{\"age\":30, \"ints\":[1, 2, 3, 4, 5}}", 0, 32)]
-        [InlineData("{\"age\":30, \"name\":\"test}", 0, 18)]
-        [InlineData("{\r\n\"isActive\": false \"\r\n}", 1, 18)]
-        [InlineData("[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2\":[}]]]]}]]]]", 1, 28)]
-        [InlineData("[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2:[]}]]]]}]]]]", 1, 19)]
-        [InlineData("[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2\":[]},[}]]]]}]]]]", 1, 32)]
-        [InlineData("{\r\n\t\"isActive\": false,\r\n\t\"array\": [\r\n\t\t[{\r\n\t\t\t\"id\": 1\r\n\t\t}]\r\n\t]\r\n}", 3, 3, 3)]
-        [InlineData("{\"Here is a \u6F22\u5B57string: \\\"\\\"\":\"Here is \u6F22\u5B57a\",\"Here is a back slash\\\\\":[\"Multiline\\r\\n String\\r\\n\",\"\\tMul\\r\\ntiline String\",\"\\\"somequote\\\"\\tMu\\\"\\\"l\\r\\ntiline\\\"another\\\" String\\\\\"],\"str:\"\\\"\\\"\"}", 4, 35)]
-        [InlineData("\"hel\rlo\"", 0, 4)]
-        [InlineData("\"hel\nlo\"", 0, 4)]
-        [InlineData("\"hel\\uABCXlo\"", 0, 9)]
-        [InlineData("\"hel\\\tlo\"", 0, 5)]
-        [InlineData("\"hel\rlo\\\"\"", 0, 4)]
-        [InlineData("\"hel\nlo\\\"\"", 0, 4)]
-        [InlineData("\"hel\\uABCXlo\\\"\"", 0, 9)]
-        [InlineData("\"hel\\\tlo\\\"\"", 0, 5)]
-        [InlineData("\"he\\nl\rlo\\\"\"", 1, 1)]
-        [InlineData("\"he\\nl\nlo\\\"\"", 1, 1)]
-        [InlineData("\"he\\nl\\uABCXlo\\\"\"", 1, 6)]
-        [InlineData("\"he\\nl\\\tlo\\\"\"", 1, 2)]
-        [InlineData("\"he\\nl\rlo", 1, 1)]
-        [InlineData("\"he\\nl\nlo", 1, 1)]
-        [InlineData("\"he\\nl\\uABCXlo", 1, 6)]
-        [InlineData("\"he\\nl\\\tlo", 1, 2)]
+        [MemberData(nameof(InvalidJsonStrings))]
         public static void InvalidJsonSingleSegment(string jsonString, int expectedlineNumber, int expectedBytePosition, int maxDepth = 64)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -1819,6 +1715,83 @@ namespace System.Text.Json.Tests
                     new object[] {"   false   ", false, "False"},
                     new object[] {"   null   ", false, "null"},
                     new object[] {"   \" Test string with \\\"nested quotes \\\" and hex: \\uABCD values! \"   ", false, " Test string with \\\"nested quotes \\\" and hex: \\uABCD values! "},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> InvalidJsonStrings
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"\"", 0, 0},
+                    new object[] {"{]", 0, 1},
+                    new object[] {"[}", 0, 1},
+                    new object[] {"nul", 0, 3},
+                    new object[] {"tru", 0, 3},
+                    new object[] {"fals", 0, 4},
+                    new object[] {"\"a\u6F22\u5B57ge\":", 0, 11},
+                    new object[] {"{\"a\u6F22\u5B57ge\":", 0, 13},
+                    new object[] {"{\"name\":\"A\u6F22\u5B57hso", 0, 8},
+                    new object[] {"12345.1.", 0, 7},
+                    new object[] {"-", 0, 1},
+                    new object[] {"-f", 0, 1},
+                    new object[] {"1.f", 0, 2},
+                    new object[] {"0.", 0, 2},
+                    new object[] {"0.1f", 0, 3},
+                    new object[] {"0.1e1f", 0, 5},
+                    new object[] {"123,", 0, 3},
+                    new object[] {"false,", 0, 5},
+                    new object[] {"true,", 0, 4},
+                    new object[] {"null,", 0, 4},
+                    new object[] {"trUe,", 0, 2},
+                    new object[] {"\"h\u6F22\u5B57ello\",", 0, 13},
+                    new object[] {"\"\\u12z3\"", 0, 5},
+                    new object[] {"\"\\u12]3\"", 0, 5},
+                    new object[] {"\"\\u12=3\"", 0, 5},
+                    new object[] {"\"\\u12$3\"", 0, 5},
+                    new object[] {"\"\\u12\"", 0, 5},
+                    new object[] {"\"\\u120\"", 0, 6},
+                    new object[] {"01", 0, 1},
+                    new object[] {"1a", 0, 1},
+                    new object[] {"-01", 0, 2},
+                    new object[] {"10.5e", 0, 5},
+                    new object[] {"10.5e-", 0, 6},
+                    new object[] {"10.5e-0.2", 0, 7},
+                    new object[] {"{\"age\":30, \"ints\":[1, 2, 3, 4, 5.1e7.3]}", 0, 36},
+                    new object[] {"{\"age\":30, \r\n \"num\":-0.e, \r\n \"ints\":[1, 2, 3, 4, 5]}", 1, 10},
+                    new object[] {"{ \"number\": 00", 0, 13},
+                    new object[] {"{{}}", 0, 1},
+                    new object[] {"[[]", 0, 3},
+                    new object[] {"[[{{}}]]", 0, 3},
+                    new object[] {"[1, 2, 3, ]", 0, 10},
+                    new object[] {"{\"ints\":[1, 2, 3, 4, 5", 0, 22},
+                    new object[] {"{\"s\u6F22\u5B57trings\":[\"a\u6F22\u5B57bc\", \"def\"", 0, 36},
+                    new object[] {"{\"age\":30, \"ints\":[1, 2, 3, 4, 5}}", 0, 32},
+                    new object[] {"{\"age\":30, \"name\":\"test}", 0, 18},
+                    new object[] {"{\r\n\"isActive\": false \"\r\n}", 1, 18},
+                    new object[] {"[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2\":[}]]]]}]]]]", 1, 28},
+                    new object[] {"[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2:[]}]]]]}]]]]", 1, 19},
+                    new object[] {"[[[[{\r\n\"t\u6F22\u5B57emp1\":[[[[{\"temp2\":[]},[}]]]]}]]]]", 1, 32},
+                    new object[] {"{\r\n\t\"isActive\": false,\r\n\t\"array\": [\r\n\t\t[{\r\n\t\t\t\"id\": 1\r\n\t\t}]\r\n\t]\r\n}", 3, 3, 3},
+                    new object[] {"{\"Here is a \u6F22\u5B57string: \\\"\\\"\":\"Here is \u6F22\u5B57a\",\"Here is a back slash\\\\\":[\"Multiline\\r\\n String\\r\\n\",\"\\tMul\\r\\ntiline String\",\"\\\"somequote\\\"\\tMu\\\"\\\"l\\r\\ntiline\\\"another\\\" String\\\\\"],\"str:\"\\\"\\\"\"}", 4, 35},
+                    new object[] {"\"hel\rlo\"", 0, 4},
+                    new object[] {"\"hel\nlo\"", 0, 4},
+                    new object[] {"\"hel\\uABCXlo\"", 0, 9},
+                    new object[] {"\"hel\\\tlo\"", 0, 5},
+                    new object[] {"\"hel\rlo\\\"\"", 0, 4},
+                    new object[] {"\"hel\nlo\\\"\"", 0, 4},
+                    new object[] {"\"hel\\uABCXlo\\\"\"", 0, 9},
+                    new object[] {"\"hel\\\tlo\\\"\"", 0, 5},
+                    new object[] {"\"he\\nl\rlo\\\"\"", 1, 1},
+                    new object[] {"\"he\\nl\nlo\\\"\"", 1, 1},
+                    new object[] {"\"he\\nl\\uABCXlo\\\"\"", 1, 6},
+                    new object[] {"\"he\\nl\\\tlo\\\"\"", 1, 2},
+                    new object[] {"\"he\\nl\rlo", 1, 1},
+                    new object[] {"\"he\\nl\nlo", 1, 1},
+                    new object[] {"\"he\\nl\\uABCXlo", 1, 6},
+                    new object[] {"\"he\\nl\\\tlo", 1, 2},
                 };
             }
         }

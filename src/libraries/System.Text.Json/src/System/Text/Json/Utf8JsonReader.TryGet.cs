@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 
@@ -30,8 +31,10 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+
             // TODO: https://github.com/dotnet/corefx/issues/33292
-            return s_utf8Encoding.GetString(ValueSpan);
+            return s_utf8Encoding.GetString(span);
         }
 
         /// <summary>
@@ -44,14 +47,16 @@ namespace System.Text.Json
         /// </exception>
         public bool GetBooleanValue()
         {
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+
             if (TokenType == JsonTokenType.True)
             {
-                Debug.Assert(ValueSpan.Length == 4);
+                Debug.Assert(span.Length == 4);
                 return true;
             }
             else if (TokenType == JsonTokenType.False)
             {
-                Debug.Assert(ValueSpan.Length == 5);
+                Debug.Assert(span.Length == 5);
                 return false;
             }
             else
@@ -77,7 +82,8 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            return Utf8Parser.TryParse(ValueSpan, out value, out int bytesConsumed) && ValueSpan.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -97,7 +103,8 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            return Utf8Parser.TryParse(ValueSpan, out value, out int bytesConsumed) && ValueSpan.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -117,8 +124,9 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            char standardFormat = ValueSpan.IndexOfAny((byte)'e', (byte)'E') >= 0 ? 'e' : default;
-            return Utf8Parser.TryParse(ValueSpan, out value, out int bytesConsumed, standardFormat) && ValueSpan.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            char standardFormat = span.IndexOfAny((byte)'e', (byte)'E') >= 0 ? 'e' : default;
+            return Utf8Parser.TryParse(span, out value, out int bytesConsumed, standardFormat) && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -138,8 +146,9 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            char standardFormat = ValueSpan.IndexOfAny((byte)'e', (byte)'E') >= 0 ? 'e' : default;
-            return Utf8Parser.TryParse(ValueSpan, out value, out int bytesConsumed, standardFormat) && ValueSpan.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            char standardFormat = span.IndexOfAny((byte)'e', (byte)'E') >= 0 ? 'e' : default;
+            return Utf8Parser.TryParse(span, out value, out int bytesConsumed, standardFormat) && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -159,8 +168,9 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedNumber(TokenType);
             }
 
-            char standardFormat = ValueSpan.IndexOfAny((byte)'e', (byte)'E') >= 0 ? 'e' : default;
-            return Utf8Parser.TryParse(ValueSpan, out value, out int bytesConsumed, standardFormat) && ValueSpan.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+            char standardFormat = span.IndexOfAny((byte)'e', (byte)'E') >= 0 ? 'e' : default;
+            return Utf8Parser.TryParse(span, out value, out int bytesConsumed, standardFormat) && span.Length == bytesConsumed;
         }
     }
 }

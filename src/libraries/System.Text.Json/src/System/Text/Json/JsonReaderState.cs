@@ -26,12 +26,20 @@ namespace System.Text.Json
         internal JsonTokenType _previousTokenType;
         internal JsonReaderOptions _readerOptions;
         internal BitStack _bitStack;
+        internal SequencePosition _sequencePosition;
 
         /// <summary>
         /// Returns the total amount of bytes consumed by the <see cref="Utf8JsonReader"/> so far
         /// for the given UTF-8 encoded input text.
         /// </summary>
         public long BytesConsumed => _bytesConsumed;
+
+        /// <summary>
+        /// Returns the current <see cref="SequencePosition"/> within the provided UTF-8 encoded
+        /// input ReadOnlySequence&lt;byte&gt;. If the <see cref="Utf8JsonReader"/> was constructed
+        /// with a ReadOnlySpan&lt;byte&gt; instead, this will always return a default <see cref="SequencePosition"/>.
+        /// </summary>
+        public SequencePosition Position => _sequencePosition;
 
         /// <summary>
         /// Constructs a new <see cref="JsonReaderState"/> instance.
@@ -68,6 +76,8 @@ namespace System.Text.Json
             // Only allocate if the user reads a JSON payload beyond the depth that the _allocationFreeContainer can handle.
             // This way we avoid allocations in the common, default cases, and allocate lazily.
             _bitStack = default;
+
+            _sequencePosition = default;
         }
 
         /// <summary>
