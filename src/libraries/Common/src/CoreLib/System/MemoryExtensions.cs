@@ -537,11 +537,32 @@ namespace System
         {
             if (typeof(T) == typeof(byte))
             {
-                return SpanHelpers.IndexOfAny(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    span.Length,
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)),
-                    values.Length);
+                ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
+                if (values.Length == 2)
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        span.Length);
+                }
+                else if (values.Length == 3)
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        span.Length);
+                }
+                else
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        span.Length,
+                        ref valueRef,
+                        values.Length);
+                }
             }
             if (typeof(T) == typeof(char))
             {
@@ -666,11 +687,34 @@ namespace System
             where T : IEquatable<T>
         {
             if (typeof(T) == typeof(byte))
-                return SpanHelpers.IndexOfAny(
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                    span.Length,
-                    ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)),
-                    values.Length);
+            {
+                ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
+                if (values.Length == 2)
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        span.Length);
+                }
+                else if (values.Length == 3)
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        valueRef,
+                        Unsafe.Add(ref valueRef, 1),
+                        Unsafe.Add(ref valueRef, 2),
+                        span.Length);
+                }
+                else
+                {
+                    return SpanHelpers.IndexOfAny(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        span.Length,
+                        ref valueRef,
+                        values.Length);
+                }
+            }
 
             if (typeof(T) == typeof(char))
             {
