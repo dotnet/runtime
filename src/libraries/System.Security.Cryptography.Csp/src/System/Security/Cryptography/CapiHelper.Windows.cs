@@ -100,22 +100,22 @@ namespace Internal.NativeCrypto
             {
                 throw GetErrorCode().ToCryptographicException();
             }
+
             // check to see if there are upgrades available for the requested CSP
+            string providerNameString = providerName.ToString();
             string wszUpgrade = null;
             if (dwType == (int)ProviderType.PROV_RSA_FULL)
             {
-                wszUpgrade = UpgradeRSA(dwType, providerName.ToString());
+                wszUpgrade = UpgradeRSA(dwType, providerNameString);
             }
             else if (dwType == (int)ProviderType.PROV_DSS_DH)
             {
-                wszUpgrade = UpgradeDSS(dwType, providerName.ToString());
+                wszUpgrade = UpgradeDSS(dwType, providerNameString);
             }
-            if (null != wszUpgrade)
-            {
-                //Overwrite the provider name with the upgraded provider name
-                providerName = new StringBuilder(wszUpgrade);
-            }
-            return providerName.ToString();
+
+            return wszUpgrade != null ?
+                wszUpgrade : // Overwrite the provider name with the upgraded provider name
+                providerNameString;
         }
 
         /// <summary>
