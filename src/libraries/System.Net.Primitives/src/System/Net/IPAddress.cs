@@ -613,12 +613,9 @@ namespace System.Net
             }
             else
             {
-                Span<uint> addressOrScopeIdSpan = stackalloc uint[1];
-                addressOrScopeIdSpan[0] = _addressOrScopeId;
- 
                 // For IPv4 addresses, we use Marvin on the integer representation of the Address.
                 hashCode = Marvin.ComputeHash32(
-                    MemoryMarshal.AsBytes(addressOrScopeIdSpan),
+                    MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref _addressOrScopeId, 1)),
                     Marvin.DefaultSeed);
             }
 
