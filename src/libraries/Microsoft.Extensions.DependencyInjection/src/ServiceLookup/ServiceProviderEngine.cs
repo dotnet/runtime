@@ -77,6 +77,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             var realizedService = RealizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             _callback?.OnResolve(serviceType, serviceProviderEngineScope);
+            DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
             return realizedService.Invoke(serviceProviderEngineScope);
         }
 
@@ -95,6 +96,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
+                DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);
                 _callback?.OnCreate(callSite);
                 return RealizeService(callSite);
             }
