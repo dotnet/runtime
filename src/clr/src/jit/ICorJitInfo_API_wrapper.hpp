@@ -395,6 +395,14 @@ BOOL WrapICorJitInfo::isValueClass(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+CorInfoInlineTypeCheck canInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source)
+{
+    API_ENTER(canInlineTypeCheck);
+    CorInfoInlineTypeCheck temp = wrapHnd->canInlineTypeCheck(cls, source);
+    API_LEAVE(canInlineTypeCheck);
+    return temp;
+}
+
 BOOL WrapICorJitInfo::canInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(canInlineTypeCheckWithObjectVTable);
