@@ -8,6 +8,7 @@ include_directories(../../pal/prebuilt/corerror)
 
 set(crossgen_SOURCES crossgen.cpp ../util/consoleargs.cpp)
 if(WIN32)
+    list(APPEND crossgen_SOURCES ../util/consoleargs.h)
     set(crossgen_RESOURCES Native.rc)
     add_definitions(-D_CRT_NON_CONFORMING_WCSTOK)
 endif()
