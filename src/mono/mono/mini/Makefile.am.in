@@ -1044,7 +1044,7 @@ if ENABLE_LLVM
 llvm_makefile_dep = $(mono_build_root)/llvm/llvm_config.mk
 endif
 
-if HAS_EXTENSION_MODULE
+if ENABLE_EXTENSION_MODULE
 else
 Makefile.am: Makefile.am.in
 	echo "##################### Generated from Makefile.am.in, do not modify ##########################" > $@
