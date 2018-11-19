@@ -2738,6 +2738,9 @@ MonoBoolean
 ves_icall_RuntimeTypeHandle_IsByRefLike (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	/* .NET Core says byref types are not IsByRefLike */
+	if (type->byref)
+		return FALSE;
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	return m_class_is_byreflike (klass);
 }
