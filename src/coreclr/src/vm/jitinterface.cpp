@@ -3829,8 +3829,44 @@ BOOL CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /*********************************************************************/
+// Decides how the JIT should do the optimization to inline the check for
+//     GetTypeFromHandle(handle) == obj.GetType() (for CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE)
+//     GetTypeFromHandle(X) == GetTypeFromHandle(Y) (for CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
+//
+// This will enable to use directly the typehandle instead of going through getClassByHandle
+CorInfoInlineTypeCheck CEEInfo::canInlineTypeCheck(CORINFO_CLASS_HANDLE clsHnd, CorInfoInlineTypeCheckSource source)
+{
+    CONTRACTL {
+        SO_TOLERANT;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CorInfoInlineTypeCheck ret;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    if (source == CORINFO_INLINE_TYPECHECK_SOURCE_TOKEN)
+    {
+        // It's always okay to compare type handles coming from IL tokens
+        ret = CORINFO_INLINE_TYPECHECK_PASS;
+    }
+    else
+    {
+        _ASSERTE(source == CORINFO_INLINE_TYPECHECK_SOURCE_VTABLE);
+        ret = canInlineTypeCheckWithObjectVTable(clsHnd) ?
+            CORINFO_INLINE_TYPECHECK_PASS : CORINFO_INLINE_TYPECHECK_NONE;
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return(ret);
+}
+
+/*********************************************************************/
 // If this method returns true, JIT will do optimization to inline the check for
-//     GetClassFromHandle(handle) == obj.GetType()
+//     GetTypeFromHandle(handle) == obj.GetType()
 //
 // This will enable to use directly the typehandle instead of going through getClassByHandle
 BOOL CEEInfo::canInlineTypeCheckWithObjectVTable (CORINFO_CLASS_HANDLE clsHnd)
