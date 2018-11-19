@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -118,6 +119,43 @@ namespace System.Text.Json.Tests
             return ReaderLoop(data.Length, out length, ref reader);
         }
 
+        public static byte[] SequenceReturnBytesHelper(byte[] data, out int length, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow, int maxDepth = 64)
+        {
+            ReadOnlySequence<byte> sequence = CreateSegments(data);
+            var state = new JsonReaderState(maxDepth: maxDepth, options: new JsonReaderOptions { CommentHandling = commentHandling });
+            var reader = new Utf8JsonReader(sequence, true, state);
+            return ReaderLoop(data.Length, out length, ref reader);
+        }
+
+        public static ReadOnlySequence<byte> CreateSegments(byte[] data)
+        {
+            ReadOnlyMemory<byte> dataMemory = data;
+
+            var firstSegment = new BufferSegment<byte>(dataMemory.Slice(0, data.Length / 2));
+            ReadOnlyMemory<byte> secondMem = dataMemory.Slice(data.Length / 2);
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+
+            return new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+        }
+
+        public static ReadOnlySequence<byte> GetSequence(byte[] _dataUtf8, int segmentSize)
+        {
+            int numberOfSegments = _dataUtf8.Length / segmentSize + 1;
+            byte[][] buffers = new byte[numberOfSegments][];
+
+            for (int j = 0; j < numberOfSegments - 1; j++)
+            {
+                buffers[j] = new byte[segmentSize];
+                Array.Copy(_dataUtf8, j * segmentSize, buffers[j], 0, segmentSize);
+            }
+
+            int remaining = _dataUtf8.Length % segmentSize;
+            buffers[numberOfSegments - 1] = new byte[remaining];
+            Array.Copy(_dataUtf8, _dataUtf8.Length - remaining, buffers[numberOfSegments - 1], 0, remaining);
+
+            return BufferFactory.Create(buffers);
+        }
+
         public static object ReturnObjectHelper(byte[] data, JsonCommentHandling commentHandling = JsonCommentHandling.Disallow)
         {
             var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
@@ -173,7 +211,7 @@ namespace System.Text.Json.Tests
             while (json.Read())
             {
                 JsonTokenType tokenType = json.TokenType;
-                ReadOnlySpan<byte> valueSpan = json.ValueSpan;
+                ReadOnlySpan<byte> valueSpan = json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan;
                 switch (tokenType)
                 {
                     case JsonTokenType.PropertyName:

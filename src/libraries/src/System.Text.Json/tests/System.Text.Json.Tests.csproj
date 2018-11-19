@@ -5,10 +5,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BitStackTests.cs" />
+    <Compile Include="BufferFactory.cs" />
+    <Compile Include="BufferSegment.cs" />
     <Compile Include="JsonReaderStateTests.cs" />
     <Compile Include="JsonTestHelper.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
+    <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
     <Compile Include="Utf8JsonReaderTests.TryGet.cs" />
   </ItemGroup>
   <ItemGroup>

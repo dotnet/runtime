@@ -50,7 +50,7 @@ namespace System.Text.Json
         // Borrowed and modified from SpanHelpers.Byte:
         // https://github.com/dotnet/corefx/blob/fc169cddedb6820aaabbdb8b7bece2a3df0fd1a5/src/Common/src/CoreLib/System/SpanHelpers.Byte.cs#L473-L604
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfQuoteOrAnyControlOrBaskSlash(this ReadOnlySpan<byte> span)
+        public static int IndexOfQuoteOrAnyControlOrBackSlash(this ReadOnlySpan<byte> span)
         {
             return IndexOfOrLessThan(
                     ref MemoryMarshal.GetReference(span),
