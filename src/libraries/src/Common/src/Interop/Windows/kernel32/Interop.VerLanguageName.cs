@@ -3,13 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal partial class Interop
 {
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "VerLanguageNameW")]
-        internal static extern int VerLanguageName(uint langID, [Out] StringBuilder lpBuffer, uint nSize);
+        internal static extern unsafe int VerLanguageName(uint wLang, char* szLang, uint cchLang);
     }
 }
