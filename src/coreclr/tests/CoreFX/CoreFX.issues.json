@@ -171,6 +171,20 @@
         }
     },
     {
+        "name": "System.Net.Sockets.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Net.Sockets.Tests.KeepAliveTest.Socket_Set_KeepAlive_Interval_Failure",
+                    "reason": "outdated"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Net.WebProxy.Tests",
         "enabled": true,
         "exclusions": {
