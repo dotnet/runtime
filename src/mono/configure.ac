@@ -1672,7 +1672,7 @@ AC_ARG_ENABLE(extension-module, [  --enable-extension-module=LIST enable the cor
 	fi
 ], [])
 
-AM_CONDITIONAL([ENABLE_EXTENSION_MODULE], [test x$has_extension_module != xno])
+AM_CONDITIONAL([HAS_EXTENSION_MODULE], [test x$has_extension_module != xno])
 
 if test x$has_extension_module != xno ; then
 	AC_DEFINE([ENABLE_EXTENSION_MODULE], 1, [Extension module enabled])
