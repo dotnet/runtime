@@ -69,6 +69,13 @@ namespace ObjectStackAllocation
         public SimpleStruct s;
     }
 
+    enum AllocationKind
+    {
+        Heap,
+        Stack,
+        Undefined
+    }
+
     class Tests
     {
         static volatile int f1 = 5;
@@ -80,32 +87,43 @@ namespace ObjectStackAllocation
 
         public static int Main()
         {
-            bool spcOptimizationEnabled = SPCOptimizationsEnabled();
+            AllocationKind expectedAllocationKind = AllocationKind.Stack;
+            if (GCStressEnabled()) {
+                expectedAllocationKind = AllocationKind.Undefined;
+            }
+            else if (!SPCOptimizationsEnabled()) {
+                expectedAllocationKind = AllocationKind.Heap;
+            }
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndAddFields, 12, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndAddFields, 12, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassesAndEQCompareThem, 0, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateSimpleClassesAndEQCompareThem, 0, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassesAndNECompareThem, 1, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateSimpleClassesAndNECompareThem, 1, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckType, 1, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckType, 1, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndGetField, 7, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndGetField, 7, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndGetField, 5, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndGetField, 5, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndAddFields, 24, !spcOptimizationEnabled);
+            CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndAddFields, 24, expectedAllocationKind);
+
+            // The remaining tests currently never allocate on the stack
+            if (expectedAllocationKind == AllocationKind.Stack) {
+                expectedAllocationKind = AllocationKind.Heap;
+            }
 
             // Stack allocation of classes with GC fields is currently disabled
-            CallTestAndVerifyAllocation(AllocateSimpleClassWithGCFieldAndAddFields, 12, true);
+            CallTestAndVerifyAllocation(AllocateSimpleClassWithGCFieldAndAddFields, 12, expectedAllocationKind);
 
             // Assigning class ref to a field of another object currently always disables stack allocation
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndAssignRefToAField, 12, true);
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndAssignRefToAField, 12, expectedAllocationKind);
 
             // Stack allocation of boxed structs is currently disabled
-            CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, true);
+            CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
             return methodResult;
         }
@@ -119,8 +137,15 @@ namespace ObjectStackAllocation
             return ((debuggableAttribute == null) || !debuggableAttribute.IsJITOptimizerDisabled);
         }
 
-        static void CallTestAndVerifyAllocation(Test test, int expectedResult, bool expectHeapAllocations)
+        static bool GCStressEnabled()
         {
+            return Environment.GetEnvironmentVariable("COMPlus_GCStress") != null;
+        }
+
+        static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)
+        {
+            // Run the test once to exclude any allocations during jitting, etc.
+            //test();
             long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
             int testResult = test();
             long allocatedBytesAfter = GC.GetAllocatedBytesForCurrentThread();
@@ -130,11 +155,11 @@ namespace ObjectStackAllocation
                 Console.WriteLine($"FAILURE ({methodName}): expected {expectedResult}, got {testResult}");
                 methodResult = -1;
             }
-            else if (!expectHeapAllocations && (allocatedBytesBefore != allocatedBytesAfter)) {
+            else if ((expectedAllocationsKind == AllocationKind.Stack) && (allocatedBytesBefore != allocatedBytesAfter)) {
                 Console.WriteLine($"FAILURE ({methodName}): unexpected allocation of {allocatedBytesAfter - allocatedBytesBefore} bytes");
                 methodResult = -1;
             }
-            else if (expectHeapAllocations && (allocatedBytesBefore == allocatedBytesAfter)) {
+            else if ((expectedAllocationsKind == AllocationKind.Heap) && (allocatedBytesBefore == allocatedBytesAfter)) {
                 Console.WriteLine($"FAILURE ({methodName}): unexpected stack allocation");
                 methodResult = -1;
             }
