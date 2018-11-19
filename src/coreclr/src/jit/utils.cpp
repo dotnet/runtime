@@ -1308,9 +1308,16 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ISINSTANCEOFANY:
             case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
             case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE:
+            case CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE:
 
                 isPure  = true;
                 noThrow = true; // These return null for a failing cast
+                break;
+
+            case CORINFO_HELP_ARE_TYPES_EQUIVALENT:
+
+                isPure  = true;
+                noThrow = true;
                 break;
 
             // type casting helpers that throw
