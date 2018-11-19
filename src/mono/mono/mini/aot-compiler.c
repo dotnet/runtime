@@ -9052,7 +9052,7 @@ append_mangled_method (GString *s, MonoMethod *method)
 		g_assert (imethod->context.class_inst != NULL || imethod->context.method_inst != NULL);
 
 		append_mangled_context (s, &imethod->context);
-		g_string_append_printf (s, "_declared_by_");
+		g_string_append_printf (s, "_declared_by_%s_", m_class_get_image (imethod->declaring->klass)->assembly->aname.name);
 		append_mangled_method (s, imethod->declaring);
 	} else if (method->is_generic) {
 		g_string_append_printf (s, "%s_", m_class_get_image (method->klass)->assembly->aname.name);
