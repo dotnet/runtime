@@ -5,7 +5,6 @@
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
@@ -22,13 +21,13 @@ internal static partial class Interop
         }
 
         [DllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
-        internal static extern SocketError GetNameInfoW(
-            [In]         byte[] sa,
-            [In]         int salen,
-            [Out]        StringBuilder host,
-            [In]         int hostlen,
-            [Out]        StringBuilder serv,
-            [In]         int servlen,
-            [In]         int flags);
+        internal static extern unsafe SocketError GetNameInfoW(
+            byte* pSockaddr,
+            int SockaddrLength,
+            char* pNodeBuffer,
+            int NodeBufferSize,
+            char* pServiceBuffer,
+            int ServiceBufferSize,
+            int Flags);
     }
 }
