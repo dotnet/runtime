@@ -4,7 +4,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIpInterfaceStatistics : IPInterfaceStatistics
+    internal class BsdIpInterfaceStatistics : IPInterfaceStatistics
     {
         private readonly long _outputQueueLength;
         private readonly long _inPackets;
@@ -18,7 +18,7 @@ namespace System.Net.NetworkInformation
         private readonly long _outNonUnicastPackets;
         private readonly long _outErrors;
 
-        public OsxIpInterfaceStatistics(string name)
+        public BsdIpInterfaceStatistics(string name)
         {
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;
             if (Interop.Sys.GetNativeIPInterfaceStatistics(name, out nativeStats) == -1)

@@ -7,16 +7,16 @@ using System.Linq;
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIpInterfaceProperties : UnixIPInterfaceProperties
+    internal class BsdIpInterfaceProperties : UnixIPInterfaceProperties
     {
-        private readonly OsxIPv4InterfaceProperties _ipv4Properties;
-        private readonly OsxIPv6InterfaceProperties _ipv6Properties;
+        private readonly BsdIPv4InterfaceProperties _ipv4Properties;
+        private readonly BsdIPv6InterfaceProperties _ipv6Properties;
         private readonly GatewayIPAddressInformationCollection _gatewayAddresses;
 
-        public OsxIpInterfaceProperties(OsxNetworkInterface oni, int mtu) : base(oni)
+        public BsdIpInterfaceProperties(BsdNetworkInterface oni, int mtu) : base(oni)
         {
-            _ipv4Properties = new OsxIPv4InterfaceProperties(oni, mtu);
-            _ipv6Properties = new OsxIPv6InterfaceProperties(oni, mtu);
+            _ipv4Properties = new BsdIPv4InterfaceProperties(oni, mtu);
+            _ipv6Properties = new BsdIPv6InterfaceProperties(oni, mtu);
             _gatewayAddresses = GetGatewayAddresses(oni.Index);
         }
 

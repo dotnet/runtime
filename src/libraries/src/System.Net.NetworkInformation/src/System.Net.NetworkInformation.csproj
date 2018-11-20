@@ -5,7 +5,7 @@
     <ProjectGuid>{3CA89D6C-F8D1-4813-9775-F8D249686E31}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
-    <Configurations>netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Linux-Debug;netcoreapp-Linux-Release;netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-FreeBSD-Debug;netcoreapp-FreeBSD-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Net\NetworkInformation\DuplicateAddressDetectionState.cs" />
@@ -228,29 +228,32 @@
     </Compile>
   </ItemGroup>
   <!-- OSX -->
+  <ItemGroup Condition=" '$(TargetsOsx)' == 'true' OR '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Bsd.cs" />
+    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Bsd.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIcmpV4Statistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIcmpV6Statistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIPGlobalProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIPv4GlobalStatistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIpInterfaceStatistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIPv4InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIPv4InterfaceStatistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIPv6InterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdIpInterfaceProperties.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdNetworkInterface.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdTcpStatistics.cs" />
+    <Compile Include="System\Net\NetworkInformation\BsdUdpStatistics.cs" />
+    <!-- BSD Common -->
+    <Compile Include="$(CommonPath)\Interop\BSD\System.Native\Interop.ProtocolStatistics.cs">
+      <Link>Interop\BSD\System.Native\Interop.ProtocolStatistics.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs">
+      <Link>Interop\BSD\System.Native\Interop.TcpConnectionInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOsx)' == 'true'">
-    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Osx.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.OSX.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Osx.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIcmpV4Statistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIcmpV6Statistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIPGlobalProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIPv4GlobalStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIpInterfaceStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIPv4InterfaceProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIPv4InterfaceStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIPv6InterfaceProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxIpInterfaceProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxNetworkInterface.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxTcpStatistics.cs" />
-    <Compile Include="System\Net\NetworkInformation\OsxUdpStatistics.cs" />
     <!-- OSX Common -->
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Native\Interop.ProtocolStatistics.cs">
-      <Link>Interop\OSX\System.Native\Interop.ProtocolStatistics.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\OSX\System.Native\Interop.TcpConnectionInfo.cs">
-      <Link>Interop\OSX\System.Native\Interop.TcpConnectionInfo.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
       <Link>Interop\OSX\Interop.CoreFoundation.cs</Link>
     </Compile>
@@ -267,8 +270,14 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true'">
+    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />
+    <Compile Include="$(CommonPath)\Interop\FreeBSD\Interop.Libraries.cs">
+      <Link>Interop\FreeBSD\Interop.Libraries.cs</Link>
+    </Compile>
+  </ItemGroup>
   <!-- Unknown Unix -->
-  <ItemGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnknownUnix)' == 'true' ">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.UnknownUnix.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.UnknownUnix.cs" />

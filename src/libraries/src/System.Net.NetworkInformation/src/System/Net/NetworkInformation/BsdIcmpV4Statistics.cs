@@ -4,7 +4,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIcmpV4Statistics : IcmpV4Statistics
+    internal class BsdIcmpV4Statistics : IcmpV4Statistics
     {
         private readonly long _addressMaskRepliesReceived;
         private readonly long _addressMaskRepliesSent;
@@ -29,7 +29,7 @@ namespace System.Net.NetworkInformation
         private readonly long _timestampRequestsReceived;
         private readonly long _timestampRequestsSent;
 
-        public OsxIcmpV4Statistics()
+        public BsdIcmpV4Statistics()
         {
             Interop.Sys.Icmpv4GlobalStatistics statistics;
             if (Interop.Sys.GetIcmpv4GlobalStatistics(out statistics) != 0)

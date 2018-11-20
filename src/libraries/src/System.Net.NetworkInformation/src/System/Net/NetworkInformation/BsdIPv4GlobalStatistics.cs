@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIPv4GlobalStatistics : IPGlobalStatistics
+    internal class BsdIPv4GlobalStatistics : IPGlobalStatistics
     {
         private readonly long _outboundPackets;
         private readonly long _outputPacketsNoRoute;
@@ -28,7 +28,7 @@ namespace System.Net.NetworkInformation
         private readonly int _numIPAddresses;
         private readonly int _numRoutes;
 
-        public unsafe OsxIPv4GlobalStatistics()
+        public unsafe BsdIPv4GlobalStatistics()
         {
             Interop.Sys.IPv4GlobalStatistics statistics;
             if (Interop.Sys.GetIPv4GlobalStatistics(out statistics) == -1)

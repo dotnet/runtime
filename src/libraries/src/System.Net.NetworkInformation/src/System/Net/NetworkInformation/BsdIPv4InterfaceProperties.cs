@@ -4,11 +4,11 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIPv4InterfaceProperties : UnixIPv4InterfaceProperties
+    internal class BsdIPv4InterfaceProperties : UnixIPv4InterfaceProperties
     {
         private readonly int _mtu;
 
-        public OsxIPv4InterfaceProperties(OsxNetworkInterface oni, int mtu)
+        public BsdIPv4InterfaceProperties(BsdNetworkInterface oni, int mtu)
             : base(oni)
         {
             _mtu = mtu;
