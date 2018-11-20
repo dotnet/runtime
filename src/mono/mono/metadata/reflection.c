@@ -1196,7 +1196,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
-/* WARNING: This method can return NULL on sucess */
+/* WARNING: This method can return NULL on success */
 static MonoReflectionMethodBodyHandle
 method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoMethod *method, gpointer user_data, MonoError *error)
 {
@@ -1206,6 +1206,10 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	char *ptr;
 	unsigned char format, flags;
 	int i;
+	gpointer params [6];
+	MonoBoolean init_locals_param;
+	gint32 sig_token_param;
+	gint32 max_stack_param;
 
 	error_init (error);
 
@@ -1248,17 +1252,23 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	} else
 		local_var_sig_token = 0; //FIXME
 
+	static MonoMethod *ctor;
+	if (!ctor) {
+		MonoMethod *tmp = mono_class_get_method_from_name_checked (mono_class_get_method_body_class (), ".ctor", 6, 0, error);
+		mono_error_assert_ok (error);
+		g_assert (tmp);
+
+		mono_memory_barrier ();
+		ctor = tmp;
+	}
+
 	MonoReflectionMethodBodyHandle ret;
 	ret = MONO_HANDLE_CAST (MonoReflectionMethodBody, mono_object_new_handle (domain, mono_class_get_method_body_class (), error));
 	goto_if_nok (error, fail);
 
-	MONO_HANDLE_SETVAL (ret, init_locals, MonoBoolean, header->init_locals);
-	MONO_HANDLE_SETVAL (ret, max_stack, guint32, header->max_stack);
-	MONO_HANDLE_SETVAL (ret, local_var_sig_token, guint32, local_var_sig_token);
 	MonoArrayHandle il_arr;
 	il_arr = mono_array_new_handle (domain, mono_defaults.byte_class, header->code_size, error);
 	goto_if_nok (error, fail);
-	MONO_HANDLE_SET (ret, il, il_arr);
 	uint32_t il_gchandle;
 	guint8* il_data;
 	il_data = MONO_ARRAY_HANDLE_PIN (il_arr, guint8, 0, &il_gchandle);
@@ -1269,7 +1279,6 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	MonoArrayHandle locals_arr;
 	locals_arr = mono_array_new_handle (domain, mono_class_get_local_variable_info_class (), header->num_locals, error);
 	goto_if_nok (error, fail);
-	MONO_HANDLE_SET (ret, locals, locals_arr);
 	for (i = 0; i < header->num_locals; ++i) {
 		if (!add_local_var_info_to_array (domain, header, i, locals_arr, error))
 			goto fail;
@@ -1279,13 +1288,30 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	MonoArrayHandle exn_clauses;
 	exn_clauses = mono_array_new_handle (domain, mono_class_get_exception_handling_clause_class (), header->num_clauses, error);
 	goto_if_nok (error, fail);
-	MONO_HANDLE_SET (ret, clauses, exn_clauses);
 	for (i = 0; i < header->num_clauses; ++i) {
 		if (!add_exception_handling_clause_to_array (domain, header, i, exn_clauses, error))
 			goto fail;
 	}
 
+	/*
+	  MethodBody (ExceptionHandlingClause[] clauses, LocalVariableInfo[] locals,
+	              byte[] il, bool init_locals, int sig_token, int max_stack)
+	*/
+	init_locals_param = header->init_locals;
+	sig_token_param = local_var_sig_token;
+	max_stack_param = header->max_stack;
 	mono_metadata_free_mh (header);
+	header = NULL;
+
+	params [0] = MONO_HANDLE_RAW (exn_clauses);
+	params [1] = MONO_HANDLE_RAW (locals_arr);
+	params [2] = MONO_HANDLE_RAW (il_arr);
+	params [3] = &init_locals_param;
+	params [4] = &sig_token_param;
+	params [5] = &max_stack_param;
+	mono_runtime_invoke_handle (ctor, MONO_HANDLE_CAST (MonoObject, ret), params, error);
+	mono_error_assert_ok (error);
+
 	return ret;
 fail:
 	if (header)

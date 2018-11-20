@@ -972,12 +972,6 @@ TYPED_HANDLE_DECL (MonoReflectionParameter);
 
 struct _MonoReflectionMethodBody {
 	MonoObject object;
-	MonoArray *clauses;
-	MonoArray *locals;
-	MonoArray *il;
-	MonoBoolean init_locals;
-	guint32 local_var_sig_token;
-	guint32 max_stack;
 };
 
 /* Safely access System.Reflection.MethodBody from native code */
