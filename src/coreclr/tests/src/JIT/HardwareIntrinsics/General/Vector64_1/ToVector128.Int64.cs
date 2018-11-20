@@ -97,11 +97,13 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(Int64[] result, Int64[] values, bool isUnsafe, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (int i = 0; i < ElementCount; i++)
             {
                 if (result[i] != values[i])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
@@ -112,18 +114,20 @@ namespace JIT.HardwareIntrinsics.General
                 {
                     if (result[i] != 0)
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector64<Int64>.ToVector128{(isUnsafe ? "Unsafe" : "")}(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

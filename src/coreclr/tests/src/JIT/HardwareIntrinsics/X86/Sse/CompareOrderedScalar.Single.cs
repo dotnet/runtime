@@ -334,7 +334,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -342,7 +342,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -374,9 +379,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Single[] left, Single[] right, Single[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (BitConverter.SingleToInt32Bits(result[0]) != ((!float.IsNaN(left[0]) && !float.IsNaN(right[0])) ? -1 : 0))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -384,19 +391,21 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (BitConverter.SingleToInt32Bits(left[i]) != BitConverter.SingleToInt32Bits(result[i]))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse)}.{nameof(Sse.CompareOrderedScalar)}<Single>(Vector128<Single>, Vector128<Single>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

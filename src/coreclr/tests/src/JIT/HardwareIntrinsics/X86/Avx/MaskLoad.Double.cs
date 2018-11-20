@@ -331,7 +331,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -339,7 +339,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -371,9 +376,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Double[] left, Double[] right, Double[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (BitConverter.DoubleToInt64Bits(result[0]) != BitConverter.DoubleToInt64Bits((BitConverter.DoubleToInt64Bits(right[0]) < 0) ? left[0] : 0))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -381,19 +388,21 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (BitConverter.DoubleToInt64Bits(result[i]) != BitConverter.DoubleToInt64Bits((BitConverter.DoubleToInt64Bits(right[i]) < 0) ? left[i] : 0))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx)}.{nameof(Avx.MaskLoad)}<Double>(Double*, Vector256<Double>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

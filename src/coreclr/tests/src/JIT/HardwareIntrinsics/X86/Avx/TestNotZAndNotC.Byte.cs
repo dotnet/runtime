@@ -329,7 +329,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -337,7 +337,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -381,13 +386,13 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (((expectedResult1 == false) && (expectedResult2 == false)) != result)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx)}.{nameof(Avx.TestNotZAndNotC)}<Byte>(Vector256<Byte>, Vector256<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

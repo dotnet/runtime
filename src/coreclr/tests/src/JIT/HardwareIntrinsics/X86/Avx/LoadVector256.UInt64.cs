@@ -133,9 +133,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(UInt64[] firstOp, UInt64[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (firstOp[0] != result[0])
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -143,18 +145,20 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (firstOp[i] != result[i])
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx)}.{nameof(Avx.LoadVector256)}<UInt64>(Vector256<UInt64>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

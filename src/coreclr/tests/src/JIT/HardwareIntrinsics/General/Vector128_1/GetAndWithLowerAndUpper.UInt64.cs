@@ -108,38 +108,46 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateGetResult(UInt64[] lowerResult, UInt64[] upperResult, UInt64[] values, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (int i = 0; i < ElementCount / 2; i++)
             {
                 if (lowerResult[i] != values[i])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128<UInt64>.GetLower(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", lowerResult)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
+
+            succeeded = true;
 
             for (int i = ElementCount / 2; i < ElementCount; i++)
             {
                 if (upperResult[i - (ElementCount / 2)] != values[i])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128<UInt64>.GetUpper(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", upperResult)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
 
@@ -152,38 +160,46 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateWithResult(UInt64[] result, UInt64[] values, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (int i = 0; i < ElementCount / 2; i++)
             {
                 if (result[i] != values[i + (ElementCount / 2)])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128<UInt64.WithLower(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
+
+            succeeded = true;
 
             for (int i = ElementCount / 2; i < ElementCount; i++)
             {
                 if (result[i] != values[i - (ElementCount / 2)])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128<UInt64.WithUpper(): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }
