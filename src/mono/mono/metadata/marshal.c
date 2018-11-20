@@ -4140,7 +4140,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	}
 	g_assert (stoptr);
 
-	mb = mono_mb_new (klass, stoptr->name, MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (klass, stoptr->name, MONO_WRAPPER_OTHER);
 
 	get_marshal_cb ()->emit_struct_to_ptr (mb, klass);
 
@@ -4196,7 +4196,7 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 		ptostr = sig;
 	}
 
-	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_OTHER);
 
 	get_marshal_cb ()->emit_ptr_to_struct (mb, klass);
 
@@ -4238,7 +4238,7 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 		g_assert (container);
 	}
 
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_OTHER);
 	get_marshal_cb ()->mb_emit_exception (mb, "System", "ExecutionEngineException", "Shouldn't be called.");
 	get_marshal_cb ()->mb_emit_byte (mb, CEE_RET);
 
@@ -4620,7 +4620,7 @@ mono_marshal_get_gsharedvt_in_wrapper (void)
 	if (ret)
 		return ret;
 	
-	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_in", MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_in", MONO_WRAPPER_OTHER);
 	
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	sig->ret = mono_get_void_type ();
@@ -4653,7 +4653,7 @@ mono_marshal_get_gsharedvt_out_wrapper (void)
 	if (ret)
 		return ret;
 	
-	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out", MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (mono_defaults.object_class, "gsharedvt_out", MONO_WRAPPER_OTHER);
 	
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
 	sig->ret = mono_get_void_type ();
@@ -4814,7 +4814,7 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	sig = mono_metadata_signature_dup_full (get_method_image (method), mono_method_signature_internal (method));
 	sig->pinvoke = 0;
 
-	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_UNKNOWN);
+	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_OTHER);
 
 	get_marshal_cb ()->emit_array_accessor_wrapper (mb, method, sig, ctx);
 

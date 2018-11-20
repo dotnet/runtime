@@ -25,6 +25,8 @@
 #define MONO_ARCH_NEED_DIV_CHECK 1
 
 #define MONO_ARCH_EMULATE_FREM 1
+#define MONO_ARCH_NO_EMULATE_LONG_SHIFT_OPS 1
+#define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 
 //mini-codegen stubs - this doesn't do anything

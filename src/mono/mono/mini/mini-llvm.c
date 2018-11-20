@@ -3344,7 +3344,7 @@ needs_extra_arg (EmitContext *ctx, MonoMethod *method)
 		info = mono_marshal_get_wrapper_info (method);
 
 	switch (method->wrapper_type) {
-	case MONO_WRAPPER_UNKNOWN:
+	case MONO_WRAPPER_OTHER:
 		if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG || info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 			/* Already have an explicit extra arg */
 			return FALSE;

@@ -350,7 +350,7 @@ mini_add_method_trampoline (MonoMethod *m, gpointer compiled_method, gboolean ad
 			callee_array_helper = TRUE;
 			m = info->d.generic_array_helper.method;
 		}
-	} else if (m->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+	} else if (m->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
 
 		/* Same for synchronized inner wrappers */
@@ -458,7 +458,7 @@ mini_add_method_wrappers_llvmonly (MonoMethod *m, gpointer compiled_method, gboo
 		if (info && info->subtype == WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER) {
 			m = info->d.generic_array_helper.method;
 		}
-	} else if (m->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+	} else if (m->wrapper_type == MONO_WRAPPER_OTHER) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (m);
 
 		/* Same for synchronized inner wrappers */

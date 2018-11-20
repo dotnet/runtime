@@ -6639,7 +6639,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 	/* still some type unsafety issues in marshal wrappers... (unknown is PtrToStructure) */
 	dont_verify_stloc = method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE;
-	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_UNKNOWN;
+	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_OTHER;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED;
 	dont_verify_stloc |= method->wrapper_type == MONO_WRAPPER_STELEMREF;
 
@@ -8005,6 +8005,46 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				goto call_end;
 			}
 
+			/*
+			 * Implement a workaround for the inherent races involved in locking:
+			 * Monitor.Enter ()
+			 * try {
+			 * } finally {
+			 *    Monitor.Exit ()
+			 * }
+			 * If a thread abort happens between the call to Monitor.Enter () and the start of the
+			 * try block, the Exit () won't be executed, see:
+			 * http://www.bluebytesoftware.com/blog/2007/01/30/MonitorEnterThreadAbortsAndOrphanedLocks.aspx
+			 * To work around this, we extend such try blocks to include the last x bytes
+			 * of the Monitor.Enter () call.
+			 */
+			if (cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature_internal (cmethod)->param_count == 1) {
+				MonoBasicBlock *tbb;
+
+				GET_BBLOCK (cfg, tbb, next_ip);
+				/* 
+				 * Only extend try blocks with a finally, to avoid catching exceptions thrown
+				 * from Monitor.Enter like ArgumentNullException.
+				 */
+				if (tbb->try_start && MONO_REGION_FLAGS(tbb->region) == MONO_EXCEPTION_CLAUSE_FINALLY) {
+					/* Mark this bblock as needing to be extended */
+					tbb->extend_try_block = TRUE;
+				}
+			}
+
+			/* Conversion to a JIT intrinsic */
+			if ((ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
+				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
+					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
+					emit_widen = FALSE;
+				}
+				// FIXME This is only missed if in fact the intrinsic involves a call.
+				if (inst_tailcall) // FIXME
+					mono_tailcall_print ("missed tailcall intrins %s -> %s\n", method->name, cmethod->name);
+				goto call_end;
+			}
+			CHECK_CFG_ERROR;
+
 			/* 
 			 * If the callee is a shared method, then its static cctor
 			 * might not get called after the call was patched.
@@ -8212,45 +8252,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 				if (inst_tailcall) // FIXME
 					mono_tailcall_print ("missed tailcall virtual generic %s -> %s\n", method->name, cmethod->name);
-				goto call_end;
-			}
-
-			/*
-			 * Implement a workaround for the inherent races involved in locking:
-			 * Monitor.Enter ()
-			 * try {
-			 * } finally {
-			 *    Monitor.Exit ()
-			 * }
-			 * If a thread abort happens between the call to Monitor.Enter () and the start of the
-			 * try block, the Exit () won't be executed, see:
-			 * http://www.bluebytesoftware.com/blog/2007/01/30/MonitorEnterThreadAbortsAndOrphanedLocks.aspx
-			 * To work around this, we extend such try blocks to include the last x bytes
-			 * of the Monitor.Enter () call.
-			 */
-			if (cmethod->klass == mono_defaults.monitor_class && !strcmp (cmethod->name, "Enter") && mono_method_signature_internal (cmethod)->param_count == 1) {
-				MonoBasicBlock *tbb;
-
-				GET_BBLOCK (cfg, tbb, next_ip);
-				/* 
-				 * Only extend try blocks with a finally, to avoid catching exceptions thrown
-				 * from Monitor.Enter like ArgumentNullException.
-				 */
-				if (tbb->try_start && MONO_REGION_FLAGS(tbb->region) == MONO_EXCEPTION_CLAUSE_FINALLY) {
-					/* Mark this bblock as needing to be extended */
-					tbb->extend_try_block = TRUE;
-				}
-			}
-
-			/* Conversion to a JIT intrinsic */
-			if ((ins = mini_emit_inst_for_method (cfg, cmethod, fsig, sp))) {
-				if (!MONO_TYPE_IS_VOID (fsig->ret)) {
-					mini_type_to_eval_stack_type ((cfg), fsig->ret, ins);
-					emit_widen = FALSE;
-				}
-				// FIXME This is only missed if in fact the intrinsic involves a call.
-				if (inst_tailcall) // FIXME
-					mono_tailcall_print ("missed tailcall intrins %s -> %s\n", method->name, cmethod->name);
 				goto call_end;
 			}
 			CHECK_CFG_ERROR;

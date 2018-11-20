@@ -136,7 +136,7 @@ static int map_hw_reg_to_dwarf_reg [NUM_DWARF_REGS] = {
 #else
 static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_DWARF_REGS 16
-#define DWARF_DATA_ALIGN 0
+#define DWARF_DATA_ALIGN 1
 #define DWARF_PC_REG -1
 #endif
 
