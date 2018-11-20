@@ -34,7 +34,7 @@ internal class Outside<T>
 
 namespace System.Tests
 {
-    public class TypeTests
+    public partial class TypeTests
     {
         [Fact]
         public void FilterName_Get_ReturnsExpected()
