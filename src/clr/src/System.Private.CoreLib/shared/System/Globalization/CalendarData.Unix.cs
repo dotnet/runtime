@@ -104,18 +104,18 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        private static bool GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string calendarString)
+        private static unsafe bool GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string calendarString)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
             return Interop.CallStringMethod(
-                (locale, calId, type, stringBuilder) =>
-                    Interop.Globalization.GetCalendarInfo(
-                        locale,
-                        calId,
-                        type,
-                        stringBuilder,
-                        stringBuilder.Capacity),
+                (buffer, locale, id, type) =>
+                {
+                    fixed (char* bufferPtr = buffer)
+                    {
+                        return Interop.Globalization.GetCalendarInfo(locale, id, type, bufferPtr, buffer.Length);
+                    }
+                },
                 localeName,
                 calendarId,
                 dataType,
