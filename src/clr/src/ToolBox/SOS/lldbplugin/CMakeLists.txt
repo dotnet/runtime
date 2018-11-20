@@ -70,7 +70,7 @@ if(NOT $ENV{LLDB_LIB} STREQUAL "")
 else()
     # Check for LLDB library
     if(CLR_CMAKE_PLATFORM_DARWIN)
-        find_library(LLDB_LIB NAMES LLDB lldb lldb-7 lldb-6.0 lldb-5.0 lldb-4.0 lldb-3.9 lldb-3.8 lldb-3.7 lldb-3.6 lldb-3.5 PATHS "${WITH_LLDB_LIBS}" PATH_SUFFIXES llvm NO_DEFAULT_PATH)
+        find_library(LLDB_LIB NAMES LLDB lldb lldb-7 lldb-6.0 lldb-5.0 lldb-4.0 lldb-3.9 lldb-3.8 lldb-3.7 lldb-3.6 lldb-3.5 PATHS "${LLDB_LIB_DIR}" PATH_SUFFIXES llvm NO_DEFAULT_PATH)
         find_library(LLDB_LIB NAMES LLDB lldb lldb-7 lldb-6.0 lldb-5.0 lldb-4.0 lldb-3.9 lldb-3.8 lldb-3.7 lldb-3.6 lldb-3.5 PATH_SUFFIXES llvm)
         if(LLDB_LIB STREQUAL LLDB_LIB-NOTFOUND)
             if(REQUIRE_LLDBPLUGIN)
@@ -92,7 +92,7 @@ else()
     # Check for LLDB headers
     # Multiple versions of LLDB can install side-by-side, so we need to check for lldb in various locations.
     # If the file in a directory is found the result is stored in the variable and the search will not be repeated unless the variable is cleared.
-    find_path(LLDB_H "lldb/API/LLDB.h" PATHS "${WITH_LLDB_INCLUDES}" NO_DEFAULT_PATH)
+    find_path(LLDB_H "lldb/API/LLDB.h" PATHS "${LLDB_INCLUDE_DIR}" NO_DEFAULT_PATH)
     find_path(LLDB_H "lldb/API/LLDB.h")
     find_path(LLDB_H "lldb/API/LLDB.h" PATHS "/usr/lib/llvm-7/include")
     find_path(LLDB_H "lldb/API/LLDB.h" PATHS "/usr/lib/llvm-6.0/include")
