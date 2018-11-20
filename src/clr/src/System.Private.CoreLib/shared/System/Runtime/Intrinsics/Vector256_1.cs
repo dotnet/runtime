@@ -61,6 +61,7 @@ namespace System.Runtime.Intrinsics
 
         internal static bool IsSupported
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return (typeof(T) == typeof(byte)) ||
@@ -76,6 +77,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowIfUnsupportedType()
         {
             if (!IsSupported)
@@ -88,6 +90,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="U">The type of the vector the current instance should be reinterpreted as.</typeparam>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{U}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) or the type of the target (<typeparamref name="U" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector256<U> As<U>() where U : struct
         {
             ThrowIfUnsupportedType();
