@@ -1044,7 +1044,9 @@ public:
     void dmpGetFieldName(DWORDLONG key, DD value);
     const char* repGetFieldName(CORINFO_FIELD_HANDLE ftn, const char** moduleName);
 
-    void recCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source, CorInfoInlineTypeCheck result);
+    void recCanInlineTypeCheck(CORINFO_CLASS_HANDLE         cls,
+                               CorInfoInlineTypeCheckSource source,
+                               CorInfoInlineTypeCheck       result);
     void dmpCanInlineTypeCheck(DLD key, DWORD value);
     CorInfoInlineTypeCheck repCanInlineTypeCheck(CORINFO_CLASS_HANDLE cls, CorInfoInlineTypeCheckSource source);
     void recCanInlineTypeCheckWithObjectVTable(CORINFO_CLASS_HANDLE cls, BOOL result);
@@ -1341,10 +1343,10 @@ enum mcPackets
     Packet_CanCast                    = 5,
     Retired8                          = 6,
     Packet_GetLazyStringLiteralHelper = 147, // Added 12/20/2013 - as a replacement for CanEmbedModuleHandleForHelper
-    Packet_CanGetCookieForPInvokeCalliSig                = 7,
-    Packet_CanGetVarArgsHandle                           = 8,
-    Packet_CanInline                                     = 9,
-    Packet_CanInlineTypeCheck                            = 173, // Added 11/15/2018 as a replacement for CanInlineTypeCheckWithObjectVTable
+    Packet_CanGetCookieForPInvokeCalliSig = 7,
+    Packet_CanGetVarArgsHandle            = 8,
+    Packet_CanInline                      = 9,
+    Packet_CanInlineTypeCheck = 173, // Added 11/15/2018 as a replacement for CanInlineTypeCheckWithObjectVTable
     Packet_CanInlineTypeCheckWithObjectVTable            = 10,
     Packet_CanSkipMethodVerification                     = 11,
     Packet_CanTailCall                                   = 12,
