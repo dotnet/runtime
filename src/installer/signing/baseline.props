@@ -5,8 +5,5 @@
     <BinInspectBaselineFile Include=".%2A\\apphost\.exe" />
     <!-- wixstdba is internal to the engine bundle and does not get signed -->
     <BinInspectBaselineFile Include=".%2A\\wixstdba\.dll" />
-    <!-- api-ms-win-core-xstate-l2-1-0.dll was added in RS4 and only got catalog signed.
-            will be fixed in RS5.  For now, baseline this file. -->
-    <BinInspectBaselineFile Include=".%2A\\api-ms-win-core-xstate-l2-1-0\.dll" />
   </ItemGroup>
 </Project>
