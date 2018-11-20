@@ -58,22 +58,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Empty" xml:space="preserve">
-    <value />
-  </data>
-  <data name="One" xml:space="preserve">
-    <value>Value-One</value>
-  </data>
-  <data name="Three" xml:space="preserve">
-    <value>Value-Three</value>
-  </data>
-  <data name="Two" xml:space="preserve">
-    <value>Value-Two</value>
-  </data>
   <data name="OneLoc" xml:space="preserve">
-    <value>Value-One</value>
-  </data>
-  <data name="NeutOnly" xml:space="preserve">
-    <value>Neutral</value>
+    <value>Value-One(es-MX)</value>
   </data>
 </root>

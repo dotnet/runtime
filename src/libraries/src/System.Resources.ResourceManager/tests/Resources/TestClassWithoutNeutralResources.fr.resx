@@ -62,18 +62,12 @@
     <value />
   </data>
   <data name="One" xml:space="preserve">
-    <value>Value-One</value>
+    <value>Value-One(fr)</value>
   </data>
   <data name="Three" xml:space="preserve">
-    <value>Value-Three</value>
+    <value>Value-Three(fr)</value>
   </data>
   <data name="Two" xml:space="preserve">
-    <value>Value-Two</value>
-  </data>
-  <data name="OneLoc" xml:space="preserve">
-    <value>Value-One</value>
-  </data>
-  <data name="NeutOnly" xml:space="preserve">
-    <value>Neutral</value>
+    <value>Value-Two(fr)</value>
   </data>
 </root>
