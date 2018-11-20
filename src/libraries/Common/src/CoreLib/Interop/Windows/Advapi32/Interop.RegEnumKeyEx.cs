@@ -22,7 +22,7 @@ internal partial class Interop
             char[] lpName,
             ref int lpcbName,
             int[] lpReserved,
-            [Out]StringBuilder lpClass,
+            [Out] char[] lpClass,
             int[] lpcbClass,
             long[] lpftLastWriteTime);
     }

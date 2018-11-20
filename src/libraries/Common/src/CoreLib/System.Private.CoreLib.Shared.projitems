@@ -893,7 +893,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegFlushKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegistryConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegOpenKeyEx.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegQueryInfoKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegQueryValueEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
