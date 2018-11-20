@@ -4350,7 +4350,7 @@ event_equal (MonoEvent *event1, MonoEvent *event2)
 }
 
 GPtrArray*
-ves_icall_RuntimeType_GetEvents_native (MonoReflectionTypeHandle ref_type, char *utf8_name, guint32 bflags, guint32 mlisttype, MonoError *error)
+ves_icall_RuntimeType_GetEvents_native (MonoReflectionTypeHandle ref_type, char *utf8_name, guint32 mlisttype, MonoError *error)
 {
 	error_init (error);
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
@@ -4359,7 +4359,7 @@ ves_icall_RuntimeType_GetEvents_native (MonoReflectionTypeHandle ref_type, char 
 		return g_ptr_array_new ();
 	}
 
-	int (*compare_func) (const char *s1, const char *s2) = ((bflags & BFLAGS_IgnoreCase) || (mlisttype == MLISTTYPE_CaseInsensitive)) ? mono_utf8_strcasecmp : strcmp;
+	int (*compare_func) (const char *s1, const char *s2) = (mlisttype == MLISTTYPE_CaseInsensitive) ? mono_utf8_strcasecmp : strcmp;
 
 	GPtrArray *res_array = g_ptr_array_sized_new (4);
 
@@ -4379,42 +4379,21 @@ handle_parent:
 	gpointer iter;
 	iter = NULL;
 	while ((event = mono_class_get_events (klass, &iter))) {
-		int match = 0;
-		MonoMethod *method = event->add;
-		if (!method)
-			method = event->remove;
-		if (!method)
-			method = event->raise;
-		if (method) {
-			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC) {
-				if (bflags & BFLAGS_Public)
-					match++;
-			} else if ((klass == startklass) || (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE) {
-				if (bflags & BFLAGS_NonPublic)
-					match++;
-			}
+
+		// Remove inherited privates and inherited
+		// without add/remove/raise methods
+		if (klass != startklass)
+		{
+			MonoMethod *method = event->add;
+			if (!method)
+				method = event->remove;
+			if (!method)
+				method = event->raise;
+			if (!method)
+				continue;
+			if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PRIVATE)
+				continue;
 		}
-		else
-			if (bflags & BFLAGS_NonPublic)
-				match ++;
-		if (!match)
-			continue;
-		match = 0;
-		if (method) {
-			if (method->flags & METHOD_ATTRIBUTE_STATIC) {
-				if (bflags & BFLAGS_Static)
-					if ((bflags & BFLAGS_FlattenHierarchy) || (klass == startklass))
-						match++;
-			} else {
-				if (bflags & BFLAGS_Instance)
-					match++;
-			}
-		}
-		else
-			if (bflags & BFLAGS_Instance)
-				match ++;
-		if (!match)
-			continue;
 
 		if ((mlisttype != MLISTTYPE_All) && (utf8_name != NULL) && compare_func (event->name, utf8_name))
 			continue;
@@ -4426,7 +4405,7 @@ handle_parent:
 
 		g_hash_table_insert (events, event, event);
 	}
-	if (!(bflags & BFLAGS_DeclaredOnly) && (klass = m_class_get_parent (klass)))
+	if (klass = m_class_get_parent (klass))
 		goto handle_parent;
 
 	g_hash_table_destroy (events);
