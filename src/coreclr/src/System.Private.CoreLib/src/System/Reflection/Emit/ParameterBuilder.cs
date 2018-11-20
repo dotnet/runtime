@@ -2,21 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** ParameterBuilder is used to create/associate parameter information
-**
-** 
-===========================================================*/
-
-using System.Runtime.InteropServices;
-using System;
-using System.Reflection;
-
 namespace System.Reflection.Emit
 {
     public class ParameterBuilder
@@ -25,25 +10,28 @@ namespace System.Reflection.Emit
         public virtual void SetConstant(object defaultValue)
         {
             TypeBuilder.SetConstantValue(
-                m_methodBuilder.GetModuleBuilder(),
-                m_pdToken.Token,
-                m_iPosition == 0 ? m_methodBuilder.ReturnType : m_methodBuilder.m_parameterTypes[m_iPosition - 1],
+                _methodBuilder.GetModuleBuilder(),
+                _token.Token,
+                _position == 0 ? _methodBuilder.ReturnType : _methodBuilder.m_parameterTypes[_position - 1],
                 defaultValue);
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
-
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
+            {
                 throw new ArgumentNullException(nameof(con));
+            }
             if (binaryAttribute == null)
+            {
                 throw new ArgumentNullException(nameof(binaryAttribute));
+            }
 
             TypeBuilder.DefineCustomAttribute(
-                m_methodBuilder.GetModuleBuilder(),
-                m_pdToken.Token,
-                ((ModuleBuilder)m_methodBuilder.GetModule()).GetConstructorToken(con).Token,
+                _methodBuilder.GetModuleBuilder(),
+                _token.Token,
+                ((ModuleBuilder)_methodBuilder.GetModule()).GetConstructorToken(con).Token,
                 binaryAttribute,
                 false, false);
         }
@@ -55,65 +43,48 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentNullException(nameof(customBuilder));
             }
-            customBuilder.CreateCustomAttribute((ModuleBuilder)(m_methodBuilder.GetModule()), m_pdToken.Token);
+            customBuilder.CreateCustomAttribute((ModuleBuilder)(_methodBuilder.GetModule()), _token.Token);
         }
 
         internal ParameterBuilder(
             MethodBuilder methodBuilder,
             int sequence,
             ParameterAttributes attributes,
-            string strParamName)            // can be NULL string
+            string paramName)            // can be NULL string
         {
-            m_iPosition = sequence;
-            m_strParamName = strParamName;
-            m_methodBuilder = methodBuilder;
-            m_strParamName = strParamName;
-            m_attributes = attributes;
-            m_pdToken = new ParameterToken(TypeBuilder.SetParamInfo(
-                        m_methodBuilder.GetModuleBuilder().GetNativeHandle(),
-                        m_methodBuilder.GetToken().Token,
+            _position = sequence;
+            _name = paramName;
+            _methodBuilder = methodBuilder;
+            _attributes = attributes;
+            _token = new ParameterToken(TypeBuilder.SetParamInfo(
+                        _methodBuilder.GetModuleBuilder().GetNativeHandle(),
+                        _methodBuilder.GetToken().Token,
                         sequence,
                         attributes,
-                        strParamName));
+                        paramName));
         }
 
         public virtual ParameterToken GetToken()
         {
-            return m_pdToken;
+            return _token;
         }
 
-        public virtual string Name
-        {
-            get { return m_strParamName; }
-        }
+        public virtual string Name => _name;
 
-        public virtual int Position
-        {
-            get { return m_iPosition; }
-        }
+        public virtual int Position => _position;
 
-        public virtual int Attributes
-        {
-            get { return (int)m_attributes; }
-        }
+        public virtual int Attributes => (int)_attributes;
 
-        public bool IsIn
-        {
-            get { return ((m_attributes & ParameterAttributes.In) != 0); }
-        }
-        public bool IsOut
-        {
-            get { return ((m_attributes & ParameterAttributes.Out) != 0); }
-        }
-        public bool IsOptional
-        {
-            get { return ((m_attributes & ParameterAttributes.Optional) != 0); }
-        }
+        public bool IsIn => (_attributes & ParameterAttributes.In) != 0;
 
-        private string m_strParamName;
-        private int m_iPosition;
-        private ParameterAttributes m_attributes;
-        private MethodBuilder m_methodBuilder;
-        private ParameterToken m_pdToken;
+        public bool IsOut => (_attributes & ParameterAttributes.Out) != 0;
+
+        public bool IsOptional => (_attributes & ParameterAttributes.Optional) != 0;
+
+        private readonly string _name;
+        private readonly int _position;
+        private readonly ParameterAttributes _attributes;
+        private MethodBuilder _methodBuilder;
+        private ParameterToken _token;
     }
 }
