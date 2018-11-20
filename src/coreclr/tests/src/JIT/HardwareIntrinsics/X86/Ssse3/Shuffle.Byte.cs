@@ -334,7 +334,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -342,7 +342,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -374,9 +379,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Byte[] left, Byte[] right, Byte[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (result[0] != ((right[0] > 127) ? 0 : left[right[0] & 0x0F]))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -384,19 +391,21 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (result[i] != ((right[i] > 127) ? 0 : left[right[i] & 0x0F]))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Ssse3)}.{nameof(Ssse3.Shuffle)}<Byte>(Vector128<Byte>, Vector128<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

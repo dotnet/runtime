@@ -218,21 +218,25 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(Int32[] resultElements, Int32[] valueElements, Type targetType, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (var i = 0; i < ElementCount; i++)
             {
                 if (resultElements[i] != valueElements[i])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128<Int32>.As{targetType.Name}: {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", valueElements)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

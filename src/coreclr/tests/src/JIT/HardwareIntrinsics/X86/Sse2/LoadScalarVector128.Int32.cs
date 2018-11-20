@@ -133,9 +133,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Int32[] firstOp, Int32[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (firstOp[0] != result[0])
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -143,18 +145,20 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (0 != result[i])
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse2)}.{nameof(Sse2.LoadScalarVector128)}<Int32>(Vector128<Int32>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

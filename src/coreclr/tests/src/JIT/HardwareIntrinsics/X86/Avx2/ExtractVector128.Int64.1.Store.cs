@@ -306,7 +306,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -314,7 +314,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -342,9 +347,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Int64[] firstOp, Int64[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (result[0] != firstOp[2])
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -352,18 +359,20 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if ((result[i] != firstOp[i + 2]))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx2)}.{nameof(Avx2.ExtractVector128)}<Int64>(Vector256<Int64><9>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

@@ -74,10 +74,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector64<Int64.GetElement({imm}): {nameof(RunBasicScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
 
             succeeded = !expectedOutOfRangeException;
@@ -96,10 +96,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector64<Int64.WithElement({imm}): {nameof(RunBasicScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
 
@@ -133,10 +133,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector64<Int64.GetElement({imm}): {nameof(RunReflectionScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
 
             succeeded = !expectedOutOfRangeException;
@@ -158,10 +158,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector64<Int64.WithElement({imm}): {nameof(RunReflectionScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
 
@@ -196,27 +196,31 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateWithResult(Int64[] result, Int64[] values, Int64 insertedValue, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (int i = 0; i < ElementCount; i++)
             {
                 if ((i != 0) && (result[i] != values[i]))
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
             if (result[0] != insertedValue)
             {
-                Succeeded = false;
+                succeeded = false;
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector64<Int64.WithElement(0): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  insert: insertedValue");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

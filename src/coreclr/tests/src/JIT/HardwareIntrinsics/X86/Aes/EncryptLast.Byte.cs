@@ -330,7 +330,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -338,7 +338,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -355,19 +360,24 @@ namespace JIT.HardwareIntrinsics.X86
         
         private void ValidateResult(Byte[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (int i = 0; i < result.Length; i++)
             {
                 if (result[i] != _expectedRet[i] )
                 {
-                    Succeeded = false;
+                    succeeded = false;
                 } 
             }
-            if (!Succeeded)
+
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Aes)}.{nameof(Aes.EncryptLast)}<Byte>(Vector128<Byte>, Vector128<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  expectedRet: ({string.Join(", ", _expectedRet)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

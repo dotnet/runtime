@@ -326,7 +326,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -334,7 +334,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -362,22 +367,25 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(UInt64[] firstOp, UInt64[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
 
             for (var i = 0; i < RetElementCount; i++)
             {
                 if ((i == 1 ? result[i] != 2 : result[i] != firstOp[i]))
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse41)}.{nameof(Sse41.Insert)}<UInt64>(Vector128<UInt64><9>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

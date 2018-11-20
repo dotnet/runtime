@@ -334,7 +334,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -342,7 +342,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -374,9 +379,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Byte[] left, Byte[] right, UInt16[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (result[0] != Math.Abs(left[0] - right[0]) + Math.Abs(left[1] - right[1]) + Math.Abs(left[2] - right[2]) + Math.Abs(left[3] - right[3]) + Math.Abs(left[4] - right[4]) + Math.Abs(left[5] - right[5]) + Math.Abs(left[6] - right[6]) + Math.Abs(left[7] - right[7]))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -384,19 +391,21 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (result[i] != (i != 4 ? 0 : Math.Abs(left[8] - right[8]) + Math.Abs(left[9] - right[9]) + Math.Abs(left[10] - right[10]) + Math.Abs(left[11] - right[11]) + Math.Abs(left[12] - right[12]) + Math.Abs(left[13] - right[13]) + Math.Abs(left[14] - right[14]) + Math.Abs(left[15] - right[15])))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse2)}.{nameof(Sse2.SumAbsoluteDifferences)}<UInt16>(Vector128<Byte>, Vector128<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

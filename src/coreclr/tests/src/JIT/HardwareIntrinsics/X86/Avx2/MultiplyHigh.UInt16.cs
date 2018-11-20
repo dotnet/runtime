@@ -334,7 +334,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -342,7 +342,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -374,9 +379,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(UInt16[] left, UInt16[] right, UInt16[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (result[0] != BitConverter.ToUInt16(BitConverter.GetBytes((((uint)(left[0])) * right[0]) >> 16), 0))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -384,19 +391,21 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (result[i] != BitConverter.ToUInt16(BitConverter.GetBytes((((uint)(left[i])) * right[i]) >> 16), 0))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx2)}.{nameof(Avx2.MultiplyHigh)}<UInt16>(Vector256<UInt16>, Vector256<UInt16>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }
