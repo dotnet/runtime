@@ -182,7 +182,6 @@
     <Compile Include="System\Reflection\StrongNameKeyPairTests.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
-    <Compile Include="System\Reflection\TypeTests.GetInterface.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributesTests.cs" />
@@ -202,6 +201,7 @@
     <Compile Include="System\Threading\WaitHandleTests.cs" />
     <Compile Include="System\Type\TypePropertyTests.cs" />
     <Compile Include="System\Type\TypeTests.cs" />
+    <Compile Include="System\Type\TypeTests.Get.cs" />
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>

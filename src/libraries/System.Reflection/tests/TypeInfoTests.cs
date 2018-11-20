@@ -812,20 +812,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(nameof(TI_NonGenericInterface1), false, true)]
-        [InlineData(nameof(TI_NonGenericInterface2), false, true)]
-        [InlineData(nameof(TI_NonGenericInterface2), true, true)]
-        public void GetInterface(string name, bool ignoreCase, bool exists)
-        {
-            TypeInfo typeInfo = typeof(MembersClass).GetTypeInfo();
-            if (!ignoreCase)
-            {
-                Assert.Equal(exists, typeInfo.GetInterface(name) != null);
-            }
-            Assert.Equal(exists, typeInfo.GetInterface(name, exists) != null);
-        }
-
-        [Theory]
         [InlineData(typeof(MembersClass), new Type[] { typeof(TI_NonGenericInterface1), typeof(TI_NonGenericInterface2) })]
         [InlineData(typeof(TI_NonGenericInterface2), new Type[0])]
         public void GetInterfaces(Type type, Type[] expected)
