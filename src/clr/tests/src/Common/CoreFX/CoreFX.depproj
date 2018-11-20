@@ -13,7 +13,8 @@
       <SystemCompositionVersions>1.3.0-preview3-26501-04</SystemCompositionVersions>
       <XUnitNetcoreExtensionsVersion>2.2.0-preview1-02902-01</XUnitNetcoreExtensionsVersion>
       <!-- Xunit Abstractions is differently versioned then the rest of XUnit -->
-      <XUnitAbstractionsVersion>2.0.1</XUnitAbstractionsVersion>
+      <XUnitAbstractionsVersion>2.0.3</XUnitAbstractionsVersion>
+      <XUnitAssertVersion>2.4.1-pre.build.4059</XUnitAssertVersion>
       <CoreFXXUnitPackageVersion>2.2.0-beta2-build3300</CoreFXXUnitPackageVersion>
       <MicrosoftDiagnosticsTracingTraceVentVersion>2.0.19</MicrosoftDiagnosticsTracingTraceVentVersion>
       <MicrosoftDotnetPlatformAbstractionsVersion>2.1.0</MicrosoftDotnetPlatformAbstractionsVersion>
@@ -36,7 +37,7 @@
       <Version>$(CoreFXXUnitPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.assert">
-      <Version>$(CoreFXXUnitPackageVersion)</Version>
+      <Version>$(XUnitAssertVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.abstractions">
       <Version>$(XUnitAbstractionsVersion)</Version>

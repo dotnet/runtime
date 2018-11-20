@@ -755,6 +755,10 @@
                 {
                     "name": "System.Tests.DecimalTests+BigIntegerMod.Test",
                     "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                },
+                {
+                    "name": "System.Tests.ArrayTests.Copy",
+                    "reason": "Needs updates for XUnit 2.4"
                 }
             ]
         }
