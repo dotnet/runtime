@@ -508,16 +508,24 @@ namespace System.Diagnostics
                     continue;
                 }
 
+                bool foundAttribute = false, foundIteratorAttribute = false;
                 foreach (StateMachineAttribute asma in attributes)
                 {
                     if (asma.StateMachineType == declaringType)
                     {
-                        method = candidateMethod;
-                        declaringType = candidateMethod.DeclaringType;
-                        // Mark the iterator as changed; so it gets the + annotation of the original method
-                        // async statemachines resolve directly to their builder methods so aren't marked as changed
-                        return asma is IteratorStateMachineAttribute;
+                        foundAttribute = true;
+                        foundIteratorAttribute |= asma is IteratorStateMachineAttribute;
                     }
+                }
+
+                if (foundAttribute)
+                {
+                    // If this is an iterator (sync or async), mark the iterator as changed, so it gets the + annotation
+                    // of the original method. Non-iterator async state machines resolve directly to their builder methods
+                    // so aren't marked as changed.
+                    method = candidateMethod;
+                    declaringType = candidateMethod.DeclaringType;
+                    return foundIteratorAttribute;
                 }
             }
 
