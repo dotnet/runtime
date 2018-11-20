@@ -8033,7 +8033,14 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             // in turn passes it to VM to know the size of value type.
             GenTree* temp = fgInsertCommaFormTemp(&retNode->gtOp.gtOp1, info.compMethodInfo->args.retTypeClass);
 
-            GenTree* lclVar                 = retNode->gtOp.gtOp1->gtOp.gtOp2;
+            GenTree* lclVar = retNode->gtOp.gtOp1->gtOp.gtOp2;
+
+            // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
+            // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
+            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
+            // 0",
+            // which downstream phases can't handle.
+            lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
             retNode->gtOp.gtOp1->gtOp.gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
         }
         else

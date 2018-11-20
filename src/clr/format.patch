@@ -1,0 +1,53 @@
+diff --git a/src/jit/flowgraph.cpp b/src/jit/flowgraph.cpp
+index ad1fd83fe9..bcc818f25b 100644
+--- a/src/jit/flowgraph.cpp
++++ b/src/jit/flowgraph.cpp
+@@ -8016,45 +8016,46 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
+     {
+         GenTree* retNode = block->lastStmt()->gtStmtExpr;
+         GenTree* retExpr = retNode->gtOp.gtOp1;
+ 
+         if (retExpr != nullptr)
+         {
+             // have to insert this immediately before the GT_RETURN so we transform:
+             // ret(...) ->
+             // ret(comma(comma(tmp=...,call mon_exit), tmp)
+             //
+             //
+             // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
+             // TYP_STRUCT (of 8-bytes) and op1 is call node. See the big comment block in impReturnInstruction()
+             // for details for the case where info.compRetType is not the same as info.compRetNativeType.  For
+             // this reason pass compMethodInfo->args.retTypeClass which is guaranteed to be a valid class handle
+             // if the return type is a value class.  Note that fgInsertCommFormTemp() in turn uses this class handle
+             // if the type of op1 is TYP_STRUCT to perform lvaSetStruct() on the new temp that is created, which
+             // in turn passes it to VM to know the size of value type.
+             GenTree* temp = fgInsertCommaFormTemp(&retNode->gtOp.gtOp1, info.compMethodInfo->args.retTypeClass);
+ 
+-            GenTree* lclVar                 = retNode->gtOp.gtOp1->gtOp.gtOp2;
++            GenTree* lclVar = retNode->gtOp.gtOp1->gtOp.gtOp2;
+ 
+             // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
+             // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
+-            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct 0",
++            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
++            // 0",
+             // which downstream phases can't handle.
+             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
+             retNode->gtOp.gtOp1->gtOp.gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
+         }
+         else
+         {
+             // Insert this immediately before the GT_RETURN
+             fgInsertStmtNearEnd(block, tree);
+         }
+     }
+     else
+     {
+         fgInsertStmtAtEnd(block, tree);
+     }
+ 
+     return tree;
+ }
+ 
+ // Convert a BBJ_RETURN block in a synchronized method to a BBJ_ALWAYS.
+ // We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit().
