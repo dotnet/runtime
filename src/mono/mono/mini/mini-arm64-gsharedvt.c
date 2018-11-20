@@ -105,6 +105,8 @@ get_arg_slots (ArgInfo *ainfo, int **out_slots)
 			src [i] = map_reg (sreg + i);
 		break;
 	case ArgOnStack:
+	case ArgOnStackR4:
+	case ArgOnStackR8:
 		nsrc = 1;
 		src = g_malloc (nsrc * sizeof (int));
 		src [0] = map_stack_slot (sslot);
@@ -253,7 +255,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		}
 		if (nsrc)
 			src [0] |= (arg_marshal << 18);
-		if (ainfo->storage == ArgOnStack && ainfo->slot_size != 8) {
+		if ((ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4) && ainfo->slot_size != 8) {
 			GSharedVtArgSize arg_size = GSHAREDVT_ARG_SIZE_NONE;
 
 			/*
