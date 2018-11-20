@@ -231,7 +231,7 @@ namespace System.Data.Tests
         [Fact]
         public void TestCanRemove_ForigenConstraint()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
 
             Assert.Equal(false, ds.Tables["child"].Columns.CanRemove(ds.Tables["child"].Columns["parentId"]));
             Assert.Equal(false, ds.Tables["parent"].Columns.CanRemove(ds.Tables["child"].Columns["parentId"]));
@@ -570,7 +570,7 @@ namespace System.Data.Tests
         [Fact]
         public void Clear2()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Tables[0].Columns.Clear();
@@ -580,7 +580,7 @@ namespace System.Data.Tests
         [Fact]
         public void Clear3()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             ds.Tables[1].Constraints.RemoveAt(0);
             ds.Tables[0].Constraints.RemoveAt(0);
             ds.Tables[0].Columns.Clear();

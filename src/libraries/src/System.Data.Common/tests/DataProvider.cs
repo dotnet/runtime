@@ -149,7 +149,7 @@ namespace System.Data.Tests
             dt.Rows.Add(dr1);
         }
 
-        public static DataSet CreateForigenConstraint()
+        public static DataSet CreateForeignConstraint()
         {
             DataTable parent = DataProvider.CreateParentDataTable();
             DataTable child = DataProvider.CreateChildDataTable();
@@ -165,7 +165,7 @@ namespace System.Data.Tests
 
         public static void TryToBreakForigenConstraint()
         {
-            DataSet ds = CreateForigenConstraint();
+            DataSet ds = CreateForeignConstraint();
             //Code to break:
 
             DataRow dr = ds.Tables[1].NewRow();

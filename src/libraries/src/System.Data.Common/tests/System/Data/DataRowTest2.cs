@@ -2400,7 +2400,7 @@ namespace System.Data.Tests
         [Fact]
         public void testMore()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             DataRow drParent = ds.Tables[0].Rows[0];
             //DataRow[] drArray =  ds.Tables[1].Rows[0].GetParentRows(ds.Tables[1].ParentRelations[0]);
             ds.Tables[1].Rows[0].SetParentRow(drParent);
@@ -2540,7 +2540,7 @@ namespace System.Data.Tests
         {
             Assert.Throws<ConstraintException>(() =>
            {
-               DataSet ds = DataProvider.CreateForigenConstraint();
+               DataSet ds = DataProvider.CreateForeignConstraint();
                ds.Tables[0].BeginLoadData();
                ds.Tables[0].Rows[0][0] = 10;
                ds.Tables[0].EndLoadData(); //Foreign constraint violation
@@ -2782,11 +2782,11 @@ namespace System.Data.Tests
             Assert.Equal(true, dt1.GetErrors()[0].RowError.Length > 10);
             Assert.Equal(true, dt1.GetErrors()[1].RowError.Length > 10);
 
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             Assert.Throws<ConstraintException>(() =>
             {
                 ds.Tables[0].BeginLoadData();
-                ds.Tables[0].Rows[0][0] = 10; //Forigen constraint violation
+                ds.Tables[0].Rows[0][0] = 10; //Foreign constraint violation
                                               //ds.Tables[0].AcceptChanges();
                 ds.Tables[0].EndLoadData();
             });
