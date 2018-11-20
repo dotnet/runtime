@@ -10,11 +10,34 @@ using System.IO;
 using System.Reflection;
 using System.Drawing.Imaging;
 using System.Linq;
+using System.Resources;
+using System.Diagnostics;
+
+[assembly:NeutralResourcesLanguage("en")]
 
 namespace System.Resources.Tests
 {
-    public static partial class ResourceManagerTests
+    namespace Resources
     {
+        internal class TestClassWithoutNeutralResources
+        {
+        }
+    }
+
+    public class ResourceManagerTests : RemoteExecutorTestBase
+    {
+        [Fact]
+        public static void ExpectMissingManifestResourceException()
+        {
+            MissingManifestResourceException e = Assert.Throws<MissingManifestResourceException> (() =>
+            {
+                Type resourceType = typeof(Resources.TestClassWithoutNeutralResources);
+                ResourceManager resourceManager = new ResourceManager(resourceType);
+                string actual = resourceManager.GetString("Any");
+            });
+            Assert.NotNull(e.Message);
+        }
+
         public static IEnumerable<object[]> EnglishResourceData()
         {
             yield return new object[] { "One", "Value-One" };
@@ -41,6 +64,118 @@ namespace System.Resources.Tests
             ResourceManager resourceManager = new ResourceManager(resourceType);
             string actual = resourceManager.GetString(key);
             Assert.Equal(expectedValue, actual);
+        }
+
+        public static IEnumerable<object[]> CultureResourceData()
+        {
+            yield return new object[] { "OneLoc", "es", "Value-One(es)" };       // Find language specific resource
+            yield return new object[] { "OneLoc", "es-ES", "Value-One(es)" };    // Finds parent language of culture specific resource
+            yield return new object[] { "OneLoc", "es-MX", "Value-One(es-MX)" }; // Finds culture specific resource
+            yield return new object[] { "OneLoc", "fr", "Value-One" };           // Find neutral resource when language resources are absent
+            yield return new object[] { "OneLoc", "fr-CA", "Value-One" };        // Find neutral resource when culture and language resources are absent
+            yield return new object[] { "OneLoc", "fr-FR", "Value-One(fr-FR)" }; // Finds culture specific resource
+            yield return new object[] { "Lang", "es-MX", "es" };                 // Finds lang specific string when key is missing in culture resource
+            yield return new object[] { "NeutOnly", "es-MX", "Neutral" };        // Finds neutral string when key is missing in culture and lang resource
+        }
+
+        [Theory]
+        [MemberData(nameof(CultureResourceData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UWP build not configured correctly for culture fallback")]
+        public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
+        {
+            Type resourceType = typeof(Resources.TestResx);
+            ResourceManager resourceManager = new ResourceManager(resourceType);
+            var culture = new CultureInfo(cultureName);
+            string actual = resourceManager.GetString(key, culture);
+            Assert.Equal(expectedValue, actual);
+        }
+
+        [Fact]
+        public static void GetString_FromTestClassWithoutNeutralResources()
+        {
+            // This test is designed to complement the GetString_FromCulutureAndResourceType "fr" & "fr-CA" cases
+            // Together these tests cover the case where there exists a satellite assembly for "fr" which has
+            // resources for some types, but not all.  This confirms the fallback through a satellite which matches
+            // culture but does not match resource file
+            Type resourceType = typeof(Resources.TestClassWithoutNeutralResources);
+            ResourceManager resourceManager = new ResourceManager(resourceType);
+            var culture = new CultureInfo("fr");
+            string actual = resourceManager.GetString("One", culture);
+            Assert.Equal("Value-One(fr)", actual);
+        }
+
+        static int ResourcesAfAZEvents = 0;
+
+#if netcoreapp
+        static System.Reflection.Assembly AssemblyResolvingEventHandler(System.Runtime.Loader.AssemblyLoadContext alc, System.Reflection.AssemblyName name)
+        {
+            if (name.FullName.StartsWith("System.Resources.ResourceManager.Tests.resources"))
+            {
+                if (name.FullName.Contains("Culture=af-ZA"))
+                {
+                    Assert.Equal(System.Runtime.Loader.AssemblyLoadContext.Default, alc);
+                    Assert.Equal("System.Resources.ResourceManager.Tests.resources", name.Name);
+                    Assert.Equal("af-ZA", name.CultureName);
+                    Assert.Equal(0, ResourcesAfAZEvents);
+                    ResourcesAfAZEvents++;
+                }
+            }
+
+            return null;
+        }
+#endif
+
+        static System.Reflection.Assembly AssemblyResolveEventHandler(object sender, ResolveEventArgs args)
+        {
+            string name = args.Name;
+            if (name.StartsWith("System.Resources.ResourceManager.Tests.resources"))
+            {
+                if (name.Contains("Culture=af-ZA"))
+                {
+#if netcoreapp
+                    Assert.Equal(1, ResourcesAfAZEvents);
+#else
+                    Assert.Equal(0, ResourcesAfAZEvents);
+#endif
+                    ResourcesAfAZEvents++;
+                }
+            }
+
+            return null;
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UWP does not use satellite assemblies in most cases")]
+        public static void GetString_ExpectEvents()
+        {
+            RemoteInvoke(() =>
+            {
+                // Events only fire first time.  Remote to make sure test runs in a separate process
+                Remote_ExpectEvents();
+            }).Dispose();
+        }
+
+        public static void Remote_ExpectEvents()
+        {
+#if netcoreapp
+            System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += AssemblyResolvingEventHandler;
+#endif
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(AssemblyResolveEventHandler);
+
+            ResourcesAfAZEvents = 0;
+
+            Type resourceType = typeof(Resources.TestResx);
+
+            ResourceManager resourceManager = new ResourceManager(resourceType);
+            var culture = new CultureInfo("af-ZA");
+            string actual = resourceManager.GetString("One", culture);
+            Assert.Equal("Value-One", actual);
+
+#if netcoreapp
+            Assert.Equal(2, ResourcesAfAZEvents);
+#else
+            Assert.Equal(1, ResourcesAfAZEvents);
+#endif
         }
 
         [Fact]
