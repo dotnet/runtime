@@ -35,21 +35,21 @@ namespace System.Data.Tests
         [Fact]
         public void CanRemove_ParentForeign()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             Assert.False(ds.Tables["parent"].Constraints.CanRemove(ds.Tables["parent"].Constraints[0]));
         }
 
         [Fact]
         public void CanRemove_ChildForeign()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             Assert.True(ds.Tables["child"].Constraints.CanRemove(ds.Tables["child"].Constraints[0]));
         }
 
         [Fact]
         public void CanRemove_ParentAndChildForeign()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             //remove the forigen and ask about the unique
             ds.Tables["child"].Constraints.Remove(ds.Tables["child"].Constraints[0]);
             Assert.True(ds.Tables["parent"].Constraints.CanRemove(ds.Tables["parent"].Constraints[0]));
@@ -58,7 +58,7 @@ namespace System.Data.Tests
         [Fact]
         public void Clear_Foreign()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             foreach (DataTable dt in ds.Tables)
             {
                 dt.Constraints.Clear();
@@ -92,7 +92,7 @@ namespace System.Data.Tests
         [Fact]
         public void Contains_ByName()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
 
             //changing the constraints's name
 
@@ -386,7 +386,7 @@ namespace System.Data.Tests
             Assert.Equal(1, dt.Constraints.Count);
             Assert.Equal("Constraint1", dt.Constraints[0].ConstraintName);
 
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             Assert.Equal(1, ds.Tables[1].Constraints.Count);
             Assert.Equal(1, ds.Tables[0].Constraints.Count);
 
