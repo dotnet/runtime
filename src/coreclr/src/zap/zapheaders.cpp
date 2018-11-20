@@ -116,7 +116,6 @@ void ZapImage::SaveNativeHeader()
     SetDirectoryData(&nativeHeader.EEInfoTable, m_pEEInfoTable);
     SetDirectoryData(&nativeHeader.HelperTable, m_pHelperTableSection);
     SetDirectoryData(&nativeHeader.ImportSections, m_pImportSectionsTable);
-    SetDirectoryData(&nativeHeader.ImportTable, m_pImportTable);
     SetDirectoryData(&nativeHeader.StubsData, m_pStubsSection);
     SetDirectoryData(&nativeHeader.VersionInfo, m_pVersionInfo);
     SetDirectoryData(&nativeHeader.Dependencies, m_pDependencies);

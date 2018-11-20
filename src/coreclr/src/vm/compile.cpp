@@ -1471,11 +1471,10 @@ HRESULT CEECompileInfo::GetFieldDef(CORINFO_FIELD_HANDLE fieldHandle,
     return S_OK;
 }
 
-void CEECompileInfo::EncodeModuleAsIndexes(CORINFO_MODULE_HANDLE  fromHandle,
-                                           CORINFO_MODULE_HANDLE  handle,
-                                           DWORD*                 pAssemblyIndex,
-                                           DWORD*                 pModuleIndex,
-                                           IMetaDataAssemblyEmit* pAssemblyEmit)
+void CEECompileInfo::EncodeModuleAsIndex(CORINFO_MODULE_HANDLE  fromHandle,
+                                         CORINFO_MODULE_HANDLE  handle,
+                                         DWORD*                 pIndex,
+                                         IMetaDataAssemblyEmit* pAssemblyEmit)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1488,7 +1487,7 @@ void CEECompileInfo::EncodeModuleAsIndexes(CORINFO_MODULE_HANDLE  fromHandle,
     Assembly *assembly = module->GetAssembly();
 
     if (assembly == fromAssembly)
-        *pAssemblyIndex = 0;
+        *pIndex = 0;
     else
     {
         UPTR    result;
@@ -1534,17 +1533,9 @@ void CEECompileInfo::EncodeModuleAsIndexes(CORINFO_MODULE_HANDLE  fromHandle,
             }
         }
 
-        *pAssemblyIndex = RidFromToken(token);
+        *pIndex = RidFromToken(token);
 
         pRefCache->m_sAssemblyRefMap.InsertValue((UPTR) assembly, (UPTR)token);
-    }
-
-    if (module == assembly->GetManifestModule())
-        *pModuleIndex = 0;
-    else
-    {
-        _ASSERTE(module->GetModuleRef() != mdFileNil);
-        *pModuleIndex = RidFromToken(module->GetModuleRef());
     }
 
     COOPERATIVE_TRANSITION_END();

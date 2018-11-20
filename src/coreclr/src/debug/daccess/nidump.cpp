@@ -1122,13 +1122,6 @@ NativeImageDumper::DumpNativeImage()
         DisplayEndArray( "Total Dependencies", COR_INFO );
         DisplayEndStructure(COR_INFO); //CORCOMPILE_VERSION_INFO
 
-        //Now load all dependencies and imports.  There may be more
-        //dependencies than imports, so make sure to get them all.
-        for( COUNT_T i = 0; i < m_decoder.GetNativeImportTableCount(); ++i )
-        {
-            NativeImageDumper::Import * import = OpenImport(i);
-            TraceDumpImport( i, import ); 
-        }
         NativeImageDumper::Dependency * traceDependency = OpenDependency(0);
         TraceDumpDependency( 0, traceDependency );
 
@@ -1266,16 +1259,6 @@ void NativeImageDumper::DumpNative()
         DumpTypes( module );
 }
 
-void NativeImageDumper::TraceDumpImport(int idx, NativeImageDumper::Import * import)
-{
-    IF_OPT(DEBUG_TRACE)
-    {
-        m_display->ErrorPrintF("Import: %d\n", idx);
-        m_display->ErrorPrintF("\tDependency: %p\n", import->dependency);
-        m_display->ErrorPrintF("\twAssemblyRid: %d\n", import->entry->wAssemblyRid);
-        m_display->ErrorPrintF("\twModuleRid %d\n", import->entry->wModuleRid);
-    }
-}
 void NativeImageDumper::TraceDumpDependency(int idx, NativeImageDumper::Dependency * dependency)
 {
     IF_OPT(DEBUG_TRACE)
@@ -1942,21 +1925,12 @@ void NativeImageDumper::FixupBlobToString(RVA rva, SString& buf)
 
         // print assembly/module info
 
-        PTR_CORCOMPILE_IMPORT_TABLE_ENTRY entry = import->entry;
-        if (entry->wAssemblyRid != 0)
-        {
-            mdToken realRef =
-                MapAssemblyRefToManifest(TokenFromRid(entry->wAssemblyRid,
-                                                      mdtAssemblyRef),
-                                         m_assemblyImport);
-            AppendToken(realRef, buf, m_manifestImport);
-            buf.Append( W(" ") );
-        }
-        if (entry->wModuleRid != 0)
-        {
-            AppendToken(TokenFromRid(entry->wModuleRid, mdtFile), buf, pImport);
-            buf.Append( W(" ") );
-        }
+        mdToken realRef =
+            MapAssemblyRefToManifest(TokenFromRid(import->index,
+                                                    mdtAssemblyRef),
+                                        m_assemblyImport);
+        AppendToken(realRef, buf, m_manifestImport);
+        buf.Append( W(" ") );
     }
 
     // print further info
@@ -2231,21 +2205,12 @@ DataToTokenCore:
             int targetModuleIndex = DacSigUncompressData(sig);
             Import *targetImport = OpenImport(targetModuleIndex);
 
-            CORCOMPILE_IMPORT_TABLE_ENTRY *entry = targetImport->entry;
-            if (entry->wAssemblyRid != 0)
-            {
-                mdToken realRef =
-                    MapAssemblyRefToManifest(TokenFromRid(entry->wAssemblyRid,
-                                                          mdtAssemblyRef),
-                                             m_assemblyImport);
-                AppendToken(realRef, buf, m_manifestImport);
-                buf.Append( W(" ") );
-            }
-            if (entry->wModuleRid != 0)
-            {
-                AppendToken(TokenFromRid(entry->wModuleRid, mdtFile), buf,
-                            targetImport->dependency->pImport);
-            }
+            mdToken realRef =
+                MapAssemblyRefToManifest(TokenFromRid(targetImport->index,
+                                                        mdtAssemblyRef),
+                                            m_assemblyImport);
+            AppendToken(realRef, buf, m_manifestImport);
+            buf.Append( W(" ") );
         }
         break;
 
@@ -2464,23 +2429,23 @@ NativeImageDumper::Import * NativeImageDumper::OpenImport(int i)
 {
     if (m_imports == NULL)
     {
-        COUNT_T count = m_decoder.GetNativeImportTableCount();
+        COUNT_T count;
+        m_decoder.GetNativeDependencies(&count);
         m_numImports = count;
         m_imports = new Import [count];
         ZeroMemory(m_imports, count * sizeof(m_imports[0]));
     }
 
-    if (m_imports[i].entry == NULL)
+    if (m_imports[i].index == 0)
     {
         //GetNativeImportFromIndex returns a host pointer.
-        CORCOMPILE_IMPORT_TABLE_ENTRY * entry = m_decoder.GetNativeImportFromIndex(i);
-        m_imports[i].entry = (PTR_CORCOMPILE_IMPORT_TABLE_ENTRY)(TADDR)entry;
+        m_imports[i].index = i;
 
         /*
-        mdToken tok = TokenFromRid(entry->wAssemblyRid, mdtAssemblyRef);
+        mdToken tok = TokenFromRid(entry->index, mdtAssemblyRef);
         Dependency * dependency = GetDependency( MapAssemblyRefToManifest(tok, 
         */
-        Dependency *dependency = GetDependency(TokenFromRid(entry->wAssemblyRid, mdtAssemblyRef));
+        Dependency *dependency = GetDependency(TokenFromRid(i, mdtAssemblyRef));
         m_imports[i].dependency = dependency;
         _ASSERTE(dependency); //Why can this be null?
 
@@ -2497,7 +2462,7 @@ const NativeImageDumper::Dependency *NativeImageDumper::GetDependencyForFixup(RV
     {
         unsigned idx = DacSigUncompressData(sig);
 
-        _ASSERTE(idx >= 0 && idx < (int)m_decoder.GetNativeImportTableCount());
+        _ASSERTE(idx >= 0 && idx < (int)m_numImports);
         return OpenImport(idx)->dependency;
     }
 
@@ -5328,22 +5293,6 @@ void NativeImageDumper::DumpNativeHeader()
 
         }
         DisplayEndArray( NULL, ALWAYS ); //delayLoads
-
-        WRITE_NATIVE_FIELD(ImportTable);
-        DisplayStartArray( "imports", NULL, ALWAYS );
-        PTR_CORCOMPILE_IMPORT_TABLE_ENTRY ent( nativeHeader->ImportTable.VirtualAddress + PTR_TO_TADDR(m_decoder.GetBase()) );
-        for( COUNT_T i = 0; i < nativeHeader->ImportTable.Size / sizeof(*ent); ++i )
-        {
-            DisplayStartStructure( "CORCOMPILE_IMPORT_TABLE_ENTRY",
-                                   DPtrToPreferredAddr(ent + i),
-                                   sizeof(ent[i]), ALWAYS );
-            DisplayWriteFieldUInt( wAssemblyRid, ent[i].wAssemblyRid, 
-                                   CORCOMPILE_IMPORT_TABLE_ENTRY, ALWAYS );
-            DisplayWriteFieldUInt( wModuleRid, ent[i].wModuleRid, 
-                                   CORCOMPILE_IMPORT_TABLE_ENTRY, ALWAYS );
-            DisplayEndStructure( ALWAYS ); //CORCOMPILE_IMPORT_TABLE_ENTRY
-        }
-        DisplayEndArray( NULL, ALWAYS ); //imports
 
         WRITE_NATIVE_FIELD(VersionInfo);
         WRITE_NATIVE_FIELD(DebugMap);

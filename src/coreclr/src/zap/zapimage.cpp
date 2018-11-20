@@ -149,7 +149,6 @@ void ZapImage::InitializeSections()
     m_pStubDispatchDataSection->Place(m_pStubDispatchDataTable);
 
     m_pImportTable = new (GetHeap()) ZapImportTable(this);
-    m_pImportTableSection->Place(m_pImportTable);
 
     m_pGCInfoTable = new (GetHeap()) ZapGCInfoTable(this);
     m_pExceptionInfoLookupTable = new (GetHeap()) ZapExceptionInfoLookupTable(this);
@@ -229,7 +228,6 @@ void ZapImage::InitializeSectionsForReadyToRun()
     }
 
     m_pImportTable = new (GetHeap()) ZapImportTable(this);
-    m_pImportTableSection->Place(m_pImportTable);
 
     for (int i=0; i<ZapImportSectionType_Total; i++)
     {
@@ -1165,8 +1163,6 @@ void ZapImage::PrintStats(LPCWSTR wszOutputFileName)
     ACCUM_SIZE(m_stats->m_dynamicInfoDelayListSize, m_pDelayLoadInfoDelayListSectionEager);
     ACCUM_SIZE(m_stats->m_dynamicInfoDelayListSize, m_pDelayLoadInfoDelayListSectionHot);
     ACCUM_SIZE(m_stats->m_dynamicInfoDelayListSize, m_pDelayLoadInfoDelayListSectionCold);
-
-    ACCUM_SIZE(m_stats->m_importTableSize, m_pImportTable);
 
     ACCUM_SIZE(m_stats->m_debuggingTableSize, m_pDebugSection);
     ACCUM_SIZE(m_stats->m_headerSectionSize, m_pGCSection);
