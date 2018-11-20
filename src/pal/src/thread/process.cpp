@@ -61,6 +61,24 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include <stdint.h>
 #include <dlfcn.h>
 
+#ifdef __linux__
+#include <sys/syscall.h> // __NR_membarrier
+// Ensure __NR_membarrier is defined for portable builds.
+# if !defined(__NR_membarrier)
+#  if defined(__amd64__)
+#   define __NR_membarrier  324
+#  elif defined(__i386__)
+#   define __NR_membarrier  375
+#  elif defined(__arm__)
+#   define __NR_membarrier  389
+#  elif defined(__aarch64__)
+#   define __NR_membarrier  283
+#  elif
+#   error Unknown architecture
+#  endif
+# endif
+#endif
+
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #endif
@@ -96,6 +114,32 @@ CObjectType CorUnix::otProcess(
                 CObjectType::ThreadReleaseHasNoSideEffects,
                 CObjectType::NoOwner
                 );
+
+//
+// Helper membarrier function
+//
+#ifdef __NR_membarrier
+# define membarrier(...)  syscall(__NR_membarrier, __VA_ARGS__)
+#else
+# define membarrier(...)  -ENOSYS
+#endif
+
+enum membarrier_cmd
+{
+    MEMBARRIER_CMD_QUERY                                 = 0,
+    MEMBARRIER_CMD_GLOBAL                                = (1 << 0),
+    MEMBARRIER_CMD_GLOBAL_EXPEDITED                      = (1 << 1),
+    MEMBARRIER_CMD_REGISTER_GLOBAL_EXPEDITED             = (1 << 2),
+    MEMBARRIER_CMD_PRIVATE_EXPEDITED                     = (1 << 3),
+    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED            = (1 << 4),
+    MEMBARRIER_CMD_PRIVATE_EXPEDITED_SYNC_CORE           = (1 << 5),
+    MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED_SYNC_CORE  = (1 << 6)
+};
+
+//
+// Tracks if the OS supports FlushProcessWriteBuffers using membarrier
+//
+static int s_flushUsingMemBarrier = 0;
 
 //
 // Helper memory page used by the FlushProcessWriteBuffers
@@ -3133,12 +3177,27 @@ BOOL
 InitializeFlushProcessWriteBuffers()
 {
     _ASSERTE(s_helperPage == 0);
+    _ASSERTE(s_flushUsingMemBarrier == 0);
+
+    // Starting with Linux kernel 4.14, process memory barriers can be generated
+    // using MEMBARRIER_CMD_PRIVATE_EXPEDITED.
+    int mask = membarrier(MEMBARRIER_CMD_QUERY, 0);
+    if (mask >= 0 &&
+        mask & MEMBARRIER_CMD_PRIVATE_EXPEDITED)
+    {
+        // Register intent to use the private expedited command.
+        if (membarrier(MEMBARRIER_CMD_REGISTER_PRIVATE_EXPEDITED, 0) == 0)
+        {
+            s_flushUsingMemBarrier = TRUE;
+            return TRUE;
+        }
+    }
 
     s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
 
     if(s_helperPage == MAP_FAILED)
     {
-        return false;
+        return FALSE;
     }
 
     // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
@@ -3184,24 +3243,32 @@ VOID
 PALAPI 
 FlushProcessWriteBuffers()
 {   
-    int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
-    FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
+    if (s_flushUsingMemBarrier)
+    {
+        int status = membarrier(MEMBARRIER_CMD_PRIVATE_EXPEDITED, 0);
+        FATAL_ASSERT(status == 0, "Failed to flush using membarrier");
+    }
+    else
+    {
+        int status = pthread_mutex_lock(&flushProcessWriteBuffersMutex);
+        FATAL_ASSERT(status == 0, "Failed to lock the flushProcessWriteBuffersMutex lock");
 
-    // Changing a helper memory page protection from read / write to no access 
-    // causes the OS to issue IPI to flush TLBs on all processors. This also
-    // results in flushing the processor buffers.
-    status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
-    FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
+        // Changing a helper memory page protection from read / write to no access
+        // causes the OS to issue IPI to flush TLBs on all processors. This also
+        // results in flushing the processor buffers.
+        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
+        FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
 
-    // Ensure that the page is dirty before we change the protection so that
-    // we prevent the OS from skipping the global TLB flush.
-    InterlockedIncrement(s_helperPage);
+        // Ensure that the page is dirty before we change the protection so that
+        // we prevent the OS from skipping the global TLB flush.
+        InterlockedIncrement(s_helperPage);
 
-    status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
-    FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
+        status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
+        FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
 
-    status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
-    FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
+        status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
+        FATAL_ASSERT(status == 0, "Failed to unlock the flushProcessWriteBuffersMutex lock");
+    }
 }
 
 /*++
