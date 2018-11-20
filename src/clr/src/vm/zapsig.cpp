@@ -628,9 +628,8 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
 }
 
 #ifndef DACCESS_COMPILE
-Module *ZapSig::DecodeModuleFromIndexes(Module *fromModule,
-                                        DWORD assemblyIndex,
-                                        DWORD moduleIndex)
+Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
+                                      DWORD index)
 {
     CONTRACTL
     {
@@ -642,45 +641,41 @@ Module *ZapSig::DecodeModuleFromIndexes(Module *fromModule,
 
     Assembly *pAssembly = NULL;
 
-    if (assemblyIndex == 0)
+    if (index == 0)
     {
         pAssembly = fromModule->GetAssembly();
     }
     else
     {
-        if (assemblyIndex < fromModule->GetAssemblyRefMax())
+        if (index < fromModule->GetAssemblyRefMax())
         {
-            pAssembly = fromModule->LoadAssembly(GetAppDomain(), RidToToken(assemblyIndex, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->LoadAssembly(GetAppDomain(), RidToToken(index, mdtAssemblyRef))->GetAssembly();
         }
         else
         {
-            assemblyIndex -= fromModule->GetAssemblyRefMax();
+            index -= fromModule->GetAssemblyRefMax();
 
-            pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(assemblyIndex);
+            pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
             if(pAssembly == NULL)
             {
                 AssemblySpec spec;
-                spec.InitializeSpec(TokenFromRid(assemblyIndex, mdtAssemblyRef),
+                spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
                                     fromModule->GetNativeAssemblyImport(),
                                     NULL);
 
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
 
-                fromModule->SetNativeMetadataAssemblyRefInCache(assemblyIndex, pAssembly);            
+                fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);            
             }
         }
     }
 
-    if (moduleIndex == 0)
-        return pAssembly->GetManifestModule();
-    else
-        return pAssembly->GetManifestModule()->LoadModule(GetAppDomain(), RidToToken(moduleIndex, mdtFile))->GetModule();
+    return pAssembly->GetManifestModule();
 }
 
-Module *ZapSig::DecodeModuleFromIndexesIfLoaded(Module *fromModule,
-                                                DWORD assemblyIndex,
-                                                DWORD moduleIndex)
+Module *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
+                                              DWORD index)
 {
     CONTRACTL
     {
@@ -694,19 +689,19 @@ Module *ZapSig::DecodeModuleFromIndexesIfLoaded(Module *fromModule,
     Assembly *pAssembly = NULL;
     mdAssemblyRef tkAssemblyRef;
 
-    if (assemblyIndex == 0)
+    if (index == 0)
         pAssembly = fromModule->GetAssembly();
     else
     {
-        if (assemblyIndex < fromModule->GetAssemblyRefMax())
+        if (index < fromModule->GetAssemblyRefMax())
         {
-            tkAssemblyRef = RidToToken(assemblyIndex, mdtAssemblyRef);
+            tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
             pAssembly = fromModule->GetAssemblyIfLoaded(tkAssemblyRef);
         }
         else
         {
-            assemblyIndex -= fromModule->GetAssemblyRefMax();
-            tkAssemblyRef = RidToToken(assemblyIndex, mdtAssemblyRef);
+            index -= fromModule->GetAssemblyRefMax();
+            tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
             IMDInternalImport *  pMDImportOverride = fromModule->GetNativeAssemblyImport(FALSE);
             if (pMDImportOverride != NULL)
             {
@@ -781,10 +776,7 @@ Module *ZapSig::DecodeModuleFromIndexesIfLoaded(Module *fromModule,
     if (pAssembly == NULL)
         return NULL;
 
-    if (moduleIndex == 0)
-        return pAssembly->GetManifestModule();
-    else
-        return pAssembly->GetManifestModule()->GetModuleIfLoaded(RidToToken(moduleIndex, mdtFile), TRUE, TRUE);
+    return pAssembly->GetManifestModule();
 }
 
 

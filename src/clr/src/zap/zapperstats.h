@@ -66,7 +66,6 @@ class ZapperStats
     unsigned m_helperTableSize;
     unsigned m_dynamicInfoTableSize;
     unsigned m_dynamicInfoDelayListSize;
-    unsigned m_importTableSize;
     unsigned m_debuggingTableSize;
     unsigned m_headerSectionSize;
     unsigned m_codeSectionSize;

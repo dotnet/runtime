@@ -140,13 +140,11 @@ public:
     //--------------------------------------------------------------------
     // Static helper encode/decode helper methods
 
-    static Module *DecodeModuleFromIndexes(Module *fromModule,
-        DWORD assemblyIndex,
-        DWORD moduleIndex);
+    static Module *DecodeModuleFromIndex(Module *fromModule,
+        DWORD index);
 
-    static Module *DecodeModuleFromIndexesIfLoaded(Module *fromModule,
-        DWORD assemblyIndex,
-        DWORD moduleIndex);
+    static Module *DecodeModuleFromIndexIfLoaded(Module *fromModule,
+        DWORD index);
 
     // referencingModule is the module that references the type.
     // fromModule is the module in which the type is defined.

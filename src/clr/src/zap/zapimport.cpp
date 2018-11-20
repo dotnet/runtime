@@ -26,22 +26,6 @@ const DWORD READYTORUN_HELPER_FLAG_VSD = 0x10000000;
 // ZapImportTable
 //
 
-void ZapImportTable::Save(ZapWriter * pZapWriter)
-{
-    for (COUNT_T i = 0; i < m_modules.GetCount(); i++)
-    {
-        ModuleReferenceEntry * pModuleReference = m_modules[i];
-        _ASSERTE(pModuleReference != NULL);
-
-        CORCOMPILE_IMPORT_TABLE_ENTRY entry;
-
-        entry.wAssemblyRid = pModuleReference->m_wAssemblyRid;
-        entry.wModuleRid = pModuleReference->m_wModuleRid;
-
-        pZapWriter->Write(&entry, sizeof(entry));
-    }
-}
-
 ZapImportTable::ModuleReferenceEntry * ZapImportTable::GetModuleReference(CORINFO_MODULE_HANDLE handle)
 {
     ModuleReferenceEntry * pEntry = m_moduleReferences.Lookup(handle);
@@ -59,18 +43,9 @@ ZapImportTable::ModuleReferenceEntry * ZapImportTable::GetModuleReference(CORINF
     pEntry = new (m_pImage->GetHeap()) ModuleReferenceEntry();
     pEntry->m_module = handle;
 
-    DWORD assemblyIndex = 0;
-    DWORD moduleIndex = 0;
-    GetCompileInfo()->EncodeModuleAsIndexes(m_pImage->GetModuleHandle(), handle,
-                                                        &assemblyIndex, &moduleIndex,
+    GetCompileInfo()->EncodeModuleAsIndex(m_pImage->GetModuleHandle(), handle,
+                                                        &pEntry->m_index,
                                                         m_pImage->GetAssemblyEmit());
-    _ASSERTE(assemblyIndex <= USHRT_MAX);
-    _ASSERTE(moduleIndex <= USHRT_MAX);
-    pEntry->m_wAssemblyRid = (USHORT) assemblyIndex;
-    pEntry->m_wModuleRid = (USHORT) moduleIndex;
-
-    pEntry->m_index = m_modules.GetCount();
-    m_modules.Append(pEntry);
 
     m_moduleReferences.Add(pEntry);
 

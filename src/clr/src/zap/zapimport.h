@@ -143,7 +143,7 @@ public:
 //
 // There is a single instance of it per image.
 //
-class ZapImportTable : public ZapNode
+class ZapImportTable
 {
     //
     // Hashtable key of the import
@@ -203,9 +203,6 @@ class ZapImportTable : public ZapNode
     {
         CORINFO_MODULE_HANDLE m_module;
         DWORD m_index;
-
-        USHORT m_wAssemblyRid;
-        USHORT m_wModuleRid;
     };
 
     class ModuleReferenceTraits : public NoRemoveSHashTraits< DefaultSHashTraits<ModuleReferenceEntry *> >
@@ -307,7 +304,6 @@ class ZapImportTable : public ZapNode
     SHash< NoRemoveSHashTraits < ZapBlob::SHashTraits > > m_blobs; // Interned ZapBlos for signatures and fixups
 
     ModuleReferenceTable m_moduleReferences;
-    SArray<ModuleReferenceEntry *> m_modules;   // Secondary table of ModuleReferences to allow fast index based lookup
 
     SHash< NoRemoveSHashTraits < ZapBlob::SHashTraits > > m_genericSignatures;
 
@@ -446,23 +442,6 @@ public:
     ZapImport * GetPlacedHelperImport(ReadyToRunHelper helperNum);
     ZapImport * GetHelperImport(ReadyToRunHelper helperNum);
 #endif
-
-    virtual DWORD GetSize()
-    {
-        return m_modules.GetCount() * sizeof(CORCOMPILE_IMPORT_TABLE_ENTRY);
-    }
-
-    virtual UINT GetAlignment()
-    {
-        return sizeof(DWORD);
-    }
-
-    virtual ZapNodeType GetType()
-    {
-        return ZapNodeType_ImportTable;
-    }
-
-    virtual void Save(ZapWriter * pZapWriter);
 };
 
 //
