@@ -2,62 +2,45 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.SymbolStore;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    using System.Runtime.InteropServices;
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics.SymbolStore;
-    using System.Globalization;
-    using System.Reflection;
-    using System.IO;
-    using System.Resources;
-    using System.Security;
-    using System.Runtime.Serialization;
-    using System.Text;
-    using System.Threading;
-    using System.Runtime.Versioning;
-    using System.Runtime.CompilerServices;
-    using System.Diagnostics;
-
     internal sealed class InternalModuleBuilder : RuntimeModule
     {
-        #region Private Data Members
-        // WARNING!! WARNING!!
         // InternalModuleBuilder should not contain any data members as its reflectbase is the same as Module.
-        #endregion
 
         private InternalModuleBuilder() { }
 
-        #region object overrides
         public override bool Equals(object obj)
         {
             if (obj == null)
+            {
                 return false;
+            }
 
             if (obj is InternalModuleBuilder)
+            {
                 return ((object)this == obj);
+            }
 
             return obj.Equals(this);
         }
+
         // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() { return base.GetHashCode(); }
-        #endregion
+        public override int GetHashCode() => base.GetHashCode();
     }
 
     // deliberately not [serializable]
     public class ModuleBuilder : Module
     {
-        #region FCalls
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr nCreateISymWriterForDynamicModule(Module module, string filename);
 
-        #endregion
-
-        #region Internal Static Members
         internal static string UnmangleTypeName(string typeName)
         {
             // Gets the original type name, without '+' name mangling.
@@ -67,16 +50,22 @@ namespace System.Reflection.Emit
             {
                 i = typeName.LastIndexOf('+', i);
                 if (i == -1)
+                {
                     break;
+                }
 
                 bool evenSlashes = true;
                 int iSlash = i;
                 while (typeName[--iSlash] == '\\')
+                {
                     evenSlashes = !evenSlashes;
+                }
 
                 // Even number of slashes means this '+' is a name separator
                 if (evenSlashes)
+                {
                     break;
+                }
 
                 i = iSlash;
             }
@@ -84,39 +73,37 @@ namespace System.Reflection.Emit
             return typeName.Substring(i + 1);
         }
 
-        #endregion
-
         #region Internal Data Members
-        // m_TypeBuilder contains both TypeBuilder and EnumBuilder objects
-        private Dictionary<string, Type> m_TypeBuilderDict;
-        private ISymbolWriter m_iSymWriter;
-        internal ModuleBuilderData m_moduleData;
-        internal InternalModuleBuilder m_internalModuleBuilder;
+
+        // _TypeBuilder contains both TypeBuilder and EnumBuilder objects
+        private Dictionary<string, Type> _typeBuilderDict;
+        private ISymbolWriter _iSymWriter;
+        internal ModuleBuilderData _moduleData;
+        internal InternalModuleBuilder _internalModuleBuilder;
         // This is the "external" AssemblyBuilder
         // only the "external" ModuleBuilder has this set
-        private AssemblyBuilder m_assemblyBuilder;
-        internal AssemblyBuilder ContainingAssemblyBuilder { get { return m_assemblyBuilder; } }
+        private readonly AssemblyBuilder _assemblyBuilder;
+        internal AssemblyBuilder ContainingAssemblyBuilder => _assemblyBuilder;
+
         #endregion
 
         #region Constructor
+
         internal ModuleBuilder(AssemblyBuilder assemblyBuilder, InternalModuleBuilder internalModuleBuilder)
         {
-            m_internalModuleBuilder = internalModuleBuilder;
-            m_assemblyBuilder = assemblyBuilder;
+            _internalModuleBuilder = internalModuleBuilder;
+            _assemblyBuilder = assemblyBuilder;
         }
+
         #endregion
 
         #region Private Members
-        internal void AddType(string name, Type type)
-        {
-            m_TypeBuilderDict.Add(name, type);
-        }
+        internal void AddType(string name, Type type) => _typeBuilderDict.Add(name, type);
 
         internal void CheckTypeNameConflict(string strTypeName, Type enclosingType)
         {
-            Type foundType = null;
-            if (m_TypeBuilderDict.TryGetValue(strTypeName, out foundType) &&
-                object.ReferenceEquals(foundType.DeclaringType, enclosingType))
+            if (_typeBuilderDict.TryGetValue(strTypeName, out Type foundType) &&
+                ReferenceEquals(foundType.DeclaringType, enclosingType))
             {
                 // Cannot have two types with the same name
                 throw new ArgumentException(SR.Argument_DuplicateTypeName);
@@ -126,7 +113,6 @@ namespace System.Reflection.Emit
         private Type GetType(string strFormat, Type baseType)
         {
             // This function takes a string to describe the compound type, such as "[,][]", and a baseType.
-
             if (strFormat == null || strFormat.Equals(string.Empty))
             {
                 return baseType;
@@ -136,7 +122,6 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType(strFormat, baseType, 0);
         }
 
-
         internal void CheckContext(params Type[][] typess)
         {
             ContainingAssemblyBuilder.CheckContext(typess);
@@ -145,7 +130,6 @@ namespace System.Reflection.Emit
         {
             ContainingAssemblyBuilder.CheckContext(types);
         }
-
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int GetTypeRef(RuntimeModule module, string strFullName, RuntimeModule refedModule, string strRefedModuleFileName, int tkResolution);
@@ -213,21 +197,25 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
+
         internal virtual Type FindTypeBuilderWithName(string strTypeName, bool ignoreCase)
         {
             if (ignoreCase)
             {
-                foreach (string name in m_TypeBuilderDict.Keys)
+                foreach (string name in _typeBuilderDict.Keys)
                 {
                     if (string.Equals(name, strTypeName, StringComparison.OrdinalIgnoreCase))
-                        return m_TypeBuilderDict[name];
+                    {
+                        return _typeBuilderDict[name];
+                    }
                 }
             }
             else
             {
-                Type foundType;
-                if (m_TypeBuilderDict.TryGetValue(strTypeName, out foundType))
+                if (_typeBuilderDict.TryGetValue(strTypeName, out Type foundType))
+                {
                     return foundType;
+                }
             }
 
             return null;
@@ -236,7 +224,6 @@ namespace System.Reflection.Emit
         private int GetTypeRefNested(Type type, Module refedModule, string strRefedModuleFileName)
         {
             // This function will generate correct TypeRef token for top level type and nested type.
-
             Type enclosingType = type.DeclaringType;
             int tkResolution = 0;
             string typeName = type.FullName;
@@ -256,9 +243,10 @@ namespace System.Reflection.Emit
         internal MethodToken InternalGetConstructorToken(ConstructorInfo con, bool usingRef)
         {
             // Helper to get constructor token. If usingRef is true, we will never use the def token
-
             if (con == null)
+            {
                 throw new ArgumentNullException(nameof(con));
+            }
 
             int tr;
             int mr = 0;
@@ -287,7 +275,6 @@ namespace System.Reflection.Emit
             {
                 // constructor is not a dynamic field
                 // We need to get the TypeRef tokens
-
                 tr = GetTypeTokenInternal(con.ReflectedType).Token;
                 mr = GetMemberRefOfMethodInfo(tr, rtCon);
             }
@@ -297,7 +284,9 @@ namespace System.Reflection.Emit
                 // go through the slower code path, i.e. retrieve parameters and form signature helper.
                 ParameterInfo[] parameters = con.GetParameters();
                 if (parameters == null)
+                {
                     throw new ArgumentException(SR.Argument_InvalidConstructorInfo);
+                }
 
                 Type[] parameterTypes = new Type[parameters.Length];
                 Type[][] requiredCustomModifiers = new Type[parameters.Length][];
@@ -306,7 +295,9 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     if (parameters[i] == null)
+                    {
                         throw new ArgumentException(SR.Argument_InvalidConstructorInfo);
+                    }
 
                     parameterTypes[i] = parameters[i].ParameterType;
                     requiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
@@ -316,56 +307,33 @@ namespace System.Reflection.Emit
                 tr = GetTypeTokenInternal(con.ReflectedType).Token;
 
                 SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(this, con.CallingConvention, null, null, null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
-                int length;
-                byte[] sigBytes = sigHelp.InternalGetSignature(out length);
-
+                byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
                 mr = GetMemberRefFromSignature(tr, con.Name, sigBytes, length);
             }
 
             return new MethodToken(mr);
         }
 
-        internal void Init(string strModuleName, string strFileName, int tkFile)
+        internal void Init(string strModuleName)
         {
-            m_moduleData = new ModuleBuilderData(this, strModuleName, strFileName, tkFile);
-            m_TypeBuilderDict = new Dictionary<string, Type>();
+            _moduleData = new ModuleBuilderData(this, strModuleName);
+            _typeBuilderDict = new Dictionary<string, Type>();
         }
 
-        internal void SetSymWriter(ISymbolWriter writer)
-        {
-            m_iSymWriter = writer;
-        }
+        internal void SetSymWriter(ISymbolWriter writer) => _iSymWriter = writer;
 
-        internal object SyncRoot
-        {
-            get
-            {
-                return ContainingAssemblyBuilder.SyncRoot;
-            }
-        }
+        internal object SyncRoot => ContainingAssemblyBuilder.SyncRoot;
 
         #endregion
 
         #region Module Overrides
 
-        // m_internalModuleBuilder is null iff this is a "internal" ModuleBuilder
-        internal InternalModuleBuilder InternalModule
-        {
-            get
-            {
-                return m_internalModuleBuilder;
-            }
-        }
+        // _internalModuleBuilder is null iff this is a "internal" ModuleBuilder
+        internal InternalModuleBuilder InternalModule => _internalModuleBuilder;
 
-        protected override ModuleHandle GetModuleHandleImpl()
-        {
-            return new ModuleHandle(GetNativeHandle());
-        }
+        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(GetNativeHandle());
 
-        internal RuntimeModule GetNativeHandle()
-        {
-            return InternalModule.GetNativeHandle();
-        }
+        internal RuntimeModule GetNativeHandle() => InternalModule.GetNativeHandle();
 
         private static RuntimeModule GetRuntimeModuleFromModule(Module m)
         {
@@ -388,7 +356,9 @@ namespace System.Reflection.Emit
             if (method.IsGenericMethod)
             {
                 if (!method.IsGenericMethodDefinition)
+                {
                     throw new InvalidOperationException();
+                }
 
                 cGenericParameters = method.GetGenericArguments().Length;
             }
@@ -435,14 +405,14 @@ namespace System.Reflection.Emit
                         methDef = masmi.GetGenericMethodDefinition();
                         methDef = methDef.Module.ResolveMethod(
                             method.MetadataToken,
-                            methDef.DeclaringType != null ? methDef.DeclaringType.GetGenericArguments() : null,
+                            methDef.DeclaringType?.GetGenericArguments(),
                             methDef.GetGenericArguments());
                     }
                     else
                     {
                         methDef = method.Module.ResolveMethod(
                             method.MetadataToken,
-                            method.DeclaringType != null ? method.DeclaringType.GetGenericArguments() : null,
+                            method.DeclaringType?.GetGenericArguments(),
                             null);
                     }
                 }
@@ -456,14 +426,12 @@ namespace System.Reflection.Emit
                 returnType = MethodBuilder.GetMethodBaseReturnType(method);
             }
 
-            int sigLength;
             byte[] sigBytes = GetMemberRefSignature(method.CallingConvention, returnType, parameterTypes,
-                optionalParameterTypes, cGenericParameters).InternalGetSignature(out sigLength);
+                optionalParameterTypes, cGenericParameters).InternalGetSignature(out int sigLength);
 
             if (method.DeclaringType.IsGenericType)
             {
-                int length;
-                byte[] sig = SignatureHelper.GetTypeSigToken(this, method.DeclaringType).InternalGetSignature(out length);
+                byte[] sig = SignatureHelper.GetTypeSigToken(this, method.DeclaringType).InternalGetSignature(out int length);
                 tkParent = GetTokenFromTypeSpec(sig, length);
             }
             else if (!method.Module.Equals(this))
@@ -517,16 +485,13 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region object overrides
-        public override bool Equals(object obj)
-        {
-            return InternalModule.Equals(obj);
-        }
+        public override bool Equals(object obj) => InternalModule.Equals(obj);
+
         // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() { return InternalModule.GetHashCode(); }
-        #endregion
+        public override int GetHashCode() => InternalModule.GetHashCode();
 
         #region ICustomAttributeProvider Members
+
         public override object[] GetCustomAttributes(bool inherit)
         {
             return InternalModule.GetCustomAttributes(inherit);
@@ -546,6 +511,7 @@ namespace System.Reflection.Emit
         {
             return InternalModule.GetCustomAttributesData();
         }
+
         #endregion
 
         #region Module Overrides
@@ -560,11 +526,11 @@ namespace System.Reflection.Emit
 
         internal Type[] GetTypesNoLock()
         {
-            int size = m_TypeBuilderDict.Count;
-            Type[] typeList = new Type[m_TypeBuilderDict.Count];
+            int size = _typeBuilderDict.Count;
+            Type[] typeList = new Type[_typeBuilderDict.Count];
             int i = 0;
 
-            foreach (Type builder in m_TypeBuilderDict.Values)
+            foreach (Type builder in _typeBuilderDict.Values)
             {
                 EnumBuilder enumBldr = builder as EnumBuilder;
                 TypeBuilder tmpTypeBldr;
@@ -668,7 +634,6 @@ namespace System.Reflection.Emit
             {
                 // try to see if reflection can find the base type. It can be such that reflection
                 // does not support the complex format string yet!
-
                 baseType = InternalModule.GetType(baseName, false, ignoreCase);
             }
 
@@ -683,7 +648,7 @@ namespace System.Reflection.Emit
                     int size;
                     List<ModuleBuilder> modList;
 
-                    modList = ContainingAssemblyBuilder.m_assemblyData.m_moduleBuilderList;
+                    modList = ContainingAssemblyBuilder._assemblyData._moduleBuilderList;
                     size = modList.Count;
                     for (int i = 0; i < size && baseType == null; i++)
                     {
@@ -692,22 +657,20 @@ namespace System.Reflection.Emit
                     }
                 }
                 if (baseType == null)
+                {
                     return null;
+                }
             }
 
             if (parameters == null)
+            {
                 return baseType;
+            }
 
             return GetType(parameters, baseType);
         }
 
-        public override string FullyQualifiedName
-        {
-            get
-            {
-                return m_moduleData.m_strFileName;
-            }
-        }
+        public override string FullyQualifiedName => _moduleData._moduleName;
 
         public override byte[] ResolveSignature(int metadataToken)
         {
@@ -744,34 +707,13 @@ namespace System.Reflection.Emit
             InternalModule.GetPEKind(out peKind, out machine);
         }
 
-        public override int MDStreamVersion
-        {
-            get
-            {
-                return InternalModule.MDStreamVersion;
-            }
-        }
+        public override int MDStreamVersion => InternalModule.MDStreamVersion;
 
-        public override Guid ModuleVersionId
-        {
-            get
-            {
-                return InternalModule.ModuleVersionId;
-            }
-        }
+        public override Guid ModuleVersionId => InternalModule.ModuleVersionId;
 
-        public override int MetadataToken
-        {
-            get
-            {
-                return InternalModule.MetadataToken;
-            }
-        }
+        public override int MetadataToken => InternalModule.MetadataToken;
 
-        public override bool IsResource()
-        {
-            return InternalModule.IsResource();
-        }
+        public override bool IsResource() => InternalModule.IsResource();
 
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
@@ -795,35 +737,18 @@ namespace System.Reflection.Emit
             return InternalModule.GetMethodInternal(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
-        public override string ScopeName
-        {
-            get
-            {
-                return InternalModule.ScopeName;
-            }
-        }
+        public override string ScopeName => InternalModule.ScopeName;
 
-        public override string Name
-        {
-            get
-            {
-                return InternalModule.Name;
-            }
-        }
+        public override string Name => InternalModule.Name;
 
-        public override Assembly Assembly
-        {
-            get
-            {
-                return m_assemblyBuilder;
-            }
-        }
+        public override Assembly Assembly => _assemblyBuilder;
 
         #endregion
 
         #region Public Members
 
         #region Define Type
+
         public TypeBuilder DefineType(string name)
         {
             lock (SyncRoot)
@@ -844,7 +769,6 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                // Why do we only call CheckContext here? Why don't we call it in the other overloads?
                 CheckContext(parent);
 
                 return DefineTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
@@ -907,17 +831,8 @@ namespace System.Reflection.Emit
                 EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
 
                 // This enum is not generic, nested, and cannot have any element type.
-
-                // We ought to be able to make the following assertions:
-                //
-                //  Debug.Assert(name == enumBuilder.FullName);
-                //  Debug.Assert(enumBuilder.m_typeBuilder == m_TypeBuilderDict[name]);
-                //
-                // but we can't because an embedded null ('\0') in the name will cause it to be truncated
-                // incorrectly.  Fixing that would be a breaking change.
-
-                // Replace the TypeBuilder object in m_TypeBuilderDict with this EnumBuilder object.
-                m_TypeBuilderDict[name] = enumBuilder;
+                // Replace the TypeBuilder object in _typeBuilderDict with this EnumBuilder object.
+                _typeBuilderDict[name] = enumBuilder;
 
                 return enumBuilder;
             }
@@ -930,9 +845,6 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        #region Define Resource
-
-        #endregion
         #region Define Global Method
 
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,
@@ -948,7 +860,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                //Global methods must be static.        
+                // Global methods must be static.
                 if ((attributes & MethodAttributes.Static) == 0)
                 {
                     throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
@@ -957,8 +869,7 @@ namespace System.Reflection.Emit
                 CheckContext(returnType);
                 CheckContext(parameterTypes);
 
-                m_moduleData.m_fHasGlobal = true;
-                return m_moduleData.m_globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
+                return _moduleData._globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
             }
         }
 
@@ -989,26 +900,29 @@ namespace System.Reflection.Emit
             Type returnType, Type[] requiredReturnTypeCustomModifiers, Type[] optionalReturnTypeCustomModifiers,
             Type[] parameterTypes, Type[][] requiredParameterTypeCustomModifiers, Type[][] optionalParameterTypeCustomModifiers)
         {
-            if (m_moduleData.m_fGlobalBeenCreated == true)
+            if (_moduleData._hasGlobalBeenCreated)
+            {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
-
+            }
             if (name == null)
+            {
                 throw new ArgumentNullException(nameof(name));
-
+            }
             if (name.Length == 0)
+            {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
-
+            }
             if ((attributes & MethodAttributes.Static) == 0)
+            {
                 throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
+            }
 
             CheckContext(returnType);
             CheckContext(requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes);
             CheckContext(requiredParameterTypeCustomModifiers);
             CheckContext(optionalParameterTypeCustomModifiers);
 
-            m_moduleData.m_fHasGlobal = true;
-
-            return m_moduleData.m_globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
+            return _moduleData._globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
                 returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
                 parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
         }
@@ -1023,13 +937,13 @@ namespace System.Reflection.Emit
 
         private void CreateGlobalFunctionsNoLock()
         {
-            if (m_moduleData.m_fGlobalBeenCreated)
+            if (_moduleData._hasGlobalBeenCreated)
             {
                 // cannot create globals twice
                 throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
             }
-            m_moduleData.m_globalTypeBuilder.CreateType();
-            m_moduleData.m_fGlobalBeenCreated = true;
+            _moduleData._globalTypeBuilder.CreateType();
+            _moduleData._hasGlobalBeenCreated = true;
         }
 
         #endregion
@@ -1053,13 +967,12 @@ namespace System.Reflection.Emit
             // This method will define an initialized Data in .sdata. 
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field.
-            if (m_moduleData.m_fGlobalBeenCreated == true)
+            if (_moduleData._hasGlobalBeenCreated == true)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
 
-            m_moduleData.m_fHasGlobal = true;
-            return m_moduleData.m_globalTypeBuilder.DefineInitializedData(name, data, attributes);
+            return _moduleData._globalTypeBuilder.DefineInitializedData(name, data, attributes);
         }
 
         public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
@@ -1076,25 +989,25 @@ namespace System.Reflection.Emit
             // We will create a fake TypeDef to represent the data with size. This TypeDef
             // will be the signature for the Field. 
 
-            if (m_moduleData.m_fGlobalBeenCreated == true)
+            if (_moduleData._hasGlobalBeenCreated)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_GlobalsHaveBeenCreated);
             }
 
-            m_moduleData.m_fHasGlobal = true;
-            return m_moduleData.m_globalTypeBuilder.DefineUninitializedData(name, size, attributes);
+            return _moduleData._globalTypeBuilder.DefineUninitializedData(name, size, attributes);
         }
 
         #endregion
 
         #region GetToken
+
         // For a generic type definition, we should return the token for the generic type definition itself in two cases: 
         //   1. GetTypeToken
         //   2. ldtoken (see ILGenerator)
         // For all other occasions we should return the generic type instantiated on its formal parameters.
         internal TypeToken GetTypeTokenInternal(Type type)
         {
-            return GetTypeTokenInternal(type, false);
+            return GetTypeTokenInternal(type, getGenericDefinition: false);
         }
 
         private TypeToken GetTypeTokenInternal(Type type, bool getGenericDefinition)
@@ -1107,13 +1020,15 @@ namespace System.Reflection.Emit
 
         public TypeToken GetTypeToken(Type type)
         {
-            return GetTypeTokenInternal(type, true);
+            return GetTypeTokenInternal(type, getGenericDefinition: true);
         }
 
         private TypeToken GetTypeTokenWorkerNoLock(Type type, bool getGenericDefinition)
         {
             if (type == null)
+            {
                 throw new ArgumentNullException(nameof(type));
+            }
 
             CheckContext(type);
 
@@ -1126,17 +1041,17 @@ namespace System.Reflection.Emit
             // multiple calles to this method with the same class have no additional side affects.
             // This function is optimized to use the TypeDef token if Type is within the same module.
             // We should also be aware of multiple dynamic modules and multiple implementation of Type!!!
-
             if (type.IsByRef)
+            {
                 throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
+            }
 
             if ((type.IsGenericType && (!type.IsGenericTypeDefinition || !getGenericDefinition)) ||
                 type.IsGenericParameter ||
                 type.IsArray ||
                 type.IsPointer)
             {
-                int length;
-                byte[] sig = SignatureHelper.GetTypeSigToken(this, type).InternalGetSignature(out length);
+                byte[] sig = SignatureHelper.GetTypeSigToken(this, type).InternalGetSignature(out int length);
                 return new TypeToken(GetTokenFromTypeSpec(sig, length));
             }
 
@@ -1149,16 +1064,11 @@ namespace System.Reflection.Emit
                 GenericTypeParameterBuilder paramBuilder = null;
 
                 EnumBuilder enumBuilder = type as EnumBuilder;
-                if (enumBuilder != null)
-                    typeBuilder = enumBuilder.m_typeBuilder;
-                else
-                    typeBuilder = type as TypeBuilder;
+                typeBuilder = enumBuilder != null ? enumBuilder.m_typeBuilder : type as TypeBuilder;
 
                 if (typeBuilder != null)
                 {
-                    // optimization: if the type is defined in this module,
-                    // just return the token
-                    //
+                    // If the type is defined in this module, just return the token.
                     return typeBuilder.TypeToken;
                 }
                 else if ((paramBuilder = type as GenericTypeParameterBuilder) != null)
@@ -1171,11 +1081,10 @@ namespace System.Reflection.Emit
 
             // After this point, the referenced module is not the same as the referencing
             // module.
-            //
             ModuleBuilder refedModuleBuilder = refedModule as ModuleBuilder;
 
-            string strRefedModuleFileName = string.Empty;
-            if (refedModule.Assembly.Equals(this.Assembly))
+            string referencedModuleFileName = string.Empty;
+            if (refedModule.Assembly.Equals(Assembly))
             {
                 // if the referenced module is in the same assembly, the resolution
                 // scope of the type token will be a module ref, we will need
@@ -1185,12 +1094,12 @@ namespace System.Reflection.Emit
                 // the file name of the referenced module.
                 if (refedModuleBuilder == null)
                 {
-                    refedModuleBuilder = this.ContainingAssemblyBuilder.GetModuleBuilder((InternalModuleBuilder)refedModule);
+                    refedModuleBuilder = ContainingAssemblyBuilder.GetModuleBuilder((InternalModuleBuilder)refedModule);
                 }
-                strRefedModuleFileName = refedModuleBuilder.m_moduleData.m_strFileName;
+                referencedModuleFileName = refedModuleBuilder._moduleData._moduleName;
             }
 
-            return new TypeToken(GetTypeRefNested(type, refedModule, strRefedModuleFileName));
+            return new TypeToken(GetTypeRefNested(type, refedModule, referencedModuleFileName));
         }
 
         public TypeToken GetTypeToken(string name)
@@ -1229,7 +1138,9 @@ namespace System.Reflection.Emit
             // Return a MemberRef token if MethodInfo is not defined in this module. Or 
             // return the MethodDef token. 
             if (method == null)
+            {
                 throw new ArgumentNullException(nameof(method));
+            }
 
             int tr;
             int mr = 0;
@@ -1241,10 +1152,14 @@ namespace System.Reflection.Emit
             {
                 int methodToken = methBuilder.MetadataTokenInternal;
                 if (method.Module.Equals(this))
+                {
                     return new MethodToken(methodToken);
+                }
 
                 if (method.DeclaringType == null)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_CannotImportGlobalFromDifferentModule);
+                }
 
                 // method is defined in a different module
                 tr = getGenericTypeDefinition ? GetTypeToken(method.DeclaringType).Token : GetTypeTokenInternal(method.DeclaringType).Token;
@@ -1268,7 +1183,9 @@ namespace System.Reflection.Emit
 
                 // We need to get the TypeRef tokens
                 if (declaringType == null)
+                {
                     throw new InvalidOperationException(SR.InvalidOperation_CannotImportGlobalFromDifferentModule);
+                }
 
                 RuntimeMethodInfo rtMeth = null;
 
@@ -1323,8 +1240,7 @@ namespace System.Reflection.Emit
                         sigHelp = SignatureHelper.GetMethodSigHelper(this, method.ReturnType, parameterTypes);
                     }
 
-                    int length;
-                    byte[] sigBytes = sigHelp.InternalGetSignature(out length);
+                    byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
                     mr = GetMemberRefFromSignature(tr, method.Name, sigBytes, length);
                 }
             }
@@ -1351,7 +1267,7 @@ namespace System.Reflection.Emit
                     methodInfoUnbound = methodInfo.GetGenericMethodDefinition();
                 }
 
-                if (!this.Equals(methodInfoUnbound.Module)
+                if (!Equals(methodInfoUnbound.Module)
                     || (methodInfoUnbound.DeclaringType != null && methodInfoUnbound.DeclaringType.IsGenericType))
                 {
                     tk = GetMemberRefToken(methodInfoUnbound, null);
@@ -1368,12 +1284,10 @@ namespace System.Reflection.Emit
                 }
 
                 // Create signature of method instantiation M<Bar>
-                int sigLength;
-                byte[] sigBytes = SignatureHelper.GetMethodSpecSigHelper(
-                    this, methodInfo.GetGenericArguments()).InternalGetSignature(out sigLength);
-
                 // Create MethodSepc M<Bar> with parent G?.M<S> 
-                tk = TypeBuilder.DefineMethodSpec(this.GetNativeHandle(), tk, sigBytes, sigLength);
+                byte[] sigBytes = SignatureHelper.GetMethodSpecSigHelper(
+                    this, methodInfo.GetGenericArguments()).InternalGetSignature(out int sigLength);
+                tk = TypeBuilder.DefineMethodSpec(GetNativeHandle(), tk, sigBytes, sigLength);
             }
             else
             {
@@ -1411,30 +1325,30 @@ namespace System.Reflection.Emit
             Type returnType, Type[] parameterTypes)
         {
             if (arrayClass == null)
+            {
                 throw new ArgumentNullException(nameof(arrayClass));
-
+            }
             if (methodName == null)
+            {
                 throw new ArgumentNullException(nameof(methodName));
-
+            }
             if (methodName.Length == 0)
+            {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(methodName));
-
-            if (arrayClass.IsArray == false)
+            }
+            if (!arrayClass.IsArray)
+            {
                 throw new ArgumentException(SR.Argument_HasToBeArrayClass);
+            }
 
             CheckContext(returnType, arrayClass);
             CheckContext(parameterTypes);
 
             // Return a token for the MethodInfo for a method on an Array.  This is primarily
             // used to get the LoadElementAddress method. 
-
-            int length;
-
             SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(
                 this, callingConvention, returnType, null, null, parameterTypes, null, null);
-
-            byte[] sigBytes = sigHelp.InternalGetSignature(out length);
-
+            byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
             TypeToken typeSpec = GetTypeTokenInternal(arrayClass);
 
             return new MethodToken(GetArrayMethodToken(GetNativeHandle(),
@@ -1489,8 +1403,7 @@ namespace System.Reflection.Emit
             {
                 if (field.DeclaringType != null && field.DeclaringType.IsGenericType)
                 {
-                    int length;
-                    byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out length);
+                    byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out int length);
                     tr = GetTokenFromTypeSpec(sig, length);
                     mr = GetMemberRef(this, tr, fdBuilder.GetToken().Token);
                 }
@@ -1513,7 +1426,6 @@ namespace System.Reflection.Emit
             else if ((rtField = field as RuntimeFieldInfo) != null)
             {
                 // FieldInfo is not an dynamic field
-
                 // We need to get the TypeRef tokens
                 if (field.DeclaringType == null)
                 {
@@ -1522,8 +1434,7 @@ namespace System.Reflection.Emit
 
                 if (field.DeclaringType != null && field.DeclaringType.IsGenericType)
                 {
-                    int length;
-                    byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out length);
+                    byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out int length);
                     tr = GetTokenFromTypeSpec(sig, length);
                     mr = GetMemberRefOfFieldInfo(tr, field.DeclaringType.GetTypeHandleInternal(), rtField);
                 }
@@ -1536,8 +1447,7 @@ namespace System.Reflection.Emit
             else if ((fOnTB = field as FieldOnTypeBuilderInstantiation) != null)
             {
                 FieldInfo fb = fOnTB.FieldInfo;
-                int length;
-                byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out length);
+                byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out int length);
                 tr = GetTokenFromTypeSpec(sig, length);
                 mr = GetMemberRef(fb.ReflectedType.Module, tr, fOnTB.MetadataTokenInternal);
             }
@@ -1550,9 +1460,7 @@ namespace System.Reflection.Emit
 
                 sigHelp.AddArgument(field.FieldType, field.GetRequiredCustomModifiers(), field.GetOptionalCustomModifiers());
 
-                int length;
-                byte[] sigBytes = sigHelp.InternalGetSignature(out length);
-
+                byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
                 mr = GetMemberRefFromSignature(tr, field.Name, sigBytes, length);
             }
 
@@ -1575,28 +1483,27 @@ namespace System.Reflection.Emit
         {
             // Define signature token given a signature helper. This will define a metadata
             // token for the signature described by SignatureHelper.
-
             if (sigHelper == null)
             {
                 throw new ArgumentNullException(nameof(sigHelper));
             }
 
-            int sigLength;
-            byte[] sigBytes;
-
             // get the signature in byte form
-            sigBytes = sigHelper.InternalGetSignature(out sigLength);
-            return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), sigBytes, sigLength), this);
+            byte[] sigBytes = sigHelper.InternalGetSignature(out int sigLength);
+            return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), sigBytes, sigLength));
         }
+
         public SignatureToken GetSignatureToken(byte[] sigBytes, int sigLength)
         {
             if (sigBytes == null)
+            {
                 throw new ArgumentNullException(nameof(sigBytes));
+            }
 
             byte[] localSigBytes = new byte[sigBytes.Length];
             Buffer.BlockCopy(sigBytes, 0, localSigBytes, 0, sigBytes.Length);
 
-            return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), localSigBytes, sigLength), this);
+            return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), localSigBytes, sigLength));
         }
 
         #endregion
@@ -1606,14 +1513,18 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
             if (con == null)
+            {
                 throw new ArgumentNullException(nameof(con));
+            }
             if (binaryAttribute == null)
+            {
                 throw new ArgumentNullException(nameof(binaryAttribute));
+            }
 
             TypeBuilder.DefineCustomAttribute(
                 this,
                 1,                                          // This is hard coding the module token to 1
-                this.GetConstructorToken(con).Token,
+                GetConstructorToken(con).Token,
                 binaryAttribute,
                 false, false);
         }
@@ -1653,20 +1564,15 @@ namespace System.Reflection.Emit
         // writer access can cause AVs and other problems.  The writer APIs should not be callable
         // directly by partial-trust code, but if they could this would be a security hole.  
         // Regardless, this is a reliability bug.  
-        // 
-        // For these reasons, we should consider making this API internal in Arrowhead
-        // (as it is in Silverlight), and consider validating that we're within a call
-        // to TypeBuilder.CreateType whenever this is used.
-        internal ISymbolWriter GetSymWriter()
-        {
-            return m_iSymWriter;
-        }
+        internal ISymbolWriter GetSymWriter() => _iSymWriter;
 
         public ISymbolDocumentWriter DefineDocument(string url, Guid language, Guid languageVendor, Guid documentType)
         {
             // url cannot be null but can be an empty string 
             if (url == null)
+            {
                 throw new ArgumentNullException(nameof(url));
+            }
 
             lock (SyncRoot)
             {
@@ -1676,19 +1582,16 @@ namespace System.Reflection.Emit
 
         private ISymbolDocumentWriter DefineDocumentNoLock(string url, Guid language, Guid languageVendor, Guid documentType)
         {
-            if (m_iSymWriter == null)
+            if (_iSymWriter == null)
             {
                 // Cannot DefineDocument when it is not a debug module
                 throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
             }
 
-            return m_iSymWriter.DefineDocument(url, language, languageVendor, documentType);
+            return _iSymWriter.DefineDocument(url, language, languageVendor, documentType);
         }
 
-        public bool IsTransient()
-        {
-            return InternalModule.IsTransientInternal();
-        }
+        public bool IsTransient() => InternalModule.IsTransientInternal();
 
         #endregion
 

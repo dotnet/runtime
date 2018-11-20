@@ -67,19 +67,9 @@ namespace System.Reflection
             return codeBase;
         }
 
-        public override string CodeBase
-        {
-            get
-            {
-                string codeBase = GetCodeBase(false);
-                return codeBase;
-            }
-        }
+        public override string CodeBase => GetCodeBase(false);
 
-        internal RuntimeAssembly GetNativeHandle()
-        {
-            return this;
-        }
+        internal RuntimeAssembly GetNativeHandle() => this;
 
         // If the assembly is copied before it is loaded, the codebase will be set to the
         // actual file loaded if copiedName is true. If it is false, then the original code base
@@ -101,15 +91,12 @@ namespace System.Reflection
                     GetFlags() | AssemblyNameFlags.PublicKey,
                     null); // strong name key pair
 
-            PortableExecutableKinds pek;
-            ImageFileMachine ifm;
-
             Module manifestModule = ManifestModule;
             if (manifestModule != null)
             {
                 if (manifestModule.MDStreamVersion > 0x10000)
                 {
-                    ManifestModule.GetPEKind(out pek, out ifm);
+                    ManifestModule.GetPEKind(out PortableExecutableKinds pek, out ImageFileMachine ifm);
                     an.SetProcArchIndex(pek, ifm);
                 }
             }
