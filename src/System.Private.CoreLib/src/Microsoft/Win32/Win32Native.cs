@@ -261,8 +261,8 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Ole32)]
         internal static extern IntPtr CoTaskMemRealloc(IntPtr pv, UIntPtr cb);
 
-        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
-        internal static extern int ExpandEnvironmentStrings(string lpSrc, [Out]StringBuilder lpDst, int nSize);
+        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
+        internal static extern uint ExpandEnvironmentStringsW(string lpSrc, ref char lpDst, uint nSize);
 
         [DllImport(Interop.Libraries.Kernel32)]
         internal static extern IntPtr LocalReAlloc(IntPtr handle, IntPtr sizetcbBytes, int uFlags);

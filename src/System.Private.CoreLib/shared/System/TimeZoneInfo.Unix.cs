@@ -104,7 +104,7 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
-        private void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, ref string displayName)
+        private unsafe void GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType nameType, ref string displayName)
         {
             if (GlobalizationMode.Invariant)
             {
@@ -114,12 +114,13 @@ namespace System
 
             string timeZoneDisplayName;
             bool result = Interop.CallStringMethod(
-                (locale, id, type, stringBuilder) => Interop.Globalization.GetTimeZoneDisplayName(
-                    locale,
-                    id,
-                    type,
-                    stringBuilder,
-                    stringBuilder.Capacity),
+                (buffer, locale, id, type) =>
+                {
+                    fixed (char* bufferPtr = buffer)
+                    {
+                        return Interop.Globalization.GetTimeZoneDisplayName(locale, id, type, bufferPtr, buffer.Length);
+                    }
+                },
                 CultureInfo.CurrentUICulture.Name,
                 _id,
                 nameType,
