@@ -9,7 +9,7 @@ namespace System.Net.NetworkInformation
         /// Returns objects that describe the network interfaces on the local computer.
         public static NetworkInterface[] GetAllNetworkInterfaces()
         {
-            return OsxNetworkInterface.GetOsxNetworkInterfaces();
+            return BsdNetworkInterface.GetBsdNetworkInterfaces();
         }
 
         public static bool GetIsNetworkAvailable()
@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                var interfaces = OsxNetworkInterface.GetOsxNetworkInterfaces();
+                var interfaces = BsdNetworkInterface.GetBsdNetworkInterfaces();
                 for (int i = 0; i < interfaces.Length; i++)
                 {
                     if (interfaces[i].NetworkInterfaceType == NetworkInterfaceType.Loopback)

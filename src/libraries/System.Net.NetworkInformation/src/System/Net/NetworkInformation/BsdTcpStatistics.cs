@@ -4,7 +4,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxTcpStatistics : TcpStatistics
+    internal class BsdTcpStatistics : TcpStatistics
     {
         private readonly long _connectionsAccepted;
         private readonly long _connectionsInitiated;
@@ -16,7 +16,7 @@ namespace System.Net.NetworkInformation
         private readonly long _segmentsReceived;
         private readonly int _currentConnections;
 
-        public OsxTcpStatistics()
+        public BsdTcpStatistics()
         {
             Interop.Sys.TcpGlobalStatistics statistics;
             if (Interop.Sys.GetTcpGlobalStatistics(out statistics) != 0)
