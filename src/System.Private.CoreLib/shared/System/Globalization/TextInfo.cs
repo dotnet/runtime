@@ -451,7 +451,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe string ToLowerAsciiInvariant(string s)
+        internal static unsafe string ToLowerAsciiInvariant(string s)
         {
             if (s.Length == 0)
             {
