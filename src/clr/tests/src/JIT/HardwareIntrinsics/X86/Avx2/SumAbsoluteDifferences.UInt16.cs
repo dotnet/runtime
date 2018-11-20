@@ -334,7 +334,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -342,7 +342,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -374,9 +379,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Byte[] left, Byte[] right, UInt16[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (result[0] != Math.Abs(left[0] - right[0]) + Math.Abs(left[1] - right[1]) + Math.Abs(left[2] - right[2]) + Math.Abs(left[3] - right[3]) + Math.Abs(left[4] - right[4]) + Math.Abs(left[5] - right[5]) + Math.Abs(left[6] - right[6]) + Math.Abs(left[7] - right[7]))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -384,19 +391,21 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (result[i] != ((i % 4 != 0) ? 0 : Math.Abs(left[(i/4)*8] - right[(i/4)*8]) + Math.Abs(left[(i/4)*8+1] - right[(i/4)*8+1]) + Math.Abs(left[(i/4)*8+2] - right[(i/4)*8+2]) + Math.Abs(left[(i/4)*8+3] - right[(i/4)*8+3]) + Math.Abs(left[(i/4)*8+4] - right[(i/4)*8+4]) + Math.Abs(left[(i/4)*8+5] - right[(i/4)*8+5]) + Math.Abs(left[(i/4)*8+6] - right[(i/4)*8+6]) + Math.Abs(left[(i/4)*8+7] - right[(i/4)*8+7])))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx2)}.{nameof(Avx2.SumAbsoluteDifferences)}<UInt16>(Vector256<Byte>, Vector256<Byte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

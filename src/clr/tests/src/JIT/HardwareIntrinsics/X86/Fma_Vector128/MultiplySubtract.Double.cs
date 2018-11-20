@@ -356,7 +356,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -364,7 +364,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -400,9 +405,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Double[] firstOp, Double[] secondOp, Double[] thirdOp, Double[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (BitConverter.DoubleToInt64Bits(Math.Round((firstOp[0] * secondOp[0]) - thirdOp[0], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[0], 9)))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -410,13 +417,13 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (BitConverter.DoubleToInt64Bits(Math.Round((firstOp[i] * secondOp[i]) - thirdOp[i], 9)) != BitConverter.DoubleToInt64Bits(Math.Round(result[i], 9)))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Fma)}.{nameof(Fma.MultiplySubtract)}<Double>(Vector128<Double>, Vector128<Double>, Vector128<Double>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   firstOp: ({string.Join(", ", firstOp)})");
@@ -424,6 +431,8 @@ namespace JIT.HardwareIntrinsics.X86
                 TestLibrary.TestFramework.LogInformation($"   thirdOp: ({string.Join(", ", thirdOp)})");
                 TestLibrary.TestFramework.LogInformation($"    result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

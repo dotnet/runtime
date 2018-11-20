@@ -312,7 +312,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -320,7 +320,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -348,9 +353,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Double[] firstOp, Double[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (BitConverter.DoubleToInt64Bits(result[0]) != BitConverter.DoubleToInt64Bits(Math.Round(firstOp[0], MidpointRounding.AwayFromZero)))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -358,18 +365,20 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (BitConverter.DoubleToInt64Bits(result[i]) != BitConverter.DoubleToInt64Bits(Math.Round(firstOp[i], MidpointRounding.AwayFromZero)))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse41)}.{nameof(Sse41.RoundToNearestInteger)}<Double>(Vector128<Double>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

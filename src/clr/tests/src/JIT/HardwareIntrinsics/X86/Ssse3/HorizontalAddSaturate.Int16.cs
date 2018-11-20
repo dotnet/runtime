@@ -334,7 +334,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -342,7 +342,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -374,6 +379,8 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Int16[] left, Int16[] right, Int16[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (var outer = 0; outer < (LargestVectorSize / 16); outer++)
             {
                 for (var inner = 0; inner < (8 / sizeof(Int16)); inner++)
@@ -384,25 +391,27 @@ namespace JIT.HardwareIntrinsics.X86
 
                     if (result[i1] != Math.Clamp((left[i3] + left[i3 + 1]), short.MinValue, short.MaxValue))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
 
                     if (result[i2] != Math.Clamp((right[i3] + right[i3 + 1]), short.MinValue, short.MaxValue))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Ssse3)}.{nameof(Ssse3.HorizontalAddSaturate)}<Int16>(Vector128<Int16>, Vector128<Int16>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

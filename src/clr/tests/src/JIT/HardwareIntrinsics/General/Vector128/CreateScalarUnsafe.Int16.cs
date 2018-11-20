@@ -74,9 +74,11 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(Int16[] resultElements, Int16 expectedValue, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (resultElements[0] != expectedValue)
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -84,18 +86,20 @@ namespace JIT.HardwareIntrinsics.General
                 {
                     if (false /* value is uninitialized */)
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128.CreateScalarUnsafe(Int16): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: {expectedValue}");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

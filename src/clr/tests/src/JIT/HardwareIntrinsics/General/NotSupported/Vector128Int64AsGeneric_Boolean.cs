@@ -35,6 +35,8 @@ namespace JIT.HardwareIntrinsics.General
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128Int64AsGeneric_Boolean: RunNotSupportedScenario failed to throw NotSupportedException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                throw new Exception("One or more scenarios did not complete as expected.");
             }
         }
     }

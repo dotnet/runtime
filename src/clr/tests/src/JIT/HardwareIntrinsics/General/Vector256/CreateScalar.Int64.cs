@@ -74,9 +74,11 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(Int64[] resultElements, Int64 expectedValue, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (resultElements[0] != expectedValue)
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -84,18 +86,20 @@ namespace JIT.HardwareIntrinsics.General
                 {
                     if (resultElements[i] != 0)
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector256.CreateScalar(Int64): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: {expectedValue}");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

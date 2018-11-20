@@ -319,7 +319,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
 
-            Succeeded = false;
+            bool succeeded = false;
 
             try
             {
@@ -327,7 +327,12 @@ namespace JIT.HardwareIntrinsics.X86
             }
             catch (PlatformNotSupportedException)
             {
-                Succeeded = true;
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
             }
         }
 
@@ -355,9 +360,11 @@ namespace JIT.HardwareIntrinsics.X86
 
         private void ValidateResult(Single[] firstOp, Single[] result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if (BitConverter.SingleToInt32Bits(result[0]) != BitConverter.SingleToInt32Bits(firstOp[1]))
             {
-                Succeeded = false;
+                succeeded = false;
             }
             else
             {
@@ -365,18 +372,20 @@ namespace JIT.HardwareIntrinsics.X86
                 {
                     if (BitConverter.SingleToInt32Bits(result[4]) != BitConverter.SingleToInt32Bits(firstOp[5]))
                     {
-                        Succeeded = false;
+                        succeeded = false;
                         break;
                     }
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx)}.{nameof(Avx.Permute)}<Single>(Vector256<Single><9>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

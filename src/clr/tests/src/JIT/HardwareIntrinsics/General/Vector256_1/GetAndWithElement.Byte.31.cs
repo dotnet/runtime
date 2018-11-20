@@ -74,10 +74,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector256<Byte.GetElement({imm}): {nameof(RunBasicScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
 
             succeeded = !expectedOutOfRangeException;
@@ -96,10 +96,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector256<Byte.WithElement({imm}): {nameof(RunBasicScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
 
@@ -133,10 +133,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector256<Byte.GetElement({imm}): {nameof(RunReflectionScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
 
             succeeded = !expectedOutOfRangeException;
@@ -158,10 +158,10 @@ namespace JIT.HardwareIntrinsics.General
 
             if (!succeeded)
             {
-                Succeeded = false;
-
                 TestLibrary.TestFramework.LogInformation($"Vector256<Byte.WithElement({imm}): {nameof(RunReflectionScenario)} failed to throw ArgumentOutOfRangeException.");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
 
@@ -196,27 +196,31 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateWithResult(Byte[] result, Byte[] values, Byte insertedValue, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (int i = 0; i < ElementCount; i++)
             {
                 if ((i != 31) && (result[i] != values[i]))
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
             if (result[31] != insertedValue)
             {
-                Succeeded = false;
+                succeeded = false;
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector256<Byte.WithElement(31): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", values)})");
                 TestLibrary.TestFramework.LogInformation($"  insert: insertedValue");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }
