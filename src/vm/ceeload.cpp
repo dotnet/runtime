@@ -10279,9 +10279,7 @@ Module *Module::GetModuleFromIndex(DWORD ix)
 
     if (HasNativeImage())
     {
-        PRECONDITION(GetNativeImage()->CheckNativeImportFromIndex(ix));
-        CORCOMPILE_IMPORT_TABLE_ENTRY *p = GetNativeImage()->GetNativeImportFromIndex(ix);
-        RETURN ZapSig::DecodeModuleFromIndexes(this, p->wAssemblyRid, p->wModuleRid);
+        RETURN ZapSig::DecodeModuleFromIndex(this, ix);
     }
     else
     {
@@ -10313,15 +10311,12 @@ Module *Module::GetModuleFromIndexIfLoaded(DWORD ix)
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(HasNativeImage());
-        PRECONDITION(GetNativeImage()->CheckNativeImportFromIndex(ix));
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
     CONTRACT_END;
 
 #ifndef DACCESS_COMPILE 
-    CORCOMPILE_IMPORT_TABLE_ENTRY *p = GetNativeImage()->GetNativeImportFromIndex(ix);
-
-    RETURN ZapSig::DecodeModuleFromIndexesIfLoaded(this, p->wAssemblyRid, p->wModuleRid);
+    RETURN ZapSig::DecodeModuleFromIndexIfLoaded(this, ix);
 #else // DACCESS_COMPILE
     DacNotImpl();
     RETURN NULL;

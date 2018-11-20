@@ -2496,56 +2496,6 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
     RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
 }
 
-CHECK PEDecoder::CheckNativeImportFromIndex(COUNT_T index) const
-{
-    CONTRACT_CHECK
-    {
-        PRECONDITION(CheckNativeHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_CHECK_END;
-
-    CHECK_MSG(index >= 0 && index < GetNativeImportTableCount(), "Bad Native Import Index");
-
-    CHECK_OK;
-}
-
-COUNT_T PEDecoder::GetNativeImportTableCount() const
-{
-    CONTRACT(COUNT_T)
-    {
-        PRECONDITION(CheckNativeHeader());
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetNativeHeader()->ImportTable;
-
-    RETURN (VAL32(pDir->Size) / sizeof(CORCOMPILE_IMPORT_TABLE_ENTRY));
-}
-
-CORCOMPILE_IMPORT_TABLE_ENTRY *PEDecoder::GetNativeImportFromIndex(COUNT_T index) const
-{
-    CONTRACT(CORCOMPILE_IMPORT_TABLE_ENTRY *)
-    {
-        PRECONDITION(CheckNativeHeader());
-        PRECONDITION(CheckNativeImportFromIndex(index));
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    IMAGE_DATA_DIRECTORY *pDir = &GetNativeHeader()->ImportTable;
-
-    CORCOMPILE_IMPORT_TABLE_ENTRY *pEntry
-      = (CORCOMPILE_IMPORT_TABLE_ENTRY *) GetDirectoryData(pDir);
-
-    RETURN pEntry + index;
-}
-
 PTR_CORCOMPILE_IMPORT_SECTION PEDecoder::GetNativeImportSections(COUNT_T *pCount) const
 {
     CONTRACT(PTR_CORCOMPILE_IMPORT_SECTION)
