@@ -322,7 +322,7 @@ public:
      */
     struct Import
     {
-        PTR_CORCOMPILE_IMPORT_TABLE_ENTRY entry;
+        DWORD index;
         Dependency *dependency;
     };
 private:
