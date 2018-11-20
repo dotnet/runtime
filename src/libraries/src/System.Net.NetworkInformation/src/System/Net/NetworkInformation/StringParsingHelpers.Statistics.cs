@@ -178,6 +178,7 @@ namespace System.Net.NetworkInformation
             string fileContents = File.ReadAllText(filePath);
             int firstIpHeader = fileContents.IndexOf("Icmp:", StringComparison.Ordinal);
             int secondIpHeader = fileContents.IndexOf("Icmp:", firstIpHeader + 1, StringComparison.Ordinal);
+            int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstIpHeader + 1, StringComparison.Ordinal);
             int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondIpHeader, StringComparison.Ordinal);
             string icmpData = fileContents.Substring(secondIpHeader, endOfSecondLine - secondIpHeader);
             StringParser parser = new StringParser(icmpData, ' ');
@@ -188,7 +189,7 @@ namespace System.Net.NetworkInformation
             {
                 InMsgs = parser.ParseNextInt32(),
                 InErrors = parser.ParseNextInt32(),
-                InCsumErrors = parser.ParseNextInt32(),
+                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt32(),
                 InDestUnreachs = parser.ParseNextInt32(),
                 InTimeExcds = parser.ParseNextInt32(),
                 InParmProbs = parser.ParseNextInt32(),
@@ -220,13 +221,14 @@ namespace System.Net.NetworkInformation
         {
             string fileContents = File.ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
+            int Icmp6OutErrorsIdx = fileContents.IndexOf("Icmp6OutErrors", StringComparison.Ordinal);
 
             return new Icmpv6StatisticsTable()
             {
                 InMsgs = reader.GetNextValueAsInt32("Icmp6InMsgs"),
                 InErrors = reader.GetNextValueAsInt32("Icmp6InErrors"),
                 OutMsgs = reader.GetNextValueAsInt32("Icmp6OutMsgs"),
-                OutErrors = reader.GetNextValueAsInt32("Icmp6OutErrors"),
+                OutErrors = Icmp6OutErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Icmp6OutErrors"),
                 InDestUnreachs = reader.GetNextValueAsInt32("Icmp6InDestUnreachs"),
                 InPktTooBigs = reader.GetNextValueAsInt32("Icmp6InPktTooBigs"),
                 InTimeExcds = reader.GetNextValueAsInt32("Icmp6InTimeExcds"),
@@ -330,6 +332,7 @@ namespace System.Net.NetworkInformation
             string fileContents = File.ReadAllText(filePath);
             int firstTcpHeader = fileContents.IndexOf("Tcp:", StringComparison.Ordinal);
             int secondTcpHeader = fileContents.IndexOf("Tcp:", firstTcpHeader + 1, StringComparison.Ordinal);
+            int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstTcpHeader + 1, StringComparison.Ordinal);
             int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondTcpHeader, StringComparison.Ordinal);
             string tcpData = fileContents.Substring(secondTcpHeader, endOfSecondLine - secondTcpHeader);
             StringParser parser = new StringParser(tcpData, ' ');
@@ -352,7 +355,7 @@ namespace System.Net.NetworkInformation
                 RetransSegs = parser.ParseNextInt32(),
                 InErrs = parser.ParseNextInt32(),
                 OutRsts = parser.ParseNextInt32(),
-                InCsumErrors = parser.ParseNextInt32()
+                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt32()
             };
         }
 
@@ -361,6 +364,7 @@ namespace System.Net.NetworkInformation
             string fileContents = File.ReadAllText(filePath);
             int firstUdpHeader = fileContents.IndexOf("Udp:", StringComparison.Ordinal);
             int secondUdpHeader = fileContents.IndexOf("Udp:", firstUdpHeader + 1, StringComparison.Ordinal);
+            int inCsumErrorsIdx = fileContents.IndexOf("InCsumErrors", firstUdpHeader + 1, StringComparison.Ordinal);
             int endOfSecondLine = fileContents.IndexOf(Environment.NewLine, secondUdpHeader, StringComparison.Ordinal);
             string tcpData = fileContents.Substring(secondUdpHeader, endOfSecondLine - secondUdpHeader);
             StringParser parser = new StringParser(tcpData, ' ');
@@ -375,7 +379,7 @@ namespace System.Net.NetworkInformation
                 OutDatagrams = parser.ParseNextInt32(),
                 RcvbufErrors = parser.ParseNextInt32(),
                 SndbufErrors = parser.ParseNextInt32(),
-                InCsumErrors = parser.ParseNextInt32()
+                InCsumErrors = inCsumErrorsIdx == -1 ? 0 : parser.ParseNextInt32()
             };
         }
 
@@ -383,6 +387,7 @@ namespace System.Net.NetworkInformation
         {
             string fileContents = File.ReadAllText(filePath);
             RowConfigReader reader = new RowConfigReader(fileContents);
+            int udp6ErrorsIdx = fileContents.IndexOf("Udp6SndbufErrors", StringComparison.Ordinal);
 
             return new UdpGlobalStatisticsTable()
             {
@@ -390,9 +395,9 @@ namespace System.Net.NetworkInformation
                 NoPorts = reader.GetNextValueAsInt32("Udp6NoPorts"),
                 InErrors = reader.GetNextValueAsInt32("Udp6InErrors"),
                 OutDatagrams = reader.GetNextValueAsInt32("Udp6OutDatagrams"),
-                RcvbufErrors = reader.GetNextValueAsInt32("Udp6RcvbufErrors"),
-                SndbufErrors = reader.GetNextValueAsInt32("Udp6SndbufErrors"),
-                InCsumErrors = reader.GetNextValueAsInt32("Udp6InCsumErrors"),
+                RcvbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Udp6RcvbufErrors"),
+                SndbufErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Udp6SndbufErrors"),
+                InCsumErrors = udp6ErrorsIdx == -1 ? 0 : reader.GetNextValueAsInt32("Udp6InCsumErrors"),
             };
         }
 
