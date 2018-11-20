@@ -88,21 +88,25 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(Double[] resultElements, Double[] expectedValues, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             for (var i = 0; i < ElementCount; i++)
             {
                 if (resultElements[i] != expectedValues[i])
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector256.Create(Double): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", expectedValues)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }

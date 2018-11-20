@@ -73,20 +73,24 @@ namespace JIT.HardwareIntrinsics.General
 
         private void ValidateResult(Single[] resultElements, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+        
             for (var i = 0; i < ElementCount; i++)
             {
                 if (resultElements[i] != 0)
                 {
-                    Succeeded = false;
+                    succeeded = false;
                     break;
                 }
             }
 
-            if (!Succeeded)
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"Vector128.Zero(Single): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", resultElements)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
             }
         }
     }
