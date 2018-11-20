@@ -4,7 +4,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIcmpV6Statistics : IcmpV6Statistics
+    internal class BsdIcmpV6Statistics : IcmpV6Statistics
     {
         private readonly long _destinationUnreachableMessagesReceived;
         private readonly long _destinationUnreachableMessagesSent;
@@ -35,7 +35,7 @@ namespace System.Net.NetworkInformation
         private readonly long _timeExceededMessagesReceived;
         private readonly long _timeExceededMessagesSent;
 
-        public OsxIcmpV6Statistics()
+        public BsdIcmpV6Statistics()
         {
             Interop.Sys.Icmpv6GlobalStatistics statistics;
             if (Interop.Sys.GetIcmpv6GlobalStatistics(out statistics) != 0)

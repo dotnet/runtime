@@ -8,7 +8,7 @@ namespace System.Net.NetworkInformation
     {
         public static IPGlobalProperties GetIPGlobalProperties()
         {
-            return new OsxIPGlobalProperties();
+            return new BsdIPGlobalProperties();
         }
     }
 }

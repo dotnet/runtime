@@ -7,14 +7,14 @@ using System.Linq;
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxNetworkInterface : UnixNetworkInterface
+    internal class BsdNetworkInterface : UnixNetworkInterface
     {
-        private readonly OsxIpInterfaceProperties _ipProperties;
+        private readonly BsdIpInterfaceProperties _ipProperties;
         private readonly OperationalStatus _operationalStatus;
         private readonly bool _supportsMulticast;
         private readonly long _speed;
 
-        protected unsafe OsxNetworkInterface(string name) : base(name)
+        protected unsafe BsdNetworkInterface(string name) : base(name)
         {
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;
             if (Interop.Sys.GetNativeIPInterfaceStatistics(name, out nativeStats) == -1)
@@ -33,12 +33,12 @@ namespace System.Net.NetworkInformation
 
             _supportsMulticast = (nativeStats.Flags & (ulong)Interop.Sys.InterfaceFlags.InterfaceSupportsMulticast) != 0;
             _speed = (long)nativeStats.Speed;
-            _ipProperties = new OsxIpInterfaceProperties(this, (int)nativeStats.Mtu);
+            _ipProperties = new BsdIpInterfaceProperties(this, (int)nativeStats.Mtu);
         }
 
-        public static unsafe NetworkInterface[] GetOsxNetworkInterfaces()
+        public static unsafe NetworkInterface[] GetBsdNetworkInterfaces()
         {
-            Dictionary<string, OsxNetworkInterface> interfacesByName = new Dictionary<string, OsxNetworkInterface>();
+            Dictionary<string, BsdNetworkInterface> interfacesByName = new Dictionary<string, BsdNetworkInterface>();
             List<Exception> exceptions = null;
             const int MaxTries = 3;
             for (int attempt = 0; attempt < MaxTries; attempt++)
@@ -51,7 +51,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name);
                             oni.ProcessIpv4Address(ipAddr, maskAddr);
                         }
                         catch (Exception e)
@@ -67,7 +67,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name);
                             oni.ProcessIpv6Address(ipAddr, *scopeId);
                         }
                         catch (Exception e)
@@ -83,7 +83,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            OsxNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name);
                             oni.ProcessLinkLayerAddress(llAddr);
                         }
                         catch (Exception e)
@@ -113,18 +113,18 @@ namespace System.Net.NetworkInformation
         }
 
         /// <summary>
-        /// Gets or creates an OsxNetworkInterface, based on whether it already exists in the given Dictionary.
+        /// Gets or creates an BsdNetworkInterface, based on whether it already exists in the given Dictionary.
         /// If created, it is added to the Dictionary.
         /// </summary>
         /// <param name="interfaces">The Dictionary of existing interfaces.</param>
         /// <param name="name">The name of the interface.</param>
-        /// <returns>The cached or new OsxNetworkInterface with the given name.</returns>
-        private static OsxNetworkInterface GetOrCreate(Dictionary<string, OsxNetworkInterface> interfaces, string name)
+        /// <returns>The cached or new BsdNetworkInterface with the given name.</returns>
+        private static BsdNetworkInterface GetOrCreate(Dictionary<string, BsdNetworkInterface> interfaces, string name)
         {
-            OsxNetworkInterface oni;
+            BsdNetworkInterface oni;
             if (!interfaces.TryGetValue(name, out oni))
             {
-                oni = new OsxNetworkInterface(name);
+                oni = new BsdNetworkInterface(name);
                 interfaces.Add(name, oni);
             }
 
@@ -138,12 +138,12 @@ namespace System.Net.NetworkInformation
 
         public override IPInterfaceStatistics GetIPStatistics()
         {
-            return new OsxIpInterfaceStatistics(Name);
+            return new BsdIpInterfaceStatistics(Name);
         }
 
         public override IPv4InterfaceStatistics GetIPv4Statistics()
         {
-            return new OsxIPv4InterfaceStatistics(Name);
+            return new BsdIPv4InterfaceStatistics(Name);
         }
 
         public override OperationalStatus OperationalStatus { get { return _operationalStatus; } }

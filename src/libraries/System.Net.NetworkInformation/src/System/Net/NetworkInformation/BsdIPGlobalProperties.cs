@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIPGlobalProperties : UnixIPGlobalProperties
+    internal class BsdIPGlobalProperties : UnixIPGlobalProperties
     {
         private unsafe TcpConnectionInformation[] GetTcpConnections(bool listeners)
         {
@@ -114,17 +114,17 @@ namespace System.Net.NetworkInformation
 
         public override IcmpV4Statistics GetIcmpV4Statistics()
         {
-            return new OsxIcmpV4Statistics();
+            return new BsdIcmpV4Statistics();
         }
 
         public override IcmpV6Statistics GetIcmpV6Statistics()
         {
-            return new OsxIcmpV6Statistics();
+            return new BsdIcmpV6Statistics();
         }
 
         public override IPGlobalStatistics GetIPv4GlobalStatistics()
         {
-            return new OsxIPv4GlobalStatistics();
+            return new BsdIPv4GlobalStatistics();
         }
 
         public override IPGlobalStatistics GetIPv6GlobalStatistics()
@@ -137,25 +137,25 @@ namespace System.Net.NetworkInformation
         public override TcpStatistics GetTcpIPv4Statistics()
         {
             // OSX does not provide separated TCP-IPv4 and TCP-IPv6 stats.
-            return new OsxTcpStatistics();
+            return new BsdTcpStatistics();
         }
 
         public override TcpStatistics GetTcpIPv6Statistics()
         {
             // OSX does not provide separated TCP-IPv4 and TCP-IPv6 stats.
-            return new OsxTcpStatistics();
+            return new BsdTcpStatistics();
         }
 
         public override UdpStatistics GetUdpIPv4Statistics()
         {
             // OSX does not provide separated UDP-IPv4 and UDP-IPv6 stats.
-            return new OsxUdpStatistics();
+            return new BsdUdpStatistics();
         }
 
         public override UdpStatistics GetUdpIPv6Statistics()
         {
             // OSX does not provide separated UDP-IPv4 and UDP-IPv6 stats.
-            return new OsxUdpStatistics();
+            return new BsdUdpStatistics();
         }
     }
 }

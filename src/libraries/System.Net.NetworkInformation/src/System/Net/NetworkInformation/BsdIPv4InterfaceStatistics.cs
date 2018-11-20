@@ -4,13 +4,13 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class OsxIPv4InterfaceStatistics : IPv4InterfaceStatistics
+    internal class BsdIPv4InterfaceStatistics : IPv4InterfaceStatistics
     {
-        private readonly OsxIpInterfaceStatistics _statistics;
+        private readonly BsdIpInterfaceStatistics _statistics;
 
-        public OsxIPv4InterfaceStatistics(string name)
+        public BsdIPv4InterfaceStatistics(string name)
         {
-            _statistics = new OsxIpInterfaceStatistics(name);
+            _statistics = new BsdIpInterfaceStatistics(name);
         }
 
         public override long BytesReceived => _statistics.BytesReceived;
