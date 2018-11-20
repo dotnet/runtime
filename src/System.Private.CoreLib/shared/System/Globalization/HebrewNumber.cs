@@ -53,27 +53,21 @@ namespace System.Globalization
     //  Hebrew text and parsing Hebrew number text.
     //
     //  Limitations:
-    //      Parse can only handles value 1 ~ 999.
-    //      ToString() can only handles 1 ~ 999. If value is greater than 5000,
+    //      Parse can only handle value 1 ~ 999.
+    //      Append() can only handle 1 ~ 999. If value is greater than 5000,
     //      5000 will be subtracted from the value.
     //
     ////////////////////////////////////////////////////////////////////////////
 
-    internal class HebrewNumber
+    internal static class HebrewNumber
     {
-        // This class contains only static methods.  Add a private ctor so that
-        // compiler won't generate a default one for us.
-        private HebrewNumber()
-        {
-        }
-
         ////////////////////////////////////////////////////////////////////////////
         //
-        //  ToString
+        //  Append
         //
         //  Converts the given number to Hebrew letters according to the numeric
-        //  value of each Hebrew letter.  Basically, this converts the lunar year
-        //  and the lunar month to letters.
+        //  value of each Hebrew letter, appending to the supplied StringBuilder.
+        //  Basically, this converts the lunar year and the lunar month to letters.
         //
         //  The character of a year is described by three letters of the Hebrew
         //  alphabet, the first and third giving, respectively, the days of the
@@ -87,13 +81,14 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static string ToString(int Number)
+        internal static void Append(StringBuilder outputBuffer, int Number)
         {
+            Debug.Assert(outputBuffer != null);
+            int outputBufferStartingLength = outputBuffer.Length;
+
             char cTens = '\x0';
             char cUnits;               // tens and units chars
             int Hundreds, Tens;              // hundreds and tens values
-            StringBuilder szHebrew = new StringBuilder();
-
 
             //
             //  Adjust the number if greater than 5000.
@@ -120,13 +115,13 @@ namespace System.Globalization
                 // If the number is greater than 400, use the multiples of 400.
                 for (int i = 0; i < (Hundreds / 4); i++)
                 {
-                    szHebrew.Append('\x05ea');
+                    outputBuffer.Append('\x05ea');
                 }
 
                 int remains = Hundreds % 4;
                 if (remains > 0)
                 {
-                    szHebrew.Append((char)((int)'\x05e6' + remains));
+                    outputBuffer.Append((char)((int)'\x05e6' + remains));
                 }
             }
 
@@ -195,27 +190,22 @@ namespace System.Globalization
 
             if (cTens != '\x0')
             {
-                szHebrew.Append(cTens);
+                outputBuffer.Append(cTens);
             }
 
             if (cUnits != '\x0')
             {
-                szHebrew.Append(cUnits);
+                outputBuffer.Append(cUnits);
             }
 
-            if (szHebrew.Length > 1)
+            if (outputBuffer.Length - outputBufferStartingLength > 1)
             {
-                szHebrew.Insert(szHebrew.Length - 1, '"');
+                outputBuffer.Insert(outputBuffer.Length - 1, '"');
             }
             else
             {
-                szHebrew.Append('\'');
+                outputBuffer.Append('\'');
             }
-
-            //
-            //  Return success.
-            //
-            return (szHebrew.ToString());
         }
 
         ////////////////////////////////////////////////////////////////////////////
