@@ -2,66 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: metadata tokens for a parameter
-**
-** 
-===========================================================*/
-
-using System;
-using System.Reflection;
-
 namespace System.Reflection.Emit
-{
-    // The ParameterToken class is an opaque representation of the Token returned
-    // by the Metadata to represent the parameter. 
+{  
+    /// <summary>
+    /// The ParameterToken class is an opaque representation of the Token returned
+    /// by the Metadata to represent the parameter.
+    /// </summary>
     public struct ParameterToken
     {
         public static readonly ParameterToken Empty = new ParameterToken();
-        internal int m_tkParameter;
 
+        private readonly int _token;
 
-        internal ParameterToken(int tkParam)
+        internal ParameterToken(int parameterToken)
         {
-            m_tkParameter = tkParam;
+            _token = parameterToken;
         }
 
-        public int Token
-        {
-            get { return m_tkParameter; }
-        }
+        public int Token => _token;
 
-        public override int GetHashCode()
-        {
-            return m_tkParameter;
-        }
+        public override int GetHashCode() => Token;
 
-        public override bool Equals(object obj)
-        {
-            if (obj is ParameterToken)
-                return Equals((ParameterToken)obj);
-            else
-                return false;
-        }
+        public override bool Equals(object obj) => obj is ParameterToken pt && Equals(pt);
 
-        public bool Equals(ParameterToken obj)
-        {
-            return obj.m_tkParameter == m_tkParameter;
-        }
+        public bool Equals(ParameterToken obj) => obj.Token == Token;
 
-        public static bool operator ==(ParameterToken a, ParameterToken b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(ParameterToken a, ParameterToken b) => a.Equals(b);
 
-        public static bool operator !=(ParameterToken a, ParameterToken b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(ParameterToken a, ParameterToken b) => !(a == b);
     }
 }

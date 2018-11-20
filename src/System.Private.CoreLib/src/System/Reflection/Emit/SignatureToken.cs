@@ -2,67 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Signature:  SignatureToken
-** 
-** 
-**
-**
-** Purpose: Represents a Signature to the ILGenerator signature.
-**
-** 
-===========================================================*/
-
-using System;
-using System.Reflection;
-
 namespace System.Reflection.Emit
 {
     public struct SignatureToken
     {
         public static readonly SignatureToken Empty = new SignatureToken();
 
-        internal int m_signature;
-        internal ModuleBuilder m_moduleBuilder;
+        private int _token;
 
-        internal SignatureToken(int str, ModuleBuilder mod)
+        internal SignatureToken(int signatureToken)
         {
-            m_signature = str;
-            m_moduleBuilder = mod;
+            _token = signatureToken;
         }
 
-        public int Token
-        {
-            get { return m_signature; }
-        }
+        public int Token => _token;
 
-        public override int GetHashCode()
-        {
-            return m_signature;
-        }
+        public override int GetHashCode() => Token;
 
-        public override bool Equals(object obj)
-        {
-            if (obj is SignatureToken)
-                return Equals((SignatureToken)obj);
-            else
-                return false;
-        }
+        public override bool Equals(object obj) => obj is SignatureToken st && Equals(st);
 
-        public bool Equals(SignatureToken obj)
-        {
-            return obj.m_signature == m_signature;
-        }
+        public bool Equals(SignatureToken obj) => obj.Token == Token;
 
-        public static bool operator ==(SignatureToken a, SignatureToken b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(SignatureToken a, SignatureToken b) => a.Equals(b);
 
-        public static bool operator !=(SignatureToken a, SignatureToken b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(SignatureToken a, SignatureToken b) => !(a == b);
     }
 }
