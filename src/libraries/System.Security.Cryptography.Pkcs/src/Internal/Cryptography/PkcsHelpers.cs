@@ -307,6 +307,24 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
+#if netcoreapp
+        private static unsafe string ToUpperHexString(ReadOnlySpan<byte> ba)
+        {
+            fixed (byte* baPtr = ba)
+            {
+                return string.Create(ba.Length * 2, (new IntPtr(baPtr), ba.Length), (span, args) =>
+                {
+                    const string HexValues = "0123456789ABCDEF";
+                    int p = 0;
+                    foreach (byte b in new ReadOnlySpan<byte>((byte*)args.Item1, args.Item2))
+                    {
+                        span[p++] = HexValues[b >> 4];
+                        span[p++] = HexValues[b & 0xF];
+                    }
+                });
+            }
+        }
+#else
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             StringBuilder sb = new StringBuilder(ba.Length * 2);
@@ -318,6 +336,7 @@ namespace Internal.Cryptography
 
             return sb.ToString();
         }
+#endif
 
         /// <summary>
         /// Asserts on bad input. Input must come from trusted sources.
