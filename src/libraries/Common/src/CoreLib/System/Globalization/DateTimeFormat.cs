@@ -209,7 +209,7 @@ namespace System
 
         private static void HebrewFormatDigits(StringBuilder outputBuffer, int digits)
         {
-            outputBuffer.Append(HebrewNumber.ToString(digits));
+            HebrewNumber.Append(outputBuffer, digits);
         }
 
         internal static int ParseRepeatPattern(ReadOnlySpan<char> format, int pos, char patternChar)
