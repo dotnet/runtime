@@ -43,25 +43,33 @@ static void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset,
 static bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID codeStart);
 #endif
 
+// There is a call target instruction, try to find the MethodDesc for where target points to.
+// Returns nullptr if it can't find it.
 static MethodDesc* getTargetMethodDesc(PCODE target)
 {
     MethodDesc* targetMD = ExecutionManager::GetCodeMethodDesc(target);
-    if (targetMD == 0) 
+    if (targetMD != nullptr)
     {
-        VirtualCallStubManager::StubKind vsdStubKind = VirtualCallStubManager::SK_UNKNOWN;
-        VirtualCallStubManager *pVSDStubManager = VirtualCallStubManager::FindStubManager(target, &vsdStubKind);
-        if (vsdStubKind != VirtualCallStubManager::SK_BREAKPOINT && vsdStubKind != VirtualCallStubManager::SK_UNKNOWN)
-        {
-            DispatchToken token = VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, vsdStubKind);
-            _ASSERTE(token.IsValid());
-            targetMD = VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
-        }
-        else
-        {
-            targetMD = AsMethodDesc(size_t(MethodDesc::GetMethodDescFromStubAddr(target, TRUE)));
-        }
+        // It is JIT/NGened call.
+        return targetMD;
     }
-    return targetMD;
+
+    VirtualCallStubManager::StubKind vsdStubKind = VirtualCallStubManager::SK_UNKNOWN;
+    VirtualCallStubManager *pVSDStubManager = VirtualCallStubManager::FindStubManager(target, &vsdStubKind);
+    if (vsdStubKind != VirtualCallStubManager::SK_BREAKPOINT && vsdStubKind != VirtualCallStubManager::SK_UNKNOWN)
+    {
+        // It is a VSD stub manager.
+        DispatchToken token = VirtualCallStubManager::GetTokenFromStubQuick(pVSDStubManager, target, vsdStubKind);
+        _ASSERTE(token.IsValid());
+        return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
+    }
+    if (RangeSectionStubManager::GetStubKind(target) == STUB_CODE_BLOCK_PRECODE)
+    {
+        // The address looks like a value stub, try to get the method descriptor.
+        return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
+    }
+
+    return nullptr;
 }
 
 
