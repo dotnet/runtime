@@ -255,7 +255,7 @@ namespace System.Data.Tests
         {
             Assert.Throws<InvalidConstraintException>(() =>
             {
-                DataSet ds = DataProvider.CreateForigenConstraint();
+                DataSet ds = DataProvider.CreateForeignConstraint();
 
                 ds.Tables[0].Rows.Clear(); //Try to clear the parent table		
             });

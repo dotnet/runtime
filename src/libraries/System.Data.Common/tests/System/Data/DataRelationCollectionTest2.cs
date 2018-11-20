@@ -317,7 +317,7 @@ namespace System.Data.Tests
         [Fact]
         public void Add_DataColumn1()
         {
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             int originalRelationsCount = ds.Relations.Count;
 
             DataRelation rel = new DataRelation("rel1", ds.Tables[0].Columns["ParentId"]

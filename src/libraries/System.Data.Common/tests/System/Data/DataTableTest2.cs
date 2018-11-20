@@ -1679,9 +1679,9 @@ namespace System.Data.Tests
                 Assert.True(dt1.GetErrors()[1].RowError.Length > 10);
             }
 
-            DataSet ds = DataProvider.CreateForigenConstraint();
+            DataSet ds = DataProvider.CreateForeignConstraint();
             ds.Tables[0].BeginLoadData();
-            ds.Tables[0].Rows[0][0] = 10; //Forigen constraint violation
+            ds.Tables[0].Rows[0][0] = 10; //Foreign constraint violation
 
             try
             {
