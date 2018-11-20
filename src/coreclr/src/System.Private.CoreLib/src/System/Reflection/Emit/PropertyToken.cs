@@ -2,66 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-**
-**
-** Propertybuilder is for client to define properties for a class
-**
-** 
-===========================================================*/
-
-using System;
-using System.Reflection;
-
 namespace System.Reflection.Emit
 {
     public struct PropertyToken
     {
         public static readonly PropertyToken Empty = new PropertyToken();
 
-        internal int m_property;
+        private readonly int _token;
 
-        internal PropertyToken(int str)
+        internal PropertyToken(int propertyToken)
         {
-            m_property = str;
+            _token = propertyToken;
         }
 
-        public int Token
-        {
-            get { return m_property; }
-        }
+        public int Token => _token;
 
-        // Satisfy value class requirements
-        public override int GetHashCode()
-        {
-            return m_property;
-        }
+        public override int GetHashCode() => Token;
 
-        // Satisfy value class requirements
-        public override bool Equals(object obj)
-        {
-            if (obj is PropertyToken)
-                return Equals((PropertyToken)obj);
-            else
-                return false;
-        }
+        public override bool Equals(object obj) => obj is PropertyToken pt && Equals(pt);
 
-        public bool Equals(PropertyToken obj)
-        {
-            return obj.m_property == m_property;
-        }
+        public bool Equals(PropertyToken obj) => obj.Token == Token;
 
-        public static bool operator ==(PropertyToken a, PropertyToken b)
-        {
-            return a.Equals(b);
-        }
+        public static bool operator ==(PropertyToken a, PropertyToken b) => a.Equals(b);
 
-        public static bool operator !=(PropertyToken a, PropertyToken b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(PropertyToken a, PropertyToken b) => !(a == b);
     }
 }

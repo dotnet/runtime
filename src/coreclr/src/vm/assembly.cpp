@@ -145,7 +145,7 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     STANDARD_VM_CONTRACT;
 }
 
-// This name needs to stay in sync with AssemblyBuilder.MANIFEST_MODULE_NAME
+// This name needs to stay in sync with AssemblyBuilder.ManifestModuleName
 // which is used in AssemblyBuilder.InitManifestModule
 #define REFEMIT_MANIFEST_MODULE_NAME W("RefEmit_InMemoryManifestModule")
 
