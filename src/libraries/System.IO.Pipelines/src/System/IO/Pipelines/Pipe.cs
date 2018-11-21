@@ -618,8 +618,7 @@ namespace System.IO.Pipelines
                 // If the awaitable is already complete then return the value result directly
                 if (_readerAwaitable.IsCompleted)
                 {
-                    var readResult = new ReadResult();
-                    GetReadResult(ref readResult);
+                    GetReadResult(out ReadResult readResult);
                     result = new ValueTask<ReadResult>(readResult);
                 }
                 else
@@ -642,10 +641,9 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
                 }
 
-                result = new ReadResult();
                 if (_length > 0 || _readerAwaitable.IsCompleted)
                 {
-                    GetReadResult(ref result);
+                    GetReadResult(out result);
                     return true;
                 }
 
@@ -653,6 +651,7 @@ namespace System.IO.Pipelines
                 {
                     ThrowHelper.ThrowInvalidOperationException_AlreadyReading();
                 }
+                result = default;
                 return false;
             }
         }
@@ -785,34 +784,29 @@ namespace System.IO.Pipelines
                 ThrowHelper.ThrowInvalidOperationException_GetResultNotCompleted();
             }
 
-            var result = new ReadResult();
             lock (_sync)
             {
-                GetReadResult(ref result);
+                GetReadResult(out ReadResult result);
+                return result;
             }
-            return result;
         }
 
-        private void GetReadResult(ref ReadResult result)
+        private void GetReadResult(out ReadResult result)
         {
-            if (_writerCompletion.IsCompletedOrThrow())
-            {
-                result._resultFlags |= ResultFlags.Completed;
-            }
-
+            bool isCompleted = _writerCompletion.IsCompletedOrThrow();
             bool isCanceled = _readerAwaitable.ObserveCancelation();
-            if (isCanceled)
-            {
-                result._resultFlags |= ResultFlags.Canceled;
-            }
-
+           
             // No need to read end if there is no head
             BufferSegment head = _readHead;
-
             if (head != null)
             {
                 // Reading commit head shared with writer
-                result._resultBuffer = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex - _commitHead.Start);
+                var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex - _commitHead.Start);
+                result = new ReadResult(readOnlySequence, isCanceled, isCompleted);
+            }
+            else
+            {
+                result = new ReadResult(default, isCanceled, isCompleted);
             }
 
             if (isCanceled)
