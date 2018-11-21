@@ -1326,8 +1326,7 @@ namespace System.Threading
             return true;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/32547. Make public.
-        internal static bool UnsafeQueueUserWorkItem<TState>(Action<TState> callBack, TState state, bool preferLocal)
+        public static bool UnsafeQueueUserWorkItem<TState>(Action<TState> callBack, TState state, bool preferLocal)
         {
             if (callBack == null)
             {
