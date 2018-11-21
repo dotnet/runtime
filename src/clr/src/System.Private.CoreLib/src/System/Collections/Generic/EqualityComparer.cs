@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Diagnostics;
 
 namespace System.Collections.Generic
 {
@@ -272,8 +273,6 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-    // Performance of IndexOf on byte array is very important for some scenarios.
-    // We will call the C runtime function memchr, which is optimized.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
@@ -291,18 +290,19 @@ namespace System.Collections.Generic
             return b.GetHashCode();
         }
 
-        internal unsafe override int IndexOf(byte[] array, byte value, int startIndex, int count)
+#if DEBUG
+        internal override int IndexOf(byte[] array, byte value, int startIndex, int count)
         {
-            int found = new ReadOnlySpan<byte>(array, startIndex, count).IndexOf(value);
-            return (found >= 0) ? (startIndex + found) : found;
+             Debug.Fail("Should not get here.");
+             return -1;
         }
 
         internal override int LastIndexOf(byte[] array, byte value, int startIndex, int count)
         {
-            int endIndex = startIndex - count + 1;
-            int found = new ReadOnlySpan<byte>(array, endIndex, count).LastIndexOf(value);
-            return (found >= 0) ? (endIndex + found) : found;
+             Debug.Fail("Should not get here.");
+             return -1;
         }
+#endif
 
         // Equals method for the comparer itself.
         public override bool Equals(object obj) =>
