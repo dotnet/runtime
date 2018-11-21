@@ -69,9 +69,9 @@ namespace System.IO.Pipelines
         public abstract void OnReaderCompleted(System.Action<System.Exception, object> callback, object state);
         public virtual System.Threading.Tasks.ValueTask<System.IO.Pipelines.FlushResult> WriteAsync(System.ReadOnlyMemory<byte> source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
-    public partial struct ReadResult
+    public readonly partial struct ReadResult
     {
-        private object _dummy;
+        private readonly object _dummy;
         public ReadResult(System.Buffers.ReadOnlySequence<byte> buffer, bool isCanceled, bool isCompleted) { throw null; }
         public System.Buffers.ReadOnlySequence<byte> Buffer { get { throw null; } }
         public bool IsCanceled { get { throw null; } }
