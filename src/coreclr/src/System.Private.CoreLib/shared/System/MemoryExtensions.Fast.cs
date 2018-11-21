@@ -141,6 +141,15 @@ namespace System
                 return -1;
             }
 
+            if (comparisonType == StringComparison.Ordinal)
+            {
+                return SpanHelpers.IndexOf(
+                    ref MemoryMarshal.GetReference(span),
+                    span.Length,
+                    ref MemoryMarshal.GetReference(value),
+                    value.Length);
+            }
+
             if (GlobalizationMode.Invariant)
             {
                 return CompareInfo.InvariantIndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
@@ -157,8 +166,8 @@ namespace System
                     return CompareInfo.Invariant.IndexOf(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType));
 
                 default:
-                    Debug.Assert(comparisonType == StringComparison.Ordinal || comparisonType == StringComparison.OrdinalIgnoreCase);
-                    return CompareInfo.Invariant.IndexOfOrdinal(span, value, string.GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
+                    Debug.Assert(comparisonType == StringComparison.OrdinalIgnoreCase);
+                    return CompareInfo.Invariant.IndexOfOrdinalIgnoreCase(span, value);
             }
         }
 
