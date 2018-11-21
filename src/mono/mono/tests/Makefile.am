@@ -934,6 +934,7 @@ TESTS_IL_SRC=			\
 	invalid-token.il	\
 	call_missing_method.il	\
 	call_missing_class.il	\
+	calli_sig_check.il	\
 	ldfld_missing_field.il	\
 	ldfld_missing_class.il	\
 	find-method.2.il	\
@@ -1406,6 +1407,7 @@ endif
 # Could not resolve type with token 01000002 assembly:mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089 type:System.BrokenIComparable`1 member:<none>.
 PROFILE_DISABLED_TESTS += \
 	constraints-load.exe \
+	calli_sig_check.exe \
 	bug-515884.exe
 
 PROFILE_DISABLED_TESTS += \
@@ -1531,7 +1533,8 @@ PROFILE_DISABLED_TESTS += \
 endif
 
 AOT_DISABLED_TESTS= \
-	constraints-load.exe
+	constraints-load.exe \
+	calli_sig_check.exe
 
 CI_DISABLED_TESTS = \
 	main-returns-background-resetabort.exe \
@@ -1788,6 +1791,9 @@ INTERP_DISABLED_TESTS += tailcall/interface-conservestack/6.exe
 INTERP_DISABLED_TESTS += tailcall/interface-conservestack/7.exe
 INTERP_DISABLED_TESTS += tailcall/interface-conservestack/8.exe
 INTERP_DISABLED_TESTS += tailcall/interface-conservestack/9.exe
+
+# expected InvalidProgramException not thrown
+INTERP_DISABLED_TESTS += calli_sig_check.exe
 
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.

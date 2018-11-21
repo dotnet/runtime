@@ -3136,48 +3136,6 @@ L_3:
        ret
   }
 
-  // Test that calli does signature checking
-  .method public static int32 calli_sig_check (string s) cil managed
-  {
-	.maxstack 16
-	ldc.i4.0
-	ret
-   }
-
-  .method public static int32 calli_sig_check_2 () cil managed
-  {
-	.maxstack 16
-
-	ldc.r4 1.13
-	ldftn int32 Tests::calli_sig_check(string)
-	calli int32(string)
-	ret
-   }
-
-	.method public static int32 test_0_calli_sig_check () cil managed
-	{
-	    .custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
-		.custom instance void class [TestDriver]CategoryAttribute::'.ctor'(string) =  (01 00 08 21 46 55 4C 4C 41 4F 54 00 00 ) // ...!FULLAOT..
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 08 21 42 49 54 43 4F 44 45 00 00 ) // ...!BITCODE..
-		.maxstack 16
-
-		.try {
-			call int32 Tests::calli_sig_check_2()
-			pop
-			leave L0
-		} catch [mscorlib]System.InvalidProgramException {
-			pop
-			leave L1
-		}
-
-		L0:
-			ldc.i4.1
-			ret
-		L1:
-			ldc.i4.0
-			ret
-	}
-
   .method public hidebysig static int32 test_1_box_r8_r4_autoconv () cil managed
   {
 		ldc.r8 1.234
