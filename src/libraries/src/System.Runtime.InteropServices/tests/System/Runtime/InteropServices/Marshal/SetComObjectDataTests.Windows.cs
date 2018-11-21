@@ -11,7 +11,6 @@ namespace System.Runtime.InteropServices.Tests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetComObjectData_NonNullValue_Sucesss()
         {
             var comObject = new ComImportObject();
@@ -28,7 +27,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetComObjectData_NullValue_Sucesss()
         {
             var comObject = new ComImportObject();
