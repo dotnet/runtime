@@ -1441,7 +1441,7 @@ namespace System.Data.SqlClient
         }
 
 
-        internal SqlDataReader EndExecuteReader(IAsyncResult asyncResult)
+        public SqlDataReader EndExecuteReader(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -1491,7 +1491,22 @@ namespace System.Data.SqlClient
             }
         }
 
-        internal IAsyncResult BeginExecuteReader(CommandBehavior behavior, AsyncCallback callback, object stateObject)
+        public IAsyncResult BeginExecuteReader()
+        {
+            return BeginExecuteReader(null, null, CommandBehavior.Default);
+        }
+
+        public IAsyncResult BeginExecuteReader(AsyncCallback callback, object stateObject)
+        {
+            return BeginExecuteReader(callback, stateObject, CommandBehavior.Default);
+        }
+
+        public IAsyncResult BeginExecuteReader(CommandBehavior behavior)
+        {
+            return BeginExecuteReader(null, null, behavior);
+        }
+
+        public IAsyncResult BeginExecuteReader(AsyncCallback callback, object stateObject, CommandBehavior behavior)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
