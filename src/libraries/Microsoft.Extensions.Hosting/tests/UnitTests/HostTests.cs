@@ -160,6 +160,27 @@ namespace Microsoft.Extensions.Hosting
         }
 
         [Fact]
+        public async Task HostedServiceRegisteredAsSingletons()
+        {
+            using (var host = CreateBuilder()
+                   .ConfigureServices((hostContext, services) =>
+                   {
+                       services.AddHostedService<TestHostedService>();
+                   })
+                   .Build())
+            {
+                var svc = (TestHostedService)host.Services.GetRequiredService<IHostedService>();
+                Assert.False(svc.StartCalled);
+                await host.StartAsync();
+                Assert.True(svc.StartCalled);
+                await host.StopAsync();
+                Assert.True(svc.StopCalled);
+                host.Dispose();
+                Assert.True(svc.DisposeCalled);
+            }
+        }
+
+        [Fact]
         public async Task HostCanBeStoppedWhenNotStarted()
         {
             using (var host = CreateBuilder()
