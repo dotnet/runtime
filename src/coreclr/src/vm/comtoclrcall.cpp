@@ -54,7 +54,6 @@ static PCODE g_pGenericComCallStub       = NULL;
 UINT64 FieldCallWorker(Thread *pThread, ComMethodFrame* pFrame);
 void FieldCallWorkerDebuggerWrapper(Thread *pThread, ComMethodFrame* pFrame);
 void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame);
-extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread);
 
 #ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------
@@ -680,7 +679,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
     HRESULT hr = S_OK;
 
     pThread = GetThread();
-    if (NULL == pThread)
+    if (pThread == NULL)
     {
         pThread = SetupThreadNoThrow();
         if (pThread == NULL)
@@ -769,7 +768,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 
     LOG((LF_STUBS, LL_INFO1000000, "COMToCLRWorker leave\n"));
 
-    // The call was successfull. If the native return type is a floating point
+    // The call was successful. If the native return type is a floating point
     // value, then we need to set the floating point registers appropriately.
     if (pCMD->IsNativeFloatingPointRetVal()) // single check skips both cases
     {
@@ -782,7 +781,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 
 #ifndef _TARGET_X86_
 ErrorExit:
-    if (pThread->PreemptiveGCDisabled())
+    if (pThread != NULL && pThread->PreemptiveGCDisabled())
         pThread->EnablePreemptiveGC();
 
     // The call failed so we need to report an error to the caller.
@@ -792,13 +791,22 @@ ErrorExit:
         retVal = hr;
     }
     else if (pCMD->IsNativeBoolRetVal())
-        retVal = 0;
+    {
+        retVal = FALSE;
+    }
     else if (pCMD->IsNativeR4RetVal())
+    {
         setFPReturn(4, CLR_NAN_32);
+    }
     else if (pCMD->IsNativeR8RetVal())
+    {
         setFPReturn(8, CLR_NAN_64);
+    }
     else
+    {
         _ASSERTE(pCMD->IsNativeVoidRetVal());
+    }
+
     return retVal;
 #endif // _TARGET_X86_
 }
