@@ -6253,17 +6253,6 @@ void InitJitHelperLogging()
 #endif
 #endif // _TARGET_X86_
 
-        if (g_pConfig->NgenHardBind() == EEConfig::NGEN_HARD_BIND_NONE)
-        {
-            _ASSERTE(g_pConfig->NgenHardBind() != EEConfig::NGEN_HARD_BIND_NONE && "You are "
-                        "trying to log JIT helper method calls while you have NGEN HARD BINDING "
-                        "set to 0. This probably means you're really trying to NGEN something for "
-                        "logging purposes, NGEN breaks with JitHelperLogging turned on!!!! Please "
-                        "set JitHelperLogging=0 while you NGEN, or unset HardPrejitEnabled while "
-                        "running managed code.");
-            return;
-        }
-
         // Make the static hlpFuncTable read/write for purposes of writing the logging thunks
         DWORD dwOldProtect;
         if (!ClrVirtualProtect((LPVOID)hlpFuncTable, (sizeof(VMHELPDEF) * CORINFO_HELP_COUNT), PAGE_EXECUTE_READWRITE, &dwOldProtect))

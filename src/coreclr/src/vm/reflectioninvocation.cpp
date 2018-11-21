@@ -168,11 +168,6 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
         pAssem = declaringType.GetAssembly();
     }
 
-    // We should throw NotSupportedException here. 
-    // But for backward compatibility we are throwing FieldAccessException instead.
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrow(kFieldAccessException);
-
     OBJECTREF rv = NULL; // not protected
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
@@ -328,11 +323,6 @@ FCIMPL7(void, RuntimeFieldHandle::SetValue, ReflectFieldObject *pFieldUNSAFE, Ob
         pAssem = declaringType.GetAssembly();
     }
 
-    // We should throw NotSupportedException here. 
-    // But for backward compatibility we are throwing FieldAccessException instead.
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrowVoid(kFieldAccessException);
-
     FC_GC_POLL_NOT_NEEDED();
 
     FieldDesc* pFieldDesc = gc.refField->GetField();
@@ -416,9 +406,6 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
     TypeHandle thisTH = refThis->GetType();
 
     Assembly *pAssem = thisTH.GetAssembly();
-
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrowRes(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
 
     HELPER_METHOD_FRAME_BEGIN_RET_2(rv, refThis);
 
@@ -573,7 +560,6 @@ FCIMPL2(Object*, RuntimeTypeHandle::CreateInstanceForGenericType, ReflectClassBa
     // Get the type information associated with refThis
     MethodTable* pVMT = instantiatedType.GetMethodTable();
     _ASSERTE (pVMT != 0 &&  !instantiatedType.IsTypeDesc());
-    _ASSERTE(!(pVMT->GetAssembly()->IsDynamic() && !pVMT->GetAssembly()->HasRunAccess()));
     _ASSERTE( !pVMT->IsAbstract() ||! instantiatedType.ContainsGenericVariables());
     _ASSERTE(!pVMT->IsByRefLike() && pVMT->HasDefaultConstructor());
 
@@ -1005,11 +991,6 @@ FCIMPL5(Object*, RuntimeMethodHandle::InvokeMethod,
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     Assembly *pAssem = pMeth->GetAssembly();
-
-    // We should throw NotSupportedException here. 
-    // But for backward compatibility we are throwing TargetException instead.
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        COMPlusThrow(kTargetException);
 
     if (ownerType.IsSharedByGenericInstantiations())
         COMPlusThrow(kNotSupportedException, W("NotSupported_Type"));
@@ -1544,11 +1525,6 @@ FCIMPL4(Object*, RuntimeFieldHandle::GetValueDirect, ReflectFieldObject *pFieldU
 
     Assembly *pAssem = pField->GetModule()->GetAssembly();
 
-    // We should throw NotSupportedException here. 
-    // But for backward compatibility we are throwing FieldAccessException instead.
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrow(kFieldAccessException);
-
     OBJECTREF refRet  = NULL;
     CorElementType fieldElType;
 
@@ -1705,11 +1681,6 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
     FieldDesc *pField = gc.refField->GetField();
 
     Assembly *pAssem = pField->GetModule()->GetAssembly();
-
-    // We should throw NotSupportedException here. 
-    // But for backward compatibility we are throwing FieldAccessException instead.
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrowVoid(kFieldAccessException);
 
     BYTE           *pDst = NULL;
     ARG_SLOT        value = NULL;
@@ -1927,11 +1898,6 @@ FCIMPL1(void, ReflectionInvocation::RunClassConstructor, ReflectClassBaseObject 
 
     Assembly *pAssem = pMT->GetAssembly();
 
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-    {
-        FCThrowResVoid(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
-    }
-
     if (!pMT->IsClassInited()) 
     {
         HELPER_METHOD_FRAME_BEGIN_1(refType);
@@ -1961,9 +1927,6 @@ FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObjec
     Module *pModule = refModule->GetModule();
 
     Assembly *pAssem = pModule->GetAssembly();
-
-    if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-        FCThrowResVoid(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
 
     DomainFile *pDomainFile = pModule->FindDomainFile(GetAppDomain());
     if (pDomainFile==NULL || !pDomainFile->IsActive())

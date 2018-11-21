@@ -103,7 +103,6 @@ set(VM_CROSSGEN_HEADERS
   ../class.inl
   ../classhash.h
   ../clrex.h
-  ../clrprivbinderloadfile.h
   ../clsload.hpp
   ../clsload.inl
   ../codeman.h

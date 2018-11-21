@@ -687,13 +687,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
 
     TypeHandle methodType = gc.refMethodType->GetType();
 
-    //We should thrown an exception if the assembly doesn't have run access.
-    //That would be a breaking change from V2.
-    //
-    //Assembly *pAssem = methodType.GetAssembly();
-    //if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-    //    FCThrowRes(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
-
     MethodDesc *pMatchingMethod = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
@@ -818,13 +811,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
 
     MethodTable *pMethMT = gc.refMethodType->GetType().GetMethodTable();
     MethodDesc *method = gc.refMethod->GetMethod();
-
-    //We should thrown an exception if the assembly doesn't have run access.
-    //That would be a breaking change from V2.
-    //
-    //Assembly *pAssem = pMethMT->GetAssembly();
-    //if (pAssem->IsDynamic() && !pAssem->HasRunAccess())
-    //    FCThrowRes(kNotSupportedException, W("NotSupported_DynamicAssemblyNoRunAccess"));
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 

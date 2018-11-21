@@ -5877,35 +5877,7 @@ void AppDomain::SetupSharedStatics()
     // Because we are allocating/referencing objects, need to be in cooperative mode
     GCX_COOP();
 
-    static OBJECTHANDLE hSharedStaticsHandle = NULL;
-
-    if (hSharedStaticsHandle == NULL) {
-        // Note that there is no race here since the default domain is always set up first
-        _ASSERTE(IsDefaultDomain());
-
-        MethodTable *pMT = MscorlibBinder::GetClass(CLASS__SHARED_STATICS);
-        _ASSERTE(pMT->IsClassPreInited());
-
-        hSharedStaticsHandle = CreateGlobalHandle(AllocateObject(pMT));
-    }
-
-    DomainLocalModule *pLocalModule;
-
-    if (IsSingleAppDomain())
-    {
-        pLocalModule = MscorlibBinder::GetModule()->GetDomainLocalModule();
-    }
-    else
-    {
-        pLocalModule = GetDomainLocalBlock()->GetModuleSlot(
-            MscorlibBinder::GetModule()->GetModuleIndex());
-    }
-
-    FieldDesc *pFD = MscorlibBinder::GetField(FIELD__SHARED_STATICS__SHARED_STATICS);
-
-    OBJECTREF* pHandle = (OBJECTREF*)
-        ((TADDR)pLocalModule->GetPrecomputedGCStaticsBasePointer()+pFD->GetOffset());
-    SetObjectReference( pHandle, ObjectFromHandle(hSharedStaticsHandle), this );
+    DomainLocalModule *pLocalModule = MscorlibBinder::GetModule()->GetDomainLocalModule();
 
     // This is a convenient place to initialize String.Empty.
     // It is treated as intrinsic by the JIT as so the static constructor would never run.

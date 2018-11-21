@@ -268,7 +268,6 @@ private:
     BOOL IsDelegate() { LIMITED_METHOD_CONTRACT; return bmtProp->fIsDelegate; } 
     Module *GetModule() { LIMITED_METHOD_CONTRACT; return bmtType->pModule; } 
     Assembly *GetAssembly() { WRAPPER_NO_CONTRACT; return GetModule()->GetAssembly(); } 
-    BaseDomain *GetDomain() { LIMITED_METHOD_CONTRACT; return bmtDomain; } 
     ClassLoader *GetClassLoader() { WRAPPER_NO_CONTRACT; return GetModule()->GetClassLoader(); } 
     IMDInternalImport* GetMDImport()  { WRAPPER_NO_CONTRACT; return GetModule()->GetMDImport(); } 
 #ifdef _DEBUG
@@ -566,7 +565,6 @@ private:
     // Look at the struct definitions for a detailed list of all parameters available
     // to BuildMethodTable.
 
-    BaseDomain *bmtDomain;
     bmtErrorInfo *bmtError;
     bmtProperties *bmtProp;
     bmtVtable *bmtVT;
@@ -577,7 +575,6 @@ private:
     bmtMethodImplInfo *bmtMethodImpl;
 
     void SetBMTData(
-        BaseDomain *bmtDomain,
         bmtErrorInfo *bmtError,
         bmtProperties *bmtProp,
         bmtVtable *bmtVT,
@@ -704,7 +701,6 @@ private:
         WORD *pcBuildingInterfaceList);
 
     VOID BuildInteropVTable_PlaceMembers(
-        BaseDomain *bmtDomain,
         bmtTypeInfo* bmtType,
         DWORD numDeclaredInterfaces,
         BuildingInterfaceInfo_t *pBuildingInterfaceList,
@@ -717,7 +713,6 @@ private:
         bmtVtable* bmtVT);
 
     VOID BuildInteropVTable_ResolveInterfaces(
-        BaseDomain *bmtDomain,
         BuildingInterfaceInfo_t *pBuildingInterfaceList,
         bmtTypeInfo* bmtType,
         bmtInterfaceInfo* bmtInterface,
@@ -751,7 +746,6 @@ private:
         bmtParentInfo* bmtParent);
 
     VOID BuildInteropVTable_PlaceMethodImpls(
-        BaseDomain *bmtDomain,
         bmtTypeInfo* bmtType,
         bmtMethodImplInfo* bmtMethodImpl,
         bmtErrorInfo* bmtError,

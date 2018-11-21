@@ -290,35 +290,6 @@ public:
         return GetManifestFile()->GetFlags();
     }
 
-
-    // Level of strong name support (dynamic assemblies only).
-    enum StrongNameLevel {
-        SN_NONE = 0,
-        SN_PUBLIC_KEY = 1,
-        SN_FULL_KEYPAIR_IN_ARRAY = 2,
-        SN_FULL_KEYPAIR_IN_CONTAINER = 3
-    };
-
-    StrongNameLevel GetStrongNameLevel()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_eStrongNameLevel;
-    }
-
-    void SetStrongNameLevel(StrongNameLevel eLevel)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_eStrongNameLevel = eLevel;
-    }
-
-    // returns whether CAS policy needs to be resolved for this assembly
-    // or whether it's safe to skip that step.
-    BOOL CanSkipPolicyResolution()
-    {
-        WRAPPER_NO_CONTRACT;
-        return IsSystem() || (m_isDynamic && !(m_dwDynamicAssemblyAccess & ASSEMBLY_ACCESS_RUN));
-    }
-
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
     PTR_LoaderHeap GetStubHeap();
@@ -328,17 +299,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
         return m_pManifest;
-    }
-
-    ReflectionModule* GetOnDiskManifestModule()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pOnDiskManifest;
-    }
-
-    BOOL NeedsToHideManifestForEmit()
-    {
-        return m_needsToHideManifestForEmit;
     }
 
     PTR_PEAssembly GetManifestFile()
@@ -464,12 +424,6 @@ public:
 
     FORCEINLINE BOOL IsDynamic() { LIMITED_METHOD_CONTRACT; return m_isDynamic; }
     FORCEINLINE BOOL IsCollectible() { LIMITED_METHOD_DAC_CONTRACT; return m_isCollectible; }
-    FORCEINLINE BOOL HasRunAccess() {
-        LIMITED_METHOD_CONTRACT; 
-        SUPPORTS_DAC;
-        return m_dwDynamicAssemblyAccess & ASSEMBLY_ACCESS_RUN; 
-    }
-    FORCEINLINE BOOL HasSaveAccess() {LIMITED_METHOD_CONTRACT; return m_dwDynamicAssemblyAccess & ASSEMBLY_ACCESS_SAVE; }
 
     DWORD GetNextModuleIndex() { LIMITED_METHOD_CONTRACT; return m_nextAvailableModuleIndex++; }
 
@@ -497,11 +451,6 @@ public:
 
     BOOL CanBeShared(DomainAssembly *pAsAssembly);
 
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    BOOL MissingDependenciesCheckDone();
-    void SetMissingDependenciesCheckDone();
-#endif // FEATURE_LOADER_OPTIMIZATION
-
     void SetDomainNeutral() { LIMITED_METHOD_CONTRACT; m_fIsDomainNeutral = TRUE; }
     BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return m_fIsDomainNeutral; }
 
@@ -511,18 +460,6 @@ public:
     BOOL IsInstrumented();
     BOOL IsInstrumentedHelper();
 #endif // FEATURE_PREJIT
-
-    HRESULT AllocateStrongNameSignature(ICeeFileGen  *pCeeFileGen,
-                                        HCEEFILE      ceeFile);
-    HRESULT SignWithStrongName(LPCWSTR wszFileName);
-
-
-#ifdef FEATURE_COMINTEROP
-    // Get any cached ITypeLib* for the assembly.
-    ITypeLib *GetTypeLib();
-    // Cache the ITypeLib*, if one is not already cached.
-    void SetTypeLib(ITypeLib *pITLB);
-#endif // FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
 
@@ -550,12 +487,6 @@ public:
     void DECLSPEC_NORETURN ThrowBadImageException(LPCUTF8 pszNameSpace,
                                                   LPCUTF8 pszTypeName,
                                                   UINT resIDWhy);
-
-    UINT64 GetHostAssemblyId() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_HostAssemblyId;
-    }
 
 #endif // #ifndef DACCESS_COMPILE
 
@@ -602,14 +533,6 @@ public:
 
 
 protected:
-
-    enum {
-        FREE_KEY_PAIR = 4,
-        FREE_KEY_CONTAINER = 8,
-    };
-
-    void ReportAssemblyUse();
-
 #ifdef FEATURE_COMINTEROP
     enum WinMDStatus
     {
@@ -657,9 +580,6 @@ protected:
     }
 #endif // FEATURE_INTEROP
 
-    // Keep track of the vars that need to be freed.
-    short int m_FreeFlag;
-
 private:
 
     //****************************************************************************************
@@ -678,35 +598,18 @@ private:
     PTR_MethodDesc        m_pEntryPoint;    // Method containing the entry point
     PTR_Module            m_pManifest;
     PTR_PEAssembly        m_pManifestFile;
-    ReflectionModule*     m_pOnDiskManifest;  // This is the module containing the on disk manifest.
-    BOOL                  m_fEmbeddedManifest;
 
     FriendAssemblyDescriptor *m_pFriendAssemblyDescriptor;
-
-    // Strong name key info for reflection emit
-    PBYTE                 m_pbStrongNameKeyPair;
-    DWORD                 m_cbStrongNameKeyPair;
-    LPWSTR                m_pwStrongNameKeyContainer;
-    StrongNameLevel       m_eStrongNameLevel;
 
     BOOL                  m_isDynamic;
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL                  m_isCollectible;
 #endif // FEATURE_COLLECTIBLE_TYPES
-    // this boolean is used by Reflection.Emit to determine when to hide m_pOnDiskManifest.
-    // Via reflection emit m_pOnDiskManifest may be explicitly defined by the user and thus available
-    // or created implicitly via Save in which case it needs to be hidden from the user for
-    // backward compatibility reason.
-    // This is a bit of a workaround however and that whole story should be understood a bit better...
-    BOOL                  m_needsToHideManifestForEmit;
-    DWORD                 m_dwDynamicAssemblyAccess;
     DWORD                 m_nextAvailableModuleIndex;
     PTR_LoaderAllocator   m_pLoaderAllocator;
     DWORD                 m_isDisabledPrivateReflection;
 
 #ifdef FEATURE_COMINTEROP
-    // If a TypeLib is ever required for this module, cache the pointer here.
-    ITypeLib              *m_pITypeLib;
     InteropAttributeStatus m_InteropAttributeStatus;
 
     WinMDStatus            m_winMDStatus;
@@ -714,18 +617,12 @@ private:
 #endif // FEATURE_COMINTEROP
 
     BOOL                   m_fIsDomainNeutral;
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    BOOL m_bMissingDependenciesCheckDone;
-#endif // FEATURE_LOADER_OPTIMIZATION
 
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
     BOOL                  m_fTerminated;
 
     BOOL                  m_fIsSIMDVectorAssembly;
-    UINT64                m_HostAssemblyId;
-
-    DWORD                 m_dwReliabilityContract;
 
 #ifdef FEATURE_PREJIT
     enum IsInstrumentedStatus {

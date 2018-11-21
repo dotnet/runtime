@@ -1540,9 +1540,6 @@
   <data name="Argument_UnmatchingSymScope" xml:space="preserve">
     <value>Non-matching symbol scope.</value>
   </data>
-  <data name="Argument_UnrecognizedLoaderOptimization" xml:space="preserve">
-    <value>Unrecognized LOADER_OPTIMIZATION property value.  Supported values may include "SingleDomain", "MultiDomain", "MultiDomainHost", and "NotSpecified".</value>
-  </data>
   <data name="Argument_UTCOutOfRange" xml:space="preserve">
     <value>The UTC time represented when the offset is applied must be between year 0 and 10,000.</value>
   </data>
@@ -2904,9 +2901,6 @@
   </data>
   <data name="NotSupported_DynamicAssembly" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic assembly.</value>
-  </data>
-  <data name="NotSupported_DynamicAssemblyNoRunAccess" xml:space="preserve">
-    <value>Cannot execute code on a dynamic assembly without run access.</value>
   </data>
   <data name="NotSupported_DynamicMethodFlags" xml:space="preserve">
     <value>Wrong MethodAttributes or CallingConventions for DynamicMethod. Only public, static, standard supported</value>

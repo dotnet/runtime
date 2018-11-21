@@ -406,8 +406,7 @@ BOOL DomainAssembly::IsVisibleToDebugger()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // If you can't run an assembly, then don't send notifications to the debugger.
-    return ((GetAssembly() != NULL) ? GetAssembly()->HasRunAccess() : FALSE);
+    return (GetAssembly() != NULL);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1739,7 +1738,7 @@ void DomainAssembly::FindNativeImage()
 
         ReleaseHolder<PEImage> pNativeImage = GetFile()->GetNativeImageWithRef();
 
-        if(!IsSystem() && !SystemDomain::System()->SystemFile()->HasNativeImage() && !CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NgenAllowMscorlibSoftbind))
+        if(!IsSystem() && !SystemDomain::System()->SystemFile()->HasNativeImage())
         {
             m_dwReasonForRejectingNativeImage = ReasonForRejectingNativeImage_MscorlibNotNative;
             STRESS_LOG2(LF_ZAP,LL_INFO100,"Rejecting native file %p, because mscolib has not NI - reason 0x%x\n",pNativeImage.GetValue(),m_dwReasonForRejectingNativeImage);
@@ -1982,9 +1981,6 @@ void DomainAssembly::Allocate()
                 // Go ahead and create new shared version of the assembly if possible
                 // <TODO> We will need to pass a valid OBJECREF* here in the future when we implement SCU </TODO>
                 assemblyHolder = pAssembly = Assembly::Create(pSharedDomain, GetFile(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-
-                if (MissingDependenciesCheckDone())
-                    pAssembly->SetMissingDependenciesCheckDone();
 
                 // Compute the closure assembly dependencies
                 // of the code & layout of given assembly.
