@@ -1,7 +1,3 @@
-parameters:
-  helixSource: 'undefined_defaulted_in_telemetry.yml'
-  helixType: 'undefined_defaulted_in_telemetry.yml'
-
 steps:
 - bash: |
     if [ "$AGENT_JOBSTATUS" = "Succeeded" ] || [ "$AGENT_JOBSTATUS" = "PartiallySucceeded" ]; then
