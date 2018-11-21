@@ -5,9 +5,6 @@
 // File: DllImport.h
 //
 
-//
-
-
 #ifndef __dllimport_h__
 #define __dllimport_h__
 
@@ -77,9 +74,13 @@ public:
     static HRESULT HasNAT_LAttribute(IMDInternalImport *pInternalImport, mdToken token, DWORD dwMemberAttrs);
 
     static LPVOID NDirectGetEntryPoint(NDirectMethodDesc *pMD, HINSTANCE hMod);
-    static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath);
+    static NATIVE_LIBRARY_HANDLE LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError);
+    static NATIVE_LIBRARY_HANDLE LoadLibraryByName(LPCWSTR name, Assembly *callingAssembly, 
+                                                   BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag, 
+                                                   BOOL throwOnError);
     static HINSTANCE LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker *pErrorTracker);
-
+    static void FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle);
+    static INT_PTR GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError);
 
     static VOID NDirectLink(NDirectMethodDesc *pMD);
 
@@ -125,6 +126,7 @@ private:
     static NATIVE_LIBRARY_HANDLE LoadFromPInvokeAssemblyDirectory(Assembly *pAssembly, LPCWSTR libName, DWORD flags, LoadLibErrorTracker *pErrorTracker);
     static NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaHost(NDirectMethodDesc * pMD, AppDomain* pDomain, const wchar_t* wszLibName);
     static NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker, const wchar_t* wszLibName);
+    static NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(Assembly *callingAssembly, BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlag, LoadLibErrorTracker * pErrorTracker, const wchar_t* wszLibName);
 
 #if !defined(FEATURE_PAL)
     // Indicates if the OS supports the new secure LoadLibraryEx flags introduced in KB2533623

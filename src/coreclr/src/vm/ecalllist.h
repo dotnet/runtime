@@ -863,6 +863,12 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("GetExceptionForHRInternal", MarshalNative::GetExceptionForHR)
     FCFuncElement("GetDelegateForFunctionPointerInternal", MarshalNative::GetDelegateForFunctionPointerInternal)
     FCFuncElement("GetFunctionPointerForDelegateInternal", MarshalNative::GetFunctionPointerForDelegateInternal)
+
+    QCFuncElement("LoadLibraryFromPath", MarshalNative::LoadLibraryFromPath)
+    QCFuncElement("LoadLibraryByName", MarshalNative::LoadLibraryByName)
+    QCFuncElement("FreeNativeLibrary", MarshalNative::FreeNativeLibrary)
+    QCFuncElement("GetNativeLibraryExport", MarshalNative::GetNativeLibraryExport)
+
 #ifdef FEATURE_COMINTEROP
     FCFuncElement("GetHRForException", MarshalNative::GetHRForException)
     FCFuncElement("GetHRForException_WinRT", MarshalNative::GetHRForException_WinRT)

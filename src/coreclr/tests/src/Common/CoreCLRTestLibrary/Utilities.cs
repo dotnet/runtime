@@ -57,10 +57,15 @@ namespace TestLibrary
             }
         }
 
-        public static bool IsWindows => (Path.DirectorySeparatorChar == '\\');
+        public static bool IsX86 => (RuntimeInformation.ProcessArchitecture == Architecture.X86);
+        public static bool IsX64 => (RuntimeInformation.ProcessArchitecture == Architecture.X64);
+        public static bool IsArm => (RuntimeInformation.ProcessArchitecture == Architecture.Arm);
+        public static bool IsArm64 => (RuntimeInformation.ProcessArchitecture == Architecture.Arm64);
 
+        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
+        public static bool IsMacOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
-
         public static bool IsWindowsIoTCore
         {
             get
