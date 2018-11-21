@@ -12,7 +12,6 @@ add_definitions(-DSTRONGNAME_IN_VM -DSNAPI_INTERNAL)
 
 set(STRONGNAME_SOURCES
   strongname.cpp
-  strongnamecoreclr.cpp
   strongnameinternal.cpp
 )
 

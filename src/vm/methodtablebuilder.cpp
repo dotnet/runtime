@@ -10153,7 +10153,7 @@ MethodTableBuilder::SetupMethodTable2(
         {
             Module * pModule = GetModule();
             Module * pParentModule = GetParentMethodTable()->GetModule();
-            if (pModule != pParentModule && !pModule->HasUnconditionalActiveDependency(pParentModule))
+            if (pModule != pParentModule)
             {
                 pMT->SetHasModuleDependencies();
             }

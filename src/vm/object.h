@@ -1625,28 +1625,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     }
 };
 
-
-// The managed definition of AppDomainSetup is in BCL\System\AppDomainSetup.cs
-class AppDomainSetupObject : public Object
-{
-    friend class MscorlibBinder;
-
-  protected:
-    PTRARRAYREF m_Entries;
-    STRINGREF m_AppBase;
-    OBJECTREF m_CompatFlags;
-
-  protected:
-    AppDomainSetupObject() { LIMITED_METHOD_CONTRACT; }
-   ~AppDomainSetupObject() { LIMITED_METHOD_CONTRACT; }
-};
-typedef DPTR(AppDomainSetupObject) PTR_AppDomainSetupObject;
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<AppDomainSetupObject> APPDOMAINSETUPREF;
-#else
-typedef AppDomainSetupObject*     APPDOMAINSETUPREF;
-#endif
-
 // AssemblyBaseObject 
 // This class is the base class for assemblies
 //  

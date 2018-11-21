@@ -1356,16 +1356,6 @@ UriMarshalingInfo *EEMarshalingData::GetUriMarshalingInfo()
         }
     }
 
-#ifdef _DEBUG
-    BaseDomain *pUriDomain = m_pUriInfo->GetSystemUriType().GetDomain();
-    if (pUriDomain != m_pDomain)
-    {
-        // Make sure that Uri marshaling data is initialized in its own (shared) domain as well.
-        // This allows us to perform quick checks in code:EEMarshalingData.IsUriHelperMethod.
-        (void) pUriDomain->GetMarshalingData()->GetUriMarshalingInfo();
-    }
-#endif // _DEBUG
-
     RETURN m_pUriInfo;
 }
 
@@ -1394,16 +1384,6 @@ EventArgsMarshalingInfo *EEMarshalingData::GetEventArgsMarshalingInfo()
         }
     }
 
-#ifdef _DEBUG
-    BaseDomain *pEventArgsDomain = m_pEventArgsInfo->GetSystemNCCEventArgsType().GetDomain();
-    if (pEventArgsDomain != m_pDomain)
-    {
-        // Make sure that EventArgs marshaling data is initialized in its own (shared) domain as well.
-        // This allows us to perform quick checks in code:EEMarshalingData.IsEventArgsHelperMethod.
-        (void) pEventArgsDomain->GetMarshalingData()->GetEventArgsMarshalingInfo();
-    }
-#endif // _DEBUG
-
     RETURN m_pEventArgsInfo;
 }
 
@@ -1431,16 +1411,6 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
             delete pOleColorInfo;
         }
     }
-
-#ifdef _DEBUG
-    BaseDomain *pColorDomain = m_pOleColorInfo->GetColorType().GetDomain();
-    if (pColorDomain != m_pDomain)
-    {
-        // Make sure that Color marshaling data is initialized in its own (shared) domain as well.
-        // This allows us to perform quick checks in code:EEMarshalingData.IsOleColorHelperMethod.
-        (void) pColorDomain->GetMarshalingData()->GetOleColorMarshalingInfo();
-    }
-#endif // _DEBUG
 
     RETURN m_pOleColorInfo;
 }

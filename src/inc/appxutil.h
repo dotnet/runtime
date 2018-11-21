@@ -10,7 +10,6 @@
 
 #include "clrtypes.h"
 #include "appmodel.h"
-#include "fusionsetup.h"
 
 #define PACKAGE_FILTER_CLR_DEFAULT (PACKAGE_FILTER_HEAD|PACKAGE_FILTER_DIRECT)
 

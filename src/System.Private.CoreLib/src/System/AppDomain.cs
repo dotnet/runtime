@@ -486,7 +486,7 @@ namespace System
                                                         string[] propertyNames,
                                                         string[] propertyValues)
         {
-            var newSetup = new AppDomainSetup(setup, copyDomainBoundData: false);
+            var newSetup = new AppDomainSetup(setup);
 
             // Remove the special AppDomainCompatSwitch entries from the set of name value pairs
             // And add them to the AppDomainSetup
@@ -532,7 +532,7 @@ namespace System
             var propertyValues = (string[])args[3]; // can contain null elements
 
             AppDomain ad = CurrentDomain;
-            var newSetup = new AppDomainSetup(setup, copyDomainBoundData: false);
+            var newSetup = new AppDomainSetup(setup);
 
             if (propertyNames != null && propertyValues != null)
             {
@@ -660,8 +660,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void nSetupFriendlyName(string friendlyName);
-
-        public AppDomainSetup SetupInformation => new AppDomainSetup(FusionStore, copyDomainBoundData: true);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern string IsStringInterned(string str);

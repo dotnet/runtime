@@ -553,7 +553,7 @@ BOOL  MethodTable::IsInitError()
 void MethodTable::SetClassInited()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(!IsClassPreInited() || MscorlibBinder::IsClass(this, CLASS__SHARED_STATICS));
+    _ASSERTE(!IsClassPreInited());
     GetDomainLocalModule()->SetClassInitialized(this);
 }
 

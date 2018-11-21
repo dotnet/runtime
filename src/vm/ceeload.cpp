@@ -3947,16 +3947,6 @@ BOOL Module::IsSymbolReadingEnabled()
     }
     CONTRACTL_END;
 
-    // The only time we need symbols available is for debugging and taking stack traces,
-    // neither of which can be done if the assembly can't run. The advantage of being strict
-    // is that there is a perf penalty adding types to a module if you must support reading
-    // symbols at any time. If symbols don't need to be accesible then we can
-    // optimize by only commiting symbols when the assembly is saved to disk. See DDB 671107.
-    if(!GetAssembly()->HasRunAccess())
-    {
-        return FALSE;
-    }
-
     // If the module has symbols in-memory (eg. RefEmit) that are in ILDB
     // format, then there isn't any reason not to supply them.  The reader
     // code is always available, and we trust it's security.
@@ -4247,12 +4237,6 @@ BOOL Module::IsVisibleToDebugger()
         return FALSE;
     }
 
-    // If for whatever other reason, we can't run it, then don't notify the debugger about it.
-    Assembly * pAssembly = GetAssembly();
-    if (!pAssembly->HasRunAccess())
-    {
-        return FALSE;
-    }
     return TRUE;
 }
 
