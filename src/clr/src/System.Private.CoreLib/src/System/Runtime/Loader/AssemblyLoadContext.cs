@@ -33,9 +33,6 @@ namespace System.Runtime.Loader
         private InternalState state;
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool CanUseAppPathAssemblyLoadContextInCurrentDomain();
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext, bool isCollectible);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -422,16 +419,12 @@ namespace System.Runtime.Loader
             {
                 if (s_DefaultAssemblyLoadContext == null)
                 {
-                    // Try to initialize the default assembly load context with apppath one if we are allowed to
-                    if (AssemblyLoadContext.CanUseAppPathAssemblyLoadContextInCurrentDomain())
+                    // Synchronize access to initializing Default ALC
+                    lock (s_initLock)
                     {
-                        // Synchronize access to initializing Default ALC
-                        lock (s_initLock)
+                        if (s_DefaultAssemblyLoadContext == null)
                         {
-                            if (s_DefaultAssemblyLoadContext == null)
-                            {
-                                s_DefaultAssemblyLoadContext = new AppPathAssemblyLoadContext();
-                            }
+                            s_DefaultAssemblyLoadContext = new AppPathAssemblyLoadContext();
                         }
                     }
                 }

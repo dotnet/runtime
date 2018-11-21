@@ -136,8 +136,8 @@ namespace System.Runtime
         // use a MemoryFailPoint at the same time, and they both succeed, that
         // they don't trample over each other's memory.  Keep a process-wide
         // count of "reserved" memory, and decrement this in Dispose and
-        // in the critical finalizer.  See 
-        // SharedStatics.MemoryFailPointReservedMemory
+        // in the critical finalizer.
+        private static long s_failPointReservedMemory;
 
         private ulong _reservedMemory;  // The size of this request (from user)
         private bool _mustSubtractReservation; // Did we add data to SharedStatics?
@@ -196,7 +196,7 @@ namespace System.Runtime
                 // If we have enough room, then skip some stages.
                 // Note that multiple threads can still lead to a race condition for our free chunk
                 // of address space, which can't be easily solved.
-                ulong reserved = SharedStatics.MemoryFailPointReservedMemory;
+                ulong reserved = (ulong)Volatile.Read(ref s_failPointReservedMemory);
                 ulong segPlusReserved = segmentSize + reserved;
                 bool overflow = segPlusReserved < segmentSize || segPlusReserved < reserved;
                 bool needPageFile = availPageFile < (requestedSizeRounded + reserved + LowMemoryFudgeFactor) || overflow;
@@ -307,7 +307,7 @@ namespace System.Runtime
 
             RuntimeHelpers.PrepareConstrainedRegions();
 
-            SharedStatics.AddMemoryFailPointReservation((long)size);
+            Interlocked.Add(ref s_failPointReservedMemory, (long)size);
             _mustSubtractReservation = true;
 #endif
         }
@@ -412,7 +412,7 @@ namespace System.Runtime
             {
                 RuntimeHelpers.PrepareConstrainedRegions();
 
-                SharedStatics.AddMemoryFailPointReservation(-((long)_reservedMemory));
+                Interlocked.Add(ref s_failPointReservedMemory, -(long)_reservedMemory);
                 _mustSubtractReservation = false;
             }
 

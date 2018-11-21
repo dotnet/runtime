@@ -230,8 +230,6 @@ HRESULT EEConfig::Init()
 
     fNgenBindOptimizeNonGac = false;
     fStressLog = false;
-    fCacheBindingFailures = true;
-    fDisableCommitThreadStack = false;
     fProbeForStackOverflow = true;
     
     INDEBUG(fStressLog = true;)
@@ -253,7 +251,6 @@ HRESULT EEConfig::Init()
     fJitVerificationDisable= false;
     fVerifierOff           = false;
 
-    fDoAllowUntrustedCallerChecks = true;
 #ifdef ENABLE_STARTUP_DELAY
     iStartupDelayMS = 0;
 #endif
@@ -300,15 +297,7 @@ HRESULT EEConfig::Init()
 
     iRequireZaps = REQUIRE_ZAPS_NONE;
 
-    // new loader behavior switches
-
-    m_fDeveloperInstallation = false;
-
     pZapSet = DEFAULT_ZAP_SET;
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    dwSharePolicy = AppDomain::SHARE_POLICY_UNSPECIFIED;
-#endif
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     dwDisableStackwalkCache = 0;
@@ -316,8 +305,6 @@ HRESULT EEConfig::Init()
     dwDisableStackwalkCache = 1;
 #endif // _TARGET_X86_
 
-    fUseNewCrossDomainRemoting = 1;
-    
     szZapBBInstr     = NULL;
     szZapBBInstrDir  = NULL;
 
@@ -330,7 +317,6 @@ HRESULT EEConfig::Init()
     m_TraceWrapper = 0;
 #endif
 
-    iNgenHardBind = NGEN_HARD_BIND_DEFAULT;
 #ifdef _DEBUG
     dwNgenForceFailureMask  = 0;
     dwNgenForceFailureCount = 0;
@@ -955,10 +941,6 @@ HRESULT EEConfig::sync()
     }
 #endif
 
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    dwSharePolicy           = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_LoaderOptimization, dwSharePolicy);
-#endif
-
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
     DoubleArrayToLargeObjectHeapThreshold = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
@@ -1130,10 +1112,6 @@ HRESULT EEConfig::sync()
 #ifdef TEST_DATA_CONSISTENCY
     fTestDataConsistency = (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TestDataConsistency) !=0);
 #endif
-
-    fDoAllowUntrustedCallerChecks =  
-        (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SupressAllowUntrustedCallerChecks) != 1);
-
 
     m_SuspendThreadDeadlockTimeoutMs = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendThreadDeadlockTimeoutMs);
     m_SuspendDeadlockTimeout = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuspendDeadlockTimeout);

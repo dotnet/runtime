@@ -104,37 +104,26 @@ enum ReasonForNotSharing
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
 Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
-    m_FreeFlag(0),
     m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pManifest(NULL),
     m_pManifestFile(clr::SafeAddRef(pFile)),
-    m_pOnDiskManifest(NULL),
     m_pFriendAssemblyDescriptor(NULL),
-    m_pbStrongNameKeyPair(NULL),
-    m_pwStrongNameKeyContainer(NULL),
     m_isDynamic(false),
 #ifdef FEATURE_COLLECTIBLE_TYPES
     m_isCollectible(fIsCollectible),
 #endif
-    m_needsToHideManifestForEmit(FALSE),
-    m_dwDynamicAssemblyAccess(ASSEMBLY_ACCESS_RUN),
     m_nextAvailableModuleIndex(1),
     m_pLoaderAllocator(NULL),
     m_isDisabledPrivateReflection(0),
 #ifdef FEATURE_COMINTEROP
-    m_pITypeLib(NULL),
     m_winMDStatus(WinMDStatus_Unknown),
     m_pManifestWinMDImport(NULL),
 #endif // FEATURE_COMINTEROP
     m_fIsDomainNeutral(pDomain == SharedDomain::GetDomain()),
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    m_bMissingDependenciesCheckDone(FALSE),
-#endif // FEATURE_LOADER_OPTIMIZATION
     m_debuggerFlags(debuggerFlags),
-    m_fTerminated(FALSE),
-    m_HostAssemblyId(0)
+    m_fTerminated(FALSE)
 #ifdef FEATURE_COMINTEROP
     , m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET)
 #endif
@@ -286,17 +275,6 @@ Assembly::~Assembly()
     if (m_pFriendAssemblyDescriptor != NULL && m_pFriendAssemblyDescriptor != NO_FRIEND_ASSEMBLIES_MARKER)
         delete m_pFriendAssemblyDescriptor;
 
-    if (m_pbStrongNameKeyPair && (m_FreeFlag & FREE_KEY_PAIR))
-        delete[] m_pbStrongNameKeyPair;
-    if (m_pwStrongNameKeyContainer && (m_FreeFlag & FREE_KEY_CONTAINER))
-        delete[] m_pwStrongNameKeyContainer;
-
-    if (IsDynamic()) {
-        if (m_pOnDiskManifest)
-            // clear the on disk manifest if it is not cleared yet.
-            m_pOnDiskManifest = NULL;
-    }
-
     if (m_pManifestFile)
     {
         m_pManifestFile->Release();
@@ -363,26 +341,6 @@ void Assembly::StartUnload()
         ProfilerCallAssemblyUnloadStarted(this);
     }
 #endif
-
-    // we need to release tlb files eagerly
-#ifdef FEATURE_COMINTEROP
-    if(g_fProcessDetach == FALSE)
-    {
-        DefaultCatchFilterParam param; param.pv = COMPLUS_EXCEPTION_EXECUTE_HANDLER;
-        PAL_TRY(Assembly *, pThis, this)
-        {
-            if (pThis->m_pITypeLib && pThis->m_pITypeLib != (ITypeLib*)-1) {
-                pThis->m_pITypeLib->Release();
-                pThis->m_pITypeLib = NULL;
-            }
-        }
-        PAL_EXCEPT_FILTER(DefaultCatchFilter)
-        {
-        }
-        PAL_ENDTRY
-    }
-#endif // FEATURE_COMINTEROP
-
 }
 
 void Assembly::Terminate( BOOL signalProfiler )
@@ -717,30 +675,21 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         pAssem->m_isDynamic = true;
 
-        pAssem->m_dwDynamicAssemblyAccess = args->access;
-
-        // Set the additional strong name information
-
-        pAssem->SetStrongNameLevel(Assembly::SN_NONE);
-
         if (publicKey.GetSize() > 0)
         {
-            pAssem->SetStrongNameLevel(Assembly::SN_PUBLIC_KEY);
+            // Since we have no way to validate the public key of a dynamic assembly we don't allow 
+            // partial trust code to emit a dynamic assembly with an arbitrary public key.
+            // Ideally we shouldn't allow anyone to emit a dynamic assembly with only a public key,
+            // but we allow a couple of exceptions to reduce the compat risk: full trust, caller's own key.
+            // As usual we treat anonymously hosted dynamic methods as partial trust code.
+            DomainAssembly* pCallerDomainAssembly = pCallerAssembly->GetDomainAssembly(pCallersDomain);
+            if (pCallerDomainAssembly == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
             {
-                // Since we have no way to validate the public key of a dynamic assembly we don't allow 
-                // partial trust code to emit a dynamic assembly with an arbitrary public key.
-                // Ideally we shouldn't allow anyone to emit a dynamic assembly with only a public key,
-                // but we allow a couple of exceptions to reduce the compat risk: full trust, caller's own key.
-                // As usual we treat anonymously hosted dynamic methods as partial trust code.
-                DomainAssembly* pCallerDomainAssembly = pCallerAssembly->GetDomainAssembly(pCallersDomain);
-                if (pCallerDomainAssembly == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
-                {
-                    DWORD cbKey = 0;
-                    const void* pKey = pCallerAssembly->GetPublicKey(&cbKey);
+                DWORD cbKey = 0;
+                const void* pKey = pCallerAssembly->GetPublicKey(&cbKey);
 
-                    if (!publicKey.Equals((const BYTE *)pKey, cbKey))
-                        COMPlusThrow(kInvalidOperationException, W("InvalidOperation_StrongNameKeyPairRequired"));
-                }
+                if (!publicKey.Equals((const BYTE *)pKey, cbKey))
+                    COMPlusThrow(kInvalidOperationException, W("InvalidOperation_StrongNameKeyPairRequired"));
             }
         }
 
@@ -2184,21 +2133,6 @@ GetAssembliesByName(LPCWSTR  szAppBase,
 
 #ifdef FEATURE_LOADER_OPTIMIZATION
 
-void Assembly::SetMissingDependenciesCheckDone()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_bMissingDependenciesCheckDone=TRUE;
-};
-
-BOOL Assembly::MissingDependenciesCheckDone()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_bMissingDependenciesCheckDone;
-};
-
-
-
-
 BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 {
     PTR_PEAssembly pFile=pDomainAssembly->GetFile();
@@ -2349,49 +2283,6 @@ void DECLSPEC_NORETURN Assembly::ThrowBadImageException(LPCUTF8 pszNameSpace,
 
 
 #ifdef FEATURE_COMINTEROP
-//
-// Manage an ITypeLib pointer for this Assembly.
-//
-ITypeLib* Assembly::GetTypeLib()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    // Get the value we are going to return.
-    ITypeLib *pResult = m_pITypeLib;
-    // If there is a value, AddRef() it.
-    if (pResult && pResult != (ITypeLib*)-1)
-        pResult->AddRef();
-    return pResult;
-} // ITypeLib* Assembly::GetTypeLib()
-
-void Assembly::SetTypeLib(ITypeLib *pNew)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    ITypeLib *pOld;
-    pOld = InterlockedExchangeT(&m_pITypeLib, pNew);
-    // TypeLibs are refcounted pointers.
-    if (pNew != pOld)
-    {
-        if (pNew && pNew != (ITypeLib*)-1)
-            pNew->AddRef();
-        if (pOld && pOld != (ITypeLib*)-1)
-            pOld->Release();
-    }
-} // void Assembly::SetTypeLib()
-
 Assembly::WinMDStatus Assembly::GetWinMDStatus()
 {
     LIMITED_METHOD_CONTRACT;

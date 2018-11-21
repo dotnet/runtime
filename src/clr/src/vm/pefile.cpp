@@ -2140,8 +2140,7 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
 #ifndef CROSSGEN_COMPILE
 /* static */
 PEAssembly *PEAssembly::OpenMemory(PEAssembly *pParentAssembly,
-                                   const void *flat, COUNT_T size,
-                                   CLRPrivBinderLoadFile* pBinderToUse)
+                                   const void *flat, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
 
@@ -2149,7 +2148,7 @@ PEAssembly *PEAssembly::OpenMemory(PEAssembly *pParentAssembly,
 
     EX_TRY
     {
-        result = DoOpenMemory(pParentAssembly, flat, size, pBinderToUse);
+        result = DoOpenMemory(pParentAssembly, flat, size);
     }
     EX_HOOK
     {
@@ -2180,7 +2179,7 @@ public:
     void Invoke()
     {
         WRAPPER_NO_CONTRACT;
-        PEAssemblyHolder result(PEAssembly::OpenMemory(pParentAssembly, flat, size, FALSE));
+        PEAssemblyHolder result(PEAssembly::OpenMemory(pParentAssembly, flat, size));
     }
 };
 
@@ -2188,8 +2187,7 @@ public:
 PEAssembly *PEAssembly::DoOpenMemory(
     PEAssembly *pParentAssembly,
     const void *flat,
-    COUNT_T size,
-    CLRPrivBinderLoadFile* pBinderToUse)
+    COUNT_T size)
 {
     CONTRACT(PEAssembly *)
     {
