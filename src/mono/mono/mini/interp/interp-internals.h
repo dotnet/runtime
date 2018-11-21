@@ -38,6 +38,10 @@ enum {
 	VAL_OBJ     = 3 + VAL_POINTER
 };
 
+enum {
+	INTERP_OPT_INLINE = 1
+};
+
 #if SIZEOF_VOID_P == 4
 typedef guint32 mono_u;
 typedef gint32  mono_i;
@@ -152,6 +156,7 @@ typedef struct {
 } ThreadContext;
 
 extern int mono_interp_traceopt;
+extern int mono_interp_opt;
 extern GSList *mono_interp_jit_classes;
 
 void

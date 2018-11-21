@@ -98,6 +98,8 @@ init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod
  * Used for testing.
  */
 GSList *mono_interp_jit_classes;
+/* Optimizations enabled with interpreter */
+int mono_interp_opt = INTERP_OPT_INLINE;
 /* If TRUE, interpreted code will be interrupted at function entry/backward branches */
 static gboolean ss_enabled;
 
@@ -5976,6 +5978,8 @@ interp_parse_options (const char *options)
 			mono_interp_jit_classes = g_slist_prepend (mono_interp_jit_classes, arg + 4);
 		if (strncmp (arg, "interp-only=", 4) == 0)
 			mono_interp_only_classes = g_slist_prepend (mono_interp_only_classes, arg + strlen ("interp-only="));
+		if (strncmp (arg, "-inline", 7) == 0)
+			mono_interp_opt &= ~INTERP_OPT_INLINE;
 	}
 }
 
@@ -6228,6 +6232,8 @@ mono_ee_interp_init (const char *opts)
 	set_context (NULL);
 
 	interp_parse_options (opts);
+	if (mini_get_debug_options ()->mdb_optimizations)
+		mono_interp_opt &= ~INTERP_OPT_INLINE;
 	mono_interp_transform_init ();
 
 	MonoEECallbacks c;
