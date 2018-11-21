@@ -2552,6 +2552,8 @@ OpenFileMappingW(
 #define OpenFileMapping OpenFileMappingA
 #endif
 
+typedef INT_PTR (PALAPI *FARPROC)();
+
 PALIMPORT
 LPVOID
 PALAPI
@@ -2604,8 +2606,21 @@ PALIMPORT
 HMODULE
 PALAPI
 PAL_RegisterLibraryDirect(
-        IN void *dl_handle,
+        IN NATIVE_LIBRARY_HANDLE dl_handle,
         IN LPCWSTR lpLibFileName);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_FreeLibraryDirect(
+        IN NATIVE_LIBRARY_HANDLE dl_handle);
+
+PALIMPORT
+FARPROC
+PALAPI
+PAL_GetProcAddressDirect(
+        IN NATIVE_LIBRARY_HANDLE dl_handle,
+        IN LPCSTR lpProcName);
 
 /*++
 Function:
@@ -2649,8 +2664,6 @@ PAL_LOADUnloadPEFile(void * ptr);
 #define LoadLibrary LoadLibraryA
 #define LoadLibraryEx LoadLibraryExA
 #endif
-
-typedef INT_PTR (PALAPI *FARPROC)();
 
 PALIMPORT
 FARPROC

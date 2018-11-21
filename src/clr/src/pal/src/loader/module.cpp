@@ -630,7 +630,7 @@ PAL_LoadLibraryDirect(
     dl_handle = LOADLoadLibraryDirect(lpcstr);
 
 done:
-    LOGEXIT("LoadLibraryDirect returns HMODULE %p\n", dl_handle);
+    LOGEXIT("LoadLibraryDirect returns NATIVE_LIBRARY_HANDLE %p\n", dl_handle);
     PERF_EXIT(LoadLibraryDirect);
     return dl_handle;
 }
@@ -687,6 +687,59 @@ done:
     LOGEXIT("RegisterLibraryDirect returns HMODULE %p\n", hModule);
     PERF_EXIT(RegisterLibraryDirect);
     return hModule;
+}
+
+/*
+Function:
+  PAL_FreeLibraryDirect
+
+  Free a loaded library
+
+  Returns true on success, false on failure.
+*/
+BOOL
+PALAPI
+PAL_FreeLibraryDirect(
+        IN NATIVE_LIBRARY_HANDLE dl_handle)
+{
+    BOOL retValue = 0; 
+    PERF_ENTRY(PAL_FreeLibraryDirect);
+    ENTRY("PAL_FreeLibraryDirect (dl_handle=%p) \n", dl_handle);
+
+    retValue = dlclose(dl_handle) == 0;
+
+    LOGEXIT("PAL_FreeLibraryDirect returns BOOL %p\n", retValue);
+    PERF_EXIT(PAL_FreeLibraryDirect);
+    return retValue;
+}
+
+/*
+Function:
+  PAL_GetProcAddressDirect
+
+  Get the address corresponding to a symbol in a loaded native library.
+
+  Returns the address of the sumbol loaded in memory.
+*/
+FARPROC
+PALAPI
+PAL_GetProcAddressDirect(
+        IN NATIVE_LIBRARY_HANDLE dl_handle,
+        IN LPCSTR lpProcName)
+{
+    INT name_length;
+    FARPROC address = nullptr;
+
+    PERF_ENTRY(PAL_GetProcAddressDirect);
+    ENTRY("PAL_GetProcAddressDirect (lpLibFileName=%p (%S)) \n",
+          lpProcName ? lpProcName : "NULL",
+          lpProcName ? lpProcName : "NULL");
+
+    address = (FARPROC) dlsym(dl_handle, lpProcName);
+
+    LOGEXIT("PAL_GetProcAddressDirect returns FARPROC %p\n", address);
+    PERF_EXIT(PAL_GetProcAddressDirect);
+    return address;
 }
 
 /*++

@@ -31,13 +31,13 @@ typedef VOID (PALAPI *PUNREGISTER_MODULE)(HINSTANCE);           /* used to clean
 
 typedef struct _MODSTRUCT
 {
-    HMODULE self;           /* circular reference to this module */
-    void *dl_handle;        /* handle returned by dlopen() */
-    HINSTANCE hinstance;    /* handle returned by PAL_RegisterLibrary */
-    LPWSTR lib_name;        /* full path of module */
-    INT refcount;           /* reference count */
-                            /* -1 means infinite reference count - module is never released */
-    BOOL threadLibCalls;    /* TRUE for DLL_THREAD_ATTACH/DETACH notifications enabled, FALSE if they are disabled */
+    HMODULE self;                     /* circular reference to this module */
+    NATIVE_LIBRARY_HANDLE dl_handle;  /* handle returned by dlopen() */
+    HINSTANCE hinstance;              /* handle returned by PAL_RegisterLibrary */
+    LPWSTR lib_name;                  /* full path of module */
+    INT refcount;                     /* reference count */
+                                      /* -1 means infinite reference count - module is never released */
+    BOOL threadLibCalls;              /* TRUE for DLL_THREAD_ATTACH/DETACH notifications enabled, FALSE if they are disabled */
 
 #if RETURNS_NEW_HANDLES_ON_REPEAT_DLOPEN
     ino_t inode;
