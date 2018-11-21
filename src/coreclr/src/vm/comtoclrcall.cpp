@@ -782,7 +782,7 @@ extern "C" UINT64 __stdcall COMToCLRWorker(Thread *pThread, ComMethodFrame* pFra
 
 #ifndef _TARGET_X86_
 ErrorExit:
-    if (pThread->PreemptiveGCDisabled())
+    if (pThread != nullptr && pThread->PreemptiveGCDisabled())
         pThread->EnablePreemptiveGC();
 
     // The call failed so we need to report an error to the caller.
