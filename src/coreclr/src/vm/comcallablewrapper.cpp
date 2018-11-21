@@ -1096,14 +1096,6 @@ VOID SimpleComCallWrapper::Cleanup()
         m_pCPList = NULL;
     }
     
-    // if this object was made agile, then we will have stashed away the original handle
-    // so we must release it if the AD wasn't unloaded
-    if (IsAgile() && m_hOrigDomainHandle)
-    {  
-        DestroyRefcountedHandle(m_hOrigDomainHandle);
-        m_hOrigDomainHandle = NULL;
-    }
-
     if (m_pTemplate)
     {
         m_pTemplate->Release();
@@ -1264,13 +1256,12 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     m_pWrapperCache = pWrapperCache;
     m_pTemplate = pTemplate;
     m_pTemplate->AddRef();
-    
+
     m_pOuter = NULL;
 
     m_pSyncBlock = pSyncBlock;
     m_pContext = pContext;
     m_dwDomainId = pContext->GetDomain()->GetId();
-    m_hOrigDomainHandle = NULL;
 
     //@TODO: CTS, when we transition into the correct context before creating a wrapper
     // then uncomment the next line
@@ -2156,19 +2147,6 @@ BOOL ComCallWrapper::IsAggregated()
 
 
 //--------------------------------------------------------------------------
-// BOOL ComCallWrapper::IsObjectTP()
-// check if the wrapper is to a TP object
-//--------------------------------------------------------------------------
-BOOL ComCallWrapper::IsObjectTP()
-{
-    WRAPPER_NO_CONTRACT;
-    
-    return GetSimpleWrapper()->IsObjectTP();
-}
-
-
-
-//--------------------------------------------------------------------------
 // BOOL ComCallWrapper::IsExtendsCOMObject(()
 // check if the wrapper is to a managed object that extends a com object
 //--------------------------------------------------------------------------
@@ -2618,15 +2596,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
         COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleCOM"));
     }
 
-    if (thClass.IsDomainNeutral())
-    {
-        pWrapperCache = SystemDomain::System()->DefaultDomain()->GetComCallWrapperCache();
-    }
-    else
-    {
-        pWrapperCache = pContext->GetDomain()->GetComCallWrapperCache();
-    }
-
+    pWrapperCache = pContext->GetDomain()->GetComCallWrapperCache();
 
     {
         // check if somebody beat us to it    
@@ -3547,12 +3517,10 @@ IUnknown* ComCallWrapper::GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, Me
     }
 
     // COM plus objects that extend from COM guys are special
-    // unless the CCW points a TP in which case the COM object
-    // is remote, so let the calls go through the CCW
-    // Also, if we're being asked for just an IInspectable, we don't need to do this (we may be in the process
+    // If we're being asked for just an IInspectable, we don't need to do this (we may be in the process
     // of activating our aggregated object so can't use the RCW yet) - this is analagous to how IUnkown is handled
     // specially with GetBasicIP at the top of this function.
-    if (pWrap->IsExtendsCOMObject() && !pWrap->IsObjectTP() && !IsEqualGUID(riid, IID_IInspectable))
+    if (pWrap->IsExtendsCOMObject() && !IsEqualGUID(riid, IID_IInspectable))
     {
         IUnknown * pIntf = GetComIPFromCCW_HandleExtendsCOMObject(pWrap, riid, pIntfMT,
                                 pTemplate, imapIndex, intfIndex);
@@ -3833,57 +3801,6 @@ IDispatch* ComCallWrapper::GetIDispatchIP()
     }
 }
 
-// MakeAgile needs the object passed in because it has to set it in the new handle
-// If the original handle is from an unloaded appdomain, it will no longer be valid
-// so we won't be able to get the object.
-void ComCallWrapper::MakeAgile(OBJECTREF pObj)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-
-        // if this assert fires, then we've called addref from a place where we need to
-        // make the object agile but we haven't supplied the object. Need to change the caller.
-        PRECONDITION(pObj != NULL);
-    }
-    CONTRACTL_END;
-
-    OBJECTHANDLE origHandle = m_ppThis;
-    RCOBJECTHANDLEHolder agileHandle = SharedDomain::GetDomain()->CreateRefcountedHandle(pObj);
-    _ASSERTE(agileHandle);
-
-    SimpleComCallWrapper *pSimpleWrap = GetSimpleWrapper();
-    ComCallWrapperCache *pWrapperCache = pSimpleWrap->GetWrapperCache();
-
-    
-    // lock the wrapper cache so nobody else can update to agile while we are
-    {
-        ComCallWrapperCache::LockHolder lh(pWrapperCache);
-
-        if (pSimpleWrap->IsAgile()) 
-        {
-            // someone beat us to it - let the holder destroy it and return
-            return;
-        }
-
-        // Update all the wrappers to use the agile handle.
-        ComCallWrapper *pWrap = this;
-        while (pWrap)
-        {
-            pWrap->m_ppThis = agileHandle;
-            pWrap = GetNext(pWrap);
-        }
-            
-        // so all the handles are updated - now update the simple wrapper
-        // keep the lock so someone else doesn't try to
-        pSimpleWrap->MakeAgile(origHandle);
-    }
-
-    agileHandle.SuppressRelease();
-}
-
 //--------------------------------------------------------------------------
 // ComCallable wrapper manager
 // constructor
@@ -3897,7 +3814,6 @@ ComCallWrapperCache::ComCallWrapperCache() :
     WRAPPER_NO_CONTRACT;
     
 }
-
 
 //-------------------------------------------------------------------
 // ComCallable wrapper manager

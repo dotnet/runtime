@@ -407,7 +407,6 @@ set(VM_HEADERS_WKS
     ceemain.h
     clrconfignative.h
     clrex.h
-    clrprivbinderloadfile.h
     clrvarargs.h
     comdatetime.h
     comdependenthandle.h

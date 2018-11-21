@@ -12,19 +12,12 @@
 ** 
 ===========================================================*/
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
 namespace System
 {
-    using System;
-    using System.Diagnostics;
-    using System.Runtime;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.Versioning;
-    using CultureInfo = System.Globalization.CultureInfo;
-    using FieldInfo = System.Reflection.FieldInfo;
-    using BindingFlags = System.Reflection.BindingFlags;
-
     // The Object is the root class for all object in the CLR System. Object 
     // is the super class for all other CLR objects and provide a set of methods and low level
     // services to subclasses.  These services include object synchronization and support for clone
@@ -38,7 +31,7 @@ namespace System
     public class Object
     {
         // Creates a new instance of an Object.
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public Object()
         {
         }
@@ -75,7 +68,7 @@ namespace System
             return objA.Equals(objB);
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool ReferenceEquals(object objA, object objB)
         {
             return objA == objB;
@@ -102,7 +95,7 @@ namespace System
 
         // Allow an object to free resources before the object is reclaimed by the GC.
         // 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         ~Object()
         {
         }
@@ -114,85 +107,6 @@ namespace System
         // 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         protected extern object MemberwiseClone();
-
-
-        // Sets the value specified in the variant on the field
-        // 
-        private void FieldSetter(string typeName, string fieldName, object val)
-        {
-            Debug.Assert(typeName != null);
-            Debug.Assert(fieldName != null);
-
-            // Extract the field info object
-            FieldInfo fldInfo = GetFieldInfo(typeName, fieldName);
-
-            if (fldInfo.IsInitOnly)
-                throw new FieldAccessException(SR.FieldAccess_InitOnly);
-
-            // Make sure that the value is compatible with the type
-            // of field
-            Type pt = fldInfo.FieldType;
-            if (pt.IsByRef)
-            {
-                pt = pt.GetElementType();
-            }
-
-            if (!pt.IsInstanceOfType(val))
-            {
-                val = Convert.ChangeType(val, pt, CultureInfo.InvariantCulture);
-            }
-
-            // Set the value
-            fldInfo.SetValue(this, val);
-        }
-
-        // Gets the value specified in the variant on the field
-        // 
-        private void FieldGetter(string typeName, string fieldName, ref object val)
-        {
-            Debug.Assert(typeName != null);
-            Debug.Assert(fieldName != null);
-
-            // Extract the field info object
-            FieldInfo fldInfo = GetFieldInfo(typeName, fieldName);
-
-            // Get the value
-            val = fldInfo.GetValue(this);
-        }
-
-        // Gets the field info object given the type name and field name.
-        // 
-        private FieldInfo GetFieldInfo(string typeName, string fieldName)
-        {
-            Debug.Assert(typeName != null);
-            Debug.Assert(fieldName != null);
-
-            Type t = GetType();
-            while (null != t)
-            {
-                if (t.FullName.Equals(typeName))
-                {
-                    break;
-                }
-
-                t = t.BaseType;
-            }
-
-            if (null == t)
-            {
-                throw new ArgumentException();
-            }
-
-            FieldInfo fldInfo = t.GetField(fieldName, BindingFlags.Public |
-                                                      BindingFlags.Instance |
-                                                      BindingFlags.IgnoreCase);
-            if (null == fldInfo)
-            {
-                throw new ArgumentException();
-            }
-
-            return fldInfo;
-        }
     }
 
 

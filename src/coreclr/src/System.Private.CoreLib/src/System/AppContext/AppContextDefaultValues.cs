@@ -26,7 +26,7 @@ namespace System
         /// </summary>
         private static void ParseTargetFrameworkName(out string identifier, out string profile, out int version)
         {
-            string targetFrameworkMoniker = AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+            string targetFrameworkMoniker = AppContext.TargetFrameworkName;
 
             if (!TryParseFrameworkName(targetFrameworkMoniker, out identifier, out version, out profile))
             {

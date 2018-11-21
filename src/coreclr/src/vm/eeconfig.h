@@ -497,38 +497,6 @@ public:
     unsigned int  GetDoubleArrayToLargeObjectHeapThreshold() const { LIMITED_METHOD_CONTRACT; return DoubleArrayToLargeObjectHeapThreshold; }
 #endif
 
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    inline DWORD DefaultSharePolicy() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return dwSharePolicy;
-    }
-#endif
-
-    inline bool CacheBindingFailures() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fCacheBindingFailures;
-    }
-
-    inline bool UseLegacyIdentityFormat() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fUseLegacyIdentityFormat;
-    }
-
-    inline void SetDisableCommitThreadStack(bool val)
-    {
-        LIMITED_METHOD_CONTRACT; 
-        fDisableCommitThreadStack = val;
-    }
-
-    inline bool GetDisableCommitThreadStack() const
-    {
-        LIMITED_METHOD_CONTRACT; 
-        return fDisableCommitThreadStack;
-    }
-
     inline bool ProbeForStackOverflow() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -551,9 +519,6 @@ public:
         return false;
     }
 #endif
-
-    inline bool DeveloperInstallation() const
-    {LIMITED_METHOD_CONTRACT;  return m_fDeveloperInstallation; }
 
 #ifdef TEST_DATA_CONSISTENCY
     // get the value of fTestDataConsistency, which controls whether we test that we can correctly detect
@@ -580,9 +545,6 @@ public:
 
     inline bool SuppressChecks() const
     {LIMITED_METHOD_CONTRACT;  return fSuppressChecks; }
-
-    inline bool Do_AllowUntrustedCaller_Checks()
-    {LIMITED_METHOD_CONTRACT;  return fDoAllowUntrustedCallerChecks; }
 
     inline bool EnableFullDebug() const
     {LIMITED_METHOD_CONTRACT;  return fEnableFullDebug; }
@@ -725,7 +687,6 @@ public:
     LPUTF8  GetZapBBInstr()                 const { LIMITED_METHOD_CONTRACT; return szZapBBInstr; }
     LPWSTR  GetZapBBInstrDir()              const { LIMITED_METHOD_CONTRACT; return szZapBBInstrDir; }
     DWORD   DisableStackwalkCache()         const {LIMITED_METHOD_CONTRACT;  return dwDisableStackwalkCache; }
-    DWORD   UseNewCrossDomainRemoting()     const { LIMITED_METHOD_CONTRACT; return fUseNewCrossDomainRemoting; }
 
     bool    StressLog()                     const { LIMITED_METHOD_CONTRACT; return fStressLog; }
     bool    ForceEnc()                      const { LIMITED_METHOD_CONTRACT; return fForceEnc; }
@@ -787,18 +748,6 @@ public:
 
 #endif // _DEBUG
 
-    enum NgenHardBindType
-    {
-        NGEN_HARD_BIND_NONE,    // Do not hardbind at all
-        NGEN_HARD_BIND_LIST,    // Only hardbind to what is specified by CustomAttributes (and any default assemblies specified by the CLR)
-        NGEN_HARD_BIND_ALL,     // Hardbind to any existing ngen images if possible
-        NGEN_HARD_BIND_COUNT,
-        
-        NGEN_HARD_BIND_DEFAULT = NGEN_HARD_BIND_LIST,
-    };
-    
-    NgenHardBindType NgenHardBind()   { LIMITED_METHOD_CONTRACT; return iNgenHardBind;    }
-
 #ifdef _DEBUG
     DWORD  NgenForceFailureMask()     { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureMask; }
     DWORD  NgenForceFailureCount()    { LIMITED_METHOD_CONTRACT; return dwNgenForceFailureCount; }
@@ -832,12 +781,6 @@ public:
 
 private: //----------------------------------------------------------------
 
-    // @TODO - Fusion needs to be able to read this value, but they are unable to
-    // pull in all of the appropriate headers for all of the #defines found below.
-    // As long as this is defined at the top of the object, the "incorrect offsets" that
-    // will come as a result won't matter.
-    bool fCacheBindingFailures;
-    bool fUseLegacyIdentityFormat;
     bool fInited;                   // have we synced to the registry at least once?
 
     // Jit-config
@@ -919,13 +862,6 @@ private: //----------------------------------------------------------------
     unsigned int DoubleArrayToLargeObjectHeapThreshold;  // double arrays of more than this number of elems go in large object heap
 #endif
 
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    DWORD  dwSharePolicy;               // Default policy for loading assemblies into the domain neutral area
-#endif
-
-    // Only developer machines are allowed to use DEVPATH. This value is set when there is an appropriate entry
-    // in the machine configuration file. This should not be sent out in the redist.
-    bool   m_fDeveloperInstallation;      // We are on a developers machine
     bool   fAppDomainUnload;            // Enable appdomain unloading
     
     DWORD  dwADURetryCount;
@@ -938,8 +874,6 @@ private: //----------------------------------------------------------------
 
     // Verifier
     bool fVerifierOff;
-
-    bool fDoAllowUntrustedCallerChecks; // do AllowUntrustedCallerChecks
 
 #ifdef WIN64EXCEPTIONS
     bool fSuppressLockViolationsOnReentryFromOS;
@@ -1041,14 +975,10 @@ private: //----------------------------------------------------------------
 
     bool fStressLog;
     bool fForceEnc;
-    bool fDisableCommitThreadStack;
     bool fProbeForStackOverflow;
     
     // Stackwalk optimization flag
     DWORD dwDisableStackwalkCache;
-
-    // New cross domain remoting
-    DWORD fUseNewCrossDomainRemoting;
     
     LPUTF8 szZapBBInstr;
     LPWSTR szZapBBInstrDir;
@@ -1073,8 +1003,6 @@ private: //----------------------------------------------------------------
     // New configuration
     ConfigList  m_Configuration;
 
-    BOOL fEnableHardbinding;
-    NgenHardBindType iNgenHardBind;
 #ifdef _DEBUG
     DWORD dwNgenForceFailureMask;
     DWORD dwNgenForceFailureCount;

@@ -658,16 +658,12 @@ void QCALLTYPE AssemblyNative::GetModules(QCall::AssemblyHandle pAssembly, BOOL 
 
     modules.Append(pAssembly);
 
-    ReflectionModule *pOnDiskManifest = NULL;
-    if (pAssembly->GetAssembly()->NeedsToHideManifestForEmit())
-        pOnDiskManifest = pAssembly->GetAssembly()->GetOnDiskManifestModule();
-
     mdFile mdFile;
     while (pAssembly->GetMDImport()->EnumNext(&phEnum, &mdFile))
     {
         DomainFile *pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile, fGetResourceModules, !fLoadIfNotFound);
 
-        if (pModule && pModule->GetModule() != pOnDiskManifest) {
+        if (pModule) {
             modules.Append(pModule);
         }
     }
@@ -1292,65 +1288,6 @@ void QCALLTYPE AssemblyNative::PrepareForAssemblyLoadContextRelease(INT_PTR ptrN
     }
 
     END_QCALL;
-}
-
-/*static*/
-BOOL QCALLTYPE AssemblyNative::OverrideDefaultAssemblyLoadContextForCurrentDomain(INT_PTR ptrNativeAssemblyLoadContext)
-{
-    QCALL_CONTRACT;
-    
-    BOOL fOverrodeDefaultLoadContext = FALSE;
-    
-    BEGIN_QCALL;
-    
-    AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
-    
-    if (pCurDomain->LockBindingModel())
-    {
-        // Only one thread will ever enter here - it will be the ones that actually locked the binding model
-        //
-        // AssemblyLoadContext should have a binder associated with it
-        IUnknown *pOverrideBinder = reinterpret_cast<IUnknown *>(ptrNativeAssemblyLoadContext);
-        _ASSERTE(pOverrideBinder != NULL);
-        
-        // Get reference to the current default context binder
-        
-        IUnknown * pCurrentDefaultContextBinder = pCurDomain->GetFusionContext();
-        
-        // The default context binder can never be null since the runtime always sets one up
-        _ASSERTE(pCurrentDefaultContextBinder != NULL);
-        
-        // The default context should also be the same as TPABinder context
-        _ASSERTE(pCurrentDefaultContextBinder == pCurDomain->GetTPABinderContext());
-        
-        // Override the default context binder in the VM
-        pCurDomain->OverrideDefaultContextBinder(pOverrideBinder);
-        
-        fOverrodeDefaultLoadContext = TRUE;
-    }
-    
-    END_QCALL;
-    
-    return fOverrodeDefaultLoadContext;
-}
-
-BOOL QCALLTYPE AssemblyNative::CanUseAppPathAssemblyLoadContextInCurrentDomain()
-{
-    QCALL_CONTRACT;
-    
-    BOOL fCanUseAppPathAssemblyLoadContext = FALSE;
-    
-    BEGIN_QCALL;
-
-    AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
-
-    pCurDomain->LockBindingModel();
-        
-    fCanUseAppPathAssemblyLoadContext = !pCurDomain->IsHostAssemblyResolverInUse();
-
-    END_QCALL;
-    
-    return fCanUseAppPathAssemblyLoadContext;
 }
 
 /*static*/

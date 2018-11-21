@@ -47,8 +47,6 @@ class PEModule;
 class PEAssembly;
 class SimpleRWLock;
 
-class CLRPrivBinderLoadFile;
-
 typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
 
@@ -669,14 +667,12 @@ class PEAssembly : public PEFile
     static PEAssembly *OpenMemory(
         PEAssembly *pParentAssembly,
         const void *flat,
-        COUNT_T size, 
-        CLRPrivBinderLoadFile* pBinderToUse = NULL);
+        COUNT_T size);
 
     static PEAssembly *DoOpenMemory(
         PEAssembly *pParentAssembly,
         const void *flat,
-        COUNT_T size,
-        CLRPrivBinderLoadFile* pBinderToUse);
+        COUNT_T size);
 
   private:
     // Private helpers for crufty exception handling reasons

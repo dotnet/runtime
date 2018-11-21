@@ -4,6 +4,8 @@
 
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -43,8 +45,9 @@ namespace System
         {
             get
             {
-                // Forward the value that is set on the current domain.
-                return AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName;
+                // The Target framework is not the framework that the process is actually running on.
+                // It is the value read from the TargetFrameworkAttribute on the .exe that started the process.
+                return Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
             }
         }
 

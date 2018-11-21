@@ -109,10 +109,6 @@ DEFINE_FIELD_U(typeKind,        TypeNameNative,             typeKind)
 #endif
 
 DEFINE_CLASS(APPDOMAIN_SETUP,       System,                 AppDomainSetup)
-DEFINE_CLASS_U(System,       AppDomainSetup,                 AppDomainSetupObject)
-DEFINE_FIELD_U(_Entries,                           AppDomainSetupObject,   m_Entries)
-DEFINE_FIELD_U(_AppBase,                           AppDomainSetupObject,   m_AppBase)
-DEFINE_FIELD_U(_CompatFlags,                       AppDomainSetupObject,   m_CompatFlags)
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.
@@ -647,8 +643,6 @@ DEFINE_METHOD(OBJECT,               TO_STRING,              ToString,           
 DEFINE_METHOD(OBJECT,               GET_TYPE,               GetType,                    IM_RetType)
 DEFINE_METHOD(OBJECT,               GET_HASH_CODE,          GetHashCode,                IM_RetInt)
 DEFINE_METHOD(OBJECT,               EQUALS,                 Equals,                     IM_Obj_RetBool)
-DEFINE_METHOD(OBJECT,               FIELD_SETTER,           FieldSetter,                IM_Str_Str_Obj_RetVoid)
-DEFINE_METHOD(OBJECT,               FIELD_GETTER,           FieldGetter,                IM_Str_Str_RefObj_RetVoid)
 
 // DEFINE_CLASS(DOUBLE,                System,                 Double)
 DEFINE_METHOD(DOUBLE,               GET_HASH_CODE,          GetHashCode, IM_RetInt)
@@ -814,11 +808,6 @@ DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,            
 DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
 
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
-
-
-DEFINE_CLASS(SHARED_STATICS,        System,                 SharedStatics)
-DEFINE_FIELD(SHARED_STATICS,        SHARED_STATICS,         _sharedStatics)
-
 
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)
 DEFINE_FIELD_U(targetThread,               StackFrameHelper,   targetThread)
