@@ -1703,6 +1703,14 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	result->token = token;
 	result->name = mono_metadata_string_heap (image, cols [3]);
 
+	/* If a method is abstract and marked as an icall, silently ignore the
+	 * icall attribute so that we don't later emit a warning that the icall
+	 * can't be found.
+	 */
+	if ((result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+	    (result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		result->iflags &= ~METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	/* size = */ mono_metadata_decode_blob_size (sig, &sig);
