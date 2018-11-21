@@ -9131,7 +9131,7 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
                 // SIMD intrinsics are recognized by name.
                 const char* namespaceName = NULL;
                 const char* className = NULL;
-                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName);
+                const char* methodName = m_interpCeeInfo.getMethodNameFromMetadata((CORINFO_METHOD_HANDLE)methToCall, &className, &namespaceName, NULL);
                 if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
                 {
                     GCX_COOP();
