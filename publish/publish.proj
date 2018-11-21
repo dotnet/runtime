@@ -33,6 +33,20 @@
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
           DependsOnTargets="PublishCoreHostPackages;SetupPublishSymbols;PublishSymbols;FinalizeBuildInAzure;UpdateVersionsRepo" />
+    
+  <Target Name="GetPackagesToSign" DependsOnTargets="GatherShippingPackages">
+    <ItemGroup>
+      <FilesToSign Include="@(ShippedNugetPackage)">
+        <Authenticode>NuGet</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+    <Message Importance="High" Text="Attempting to sign package '%(FilesToSign.Identity)'" />
+  </Target>
+  
+  <Target Name="SignPackages"
+          Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'public'"
+          DependsOnTargets="GetPackagesToSign;SignFiles">
+  </Target>
 
   <!--
     Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
@@ -41,10 +55,10 @@
   -->
   <Target Name="UpdateVersionsRepo"
           Condition="'$(GitHubAuthToken)' != ''"
-          DependsOnTargets="ExcludeSymbolsPackagesFromPublishedVersions;
+          DependsOnTargets="GatherShippingPackages;
                             UpdatePublishedVersions" />
 
-  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions">
+  <Target Name="GatherShippingPackages">
     <ItemGroup>
       <PackagesToShip Include="$(DownloadDirectory)*.nupkg" Exclude="$(DownloadDirectory)*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
@@ -175,7 +189,7 @@
   </Target>
 
   <Target Name="PublishCoreHostPackages"
-          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;DoPushCoreHostPackagesToFeed;DoPushCoreHostPackagesToAzure"
+          DependsOnTargets="CheckIfAllBuildsHavePublished;DownloadCoreHostPackages;SignPackages;DoPushCoreHostPackagesToFeed;DoPushCoreHostPackagesToAzure"
           Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
     <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
     <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
@@ -197,6 +211,8 @@
     </ItemGroup>
     <PropertyGroup>
       <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)PackageDownload/</DownloadDirectory>
+      <!-- The SignFiles target needs OutDir to be defined -->
+      <OutDir>$(DownloadDirectory)</OutDir>
     </PropertyGroup>
     <MakeDir Directories="$(DownloadDirectory)"
              Condition="!Exists('$(DownloadDirectory)')" />
