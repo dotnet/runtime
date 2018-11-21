@@ -31,17 +31,16 @@ steps:
     }
     JobListStuff
     
+    cat $jobInfo
+
     # create a temporary file for curl output
     res=`mktemp`
 
-    accessTokenParameter=''
-    if [[ ! "$HelixApiAccessToken" == "" ]]; then
-      accessTokenParameter="?access_token=$HelixApiAccessToken"
-    fi
+    accessTokenParameter="?access_token=$HelixApiAccessToken"
 
     curlResult=`
       cat $jobInfo |\
-      curl --verbose --output $res --write-out "%{http_code}" \
+      curl --trace - --verbose --output $res --write-out "%{http_code}" \
       -H 'Content-Type: application/json' \
       -X POST "https://helix.dot.net/api/2018-03-14/telemetry/job$accessTokenParameter" -d @-`
     curlStatus=$?
