@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Extensions.Configuration.Ini;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration.Xml;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
 using Xunit;
@@ -543,26 +544,26 @@ IniKey1=IniValue2");
 
             // Introduce an error and make sure the old key is removed
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ");
-            
+
             var i = 0;
             while (i < 10 && config["JsonKey1"] != null)
             {
                 await Task.Delay(2000); // wait for notification
                 i++;
             }
-            
+
             Assert.Null(config["JsonKey1"]);
 
             // Update the file again to make sure the config is updated
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue2""}");
-            
+
             i = 0;
             while (i < 10 && config["JsonKey1"] == null)
             {
                 await Task.Delay(1100); // wait for notification
                 i++;
             }
-            
+
             Assert.Equal("JsonValue2", config["JsonKey1"]);
         }
 
@@ -889,6 +890,35 @@ IniKey1=IniValue2");
             Assert.NotNull(providers.Single(p => p is JsonConfigurationProvider));
             Assert.NotNull(providers.Single(p => p is XmlConfigurationProvider));
             Assert.NotNull(providers.Single(p => p is IniConfigurationProvider));
+        }
+
+        [Fact]
+        public async Task TouchingFileWillReloadForUserSecrets()
+        {
+            // Arrange
+            string userSecretsId = "Test";
+            var userSecretsPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
+            var userSecretsFolder = Path.GetDirectoryName(userSecretsPath);
+
+            _fileSystem.CreateFolder(userSecretsFolder);
+            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
+
+            var config = CreateBuilder()
+                .AddUserSecrets(userSecretsId, reloadOnChange: true)
+                .Build();
+
+            Assert.Equal("UserSecretValue1", config["UserSecretKey1"]);
+
+            var token = config.GetReloadToken();
+
+            // Act & Assert
+            // Update file
+            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
+
+            await Task.Delay(2000);
+
+            Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);
+            Assert.True(token.HasChanged);
         }
 
         public void Dispose()
