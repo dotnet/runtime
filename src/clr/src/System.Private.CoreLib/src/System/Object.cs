@@ -22,12 +22,11 @@ namespace System
     // is the super class for all other CLR objects and provide a set of methods and low level
     // services to subclasses.  These services include object synchronization and support for clone
     // operations.
-    // 
-    //This class contains no data and does not need to be serializable 
+    //
     [Serializable]
-    [ClassInterface(ClassInterfaceType.AutoDual)]
-    [System.Runtime.InteropServices.ComVisible(true)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
+    [ComVisible(true)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Object
     {
         // Creates a new instance of an Object.
@@ -114,8 +113,8 @@ namespace System
     // The name "__Canon" will never been seen by users but it will appear a lot in debugger stack traces
     // involving generics so it is kept deliberately short as to avoid being a nuisance.
 
-    [ClassInterface(ClassInterfaceType.AutoDual)]
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
+    [ComVisible(true)]
     internal class __Canon
     {
     }
