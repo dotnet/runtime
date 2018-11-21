@@ -57,31 +57,52 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\AreComObjectsAvailableForCleanupTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\BindToMonikerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CleanupUnusedObjectsInCurrentContextTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\CreateAggregatedObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\DestroyStructureTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\FinalReleaseComObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\FinalReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeBSTRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeCoTaskMemTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\FreeHGlobalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateGuidForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GenerateProgIdForTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetComInterfaceForObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetComObjectDataTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetDelegateForFunctionPointerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionCodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetFunctionPointerForDelegateTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHRForExceptionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetIUnknownForObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetNativeVariantForObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectForNativeVariantTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetObjectsForNativeVariantsTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetStartComSlotTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeFromCLSIDTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetTypeInfoNameTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetUniqueObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStructureTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringBSTR.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUniTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReAllocHGlobalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReAllocCoTaskMemTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SecureStringToBSTRTests.cs" />
@@ -144,6 +165,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHINSTANCETests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.cs" />    
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsTypeVisibleFromComTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsTypeVisibleFromComTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\SetComObjectDataTests.cs" />
