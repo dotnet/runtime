@@ -13,7 +13,9 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> IsComObject_Windows_TestData()
         {
             yield return new object[] { new ComImportObject(), true };
+            yield return new object[] { new ComImportObject[0], false };
             yield return new object[] { new SubComImportObject(), true };
+            yield return new object[] { new GenericSubComImportObject<string>(), true };
             yield return new object[] { new InterfaceAndComImportObject(), true };
             yield return new object[] { new InterfaceComImportObject(), false };
         }
