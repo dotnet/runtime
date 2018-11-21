@@ -261,6 +261,17 @@ namespace System
             if (count < 0 || startIndex > this.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
+            if (comparisonType == StringComparison.Ordinal)
+            {
+                var result = SpanHelpers.IndexOf(
+                    ref Unsafe.Add(ref this._firstChar, startIndex),
+                    count,
+                    ref value._firstChar,
+                    value.Length);
+
+                return (result >= 0 ? startIndex : 0) + result;
+            }
+
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
@@ -271,7 +282,6 @@ namespace System
                 case StringComparison.InvariantCultureIgnoreCase:
                     return CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
 
-                case StringComparison.Ordinal:
                 case StringComparison.OrdinalIgnoreCase:
                     return CompareInfo.Invariant.IndexOfOrdinal(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
 
