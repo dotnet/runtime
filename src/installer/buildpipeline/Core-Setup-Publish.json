@@ -254,7 +254,7 @@
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Publish via PublishType",
-      "condition": "and(succeeded(), ne(variables.PB_PublishType, ''))",
+      "condition": "and(succeeded(), ne(variables.PB_PublishType, ''), ne(variables.PB_PublishType, 'nopublishtype'))",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
