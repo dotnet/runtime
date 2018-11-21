@@ -2,20 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+
 namespace System
 {
-    using System;
-    using System.Reflection;
-    using System.Runtime;
-    using System.Threading;
-    using System.Runtime.Serialization;
-    using System.Runtime.InteropServices;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Versioning;
-    using System.Diagnostics;
-
-    [ClassInterface(ClassInterfaceType.AutoDual)]
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
+    [ComVisible(true)]
     public abstract class Delegate : ICloneable, ISerializable
     {
         // _target is the object we will invoke on
