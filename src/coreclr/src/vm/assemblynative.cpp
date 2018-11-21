@@ -314,7 +314,7 @@ INT_PTR QCALLTYPE AssemblyNative::InternalLoadUnmanagedDllFromPath(LPCWSTR unman
 
     BEGIN_QCALL;
 
-    moduleHandle = NDirect::LoadLibraryFromPath(unmanagedLibraryPath);
+    moduleHandle = NDirect::LoadLibraryFromPath(unmanagedLibraryPath, true);
 
     END_QCALL;
 
