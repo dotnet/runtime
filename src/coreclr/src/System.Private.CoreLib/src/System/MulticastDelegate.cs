@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Runtime.Serialization;
 using System.Diagnostics;
-using System.Reflection.Emit;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
+    [ComVisible(true)]
     public abstract class MulticastDelegate : Delegate
     {
         // This is set under 3 circumstances
@@ -42,7 +43,7 @@ namespace System
 
         internal bool InvocationListLogicallyNull()
         {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is DynamicResolver);
+            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is System.Reflection.Emit.DynamicResolver);
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
