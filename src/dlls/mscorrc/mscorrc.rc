@@ -541,6 +541,8 @@ BEGIN
     IDS_EE_NDIRECT_LOADLIB_MAC              "Unable to load shared library '%1' or one of its dependencies. In order to help diagnose loading problems, consider setting the DYLD_PRINT_LIBRARIES environment variable: %2"
     IDS_EE_NDIRECT_GETPROCADDRESS_WIN       "Unable to find an entry point named '%2' in DLL '%1'."
     IDS_EE_NDIRECT_GETPROCADDRESS_UNIX      "Unable to find an entry point named '%2' in shared library '%1'."
+    IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL      "Unable to find an entry point named '%1' in DLL."
+    IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO      "Unable to find an entry point named '%1' in shared library."
     IDS_EE_NDIRECT_GETPROCADDRESS_NONAME    "A library name must be specified in a DllImport attribute applied to non-IJW methods."
     IDS_EE_CLASS_CONSTRAINTS_VIOLATION      "GenericArguments[%1], '%2', on '%3' violates the constraint of type parameter '%4'."
     IDS_EE_METHOD_CONSTRAINTS_VIOLATION     "Method %1.%2: type argument '%3' violates the constraint of type parameter '%4'."
