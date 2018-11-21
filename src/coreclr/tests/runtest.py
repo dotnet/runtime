@@ -426,6 +426,7 @@ def create_and_use_test_env(_os, env, func):
         in runtest.sh.
     """
     global gc_stress_c
+    global gc_stress
 
     complus_vars = defaultdict(lambda: None)
 
@@ -500,6 +501,7 @@ def get_environment(test_env=None):
         influencing the test runner.
     """
     global gc_stress_c
+    global gc_stress
 
     complus_vars = defaultdict(lambda: "")
     
@@ -730,8 +732,7 @@ def run_tests(host_os,
         test_native_bin_location    : Native test components, None and windows.
         test_env(str)               : path to the test_env to be used
     """
-    global gc_stress
-    
+
     # Setup the dotnetcli location
     dotnetcli_location = os.path.join(coreclr_repo_location, "Tools", "dotnetcli", "dotnet%s" % (".exe" if host_os == "Windows_NT" else ""))
 
@@ -1970,8 +1971,6 @@ def do_setup(host_os,
              core_root, 
              unprocessed_args, 
              test_env):
-    global gc_stress_c
-
     # Setup the tools for the repo.
     setup_tools(host_os, coreclr_repo_location)
 
