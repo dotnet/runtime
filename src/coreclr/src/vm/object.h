@@ -1575,9 +1575,7 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     // READ ME:
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
-    OBJECTREF    m_pDomainManager;     // AppDomainManager for host settings.
     OBJECTREF    m_LocalStore;
-    OBJECTREF    m_FusionTable;
     OBJECTREF    m_pAssemblyEventHandler; // Delegate for 'loading assembly' event
     OBJECTREF    m_pTypeEventHandler;     // Delegate for 'resolve type' event
     OBJECTREF    m_pResourceEventHandler; // Delegate for 'resolve resource' event
@@ -1586,12 +1584,9 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pDomainUnloadEventHandler; // Delegate for 'about to unload domain' event
     OBJECTREF    m_pUnhandledExceptionEventHandler; // Delegate for 'unhandled exception' event
 
-    OBJECTREF    m_compatFlags;
-
     OBJECTREF    m_pFirstChanceExceptionHandler; // Delegate for 'FirstChance Exception' event
 
     AppDomain*   m_pDomain;            // Pointer to the BaseDomain Structure
-    CLR_BOOL     m_compatFlagsInitialized;
 
   protected:
     AppDomainBaseObject() { LIMITED_METHOD_CONTRACT; }
@@ -1608,12 +1603,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     {
         LIMITED_METHOD_CONTRACT;
         return m_pDomain;
-    }
-
-    OBJECTREF GetAppDomainManager()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDomainManager;
     }
 
     // Returns the reference to the delegate of the first chance exception notification handler

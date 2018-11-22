@@ -28,9 +28,7 @@ namespace System
         // of these fields cannot be changed without changing the layout in
         // the EE- AppDomainBaseObject in this case)
 
-        private AppDomainManager _domainManager;
         private Dictionary<string, object> _LocalStore;
-        private AppDomainSetup _FusionStore;
         public event AssemblyLoadEventHandler AssemblyLoad;
 
         private ResolveEventHandler _TypeResolve;
@@ -102,17 +100,10 @@ namespace System
 
         private UnhandledExceptionEventHandler _unhandledException;
 
-        // The compat flags are set at domain creation time to indicate that the given breaking
-        // changes (named in the strings) should not be used in this domain. We only use the
-        // keys, the vhe values are ignored.
-        private Dictionary<string, object> _compatFlags;
-
         // Delegate that will hold references to FirstChance exception notifications
         private EventHandler<FirstChanceExceptionEventArgs> _firstChanceException;
 
         private IntPtr _pDomain;                      // this is an unmanaged pointer (AppDomain * m_pDomain)` used from the VM.
-
-        private bool _compatFlagsInitialized;
 
 #if FEATURE_APPX
         private static APPX_FLAGS s_flags;
@@ -151,9 +142,6 @@ namespace System
         /// </summary>
         private void CreateAppDomainManager()
         {
-            Debug.Assert(_domainManager == null, "_domainManager == null");
-
-            AppDomainSetup adSetup = FusionStore;
             string trustedPlatformAssemblies = (string)GetData("TRUSTED_PLATFORM_ASSEMBLIES");
             if (trustedPlatformAssemblies != null)
             {
@@ -163,29 +151,6 @@ namespace System
                 string appLocalWinMD = (string)GetData("APP_LOCAL_WINMETADATA") ?? string.Empty;
                 SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths, appLocalWinMD);
             }
-
-            InitializeCompatibilityFlags();
-        }
-
-        /// <summary>
-        ///     Initialize the compatibility flags to non-NULL values.
-        ///     This method is also called from the VM when the default domain doesn't have a domain manager.
-        /// </summary>
-        private void InitializeCompatibilityFlags()
-        {
-            AppDomainSetup adSetup = FusionStore;
-
-            // set up shim flags regardless of whether we create a DomainManager in this method.
-            if (adSetup.GetCompatibilityFlags() != null)
-            {
-                _compatFlags = new Dictionary<string, object>(adSetup.GetCompatibilityFlags(), StringComparer.OrdinalIgnoreCase);
-            }
-
-            // for perf, we don't intialize the _compatFlags dictionary when we don't need to.  However, we do need to make a
-            // note that we've run this method, because IsCompatibilityFlagsSet needs to return different values for the
-            // case where the compat flags have been setup.
-            Debug.Assert(!_compatFlagsInitialized);
-            _compatFlagsInitialized = true;
         }
 
         /// <summary>
@@ -237,11 +202,7 @@ namespace System
 #endif
         }
 
-        public AppDomainManager DomainManager => _domainManager;
-
         public static AppDomain CurrentDomain => Thread.GetDomain();
-
-        public string BaseDirectory => FusionStore.ApplicationBase;
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern Assembly[] nGetAssemblies(bool forIntrospection);
@@ -288,9 +249,6 @@ namespace System
         {
             Debug.Fail("Object cannot be created through this constructor.");
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void nCreateContext();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void nSetupBindingPaths(string trustedPlatformAssemblies, string platformResourceRoots, string appPath, string appNiPaths, string appLocalWinMD);
@@ -432,15 +390,6 @@ namespace System
         }
 #endif // FEATURE_COMINTEROP
 
-        internal AppDomainSetup FusionStore
-        {
-            get
-            {
-                Debug.Assert(_FusionStore != null, "Fusion store has not been correctly setup in this domain");
-                return _FusionStore;
-            }
-        }
-
         private static RuntimeAssembly GetRuntimeAssembly(Assembly asm)
         {
             return
@@ -461,78 +410,11 @@ namespace System
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void nSetNativeDllSearchDirectories(string paths);
 
-        private void SetupFusionStore(AppDomainSetup info, AppDomainSetup oldInfo)
+        private static void Setup(string friendlyName,
+                                    string[] propertyNames,
+                                    string[] propertyValues)
         {
-            Debug.Assert(info != null);
-
-            if (info.ApplicationBase == null)
-            {
-                info.SetupDefaults(RuntimeEnvironment.GetModuleFileName(), imageLocationAlreadyNormalized: true);
-            }
-
-            nCreateContext();
-
-            // This must be the last action taken
-            _FusionStore = info;
-        }
-
-        // Used to switch into other AppDomain and call SetupRemoteDomain.
-        //   We cannot simply call through the proxy, because if there
-        //   are any remoting sinks registered, they can add non-mscorlib
-        //   objects to the message (causing an assembly load exception when
-        //   we try to deserialize it on the other side)
-        private static object PrepareDataForSetup(string friendlyName,
-                                                        AppDomainSetup setup,
-                                                        string[] propertyNames,
-                                                        string[] propertyValues)
-        {
-            var newSetup = new AppDomainSetup(setup);
-
-            // Remove the special AppDomainCompatSwitch entries from the set of name value pairs
-            // And add them to the AppDomainSetup
-            //
-            // This is only supported on CoreCLR through ICLRRuntimeHost2.CreateAppDomainWithManager
-            // Desktop code should use System.AppDomain.CreateDomain() or
-            // System.AppDomainManager.CreateDomain() and add the flags to the AppDomainSetup
-            var compatList = new List<string>();
-
-            if (propertyNames != null && propertyValues != null)
-            {
-                for (int i = 0; i < propertyNames.Length; i++)
-                {
-                    if (string.Equals(propertyNames[i], "AppDomainCompatSwitch", StringComparison.OrdinalIgnoreCase))
-                    {
-                        compatList.Add(propertyValues[i]);
-                        propertyNames[i] = null;
-                        propertyValues[i] = null;
-                    }
-                }
-
-                if (compatList.Count > 0)
-                {
-                    newSetup.SetCompatibilitySwitches(compatList);
-                }
-            }
-
-            return new object[]
-            {
-                friendlyName,
-                newSetup,
-                propertyNames,
-                propertyValues
-            };
-        } // PrepareDataForSetup
-
-        private static object Setup(object arg)
-        {
-            var args = (object[])arg;
-            var friendlyName = (string)args[0];
-            var setup = (AppDomainSetup)args[1];
-            var propertyNames = (string[])args[2]; // can contain null elements
-            var propertyValues = (string[])args[3]; // can contain null elements
-
             AppDomain ad = CurrentDomain;
-            var newSetup = new AppDomainSetup(setup);
 
             if (propertyNames != null && propertyValues != null)
             {
@@ -555,107 +437,17 @@ namespace System
 
                 for (int i = 0; i < propertyNames.Length; i++)
                 {
-                    if (propertyNames[i] == "APPBASE") // make sure in sync with Fusion
+                    if (propertyNames[i] != null)
                     {
-                        if (propertyValues[i] == null)
-                            throw new ArgumentNullException("APPBASE");
-
-                        if (PathInternal.IsPartiallyQualified(propertyValues[i]))
-                            throw new ArgumentException(SR.Argument_AbsolutePathRequired);
-
-                        newSetup.ApplicationBase = NormalizePath(propertyValues[i], fullCheck: true);
-                    }
-                    else if (propertyNames[i] == "TRUSTED_PLATFORM_ASSEMBLIES" ||
-                       propertyNames[i] == "PLATFORM_RESOURCE_ROOTS" ||
-                       propertyNames[i] == "APP_PATHS" ||
-                       propertyNames[i] == "APP_NI_PATHS")
-                    {
-                        string values = propertyValues[i];
-                        if (values == null)
-                            throw new ArgumentNullException(propertyNames[i]);
-
-                        ad.SetData(propertyNames[i], NormalizeAppPaths(values));
-                    }
-                    else if (propertyNames[i] != null)
-                    {
-                        ad.SetData(propertyNames[i], propertyValues[i]);     // just propagate
+                        ad.SetData(propertyNames[i], propertyValues[i]);
                     }
                 }
             }
-
-            ad.SetupFusionStore(newSetup, null); // makes FusionStore a ref to newSetup
-
-            // technically, we don't need this, newSetup refers to the same object as FusionStore
-            // but it's confusing since it isn't immediately obvious whether we have a ref or a copy
-            AppDomainSetup adSetup = ad.FusionStore;
 
             // set up the friendly name
             ad.nSetupFriendlyName(friendlyName);
 
             ad.CreateAppDomainManager(); // could modify FusionStore's object
-
-            return null;
-        }
-
-        private static string NormalizeAppPaths(string values)
-        {
-            int estimatedLength = values.Length + 1; // +1 for extra separator temporarily added at end
-            StringBuilder sb = StringBuilderCache.Acquire(estimatedLength);
-
-            for (int pos = 0; pos < values.Length; pos++)
-            {
-                string path;
-
-                int nextPos = values.IndexOf(Path.PathSeparator, pos);
-                if (nextPos == -1)
-                {
-                    path = values.Substring(pos);
-                    pos = values.Length - 1;
-                }
-                else
-                {
-                    path = values.Substring(pos, nextPos - pos);
-                    pos = nextPos;
-                }
-
-                // Skip empty directories
-                if (path.Length == 0)
-                    continue;
-
-                if (PathInternal.IsPartiallyQualified(path))
-                    throw new ArgumentException(SR.Argument_AbsolutePathRequired);
-
-                string appPath = NormalizePath(path, fullCheck: true);
-                sb.Append(appPath);
-                sb.Append(Path.PathSeparator);
-            }
-
-            // Strip the last separator
-            if (sb.Length > 0)
-            {
-                sb.Remove(sb.Length - 1, 1);
-            }
-
-            return StringBuilderCache.GetStringAndRelease(sb);
-        }
-
-        internal static string NormalizePath(string path, bool fullCheck) => Path.GetFullPath(path);
-
-        // This routine is called from unmanaged code to
-        // set the default fusion context.
-        private void SetupDomain(bool allowRedirects, string path, string configFile, string[] propertyNames, string[] propertyValues)
-        {
-            // It is possible that we could have multiple threads initializing
-            // the default domain. We will just take the winner of these two.
-            // (eg. one thread doing a com call and another doing attach for IJW)
-            lock (this)
-            {
-                if (_FusionStore == null)
-                {
-                    // always use internet permission set
-                    SetupFusionStore(new AppDomainSetup(), null);
-                }
-            }
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

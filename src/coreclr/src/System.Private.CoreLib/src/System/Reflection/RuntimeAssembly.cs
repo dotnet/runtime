@@ -415,16 +415,6 @@ namespace System.Reflection
             return GetManifestResourceNames(GetNativeHandle());
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetExecutingAssembly(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
-
-        internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
-        {
-            RuntimeAssembly retAssembly = null;
-            GetExecutingAssembly(JitHelpers.GetStackCrawlMarkHandle(ref stackMark), JitHelpers.GetObjectHandleOnStack(ref retAssembly));
-            return retAssembly;
-        }
-
         // Returns the names of all the resources
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern AssemblyName[] GetReferencedAssemblies(RuntimeAssembly assembly);

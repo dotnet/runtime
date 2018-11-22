@@ -229,11 +229,6 @@ bool dbg_fDrasticShutdown = false;
 bool g_fInControlC = false;
 
 //
-// Cached command line file provided by the host.
-//
-LPWSTR g_pCachedCommandLine = NULL;
-LPWSTR g_pCachedModuleFileName = 0;
-
 //
 // IJW needs the shim HINSTANCE
 //

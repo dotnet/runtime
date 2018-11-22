@@ -2918,10 +2918,6 @@ void SystemDomain::ReleaseAppDomainId(ADID index)
 
 #if defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
 
-#ifdef _DEBUG
-int g_fMainThreadApartmentStateSet = 0;
-#endif
-
 Thread::ApartmentState SystemDomain::GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod)
 {
     STANDARD_VM_CONTRACT;
@@ -2972,10 +2968,6 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
         Thread::ApartmentState pState = pThread->SetApartment(Thread::AS_InMTA, TRUE);
         _ASSERTE(pState == Thread::AS_InMTA);
     }
-
-#ifdef _DEBUG
-    g_fMainThreadApartmentStateSet++;
-#endif
 }
 #endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
 
@@ -2989,139 +2981,6 @@ BOOL SystemDomain::SetGlobalSharePolicyUsingAttribute(IMDInternalImport* pScope,
 
     return FALSE;
 }
-
-void SystemDomain::SetupDefaultDomain()
-{
-    CONTRACT_VOID
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-
-    Thread *pThread = GetThread();
-    _ASSERTE(pThread);
-
-    AppDomain *pDomain;
-    pDomain = pThread->GetDomain();
-    _ASSERTE(pDomain);
-
-    GCX_COOP();
-
-    ENTER_DOMAIN_PTR(SystemDomain::System()->DefaultDomain(),ADV_DEFAULTAD)
-    {
-        // Push this frame around loading the main assembly to ensure the
-        // debugger can properly recgonize any managed code that gets run
-        // as "class initializaion" code.
-        FrameWithCookie<DebuggerClassInitMarkFrame> __dcimf;
-
-        {
-            GCX_PREEMP();
-            InitializeDefaultDomain(TRUE);
-        }
-
-        __dcimf.Pop();
-    }
-    END_DOMAIN_TRANSITION;
-
-    RETURN;
-}
-
-HRESULT SystemDomain::SetupDefaultDomainNoThrow()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        SystemDomain::SetupDefaultDomain();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    return hr;
-}
-
-#ifdef _DEBUG
-int g_fInitializingInitialAD = 0;
-#endif
-
-// This routine completes the initialization of the default domaine.
-// After this call mananged code can be executed.
-void SystemDomain::InitializeDefaultDomain(
-    BOOL allowRedirects,
-    ICLRPrivBinder * pBinder)
-{
-    STANDARD_VM_CONTRACT;
-
-    WCHAR* pwsConfig = NULL;
-    WCHAR* pwsPath = NULL;
-
-    ETWOnStartup (InitDefaultDomain_V1, InitDefaultDomainEnd_V1);
-
-
-    // Setup the default AppDomain.
-
-#ifdef _DEBUG
-    g_fInitializingInitialAD++;
-#endif
-
-    AppDomain* pDefaultDomain = SystemDomain::System()->DefaultDomain();
-
-    if (pBinder != nullptr)
-    {
-        pDefaultDomain->SetLoadContextHostBinder(pBinder);
-    }
-
-    {
-        GCX_COOP();
-
-        pDefaultDomain->InitializeDomainContext(allowRedirects, pwsPath, pwsConfig);
-
-#ifndef CROSSGEN_COMPILE
-        if (!NingenEnabled())
-        {
-    
-            if (!IsSingleAppDomain())
-            {
-                pDefaultDomain->InitializeDefaultDomainManager();
-            }
-        }
-#endif // CROSSGEN_COMPILE
-    }
-
-    // DefaultDomain Load event
-    ETW::LoaderLog::DomainLoad(pDefaultDomain);
-
-#ifdef _DEBUG
-    g_fInitializingInitialAD--;
-#endif
-
-    TESTHOOKCALL(RuntimeStarted(RTS_DEFAULTADREADY));
-}
-
-
-
-#ifndef CROSSGEN_COMPILE
-
-#ifdef _DEBUG
-Volatile<LONG> g_fInExecuteMainMethod = 0;
-#endif
-
-
-
-
-#endif // CROSSGEN_COMPILE
-
-
 
 // Helper function to load an assembly. This is called from LoadCOMClass.
 /* static */
@@ -4340,52 +4199,6 @@ OBJECTREF AppDomain::GetExposedObject()
     }
 
     return ref;
-}
-
-
-
-OBJECTREF AppDomain::DoSetup(OBJECTREF* setupInfo)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    ADID adid=GetAppDomain()->GetId();
-
-    OBJECTREF retval=NULL;
-    GCPROTECT_BEGIN(retval);    
-
-    ENTER_DOMAIN_PTR(this,ADV_CREATING);
-
-    MethodDescCallSite setup(METHOD__APP_DOMAIN__SETUP);
-
-    ARG_SLOT args[1];
-
-    args[0]=ObjToArgSlot(*setupInfo);
-
-    OBJECTREF activator;
-    activator=setup.Call_RetOBJECTREF(args);
-    _ASSERTE(activator==NULL);
-    
-#if defined(FEATURE_MULTICOREJIT)
-    // Disable AutoStartProfile in default domain from this code path.
-    // It's called from SystemDomain::ExecuteMainMethod for normal program, not needed for SL and Asp.Net
-    if (! IsDefaultDomain())
-    {
-        GCX_PREEMP();
-
-        GetMulticoreJitManager().AutoStartProfile(this);
-    }
-#endif
-
-    END_DOMAIN_TRANSITION;
-    GCPROTECT_END();
-    return retval;
 }
 
 #endif // !CROSSGEN_COMPILE
@@ -7253,75 +7066,7 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pSender, OBJECTREF *pThrowabl
     return result;
 }
 
-
-
 #endif // CROSSGEN_COMPILE
-
-// You must be in the correct context before calling this
-// routine. Therefore, it is only good for initializing the
-// default domain.
-void AppDomain::InitializeDomainContext(BOOL allowRedirects,
-                                        LPCWSTR pwszPath,
-                                        LPCWSTR pwszConfig)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (NingenEnabled())
-    {
-
-        CreateFusionContext();
-
-        return;
-    }
-
-#ifndef CROSSGEN_COMPILE
-    struct _gc {
-        STRINGREF pFilePath;
-        STRINGREF pConfig;
-        OBJECTREF ref;
-        PTRARRAYREF propertyNames;
-        PTRARRAYREF propertyValues;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-    if(pwszPath)
-    {
-        gc.pFilePath = StringObject::NewString(pwszPath);
-    }
-
-    if(pwszConfig)
-    {
-        gc.pConfig = StringObject::NewString(pwszConfig);
-    }
-
-
-    if ((gc.ref = GetExposedObject()) != NULL)
-    {
-        MethodDescCallSite setupDomain(METHOD__APP_DOMAIN__SETUP_DOMAIN);
-
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(gc.ref),
-            BoolToArgSlot(allowRedirects),
-            ObjToArgSlot(gc.pFilePath),
-            ObjToArgSlot(gc.pConfig),
-            ObjToArgSlot(gc.propertyNames),
-            ObjToArgSlot(gc.propertyValues)
-        };
-        setupDomain.Call(args);
-    }
-    GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
-}
-
 
 IUnknown *AppDomain::CreateFusionContext()
 {
@@ -8694,43 +8439,6 @@ AppDomain::RaiseAssemblyResolveEvent(
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent
 
-
-//---------------------------------------------------------------------------------------
-//
-// Determine the type of AppDomainManager to use for the default AppDomain
-//
-// Notes:
-//   v2.0 of the CLR used environment variables APPDOMAIN_MANAGER_ASM and APPDOMAIN_MANAGER_TYPE to set the
-//   domain manager. For compatibility these are still supported, along with appDomainManagerAsm and
-//   appDomainManagerType config file switches. If the config switches are supplied, the entry point must be
-//   fully trusted.  
-//
-
-void AppDomain::InitializeDefaultDomainManager()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(GetId().m_dwId == DefaultADID);
-    }
-    CONTRACTL_END;
-
-    OBJECTREF orThis = GetExposedObject();
-    GCPROTECT_BEGIN(orThis);
-
-    MethodDescCallSite initCompatFlags(METHOD__APP_DOMAIN__INITIALIZE_COMPATIBILITY_FLAGS);
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(orThis)
-    };
-
-    initCompatFlags.Call(args);
-
-    GCPROTECT_END();
-}
 
 ULONGLONG g_ObjFinalizeStartTime = 0;
 Volatile<BOOL> g_FinalizerIsRunning = FALSE;
