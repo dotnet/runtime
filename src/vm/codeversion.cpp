@@ -2845,7 +2845,7 @@ PublishMethodTableHolder::PublishMethodTableHolder(MethodTable* pMethodTable) :
         // We need to be careful to only query portions of the MethodDesc
         // that work in a partially restored state. The only methods that need
         // further restoration are IL stubs (which aren't rejittable) and
-        // generic methods. The only generic methods directly accesible from
+        // generic methods. The only generic methods directly accessible from
         // the MethodTable are definitions. GetNativeCode() on generic defs
         // will run succesfully and return NULL which short circuits the
         // rest of the logic.

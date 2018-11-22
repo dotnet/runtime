@@ -5751,7 +5751,7 @@ void CEEPreloader::ExpandTypeDependencies(TypeHandle th)
         TriageTypeForZap(intIterator.GetInterface(), TRUE);
     }
     
-    // Make sure aprox types for all fields are saved
+    // Make sure approx types for all fields are saved
     ApproxFieldDescIterator fdIterator(pMT, ApproxFieldDescIterator::ALL_FIELDS);
     FieldDesc* pFD;
     while ((pFD = fdIterator.Next()) != NULL)
