@@ -920,7 +920,8 @@ HANDLES(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType
 HANDLES(RTH_16, "IsPointer", ves_icall_RuntimeTypeHandle_IsPointer, MonoBoolean, 1, (MonoReflectionType))
 HANDLES(RTH_17, "IsPrimitive", ves_icall_RuntimeTypeHandle_IsPrimitive, MonoBoolean, 1, (MonoReflectionType))
 //HANDLES(RTH_17a, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of, MonoBoolean, 2, (MonoType_ptr, MonoType_ptr))
-NOHANDLES(ICALL(RTH_17a, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of))
+HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, MonoReflectionType, 6, (MonoString, gpointer, MonoReflectionAssembly, MonoBoolean, MonoBoolean, MonoBoolean))
+NOHANDLES(ICALL(RTH_17b, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of))
 HANDLES(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from, guint32, 2, (MonoReflectionType, MonoReflectionType))
 
 ICALL_TYPE(RNG, "System.Security.Cryptography.RNGCryptoServiceProvider", RNG_1)
@@ -1148,7 +1149,6 @@ HANDLES(WAITH_2, "Wait_internal", ves_icall_System_Threading_WaitHandle_Wait_int
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))
-HANDLES(TYPE_2, "internal_from_name", ves_icall_System_Type_internal_from_name, MonoReflectionType, 3, (MonoString, MonoBoolean, MonoBoolean))
 
 ICALL_TYPE(TYPEDR, "System.TypedReference", TYPEDR_1)
 HANDLES(TYPEDR_1, "InternalToObject", mono_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))

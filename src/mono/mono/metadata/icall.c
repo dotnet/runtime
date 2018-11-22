@@ -1480,15 +1480,20 @@ fail:
 }
 
 MonoReflectionTypeHandle
-ves_icall_System_Type_internal_from_name (MonoStringHandle name,
+ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
+					  gpointer stack_mark,
+					  MonoReflectionAssemblyHandle callerAssembly,
 					  MonoBoolean throwOnError,
 					  MonoBoolean ignoreCase,
+					  MonoBoolean reflectionOnly,
 					  MonoError *error)
 {
 	MonoTypeNameParse info;
 	gboolean free_info = FALSE;
 	MonoAssembly *caller_assembly;
 	MonoReflectionTypeHandle type = MONO_HANDLE_NEW (MonoReflectionType, NULL);
+
+	/* The callerAssembly argument is unused for now */
 
 	char *str = mono_string_handle_to_utf8 (name, error);
 	goto_if_nok (error, leave);
