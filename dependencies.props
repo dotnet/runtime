@@ -23,21 +23,21 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>fd9474f0c60ac4f7e917c072df61e4b23115b7ae</CoreFxCurrentRef>
-    <CoreClrCurrentRef>fd9474f0c60ac4f7e917c072df61e4b23115b7ae</CoreClrCurrentRef>
+    <CoreFxCurrentRef>4fb03c03166b255e16dac5810a227dcfc241a3be</CoreFxCurrentRef>
+    <CoreClrCurrentRef>4fb03c03166b255e16dac5810a227dcfc241a3be</CoreClrCurrentRef>
     <BuildToolsCurrentRef>fd9474f0c60ac4f7e917c072df61e4b23115b7ae</BuildToolsCurrentRef>
     <PgoDataCurrentRef>43806fded35e21304616b67735a79adb870c933b</PgoDataCurrentRef>
-    <CoreSetupCurrentRef>43806fded35e21304616b67735a79adb870c933b</CoreSetupCurrentRef>
+    <CoreSetupCurrentRef>4fb03c03166b255e16dac5810a227dcfc241a3be</CoreSetupCurrentRef>
     <IbcDataCurrentRef>fd9474f0c60ac4f7e917c072df61e4b23115b7ae</IbcDataCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.18571.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18571.1</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview.18571.3</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview.18571.3</MicrosoftNETCorePlatformsPackageVersion>
     <PgoDataPackageVersion>99.99.99-master-20181121-0042</PgoDataPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27121-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27121-02</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview-27121-03</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview-27121-03</MicrosoftNETCoreAppPackageVersion>
     <XunitPackageVersion>2.4.1</XunitPackageVersion>
     <IbcDataPackageVersion>99.99.99-master-20181120-0045</IbcDataPackageVersion>
     <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
