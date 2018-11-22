@@ -6136,10 +6136,12 @@ bool         NDirect::s_fSecureLoadLibrarySupported = false;
 // static
 NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryFromPath(LPCWSTR libraryPath, BOOL throwOnError)
 {
-    STANDARD_VM_CONTRACT;
-
-    if (libraryPath == NULL)
-        COMPlusThrowArgumentNull(W("libraryPath"), W("ArgumentNull_String"));
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(libraryPath));
+    }
+    CONTRACTL_END;
 
     LoadLibErrorTracker errorTracker;
     const NATIVE_LIBRARY_HANDLE hmod =
@@ -6158,15 +6160,15 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryByName(LPCWSTR libraryName, Assembly *
                                                  BOOL hasDllImportSearchFlag, DWORD dllImportSearchFlag, 
                                                  BOOL throwOnError)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(libraryName));
+        PRECONDITION(CheckPointer(callingAssembly));
+    }
+    CONTRACTL_END;
 
     LoadLibErrorTracker errorTracker;
-
-    if (libraryName == NULL)
-        COMPlusThrowArgumentNull(W("libraryName"), W("ArgumentNull_String"));
-
-    if (callingAssembly == NULL)
-        COMPlusThrowArgumentNull(W("callingAssembly"), W("ArgumentNull_Assembly"));
 
     // First checks if a default DllImportSearchPathFlag was passed in, if so, use that value.
     // Otherwise checks if the assembly has the DefaultDllImportSearchPathsAttribute attribute. If so, use that value.
@@ -6255,13 +6257,13 @@ void NDirect::FreeNativeLibrary(NATIVE_LIBRARY_HANDLE handle)
 //static 
 INT_PTR NDirect::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR symbolName, BOOL throwOnError)
 {
-    STANDARD_VM_CONTRACT;
-
-    if (handle == NULL) 
-        COMPlusThrowArgumentNull(W("handle"), W("Arg_InvalidHandle"));
-
-    if (symbolName == NULL)
-        COMPlusThrowArgumentNull(W("symbolName"), W("ArgumentNull_String"));
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(handle));
+        PRECONDITION(CheckPointer(symbolName));
+    }
+    CONTRACTL_END;
 
     MAKE_UTF8PTR_FROMWIDE(lpstr, symbolName);
 

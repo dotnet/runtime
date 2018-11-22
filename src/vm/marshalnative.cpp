@@ -947,7 +947,7 @@ INT_PTR QCALLTYPE MarshalNative::LoadLibraryByName(LPCWSTR name, QCall::Assembly
     QCALL_CONTRACT;
 
     NATIVE_LIBRARY_HANDLE handle = nullptr;
-    Assembly *pAssembly = (callingAssembly != NULL) ? callingAssembly->GetAssembly() : NULL;
+    Assembly *pAssembly = callingAssembly->GetAssembly();
 
     BEGIN_QCALL;
 
