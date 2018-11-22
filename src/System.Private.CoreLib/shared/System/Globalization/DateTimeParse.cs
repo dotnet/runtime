@@ -678,7 +678,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             raw.year = tokenValue;
                             //
                             // If we have number which has 3 or more digits (like "001" or "0001"),
-                            // we assume this number is a year. Save the currnet raw.numCount in
+                            // we assume this number is a year. Save the current raw.numCount in
                             // raw.year.
                             //
                             switch (sep = str.GetSeparatorToken(dtfi, out indexBeforeSeparator, out charBeforeSeparator))
@@ -882,7 +882,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                             raw.year = tokenValue;
                             //
                             // If we have number which has 3 or more digits (like "001" or "0001"),
-                            // we assume this number is a year. Save the currnet raw.numCount in
+                            // we assume this number is a year. Save the current raw.numCount in
                             // raw.year.
                             //
                             switch (sep = str.GetSeparatorToken(dtfi, out indexBeforeSeparator, out charBeforeSeparator))
