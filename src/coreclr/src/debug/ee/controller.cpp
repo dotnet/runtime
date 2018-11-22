@@ -9006,21 +9006,30 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
 #endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
     if (hitDataBp)
     {
-        CONTEXT contextToAdjust;
-        BOOL adjustedContext = FALSE;
-        memcpy(&contextToAdjust, pContext, sizeof(CONTEXT));
-        adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);        
-        if (adjustedContext)
-        {
-            LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));
-            DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
-            pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
-            result = false;
-        }
-        else
+        if (g_pDebugger->IsThreadAtSafePlace(thread))
         {
             LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT...\n"));
             result = true;
+        }
+        else
+        {
+            CONTEXT contextToAdjust;
+            BOOL adjustedContext = FALSE;
+            memcpy(&contextToAdjust, pContext, sizeof(CONTEXT));
+            adjustedContext = g_pEEInterface->AdjustContextForWriteBarrierForDebugger(&contextToAdjust);        
+            if (adjustedContext)
+            {
+                LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT INSIDE WRITE BARRIER...\n"));
+                DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+                pDataBreakpoint->AddAndActivateNativePatchForAddress((CORDB_ADDRESS_TYPE*)GetIP(&contextToAdjust), FramePointer::MakeFramePointer(GetFP(&contextToAdjust)), true, DPT_DEFAULT_TRACE_TYPE);
+            }
+            else
+            {
+                LOG((LF_CORDB, LL_INFO10000, "D::DDBP: HIT DATA BREAKPOINT BUT STILL NEED TO ROLL ...\n"));
+                DebuggerDataBreakpoint *pDataBreakpoint = new (interopsafe) DebuggerDataBreakpoint(thread);
+                pDataBreakpoint->EnableSingleStep();
+            }
+            result = false;
         }
     }
     else
@@ -9029,6 +9038,35 @@ bool DebuggerContinuableExceptionBreakpoint::SendEvent(Thread *thread, bool fIpC
         result = false;
     }
     return result;
+}
+
+TP_RESULT DebuggerDataBreakpoint::TriggerPatch(DebuggerControllerPatch *patch, Thread *thread,  TRIGGER_WHY tyWhy)
+{
+    if (g_pDebugger->IsThreadAtSafePlace(thread))
+    {
+        return TPR_TRIGGER;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "D::DDBP: REACH RETURN OF JIT HELPER BUT STILL NEED TO ROLL ...\n"));
+        this->EnableSingleStep();
+        return TPR_IGNORE;
+    }
+}
+
+bool DebuggerDataBreakpoint::TriggerSingleStep(Thread *thread, const BYTE *ip)
+{
+    if (g_pDebugger->IsThreadAtSafePlace(thread))
+    {
+        LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Finally safe for stopping, stop stepping\n"));
+        this->DisableSingleStep();
+        return true;
+    }
+    else
+    {
+        LOG((LF_CORDB, LL_INFO10000, "D:DDBP: Still not safe for stopping, continue stepping\n"));
+        return false;
+    }
 }
 
 #endif // FEATURE_DATABREAKPOINT

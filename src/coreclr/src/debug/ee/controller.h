@@ -1789,12 +1789,9 @@ public:
         return DEBUGGER_CONTROLLER_DATA_BREAKPOINT;
     }
 
-    virtual TP_RESULT TriggerPatch(DebuggerControllerPatch *patch,
-                              Thread *thread, 
-                              TRIGGER_WHY tyWhy)
-    {
-        return TPR_TRIGGER;
-    }
+    virtual TP_RESULT TriggerPatch(DebuggerControllerPatch *patch, Thread *thread,  TRIGGER_WHY tyWhy);
+
+    virtual bool TriggerSingleStep(Thread *thread, const BYTE *ip);
 
     bool SendEvent(Thread *thread, bool fInteruptedBySetIp)
     {
