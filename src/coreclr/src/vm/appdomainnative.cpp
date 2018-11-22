@@ -102,34 +102,6 @@ FCIMPL2(void, AppDomainNative::SetupFriendlyName, AppDomainBaseObject* refThisUN
 }
 FCIMPLEND
 
-FCIMPL1(void,
-        AppDomainNative::CreateContext,
-        AppDomainBaseObject *refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        APPDOMAINREF refThis;
-    } gc;
-
-    gc.refThis = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
-
-    AppDomain* pDomain = ValidateArg(gc.refThis);
-
-    if((BaseDomain*) pDomain == SystemDomain::System())
-    {
-        COMPlusThrow(kUnauthorizedAccessException, W("UnauthorizedAccess_SystemDomain"));
-    }
-
-    pDomain->CreateFusionContext();
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 void QCALLTYPE AppDomainNative::SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatformAssemblies, __in_z LPCWSTR wszPlatformResourceRoots, __in_z LPCWSTR wszAppPaths, __in_z LPCWSTR wszAppNiPaths, __in_z LPCWSTR appLocalWinMD)
 {
     QCALL_CONTRACT;

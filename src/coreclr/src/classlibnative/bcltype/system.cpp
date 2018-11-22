@@ -158,17 +158,9 @@ void QCALLTYPE SystemNative::_GetCommandLine(QCall::StringHandleOnStack retStrin
 
     LPCWSTR commandLine;
 
-    if (g_pCachedCommandLine != NULL)
-    {
-        // Use the cached command line if available
-        commandLine = g_pCachedCommandLine;
-    }
-    else
-    {
-        commandLine = WszGetCommandLine();
-        if (commandLine==NULL)
-            COMPlusThrowOM();
-    }
+    commandLine = WszGetCommandLine();
+    if (commandLine==NULL)
+        COMPlusThrowOM();
     
     retString.Set(commandLine);
 
@@ -185,17 +177,9 @@ FCIMPL0(Object*, SystemNative::GetCommandLineArgs)
 
     LPWSTR commandLine;
 
-    if (g_pCachedCommandLine != NULL)
-    {
-        // Use the cached command line if available
-        commandLine = g_pCachedCommandLine;
-    }
-    else
-    {
-        commandLine = WszGetCommandLine();
-        if (commandLine==NULL)
-            COMPlusThrowOM();
-    }
+    commandLine = WszGetCommandLine();
+    if (commandLine==NULL)
+        COMPlusThrowOM();
 
     DWORD numArgs = 0;
     LPWSTR* argv = SegmentCommandLine(commandLine, &numArgs);
@@ -247,64 +231,6 @@ FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* 
     HELPER_METHOD_FRAME_END();
 
     return (ReflectMethodObject*)OBJECTREFToObject(refRet);
-}
-FCIMPLEND
-
-FCIMPL0(StringObject*, SystemNative::_GetModuleFileName)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF   refRetVal = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-    if (g_pCachedModuleFileName)
-    {
-        refRetVal = StringObject::NewString(g_pCachedModuleFileName);
-    }
-    else
-    {
-        PathString wszFilePathString;
-
-       
-        DWORD lgth = WszGetModuleFileName(NULL, wszFilePathString);
-        if (!lgth)
-        {
-            COMPlusThrowWin32();
-        }
-       
-
-        refRetVal = StringObject::NewString(wszFilePathString.GetUnicode());
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return (StringObject*)OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-
-FCIMPL0(StringObject*, SystemNative::GetRuntimeDirectory)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF   refRetVal   = NULL;
-    DWORD dwFile = MAX_LONGPATH+1;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refRetVal);
-    SString wszFilePathString;
-
-    WCHAR * wszFile = wszFilePathString.OpenUnicodeBuffer(dwFile);
-    HRESULT hr = GetInternalSystemDirectory(wszFile, &dwFile);
-    wszFilePathString.CloseBuffer(dwFile);
-    
-    if(FAILED(hr))
-        COMPlusThrowHR(hr);
-
-    dwFile--; // remove the trailing NULL
-
-    if(dwFile)
-        refRetVal = StringObject::NewString(wszFile, dwFile);
-
-    HELPER_METHOD_FRAME_END();
-    return (StringObject*)OBJECTREFToObject(refRetVal);
 }
 FCIMPLEND
 

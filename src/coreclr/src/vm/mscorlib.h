@@ -67,9 +67,7 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, TARGET,            _target)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS_U(System,                 AppDomain,      AppDomainBaseObject)
-DEFINE_FIELD_U(_domainManager,             AppDomainBaseObject, m_pDomainManager)
 DEFINE_FIELD_U(_LocalStore,                AppDomainBaseObject, m_LocalStore)
-DEFINE_FIELD_U(_FusionStore,               AppDomainBaseObject, m_FusionTable)
 DEFINE_FIELD_U(AssemblyLoad,               AppDomainBaseObject, m_pAssemblyEventHandler)
 DEFINE_FIELD_U(_TypeResolve,               AppDomainBaseObject, m_pTypeEventHandler)
 DEFINE_FIELD_U(_ResourceResolve,           AppDomainBaseObject, m_pResourceEventHandler)
@@ -77,14 +75,11 @@ DEFINE_FIELD_U(_AssemblyResolve,           AppDomainBaseObject, m_pAsmResolveEve
 DEFINE_FIELD_U(_processExit,               AppDomainBaseObject, m_pProcessExitEventHandler)
 DEFINE_FIELD_U(_domainUnload,              AppDomainBaseObject, m_pDomainUnloadEventHandler)
 DEFINE_FIELD_U(_unhandledException,        AppDomainBaseObject, m_pUnhandledExceptionEventHandler)
-DEFINE_FIELD_U(_compatFlags,              AppDomainBaseObject, m_compatFlags)
 DEFINE_FIELD_U(_firstChanceException,      AppDomainBaseObject, m_pFirstChanceExceptionHandler)
 DEFINE_FIELD_U(_pDomain,                   AppDomainBaseObject, m_pDomain)
-DEFINE_FIELD_U(_compatFlagsInitialized,           AppDomainBaseObject, m_compatFlagsInitialized)
 
 DEFINE_CLASS(APP_DOMAIN,            System,                 AppDomain)
-DEFINE_METHOD(APP_DOMAIN,           PREPARE_DATA_FOR_SETUP,PrepareDataForSetup,SM_Str_AppDomainSetup_ArrStr_ArrStr_RetObj)
-DEFINE_METHOD(APP_DOMAIN,           SETUP,Setup,SM_Obj_RetObj)
+DEFINE_METHOD(APP_DOMAIN,           SETUP,Setup,SM_Str_ArrStr_ArrStr_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,        IM_Assembly_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           ON_RESOURCE_RESOLVE,    OnResourceResolveEvent,     IM_Assembly_Str_RetAssembly)
 DEFINE_METHOD(APP_DOMAIN,           ON_TYPE_RESOLVE,        OnTypeResolveEvent,         IM_Assembly_Str_RetAssembly)
@@ -92,8 +87,6 @@ DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_RESOLVE,    OnAssemblyResolveEve
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(APP_DOMAIN,           ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolveEvent, IM_Str_RetArrStr)
 #endif //FEATURE_COMINTEROP
-DEFINE_METHOD(APP_DOMAIN,           SETUP_DOMAIN,           SetupDomain,                IM_Bool_Str_Str_ArrStr_ArrStr_RetVoid)
-DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
 
 DEFINE_CLASS(CLEANUP_WORK_LIST_ELEMENT,     StubHelpers,            CleanupWorkListElement)
 
@@ -107,8 +100,6 @@ DEFINE_FIELD_U(typeName,        TypeNameNative,             typeName)
 DEFINE_FIELD_U(typeKind,        TypeNameNative,             typeKind)
 
 #endif
-
-DEFINE_CLASS(APPDOMAIN_SETUP,       System,                 AppDomainSetup)
 
 DEFINE_CLASS(ARG_ITERATOR,          System,                 ArgIterator)
 DEFINE_CLASS_U(System,              ArgIterator,            VARARGS)  // Includes a SigPointer.

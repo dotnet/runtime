@@ -116,7 +116,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override string ImageRuntimeVersion => RuntimeEnvironment.GetSystemVersion();
+        public override string ImageRuntimeVersion => Assembly.GetExecutingAssembly().ImageRuntimeVersion;
 
         #endregion
     }

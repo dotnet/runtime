@@ -240,9 +240,6 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
 HRESULT EEStartup(COINITIEE fFlags);
 
 
-BOOL STDMETHODCALLTYPE ExecuteEXE(HMODULE hMod);
-BOOL STDMETHODCALLTYPE ExecuteEXE(__in LPWSTR pImageNameIn);
-
 #ifndef CROSSGEN_COMPILE
 static void InitializeGarbageCollector();
 
@@ -1159,11 +1156,6 @@ HRESULT EEStartup(COINITIEE fFlags)
         _ASSERTE(FAILED(g_EEStartupStatus));
     }
     PAL_ENDTRY
-
-#ifndef CROSSGEN_COMPILE
-    if(SUCCEEDED(g_EEStartupStatus) && (fFlags & COINITEE_MAIN) == 0)
-        g_EEStartupStatus = SystemDomain::SetupDefaultDomainNoThrow();
-#endif
 
     return g_EEStartupStatus;
 }
