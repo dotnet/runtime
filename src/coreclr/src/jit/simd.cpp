@@ -1119,7 +1119,7 @@ GenTreeSIMD* Compiler::impSIMDGetFixed(var_types simdType, var_types baseType, u
 // impSIMDLongRelOpEqual: transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain == comparison result.
 //
-// Argumens:
+// Arguments:
 //    typeHnd  -  type handle of SIMD vector
 //    size     -  SIMD vector size
 //    op1      -  in-out parameter; first operand
@@ -1163,7 +1163,7 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpEqual(CORINFO_CLASS_HANDLE typeHnd,
 // impSIMDLongRelOpGreaterThan: transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain > comparison result.
 //
-// Argumens:
+// Arguments:
 //    typeHnd  -  type handle of SIMD vector
 //    size     -  SIMD vector size
 //    pOp1     -  in-out parameter; first operand
@@ -1259,7 +1259,7 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThan(CORINFO_CLASS_HANDLE typeH
 // impSIMDLongRelOpGreaterThanOrEqual: transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain >= comparison result.
 //
-// Argumens:
+// Arguments:
 //    typeHnd  -  type handle of SIMD vector
 //    size     -  SIMD vector size
 //    pOp1      -  in-out parameter; first operand
@@ -1315,7 +1315,7 @@ SIMDIntrinsicID Compiler::impSIMDLongRelOpGreaterThanOrEqual(CORINFO_CLASS_HANDL
 // impSIMDInt32OrSmallIntRelOpGreaterThanOrEqual: transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain >= comparison result in case of integer base type vectors
 //
-// Argumens:
+// Arguments:
 //    typeHnd  -  type handle of SIMD vector
 //    size     -  SIMD vector size
 //    baseType -  base type of SIMD vector
@@ -1376,7 +1376,7 @@ SIMDIntrinsicID Compiler::impSIMDIntegralRelOpGreaterThanOrEqual(
 // Transforms operands and returns the SIMD intrinsic to be applied on
 // transformed operands to obtain given relop result.
 //
-// Argumens:
+// Arguments:
 //    relOpIntrinsicId - Relational operator SIMD intrinsic
 //    typeHnd          - type handle of SIMD vector
 //    size             -  SIMD vector size
@@ -1717,7 +1717,7 @@ GenTree* Compiler::impSIMDAbs(CORINFO_CLASS_HANDLE typeHnd, var_types baseType, 
 
 // Creates a GT_SIMD tree for Select operation
 //
-// Argumens:
+// Arguments:
 //    typeHnd          -  type handle of SIMD vector
 //    baseType         -  base type of SIMD vector
 //    size             -  SIMD vector size
@@ -1777,7 +1777,7 @@ GenTree* Compiler::impSIMDSelect(
 
 // Creates a GT_SIMD tree for Min/Max operation
 //
-// Argumens:
+// Arguments:
 //    IntrinsicId      -  SIMD intrinsic Id, either Min or Max
 //    typeHnd          -  type handle of SIMD vector
 //    baseType         -  base type of SIMD vector

@@ -51,7 +51,7 @@ int __cdecl main(int argc, char *argv[])
     {
         Fail("The function should still return a success value even if it is "
              "passed a LPWSTR which is not an environment block properly "
-             "aquired from GetEnvironmentStrings\n");
+             "acquired from GetEnvironmentStrings\n");
     }
   
     /* Even passing this function NULL, should still return a success value */
