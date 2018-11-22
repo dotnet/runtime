@@ -16,11 +16,13 @@ namespace System
         //
         // These fields map directly onto the fields in an EE StringObject.  See object.h for the layout.
         //
-        [NonSerialized] private int _stringLength;
+        [NonSerialized]
+        private int _stringLength;
 
         // For empty strings, this will be '\0' since
         // strings are both null-terminated and length prefixed
-        [NonSerialized] private char _firstChar;
+        [NonSerialized]
+        private char _firstChar;
 
         // The Empty constant holds the empty string value. It is initialized by the EE during startup.
         // It is treated as intrinsic by the JIT as so the static constructor would never run.
@@ -29,6 +31,7 @@ namespace System
         // We need to call the String constructor so that the compiler doesn't mark this as a literal.
         // Marking this as a literal would mean that it doesn't show up as a field which we can access 
         // from native.
+        [Intrinsic]
         public static readonly string Empty;
 
         // Gets the character at a specified position.
