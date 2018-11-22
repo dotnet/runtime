@@ -26,12 +26,6 @@
     <Compile Include="TraceTestHelper.cs" />
     <Compile Include="CorrelationManagerTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="DefaultTraceListenerClassTests.netcoreapp.cs" />
-    <Compile Include="$(CommonPath)\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs">
-      <Link>Common\System\Reflection\Emit\IgnoreAccessChecksToAttributeBuilder.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
