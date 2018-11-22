@@ -38,7 +38,7 @@
 #endif
 
 #if !defined(__power_5_andup)
-#define __power_5_andup() (_system_configuration.implementation & POWER_5)
+#define __power_5_andup() (_system_configuration.implementation & POWER_5_ANDUP)
 #endif
 
 #endif
