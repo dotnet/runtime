@@ -584,12 +584,6 @@ EXTERN bool g_fInControlC;
 extern const DWORD g_rgPrimes[71];
 
 //
-// Cached command line file provided by the host.
-//
-extern LPWSTR g_pCachedCommandLine;
-extern LPWSTR g_pCachedModuleFileName;
-
-//
 // Macros to check debugger and profiler settings.
 //
 inline bool CORDebuggerPendingAttach()

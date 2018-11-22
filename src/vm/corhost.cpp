@@ -728,6 +728,8 @@ HRESULT CorHost2::_CreateAppDomain(
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
 
+    pDomain->CreateFusionContext();
+
     {
         GCX_COOP();
     
@@ -736,8 +738,6 @@ HRESULT CorHost2::_CreateAppDomain(
             STRINGREF friendlyName;
             PTRARRAYREF propertyNames;
             PTRARRAYREF propertyValues;
-            OBJECTREF setupInfo;
-            OBJECTREF adSetup;
         } _gc;
 
         ZeroMemory(&_gc,sizeof(_gc));
@@ -745,7 +745,7 @@ HRESULT CorHost2::_CreateAppDomain(
         GCPROTECT_BEGIN(_gc)
         _gc.friendlyName=StringObject::NewString(wszFriendlyName);
         
-        if(nProperties>0)
+        if (nProperties>0)
         {
             _gc.propertyNames = (PTRARRAYREF) AllocateObjectArray(nProperties, g_pStringClass);
             _gc.propertyValues= (PTRARRAYREF) AllocateObjectArray(nProperties, g_pStringClass);
@@ -759,24 +759,14 @@ HRESULT CorHost2::_CreateAppDomain(
             }
         }
 
-        MethodDescCallSite prepareDataForSetup(METHOD__APP_DOMAIN__PREPARE_DATA_FOR_SETUP);
+        MethodDescCallSite setup(METHOD__APP_DOMAIN__SETUP);
 
-        ARG_SLOT args[4];
+        ARG_SLOT args[3];
         args[0]=ObjToArgSlot(_gc.friendlyName);
-        args[1]=ObjToArgSlot(NULL);
-        args[2]=ObjToArgSlot(_gc.propertyNames);
-        args[3]=ObjToArgSlot(_gc.propertyValues);
+        args[1]=ObjToArgSlot(_gc.propertyNames);
+        args[2]=ObjToArgSlot(_gc.propertyValues);
 
-        _gc.setupInfo=prepareDataForSetup.Call_RetOBJECTREF(args);
-
-        //
-        // Get the new flag values and set it to the domain
-        //
-        PTRARRAYREF handleArrayObj = (PTRARRAYREF) ObjectToOBJECTREF(_gc.setupInfo);
-        _gc.adSetup = ObjectToOBJECTREF(handleArrayObj->GetAt(1));
-
-
-        pDomain->DoSetup(&_gc.setupInfo);
+        setup.Call(args);
         
         GCPROTECT_END();
 

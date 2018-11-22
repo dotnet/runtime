@@ -3526,9 +3526,6 @@
   <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
     <value>Access to the registry key '{0}' is denied.</value>
   </data>
-  <data name="UnauthorizedAccess_SystemDomain" xml:space="preserve">
-    <value>Cannot execute an assembly in the system domain.</value>
-  </data>
   <data name="UnknownError_Num" xml:space="preserve">
     <value>Unknown error "{0}".</value>
   </data>

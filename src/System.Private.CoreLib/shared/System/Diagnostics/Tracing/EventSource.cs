@@ -5672,19 +5672,11 @@ namespace System.Diagnostics.Tracing
                 cultures = new List<CultureInfo>();
                 cultures.Add(CultureInfo.CurrentUICulture);
             }
-#if ES_BUILD_STANDALONE || ES_BUILD_PN
-            var sortedStrings = new List<string>(stringTab.Keys);
-            sortedStrings.Sort();
-#else
-            // DD 947936
+
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
-            // Avoid using public Array.Sort as that attempts to access BinaryCompatibility. Unfortunately FrameworkEventSource gets called 
-            // very early in the app domain creation, when _FusionStore is not set up yet, resulting in a failure to run the static constructory
-            // for BinaryCompatibility. This failure is then cached and a TypeInitializationException is thrown every time some code attampts to
-            // access BinaryCompatibility.
-            ArraySortHelper<string>.IntrospectiveSort(sortedStrings, 0, sortedStrings.Length, string.Compare);
-#endif
+            Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
+
             foreach (var ci in cultures)
             {
                 sb.Append(" <resources culture=\"").Append(ci.Name).Append("\">").AppendLine();

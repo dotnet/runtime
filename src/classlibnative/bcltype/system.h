@@ -56,9 +56,6 @@ public:
     static FCDECL2(VOID, FailFastWithException, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE);
     static FCDECL3(VOID, FailFastWithExceptionAndSource, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE, StringObject* errorSourceUNSAFE);
 
-    static FCDECL0(StringObject*, _GetModuleFileName);
-    static FCDECL0(StringObject*, GetRuntimeDirectory);
-
     // Returns the number of logical processors that can be used by managed code
 	static INT32 QCALLTYPE GetProcessorCount();
 

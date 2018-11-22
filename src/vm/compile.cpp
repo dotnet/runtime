@@ -163,7 +163,7 @@ HRESULT CEECompileInfo::CreateDomain(ICorCompilationDomain **ppDomain,
 
         ENTER_DOMAIN_PTR(pCompilationDomain,ADV_COMPILATION)
         {
-            pCompilationDomain->InitializeDomainContext(TRUE, NULL, NULL);
+            pCompilationDomain->CreateFusionContext();
 
             pCompilationDomain->SetFriendlyName(W("Compilation Domain"));
             SystemDomain::System()->LoadDomain(pCompilationDomain);
