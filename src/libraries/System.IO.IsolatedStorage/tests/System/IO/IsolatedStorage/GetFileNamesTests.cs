@@ -57,7 +57,7 @@ namespace System.IO.IsolatedStorage
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void GetFileNames_RaisesInvalidPath_Core()
         {
-            // We are no longer as agressive with filters for enumerating files
+            // We are no longer as aggressive with filters for enumerating files
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
                 isf.GetFileNames("\0bad");

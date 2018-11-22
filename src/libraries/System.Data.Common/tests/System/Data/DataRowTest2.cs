@@ -2439,7 +2439,7 @@ namespace System.Data.Tests
             dtParent.Rows[0].SetParentRow(dtChild.Rows[0]);
         }
 
-        public void checkForLoopsAdvenced()
+        public void checkForLoopsAdvanced()
         {
             //Create tables
             DataTable dtChild = new DataTable();
