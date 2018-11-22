@@ -22399,9 +22399,9 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     // jit\Methodical\VT\callconv\_il_reljumper3 for x64 linux
     //
     // If so, just bail out here.
-    if ((parent != nullptr) && parent->OperGet() == GT_NOP)
+    if (tree == nullptr)
     {
-        assert(tree == nullptr);
+        assert((parent != nullptr) && parent->OperGet() == GT_NOP);
         return WALK_CONTINUE;
     }
 
