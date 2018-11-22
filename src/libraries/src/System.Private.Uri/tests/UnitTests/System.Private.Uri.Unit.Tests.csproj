@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>436</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Fakes\FakeUri.cs" />
