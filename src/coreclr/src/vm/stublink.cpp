@@ -1728,7 +1728,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap)
         // to report them to the OS. (they are not expressible anyways)
 
         // 5. Floating point argument registers:
-        // Similar to Integer argumetn registers, no reporting
+        // Similar to Integer argument registers, no reporting
         //
 
         // 4. Set the frame pointer

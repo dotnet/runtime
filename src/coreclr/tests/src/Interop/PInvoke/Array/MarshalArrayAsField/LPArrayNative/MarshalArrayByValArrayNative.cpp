@@ -79,7 +79,7 @@ BOOL Equals(T *pActual, int cActual, T *pExpected, int cExpected)
     else if ( cActual != cExpected )
     {
         printf("WARNING: Test error - %s\n", __FUNCSIG__);
-        printf("Array Length: expected: %d, actutl: %d\n", cExpected, cActual);
+        printf("Array Length: expected: %d, actual: %d\n", cExpected, cActual);
         return FALSE;
     }
 

@@ -3658,7 +3658,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
 //------------------------------------------------------------------------
 // genSIMDIntrinsic: Generate code for a SIMD Intrinsic.  This is the main
-// routine which in turn calls apropriate genSIMDIntrinsicXXX() routine.
+// routine which in turn calls appropriate genSIMDIntrinsicXXX() routine.
 //
 // Arguments:
 //    simdNode - The GT_SIMD node
