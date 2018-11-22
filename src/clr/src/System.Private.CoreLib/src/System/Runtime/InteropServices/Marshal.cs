@@ -1770,12 +1770,14 @@ namespace System.Runtime.InteropServices
         /// <param name="libraryName">The name of the native library to be loaded</param>
         /// <returns>The handle for the loaded native library</returns>  
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
-        /// <exception cref="System.DllNotFoundException ">Thrown if the library can't be found.</exception>
-        /// <exception cref="System.BadImageFormatException">Thrown if the library is not valid.</exception>
+        /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
+        /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
         public static IntPtr LoadLibrary(string libraryPath)
         {
-            bool throwOnError = true;
-            return LoadLibraryFromPath(libraryPath, throwOnError);
+            if (libraryPath == null)
+                throw new ArgumentNullException(nameof(libraryPath));
+
+            return LoadLibraryFromPath(libraryPath, throwOnError: true);
         }
 
         /// <summary>
@@ -1787,15 +1789,20 @@ namespace System.Runtime.InteropServices
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
         public static bool TryLoadLibrary(string libraryPath, out IntPtr handle)
         {
-            bool throwOnError = false;
-            handle = LoadLibraryFromPath(libraryPath, throwOnError);
+            if (libraryPath == null)
+                throw new ArgumentNullException(nameof(libraryPath));
+
+            handle = LoadLibraryFromPath(libraryPath, throwOnError: false);
             return handle != IntPtr.Zero;
         }
 
         /// <summary>
         /// NativeLibrary Loader: High-level API
         /// Given a library name, this function searches specific paths based on the 
-        /// runtime configuration and attributes of the calling module.
+        /// runtime configuration, input parameters, and attributes of the calling assembly.
+        /// If DllImportSearchPath parameter is non-null, the flags in this enumeration are used.
+        /// Otherwise, the flags specified by the DefaultDllImportSearchPaths attribute on the 
+        /// calling assembly (if any) are used. 
         /// This LoadLibrary() method does not invoke the managed call-backs for native library resolution: 
         /// * AssemblyLoadContext.LoadUnmanagedDll()
         /// </summary>
@@ -1803,16 +1810,24 @@ namespace System.Runtime.InteropServices
         /// <param name="dllImportSearchPath">The search path</param>
         /// <param name="assembly">The assembly loading the native library</param>
         /// <returns>The handle for the loaded library</returns>  
-        /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
-        /// <exception cref="System.ArgumentNullException">If assembly is null</exception>
-        /// <exception cref="System.DllNotFoundException ">Thrown if the library can't be found.</exception>
-        /// <exception cref="System.BadImageFormatException">Thrown if the library is not valid.</exception>        
+        /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
+        /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
+        /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
+        /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>        
         public static IntPtr LoadLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
         {
-            RuntimeAssembly runtimeAssembly = (assembly != null) ? ((RuntimeAssembly)assembly).GetNativeHandle() : null;
-            bool throwOnError = true;
-            uint searchPathFlag =  searchPath.HasValue ? (uint)searchPath.Value : 0;
-            return LoadLibraryByName(libraryName, runtimeAssembly, searchPath.HasValue, searchPathFlag, throwOnError);
+            if (libraryName == null)
+                throw new ArgumentNullException(nameof(libraryName));
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly));
+            if (!(assembly is RuntimeAssembly))
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+            
+            return LoadLibraryByName(libraryName, 
+                                     ((RuntimeAssembly)assembly).GetNativeHandle(), 
+                                     searchPath.HasValue, 
+                                     (uint) searchPath.GetValueOrDefault(), 
+                                     throwOnError: true);
         }
 
         /// <summary>
@@ -1823,14 +1838,22 @@ namespace System.Runtime.InteropServices
         /// <param name="assembly">The assembly loading the native library</param>
         /// <param name="handle">The out-parameter for the loaded native library handle</param>
         /// <returns>True on successful load, false otherwise</returns>  
-        /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
-        /// <exception cref="System.ArgumentNullException">If assembly is null and dllImportSearchPath includes AssemblyDirectory</exception>
+        /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
+        /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
         public static bool TryLoadLibrary(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out IntPtr handle)
         {
-            RuntimeAssembly runtimeAssembly = (assembly != null) ? ((RuntimeAssembly)assembly).GetNativeHandle() : null;
-            bool throwOnError = false;
-            uint searchPathFlag =  searchPath.HasValue ? (uint)searchPath.Value : 0;
-            handle = LoadLibraryByName(libraryName, runtimeAssembly, searchPath.HasValue, searchPathFlag, throwOnError);
+            if (libraryName == null)
+                throw new ArgumentNullException(nameof(libraryName));
+            if (assembly == null)
+                throw new ArgumentNullException(nameof(assembly));
+            if (!(assembly is RuntimeAssembly))
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
+            
+            handle = LoadLibraryByName(libraryName, 
+                                       ((RuntimeAssembly)assembly).GetNativeHandle(), 
+                                       searchPath.HasValue, 
+                                       (uint) searchPath.GetValueOrDefault(),
+                                       throwOnError: false);
             return handle != IntPtr.Zero;
         }
 
@@ -1854,12 +1877,15 @@ namespace System.Runtime.InteropServices
         /// <param name="name">The name of the exported symbol</param>
         /// <returns>The address of the symbol</returns>  
         /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
-        /// <exception cref="System.ArgumentException">If name cannot be converted to UTF8</exception>
         /// <exception cref="System.EntryPointNotFoundException">If the symbol is not found</exception>
         public static IntPtr GetLibraryExport(IntPtr handle, string name)
         {
-            bool throwOnError = true;
-            return GetNativeLibraryExport(handle, name, throwOnError);
+            if (handle == IntPtr.Zero) 
+                throw new ArgumentNullException(nameof(handle));
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            return GetNativeLibraryExport(handle, name, throwOnError: true);
         }
 
         /// <summary>
@@ -1869,10 +1895,15 @@ namespace System.Runtime.InteropServices
         /// <param name="name">The name of the exported symbol</param>
         /// <param name="address"> The out-parameter for the symbol address, if it exists</param>
         /// <returns>True on success, false otherwise</returns>  
+        /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
         public static bool TryGetLibraryExport(IntPtr handle, string name, out IntPtr address)
         {
-            bool throwOnError = false;
-            address = GetNativeLibraryExport(handle, name, throwOnError);
+            if (handle == IntPtr.Zero) 
+                throw new ArgumentNullException(nameof(handle));
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            address = GetNativeLibraryExport(handle, name, throwOnError: false);
             return address != IntPtr.Zero;
         }
 
