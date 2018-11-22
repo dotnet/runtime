@@ -1095,7 +1095,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     // in a way that mimics the lifetime behavior of a normal field reference.  Specifically,
     // when the object is collected, the field should also be collected (assuming there are no
     // other references), but references to the field shouldn't keep the object alive.
-    // To acheive this, we have introduced the concept of a "dependent handle" which provides
+    // To achieve this, we have introduced the concept of a "dependent handle" which provides
     // the appropriate semantics.  The dependent handle has a weak reference to a "primary object"
     // (the object getting a new field in this case), and a strong reference to a secondary object.
     // When the primary object is collected, the reference to the secondary object is released.
