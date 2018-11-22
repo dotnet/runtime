@@ -543,7 +543,7 @@ DEFINE_METASIG_T(IM(LicenseInteropHelper_GetLicInfo, g(RT_TYPE_HANDLE) r(i) r(i)
 // App Domain related defines
 DEFINE_METASIG(IM(Bool_Str_Str_ArrStr_ArrStr_RetVoid, F s s a(s) a(s), v))
 DEFINE_METASIG_T(SM(Str_RetAppDomain, s, C(APP_DOMAIN)))
-DEFINE_METASIG_T(SM(Str_AppDomainSetup_ArrStr_ArrStr_RetObj, s C(APPDOMAIN_SETUP) a(s) a(s), j))
+DEFINE_METASIG(SM(Str_ArrStr_ArrStr_RetVoid, s a(s) a(s), v))
 #ifdef FEATURE_COMINTEROP
 // System.AppDomain.OnReflectionOnlyNamespaceResolveEvent
 DEFINE_METASIG_T(IM(Assembly_Str_RetArrAssembly, C(ASSEMBLY) s, a(C(ASSEMBLY))))

@@ -123,7 +123,7 @@ namespace System
             Assembly assembly = null;
             if (assemblyString == null)
             {
-                assembly = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
+                assembly = Assembly.GetExecutingAssembly(ref stackMark);
             }
             else
             {

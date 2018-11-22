@@ -324,12 +324,6 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
 }
 #endif // CALLDESCR_REGTYPEMAP
 
-#if defined(_DEBUG) && defined(FEATURE_COMINTEROP)
-extern int g_fMainThreadApartmentStateSet;
-extern int g_fInitializingInitialAD;
-extern Volatile<LONG> g_fInExecuteMainMethod;
-#endif
-
 //*******************************************************************************
 #ifdef FEATURE_INTERPRETER
 void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue, bool transitionToPreemptive)
@@ -355,14 +349,6 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
         MODE_COOPERATIVE;
         PRECONDITION(GetAppDomain()->CheckCanExecuteManagedCode(m_pMD));
         PRECONDITION(m_pMD->CheckActivated());          // EnsureActive will trigger, so we must already be activated
-
-#ifdef FEATURE_COMINTEROP
-        // If we're an exe, then we must either be initializing the first AD, or have already setup the main thread's
-        //  COM apartment state.
-        // If you hit this assert, then you likely introduced code during startup that could inadvertently 
-        //  initialize the COM apartment state of the main thread before we set it based on the user attribute.
-        PRECONDITION(g_fInExecuteMainMethod ? (g_fMainThreadApartmentStateSet || g_fInitializingInitialAD) : TRUE);
-#endif // FEATURE_COMINTEROP
     }
     CONTRACTL_END;
 

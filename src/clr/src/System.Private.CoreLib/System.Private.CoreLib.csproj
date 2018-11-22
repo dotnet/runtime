@@ -141,7 +141,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMap.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMarshal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\RuntimeEnvironment.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
@@ -259,8 +258,6 @@
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomain.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.cs" />

@@ -1,5 +1,19 @@
 ﻿[
     {
+        "name": "System.Diagnostics.TraceSource.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace",
+                    "reason": "outdated"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Globalization.Tests",
         "enabled": true,
         "exclusions": {
