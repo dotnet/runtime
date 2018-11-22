@@ -147,7 +147,7 @@ namespace System.Diagnostics
                                 int index3 = 0;
                                 int previousCounterIndex = -1;
                                 //Need to filter out counters that are repeated, some providers might
-                                //return several adyacent copies of the same counter.
+                                //return several adjacent copies of the same counter.
                                 for (int index2 = 0; index2 < newCategoryEntry.CounterIndexes.Length; ++index2)
                                 {
                                     ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));

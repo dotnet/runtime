@@ -683,7 +683,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(Desc = "v109 - 386243, Adding a chameleon schema agsinst to no namaespace throws unexpected warnings", Priority = 1)]
+        //[Variation(Desc = "v109 - 386243, Adding a chameleon schema against to no namespace throws unexpected warnings", Priority = 1)]
         [InlineData()]
         [Theory]
         public void v109()
