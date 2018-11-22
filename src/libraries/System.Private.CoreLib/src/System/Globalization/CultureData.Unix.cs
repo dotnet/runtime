@@ -353,7 +353,7 @@ namespace System.Globalization
 
         private static string GetThreeLetterWindowsLanguageName(string cultureName)
         {
-            string langName = LocaleData.GetThreeLetterWindowsLangageName(cultureName);
+            string langName = LocaleData.GetThreeLetterWindowsLanguageName(cultureName);
             return langName == null ? "ZZZ" /* default lang name */ : langName; 
         }
 
