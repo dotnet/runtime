@@ -8928,11 +8928,15 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		default_lib_nodes[i] = LLVMMDNode (default_lib_args + i, 1);
 	}
 
+#if LLVM_API_VERSION < 600
 	linker_option_args[0] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 	linker_option_args[1] = LLVMMDString (linker_options, G_N_ELEMENTS (linker_options) - 1);
 	linker_option_args[2] = LLVMMDNode (default_lib_nodes, G_N_ELEMENTS (default_lib_nodes));
 
 	LLVMAddNamedMetadataOperand (module->lmodule, "llvm.module.flags", LLVMMDNode (linker_option_args, G_N_ELEMENTS (linker_option_args)));
+#else
+	LLVMAddNamedMetadataOperand (module->lmodule, "llvm.linker.options", LLVMMDNode (default_lib_args, G_N_ELEMENTS (default_lib_args)));
+#endif
 #endif
 
 	/* Add GOT */
