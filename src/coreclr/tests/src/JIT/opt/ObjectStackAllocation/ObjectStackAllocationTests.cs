@@ -101,10 +101,6 @@ namespace ObjectStackAllocation
 
             CallTestAndVerifyAllocation(AllocateSimpleClassesAndNECompareThem, 1, expectedAllocationKind);
 
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckType, 1, expectedAllocationKind);
-
-            CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
-
             CallTestAndVerifyAllocation(AllocateSimpleClassAndGetField, 7, expectedAllocationKind);
 
             CallTestAndVerifyAllocation(AllocateClassWithNestedStructAndGetField, 5, expectedAllocationKind);
@@ -115,6 +111,12 @@ namespace ObjectStackAllocation
             if (expectedAllocationKind == AllocationKind.Stack) {
                 expectedAllocationKind = AllocationKind.Heap;
             }
+
+            // This test calls CORINFO_HELP_ISINSTANCEOFCLASS
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCheckType, 1, expectedAllocationKind);
+
+            // This test calls CORINFO_HELP_CHKCASTCLASS_SPECIAL
+            CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
 
             // Stack allocation of classes with GC fields is currently disabled
             CallTestAndVerifyAllocation(AllocateSimpleClassWithGCFieldAndAddFields, 12, expectedAllocationKind);
