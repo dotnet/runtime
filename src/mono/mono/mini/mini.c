@@ -2131,7 +2131,7 @@ mono_postprocess_patches (MonoCompile *cfg)
 				 * See tests/test-arr.cs
 				 */
 				if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
-					patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+					patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
 					patch_info->data.name = info->name;
 				}
 			}

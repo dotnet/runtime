@@ -3161,7 +3161,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_THROW: {
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 4);
 			x86_push_reg (code, ins->sreg1);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, 
 							  (gpointer)"mono_arch_throw_exception");
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
@@ -3170,7 +3170,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RETHROW: {
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 4);
 			x86_push_reg (code, ins->sreg1);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, 
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, 
 							  (gpointer)"mono_arch_rethrow_exception");
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
@@ -4837,7 +4837,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			x86_test_membase_imm (code, ins->sreg1, 0, 1);
 			br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_threads_state_poll");
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, "mono_threads_state_poll");
 			x86_patch (br [0], code);
 
 			break;
@@ -4900,7 +4900,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	case MONO_PATCH_INFO_ABS:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
-	case MONO_PATCH_INFO_INTERNAL_METHOD:
+	case MONO_PATCH_INFO_JIT_ICALL:
 	case MONO_PATCH_INFO_BB:
 	case MONO_PATCH_INFO_LABEL:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
@@ -5339,7 +5339,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 
 				x86_push_imm (code, m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF);
 				patch_info->data.name = "mono_arch_throw_corlib_exception";
-				patch_info->type = MONO_PATCH_INFO_INTERNAL_METHOD;
+				patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
 				patch_info->ip.i = code - cfg->native_code;
 				x86_call_code (code, 0);
 				x86_push_imm (buf, (code - cfg->native_code) - throw_ip);
