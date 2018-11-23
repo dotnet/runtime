@@ -2715,10 +2715,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	pindex = 0;
 
 	/* Stored after the stack arguments */
-	nullable_buffer = (guint8*)&(p->regs [PARAM_REGS + (dinfo->nstack_args * sizeof (mgreg_t))]);
-
-	if (dinfo->nullable_area)
-		printf ("%d\n", dinfo->nullable_area);
+	nullable_buffer = (guint8*)&(p->regs [PARAM_REGS + dinfo->nstack_args]);
 
 	if (sig->hasthis || dinfo->cinfo->vret_arg_index == 1) {
 		p->regs [greg ++] = PTR_TO_GREG(*(args [arg_index ++]));
