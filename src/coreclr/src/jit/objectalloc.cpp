@@ -579,14 +579,12 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 if (asCall->gtCallType == CT_HELPER)
                 {
-                    const CorInfoHelpFunc helperNum = comp->eeGetHelperNum(asCall->gtCallMethHnd);
+                    // TODO-ObjectStackAllocation: Special-case helpers here that
+                    // 1. Don't make objects escape.
+                    // 2. Protect objects as interior (GCPROTECT_BEGININTERIOR() instead of GCPROTECT_BEGIN()).
+                    // 3. Don't check that the object is in the heap in ValidateInner.
 
-                    if (Compiler::s_helperCallProperties.IsPure(helperNum))
-                    {
-                        // Pure helpers don't modify the heap.
-                        // TODO-ObjectStackAllocation: We may be able to special-case more helpers here.
-                        canLclVarEscapeViaParentStack = false;
-                    }
+                    canLclVarEscapeViaParentStack = true;
                 }
                 break;
             }
