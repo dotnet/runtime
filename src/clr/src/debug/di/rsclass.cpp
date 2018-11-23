@@ -240,24 +240,27 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
     CORDB_ADDRESS pRmtStaticValue = NULL;
     CordbProcess * pProcess = pModule->GetProcess();
 
-    if (pFieldData->m_fFldIsCollectibleStatic)
+    if (!pFieldData->m_fFldIsTLS)
     {
-        EX_TRY
+        if (pFieldData->m_fFldIsCollectibleStatic)
         {
-            pRmtStaticValue = pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc, 
-                                                                                  pModule->GetAppDomain()->GetADToken());
+            EX_TRY
+            {
+                pRmtStaticValue = pProcess->GetDAC()->GetCollectibleTypeStaticAddress(pFieldData->m_vmFieldDesc, 
+                                                                                      pModule->GetAppDomain()->GetADToken());
+            }
+            EX_CATCH_HRESULT(hr);
+            if(FAILED(hr))
+            {
+                return hr;
+            }
         }
-        EX_CATCH_HRESULT(hr);
-        if(FAILED(hr)) 
+        else
         {
-            return hr;
+            // Statics never move, so we always address them using their absolute address.
+            _ASSERTE(pFieldData->OkToGetOrSetStaticAddress());
+            pRmtStaticValue = pFieldData->GetStaticAddress();
         }
-    }
-    else if (!pFieldData->m_fFldIsTLS)
-    {
-        // Statics never move, so we always address them using their absolute address.
-        _ASSERTE(pFieldData->OkToGetOrSetStaticAddress());
-        pRmtStaticValue = pFieldData->GetStaticAddress();
     }
     else
     {
