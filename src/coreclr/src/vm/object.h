@@ -1575,7 +1575,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     // READ ME:
     // Modifying the order or fields of this object may require other changes to the
     //  classlib class definition of this object.
-    OBJECTREF    m_LocalStore;
     OBJECTREF    m_pAssemblyEventHandler; // Delegate for 'loading assembly' event
     OBJECTREF    m_pTypeEventHandler;     // Delegate for 'resolve type' event
     OBJECTREF    m_pResourceEventHandler; // Delegate for 'resolve resource' event
