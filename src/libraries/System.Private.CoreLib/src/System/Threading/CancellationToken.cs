@@ -263,13 +263,7 @@ namespace System.Threading
         /// <exception cref="T:System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
         /// <exception cref="T:System.ObjectDisposedException">The associated <see
         /// cref="T:System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
-#if CORECLR
-        private
-#else
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public
-#endif
-        CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext, bool useExecutionContext)
+        private CancellationTokenRegistration Register(Action<object> callback, object state, bool useSynchronizationContext, bool useExecutionContext)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
