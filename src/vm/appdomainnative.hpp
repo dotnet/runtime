@@ -23,19 +23,12 @@ public:
     static AppDomain *ValidateArg(APPDOMAINREF pThis);
     static FCDECL2(void, SetupFriendlyName, AppDomainBaseObject* refThisUNSAFE, StringObject* strFriendlyNameUNSAFE);
 
-    static FCDECL4(Object*, CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access);
-    static FCDECL2(Object*, GetAssemblies, AppDomainBaseObject* refThisUNSAFE, CLR_BOOL fForIntrospection); 
-    static FCDECL2(Object*, GetOrInternString, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE);
-    static FCDECL1(void, CreateContext, AppDomainBaseObject *refThisUNSAFE);
+    static FCDECL3(Object*, CreateDynamicAssembly, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access);
+    static FCDECL0(Object*, GetLoadedAssemblies);
+    static FCDECL1(Object*, GetOrInternString, StringObject* pStringUNSAFE);
     static void QCALLTYPE SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatformAssemblies, __in_z LPCWSTR wszPlatformResourceRoots, __in_z LPCWSTR wszAppPaths, __in_z LPCWSTR wszAppNiPaths, __in_z LPCWSTR appLocalWinMD);
-    static FCDECL1(Object*, GetDynamicDir, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(INT32, GetId, AppDomainBaseObject* refThisUNSAFE);
-    static FCDECL1(void, ForceToSharedDomain, Object* pObjectUNSAFE);
-    static FCDECL1(LPVOID,  GetFusionContext, AppDomainBaseObject* refThis);
-    static FCDECL2(Object*, IsStringInterned, AppDomainBaseObject* refThis, StringObject* pString);
-    static FCDECL3(void,    UpdateContextProperty, LPVOID fusionContext, StringObject* key, Object* value);
-    static FCDECL2(StringObject*, nApplyPolicy, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE);
-    static FCDECL2(FC_BOOL_RET, IsFrameworkAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
+    static FCDECL1(Object*, IsStringInterned, StringObject* pString);
     static FCDECL1(UINT32,  GetAppDomainId, AppDomainBaseObject* refThisUNSAFE);
     static FCDECL1(void , PublishAnonymouslyHostedDynamicMethodsAssembly, AssemblyBaseObject * pAssemblyUNSAFE);
     static void QCALLTYPE SetNativeDllSearchDirectories(__in_z LPCWSTR wszAssembly);
@@ -49,15 +42,9 @@ public:
     static FCDECL0(INT64, GetLastSurvivedProcessMemorySize);
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
-private:
-    static INT32 ExecuteAssemblyHelper(Assembly* pAssembly,
-                                       BOOL bCreatedConsole,
-                                       PTRARRAYREF *pStringArgs);
-
-public:
 #ifdef FEATURE_APPX
     static
-    INT32 QCALLTYPE GetAppXFlags();
+    INT32 QCALLTYPE IsAppXProcess();
 #endif
 };
 

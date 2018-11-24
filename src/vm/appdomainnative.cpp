@@ -133,8 +133,7 @@ void QCALLTYPE AppDomainNative::SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatf
     END_QCALL;
 }
 
-
-FCIMPL4(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access)
+FCIMPL3(Object*, AppDomainNative::CreateDynamicAssembly, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access)
 {
     FCALL_CONTRACT;
 
@@ -145,7 +144,6 @@ FCIMPL4(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* re
     //</TODO>
     CreateDynamicAssemblyArgs   args;
 
-    args.refThis                = (APPDOMAINREF)    refThisUNSAFE;
     args.assemblyName           = (ASSEMBLYNAMEREF) assemblyNameUNSAFE;
     args.loaderAllocator        = NULL;
 
@@ -154,9 +152,7 @@ FCIMPL4(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* re
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT((CreateDynamicAssemblyArgsGC&)args);
 
-    AppDomain* pAppDomain = ValidateArg(args.refThis);
-
-    Assembly *pAssembly = Assembly::CreateDynamic(pAppDomain, &args);
+    Assembly *pAssembly = Assembly::CreateDynamic(GetAppDomain(), &args);
 
     refRetVal = (ASSEMBLYREF) pAssembly->GetExposedObject();
 
@@ -166,56 +162,39 @@ FCIMPL4(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* re
 FCIMPLEND
 
 #ifdef FEATURE_APPX
-
-//
-// Keep in sync with bcl\system\appdomain.cs
-//
-enum
-{
-    APPX_FLAGS_INITIALIZED =        0x01,
-
-    APPX_FLAGS_APPX_MODEL =         0x02,
-};
-
 // static
-INT32 QCALLTYPE AppDomainNative::GetAppXFlags()
+BOOL QCALLTYPE AppDomainNative::IsAppXProcess()
 {
     QCALL_CONTRACT;
 
-    UINT32 flags = APPX_FLAGS_INITIALIZED;
+    BOOL result;
 
     BEGIN_QCALL;
 
-    if (AppX::IsAppXProcess())
-    {
-        flags |= APPX_FLAGS_APPX_MODEL;
-    }
+    result = AppX::IsAppXProcess();
 
     END_QCALL;
 
-    return flags;
+    return result;
 }
-
 #endif // FEATURE_APPX
 
-FCIMPL2(Object*, AppDomainNative::GetAssemblies, AppDomainBaseObject* refThisUNSAFE, CLR_BOOL forIntrospection);
+FCIMPL0(Object*, AppDomainNative::GetLoadedAssemblies)
 {
     FCALL_CONTRACT;
 
     struct _gc
     {
         PTRARRAYREF     AsmArray;
-        APPDOMAINREF    refThis;
     } gc;
 
     gc.AsmArray = NULL;
-    gc.refThis  = (APPDOMAINREF) refThisUNSAFE;
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
     MethodTable * pAssemblyClass = MscorlibBinder::GetClass(CLASS__ASSEMBLY);
 
-    AppDomain * pApp = ValidateArg(gc.refThis);
+    AppDomain * pApp = GetAppDomain();
 
     // Allocate an array with as many elements as there are assemblies in this
     //  appdomain.  This will usually be correct, but there may be assemblies
@@ -294,22 +273,19 @@ FCIMPL1(INT32, AppDomainNative::GetId, AppDomainBaseObject* refThisUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL2(Object*, AppDomainNative::IsStringInterned, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE)
+FCIMPL1(Object*, AppDomainNative::IsStringInterned, StringObject* pStringUNSAFE)
 {
     FCALL_CONTRACT;
 
-    APPDOMAINREF    refThis     = (APPDOMAINREF)ObjectToOBJECTREF(refThisUNSAFE);
     STRINGREF       refString   = ObjectToSTRINGREF(pStringUNSAFE);
     STRINGREF*      prefRetVal  = NULL;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, refString);
-
-    ValidateArg(refThis);
+    HELPER_METHOD_FRAME_BEGIN_RET_1(refString);
     
     if (refString == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
-    prefRetVal = refThis->GetDomain()->IsStringInterned(&refString);
+    prefRetVal = GetAppDomain()->IsStringInterned(&refString);
 
     HELPER_METHOD_FRAME_END();
 
@@ -320,22 +296,19 @@ FCIMPL2(Object*, AppDomainNative::IsStringInterned, AppDomainBaseObject* refThis
 }
 FCIMPLEND
 
-FCIMPL2(Object*, AppDomainNative::GetOrInternString, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE)
+FCIMPL1(Object*, AppDomainNative::GetOrInternString, StringObject* pStringUNSAFE)
 {
     FCALL_CONTRACT;
 
     STRINGREF    refRetVal  = NULL;
-    APPDOMAINREF refThis    = (APPDOMAINREF) refThisUNSAFE;
     STRINGREF    pString    = (STRINGREF)    pStringUNSAFE;
 
-    HELPER_METHOD_FRAME_BEGIN_RET_2(refThis, pString);
-
-    ValidateArg(refThis);
+    HELPER_METHOD_FRAME_BEGIN_RET_1(pString);
 
     if (pString == NULL)
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
-    STRINGREF* stringVal = refThis->GetDomain()->GetOrInternString(&pString);
+    STRINGREF* stringVal = GetAppDomain()->GetOrInternString(&pString);
     if (stringVal != NULL)
     {
         refRetVal = *stringVal;
@@ -343,65 +316,6 @@ FCIMPL2(Object*, AppDomainNative::GetOrInternString, AppDomainBaseObject* refThi
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(refRetVal);
-}
-FCIMPLEND
-
-
-FCIMPL1(Object*, AppDomainNative::GetDynamicDir, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    STRINGREF    str        = NULL;
-    return OBJECTREFToObject(str);
-}
-FCIMPLEND
-
-FCIMPL2(StringObject*, AppDomainNative::nApplyPolicy, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* refAssemblyNameUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    struct _gc
-    {
-        APPDOMAINREF    refThis;
-        ASSEMBLYNAMEREF assemblyName;
-        STRINGREF       rv;
-    } gc;
-
-    gc.refThis      = (APPDOMAINREF)refThisUNSAFE;
-    gc.assemblyName = (ASSEMBLYNAMEREF) refAssemblyNameUNSAFE;
-    gc.rv           = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    AppDomain* pDomain;
-    pDomain = ValidateArg(gc.refThis);
-
-    if (gc.assemblyName == NULL)
-    {
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-    }
-    if( (gc.assemblyName->GetSimpleName() == NULL) )
-    {
-        COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
-    }
-    Thread *pThread = GetThread();
-    CheckPointHolder cph(pThread->m_MarshalAlloc.GetCheckpoint()); //hold checkpoint for autorelease
-
-    // Initialize spec
-    AssemblySpec spec;
-    spec.InitializeSpec(&(pThread->m_MarshalAlloc), 
-                        &gc.assemblyName,
-                        FALSE /*fIsStringized*/
-                       );
-
-    StackSString sDisplayName;
-
-    spec.GetFileOrDisplayName(0,sDisplayName);
-
-    gc.rv = StringObject::NewString(sDisplayName);
-
-    HELPER_METHOD_FRAME_END();
-    return (StringObject*)OBJECTREFToObject(gc.rv);
 }
 FCIMPLEND
 
@@ -611,5 +525,3 @@ FCIMPL0(INT64, AppDomainNative::GetLastSurvivedProcessMemorySize)
 }
 FCIMPLEND
 #endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
-

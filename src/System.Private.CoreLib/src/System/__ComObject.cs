@@ -33,7 +33,7 @@ namespace System
             // Only do the IStringable cast when running under AppX for better compat
             // Otherwise we could do a IStringable cast in classic apps which could introduce
             // a thread transition which would lead to deadlock.
-            if (AppDomain.IsAppXModel())
+            if (ApplicationModel.IsUap)
             {
                 // Check whether the type implements IStringable.
                 if (this is IStringable stringableType)

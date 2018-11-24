@@ -57,7 +57,6 @@ class FriendAssemblyDescriptor;
 
 struct CreateDynamicAssemblyArgsGC
 {
-    APPDOMAINREF    refThis;
     ASSEMBLYNAMEREF assemblyName;
     LOADERALLOCATORREF loaderAllocator;
 };

@@ -476,7 +476,7 @@ namespace System
                 return GetEnvironmentVariableCore(variable);
 
 #if FEATURE_WIN32_REGISTRY
-            if (AppDomain.IsAppXModel())
+            if (ApplicationModel.IsUap)
 #endif
             {
                 return null;
@@ -564,7 +564,7 @@ namespace System
         internal static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariablesFromRegistry(EnvironmentVariableTarget target)
         {
 #if FEATURE_WIN32_REGISTRY
-            if (AppDomain.IsAppXModel())
+            if (ApplicationModel.IsUap)
 #endif
             {
                 // Without registry support we have nothing to return
@@ -640,7 +640,7 @@ namespace System
             }
 
 #if FEATURE_WIN32_REGISTRY
-            if (AppDomain.IsAppXModel())
+            if (ApplicationModel.IsUap)
 #endif
             {
                 // other targets ignored

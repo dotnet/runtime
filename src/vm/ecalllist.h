@@ -112,6 +112,8 @@ FCFuncStart(gStringFuncs)
     FCFuncElement("IsAscii", COMString::IsAscii)
     FCFuncElement("SetTrailByte", COMString::FCSetTrailByte)
     FCFuncElement("TryGetTrailByte", COMString::FCTryGetTrailByte)
+    FCFuncElement("IsInterned", AppDomainNative::IsStringInterned)
+    FCFuncElement("Intern", AppDomainNative::GetOrInternString)
 FCFuncEnd()
 
 FCFuncStart(gValueTypeFuncs)
@@ -432,22 +434,13 @@ FCFuncStart(gCOMClassWriter)
     QCFuncElement("DefineCustomAttribute", COMDynamicWrite::DefineCustomAttribute)
 FCFuncEnd()
 
-
 FCFuncStart(gCompatibilitySwitchFuncs)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
 FCFuncEnd()
 
-
 FCFuncStart(gAppDomainFuncs)
-    FCFuncElement("IsStringInterned", AppDomainNative::IsStringInterned)
-
-#ifdef FEATURE_APPX
-    QCFuncElement("nGetAppXFlags", AppDomainNative::GetAppXFlags)
-#endif
     FCFuncElement("nSetupFriendlyName", AppDomainNative::SetupFriendlyName)
-    FCFuncElement("nGetAssemblies", AppDomainNative::GetAssemblies)
     FCFuncElement("GetId", AppDomainNative::GetId)
-    FCFuncElement("GetOrInternString", AppDomainNative::GetOrInternString)
     QCFuncElement("nSetupBindingPaths", AppDomainNative::SetupBindingPaths)
     QCFuncElement("nSetNativeDllSearchDirectories", AppDomainNative::SetNativeDllSearchDirectories)
     FCFuncElement("PublishAnonymouslyHostedDynamicMethodsAssembly", AppDomainNative::PublishAnonymouslyHostedDynamicMethodsAssembly)
@@ -462,6 +455,11 @@ FCFuncStart(gAppDomainFuncs)
 #endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 FCFuncEnd()
 
+#ifdef FEATURE_APPX
+FCFuncStart(gApplicationModelFuncs)
+    QCFuncElement("IsAppXProcess", AppDomainNative::IsAppXProcess)
+FCFuncEnd()
+#endif
 
 FCFuncStart(gMdUtf8String)
     FCFuncElement("EqualsCaseSensitive", MdUtf8String::EqualsCaseSensitive)
@@ -542,6 +540,7 @@ FCFuncStart(gAssemblyLoadContextFuncs)
     QCFuncElement("InternalLoadUnmanagedDllFromPath", AssemblyNative::InternalLoadUnmanagedDllFromPath)
     QCFuncElement("LoadFromStream", AssemblyNative::LoadFromStream)
     QCFuncElement("GetLoadContextForAssembly", AssemblyNative::GetLoadContextForAssembly)
+    FCFuncElement("GetLoadedAssemblies", AppDomainNative::GetLoadedAssemblies)
 #if defined(FEATURE_MULTICOREJIT)
     QCFuncElement("InternalSetProfileRoot", MultiCoreJITNative::InternalSetProfileRoot)
     QCFuncElement("InternalStartProfile",   MultiCoreJITNative::InternalStartProfile)
@@ -1239,6 +1238,9 @@ FCFuncEnd()
 // The sorting is case-sensitive
 
 FCClassElement("AppDomain", "System", gAppDomainFuncs)
+#ifdef FEATURE_APPX
+FCClassElement("ApplicationModel", "System", gApplicationModelFuncs)
+#endif
 FCClassElement("ArgIterator", "System", gVarArgFuncs)
 FCClassElement("Array", "System", gArrayFuncs)
 FCClassElement("ArrayWithOffset", "System.Runtime.InteropServices", gArrayWithOffsetFuncs)
