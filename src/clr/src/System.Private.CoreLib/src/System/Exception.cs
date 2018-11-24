@@ -489,7 +489,7 @@ namespace System
             string tmpStackTraceString;
 
 #if FEATURE_APPX
-            if (AppDomain.IsAppXModel())
+            if (ApplicationModel.IsUap)
             {
                 // Call our internal GetStackTrace in AppX so we can parse the result should
                 // we need to strip file/line info from it to make it PII-free. Calling the

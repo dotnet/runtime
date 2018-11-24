@@ -104,37 +104,6 @@ namespace System
 
         private IntPtr _pDomain;                      // this is an unmanaged pointer (AppDomain * m_pDomain)` used from the VM.
 
-#if FEATURE_APPX
-        private static APPX_FLAGS s_flags;
-
-        //
-        // Keep in async with vm\appdomainnative.cpp
-        //
-        [Flags]
-        private enum APPX_FLAGS
-        {
-            APPX_FLAGS_INITIALIZED = 0x01,
-
-            APPX_FLAGS_APPX_MODEL = 0x02,
-        }
-
-        private static APPX_FLAGS Flags
-        {
-            get
-            {
-                if (s_flags == 0)
-                    s_flags = nGetAppXFlags();
-
-                Debug.Assert(s_flags != 0);
-                return s_flags;
-            }
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.I4)]
-        private static extern APPX_FLAGS nGetAppXFlags();
-#endif
-
         /// <summary>
         ///     If this AppDomain is configured to have an AppDomain manager then create the instance of it.
         ///     This method is also called from the VM to create the domain manager in the default domain.
@@ -152,64 +121,7 @@ namespace System
             }
         }
 
-        /// <summary>
-        ///     Returns whether the current AppDomain follows the AppX rules.
-        /// </summary>
-        [Pure]
-        internal static bool IsAppXModel()
-        {
-#if FEATURE_APPX
-            return (Flags & APPX_FLAGS.APPX_FLAGS_APPX_MODEL) != 0;
-#else
-            return false;
-#endif
-        }
-
-        /// <summary>
-        ///     Checks (and throws on failure) if the domain supports Assembly.LoadFrom.
-        /// </summary>
-        [Pure]
-        internal static void CheckLoadFromSupported()
-        {
-#if FEATURE_APPX
-            if (IsAppXModel())
-                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFrom"));
-#endif
-        }
-
-        /// <summary>
-        ///     Checks (and throws on failure) if the domain supports Assembly.LoadFile.
-        /// </summary>
-        [Pure]
-        internal static void CheckLoadFileSupported()
-        {
-#if FEATURE_APPX
-            if (IsAppXModel())
-                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFile"));
-#endif
-        }
-
-        /// <summary>
-        ///     Checks (and throws on failure) if the domain supports Assembly.Load(byte[] ...).
-        /// </summary>
-        [Pure]
-        internal static void CheckLoadByteArraySupported()
-        {
-#if FEATURE_APPX
-            if (IsAppXModel())
-                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.Load(byte[], ...)"));
-#endif
-        }
-
         public static AppDomain CurrentDomain => Thread.GetDomain();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern Assembly[] nGetAssemblies(bool forIntrospection);
-
-        internal Assembly[] GetAssemblies(bool forIntrospection)
-        {
-            return nGetAssemblies(forIntrospection);
-        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
@@ -417,12 +329,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void nSetupFriendlyName(string friendlyName);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern string IsStringInterned(string str);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern string GetOrInternString(string str);
 
         public int Id => GetId();
 
