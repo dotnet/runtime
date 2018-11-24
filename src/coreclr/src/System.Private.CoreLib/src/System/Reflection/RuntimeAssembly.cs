@@ -329,10 +329,15 @@ namespace System.Reflection
             if (assemblyRef == null)
                 throw new ArgumentNullException(nameof(assemblyRef));
 
-            if (assemblyRef.CodeBase != null)
+#if FEATURE_APPX
+            if (ApplicationModel.IsUap)
             {
-                AppDomain.CheckLoadFromSupported();
+                if (assemblyRef.CodeBase != null)
+                {
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFrom"));
+                }
             }
+#endif
 
             assemblyRef = (AssemblyName)assemblyRef.Clone();
             if (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)

@@ -164,8 +164,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AppDomain domain,
-                                 AssemblyName name,
+        internal AssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
                                  ref StackCrawlMark stackMark,
                                  IEnumerable<CustomAttributeBuilder> unsafeAssemblyAttributes)
@@ -193,10 +192,9 @@ namespace System.Reflection.Emit
                 assemblyAttributes = new List<CustomAttributeBuilder>(unsafeAssemblyAttributes);
             }
 
-            _internalAssemblyBuilder = (InternalAssemblyBuilder)nCreateDynamicAssembly(domain,
-                                                                                        name,
-                                                                                        ref stackMark,
-                                                                                        access);
+            _internalAssemblyBuilder = (InternalAssemblyBuilder)nCreateDynamicAssembly(name,
+                                                                                       ref stackMark,
+                                                                                       access);
 
             _assemblyData = new AssemblyBuilderData(_internalAssemblyBuilder, access);
 
@@ -261,8 +259,7 @@ namespace System.Reflection.Emit
 
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern Assembly nCreateDynamicAssembly(AppDomain domain,
-                                                              AssemblyName name,
+        private static extern Assembly nCreateDynamicAssembly(AssemblyName name,
                                                               ref StackCrawlMark stackMark,
                                                               AssemblyBuilderAccess access);
 
@@ -277,8 +274,7 @@ namespace System.Reflection.Emit
             lock (typeof(AssemblyBuilderLock))
             {
                 // We can only create dynamic assemblies in the current domain
-                return new AssemblyBuilder(AppDomain.CurrentDomain,
-                                           name,
+                return new AssemblyBuilder(name,
                                            access,
                                            ref stackMark,
                                            unsafeAssemblyAttributes);

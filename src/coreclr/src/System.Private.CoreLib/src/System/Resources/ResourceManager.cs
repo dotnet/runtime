@@ -183,8 +183,6 @@ namespace System.Resources
         internal const string ResFileExtension = ".resources";
         internal const int ResFileExtensionLength = 10;
 
-        private static volatile bool s_IsAppXModel;
-
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         private void Init()
         {
@@ -713,7 +711,7 @@ namespace System.Resources
             Debug.Assert(_bUsingModernResourceManagement);
             Debug.Assert(_WinRTResourceManager != null);
             Debug.Assert(_PRIonAppXInitialized);
-            Debug.Assert(AppDomain.IsAppXModel());
+            Debug.Assert(ApplicationModel.IsUap);
 
             if (stringName.Length == 0)
                 return null;
@@ -810,12 +808,8 @@ namespace System.Resources
             {
                 if (resourcesAssembly != typeof(object).Assembly) // We are not loading resources for mscorlib
                 {
-                    // Cannot load the WindowsRuntimeResourceManager when in a compilation process, since it
-                    // lives in System.Runtime.WindowsRuntime and only mscorlib may be loaded for execution.
-                    if (AppDomain.IsAppXModel())
+                    if (ApplicationModel.IsUap)
                     {
-                        s_IsAppXModel = true;
-
                         // If we have the type information from the ResourceManager(Type) constructor, we use it. Otherwise, we use BaseNameField.
                         string reswFilename = _locationInfo == null ? BaseNameField : _locationInfo.FullName;
 
@@ -928,7 +922,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(name));
 
 #if FEATURE_APPX
-            if (s_IsAppXModel)
+            if (ApplicationModel.IsUap)
             {
                 // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
                 // null it out, so that we re-compute it.  If we use modern resource lookup, we may end up getting a "better"
@@ -1037,7 +1031,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(name));
 
 #if FEATURE_APPX
-            if (s_IsAppXModel)
+            if (ApplicationModel.IsUap)
             {
                 // If the caller explictily passed in a culture that was obtained by calling CultureInfo.CurrentUICulture,
                 // null it out, so that we re-compute it based on the Win32 value and not the AppX language list value.
