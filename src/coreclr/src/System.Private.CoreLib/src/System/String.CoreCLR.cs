@@ -74,6 +74,11 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool TryGetTrailByte(out byte data);
 
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern string Intern();
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private extern string IsInterned();
+
         public static string Intern(string str)
         {
             if (str == null)
@@ -81,7 +86,7 @@ namespace System
                 throw new ArgumentNullException(nameof(str));
             }
 
-            return Thread.GetDomain().GetOrInternString(str);
+            return str.Intern();
         }
 
         public static string IsInterned(string str)
@@ -91,7 +96,7 @@ namespace System
                 throw new ArgumentNullException(nameof(str));
             }
 
-            return Thread.GetDomain().IsStringInterned(str);
+            return str.IsInterned();
         }
 
         // Copies the source String (byte buffer) to the destination IntPtr memory allocated with len bytes.

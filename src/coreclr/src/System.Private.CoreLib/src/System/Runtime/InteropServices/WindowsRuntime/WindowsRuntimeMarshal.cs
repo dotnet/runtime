@@ -1125,7 +1125,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal static bool ReportUnhandledError(Exception e)
         {
             // Only report to the WinRT global exception handler in modern apps
-            if (!AppDomain.IsAppXModel())
+            if (!ApplicationModel.IsUap)
             {
                 return false;
             }

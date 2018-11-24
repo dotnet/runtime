@@ -152,7 +152,7 @@ namespace System.Threading
                 SynchronizationContext context = Thread.CurrentThread.SynchronizationContext;
 
 #if FEATURE_APPX
-                if (context == null && AppDomain.IsAppXModel())
+                if (context == null && ApplicationModel.IsUap)
                     context = GetWinRTContext();
 #endif
 
@@ -164,7 +164,7 @@ namespace System.Threading
         private static SynchronizationContext GetWinRTContext()
         {
             Debug.Assert(Environment.IsWinRTSupported);
-            Debug.Assert(AppDomain.IsAppXModel());
+            Debug.Assert(ApplicationModel.IsUap);
 
             //
             // We call into the VM to get the dispatcher.  This is because:

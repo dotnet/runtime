@@ -127,7 +127,7 @@ namespace System.Globalization
             get
             {
 #if FEATURE_APPX
-                if (AppDomain.IsAppXModel())
+                if (ApplicationModel.IsUap)
                 {
                     CultureInfo culture = GetCultureInfoForUserPreferredLanguageInAppX();
                     if (culture != null)
@@ -160,9 +160,9 @@ namespace System.Globalization
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                
+
 #if FEATURE_APPX
-                if (AppDomain.IsAppXModel())
+                if (ApplicationModel.IsUap)
                 {
                     if (SetCultureInfoForUserPreferredLanguageInAppX(value))
                     {
@@ -184,7 +184,7 @@ namespace System.Globalization
             get
             {
 #if FEATURE_APPX
-                if (AppDomain.IsAppXModel())
+                if (ApplicationModel.IsUap)
                 {
                     CultureInfo culture = GetCultureInfoForUserPreferredLanguageInAppX();
                     if (culture != null)
@@ -203,7 +203,7 @@ namespace System.Globalization
 
                 CultureInfo.VerifyCultureName(value, true);
 #if FEATURE_APPX
-                if (AppDomain.IsAppXModel())
+                if (ApplicationModel.IsUap)
                 {
                     if (SetCultureInfoForUserPreferredLanguageInAppX(value))
                     {
