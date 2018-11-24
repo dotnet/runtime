@@ -122,7 +122,7 @@
     <value>Keep-Alive and Close may not be set using this property.</value>
   </data>
   <data name="net_fromto" xml:space="preserve">
-    <value>The From parameter cannot be less than To.</value>
+    <value>The From parameter cannot be greater than To.</value>
   </data>
   <data name="net_needchunked" xml:space="preserve">
     <value>TransferEncoding requires the SendChunked property to be set to true.</value>
