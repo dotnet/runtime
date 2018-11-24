@@ -6685,6 +6685,68 @@ GenTree* Compiler::gtNewBitCastNode(var_types type, GenTree* arg)
     return node;
 }
 
+//------------------------------------------------------------------------
+// gtNewAllocObjNode: Helper to create an object allocation node.
+//
+// Arguments:
+//    pResolvedToken   - Resolved token for the object being allocated
+//    useParent     -    true iff the token represents a child of the object's class
+//
+// Return Value:
+//    Returns GT_ALLOCOBJ node that will be later morphed into an
+//    allocation helper call or local variable allocation on the stack.
+
+GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedToken, BOOL useParent)
+{
+    const BOOL      mustRestoreHandle     = TRUE;
+    BOOL* const     pRuntimeLookup        = nullptr;
+    bool            usingReadyToRunHelper = false;
+    CorInfoHelpFunc helper;
+    GenTree*        opHandle = impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, useParent);
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    CORINFO_CONST_LOOKUP lookup;
+
+    if (opts.IsReadyToRun())
+    {
+        helper                                        = CORINFO_HELP_READYTORUN_NEW;
+        CORINFO_LOOKUP_KIND* const pGenericLookupKind = nullptr;
+        usingReadyToRunHelper =
+            info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup);
+    }
+#endif
+
+    if (!usingReadyToRunHelper)
+    {
+        if (opHandle == nullptr)
+        {
+            // We must be backing out of an inline.
+            assert(compDonotInline());
+            return nullptr;
+        }
+
+        helper = info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd);
+    }
+
+    // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
+    // and the newfast call with a single call to a dynamic R2R cell that will:
+    //      1) Load the context
+    //      2) Perform the generic dictionary lookup and caching, and generate the appropriate stub
+    //      3) Allocate and return the new object for boxing
+    // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
+
+    GenTreeAllocObj* allocObj = gtNewAllocObjNode(helper, pResolvedToken->hClass, TYP_REF, opHandle);
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    if (usingReadyToRunHelper)
+    {
+        allocObj->gtEntryPoint = lookup;
+    }
+#endif
+
+    return allocObj;
+}
+
 /*****************************************************************************
  *
  *  Clones the given tree value and returns a copy of the given tree.

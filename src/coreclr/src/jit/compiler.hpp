@@ -1165,12 +1165,13 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 // Return Value:
 //    Returns GT_ALLOCOBJ node that will be later morphed into an
 //    allocation helper call or local variable allocation on the stack.
-inline GenTree* Compiler::gtNewAllocObjNode(unsigned int         helper,
-                                            CORINFO_CLASS_HANDLE clsHnd,
-                                            var_types            type,
-                                            GenTree*             op1)
+
+inline GenTreeAllocObj* Compiler::gtNewAllocObjNode(unsigned int         helper,
+                                                    CORINFO_CLASS_HANDLE clsHnd,
+                                                    var_types            type,
+                                                    GenTree*             op1)
 {
-    GenTree* node = new (this, GT_ALLOCOBJ) GenTreeAllocObj(type, helper, clsHnd, op1);
+    GenTreeAllocObj* node = new (this, GT_ALLOCOBJ) GenTreeAllocObj(type, helper, clsHnd, op1);
     return node;
 }
 
@@ -1184,6 +1185,7 @@ inline GenTree* Compiler::gtNewAllocObjNode(unsigned int         helper,
 //
 // Return Value:
 //    New GenTreeRuntimeLookup node.
+
 inline GenTree* Compiler::gtNewRuntimeLookup(CORINFO_GENERIC_HANDLE hnd, CorInfoGenericHandleType hndTyp, GenTree* tree)
 {
     assert(tree != nullptr);
