@@ -242,11 +242,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
