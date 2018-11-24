@@ -27,7 +27,6 @@
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
   <PropertyGroup>
-    <CrossGenTest>false</CrossGenTest>
     <CLRTestBatchPreCommands>
       <![CDATA[
 $(CLRTestBatchPreCommands)
