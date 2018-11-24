@@ -5561,6 +5561,9 @@ struct GenTreeAllocObj final : public GenTreeUnOp
 {
     unsigned int         gtNewHelper; // Value returned by ICorJitInfo::getNewHelper
     CORINFO_CLASS_HANDLE gtAllocObjClsHnd;
+#ifdef FEATURE_READYTORUN_COMPILER
+    CORINFO_CONST_LOOKUP gtEntryPoint;
+#endif
 
     GenTreeAllocObj(var_types type, unsigned int helper, CORINFO_CLASS_HANDLE clsHnd, GenTree* op)
         : GenTreeUnOp(GT_ALLOCOBJ, type, op DEBUGARG(/*largeNode*/ TRUE))
@@ -5568,6 +5571,9 @@ struct GenTreeAllocObj final : public GenTreeUnOp
         gtNewHelper(helper)
         , gtAllocObjClsHnd(clsHnd)
     {
+#ifdef FEATURE_READYTORUN_COMPILER
+        gtEntryPoint.addr = nullptr;
+#endif
     }
 #if DEBUGGABLE_GENTREE
     GenTreeAllocObj() : GenTreeUnOp()
