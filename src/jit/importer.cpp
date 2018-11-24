@@ -6252,36 +6252,11 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // the opcode stack becomes empty
         impBoxTempInUse = true;
 
-#ifdef FEATURE_READYTORUN_COMPILER
-        bool usingReadyToRunHelper = false;
-
-        if (opts.IsReadyToRun())
+        const BOOL useParent = FALSE;
+        op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
+        if (op1 == nullptr)
         {
-            op1                   = impReadyToRunHelperToTree(pResolvedToken, CORINFO_HELP_READYTORUN_NEW, TYP_REF);
-            usingReadyToRunHelper = (op1 != nullptr);
-        }
-
-        if (!usingReadyToRunHelper)
-#endif
-        {
-            // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
-            // and the newfast call with a single call to a dynamic R2R cell that will:
-            //      1) Load the context
-            //      2) Perform the generic dictionary lookup and caching, and generate the appropriate stub
-            //      3) Allocate and return the new object for boxing
-            // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
-
-            // Ensure that the value class is restored
-            op2 = impTokenToHandle(pResolvedToken, nullptr, TRUE /* mustRestoreHandle */);
-            if (op2 == nullptr)
-            {
-                // We must be backing out of an inline.
-                assert(compDonotInline());
-                return;
-            }
-
-            op1 = gtNewAllocObjNode(info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd),
-                                    pResolvedToken->hClass, TYP_REF, op2);
+            return;
         }
 
         /* Remember that this basic block contains 'new' of an object, and so does this method */
@@ -13972,32 +13947,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     else
                     {
-#ifdef FEATURE_READYTORUN_COMPILER
-                        if (opts.IsReadyToRun())
+                        const BOOL useParent = TRUE;
+                        op1                  = gtNewAllocObjNode(&resolvedToken, useParent);
+                        if (op1 == nullptr)
                         {
-                            op1 = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_NEW, TYP_REF);
-                            usingReadyToRunHelper = (op1 != nullptr);
-                        }
-
-                        if (!usingReadyToRunHelper)
-#endif
-                        {
-                            op1 = impParentClassTokenToHandle(&resolvedToken, nullptr, TRUE);
-                            if (op1 == nullptr)
-                            { // compDonotInline()
-                                return;
-                            }
-
-                            // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
-                            // and the newfast call with a single call to a dynamic R2R cell that will:
-                            //      1) Load the context
-                            //      2) Perform the generic dictionary lookup and caching, and generate the appropriate
-                            //      stub
-                            //      3) Allocate and return the new object
-                            // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
-
-                            op1 = gtNewAllocObjNode(info.compCompHnd->getNewHelper(&resolvedToken, info.compMethodHnd),
-                                                    resolvedToken.hClass, TYP_REF, op1);
+                            return;
                         }
 
                         // Remember that this basic block contains 'new' of an object
