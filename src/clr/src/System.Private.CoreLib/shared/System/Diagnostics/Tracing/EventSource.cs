@@ -1919,9 +1919,9 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
                             if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
                     {
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
+#if !ES_BUILD_STANDALONE
                         // Maintain old behavior - object identity is preserved
-                        if (AppContextSwitches.PreserveEventListnerObjectIdentity)
+                        if (LocalAppContextSwitches.PreserveEventListnerObjectIdentity)
                         {
                             WriteToAllListeners(
                                 eventId: eventId,

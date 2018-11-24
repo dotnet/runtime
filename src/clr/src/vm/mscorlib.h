@@ -67,7 +67,6 @@ DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, TARGET,            _target)
 DEFINE_FIELD(ACCESS_VIOLATION_EXCEPTION, ACCESSTYPE,        _accessType)
 
 DEFINE_CLASS_U(System,                 AppDomain,      AppDomainBaseObject)
-DEFINE_FIELD_U(_LocalStore,                AppDomainBaseObject, m_LocalStore)
 DEFINE_FIELD_U(AssemblyLoad,               AppDomainBaseObject, m_pAssemblyEventHandler)
 DEFINE_FIELD_U(_TypeResolve,               AppDomainBaseObject, m_pTypeEventHandler)
 DEFINE_FIELD_U(_ResourceResolve,           AppDomainBaseObject, m_pResourceEventHandler)

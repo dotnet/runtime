@@ -28,7 +28,6 @@ namespace System
         // of these fields cannot be changed without changing the layout in
         // the EE- AppDomainBaseObject in this case)
 
-        private Dictionary<string, object> _LocalStore;
         public event AssemblyLoadEventHandler AssemblyLoad;
 
         private ResolveEventHandler _TypeResolve;
@@ -142,13 +141,13 @@ namespace System
         /// </summary>
         private void CreateAppDomainManager()
         {
-            string trustedPlatformAssemblies = (string)GetData("TRUSTED_PLATFORM_ASSEMBLIES");
+            string trustedPlatformAssemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
             if (trustedPlatformAssemblies != null)
             {
-                string platformResourceRoots = (string)GetData("PLATFORM_RESOURCE_ROOTS") ?? string.Empty;
-                string appPaths = (string)GetData("APP_PATHS") ?? string.Empty;
-                string appNiPaths = (string)GetData("APP_NI_PATHS") ?? string.Empty;
-                string appLocalWinMD = (string)GetData("APP_LOCAL_WINMETADATA") ?? string.Empty;
+                string platformResourceRoots = (string)AppContext.GetData("PLATFORM_RESOURCE_ROOTS") ?? string.Empty;
+                string appPaths = (string)AppContext.GetData("APP_PATHS") ?? string.Empty;
+                string appNiPaths = (string)AppContext.GetData("APP_NI_PATHS") ?? string.Empty;
+                string appLocalWinMD = (string)AppContext.GetData("APP_LOCAL_WINMETADATA") ?? string.Empty;
                 SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths, appLocalWinMD);
             }
         }
@@ -214,32 +213,6 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
-
-        public void SetData(string name, object data)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            lock (((ICollection)LocalStore).SyncRoot)
-            {
-                LocalStore[name] = data;
-            }
-        }
-
-        [Pure]
-        public object GetData(string name)
-        {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            object data;
-            lock (((ICollection)LocalStore).SyncRoot)
-            {
-                LocalStore.TryGetValue(name, out data);
-            }
-
-            return data;
-        }
 
         [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         [DllImport(Interop.Libraries.Kernel32)]
@@ -399,14 +372,6 @@ namespace System
                 null;
         }
 
-        private Dictionary<string, object> LocalStore
-        {
-            get
-            {
-                return _LocalStore ?? (_LocalStore = new Dictionary<string, object>());
-            }
-        }
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void nSetNativeDllSearchDirectories(string paths);
 
@@ -439,7 +404,7 @@ namespace System
                 {
                     if (propertyNames[i] != null)
                     {
-                        ad.SetData(propertyNames[i], propertyValues[i]);
+                        AppContext.SetData(propertyNames[i], propertyValues[i]);
                     }
                 }
             }
