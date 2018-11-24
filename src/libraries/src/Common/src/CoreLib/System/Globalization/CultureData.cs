@@ -2134,7 +2134,7 @@ namespace System.Globalization
         // Date separator (derived from short date format)
         internal string DateSeparator(CalendarId calendarId)
         {
-            if (calendarId == CalendarId.JAPAN && !AppContextSwitches.EnforceLegacyJapaneseDateParsing)
+            if (calendarId == CalendarId.JAPAN && !LocalAppContextSwitches.EnforceLegacyJapaneseDateParsing)
             {
                 // The date separator is derived from the default short date pattern. So far this pattern is using
                 // '/' as date separator when using the Japanese calendar which make the formatting and parsing work fine.
