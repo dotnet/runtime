@@ -17,10 +17,11 @@ namespace System.Collections.Generic
     //
     // The basic idea of a red-black tree is to represent 2-3-4 trees as standard BSTs but to add one extra bit of information
     // per node to encode 3-nodes and 4-nodes.
-    // 4-nodes will be represented as:          B
-    //                                                              R            R
-    // 3 -node will be represented as:           B             or         B
-    //                                                              R          B               B       R
+    // 4-nodes will be represented as:   B
+    //                                 R   R
+    //
+    // 3 -node will be represented as:   B     or     B
+    //                                 R   B        B   R
     //
     // For a detailed description of the algorithm, take a look at "Algorithms" by Robert Sedgewick.
 
