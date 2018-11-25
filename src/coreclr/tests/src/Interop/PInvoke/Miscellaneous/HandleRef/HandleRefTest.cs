@@ -8,11 +8,6 @@ using System.Reflection;
 using System.Text;
 using TestLibrary;
 
-class BoxedInt
-{
-    public int MyInt;
-}
-
 class HandleRefTest
 {
     [DllImport(@"HandleRefNative", CallingConvention = CallingConvention.Winapi)]
@@ -60,16 +55,7 @@ class HandleRefTest
             // stay rooted until the end of the method. 
             Console.WriteLine("TestNoGC");
 
-            // Keep the int boxed and pinned to prevent it from getting collected.
-            // That way, we can safely reference it from finalizers that run on shutdown.
-            BoxedInt boxedInt = new BoxedInt();
-            GCHandle.Alloc(boxedInt, GCHandleType.Normal);
-            int* int4Ptr;
-            fixed (int* tempIntPtr = &boxedInt.MyInt)
-            {
-                // Smuggle the pointer out of the fixed scope
-                int4Ptr = tempIntPtr;
-            }
+            int* int4Ptr = (int*)Marshal.AllocHGlobal(sizeof(int)); // We don't free this memory so we don't have to worry about a GC run between freeing and return (possible in a GCStress mode).
             Console.WriteLine("2");
             *int4Ptr = intManaged;
             CollectableClass collectableClass = new CollectableClass(int4Ptr);
