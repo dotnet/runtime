@@ -1182,6 +1182,13 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
+                    // If we're making a copy of a "normalize on load" lclvar then the destination
+                    // has to be "normalize on load" as well, otherwise we risk skipping normalization.
+                    if (lclVar2->lvNormalizeOnLoad() && !lclVar->lvNormalizeOnLoad())
+                    {
+                        goto DONE_ASSERTION; // Don't make an assertion
+                    }
+
                     //  If the local variable has its address exposed then bail
                     if (lclVar2->lvAddrExposed)
                     {
