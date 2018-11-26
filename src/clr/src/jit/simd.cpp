@@ -437,15 +437,15 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             size         = Vector256SizeBytes;
             JITDUMP("  Known type Vector256<ulong>\n");
         }
-        else if (typeHnd == m_simdHandleCache->Vector256FloatHandle)
-        {
-            simdBaseType = TYP_FLOAT;
-            size         = Vector256SizeBytes;
-            JITDUMP("  Known type Vector256<float>\n");
-        }
         else
 #endif // defined(_TARGET_XARCH)
-            if (typeHnd == m_simdHandleCache->Vector128DoubleHandle)
+            if (typeHnd == m_simdHandleCache->Vector128FloatHandle)
+        {
+            simdBaseType = TYP_FLOAT;
+            size         = Vector128SizeBytes;
+            JITDUMP("  Known type Vector128<float>\n");
+        }
+        else if (typeHnd == m_simdHandleCache->Vector128DoubleHandle)
         {
             simdBaseType = TYP_DOUBLE;
             size         = Vector128SizeBytes;
@@ -499,7 +499,14 @@ var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, u
             size         = Vector128SizeBytes;
             JITDUMP("  Known type Vector128<ulong>\n");
         }
+        else
 #if defined(_TARGET_ARM64_)
+            if (typeHnd == m_simdHandleCache->Vector64FloatHandle)
+        {
+            simdBaseType = TYP_FLOAT;
+            size         = Vector64SizeBytes;
+            JITDUMP("  Known type Vector64<float>\n");
+        }
         else if (typeHnd == m_simdHandleCache->Vector64IntHandle)
         {
             simdBaseType = TYP_INT;
