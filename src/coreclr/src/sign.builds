@@ -18,7 +18,7 @@
 
   <ItemGroup Condition="'$(BuildArch)' == 'x86'">
     <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
-    <WindowsNativeLocation Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\api-ms-win-core-xstate-l2-1-0.dll" />
+    <WindowsNativeLocation Condition="'$(BuildType)'=='Release'" Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\api-ms-win-core-xstate-l2-1-0.dll" />
   </ItemGroup>
 
   <!-- sign the cross targeted files as well -->
