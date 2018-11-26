@@ -554,6 +554,9 @@ if (($doCrossgen!=0)); then
     runtestPyArguments+=("--precompile_core_root")
 fi
 
+if [ "$limitedCoreDumps" == "ON" ]; then
+    runtestPyArguments+=("--limited_core_dumps")
+fi
 
 # Default to python3 if it is installed
 __Python=python
