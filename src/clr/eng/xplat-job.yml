@@ -9,7 +9,7 @@ parameters:
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
-- template: /eng/common/templates/phases/base.yml@arcade
+- template: /eng/common/templates/phases/base.yml
   parameters:
 
     name: ${{ parameters.name }}
