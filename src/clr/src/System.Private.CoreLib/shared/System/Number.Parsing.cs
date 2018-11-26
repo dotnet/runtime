@@ -463,7 +463,7 @@ namespace System
                         {
                             number.Scale = 0;
                         }
-                        if ((state & StateDecimal) == 0)
+                        if ((number.Kind == NumberBufferKind.Integer) && (state & StateDecimal) == 0)
                         {
                             number.IsNegative = false;
                         }
@@ -1693,6 +1693,10 @@ namespace System
             {
                 ReadOnlySpan<char> valueTrim = value.Trim();
 
+                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+
                 if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                 {
                     result = double.PositiveInfinity;
@@ -1702,6 +1706,29 @@ namespace System
                     result = double.NegativeInfinity;
                 }
                 else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = double.NaN;
+                }
+                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
+
+                    if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                    {
+                        result = double.PositiveInfinity;
+                    }
+                    else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                    {
+                        result = double.NaN;
+                    }
+                    else
+                    {
+                        result = 0;
+                        return false;
+                    }
+                }
+                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                        valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
                     result = double.NaN;
                 }
@@ -1728,6 +1755,14 @@ namespace System
             {
                 ReadOnlySpan<char> valueTrim = value.Trim();
 
+                // This code would be simpler if we only had the concept of `InfinitySymbol`, but
+                // we don't so we'll check the existing cases first and then handle `PositiveSign` +
+                // `PositiveInfinitySymbol` and `PositiveSign/NegativeSign` + `NaNSymbol` last.
+                //
+                // Additionally, since some cultures ("wo") actually define `PositiveInfinitySymbol`
+                // to include `PositiveSign`, we need to check whether `PositiveInfinitySymbol` fits
+                // that case so that we don't start parsing things like `++infini`.
+
                 if (valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
                 {
                     result = float.PositiveInfinity;
@@ -1737,6 +1772,30 @@ namespace System
                     result = float.NegativeInfinity;
                 }
                 else if (valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                {
+                    result = float.NaN;
+                }
+                else if (valueTrim.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase))
+                {
+                    valueTrim = valueTrim.Slice(info.PositiveSign.Length);
+
+                    if (!info.PositiveInfinitySymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.PositiveInfinitySymbol))
+                    {
+                        result = float.PositiveInfinity;
+                    }
+                    else if (!info.NaNSymbol.StartsWith(info.PositiveSign, StringComparison.OrdinalIgnoreCase) && valueTrim.EqualsOrdinalIgnoreCase(info.NaNSymbol))
+                    {
+                        result = float.NaN;
+                    }
+                    else
+                    {
+                        result = 0;
+                        return false;
+                    }
+                }
+                else if (valueTrim.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         !info.NaNSymbol.StartsWith(info.NegativeSign, StringComparison.OrdinalIgnoreCase) &&
+                         valueTrim.Slice(info.NegativeSign.Length).EqualsOrdinalIgnoreCase(info.NaNSymbol))
                 {
                     result = float.NaN;
                 }
