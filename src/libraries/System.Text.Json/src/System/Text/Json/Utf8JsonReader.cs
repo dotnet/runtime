@@ -420,21 +420,17 @@ namespace System.Text.Json
                     _tokenType = JsonTokenType.Number;
                     _consumed += numberOfBytes;
                     _bytePositionInLine += numberOfBytes;
-                    goto Done;
                 }
-                else if (ConsumeValue(first))
+                else if (!ConsumeValue(first))
                 {
-                    goto Done;
+                    return false;
                 }
 
-                return false;
-
-            Done:
                 // Cannot use HasMoreData since the JSON payload contains a single, non-primitive value
                 // and hence must be handled differently.
                 if (_consumed >= (uint)localBuffer.Length)
                 {
-                    return true;
+                    goto SetIsNotPrimitiveAndReturnTrue;
                 }
 
                 if (localBuffer[_consumed] <= JsonConstants.Space)
@@ -442,7 +438,7 @@ namespace System.Text.Json
                     SkipWhiteSpace();
                     if (_consumed >= (uint)localBuffer.Length)
                     {
-                        return true;
+                        goto SetIsNotPrimitiveAndReturnTrue;
                     }
                 }
 
@@ -466,10 +462,17 @@ namespace System.Text.Json
                         {
                             _isNotPrimitive = true;
                         }
-                        return true;
+                        goto SetIsNotPrimitiveAndReturnTrue;
                     }
                 }
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, localBuffer[_consumed]);
+
+            SetIsNotPrimitiveAndReturnTrue:
+                if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
+                {
+                    _isNotPrimitive = true;
+                }
+                // Intentionally fall out of the if-block to return true
             }
             return true;
         }
