@@ -41,7 +41,7 @@ namespace System
                 if (field == null)
                     throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
 
-                if (field.IsInitOnly || field.IsStatic)
+                if (field.IsStatic)
                     throw new ArgumentException(SR.Format(SR.Argument_TypedReferenceInvalidField, field.Name));
 
                 if (targetType != field.GetDeclaringTypeInternal() && !targetType.IsSubclassOf(field.GetDeclaringTypeInternal()))
