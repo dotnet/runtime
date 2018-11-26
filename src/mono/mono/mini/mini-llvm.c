@@ -5210,6 +5210,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSub (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), convert (ctx, lhs, LLVMInt32Type ()), dname);
 			break;
 		case OP_LNEG:
+			if (LLVMTypeOf (lhs) != LLVMInt64Type ())
+				lhs = convert (ctx, lhs, LLVMInt64Type ());
 			values [ins->dreg] = LLVMBuildSub (builder, LLVMConstInt (LLVMInt64Type (), 0, FALSE), lhs, dname);
 			break;
 		case OP_FNEG:
@@ -5226,6 +5228,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_LNOT: {
+			if (LLVMTypeOf (lhs) != LLVMInt64Type ())
+				lhs = convert (ctx, lhs, LLVMInt64Type ());
 			guint64 v = 0xffffffffffffffffLL;
 			values [ins->dreg] = LLVMBuildXor (builder, LLVMConstInt (LLVMInt64Type (), v, FALSE), lhs, dname);
 			break;
