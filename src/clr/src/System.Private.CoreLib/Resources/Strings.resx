@@ -1499,7 +1499,7 @@
     <value>The DaylightTransitionStart property must not equal the DaylightTransitionEnd property.</value>
   </data>
   <data name="Argument_TypedReferenceInvalidField" xml:space="preserve">
-    <value>Field '{0}' in TypedReferences cannot be static or init only.</value>
+    <value>Field '{0}' in TypedReferences cannot be static.</value>
   </data>
   <data name="Argument_TypeIsWinRTType" xml:space="preserve">
     <value>The type must not be a Windows Runtime type.</value>
