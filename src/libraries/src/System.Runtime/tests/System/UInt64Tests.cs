@@ -91,9 +91,12 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { (ulong)0, "G", defaultFormat, "0" };
-                yield return new object[] { (ulong)4567, "G", defaultFormat, "4567" };
-                yield return new object[] { ulong.MaxValue, "G", defaultFormat, "18446744073709551615" };
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                {
+                    yield return new object[] { (ulong)0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { (ulong)4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { ulong.MaxValue, defaultSpecifier, defaultFormat, "18446744073709551615" };
+                }
 
                 yield return new object[] { (ulong)4567, "D", defaultFormat, "4567" };
                 yield return new object[] { (ulong)4567, "D18", defaultFormat, "000000000000004567" };
@@ -240,16 +243,28 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            // Reuse all uint test data, except for those that wouldn't overflow ulong.
-            foreach (object[] objs in UInt32Tests.Parse_Invalid_TestData())
+            // Reuse all long test data, except for those that wouldn't overflow ulong.
+            foreach (object[] objs in Int64Tests.Parse_Invalid_TestData())
             {
                 if ((Type)objs[3] == typeof(OverflowException) &&
                     (!BigInteger.TryParse((string)objs[0], out BigInteger bi) || bi <= ulong.MaxValue))
                 {
                     continue;
                 }
+
                 yield return objs;
             }
+
+            // < min value
+            foreach (string ws in new[] { "", "    " })
+            {
+                yield return new object[] { ws + "-1" + ws, NumberStyles.Integer, null, typeof(OverflowException) };
+                yield return new object[] { ws + "abc123" + ws, NumberStyles.Integer, new NumberFormatInfo { NegativeSign = "abc" }, typeof(OverflowException) };
+            }
+
+            // > max value
+            yield return new object[] { "18446744073709551616", NumberStyles.Integer, null, typeof(OverflowException) };
+            yield return new object[] { "10000000000000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
