@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
+using System.Security;
+using System.Security.Permissions;
 using System.Security.Principal;
 using System.Threading;
 
@@ -32,6 +34,8 @@ namespace System
         public string RelativeSearchPath => null;
 
         public AppDomainSetup SetupInformation => new AppDomainSetup();
+
+        public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
         public event UnhandledExceptionEventHandler UnhandledException
         {

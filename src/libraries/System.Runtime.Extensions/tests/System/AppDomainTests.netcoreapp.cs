@@ -7,6 +7,8 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Remoting;
+using System.Security;
+using System.Security.Permissions;
 using Xunit;
 
 namespace System.Tests
@@ -21,7 +23,16 @@ namespace System.Tests
                 Assert.Equal(AppContext.TargetFrameworkName, AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName);
                 return SuccessExitCode;
             }).Dispose();
-        }        
+        }
+
+        [Fact]
+        public static void GetPermissionSet()
+        {
+            RemoteInvoke(() => {
+                Assert.Equal(new PermissionSet(PermissionState.Unrestricted), AppDomain.CurrentDomain.PermissionSet);
+                return SuccessExitCode;
+            }).Dispose();
+        }    
  
         [Theory]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]

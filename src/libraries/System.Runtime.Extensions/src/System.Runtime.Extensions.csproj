@@ -47,12 +47,15 @@
     <Compile Include="System\Collections\ArrayList.cs" />
     <Compile Include="System\Security\IPermission.cs" />
     <Compile Include="System\Security\ISecurityEncodable.cs" />
+    <Compile Include="System\Security\IStackWalk.cs" />
     <Compile Include="System\Security\SecurityElement.cs" />
     <Compile Include="System\Security\Permissions\CodeAccessSecurityAttribute.cs" />
+    <Compile Include="System\Security\Permissions\PermissionState.cs" />
     <Compile Include="System\Security\Permissions\SecurityAction.cs" />
     <Compile Include="System\Security\Permissions\SecurityAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\SecurityPermissionFlag.cs" />
+    <Compile Include="System\Security\PermissionSet.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
