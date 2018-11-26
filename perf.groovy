@@ -457,6 +457,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
         
         def crossCompile = ""
         def python = "python3.5"
+        def tgzFile = "bin-Product-Linux.${architecture}.${configuration}.tgz"
 
         if (architecture == "arm") {
             python = "python3.6"
@@ -471,6 +472,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
                 steps {
                     buildCommands.each { buildCommand ->
                         shell(buildCommand)
+                        shell("tar -czf ${tgzFile} bin/Product/Linux.${architecture}.${configuration}")
                     }
                 }
 
@@ -482,7 +484,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
             }
             Utilities.setMachineAffinity(newBuildJob, "Ubuntu16.04", 'latest-or-auto')
             Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
-            Utilities.addArchival(newBuildJob, "bin/Product/**")
+            Utilities.addArchival(newBuildJob, "${tgzFile}")
         }
         else {
             // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
@@ -547,10 +549,18 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
                     steps {
                         shell("bash ./tests/scripts/perf-prep.sh --throughput${archString}")
                         copyArtifacts(fullBuildJobName) {
-                            includePatterns("bin/Product/**")
+                            if (architecture == 'arm') {
+                                includePatterns("${tgzFile}")
+                            }
+                            else {
+                                includePatterns("bin/Product/**")
+                            }
                             buildSelector {
                                 buildNumber('\${PRODUCT_BUILD}')
                             }
+                        }
+                        if (architecture == 'arm') {
+                            shell("tar -xzf ./${tgzFile} || exit 0")
                         }
                         shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
                         "${python} \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user-email \"dotnet-bot@microsoft.com\"\n" +
