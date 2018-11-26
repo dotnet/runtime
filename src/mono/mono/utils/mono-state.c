@@ -257,6 +257,13 @@ mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, Mon
 	mono_json_writer_object_key(writer, "native_thread_id");
 	mono_json_writer_printf (writer, "\"0x%x\",\n", (gpointer) thread->native_thread_id);
 
+	if (thread->managed_exc_type) {
+		assert_has_space ();
+		mono_json_writer_indent (writer);
+		mono_json_writer_object_key(writer, "managed_exception_type");
+		mono_json_writer_printf (writer, "\"%s.%s\",\n", m_class_get_name_space (thread->managed_exc_type), m_class_get_name (thread->managed_exc_type));
+	}
+
 	if (ctx)
 		mono_native_state_add_ctx (writer, ctx);
 
