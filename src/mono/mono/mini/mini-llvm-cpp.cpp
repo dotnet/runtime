@@ -21,6 +21,11 @@
 // possible
 //
 
+#ifdef _MSC_VER
+#pragma warning(disable:4141)
+#pragma warning(disable:4800)
+#endif
+
 #include "config.h"
 
 #include <stdint.h>

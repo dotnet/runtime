@@ -375,7 +375,7 @@ mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, g
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = GetVolumeInformationW (path, NULL, NULL, NULL, NULL, NULL, fsbuffer, fsbuffersize);
+	res = GetVolumeInformationW (path, NULL, 0, NULL, NULL, NULL, fsbuffer, fsbuffersize);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }

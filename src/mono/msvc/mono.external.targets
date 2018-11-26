@@ -179,9 +179,11 @@
         </_GetLLVMConfiguration>
 
         <PropertyGroup>
-            <_MonoLLVMConfigComponents>analysis core bitwriter mcjit x86codegen</_MonoLLVMConfigComponents>
-            <_MonoLLVMConfigComponents Condition="$(MONO_LLVM_API_VERSION) &lt; 600">$(_MonoLLVMConfigComponents) jit</_MonoLLVMConfigComponents>
-            <_MonoLLVMConfigComponents Condition="$(MONO_LLVM_API_VERSION) &gt;= 600">$(_MonoLLVMConfigComponents) orcjit</_MonoLLVMConfigComponents>
+            <_MonoLLVMConfigComponents>analysis core bitwriter x86codegen</_MonoLLVMConfigComponents>
+            <!-- Currently LLVM JIT is only supported on OSX and including the libraries will get some duplicated symbols during linking.
+            <_MonoLLVMConfigComponents Condition="$(MONO_LLVM_API_VERSION) &lt; 600">$(_MonoLLVMConfigComponents)mcjit jit</_MonoLLVMConfigComponents>
+            <_MonoLLVMConfigComponents Condition="$(MONO_LLVM_API_VERSION) &gt;= 600">$(_MonoLLVMConfigComponents)mcjit orcjit</_MonoLLVMConfigComponents>
+            -->
         </PropertyGroup>
 
         <_GetLLVMConfiguration LLVMConfTool="$(_MonoLLVMConfig)" LLVMConfToolArg="--libnames $(_MonoLLVMConfigComponents)">

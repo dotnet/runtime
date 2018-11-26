@@ -1111,7 +1111,7 @@ void sgen_env_var_error (const char *env_var, const char *fallback, const char *
 
 /* Utilities */
 
-void sgen_qsort (void *array, size_t count, size_t element_size, int (*compare) (const void*, const void*));
+void sgen_qsort (void *const array, const size_t count, const size_t element_size, int (*compare) (const void*, const void*));
 gint64 sgen_timestamp (void);
 
 /*

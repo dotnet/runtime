@@ -4818,7 +4818,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Restore callee saved registers */
 			save_area_offset = cfg->arch.reg_save_area_offset;
 			for (i = 0; i < AMD64_NREG; ++i)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & ((regmask_t)1 << i))) {
 					amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
 					save_area_offset += 8;
 				}

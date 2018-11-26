@@ -74,6 +74,10 @@
 #include <mono/mini/mini-arm.h>
 #endif
 
+#ifdef _MSC_VER
+#pragma warning(disable:4102)
+#endif
+
 static inline void
 init_frame (InterpFrame *frame, InterpFrame *parent_frame, InterpMethod *rmethod, stackval *method_args, stackval *method_retval)
 {
@@ -1891,6 +1895,8 @@ do_icall (ThreadContext *context, MonoMethodSignature *sig, int op, stackval *sp
 		stackval_from_data (sig->ret, &sp [-1], (char*) &sp [-1].data.p, sig->pinvoke);
 
 	interp_pop_lmf (&ext);
+
+
 exit_icall:
 	return sp;
 }

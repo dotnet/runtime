@@ -716,7 +716,9 @@ LOSObject*
 sgen_los_header_for_object (GCObject *data)
 {
 #if _MSC_VER
+#pragma warning(disable:4311)
 	return (LOSObject*)((char*)data - (int)(&(((LOSObject*)0)->data)));
+#pragma warning(default:4311)
 #else
 	return (LOSObject*)((char*)data - sizeof (LOSObject));
 #endif
