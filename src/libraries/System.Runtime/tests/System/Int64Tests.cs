@@ -40,11 +40,15 @@ namespace System.Tests
         [Theory]
         [InlineData((long)234, (long)234, 0)]
         [InlineData((long)234, long.MinValue, 1)]
+        [InlineData((long)-234, long.MinValue, 1)]
+        [InlineData((long)long.MinValue, long.MinValue, 0)]
         [InlineData((long)234, (long)-123, 1)]
         [InlineData((long)234, (long)0, 1)]
         [InlineData((long)234, (long)123, 1)]
         [InlineData((long)234, (long)456, -1)]
         [InlineData((long)234, long.MaxValue, -1)]
+        [InlineData((long)-234, long.MaxValue, -1)]
+        [InlineData(long.MaxValue, long.MaxValue, 0)]
         [InlineData((long)-234, (long)-234, 0)]
         [InlineData((long)-234, (long)234, -1)]
         [InlineData((long)-234, (long)-432, 1)]
@@ -54,6 +58,7 @@ namespace System.Tests
             if (value is long longValue)
             {
                 Assert.Equal(expected, Math.Sign(i.CompareTo(longValue)));
+                Assert.Equal(-expected, Math.Sign(longValue.CompareTo(i)));
             }
 
             Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
@@ -98,16 +103,22 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { long.MinValue, "G", defaultFormat, "-9223372036854775808" };
-                yield return new object[] { (long)-4567, "G", defaultFormat, "-4567" };
-                yield return new object[] { (long)0, "G", defaultFormat, "0" };
-                yield return new object[] { (long)4567, "G", defaultFormat, "4567" };
-                yield return new object[] { long.MaxValue, "G", defaultFormat, "9223372036854775807" };
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                {
+                    yield return new object[] { long.MinValue, defaultSpecifier, defaultFormat, "-9223372036854775808" };
+                    yield return new object[] { (long)-4567, defaultSpecifier, defaultFormat, "-4567" };
+                    yield return new object[] { (long)0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { (long)4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { long.MaxValue, defaultSpecifier, defaultFormat, "9223372036854775807" };
+                }
 
                 yield return new object[] { (long)4567, "D", defaultFormat, "4567" };
-                yield return new object[] { long.MaxValue, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000009223372036854775807" };
+                yield return new object[] { (long)4567, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { (long)4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { (long)-4567, "D99", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
                 yield return new object[] { (long)0x2468, "x", defaultFormat, "2468" };
+                yield return new object[] { (long)-0x2468, "x", defaultFormat, "ffffffffffffdb98" };
                 yield return new object[] { (long)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 

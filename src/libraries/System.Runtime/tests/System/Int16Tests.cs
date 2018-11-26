@@ -39,11 +39,15 @@ namespace System.Tests
         [Theory]
         [InlineData((short)234, (short)234, 0)]
         [InlineData((short)234, short.MinValue, 1)]
+        [InlineData((short)-234, short.MinValue, 1)]
+        [InlineData(short.MinValue, short.MinValue, 0)]
         [InlineData((short)234, (short)-123, 1)]
         [InlineData((short)234, (short)0, 1)]
         [InlineData((short)234, (short)123, 1)]
         [InlineData((short)234, (short)456, -1)]
         [InlineData((short)234, short.MaxValue, -1)]
+        [InlineData((short)-234, short.MaxValue, -1)]
+        [InlineData(short.MaxValue, short.MaxValue, 0)]
         [InlineData((short)-234, (short)-234, 0)]
         [InlineData((short)-234, (short)234, -1)]
         [InlineData((short)-234, (short)-432, 1)]
@@ -53,6 +57,7 @@ namespace System.Tests
             if (value is short shortValue)
             {
                 Assert.Equal(expected, Math.Sign(i.CompareTo(shortValue)));
+                Assert.Equal(-expected, Math.Sign(shortValue.CompareTo(i)));
             }
 
             Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
@@ -97,18 +102,22 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { short.MinValue, "G", defaultFormat, "-32768" };
-                yield return new object[] { (short)-4567, "G", defaultFormat, "-4567" };
-                yield return new object[] { (short)0, "G", defaultFormat, "0" };
-                yield return new object[] { (short)4567, "G", defaultFormat, "4567" };
-                yield return new object[] { short.MaxValue, "G", defaultFormat, "32767" };
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                {
+                    yield return new object[] { short.MinValue, defaultSpecifier, defaultFormat, "-32768" };
+                    yield return new object[] { (short)-4567, defaultSpecifier, defaultFormat, "-4567" };
+                    yield return new object[] { (short)0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { (short)4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { short.MaxValue, defaultSpecifier, defaultFormat, "32767" };
+                }
 
                 yield return new object[] { (short)4567, "D", defaultFormat, "4567" };
                 yield return new object[] { (short)4567, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { (short)4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { (short)-4567, "D99", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
                 yield return new object[] { (short)0x2468, "x", defaultFormat, "2468" };
                 yield return new object[] { (short)-0x2468, "x", defaultFormat, "db98" };
-
                 yield return new object[] { (short)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -202,72 +211,51 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse(string value, NumberStyles style, IFormatProvider provider, short expected)
+        public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, short expected)
         {
             short result;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Integer)
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
                 Assert.True(short.TryParse(value, out result));
                 Assert.Equal(expected, result);
-
                 Assert.Equal(expected, short.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
-                {
-                    Assert.Equal(expected, short.Parse(value, provider));
-                }
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.True(short.TryParse(value, style, provider ?? new NumberFormatInfo(), out result));
-            Assert.Equal(expected, result);
-
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+            // Default provider
             if (provider == null)
             {
                 Assert.Equal(expected, short.Parse(value, style));
+
+                // Substitute default NumberFormatInfo
+                Assert.True(short.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.Equal(expected, result);
+                Assert.Equal(expected, short.Parse(value, style, new NumberFormatInfo()));
             }
-            Assert.Equal(expected, short.Parse(value, style, provider ?? new NumberFormatInfo()));
+
+            // Default style
+            if (style == NumberStyles.Integer)
+            {
+                Assert.Equal(expected, short.Parse(value, provider));
+            }
+
+            // Full overloads
+            Assert.True(short.TryParse(value, style, provider, out result));
+            Assert.Equal(expected, result);
+            Assert.Equal(expected, short.Parse(value, style, provider));
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Integer;
+            // Include the test data for wider primitives.
+            foreach (object[] widerTests in Int32Tests.Parse_Invalid_TestData())
+            {
+                yield return widerTests;
+            }
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
-            customFormat.NumberDecimalSeparator = ".";
-
-            yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
-            yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "abc", defaultStyle, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
-            yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
-            yield return new object[] { 1000.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
-            yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
-            yield return new object[] { 678.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
-            yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-            yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-
-            yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "abc", NumberStyles.None, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
-
-            yield return new object[] { "67.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
-
-            yield return new object[] { "-32769", defaultStyle, null, typeof(OverflowException) }; // < min value
-            yield return new object[] { "32768", defaultStyle, null, typeof(OverflowException) }; // > max value
-
-            yield return new object[] { "2147483648", defaultStyle, null, typeof(OverflowException) }; // Internally, Parse pretends we are inputting an Int32, so this overflows
+            yield return new object[] { "-32769", NumberStyles.Integer, null, typeof(OverflowException) }; // < min value
+            yield return new object[] { "32768", NumberStyles.Integer, null, typeof(OverflowException) }; // > max value
 
             yield return new object[] { "FFFFFFFF", NumberStyles.HexNumber, null, typeof(OverflowException) }; // Hex number < 0
             yield return new object[] { "10000", NumberStyles.HexNumber, null, typeof(OverflowException) }; // Hex number > max value
@@ -278,31 +266,36 @@ namespace System.Tests
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
             short result;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Integer)
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
                 Assert.False(short.TryParse(value, out result));
-                Assert.Equal(default(short), result);
-
+                Assert.Equal(default, result);
                 Assert.Throws(exceptionType, () => short.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
-                {
-                    Assert.Throws(exceptionType, () => short.Parse(value, provider));
-                }
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.False(short.TryParse(value, style, provider ?? new NumberFormatInfo(), out result));
-            Assert.Equal(default(short), result);
-
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+            // Default provider
             if (provider == null)
             {
                 Assert.Throws(exceptionType, () => short.Parse(value, style));
+
+                // Substitute default NumberFormatInfo
+                Assert.False(short.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.Equal(default, result);
+                Assert.Throws(exceptionType, () => short.Parse(value, style, new NumberFormatInfo()));
             }
-            Assert.Throws(exceptionType, () => short.Parse(value, style, provider ?? new NumberFormatInfo()));
+
+            // Default style
+            if (style == NumberStyles.Integer)
+            {
+                Assert.Throws(exceptionType, () => short.Parse(value, provider));
+            }
+
+            // Full overloads
+            Assert.False(short.TryParse(value, style, provider, out result));
+            Assert.Equal(default, result);
+            Assert.Throws(exceptionType, () => short.Parse(value, style, provider));
         }
 
         [Theory]

@@ -39,11 +39,15 @@ namespace System.Tests
         [Theory]
         [InlineData(234, 234, 0)]
         [InlineData(234, int.MinValue, 1)]
+        [InlineData(-234, int.MinValue, 1)]
+        [InlineData(int.MinValue, int.MinValue, 0)]
         [InlineData(234, -123, 1)]
         [InlineData(234, 0, 1)]
         [InlineData(234, 123, 1)]
         [InlineData(234, 456, -1)]
         [InlineData(234, int.MaxValue, -1)]
+        [InlineData(-234, int.MaxValue, -1)]
+        [InlineData(int.MaxValue, int.MaxValue, 0)]
         [InlineData(-234, -234, 0)]
         [InlineData(-234, 234, -1)]
         [InlineData(-234, -432, 1)]
@@ -53,6 +57,7 @@ namespace System.Tests
             if (value is int intValue)
             {
                 Assert.Equal(expected, Math.Sign(i.CompareTo(intValue)));
+                Assert.Equal(-expected, Math.Sign(intValue.CompareTo(i)));
             }
 
             Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
@@ -109,8 +114,10 @@ namespace System.Tests
                 yield return new object[] { 4567, "D", defaultFormat, "4567" };
                 yield return new object[] { 4567, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
                 yield return new object[] { 4567, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
+                yield return new object[] { -4567, "D99\09", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004567" };
 
                 yield return new object[] { 0x2468, "x", defaultFormat, "2468" };
+                yield return new object[] { -0x2468, "x", defaultFormat, "ffffdb98" };
                 yield return new object[] { 2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -379,11 +386,15 @@ namespace System.Tests
             // String is null, empty or entirely whitespace
             yield return new object[] { null, NumberStyles.Integer, null, typeof(ArgumentNullException) };
             yield return new object[] { null, NumberStyles.Any, null, typeof(ArgumentNullException) };
-            yield return new object[] { "", NumberStyles.Integer, null, typeof(FormatException) };
-            yield return new object[] { "", NumberStyles.Any, null, typeof(FormatException) };
-            yield return new object[] { " \t \n \r ", NumberStyles.Integer, null, typeof(FormatException) };
-            yield return new object[] { " \t \n \r ", NumberStyles.Any, null, typeof(FormatException) };
-            yield return new object[] { "   \0\0", NumberStyles.Integer, null, typeof(FormatException) };
+
+            // String contains is null, empty or enitrely whitespace.
+            foreach (NumberStyles style in new[] { NumberStyles.Integer, NumberStyles.HexNumber, NumberStyles.Any })
+            {
+                yield return new object[] { null, style, null, typeof(ArgumentNullException) };
+                yield return new object[] { "", style, null, typeof(FormatException) };
+                yield return new object[] { " \t \n \r ", style, null, typeof(FormatException) };
+                yield return new object[] { "   \0\0", style, null, typeof(FormatException) };
+            }
 
             // Leading or trailing chars for which char.IsWhiteSpace is true but that's not valid for leading/trailing whitespace
             foreach (string c in new[] { "\x0085", "\x00A0", "\x1680", "\x2000", "\x2001", "\x2002", "\x2003", "\x2004", "\x2005", "\x2006", "\x2007", "\x2008", "\x2009", "\x200A", "\x2028", "\x2029", "\x202F", "\x205F", "\x3000" })
