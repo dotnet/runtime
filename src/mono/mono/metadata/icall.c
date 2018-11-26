@@ -1389,11 +1389,28 @@ mono_runtime_get_caller_no_system_or_reflection (void)
 	return dest;
 }
 
-static MonoReflectionTypeHandle
-type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoAssembly **caller_assembly, MonoError *error)
+/*
+ * mono_runtime_get_caller_from_stack_mark:
+ *
+ *   Walk the stack and return the assembly of the method referenced
+ * by the stack mark STACK_MARK.
+ */
+MonoAssembly*
+mono_runtime_get_caller_from_stack_mark (MonoStackCrawlMark *stack_mark)
 {
-	MonoMethod *m, *dest;
+	// FIXME: Use the stack mark
+	MonoMethod *dest = NULL;
+	mono_stack_walk_no_il (get_caller_no_system_or_reflection, &dest);
+	if (dest)
+		return m_class_get_image (dest->klass)->assembly;
+	else
+		return NULL;
+}
 
+static MonoReflectionTypeHandle
+type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, MonoBoolean ignoreCase, MonoAssembly **caller_assembly, MonoError *error)
+{
+	MonoMethod *m;
 	MonoType *type = NULL;
 	MonoAssembly *assembly = NULL;
 	gboolean type_resolve = FALSE;
@@ -1407,35 +1424,13 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoBoolean ignoreCase, MonoAsse
 	 * the metadata context (basedir currently) set to dir/b.dll we won't be able to load a dir/c.dll.
 	 */
 	m = mono_method_get_last_managed ();
-	dest = m;
 	if (m && m_class_get_image (m->klass) != mono_defaults.corlib) {
 		/* Happens with inlining */
+		assembly = m_class_get_image (m->klass)->assembly;
 	} else {
-		/* Ugly hack: type_from_parsed_name is called from
-		 * System.Type.internal_from_name, which is called most
-		 * directly from System.Type.GetType(string,bool,bool) but
-		 * also indirectly from places such as
-		 * System.Type.GetType(string,func,func) (via
-		 * System.TypeNameParser.GetType and System.TypeSpec.Resolve)
-		 * so we need to skip over all of those to find the true caller.
-		 *
-		 * It would be nice if we had stack marks.
-		 */
-		dest = mono_runtime_get_caller_no_system_or_reflection ();
-		if (!dest)
-			dest = m;
+		assembly = mono_runtime_get_caller_from_stack_mark (stack_mark);
 	}
-
-	/*
-	 * FIXME: mono_method_get_last_managed() sometimes returns NULL, thus
-	 *        causing ves_icall_System_Reflection_Assembly_GetCallingAssembly()
-	 *        to crash.  This only seems to happen in some strange remoting
-	 *        scenarios and I was unable to figure out what's happening there.
-	 *        Dec 10, 2005 - Martin.
-	 */
-
-	if (dest) {
-		assembly = m_class_get_image (dest->klass)->assembly;
+	if (assembly) {
 		type_resolve = TRUE;
 		rootimage = assembly->image;
 	} else {
@@ -1481,7 +1476,7 @@ fail:
 
 MonoReflectionTypeHandle
 ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
-					  gpointer stack_mark,
+					  MonoStackCrawlMark *stack_mark,
 					  MonoReflectionAssemblyHandle callerAssembly,
 					  MonoBoolean throwOnError,
 					  MonoBoolean ignoreCase,
@@ -1504,7 +1499,7 @@ ves_icall_System_RuntimeTypeHandle_internal_from_name (MonoStringHandle name,
 
 	/* mono_reflection_parse_type() mangles the string */
 
-	MONO_HANDLE_ASSIGN (type, type_from_parsed_name (&info, ignoreCase, &caller_assembly, error));
+	MONO_HANDLE_ASSIGN (type, type_from_parsed_name (&info, (MonoStackCrawlMark*)stack_mark, ignoreCase, &caller_assembly, error));
 
 	goto_if_nok (error, leave);
 

@@ -62,11 +62,13 @@ ves_icall_System_AppDomain_GetAssemblies           (MonoAppDomainHandle ad,
 ICALL_EXPORT
 MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_LoadFile_internal (MonoStringHandle fname,
+							MonoStackCrawlMark *stack_mark,
 							MonoError *error);
 ICALL_EXPORT
 MonoReflectionAssemblyHandle
 ves_icall_System_Reflection_Assembly_LoadFrom      (MonoStringHandle fname,
 						    MonoBoolean refonly,
+							MonoStackCrawlMark *stack_mark,
 						    MonoError *error);
 ICALL_EXPORT
 MonoReflectionAssemblyHandle
@@ -74,6 +76,7 @@ ves_icall_System_AppDomain_LoadAssembly            (MonoAppDomainHandle ad,
 						    MonoStringHandle assRef,
 						    MonoObjectHandle evidence,
 						    MonoBoolean refonly,
+							MonoStackCrawlMark *stack_mark,
 						    MonoError *error);
 ICALL_EXPORT
 MonoBoolean

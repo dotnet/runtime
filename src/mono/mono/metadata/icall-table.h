@@ -59,6 +59,7 @@ typedef MonoProperty *MonoProperty_ptr;
 typedef MonoPropertyInfo *MonoPropertyInfo_ref;
 typedef MonoType *MonoType_ptr;
 typedef MonoTypedRef *MonoTypedRef_ptr;
+typedef MonoStackCrawlMark *MonoStackCrawlMark_ptr;
 typedef unsigned *unsigned_ptr;
 typedef mono_unichar2 *mono_unichar2_ptr;
 typedef WSABUF *WSABUF_ptr;
@@ -173,6 +174,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoNativeOverlapped_ptr	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoType_ptr  		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoTypedRef_ptr 		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_MonoStackCrawlMark_ptr  	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gint32_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint32_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint64_ptr   		ICALL_HANDLES_WRAP_NONE

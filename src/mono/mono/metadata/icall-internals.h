@@ -72,6 +72,9 @@ mono_add_internal_call_with_flags (const char *name, const void* method, gboolea
 MONO_PROFILER_API void
 mono_add_internal_call_internal (const char *name, gconstpointer method);
 
+MonoAssembly*
+mono_runtime_get_caller_from_stack_mark (MonoStackCrawlMark *stack_mark);
+
 #ifdef __cplusplus
 
 #include <type_traits>

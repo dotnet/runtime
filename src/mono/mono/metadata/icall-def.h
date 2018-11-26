@@ -183,7 +183,7 @@ HANDLES(APPDOM_11, "InternalSetContext", ves_icall_System_AppDomain_InternalSetC
 HANDLES(APPDOM_12, "InternalSetDomain", ves_icall_System_AppDomain_InternalSetDomain, MonoAppDomain, 1, (MonoAppDomain))
 HANDLES(APPDOM_13, "InternalSetDomainByID", ves_icall_System_AppDomain_InternalSetDomainByID, MonoAppDomain, 1, (gint32))
 HANDLES(APPDOM_14, "InternalUnload", ves_icall_System_AppDomain_InternalUnload, void, 1, (gint32))
-HANDLES(APPDOM_15, "LoadAssembly",    ves_icall_System_AppDomain_LoadAssembly, MonoReflectionAssembly, 4, (MonoAppDomain, MonoString, MonoObject, MonoBoolean))
+HANDLES(APPDOM_15, "LoadAssembly",    ves_icall_System_AppDomain_LoadAssembly, MonoReflectionAssembly, 5, (MonoAppDomain, MonoString, MonoObject, MonoBoolean, MonoStackCrawlMark_ptr))
 HANDLES(APPDOM_16, "LoadAssemblyRaw", ves_icall_System_AppDomain_LoadAssemblyRaw, MonoReflectionAssembly, 5, (MonoAppDomain, MonoArray, MonoArray, MonoObject, MonoBoolean))
 HANDLES(APPDOM_17, "SetData", ves_icall_System_AppDomain_SetData, void, 3, (MonoAppDomain, MonoString, MonoObject))
 HANDLES(APPDOM_18, "createDomain", ves_icall_System_AppDomain_createDomain, MonoAppDomain, 2, (MonoString, MonoAppDomainSetup))
@@ -598,8 +598,8 @@ HANDLES(ASSEM_14, "InternalGetAssemblyName", ves_icall_System_Reflection_Assembl
 HANDLES(ASSEM_12, "InternalGetReferencedAssemblies", ves_icall_System_Reflection_Assembly_InternalGetReferencedAssemblies, GPtrArray_ptr, 1, (MonoReflectionAssembly))
 HANDLES(ASSEM_15, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType, MonoReflectionType, 5, (MonoReflectionAssembly, MonoReflectionModule, MonoString, MonoBoolean, MonoBoolean))
 HANDLES(ASSEM_16, "InternalImageRuntimeVersion", ves_icall_System_Reflection_Assembly_InternalImageRuntimeVersion, MonoString, 1, (MonoReflectionAssembly))
-HANDLES(ASSEM_16a, "LoadFile_internal", ves_icall_System_Reflection_Assembly_LoadFile_internal, MonoReflectionAssembly, 1, (MonoString))
-HANDLES(ASSEM_17, "LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom, MonoReflectionAssembly, 2, (MonoString, MonoBoolean))
+HANDLES(ASSEM_16a, "LoadFile_internal", ves_icall_System_Reflection_Assembly_LoadFile_internal, MonoReflectionAssembly, 2, (MonoString, MonoStackCrawlMark_ptr))
+HANDLES(ASSEM_17, "LoadFrom", ves_icall_System_Reflection_Assembly_LoadFrom, MonoReflectionAssembly, 3, (MonoString, MonoBoolean, MonoStackCrawlMark_ptr))
 HANDLES(ASSEM_18, "LoadPermissions", ves_icall_System_Reflection_Assembly_LoadPermissions, MonoBoolean, 7, (MonoReflectionAssembly, char_ptr_ref, guint32_ref, char_ptr_ref, guint32_ref, char_ptr_ref, guint32_ref))
 
 	/* normal icalls again */
@@ -920,7 +920,7 @@ HANDLES(RTH_15, "IsInstanceOfType", ves_icall_RuntimeTypeHandle_IsInstanceOfType
 HANDLES(RTH_16, "IsPointer", ves_icall_RuntimeTypeHandle_IsPointer, MonoBoolean, 1, (MonoReflectionType))
 HANDLES(RTH_17, "IsPrimitive", ves_icall_RuntimeTypeHandle_IsPrimitive, MonoBoolean, 1, (MonoReflectionType))
 //HANDLES(RTH_17a, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of, MonoBoolean, 2, (MonoType_ptr, MonoType_ptr))
-HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, MonoReflectionType, 6, (MonoString, gpointer, MonoReflectionAssembly, MonoBoolean, MonoBoolean, MonoBoolean))
+HANDLES(RTH_17a, "internal_from_name", ves_icall_System_RuntimeTypeHandle_internal_from_name, MonoReflectionType, 6, (MonoString, MonoStackCrawlMark_ptr, MonoReflectionAssembly, MonoBoolean, MonoBoolean, MonoBoolean))
 NOHANDLES(ICALL(RTH_17b, "is_subclass_of", ves_icall_RuntimeTypeHandle_is_subclass_of))
 HANDLES(RTH_18, "type_is_assignable_from", ves_icall_RuntimeTypeHandle_type_is_assignable_from, guint32, 2, (MonoReflectionType, MonoReflectionType))
 
