@@ -2971,17 +2971,6 @@ void SystemDomain::SetThreadAptState (Thread::ApartmentState state)
 }
 #endif // defined(FEATURE_COMINTEROP_APARTMENT_SUPPORT) && !defined(CROSSGEN_COMPILE)
 
-// Looks in all the modules for the DefaultDomain attribute
-// The order is assembly and then the modules. It is first
-// come, first serve.
-BOOL SystemDomain::SetGlobalSharePolicyUsingAttribute(IMDInternalImport* pScope, mdMethodDef mdMethod)
-{
-    STANDARD_VM_CONTRACT;
-
-
-    return FALSE;
-}
-
 // Helper function to load an assembly. This is called from LoadCOMClass.
 /* static */
 
@@ -3664,12 +3653,6 @@ AppDomain::AppDomain()
     CONTRACTL_END;
 
     m_cRef=1;
-
-    // Initialize Shared state. Assemblies are loaded
-    // into each domain by default.
-#ifdef FEATURE_LOADER_OPTIMIZATION    
-    m_SharePolicy = SHARE_POLICY_UNSPECIFIED;
-#endif
 
     m_pRootAssembly = NULL;
 
@@ -5563,12 +5546,6 @@ DomainFile *AppDomain::LoadDomainNeutralModuleDependency(Module *pModule, FileLo
     RETURN pDomainFile;
 }
 
-AppDomain::SharePolicy AppDomain::GetSharePolicy()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return SHARE_POLICY_NEVER;
-}
 #endif // FEATURE_LOADER_OPTIMIZATION
 
 
@@ -7800,12 +7777,7 @@ BOOL SharedDomain::CompareSharedAssembly(UPTR u1, UPTR u2)
     // This is the value stored in the table
     Assembly *pAssembly = (Assembly *) u2;
     if (pLocator->GetType()==SharedAssemblyLocator::DOMAINASSEMBLY)
-    {
-        if (!pAssembly->GetManifestFile()->Equals(pLocator->GetDomainAssembly()->GetFile()))
-            return FALSE;
-
-        return pAssembly->CanBeShared(pLocator->GetDomainAssembly());
-    }
+        return FALSE;
     else
     if (pLocator->GetType()==SharedAssemblyLocator::PEASSEMBLY)
         return pAssembly->GetManifestFile()->Equals(pLocator->GetPEAssembly());

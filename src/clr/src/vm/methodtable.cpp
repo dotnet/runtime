@@ -649,23 +649,6 @@ PTR_BaseDomain MethodTable::GetDomain()
 }
 
 //==========================================================================================
-BOOL MethodTable::IsDomainNeutral()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_SO_TOLERANT;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_SUPPORTS_DAC;
-
-    BOOL ret = GetLoaderModule()->GetAssembly()->IsDomainNeutral();
-#ifndef DACCESS_COMPILE
-    _ASSERTE(!ret == !GetLoaderAllocator()->IsDomainNeutral());
-#endif
-
-    return ret;
-}
-
-//==========================================================================================
 BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
 {
     LIMITED_METHOD_DAC_CONTRACT;

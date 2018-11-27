@@ -761,11 +761,6 @@ private:
  public:
     ULONG HashIdentity();
 
- private:
-
-    BOOL ShouldLoadDomainNeutral();
-    BOOL ShouldLoadDomainNeutralHelper();
-
     // ------------------------------------------------------------
     // Instance data
     // ------------------------------------------------------------
@@ -779,8 +774,6 @@ private:
     BOOL                                    m_fDebuggerUnloadStarted;
     BOOL                                    m_fCollectible;
     Volatile<bool>                          m_fHostAssemblyPublished;
-    Volatile<bool>                          m_fCalculatedShouldLoadDomainNeutral;
-    Volatile<bool>                          m_fShouldLoadDomainNeutral;
     PTR_LoaderAllocator                     m_pLoaderAllocator;
     DomainAssembly*                         m_NextDomainAssemblyInSameALC;
 

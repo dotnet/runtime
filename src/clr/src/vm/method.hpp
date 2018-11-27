@@ -508,7 +508,7 @@ public:
     // and the loader allocator in the current domain for non-collectable types
     LoaderAllocator * GetDomainSpecificLoaderAllocator();
 
-    inline BOOL IsDomainNeutral();
+    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
     Module* GetLoaderModule();
 

@@ -4078,7 +4078,7 @@ ILStubCache* Module::GetILStubCache()
 
     // Use per-AD cache for domain specific modules when not NGENing
     BaseDomain *pDomain = GetDomain();
-    if (!pDomain->IsSharedDomain() && !pDomain->AsAppDomain()->IsCompilationDomain())
+    if (!IsSystem() && !pDomain->IsSharedDomain() && !pDomain->AsAppDomain()->IsCompilationDomain())
         return pDomain->AsAppDomain()->GetILStubCache();
 
     if (m_pILStubCache == NULL)

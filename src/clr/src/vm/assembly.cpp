@@ -121,7 +121,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_winMDStatus(WinMDStatus_Unknown),
     m_pManifestWinMDImport(NULL),
 #endif // FEATURE_COMINTEROP
-    m_fIsDomainNeutral(pDomain == SharedDomain::GetDomain()),
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE)
 #ifdef FEATURE_COMINTEROP
@@ -2130,39 +2129,6 @@ GetAssembliesByName(LPCWSTR  szAppBase,
 
     return hr;
 }// Used by the IMetadata API's to access an assemblies metadata.
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-
-BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
-{
-    PTR_PEAssembly pFile=pDomainAssembly->GetFile();
-
-    if(pFile == NULL)
-        return FALSE;
-
-    if(pFile->IsDynamic())
-        return FALSE;
-
-    if(IsSystem() && pFile->IsSystem())
-        return TRUE;
-
-    if ((pDomainAssembly->GetDebuggerInfoBits()&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO))
-        != (m_debuggerFlags&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO)))
-    {
-        LOG((LF_CODESHARING,
-             LL_INFO100,
-             "We can't share it, desired debugging flags %x are different than %x\n",
-             pDomainAssembly->GetDebuggerInfoBits(), (m_debuggerFlags&~(DACF_PDBS_COPIED|DACF_IGNORE_PDBS|DACF_OBSOLETE_TRACK_JIT_INFO))));
-        STRESS_LOG2(LF_CODESHARING, LL_INFO100,"Flags diff= %08x [%08x/%08x]",pDomainAssembly->GetDebuggerInfoBits(),
-                    m_debuggerFlags);
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
-
-#endif // FEATURE_LOADER_OPTIMIZATION
 
 void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszFullName, UINT resIDWhy)
 {
