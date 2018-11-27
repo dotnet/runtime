@@ -3166,14 +3166,12 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	}
 #endif
 
-	if (info->use_interp) {
-		error_init (error);
-		return mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
-	}
-
 	MonoObject *result;
 
-	if (mono_llvm_only) {
+	if (info->use_interp) {
+		result = mini_get_interp_callbacks ()->runtime_invoke (method, obj, params, exc, error);
+		return_val_if_nok (error, NULL);
+	} else if (mono_llvm_only) {
 		result = mono_llvmonly_runtime_invoke (method, info, obj, params, exc, error);
 		if (!is_ok (error))
 			return NULL;

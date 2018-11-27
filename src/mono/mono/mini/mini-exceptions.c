@@ -1984,12 +1984,36 @@ build_native_trace (MonoError *error)
 #endif
 }
 
+static void
+remove_wrappers_from_trace (GList **trace_ips_p)
+{
+	GList *trace_ips = *trace_ips_p;
+	GList *p = trace_ips;
+
+	/* jit info, generic info, ip */
+	while (p) {
+		MonoJitInfo *jinfo = (MonoJitInfo*) p->data;
+		GList *next_p = p->next->next->next;
+		/* FIXME Maybe remove more wrapper types */
+		if (jinfo->d.method->wrapper_type == MONO_WRAPPER_OTHER) {
+			trace_ips = g_list_delete_link (trace_ips, p->next->next);
+			trace_ips = g_list_delete_link (trace_ips, p->next);
+			trace_ips = g_list_delete_link (trace_ips, p);
+		}
+		p = next_p;
+	}
+
+	*trace_ips_p = trace_ips;
+}
+
 /* This can be called more than once on a MonoException. */
 static void
-setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trace_ips)
+setup_stack_trace (MonoException *mono_ex, GSList **dynamic_methods, GList *trace_ips, gboolean remove_wrappers)
 {
 	if (mono_ex) {
 		GList *trace_ips_copy = g_list_copy (trace_ips);
+		if (remove_wrappers)
+			remove_wrappers_from_trace (&trace_ips_copy);
 		trace_ips_copy = g_list_reverse (trace_ips_copy);
 		ERROR_DECL (error);
 		MonoArray *ips_arr = mono_glist_to_array (trace_ips_copy, mono_defaults.int_class, error);
@@ -2132,7 +2156,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 		unwind_res = unwinder_unwind_frame (&unwinder, domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 		if (!unwind_res) {
-			setup_stack_trace (mono_ex, &dynamic_methods, trace_ips);
+			setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, FALSE);
 			g_list_free (trace_ips);
 			return result;
 		}
@@ -2220,7 +2244,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					ex_obj = obj;
 
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER) {
-					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips);
+					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, FALSE);
 
 #ifndef DISABLE_PERFCOUNTERS
 					mono_atomic_inc_i32 (&mono_perfcounters->exceptions_filters);
@@ -2288,7 +2312,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 				ERROR_DECL_VALUE (isinst_error);
 				error_init (&isinst_error);
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, error)) {
-					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips);
+					/* runtime invokes catch even unhandled exceptions */
+					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
 					g_list_free (trace_ips);
 
 					if (out_ji)
