@@ -340,6 +340,7 @@
     <Compile Include="TestFramework\CanCompileTestCaseWithCsc.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithMsc.cs" />
     <Compile Include="TestFramework\CanSandboxDependenciesUsingType.cs" />
+    <Compile Include="TestFramework\CanVerifyInterfacesOnTypesInAssembly.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesUsingTypes_LibSource1.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesUsingTypes_LibSource2.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.cs" />
@@ -347,6 +348,7 @@
     <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs_Lib.cs" />
     <Compile Include="TestFramework\Dependencies\CanSandboxDependenciesUsingType_Source1.cs" />
     <Compile Include="TestFramework\Dependencies\CanSandboxDependenciesUsingType_Source2.cs" />
+    <Compile Include="TestFramework\Dependencies\CanVerifyInterfacesOnTypesInAssembly_Lib.cs" />
     <Compile Include="TestFramework\Dependencies\VerifyAttributesInAssemblyWorks_Base.cs" />
     <Compile Include="TestFramework\Dependencies\VerifyAttributesInAssemblyWorks_Lib.cs" />
     <Compile Include="TestFramework\VerifyAttributesInAssemblyWorks.cs" />
