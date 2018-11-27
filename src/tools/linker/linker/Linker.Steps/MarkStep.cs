@@ -105,6 +105,12 @@ namespace Mono.Linker.Steps {
 
 			MarkType (type);
 
+			// Edge case to cover a scenario where a type has preserve all, implements interfaces, but does not have any instance ctors.
+			// Normally TypePreserve.All would cause an instance ctor to be marked and that would in turn lead to MarkInterfaceImplementations being called
+			// Without an instance ctor, MarkInterfaceImplementations is not called and then TypePreserve.All isn't truly respected.
+			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All)
+				MarkInterfaceImplementations (type);
+
 			if (type.HasFields)
 				InitializeFields (type);
 			if (type.HasMethods)
