@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+
 namespace System.IO.Pipelines
 {
     /// <summary>
@@ -26,5 +28,8 @@ namespace System.IO.Pipelines
         /// Requests <paramref name="action"/> to be run on scheduler with <paramref name="state"/> being passed in
         /// </summary>
         public abstract void Schedule(Action<object> action, object state);
+
+        internal virtual void UnsafeSchedule(Action<object> action, object state)
+            => Schedule(action, state);
     }
 }
