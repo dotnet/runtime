@@ -23,7 +23,7 @@ Project Docs
 - [Contributing Workflow](project-docs/contributing-workflow.md)
 - [Performance Guidelines](project-docs/performance-guidelines.md)
 - [Garbage Collector Guidelines](project-docs/garbage-collector-guidelines.md)
-- [Adding new public APIs to mscorlib](project-docs/adding_new_public_apis.md)
+- [Public APIs in System.Private.CoreLib](project-docs/changing-corelib.md)
 - [Project NuGet Dependencies](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/project-nuget-dependencies.md)
 
 Coding Guidelines
