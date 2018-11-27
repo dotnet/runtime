@@ -1487,10 +1487,10 @@ namespace Mono.Linker.Steps {
 		{
 			ApplyPreserveMethods (type);
 
-			if (!Annotations.IsPreserved (type))
+			if (!Annotations.TryGetPreserve (type, out TypePreserve preserve))
 				return;
 
-			switch (Annotations.GetPreserve (type)) {
+			switch (preserve) {
 			case TypePreserve.All:
 				MarkFields (type, true);
 				MarkMethods (type);
@@ -1988,10 +1988,10 @@ namespace Mono.Linker.Steps {
 			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
 				return true;
 
-			if (!Annotations.IsPreserved (type))
+			if (!Annotations.TryGetPreserve (type, out TypePreserve preserve))
 				return false;
 
-			return Annotations.GetPreserve (type) == TypePreserve.All;
+			return preserve == TypePreserve.All;
 		}
 
 		protected virtual void MarkInterfaceImplementation (InterfaceImplementation iface)
