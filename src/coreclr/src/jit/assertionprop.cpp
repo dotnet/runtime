@@ -631,7 +631,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
     }
     else if (curAssertion->op1.kind == O1K_CONSTANT_LOOP_BND)
     {
-        printf("Loop_Bnd");
+        printf("Const_Loop_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
     else if (curAssertion->op1.kind == O1K_VALUE_NUMBER)
@@ -2998,6 +2998,42 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
 
 /*****************************************************************************
  *
+ *  Given a set of "assertions" to search for, find an assertion that is either
+ *  op == 0 or op != 0
+ *
+ */
+AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqualZero(ASSERT_VALARG_TP assertions, GenTree* op1)
+{
+    if (BitVecOps::IsEmpty(apTraits, assertions))
+    {
+        return NO_ASSERTION_INDEX;
+    }
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        if ((curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL))
+        {
+            continue;
+        }
+
+        if ((curAssertion->op1.vn == vnStore->VNConservativeNormalValue(op1->gtVNPair)) &&
+            (curAssertion->op2.vn == vnStore->VNZeroForType(op1->TypeGet())))
+        {
+            return assertionIndex;
+        }
+    }
+    return NO_ASSERTION_INDEX;
+}
+
+/*****************************************************************************
+ *
  *  Given a tree consisting of a RelOp and a set of available assertions
  *  we try to propagate an assertion and modify the RelOp tree if we can.
  *  We pass in the root of the tree via 'stmt', for local copy prop 'stmt' will be nullptr
@@ -3008,24 +3044,23 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
 {
     assert(tree->OperKind() & GTK_RELOP);
 
-    //
-    // Currently only GT_EQ or GT_NE are supported Relops for AssertionProp
-    //
-    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE))
-    {
-        return nullptr;
-    }
-
     if (!optLocalAssertionProp)
     {
         // If global assertion prop then use value numbering.
         return optAssertionPropGlobal_RelOp(assertions, tree, stmt);
     }
-    else
+
+    //
+    // Currently only GT_EQ or GT_NE are supported Relops for local AssertionProp
+    //
+
+    if ((tree->gtOper != GT_EQ) && (tree->gtOper != GT_NE))
     {
-        // If local assertion prop then use variable based prop.
-        return optAssertionPropLocal_RelOp(assertions, tree, stmt);
+        return nullptr;
     }
+
+    // If local assertion prop then use variable based prop.
+    return optAssertionPropLocal_RelOp(assertions, tree, stmt);
 }
 
 /*************************************************************************************
@@ -3036,11 +3071,56 @@ GenTree* Compiler::optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* 
  */
 GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, GenTree* stmt)
 {
-    assert(tree->OperGet() == GT_EQ || tree->OperGet() == GT_NE);
-
     GenTree* newTree = tree;
     GenTree* op1     = tree->gtOp.gtOp1;
     GenTree* op2     = tree->gtOp.gtOp2;
+
+    // Look for assertions of the form (tree EQ/NE 0)
+    AssertionIndex index = optGlobalAssertionIsEqualOrNotEqualZero(assertions, tree);
+
+    if (index != NO_ASSERTION_INDEX)
+    {
+        // We know that this relop is either 0 or != 0 (1)
+        AssertionDsc* curAssertion = optGetAssertion(index);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nVN relop based constant assertion prop in " FMT_BB ":\n", compCurBB->bbNum);
+            printf("Assertion index=#%02u: ", index);
+            printTreeID(tree);
+            printf(" %s 0\n", (curAssertion->assertionKind == OAK_EQUAL) ? "==" : "!=");
+        }
+#endif
+
+        // Bail out if tree is not side effect free.
+        if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            JITDUMP("sorry, blocked by side effects\n");
+            return nullptr;
+        }
+
+        if (curAssertion->assertionKind == OAK_EQUAL)
+        {
+            tree->ChangeOperConst(GT_CNS_INT);
+            tree->gtIntCon.gtIconVal = 0;
+        }
+        else
+        {
+            tree->ChangeOperConst(GT_CNS_INT);
+            tree->gtIntCon.gtIconVal = 1;
+        }
+
+        newTree = fgMorphTree(tree);
+        DISPTREE(newTree);
+        return optAssertionProp_Update(newTree, tree, stmt);
+    }
+
+    // Else check if we have an equality check involving a local
+    if (!tree->OperIs(GT_EQ, GT_NE))
+    {
+        return nullptr;
+    }
 
     if (op1->gtOper != GT_LCL_VAR)
     {
@@ -3048,7 +3128,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
     }
 
     // Find an equal or not equal assertion involving "op1" and "op2".
-    AssertionIndex index = optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2);
+    index = optGlobalAssertionIsEqualOrNotEqual(assertions, op1, op2);
+
     if (index == NO_ASSERTION_INDEX)
     {
         return nullptr;
