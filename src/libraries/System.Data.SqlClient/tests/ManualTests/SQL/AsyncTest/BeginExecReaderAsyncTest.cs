@@ -49,5 +49,35 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 Assert.True(reader.HasRows, $"FAILED: Reader has no rows");
             }
         }
+
+        [CheckConnStrSetupFact]
+        public static void BeginExecuteReaderWithCallback()
+        {
+            object state = new object();
+            bool callbackExecutedFlag = false;
+
+            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand command = new SqlCommand(GenerateCommandText(), connection))
+            {
+                connection.Open();
+
+                Tuple<object, SqlCommand> stateAndCommand = new Tuple<object, SqlCommand>(state, command);
+
+                IAsyncResult result = command.BeginExecuteReader(ar =>
+                {
+                    Tuple<object, SqlCommand> asyncArgs = ar.AsyncState as Tuple<object, SqlCommand>;
+                    Assert.NotNull(asyncArgs);
+
+                    SqlDataReader reader = asyncArgs.Item2.EndExecuteReader(ar);
+                    callbackExecutedFlag = true;
+                    Assert.True(reader.HasRows, $"FAILED: Reader has no rows");
+                    Assert.Equal(state, asyncArgs.Item1);
+                }, stateAndCommand);
+                
+                System.Threading.Thread.Sleep(TimeSpan.FromSeconds(10));
+
+                Assert.True(callbackExecutedFlag, $"FAILED: Callback did not executed");
+            }
+        }
     }
 }
