@@ -176,6 +176,12 @@ namespace Mono.Linker
 			if (context.EnableReducedTracing && pair.Key is MarkStep && !ShouldRecord (pair.Value))
 				return;
 
+			// This is another hack to prevent useless information from being logged.  With the introduction of interface sweeping there are a lot of edges such as
+			// `e="InterfaceImpl:Mono.Cecil.InterfaceImplementation"` which are useless information.  Ideally we would format the interface implementation into a meaningful format
+			// however I don't think that is worth the effort at the moment.
+			if (pair.Value is InterfaceImplementation)
+				return;
+
 			if (pair.Key != pair.Value) {
 				writer.WriteStartElement ("edge");
 				if (marked)
