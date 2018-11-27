@@ -2791,4 +2791,14 @@ MonoType*   mini_native_type_replace_type (MonoType *type) MONO_LLVM_INTERNAL;
 MonoMethod*
 mini_method_to_shared (MonoMethod *method); // null if not shared
 
+static inline gboolean
+mini_safepoints_enabled (void)
+{
+#if defined (TARGET_WASM)
+	return FALSE;
+#else
+	return TRUE;
+#endif
+}
+
 #endif /* __MONO_MINI_H__ */
