@@ -34,7 +34,7 @@ namespace System.Tests
         [MemberData(nameof(Parse_Invalid_TestData))]
         public static void Parse_Invalid_NetCoreApp11(Type enumType, string value, bool ignoreCase, Type exceptionType)
         {
-            Type typeArgument = enumType == null || !enumType.GetTypeInfo().IsEnum ? typeof(SimpleEnum) : enumType;
+            Type typeArgument = enumType == null || !enumType.IsValueType ? typeof(SimpleEnum) : enumType;
             MethodInfo parseMethod = typeof(EnumTests).GetTypeInfo().GetMethod(nameof(Parse_Generic_Invalid_NetCoreApp11)).MakeGenericMethod(typeArgument);
             parseMethod.Invoke(null, new object[] { enumType, value, ignoreCase, exceptionType });
         }
