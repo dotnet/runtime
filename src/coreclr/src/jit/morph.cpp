@@ -10310,13 +10310,11 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
         JITDUMP(requiresCopyBlock ? " this requires a CopyBlock.\n" : " using field by field assignments.\n");
 
-        // Mark the dest/src structs as DoNotEnreg
-        // when they are not reg-sized non-field-addressed structs and we are using a CopyBlock
-        // or the struct is not promoted
+        // Mark the dest/src structs as DoNotEnreg when they are not being fully referenced as the same type.
         //
         if (!destDoFldAsg && (destLclVar != nullptr) && !destSingleLclVarAsg)
         {
-            if (!destLclVar->lvRegStruct)
+            if (!destLclVar->lvRegStruct || (destLclVar->lvType != dest->TypeGet()))
             {
                 // Mark it as DoNotEnregister.
                 lvaSetVarDoNotEnregister(destLclNum DEBUGARG(DNER_BlockOp));
@@ -10527,6 +10525,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
 
     _AssignFields:
 
+        // We may have allocated a temp above, and that may have caused the lvaTable to be expanded.
+        // So, beyond this point we cannot rely on the old values of 'srcLclVar' and 'destLclVar'.
         for (unsigned i = 0; i < fieldCnt; ++i)
         {
             FieldSeqNode* curFieldSeq = nullptr;
@@ -10628,10 +10628,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                 if (srcSingleLclVarAsg)
                 {
                     noway_assert(fieldCnt == 1);
-                    noway_assert(srcLclVar != nullptr);
+                    noway_assert(srcLclNum != BAD_VAR_NUM);
                     noway_assert(addrSpill == nullptr);
 
-                    src = gtNewLclvNode(srcLclNum, srcLclVar->TypeGet());
+                    src = gtNewLclvNode(srcLclNum, lvaGetDesc(srcLclNum)->TypeGet());
                 }
                 else
                 {
@@ -10649,13 +10649,44 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
                     CORINFO_CLASS_HANDLE classHnd = lvaTable[destLclNum].lvVerTypeInfo.GetClassHandle();
                     CORINFO_FIELD_HANDLE fieldHnd =
                         info.compCompHnd->getFieldInClass(classHnd, lvaTable[fieldLclNum].lvFldOrdinal);
-                    curFieldSeq = GetFieldSeqStore()->CreateSingleton(fieldHnd);
+                    curFieldSeq        = GetFieldSeqStore()->CreateSingleton(fieldHnd);
+                    var_types destType = lvaGetDesc(fieldLclNum)->lvType;
 
-                    src = gtNewOperNode(GT_ADD, TYP_BYREF, src,
-                                        new (this, GT_CNS_INT)
-                                            GenTreeIntCon(TYP_I_IMPL, lvaTable[fieldLclNum].lvFldOffset, curFieldSeq));
-
-                    src = gtNewIndir(lvaTable[fieldLclNum].TypeGet(), src);
+                    bool done = false;
+                    if (lvaGetDesc(fieldLclNum)->lvFldOffset == 0)
+                    {
+                        // If this is a full-width use of the src via a different type, we need to create a GT_LCL_FLD.
+                        // (Note that if it was the same type, 'srcSingleLclVarAsg' would be true.)
+                        if (srcLclNum != BAD_VAR_NUM)
+                        {
+                            noway_assert(srcLclVarTree != nullptr);
+                            assert(destType != TYP_STRUCT);
+                            unsigned destSize = genTypeSize(destType);
+                            srcLclVar         = lvaGetDesc(srcLclNum);
+                            unsigned srcSize =
+                                (srcLclVar->lvType == TYP_STRUCT) ? srcLclVar->lvExactSize : genTypeSize(srcLclVar);
+                            if (destSize == srcSize)
+                            {
+                                srcLclVarTree->gtFlags |= GTF_VAR_CAST;
+                                srcLclVarTree->ChangeOper(GT_LCL_FLD);
+                                srcLclVarTree->gtType                 = destType;
+                                srcLclVarTree->AsLclFld()->gtFieldSeq = curFieldSeq;
+                                src                                   = srcLclVarTree;
+                                done                                  = true;
+                            }
+                        }
+                    }
+                    else // if (lvaGetDesc(fieldLclNum)->lvFldOffset != 0)
+                    {
+                        src = gtNewOperNode(GT_ADD, TYP_BYREF, src,
+                                            new (this, GT_CNS_INT)
+                                                GenTreeIntCon(TYP_I_IMPL, lvaGetDesc(fieldLclNum)->lvFldOffset,
+                                                              curFieldSeq));
+                    }
+                    if (!done)
+                    {
+                        src = gtNewIndir(destType, src);
+                    }
                 }
             }
 
@@ -10668,7 +10699,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             // exposed. Neither liveness nor SSA are able to track this kind of indirect assignments.
             if (addrSpill && !destDoFldAsg && destLclNum != BAD_VAR_NUM)
             {
-                noway_assert(lvaTable[destLclNum].lvAddrExposed);
+                noway_assert(lvaGetDesc(destLclNum)->lvAddrExposed);
             }
 
 #if LOCAL_ASSERTION_PROP
