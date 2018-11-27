@@ -1452,8 +1452,6 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocato
     m_fDebuggerUnloadStarted(FALSE),
     m_fCollectible(pLoaderAllocator->IsCollectible()),
     m_fHostAssemblyPublished(false),
-    m_fCalculatedShouldLoadDomainNeutral(false),
-    m_fShouldLoadDomainNeutral(false),
     m_pLoaderAllocator(pLoaderAllocator),
     m_NextDomainAssemblyInSameALC(NULL)
 {
@@ -1790,18 +1788,13 @@ void DomainAssembly::FindNativeImage()
             Module *  pNativeModule = pNativeImage->GetLoadedLayout()->GetPersistedModuleImage();
             EnsureWritablePages(pNativeModule);
             PEFile ** ppNativeFile = (PEFile **) (PBYTE(pNativeModule) + Module::GetFileOffset());
-            BOOL bExpectedToBeShared= ShouldLoadDomainNeutral();
-            if (!bExpectedToBeShared)
-            {
-                GetFile()->SetNativeImageUsedExclusively();
-            }
+            GetFile()->SetNativeImageUsedExclusively();
 
             PEAssembly * pFile = (PEAssembly *)FastInterlockCompareExchangePointer((void **)ppNativeFile, (void *)GetFile(), (void *)NULL);
             STRESS_LOG3(LF_ZAP,LL_INFO100,"Attempted to set  new native file %p, old file was %p, location in the image=%p\n",GetFile(),pFile,ppNativeFile);
             if (pFile!=NULL && !IsSystem() &&
 
-                    ( !bExpectedToBeShared ||
-                       pFile == PEFile::Dummy() ||
+                    (  pFile == PEFile::Dummy() ||
                        pFile->IsNativeImageUsedExclusively() ||
                        !(GetFile()->GetPath().Equals(pFile->GetPath())))
 
@@ -1858,63 +1851,6 @@ void DomainAssembly::FindNativeImage()
 }
 #endif // FEATURE_PREJIT
 
-BOOL DomainAssembly::ShouldLoadDomainNeutral()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (m_fCalculatedShouldLoadDomainNeutral)
-        return m_fShouldLoadDomainNeutral;
-    
-    m_fShouldLoadDomainNeutral = !!ShouldLoadDomainNeutralHelper();
-    m_fCalculatedShouldLoadDomainNeutral = true;
-
-    return m_fShouldLoadDomainNeutral;
-}
-
-BOOL DomainAssembly::ShouldLoadDomainNeutralHelper()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-
-
-    if (IsSystem())
-        return TRUE;
-
-    if (IsSingleAppDomain())
-        return FALSE;
-
-    if (GetFile()->IsDynamic())
-        return FALSE;
-
-#ifdef FEATURE_COMINTEROP
-    if (GetFile()->IsWindowsRuntime())
-        return FALSE;
-#endif
-
-    switch(this->GetAppDomain()->GetSharePolicy()) {
-    case AppDomain::SHARE_POLICY_ALWAYS:
-        return TRUE;
-
-    case AppDomain::SHARE_POLICY_GAC:
-        return IsSystem();
-
-    case AppDomain::SHARE_POLICY_NEVER:
-        return FALSE;
-
-    case AppDomain::SHARE_POLICY_UNSPECIFIED:
-    case AppDomain::SHARE_POLICY_COUNT:
-        break;
-    }
-    
-    return FALSE; // No meaning in doing costly closure walk for CoreCLR.
-
-
-#else // FEATURE_LOADER_OPTIMIZATION
-    return IsSystem();
-#endif // FEATURE_LOADER_OPTIMIZATION
-}
-
 // This is where the decision whether an assembly is DomainNeutral (shared) nor not is made.
 void DomainAssembly::Allocate()
 {
@@ -1936,97 +1872,13 @@ void DomainAssembly::Allocate()
         //! If you decide to remove "if" do not remove this brace: order is important here - in the case of an exception,
         //! the Assembly holder must destruct before the AllocMemTracker declared above.
 
+        // We can now rely on the fact that our MDImport will not change so we can stop refcounting it.
+        GetFile()->MakeMDImportPersistent();
+
         NewHolder<Assembly> assemblyHolder(NULL);
 
-        // Determine whether we are supposed to load the assembly as a shared
-        // assembly or into the app domain.
-        if (ShouldLoadDomainNeutral())
-        {
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-
-
-            // Try to find an existing shared version of the assembly which
-            // is compatible with our domain.
-
-            SharedDomain * pSharedDomain = SharedDomain::GetDomain();
-
-            SIZE_T nInitialShareableAssemblyCount = pSharedDomain->GetShareableAssemblyCount();
-            DWORD dwSwitchCount = 0;
-
-            SharedFileLockHolder pFileLock(pSharedDomain, GetFile(), FALSE);
-
-            if (IsSystem())
-            {
-                pAssembly=SystemDomain::SystemAssembly();
-            }
-            else
-            {
-                SharedAssemblyLocator locator(this);
-                pAssembly = pSharedDomain->FindShareableAssembly(&locator);
-
-                if (pAssembly == NULL)
-                {
-                    pFileLock.Acquire();
-                    pAssembly = pSharedDomain->FindShareableAssembly(&locator);
-                }
-            }
-
-            if (pAssembly == NULL)
-            {
-
-                // We can now rely on the fact that our MDImport will not change so we can stop refcounting it.
-                GetFile()->MakeMDImportPersistent();
-
-                // Go ahead and create new shared version of the assembly if possible
-                // <TODO> We will need to pass a valid OBJECREF* here in the future when we implement SCU </TODO>
-                assemblyHolder = pAssembly = Assembly::Create(pSharedDomain, GetFile(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-
-                // Compute the closure assembly dependencies
-                // of the code & layout of given assembly.
-                //
-                // An assembly has direct dependencies listed in its manifest.
-                //
-                // We do not in general also have all of those dependencies' dependencies in the manifest.
-                // After all, we may be only using a small portion of the assembly.
-                //
-                // However, since all dependent assemblies must also be shared (so that
-                // the shared data in this assembly can refer to it), we are in
-                // effect forced to behave as though we do have all of their dependencies.
-                // This is because the resulting shared assembly that we will depend on
-                // DOES have those dependencies, but we won't be able to validly share that
-                // assembly unless we match all of ITS dependencies, too.
-                // Sets the tenured bit atomically with the hash insert.
-                pSharedDomain->AddShareableAssembly(pAssembly);
-            }
-#else // FEATURE_LOADER_OPTIMIZATION
-            _ASSERTE(IsSystem());
-            if (SystemDomain::SystemAssembly())
-            {
-                pAssembly = SystemDomain::SystemAssembly();
-            }
-            else
-            {
-                // We can now rely on the fact that our MDImport will not change so we can stop refcounting it.
-                GetFile()->MakeMDImportPersistent();
-
-                // <TODO> We will need to pass a valid OBJECTREF* here in the future when we implement SCU </TODO>
-                SharedDomain * pSharedDomain = SharedDomain::GetDomain();
-                assemblyHolder = pAssembly = Assembly::Create(pSharedDomain, GetFile(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-                pAssembly->SetIsTenured();
-            }
-#endif  // FEATURE_LOADER_OPTIMIZATION
-        }
-        else
-        {
-            // We can now rely on the fact that our MDImport will not change so we can stop refcounting it.
-            GetFile()->MakeMDImportPersistent();
-            
-            // <TODO> We will need to pass a valid OBJECTREF* here in the future when we implement SCU </TODO>
-            assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetFile(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
-            assemblyHolder->SetIsTenured();
-        }
-
+        assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetFile(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
+        assemblyHolder->SetIsTenured();
 
         //@todo! This is too early to be calling SuppressRelease. The right place to call it is below after
         // the CANNOTTHROWCOMPLUSEXCEPTION. Right now, we have to do this to unblock OOM injection testing quickly

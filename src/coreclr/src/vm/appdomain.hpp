@@ -2355,26 +2355,6 @@ public:
 
     BOOL ContainsAssembly(Assembly * assem);
 
-#ifdef FEATURE_LOADER_OPTIMIZATION    
-    enum SharePolicy
-    {
-        // Attributes to control when to use domain neutral assemblies
-        SHARE_POLICY_UNSPECIFIED,   // Use the current default policy (LoaderOptimization.NotSpecified)
-        SHARE_POLICY_NEVER,         // Do not share anything, except the system assembly (LoaderOptimization.SingleDomain)
-        SHARE_POLICY_ALWAYS,        // Share everything possible (LoaderOptimization.MultiDomain)
-        SHARE_POLICY_GAC,           // Share only GAC-bound assemblies (LoaderOptimization.MultiDomainHost)
-
-        SHARE_POLICY_COUNT,
-        SHARE_POLICY_MASK = 0x3,
-
-        // NOTE that previously defined was a bit 0x40 which might be set on this value
-        // in custom attributes.
-        SHARE_POLICY_DEFAULT = SHARE_POLICY_NEVER,
-    };
-
-    SharePolicy GetSharePolicy();
-#endif // FEATURE_LOADER_OPTIMIZATION
-
     //****************************************************************************************
     //
     // Reference count. When an appdomain is first created the reference is bump
@@ -3304,15 +3284,6 @@ private:
 
     OBJECTHANDLE    m_ExposedObject;
 
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    // Indicates where assemblies will be loaded for
-    // this domain. By default all assemblies are loaded into the domain.
-    // There are two additional settings, all
-    // assemblies can be loaded into the shared domain or assemblies
-    // that are strong named are loaded into the shared area.
-    SharePolicy m_SharePolicy;
-#endif
-
     IUnknown        *m_pComIPForExposedObject;
 
     // Hash table that maps a clsid to a type
@@ -3918,8 +3889,6 @@ public:
     static Thread::ApartmentState GetEntryPointThreadAptState(IMDInternalImport* pScope, mdMethodDef mdMethod);
     static void SetThreadAptState(Thread::ApartmentState state);
 #endif
-    static BOOL SetGlobalSharePolicyUsingAttribute(IMDInternalImport* pScope, mdMethodDef mdMethod);
-
 
     //****************************************************************************************
     //

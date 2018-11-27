@@ -469,7 +469,7 @@ public:
     virtual ~LoaderAllocator();
     BaseDomain *GetDomain() { LIMITED_METHOD_CONTRACT; return m_pDomain; }
     virtual BOOL CanUnload() = 0;
-    BOOL IsDomainNeutral();
+    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
     void Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory = NULL);
     void Terminate();
     virtual void ReleaseManagedAssemblyLoadContext() {}
