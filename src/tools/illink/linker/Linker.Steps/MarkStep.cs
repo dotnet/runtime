@@ -1691,8 +1691,10 @@ namespace Mono.Linker.Steps {
 			}
 
 			if (method.HasOverrides) {
-				foreach (MethodReference ov in method.Overrides)
+				foreach (MethodReference ov in method.Overrides) {
 					MarkMethod (ov);
+					MarkExplicitInterfaceImplementation (method, ov);
+				}
 			}
 
 			MarkMethodSpecialCustomAttributes (method);
@@ -1753,6 +1755,31 @@ namespace Mono.Linker.Steps {
 			MarkInterfaceImplementations (type);
 			MarkMethodsIf (type.Methods, IsVirtualAndHasPreservedParent);
 			DoAdditionalInstantiatedTypeProcessing (type);
+		}
+
+		void MarkExplicitInterfaceImplementation (MethodDefinition method, MethodReference ov)
+		{
+			var resolvedOverride = ov.Resolve ();
+			
+			if (resolvedOverride == null) {
+				HandleUnresolvedMethod (ov);
+				return;
+			}
+
+			if (resolvedOverride.DeclaringType.IsInterface) {
+				foreach (var ifaceImpl in method.DeclaringType.Interfaces) {
+					var resolvedInterfaceType = ifaceImpl.InterfaceType.Resolve ();
+					if (resolvedInterfaceType == null) {
+						HandleUnresolvedType (ifaceImpl.InterfaceType);
+						continue;
+					}
+
+					if (resolvedInterfaceType == resolvedOverride.DeclaringType) {
+						MarkInterfaceImplementation (ifaceImpl);
+						return;
+					}
+				}
+			}
 		}
 
 		void MarkNewCodeDependencies (MethodDefinition method)
