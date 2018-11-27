@@ -5637,7 +5637,7 @@ VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptio
     BOOL bIsAppDomain = pBaseDomain->IsAppDomain();
     BOOL bIsExecutable = bIsAppDomain ? !(pBaseDomain->AsAppDomain()->IsPassiveDomain()) : FALSE;
     BOOL bIsSharedDomain = pBaseDomain->IsSharedDomain();
-    UINT32 uSharingPolicy = bIsAppDomain?(pBaseDomain->AsAppDomain()->GetSharePolicy()):0;
+    UINT32 uSharingPolicy = 0;
 
     ULONGLONG ullDomainId = (ULONGLONG)pBaseDomain;
     ULONG ulDomainFlags = ((bIsDefaultDomain ? ETW::LoaderLog::LoaderStructs::DefaultDomain : 0) | 

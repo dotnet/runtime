@@ -1604,18 +1604,6 @@ BOOL AssemblyLoaderAllocator::CanUnload()
     return TRUE;
 }
 
-BOOL LoaderAllocator::IsDomainNeutral()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    return GetDomain()->IsSharedDomain();
-}
-
 DomainAssemblyIterator::DomainAssemblyIterator(DomainAssembly* pFirstAssembly)
 {
     pCurrentAssembly = pFirstAssembly;

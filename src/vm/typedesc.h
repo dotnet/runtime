@@ -201,7 +201,7 @@ public:
     // i.e. are domain-bound.  If any of the parts are domain-bound
     // then they will all belong to the same domain.
     PTR_BaseDomain GetDomain();
-    BOOL IsDomainNeutral();
+    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
     PTR_LoaderAllocator GetLoaderAllocator()
     {

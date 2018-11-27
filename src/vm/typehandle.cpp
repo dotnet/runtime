@@ -1364,16 +1364,6 @@ CorElementType TypeHandle::GetInternalCorElementType()  const
         return AsMethodTable()->GetInternalCorElementType();
 }
 
-BOOL TypeHandle::IsDomainNeutral() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (IsTypeDesc()) 
-        return AsTypeDesc()->IsDomainNeutral();
-    else
-        return AsMethodTable()->IsDomainNeutral();
-}
-
 BOOL TypeHandle::HasInstantiation()  const
 {
     LIMITED_METHOD_DAC_CONTRACT;
