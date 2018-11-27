@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -10,73 +11,112 @@ namespace System.Threading.ThreadPools.Tests
 {
     public partial class ThreadPoolTests
     {
+        public static IEnumerable<object[]> OneBool() =>
+            from b in new[] { true, false }
+            select new object[] { b };
+
+        public static IEnumerable<object[]> TwoBools() =>
+            from b1 in new[] { true, false }
+            from b2 in new[] { true, false }
+            select new object[] { b1, b2 };
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void QueueUserWorkItem_PreferLocal_InvalidArguments_Throws(bool preferLocal)
+        [MemberData(nameof(TwoBools))]
+        public void QueueUserWorkItem_PreferLocal_InvalidArguments_Throws(bool preferLocal, bool useUnsafe)
         {
-            AssertExtensions.Throws<ArgumentNullException>("callBack", () => ThreadPool.QueueUserWorkItem(null, new object(), preferLocal));
+            AssertExtensions.Throws<ArgumentNullException>("callBack", () => useUnsafe ?
+                ThreadPool.UnsafeQueueUserWorkItem(null, new object(), preferLocal) :
+                ThreadPool.QueueUserWorkItem(null, new object(), preferLocal));
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task QueueUserWorkItem_PreferLocal_NullValidForState(bool preferLocal)
+        [MemberData(nameof(TwoBools))]
+        public async Task QueueUserWorkItem_PreferLocal_NullValidForState(bool preferLocal, bool useUnsafe)
         {
             var tcs = new TaskCompletionSource<int>();
-            ThreadPool.QueueUserWorkItem(s => tcs.SetResult(84), (object)null, preferLocal);
+            if (useUnsafe)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(s => tcs.SetResult(84), (object)null, preferLocal);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(s => tcs.SetResult(84), (object)null, preferLocal);
+            }
             Assert.Equal(84, await tcs.Task);
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough(bool preferLocal)
+        [MemberData(nameof(TwoBools))]
+        public async Task QueueUserWorkItem_PreferLocal_ReferenceTypeStateObjectPassedThrough(bool preferLocal, bool useUnsafe)
         {
             var tcs = new TaskCompletionSource<int>();
-            ThreadPool.QueueUserWorkItem(s => s.SetResult(84), tcs, preferLocal);
+            if (useUnsafe)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(s => s.SetResult(84), tcs, preferLocal);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(s => s.SetResult(84), tcs, preferLocal);
+            }
             Assert.Equal(84, await tcs.Task);
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough(bool preferLocal)
+        [MemberData(nameof(TwoBools))]
+        public async Task QueueUserWorkItem_PreferLocal_ValueTypeStateObjectPassedThrough(bool preferLocal, bool useUnsafe)
         {
             var tcs = new TaskCompletionSource<int>();
-            ThreadPool.QueueUserWorkItem(s => s.tcs.SetResult(s.value), (tcs, value: 42), preferLocal);
+            if (useUnsafe)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(s => s.tcs.SetResult(s.value), (tcs, value: 42), preferLocal);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(s => s.tcs.SetResult(s.value), (tcs, value: 42), preferLocal);
+            }
             Assert.Equal(42, await tcs.Task);
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task QueueUserWorkItem_PreferLocal_RunsAsynchronously(bool preferLocal)
+        [MemberData(nameof(TwoBools))]
+        public async Task QueueUserWorkItem_PreferLocal_RunsAsynchronously(bool preferLocal, bool useUnsafe)
         {
             await Task.Factory.StartNew(() =>
             {
                 int origThread = Environment.CurrentManagedThreadId;
                 var tcs = new TaskCompletionSource<int>();
-                ThreadPool.QueueUserWorkItem(s => s.SetResult(Environment.CurrentManagedThreadId), tcs, preferLocal);
+                if (useUnsafe)
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(s => s.SetResult(Environment.CurrentManagedThreadId), tcs, preferLocal);
+                }
+                else
+                {
+                    ThreadPool.QueueUserWorkItem(s => s.SetResult(Environment.CurrentManagedThreadId), tcs, preferLocal);
+                }
                 Assert.NotEqual(origThread, tcs.Task.GetAwaiter().GetResult());
             }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task QueueUserWorkItem_PreferLocal_ExecutionContextFlowed(bool preferLocal)
+        [MemberData(nameof(TwoBools))]
+        public async Task QueueUserWorkItem_PreferLocal_ExecutionContextFlowedIfSafe(bool preferLocal, bool useUnsafe)
         {
             var tcs = new TaskCompletionSource<int>();
             var asyncLocal = new AsyncLocal<int>() { Value = 42 };
-            ThreadPool.QueueUserWorkItem(s => s.SetResult(asyncLocal.Value), tcs, preferLocal);
+            if (useUnsafe)
+            {
+                ThreadPool.UnsafeQueueUserWorkItem(s => s.SetResult(asyncLocal.Value), tcs, preferLocal);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(s => s.SetResult(asyncLocal.Value), tcs, preferLocal);
+            }
             asyncLocal.Value = 0;
-            Assert.Equal(42, await tcs.Task);
+            Assert.Equal(useUnsafe ? 0 : 42, await tcs.Task);
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [MemberData(nameof(OneBool))]
         public void UnsafeQueueUserWorkItem_IThreadPoolWorkItem_Invalid_Throws(bool preferLocal)
         {
             AssertExtensions.Throws<ArgumentNullException>("callBack", () => ThreadPool.UnsafeQueueUserWorkItem(null, preferLocal));
@@ -84,8 +124,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ManyIndividualItems_AllInvoked(bool preferLocal)
         {
             TaskCompletionSource<bool>[] tasks = Enumerable.Range(0, 100).Select(_ => new TaskCompletionSource<bool>()).ToArray();
@@ -101,8 +140,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_SameObjectReused_AllInvoked(bool preferLocal)
         {
             const int Iters = 100;
@@ -124,8 +162,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [MemberData(nameof(OneBool))]
         public async Task UnsafeQueueUserWorkItem_IThreadPoolWorkItem_ExecutionContextNotFlowed(bool preferLocal)
         {
             var al = new AsyncLocal<int> { Value = 42 };
