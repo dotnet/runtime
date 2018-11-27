@@ -163,7 +163,9 @@ namespace System
         {
             get
             {
-                return ref this [index.FromEnd ? _length - index.Value : index.Value];
+                // Evaluate the actual index first because it helps performance
+                int actualIndex = index.FromEnd ? _length - index.Value : index.Value;
+                return ref this [actualIndex];
             }
         }
 
