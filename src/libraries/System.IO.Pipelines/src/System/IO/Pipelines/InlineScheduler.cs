@@ -10,5 +10,10 @@ namespace System.IO.Pipelines
         {
             action(state);
         }
+
+        internal override void UnsafeSchedule(Action<object> action, object state)
+        {
+            action(state);
+        }
     }
 }
