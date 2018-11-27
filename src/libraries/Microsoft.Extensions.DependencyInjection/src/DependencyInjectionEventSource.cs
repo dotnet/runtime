@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.Tracing;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
@@ -12,6 +13,9 @@ namespace Microsoft.Extensions.DependencyInjection
     internal sealed class DependencyInjectionEventSource : EventSource
     {
         public static readonly DependencyInjectionEventSource Log = new DependencyInjectionEventSource();
+
+        // Event source doesn't support large payloads so we chunk formatted call site tree
+        private int MaxChunkSize = 10 * 1024;
 
         private DependencyInjectionEventSource()
         {
@@ -26,15 +30,21 @@ namespace Microsoft.Extensions.DependencyInjection
         // - Avoid renaming methods or parameters marked with EventAttribute. EventSource uses these to form the event object.
 
         [Event(1, Level = EventLevel.Verbose)]
-        private void CallSiteBuilt(string serviceType, string callSite)
+        private void CallSiteBuilt(string serviceType, string callSite, int chunkIndex, int chunkCount)
         {
-            WriteEvent(1, serviceType, callSite);
+            WriteEvent(1, serviceType, callSite, chunkIndex, chunkCount);
         }
 
         [Event(2, Level = EventLevel.Verbose)]
         public void ServiceResolved(string serviceType)
         {
             WriteEvent(2, serviceType);
+        }
+
+        [Event(3, Level = EventLevel.Verbose)]
+        public void ExpressionTreeGenerated(string serviceType, int nodeCount)
+        {
+            WriteEvent(3, serviceType, nodeCount);
         }
 
         [NonEvent]
@@ -51,7 +61,38 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
             {
-                CallSiteBuilt(serviceType.ToString(), CallSiteJsonFormatter.Instance.Format(callSite));
+                var format = CallSiteJsonFormatter.Instance.Format(callSite);
+                var chunkCount = format.Length / MaxChunkSize + (format.Length % MaxChunkSize > 0 ? 1 : 0);
+
+                for (int i = 0; i < chunkCount; i++)
+                {
+                    CallSiteBuilt(
+                        serviceType.ToString(),
+                        format.Substring(i * MaxChunkSize, Math.Min(MaxChunkSize, format.Length - i * MaxChunkSize)), i, chunkCount);
+                }
+            }
+        }
+
+        [NonEvent]
+        public void ExpressionTreeGenerated(Type serviceType, Expression expression)
+        {
+            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                var visitor = new NodeCountingVisitor();
+                visitor.Visit(expression);
+                ExpressionTreeGenerated(serviceType.ToString(), visitor.NodeCount);
+            }
+        }
+
+        private class NodeCountingVisitor : ExpressionVisitor
+        {
+            public int NodeCount { get; private set; }
+
+            public override Expression Visit(Expression e)
+            {
+                base.Visit(e);
+                NodeCount++;
+                return e;
             }
         }
     }

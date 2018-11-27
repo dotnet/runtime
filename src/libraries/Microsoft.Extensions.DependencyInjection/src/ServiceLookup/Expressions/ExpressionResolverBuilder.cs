@@ -67,7 +67,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return scope => _runtimeResolver.Resolve(callSite, scope);
             }
 
-            return BuildExpression(callSite).Compile();
+            var expression = BuildExpression(callSite);
+            DependencyInjectionEventSource.Log.ExpressionTreeGenerated(callSite.ServiceType, expression);
+            return expression.Compile();
         }
 
         private bool TryResolveSingletonValue(ServiceCallSite singletonCallSite, out object value)

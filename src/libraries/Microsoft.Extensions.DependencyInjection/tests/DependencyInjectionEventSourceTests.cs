@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -56,109 +57,96 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var callsiteBuiltEvent = _listener.EventData.Single(e => e.EventName == "CallSiteBuilt");
 
-            Assert.Equal(string.Join(Environment.NewLine, "{",
-                "    \"serviceType\": \"System.Collections.Generic.IEnumerable`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService]\",",
-                "    \"kind\": \"IEnumerable\",",
-                "    \"cache\": \"None\",",
-                "    \"itemType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService\",",
-                "    \"size\": \"1\",",
-                "    \"items\":",
-                "    [",
-                "        {",
-                "            \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService\",",
-                "            \"kind\": \"Constructor\",",
-                "            \"cache\": \"Dispose\",",
-                "            \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackOuterService\",",
-                "            \"arguments\":",
-                "            [",
-                "                {",
-                "                    \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService\",",
-                "                    \"kind\": \"Constructor\",",
-                "                    \"cache\": \"Root\",",
-                "                    \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
-                "                    \"arguments\":",
-                "                    [",
-                "                        {",
-                "                            \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
-                "                            \"kind\": \"Constant\",",
-                "                            \"cache\": \"None\",",
-                "                            \"value\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
-                "                        }",
-                "                    ]",
-                "                },",
-                "                {",
-                "                    \"serviceType\": \"System.Collections.Generic.IEnumerable`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService]\",",
-                "                    \"kind\": \"IEnumerable\",",
-                "                    \"cache\": \"None\",",
-                "                    \"itemType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
-                "                    \"size\": \"4\",",
-                "                    \"items\":",
-                "                    [",
-                "                        {",
-                "                            \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
-                "                            \"kind\": \"Constructor\",",
-                "                            \"cache\": \"Root\",",
-                "                            \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
-                "                            \"arguments\":",
-                "                            [",
-                "                                {",
-                "                                    \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
-                "                                    \"kind\": \"Constant\",",
-                "                                    \"cache\": \"None\",",
-                "                                    \"value\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
-                "                                }",
-                "                            ]",
-                "                        },",
-                "                        {",
-                "                            \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
-                "                            \"kind\": \"Factory\",",
-                "                            \"cache\": \"Root\",",
-                "                            \"method\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService <EmitsCallSiteBuiltEvent>b__0(System.IServiceProvider)\"",
-                "                        },",
-                "                        {",
-                "                            \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
-                "                            \"kind\": \"Constructor\",",
-                "                            \"cache\": \"Scope\",",
-                "                            \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
-                "                            \"arguments\":",
-                "                            [",
-                "                                {",
-                "                                    \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
-                "                                    \"kind\": \"Constant\",",
-                "                                    \"cache\": \"None\",",
-                "                                    \"value\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
-                "                                }",
-                "                            ]",
-                "                        },",
-                "                        {",
-                "                            \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
-                "                            \"kind\": \"Constructor\",",
-                "                            \"cache\": \"Dispose\",",
-                "                            \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
-                "                            \"arguments\":",
-                "                            [",
-                "                                {",
-                "                                    \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
-                "                                    \"kind\": \"Constant\",",
-                "                                    \"cache\": \"None\",",
-                "                                    \"value\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
-                "                                }",
-                "                            ]",
-                "                        }",
-                "                    ]",
-                "                },",
-                "                {",
-                "                    \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
-                "                    \"kind\": \"Constant\",",
-                "                    \"cache\": \"None\",",
-                "                    \"value\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
-                "                }",
-                "            ]",
-                "        }",
-                "    ]",
-                "}"), GetProperty(callsiteBuiltEvent, "callSite"));
 
-            Assert.Equal("System.Collections.Generic.IEnumerable`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService]", GetProperty(callsiteBuiltEvent, "serviceType"));
+            Assert.Equal(
+                string.Join(Environment.NewLine,
+                "{",
+                "  \"serviceType\": \"System.Collections.Generic.IEnumerable`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService]\",",
+                "  \"kind\": \"IEnumerable\",",
+                "  \"cache\": \"None\",",
+                "  \"itemType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService\",",
+                "  \"size\": \"1\",",
+                "  \"items\": [",
+                "    {",
+                "      \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService\",",
+                "      \"kind\": \"Constructor\",",
+                "      \"cache\": \"Dispose\",",
+                "      \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackOuterService\",",
+                "      \"arguments\": [",
+                "        {",
+                "          \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService\",",
+                "          \"kind\": \"Constructor\",",
+                "          \"cache\": \"Root\",",
+                "          \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
+                "          \"arguments\": [",
+                "            {",
+                "              \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\",",
+                "              \"kind\": \"Constant\",",
+                "              \"cache\": \"None\",",
+                "              \"value\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
+                "            }",
+                "          ]",
+                "        },",
+                "        {",
+                "          \"serviceType\": \"System.Collections.Generic.IEnumerable`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService]\",",
+                "          \"kind\": \"IEnumerable\",",
+                "          \"cache\": \"None\",",
+                "          \"itemType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "          \"size\": \"4\",",
+                "          \"items\": [",
+                "            {",
+                "              \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "              \"kind\": \"Constructor\",",
+                "              \"cache\": \"Root\",",
+                "              \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
+                "              \"arguments\": [",
+                "                {",
+                "                  \"ref\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
+                "                }",
+                "              ]",
+                "            },",
+                "            {",
+                "              \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "              \"kind\": \"Factory\",",
+                "              \"cache\": \"Root\",",
+                "              \"method\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService <EmitsCallSiteBuiltEvent>b__0(System.IServiceProvider)\"",
+                "            },",
+                "            {",
+                "              \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "              \"kind\": \"Constructor\",",
+                "              \"cache\": \"Scope\",",
+                "              \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
+                "              \"arguments\": [",
+                "                {",
+                "                  \"ref\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
+                "                }",
+                "              ]",
+                "            },",
+                "            {",
+                "              \"serviceType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeMultipleService\",",
+                "              \"kind\": \"Constructor\",",
+                "              \"cache\": \"Dispose\",",
+                "              \"implementationType\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposableCallbackInnerService\",",
+                "              \"arguments\": [",
+                "                {",
+                "                  \"ref\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
+                "                }",
+                "              ]",
+                "            }",
+                "          ]",
+                "        },",
+                "        {",
+                "          \"ref\": \"Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeDisposeCallback\"",
+                "        }",
+                "      ]",
+                "    }",
+                "  ]",
+                "}"),
+                JObject.Parse(GetProperty<string>(callsiteBuiltEvent, "callSite")).ToString());
+
+            Assert.Equal("System.Collections.Generic.IEnumerable`1[Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeOuterService]", GetProperty<string>(callsiteBuiltEvent, "serviceType"));
+            Assert.Equal(0, GetProperty<int>(callsiteBuiltEvent, "chunkIndex"));
+            Assert.Equal(1, GetProperty<int>(callsiteBuiltEvent, "chunkCount"));
             Assert.Equal(1, callsiteBuiltEvent.EventId);
         }
 
@@ -180,13 +168,31 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(3, serviceResolvedEvents.Length);
             foreach (var serviceResolvedEvent in serviceResolvedEvents)
             {
-                Assert.Equal("Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService", GetProperty(serviceResolvedEvent, "serviceType"));
+                Assert.Equal("Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService", GetProperty<string>(serviceResolvedEvent, "serviceType"));
                 Assert.Equal(2, serviceResolvedEvent.EventId);
             }
         }
 
-        private string GetProperty(EventWrittenEventArgs data, string propName)
-            => data.Payload[data.PayloadNames.IndexOf(propName)] as string;
+        [Fact]
+        public void EmitsExpressionTreeBuiltEvent()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<IFakeService, FakeService>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions { Mode = ServiceProviderMode.Expressions });
+
+            serviceProvider.GetService<IFakeService>();
+
+            var expressionTreeGeneratedEvent = _listener.EventData.Single(e => e.EventName == "ExpressionTreeGenerated");
+
+            Assert.Equal("Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService", GetProperty<string>(expressionTreeGeneratedEvent, "serviceType"));
+            Assert.Equal(9, GetProperty<int>(expressionTreeGeneratedEvent, "nodeCount"));
+            Assert.Equal(3, expressionTreeGeneratedEvent.EventId);
+        }
+
+        private T GetProperty<T>(EventWrittenEventArgs data, string propName)
+            => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
 
         private class TestEventListener : EventListener
         {
