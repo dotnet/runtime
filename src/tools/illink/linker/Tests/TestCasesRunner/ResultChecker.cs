@@ -211,6 +211,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 								if (linkedType == null)
 									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
 								break;
+							case nameof (RemovedInterfaceOnTypeInAssemblyAttribute):
+								if (linkedType == null)
+									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								VerifyRemovedInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
+								break;
+							case nameof (KeptInterfaceOnTypeInAssemblyAttribute):
+								if (linkedType == null)
+									Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+								VerifyKeptInterfaceOnTypeInAssembly (checkAttrInAssembly, linkedType);
+								break;
 							case nameof (RemovedMemberInAssemblyAttribute):
 								if (linkedType == null)
 									continue;
@@ -338,6 +348,59 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var match = provider.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.FullName == expectedAttributeTypeName);
 			if (match != null)
 				Assert.Fail ($"Expected `{provider}` to no longer have an attribute of type `{expectedAttributeTypeName}`");
+		}
+
+		void VerifyRemovedInterfaceOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+
+			var interfaceAssemblyName = inAssemblyAttribute.ConstructorArguments [2].Value.ToString ();
+			var interfaceType = inAssemblyAttribute.ConstructorArguments [3].Value;
+
+			var originalInterface = GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType);
+			if (!originalType.HasInterfaces)
+				Assert.Fail ("Invalid assertion.  Original type does not have any interfaces");
+
+			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterface.FullName);
+			if (originalInterfaceImpl == null)
+				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{originalInterface}`");
+
+			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
+			if (linkedInterfaceImpl != null)
+				Assert.Fail ($"Expected `{linkedType}` to no longer have an interface of type {originalInterface.FullName}");
+		}
+
+		void VerifyKeptInterfaceOnTypeInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
+
+			var interfaceAssemblyName = inAssemblyAttribute.ConstructorArguments [2].Value.ToString ();
+			var interfaceType = inAssemblyAttribute.ConstructorArguments [3].Value;
+
+			var originalInterface = GetOriginalTypeFromInAssemblyAttribute (interfaceAssemblyName, interfaceType);
+			if (!originalType.HasInterfaces)
+				Assert.Fail ("Invalid assertion.  Original type does not have any interfaces");
+
+			var originalInterfaceImpl = GetMatchingInterfaceImplementationOnType (originalType, originalInterface.FullName);
+			if (originalInterfaceImpl == null)
+				Assert.Fail ($"Invalid assertion.  Original type never had an interface of type `{originalInterface}`");
+
+			var linkedInterfaceImpl = GetMatchingInterfaceImplementationOnType (linkedType, originalInterface.FullName);
+			if (linkedInterfaceImpl == null)
+				Assert.Fail ($"Expected `{linkedType}` to have interface of type {originalInterface.FullName}");
+		}
+
+		protected static InterfaceImplementation GetMatchingInterfaceImplementationOnType (TypeDefinition type, string expectedInterfaceTypeName)
+		{
+			return type.Interfaces.FirstOrDefault (impl =>
+			{
+				var resolvedImpl = impl.InterfaceType.Resolve ();
+
+				if (resolvedImpl == null)
+					Assert.Fail ($"Failed to resolve interface : `{impl.InterfaceType}` on `{type}`");
+
+				return resolvedImpl.FullName == expectedInterfaceTypeName;
+			});
 		}
 
 		void VerifyRemovedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)

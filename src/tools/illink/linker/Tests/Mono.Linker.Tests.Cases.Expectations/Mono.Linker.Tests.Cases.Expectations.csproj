@@ -51,6 +51,7 @@
     <Compile Include="Assertions\KeptEventRemoveMethodAttribute.cs" />
     <Compile Include="Assertions\KeptFixedBufferAttribute.cs" />
     <Compile Include="Assertions\KeptInitializerData.cs" />
+    <Compile Include="Assertions\KeptInterfaceOnTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptMemberAttribute.cs" />
     <Compile Include="Assertions\KeptMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptReferenceAttribute.cs" />
@@ -61,6 +62,7 @@
     <Compile Include="Assertions\KeptTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAttributeInAssembly.cs" />
+    <Compile Include="Assertions\RemovedInterfaceOnTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedPseudoAttributeAttribute.cs" />
     <Compile Include="Assertions\RemovedResourceInAssemblyAttribute.cs" />
