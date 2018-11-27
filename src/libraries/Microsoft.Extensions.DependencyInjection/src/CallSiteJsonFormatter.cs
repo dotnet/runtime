@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
@@ -17,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public string Format(ServiceCallSite callSite)
         {
             var stringBuilder = new StringBuilder();
-            var context = new CallSiteFormatterContext(stringBuilder, 0);
+            var context = new CallSiteFormatterContext(stringBuilder, 0, new HashSet<ServiceCallSite>());
 
             VisitCallSite(callSite, context);
 
@@ -46,15 +47,24 @@ namespace Microsoft.Extensions.DependencyInjection
 
         protected override object VisitCallSiteMain(ServiceCallSite callSite, CallSiteFormatterContext argument)
         {
-            var childContext = argument.StartObject();
+            if (argument.ShouldFormat(callSite))
+            {
+                var childContext = argument.StartObject();
 
-            childContext.WriteProperty("serviceType", callSite.ServiceType);
-            childContext.WriteProperty("kind", callSite.Kind);
-            childContext.WriteProperty("cache", callSite.Cache.Location);
+                childContext.WriteProperty("serviceType", callSite.ServiceType);
+                childContext.WriteProperty("kind", callSite.Kind);
+                childContext.WriteProperty("cache", callSite.Cache.Location);
 
-            base.VisitCallSiteMain(callSite, childContext);
+                base.VisitCallSiteMain(callSite, childContext);
 
-            argument.EndObject();
+                argument.EndObject();
+            }
+            else
+            {
+                var childContext = argument.StartObject();
+                childContext.WriteProperty("ref", callSite.ServiceType);
+                argument.EndObject();
+            }
 
             return null;
         }
@@ -105,46 +115,42 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal struct CallSiteFormatterContext
         {
-            public CallSiteFormatterContext(StringBuilder builder, int offset)
+            private readonly HashSet<ServiceCallSite> _processedCallSites;
+
+            public CallSiteFormatterContext(StringBuilder builder, int offset, HashSet<ServiceCallSite> processedCallSites)
             {
                 Builder = builder;
                 Offset = offset;
+                _processedCallSites = processedCallSites;
                 _firstItem = true;
             }
 
             private bool _firstItem;
 
             public int Offset { get; }
-
             public StringBuilder Builder { get; }
+
+            public bool ShouldFormat(ServiceCallSite serviceCallSite)
+            {
+                return _processedCallSites.Add(serviceCallSite);
+            }
 
             public CallSiteFormatterContext IncrementOffset()
             {
-                return new CallSiteFormatterContext(Builder, Offset + 4)
+                return new CallSiteFormatterContext(Builder, Offset + 4, _processedCallSites)
                 {
                     _firstItem = true
                 };
             }
 
-            private void WriteOffset()
-            {
-                for (int i = 0; i < Offset; i++)
-                {
-                    Builder.Append(' ');
-                }
-            }
-
             public CallSiteFormatterContext StartObject()
             {
-                WriteOffset();
-                Builder.AppendLine("{");
+                Builder.Append("{");
                 return IncrementOffset();
             }
 
             public void EndObject()
             {
-                Builder.AppendLine();
-                WriteOffset();
                 Builder.Append("}");
             }
 
@@ -152,14 +158,12 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (!_firstItem)
                 {
-                    Builder.AppendLine(",");
+                    Builder.Append(",");
                 }
                 else
                 {
                     _firstItem = false;
                 }
-
-                WriteOffset();
                 Builder.AppendFormat("\"{0}\":", name);
             }
 
@@ -167,7 +171,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 if (!_firstItem)
                 {
-                    Builder.AppendLine(",");
+                    Builder.Append(",");
                 }
                 else
                 {
@@ -190,19 +194,12 @@ namespace Microsoft.Extensions.DependencyInjection
 
             public CallSiteFormatterContext StartArray()
             {
-                Builder.AppendLine();
-                WriteOffset();
-                Builder.AppendLine("[");
+                Builder.Append("[");
                 return IncrementOffset();
             }
 
             public void EndArray()
             {
-                if (!_firstItem)
-                {
-                    Builder.AppendLine();
-                }
-                WriteOffset();
                 Builder.Append("]");
             }
         }
