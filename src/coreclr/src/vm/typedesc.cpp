@@ -189,19 +189,6 @@ PTR_Module TypeDesc::GetModule() {
     return GetLoaderModule();
 }
 
-BOOL TypeDesc::IsDomainNeutral()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    return GetDomain()->IsSharedDomain();
-}
-
 BOOL ParamTypeDesc::OwnsTemplateMethodTable()
 {
     CONTRACTL

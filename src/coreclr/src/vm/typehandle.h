@@ -470,7 +470,7 @@ public:
 
     PTR_LoaderAllocator GetLoaderAllocator() const;
 
-    BOOL IsDomainNeutral() const;
+    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
     // Get the class token, assuming the type handle represents a named type,
     // i.e. a class, a value type, a generic instantiation etc.

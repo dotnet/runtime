@@ -448,10 +448,7 @@ public:
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-    BOOL CanBeShared(DomainAssembly *pAsAssembly);
-
-    void SetDomainNeutral() { LIMITED_METHOD_CONTRACT; m_fIsDomainNeutral = TRUE; }
-    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return m_fIsDomainNeutral; }
+    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
     BOOL IsSIMDVectorAssembly() { LIMITED_METHOD_DAC_CONTRACT; return m_fIsSIMDVectorAssembly; }
 
@@ -614,8 +611,6 @@ private:
     WinMDStatus            m_winMDStatus;
     IWinMDImport          *m_pManifestWinMDImport;
 #endif // FEATURE_COMINTEROP
-
-    BOOL                   m_fIsDomainNeutral;
 
     DebuggerAssemblyControlFlags m_debuggerFlags;
 
