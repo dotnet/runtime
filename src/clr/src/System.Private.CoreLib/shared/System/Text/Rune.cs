@@ -161,14 +161,10 @@ namespace System.Text
         /// </summary>
         public int Value => (int)_value;
 
-        private static Rune ChangeCase(Rune rune, CultureInfo culture, bool toUpper)
+        private static Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
         {
-            if (culture == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
-            }
-
-            var textInfo = culture.TextInfo;
+            Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
+            Debug.Assert(textInfo != null, "This should've been checked by the caller.");
 
             Span<char> original = stackalloc char[2]; // worst case scenario = 2 code units (for a surrogate pair)
             Span<char> modified = stackalloc char[2]; // case change should preserve UTF-16 code unit count
@@ -727,42 +723,90 @@ namespace System.Text
             return IsCategorySeparator(GetUnicodeCategoryNonAscii(value));
         }
 
-        public static Rune ToLower(Rune value, CultureInfo culture) => ChangeCase(value, culture, toUpper: false);
+        public static Rune ToLower(Rune value, CultureInfo culture)
+        {
+            if (culture is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
+            // We don't want to special-case ASCII here since the specified culture might handle
+            // ASCII characters differently than the invariant culture (e.g., Turkish I). Instead
+            // we'll just jump straight to the globalization tables if they're available.
+
+            if (GlobalizationMode.Invariant)
+            {
+                return ToLowerInvariant(value);
+            }
+
+            return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: false);
+        }
 
         public static Rune ToLowerInvariant(Rune value)
         {
             // Handle the most common case (ASCII data) first. Within the common case, we expect
             // that there'll be a mix of lowercase & uppercase chars, so make the conversion branchless.
 
-            if (value.IsAscii || GlobalizationMode.Invariant)
+            if (value.IsAscii)
             {
                 // It's ok for us to use the UTF-16 conversion utility for this since the high
                 // 16 bits of the value will never be set so will be left unchanged.
                 return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(value._value));
             }
 
+            if (GlobalizationMode.Invariant)
+            {
+                // If the value isn't ASCII and if the globalization tables aren't available,
+                // case changing has no effect.
+                return value;
+            }
+
             // Non-ASCII data requires going through the case folding tables.
 
-            return ToLower(value, CultureInfo.InvariantCulture);
+            return ChangeCaseCultureAware(value, TextInfo.Invariant, toUpper: false);
         }
 
-        public static Rune ToUpper(Rune value, CultureInfo culture) => ChangeCase(value, culture, toUpper: true);
+        public static Rune ToUpper(Rune value, CultureInfo culture)
+        {
+            if (culture is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+            }
+
+            // We don't want to special-case ASCII here since the specified culture might handle
+            // ASCII characters differently than the invariant culture (e.g., Turkish I). Instead
+            // we'll just jump straight to the globalization tables if they're available.
+
+            if (GlobalizationMode.Invariant)
+            {
+                return ToUpperInvariant(value);
+            }
+
+            return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: true);
+        }
 
         public static Rune ToUpperInvariant(Rune value)
         {
             // Handle the most common case (ASCII data) first. Within the common case, we expect
             // that there'll be a mix of lowercase & uppercase chars, so make the conversion branchless.
 
-            if (value.IsAscii || GlobalizationMode.Invariant)
+            if (value.IsAscii)
             {
                 // It's ok for us to use the UTF-16 conversion utility for this since the high
                 // 16 bits of the value will never be set so will be left unchanged.
                 return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(value._value));
             }
 
+            if (GlobalizationMode.Invariant)
+            {
+                // If the value isn't ASCII and if the globalization tables aren't available,
+                // case changing has no effect.
+                return value;
+            }
+
             // Non-ASCII data requires going through the case folding tables.
 
-            return ToUpper(value, CultureInfo.InvariantCulture);
+            return ChangeCaseCultureAware(value, TextInfo.Invariant, toUpper: true);
         }
     }
 }
