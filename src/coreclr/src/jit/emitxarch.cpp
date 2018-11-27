@@ -7852,16 +7852,16 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
     else
     {
         // Munge any pointers if we want diff-able disassembly
-        if (emitComp->opts.disDiffable)
+        // It's assumed to be a pointer when disp is outside of the range (-1M, +1M); top bits are not 0 or -1
+        if (!frameRef && emitComp->opts.disDiffable && (static_cast<size_t>((disp >> 20) + 1) > 1))
         {
-            ssize_t top12bits = (disp >> 20);
-            if ((top12bits != 0) && (top12bits != -1))
+            if (nsep)
             {
-                disp = 0xD1FFAB1E;
+                printf("+");
             }
+            printf("D1FFAB1EH");
         }
-
-        if (disp > 0)
+        else if (disp > 0)
         {
             if (nsep)
             {
@@ -7898,8 +7898,12 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             {
                 printf("-%04XH", -disp);
             }
-            else if ((disp & 0x7F000000) != 0x7F000000)
+            else if (disp < -0xFFFFFF)
             {
+                if (nsep)
+                {
+                    printf("+");
+                }
                 printf("%08XH", disp);
             }
             else
@@ -8271,7 +8275,7 @@ void emitter::emitDispIns(
                 {
                     printf("%d", val);
                 }
-                else if ((val > 0) || ((val & 0x7F000000) != 0x7F000000))
+                else if ((val > 0) || (val < -0xFFFFFF))
                 {
                     printf("0x%IX", val);
                 }
