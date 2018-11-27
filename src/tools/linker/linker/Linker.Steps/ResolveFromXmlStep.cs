@@ -253,7 +253,7 @@ namespace Mono.Linker.Steps {
 			}
 
 			if (Annotations.IsMarked (type)) { 
-				var existingLevel = Annotations.IsPreserved (type) ? Annotations.GetPreserve (type) : TypePreserve.Nothing; 
+				var existingLevel = Annotations.TryGetPreserve (type, out TypePreserve existingPreserve) ? existingPreserve : TypePreserve.Nothing; 
 				var duplicateLevel = preserve != TypePreserve.Nothing ? preserve : nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All; 
 				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {type.FullName} ({existingLevel}).  Duplicate uses ({duplicateLevel})"); 
 			} 
