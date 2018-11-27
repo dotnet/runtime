@@ -191,6 +191,13 @@
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceUsedOnlyAsConstraintIsKept.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeOnlyUsedHasInterfacesRemoved.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndAssemblyPreserveAll.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveAll.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveFields.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveFieldsWithInterfacesMarked.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveMethods.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveMethodsWithInterfacesMarked.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveNone.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\ComInterfaceTypeRemovedWhenOnlyUsedByClassWithOnlyStaticMethod.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\InterfaceCanBeRemovedFromClassWithOnlyStaticMethodUsed.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\InterfaceCanBeRemovedFromClassWithOnlyStaticMethodUsedWithCctor.cs" />
@@ -452,6 +459,14 @@
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\Dependencies\NoInstanceCtorAndAssemblyPreserveAll_Lib.il" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndAssemblyPreserveAll.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveAll.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveFields.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveFieldsWithInterfacesMarked.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveMethods.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveMethodsWithInterfacesMarked.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\NoInstanceCtor\NoInstanceCtorAndTypePreserveNone.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter2.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter3.xml" />
