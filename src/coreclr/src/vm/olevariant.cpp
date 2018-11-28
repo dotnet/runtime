@@ -2543,7 +2543,10 @@ void OleVariant::MarshalRecordVariantOleToCom(VARIANT *pOleVariant,
             // Go to the registry to find the value class associated
             // with the record's guid.
             GUID guid;
-            IfFailThrow(pRecInfo->GetGuid(&guid));
+            {
+                GCX_PREEMP();
+                IfFailThrow(pRecInfo->GetGuid(&guid));
+            }
             MethodTable *pValueClass = GetValueTypeForGUID(guid);
             if (!pValueClass)
                 COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
@@ -4256,87 +4259,89 @@ SAFEARRAY *OleVariant::CreateSafeArrayDescriptorForArrayRef(BASEARRAYREF *pArray
     ULONG nRank = (*pArrayRef)->GetRank();
 
     SafeArrayPtrHolder pSafeArray = NULL;
-    SafeComHolder<ITypeInfo> pITI = NULL;
-    SafeComHolder<IRecordInfo> pRecInfo = NULL;   
 
-        IfFailThrow(SafeArrayAllocDescriptorEx(vt, nRank, &pSafeArray));
+    IfFailThrow(SafeArrayAllocDescriptorEx(vt, nRank, &pSafeArray));
 
-        switch (vt)
+    switch (vt)
+    {
+        case VT_VARIANT:
         {
-            case VT_VARIANT:
-            {
-                // OleAut32.dll only sets FADF_HASVARTYPE, but VB says we also need to set
-                // the FADF_VARIANT bit for this safearray to destruct properly.  OleAut32
-                // doesn't want to change their code unless there's a strong reason, since
-                // it's all "black magic" anyway.
-                pSafeArray->fFeatures |= FADF_VARIANT;
-                break;
-            }
-
-            case VT_BSTR:
-            {
-                pSafeArray->fFeatures |= FADF_BSTR;
-                break;
-            }
-
-            case VT_UNKNOWN:
-            {
-                pSafeArray->fFeatures |= FADF_UNKNOWN;
-                break;
-            }
-
-            case VT_DISPATCH:
-            {
-                pSafeArray->fFeatures |= FADF_DISPATCH;
-                break;
-            }
-
-            case VT_RECORD:
-            {           
-                pSafeArray->fFeatures |= FADF_RECORD;
-                break;
-            }
+            // OleAut32.dll only sets FADF_HASVARTYPE, but VB says we also need to set
+            // the FADF_VARIANT bit for this safearray to destruct properly.  OleAut32
+            // doesn't want to change their code unless there's a strong reason, since
+            // it's all "black magic" anyway.
+            pSafeArray->fFeatures |= FADF_VARIANT;
+            break;
         }
 
-        //
-        // Fill in bounds
-        //
-
-        SAFEARRAYBOUND *bounds = pSafeArray->rgsabound;
-        SAFEARRAYBOUND *boundsEnd = bounds + nRank;
-        SIZE_T cElements;
-
-        if (!(*pArrayRef)->IsMultiDimArray()) 
+        case VT_BSTR:
         {
-            bounds[0].cElements = nElem;
-            bounds[0].lLbound = 0;
-            cElements = nElem;
-        } 
-        else 
-        {
-            const INT32 *count = (*pArrayRef)->GetBoundsPtr()      + nRank - 1;
-            const INT32 *lower = (*pArrayRef)->GetLowerBoundsPtr() + nRank - 1;
-
-            cElements = 1;
-            while (bounds < boundsEnd)
-            {
-                bounds->lLbound = *lower--;
-                bounds->cElements = *count--;
-                cElements *= bounds->cElements;
-                bounds++;
-            }
+            pSafeArray->fFeatures |= FADF_BSTR;
+            break;
         }
 
-        pSafeArray->cbElements = (unsigned)GetElementSizeForVarType(vt, pInterfaceMT);
-
-        // If the SAFEARRAY contains VT_RECORD's, then we need to set the 
-        // IRecordInfo.
-        if (vt == VT_RECORD)
+        case VT_UNKNOWN:
         {
-            IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
-            IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
-            IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
+            pSafeArray->fFeatures |= FADF_UNKNOWN;
+            break;
         }
+
+        case VT_DISPATCH:
+        {
+            pSafeArray->fFeatures |= FADF_DISPATCH;
+            break;
+        }
+
+        case VT_RECORD:
+        {           
+            pSafeArray->fFeatures |= FADF_RECORD;
+            break;
+        }
+    }
+
+    //
+    // Fill in bounds
+    //
+
+    SAFEARRAYBOUND *bounds = pSafeArray->rgsabound;
+    SAFEARRAYBOUND *boundsEnd = bounds + nRank;
+    SIZE_T cElements;
+
+    if (!(*pArrayRef)->IsMultiDimArray()) 
+    {
+        bounds[0].cElements = nElem;
+        bounds[0].lLbound = 0;
+        cElements = nElem;
+    } 
+    else 
+    {
+        const INT32 *count = (*pArrayRef)->GetBoundsPtr()      + nRank - 1;
+        const INT32 *lower = (*pArrayRef)->GetLowerBoundsPtr() + nRank - 1;
+
+        cElements = 1;
+        while (bounds < boundsEnd)
+        {
+            bounds->lLbound = *lower--;
+            bounds->cElements = *count--;
+            cElements *= bounds->cElements;
+            bounds++;
+        }
+    }
+
+    pSafeArray->cbElements = (unsigned)GetElementSizeForVarType(vt, pInterfaceMT);
+
+    // If the SAFEARRAY contains VT_RECORD's, then we need to set the 
+    // IRecordInfo.
+    if (vt == VT_RECORD)
+    {
+        GCX_PREEMP();
+
+        SafeComHolder<ITypeInfo> pITI;
+        SafeComHolder<IRecordInfo> pRecInfo;
+        IfFailThrow(GetITypeInfoForEEClass(pInterfaceMT, &pITI));
+        IfFailThrow(GetRecordInfoFromTypeInfo(pITI, &pRecInfo));
+        IfFailThrow(SafeArraySetRecordInfo(pSafeArray, pRecInfo));
+    }
 
     pSafeArray.SuppressRelease();
     RETURN pSafeArray;
@@ -5027,14 +5032,18 @@ TypeHandle OleVariant::GetElementTypeForRecordSafeArray(SAFEARRAY* pSafeArray)
     CONTRACTL_END;
 
     HRESULT hr = S_OK;
-    SafeComHolder<IRecordInfo> pRecInfo = NULL;
 
-        GUID guid;
+    GUID guid;
+    {
+        GCX_PREEMP();
+
+        SafeComHolder<IRecordInfo> pRecInfo;
         IfFailThrow(SafeArrayGetRecordInfo(pSafeArray, &pRecInfo));
         IfFailThrow(pRecInfo->GetGuid(&guid));
-        MethodTable *pValueClass = GetValueTypeForGUID(guid);
-        if (!pValueClass)
-            COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
+    }
+    MethodTable *pValueClass = GetValueTypeForGUID(guid);
+    if (!pValueClass)
+        COMPlusThrow(kArgumentException, IDS_EE_CANNOT_MAP_TO_MANAGED_VC);
 
     return TypeHandle(pValueClass);
 }
