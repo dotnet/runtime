@@ -59444,14 +59444,6 @@ MaxAllowedDurationSeconds=600
 Categories=Pri1;RT;EXPECTED_PASS
 HostStyle=0
 
-[Dev10_630880.cmd_9793]
-RelativePath=reflection\regression\dev10bugs\Dev10_630880\Dev10_630880.cmd
-WorkingDir=reflection\regression\dev10bugs\Dev10_630880
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
-HostStyle=0
-
 [test.cmd_9794]
 RelativePath=Regressions\assemblyref\test\test.cmd
 WorkingDir=Regressions\assemblyref\test
