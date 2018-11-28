@@ -974,6 +974,40 @@ namespace System.Tests.Types
         public override int? GenericParameterPosition => 1;
     }
 
+    public class MarshalByRefObjectTests : TypePropertyTestBase
+    {
+        public override Type CreateType() => typeof(MarshalByRefObject);
+
+        public override TypeAttributes Attributes => PlatformDetection.IsNetCore
+            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit
+            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
+
+        public override bool IsMarshalByRef => !PlatformDetection.IsNetCore;
+
+        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
+
+        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
+    }
+
+    public class ContextBoundObjectTests : TypePropertyTestBase
+    {
+        public override Type CreateType() => typeof(ContextBoundObject);
+
+        public override TypeAttributes Attributes => PlatformDetection.IsNetCore
+            ? TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.BeforeFieldInit
+            : TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Serializable | TypeAttributes.BeforeFieldInit;
+
+        public override Type BaseType => typeof(MarshalByRefObject);
+
+        public override bool IsMarshalByRef => !PlatformDetection.IsNetCore;
+
+        public override bool IsContextful => !PlatformDetection.IsNetCore;
+
+        public override bool IsSecurityCritical => PlatformDetection.IsNetCore;
+
+        public override bool IsSecurityTransparent => !PlatformDetection.IsNetCore;
+    }
+
     public enum ByteEnum : byte { }
 
     public enum SByteEnum : sbyte { }
