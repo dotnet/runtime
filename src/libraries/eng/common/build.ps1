@@ -6,6 +6,7 @@ Param(
   [string] $msbuildEngine = $null,
   [bool] $warnaserror = $true,
   [bool] $nodereuse = $true,
+  [switch] $execute,
   [switch] $restore,
   [switch] $deployDeps,
   [switch] $build,
@@ -88,7 +89,7 @@ try {
     /p:PerformanceTest=$performanceTest `
     /p:Sign=$sign `
     /p:Publish=$publish `
-    /p:PublishBuildAssets=$publishBuildAssets `
+    /p:Execute=$execute `
     /p:ContinuousIntegrationBuild=$ci `
     @properties
 
