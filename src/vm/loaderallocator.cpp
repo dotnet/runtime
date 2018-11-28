@@ -1186,6 +1186,9 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 #else
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
 #endif
+
+    // Set up the IL stub cache
+    m_ILStubCache.Init(m_pHighFrequencyHeap);
 }
 
 
