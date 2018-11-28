@@ -1306,14 +1306,14 @@ bool ValueNumStore::VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet)
 //    pvn         - a write back pointer to the normal value portion of 'vnWx'
 //    pvnx        - a write back pointer for the exception set portion of 'vnWx'
 //
-// Return Values: - This method signature is void but can return up to two values
-//                  using the write back parameters.
+// Return Values: - This method signature is void but returns two values using
+//                  the write back parameters.
 //
-// Note: 'pvnx' is only written when 'vnWx' actually has an exception set,
-//       otherwise it is left unchanged.  When we have an exception set 'vnWx'
-//       will be a VN func with m_func == VNF_ValWithExc.
-//       When 'vnWx' does not have an exception set, the orginal value is the
-//       normal value and is written to 'pvn'.
+// Note: When 'vnWx' does not have an exception set, the orginal value is the
+//       normal value and is written to 'pvn' and VNForEmptyExcSet() is
+//       written to 'pvnx'.
+//       When we have an exception set 'vnWx' will be a VN func with m_func
+//       equal to VNF_ValWithExc.
 //
 void ValueNumStore::VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx)
 {
@@ -1326,7 +1326,8 @@ void ValueNumStore::VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx)
     }
     else
     {
-        *pvn = vnWx;
+        *pvn  = vnWx;
+        *pvnx = VNForEmptyExcSet();
     }
 }
 
@@ -1483,7 +1484,7 @@ ValueNum ValueNumStore::VNWithExc(ValueNum vn, ValueNum excSet)
     else
     {
         ValueNum vnNorm;
-        ValueNum vnX = VNForEmptyExcSet();
+        ValueNum vnX;
         VNUnpackExc(vn, &vnNorm, &vnX);
         return VNForFunc(TypeOfVN(vnNorm), VNF_ValWithExc, vnNorm, VNExcSetUnion(vnX, excSet));
     }
@@ -3919,7 +3920,7 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq)
     ValueNum opAvnWx = opA->gtVNPair.GetLiberal();
     assert(VNIsValid(opAvnWx));
     ValueNum opAvn;
-    ValueNum opAvnx = VNForEmptyExcSet();
+    ValueNum opAvnx;
     VNUnpackExc(opAvnWx, &opAvn, &opAvnx);
     assert(VNIsValid(opAvn) && VNIsValid(opAvnx));
 
@@ -7127,7 +7128,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // First we'll record the exeception set for the rhs and
             // later we will union in the exeception set for the lhs
             //
-            ValueNum vnExcSet = ValueNumStore::VNForEmptyExcSet();
+            ValueNum vnExcSet;
 
             // Unpack, Norm,Exc for 'rhsVNPair'
             ValueNum vnRhsLibNorm;
@@ -7543,7 +7544,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     if (obj != nullptr)
                                     {
                                         // Unpack, Norm,Exc for 'obj'
-                                        ValueNum vnObjExcSet = ValueNumStore::VNForEmptyExcSet();
+                                        ValueNum vnObjExcSet;
                                         vnStore->VNUnpackExc(obj->gtVNPair.GetLiberal(), &normVal, &vnObjExcSet);
                                         vnExcSet = vnStore->VNExcSetUnion(vnExcSet, vnObjExcSet);
 
@@ -7762,7 +7763,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
             // See if the addr has any exceptional part.
             ValueNumPair addrNvnp;
-            ValueNumPair addrXvnp = ValueNumPair(ValueNumStore::VNForEmptyExcSet(), ValueNumStore::VNForEmptyExcSet());
+            ValueNumPair addrXvnp;
             vnStore->VNPUnpackExc(addr->gtVNPair, &addrNvnp, &addrXvnp);
 
             // Is the dereference immutable?  If so, model it as referencing the read-only heap.
@@ -8024,7 +8025,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         else
                         {
                             ValueNumPair op1VNP;
-                            ValueNumPair op1VNPx = ValueNumStore::VNPForEmptyExcSet();
+                            ValueNumPair op1VNPx;
                             vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1VNP, &op1VNPx);
 
                             // If we are fetching the array length for an array ref that came from global memory
@@ -8072,11 +8073,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // PtrToXXX.
 
                     ValueNumPair op1vnp;
-                    ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                    ValueNumPair op1Xvnp;
                     vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
                     ValueNumPair op2vnp;
-                    ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                    ValueNumPair op2Xvnp;
                     vnStore->VNPUnpackExc(op2VNPair, &op2vnp, &op2Xvnp);
                     ValueNumPair excSet = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
 
@@ -8113,7 +8114,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     case GT_COMMA:
                     {
                         ValueNumPair op1vnp;
-                        ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
+                        ValueNumPair op1Xvnp;
                         vnStore->VNPUnpackExc(tree->gtOp.gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
                         ValueNumPair op2vnp;
                         ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
@@ -8366,7 +8367,7 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
     var_types resultType = genActualType(castToType);
 
     ValueNumPair castArgVNP;
-    ValueNumPair castArgxVNP = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair castArgxVNP;
     VNPUnpackExc(srcVNPair, &castArgVNP, &castArgxVNP);
 
     // When we're considering actual value returned by a non-checking cast, (hasOverflowCheck is false)
@@ -8576,7 +8577,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             // Has at least two arguments.
             ValueNumPair vnp1wx = getCurrentArg(1)->gtVNPair;
             ValueNumPair vnp1;
-            ValueNumPair vnp1x = ValueNumStore::VNPForEmptyExcSet();
+            ValueNumPair vnp1x;
             vnStore->VNPUnpackExc(vnp1wx, &vnp1, &vnp1x);
             vnpExc = vnStore->VNPExcSetUnion(vnpExc, vnp1x);
 
@@ -8596,7 +8597,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
             {
                 ValueNumPair vnp2wx = getCurrentArg(2)->gtVNPair;
                 ValueNumPair vnp2;
-                ValueNumPair vnp2x = ValueNumStore::VNPForEmptyExcSet();
+                ValueNumPair vnp2x;
                 vnStore->VNPUnpackExc(vnp2wx, &vnp2, &vnp2x);
                 vnpExc = vnStore->VNPExcSetUnion(vnpExc, vnp2x);
 
@@ -9152,7 +9153,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree)
 
     // Unpack, Norm,Exc for the tree's op1 VN
     ValueNumPair vnpBaseNorm;
-    ValueNumPair vnpBaseExc = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair vnpBaseExc;
     vnStore->VNPUnpackExc(baseVNP, &vnpBaseNorm, &vnpBaseExc);
 
     // The Norm VN for op1 is used to create the NullPtrExc
@@ -9318,7 +9319,7 @@ void Compiler::fgValueNumberAddExceptionSetForDivision(GenTree* tree)
 
     // Unpack, Norm,Exc for the tree's VN
     ValueNumPair vnpTreeNorm;
-    ValueNumPair vnpTreeExc    = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair vnpTreeExc;
     ValueNumPair vnpDivZeroExc = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair vnpArithmExc  = ValueNumStore::VNPForEmptyExcSet();
 
@@ -9379,7 +9380,7 @@ void Compiler::fgValueNumberAddExceptionSetForOverflow(GenTree* tree)
     // Unpack, Norm,Exc for the tree's VN
     //
     ValueNumPair vnpTreeNorm;
-    ValueNumPair vnpTreeExc = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair vnpTreeExc;
 
     vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
 
@@ -9422,7 +9423,7 @@ void Compiler::fgValueNumberAddExceptionSetForCkFinite(GenTree* tree)
     // Unpack, Norm,Exc for the tree's VN
     //
     ValueNumPair vnpTreeNorm;
-    ValueNumPair vnpTreeExc = ValueNumStore::VNPForEmptyExcSet();
+    ValueNumPair vnpTreeExc;
     ValueNumPair newExcSet;
 
     vnStore->VNPUnpackExc(tree->gtVNPair, &vnpTreeNorm, &vnpTreeExc);
