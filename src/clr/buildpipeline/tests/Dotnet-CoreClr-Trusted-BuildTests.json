@@ -303,7 +303,7 @@
       "value": "linux-x64"
     },
     "TargetQueues": {
-      "value": "debian.82.amd64,fedora.23.amd64,redhat.72.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1610.amd64"
+      "value": "Debian.8.Amd64,Fedora.28.Amd64,Redhat.7.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64"
     },
     "TestProduct": {
       "value": "coreclr"
