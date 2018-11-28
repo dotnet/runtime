@@ -303,10 +303,15 @@ namespace System.Buffers.Text
             {
                 if (number.Scale > int.MaxValue - (long)absoluteExponent)
                 {
-                    bytesConsumed = 0;
-                    return false;
+                    // A scale overflow means all non-zero digits are all so far to the right of the decimal point, no
+                    // number format we have will be able to see them. Just pin the scale at the absolute maximum 
+                    // and let the converter produce a 0 with the max precision available for that type.
+                    number.Scale = int.MaxValue;
                 }
-                number.Scale += (int)absoluteExponent;
+                else
+                {
+                    number.Scale += (int)absoluteExponent;
+                }
             }
 
             digits[dstIndex] = 0;
