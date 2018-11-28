@@ -1669,6 +1669,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 		if (method == target_method && *(td->ip + 5) == CEE_RET && !(csignature->hasthis && m_class_is_valuetype (target_method->klass))) {
 			int offset;
+
+			if (td->inlined_method)
+				return FALSE;
+
 			if (td->verbose_level)
 				g_print ("Optimize tail call of %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 
@@ -1682,34 +1686,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				++td->ip; /* gobble the CEE_RET if it isn't branched to */				
 			td->ip += 5;
 			return TRUE;
-		} else {
-			MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
-			return_val_if_nok (error, FALSE);
-			/* mheader might not exist if this is a delegate invoc, etc */
-			gboolean has_vt_arg = FALSE;
-			for (i = 0; i < csignature->param_count; i++)
-				has_vt_arg |= !mini_type_is_reference (csignature->params [i]);
-
-			gboolean empty_callee = mheader && *mheader->code == CEE_RET;
-			mono_metadata_free_mh (mheader);
-
-			if (empty_callee && called_inited && !has_vt_arg) {
-				if (td->verbose_level)
-					g_print ("Inline (empty) call of %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
-				for (i = 0; i < csignature->param_count; i++) {
-					ADD_CODE (td, MINT_POP); /*FIX: vt */
-					ADD_CODE (td, 0);
-				}
-				if (csignature->hasthis) {
-					if (is_virtual || need_null_check)
-						ADD_CODE (td, MINT_CKNULL);
-					ADD_CODE (td, MINT_POP);
-					ADD_CODE (td, 0);
-				}
-				td->sp -= csignature->param_count + csignature->hasthis;
-				td->ip += 5;
-				return TRUE;
-			}
 		}
 	}
 
