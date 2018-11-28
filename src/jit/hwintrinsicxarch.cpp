@@ -788,23 +788,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
     }
 
-    if ((HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) || HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic)) &&
-        !HWIntrinsicInfo::HasSpecialImport(intrinsic))
+    if (HWIntrinsicInfo::IsOneTypeGeneric(intrinsic) && !HWIntrinsicInfo::HasSpecialImport(intrinsic))
     {
         if (!varTypeIsArithmetic(baseType))
         {
             return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
-        }
-
-        if (HWIntrinsicInfo::IsTwoTypeGeneric(intrinsic))
-        {
-            // StaticCast<T, U> has two type parameters.
-            assert(numArgs == 1);
-            var_types srcType = getBaseTypeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args));
-            if (!varTypeIsArithmetic(srcType))
-            {
-                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig, mustExpand);
-            }
         }
     }
 

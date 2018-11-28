@@ -60,9 +60,6 @@ enum HWIntrinsicFlag : unsigned int
     // Generic
     // - must throw NotSupportException if the type argument is not numeric type
     HW_Flag_OneTypeGeneric = 0x4,
-    // Two-type Generic
-    // - the intrinsic has two type parameters
-    HW_Flag_TwoTypeGeneric = 0x8,
 
     // NoCodeGen
     // - should be transformed in the compiler front-end, cannot reach CodeGen
@@ -223,12 +220,6 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_OneTypeGeneric) != 0;
-    }
-
-    static bool IsTwoTypeGeneric(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_TwoTypeGeneric) != 0;
     }
 
     static bool RequiresCodegen(NamedIntrinsic id)
