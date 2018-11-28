@@ -1311,7 +1311,9 @@ bool ValueNumStore::VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet)
 //
 // Note: When 'vnWx' does not have an exception set, the orginal value is the
 //       normal value and is written to 'pvn' and VNForEmptyExcSet() is
-//       written to 'pvnx'
+//       written to 'pvnx'.
+//       When we have an exception set 'vnWx' will be a VN func with m_func
+//       equal to VNF_ValWithExc.
 //
 void ValueNumStore::VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx)
 {
