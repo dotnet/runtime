@@ -4,6 +4,7 @@
   <PropertyGroup>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
     <RepositoryEngineeringDir>$(RepoRoot)eng\</RepositoryEngineeringDir>
+    <RepositoryUrl>git://github.com/dotnet/corefx</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup>
