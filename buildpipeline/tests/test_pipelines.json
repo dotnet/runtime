@@ -56,7 +56,7 @@
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "true",
                 "Rid": "win-arm",
-                "TargetQueues": "windows.10.arm64",
+                "TargetQueues": "Windows.10.Arm64",
                 "TestContainerSuffix": "windows",
                 },
                 "ReportingParameters": {
@@ -74,7 +74,7 @@
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "true",
                 "Rid": "win-arm",
-                "TargetQueues": "windows.10.arm64",
+                "TargetQueues": "Windows.10.Arm64",
                 "TestContainerSuffix": "windows-r2r",
                 "CrossgenArg": "Crossgen "
                 },
@@ -92,7 +92,7 @@
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "false",
                 "Rid": "osx-x64",
-                "TargetQueues": "osx.1012.amd64,osx.1013.amd64",
+                "TargetQueues": "OSX.1012.Amd64,OSX.1013.Amd64",
                 "TestContainerSuffix": "osx",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
                 },
@@ -109,7 +109,7 @@
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "false",
                 "Rid": "osx-x64",
-                "TargetQueues": "osx.1012.amd64,osx.1013.amd64",
+                "TargetQueues": "OSX.1012.Amd64,OSX.1013.Amd64",
                 "TestContainerSuffix": "osx-r2r",
                 "CrossgenArg": "Crossgen ",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
@@ -127,7 +127,7 @@
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "false",
                 "Rid": "linux-x64",
-                "TargetQueues": "debian.82.amd64,fedora.27.amd64,fedora.28.amd64,redhat.73.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1804.amd64,opensuse.423.amd64,sles.12.amd64",
+                "TargetQueues": "Debian.8.Amd64,Fedora.27.Amd64,Fedora.28.Amd64,Redhat.7.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64,Opensuse.42.amd64,SLES.12.Amd64",
                 "TestContainerSuffix": "linux",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
                 },
@@ -144,7 +144,7 @@
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "false",
                 "Rid": "linux-x64",
-                "TargetQueues": "debian.82.amd64,fedora.27.amd64,fedora.28.amd64,redhat.73.amd64,ubuntu.1404.amd64,ubuntu.1604.amd64,ubuntu.1804.amd64,opensuse.423.amd64,sles.12.amd64",
+                "TargetQueues": "Debian.8.Amd64,Fedora.27.Amd64,Fedora.28.Amd64,Redhat.7.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64,Opensuse.42.amd64,SLES.12.Amd64",
                 "TestContainerSuffix": "linux-r2r",
                 "CrossgenArg": "Crossgen ",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
@@ -162,7 +162,7 @@
                 "HelixJobType": "test/functional/cli/",
                 "TargetsWindows": "false",
                 "Rid": "rhel.6-x64",
-                "TargetQueues": "redhat.69.amd64",
+                "TargetQueues": "Redhat.6.Amd64",
                 "TestContainerSuffix": "rhel6",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
                 },
@@ -179,7 +179,7 @@
                 "HelixJobType": "test/functional/r2r/cli/",
                 "TargetsWindows": "false",
                 "Rid": "rhel.6-x64",
-                "TargetQueues": "redhat.69.amd64",
+                "TargetQueues": "Redhat.6.Amd64",
                 "TestContainerSuffix": "rhel6-r2r",
                 "CrossgenArg": "Crossgen ",
                 "TargetsNonWindowsArg": "TargetsNonWindows "
