@@ -618,7 +618,6 @@ namespace System.Diagnostics
 
         partial void EnsureHandleCountPopulated();
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public long VirtualMemorySize64
         {
             get
@@ -628,6 +627,7 @@ namespace System.Diagnostics
             }
         }
 
+        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int VirtualMemorySize
         {
             get
