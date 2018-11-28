@@ -941,17 +941,17 @@ bool CodeGenInterface::genCodeIndirAddrNeedsReloc(size_t addr)
     }
 
 #ifdef _TARGET_AMD64_
-    // If code addr could be encoded as 32-bit offset relative to IP, we need to record a relocation.
-    if (genCodeIndirAddrCanBeEncodedAsPCRelOffset(addr))
+    // See if the code indir addr can be encoded as 32-bit displacement relative to zero.
+    // We don't need a relocation in that case.
+    if (genCodeIndirAddrCanBeEncodedAsZeroRelOffset(addr))
     {
-        return true;
+        return false;
     }
 
-    // It could be possible that the code indir addr could be encoded as 32-bit displacement relative
-    // to zero.  But we don't need to emit a relocation in that case.
-    return false;
+    // Else we need a relocation.
+    return true;
 #else  //_TARGET_X86_
-    // On x86 there is need for recording relocations during jitting,
+    // On x86 there is no need to record or ask for relocations during jitting,
     // because all addrs fit within 32-bits.
     return false;
 #endif //_TARGET_X86_
