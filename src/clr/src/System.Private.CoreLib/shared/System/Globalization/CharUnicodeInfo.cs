@@ -144,9 +144,6 @@ namespace System.Globalization
         // This is called by the public char and string, index versions
         //
         // Note that for ch in the range D800-DFFF we just treat it as any other non-numeric character
-        //
-        // Workaround for https://github.com/dotnet/coreclr/issues/21051
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
         internal static double InternalGetNumericValue(int ch)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");
@@ -296,8 +293,6 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        // Workaround for https://github.com/dotnet/coreclr/issues/21051
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
         internal static byte InternalGetCategoryValue(int ch, int offset)
         {
             Debug.Assert(ch >= 0 && ch <= 0x10ffff, "ch is not in valid Unicode range.");

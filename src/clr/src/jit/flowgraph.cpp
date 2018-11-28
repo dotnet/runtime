@@ -22199,7 +22199,8 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
         // Skip through chains of GT_RET_EXPRs (say from nested inlines)
         // to the actual tree to use.
-        GenTree* inlineCandidate = tree->gtRetExprVal();
+        GenTree*  inlineCandidate = tree->gtRetExprVal();
+        var_types retType         = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -22224,6 +22225,17 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             printf("\n");
         }
 #endif // DEBUG
+
+        var_types newType = tree->TypeGet();
+
+        // If we end up swapping in an RVA static we may need to retype it here,
+        // if we've reinterpreted it as a byref.
+        if ((retType != newType) && (retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+        {
+            assert(newType == TYP_I_IMPL);
+            JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
+            tree->gtType = TYP_BYREF;
+        }
     }
 
     // If an inline was rejected and the call returns a struct, we may
