@@ -344,9 +344,9 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
     }
     else
     {
-        // otherwise we are associated with the AD
-        AppDomain* pStubCacheDomain = AppDomain::GetDomain(this);
-        CONSISTENCY_CHECK(pStubCacheDomain == pModule->GetDomain()->AsAppDomain());
+        // otherwise we are associated with the LoaderAllocator
+        LoaderAllocator* pStubLoaderAllocator = LoaderAllocator::GetLoaderAllocator(this);
+        CONSISTENCY_CHECK(pStubLoaderAllocator == pModule->GetLoaderAllocator());
     }
 #endif // _DEBUG
 
