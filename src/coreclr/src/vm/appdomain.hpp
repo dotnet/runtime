@@ -25,7 +25,6 @@
 #include "domainfile.h"
 #include "objectlist.h"
 #include "fptrstubs.h"
-#include "ilstubcache.h"
 #include "testhookmgr.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
@@ -3339,10 +3338,6 @@ private:
     DWORD m_TrackSpinLock;
 #endif
 
-
-    // IL stub cache with fabricated MethodTable parented by a random module in this AD.
-    ILStubCache         m_ILStubCache;
-
     // The number of  times we have entered this AD
     ULONG m_dwThreadEnterCount;
     // The number of threads that have entered this AD, for ADU only
@@ -3419,17 +3414,6 @@ public:
     BOOL IsHostAssemblyResolverInUse();
     BOOL IsBindingModelLocked();
     BOOL LockBindingModel();
-
-    ILStubCache* GetILStubCache()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_ILStubCache;
-    }
-
-    static AppDomain* GetDomain(ILStubCache* pILStubCache)
-    {
-        return CONTAINING_RECORD(pILStubCache, AppDomain, m_ILStubCache);
-    }
 
     enum {
         CONTEXT_INITIALIZED =               0x0001,

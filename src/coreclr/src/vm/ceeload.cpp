@@ -4076,10 +4076,10 @@ ILStubCache* Module::GetILStubCache()
     }
     CONTRACTL_END;
 
-    // Use per-AD cache for domain specific modules when not NGENing
+    // Use per-LoaderAllocator cache for modules when not NGENing
     BaseDomain *pDomain = GetDomain();
     if (!IsSystem() && !pDomain->IsSharedDomain() && !pDomain->AsAppDomain()->IsCompilationDomain())
-        return pDomain->AsAppDomain()->GetILStubCache();
+        return GetLoaderAllocator()->GetILStubCache();
 
     if (m_pILStubCache == NULL)
     {
