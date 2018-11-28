@@ -37,6 +37,18 @@ namespace System.Threading
         public static bool enableWorkerTracking;
 
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
+
+        /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
+        internal static readonly Action<object> s_invokeAsyncStateMachineBox = state =>
+        {
+            if (!(state is IAsyncStateMachineBox box))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                return;
+            }
+
+            box.MoveNext();
+        };
     }
 
     [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
@@ -1331,6 +1343,24 @@ namespace System.Threading
             if (callBack == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callBack);
+            }
+
+            // If the callback is the runtime-provided invocation of an IAsyncStateMachineBox,
+            // then we can queue the Task state directly to the ThreadPool instead of 
+            // wrapping it in a QueueUserWorkItemCallback.
+            //
+            // This occurs when user code queues its provided continuation to the ThreadPool;
+            // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
+            if (ReferenceEquals(callBack, ThreadPoolGlobals.s_invokeAsyncStateMachineBox))
+            {
+                if (!(state is IAsyncStateMachineBox))
+                {
+                    // The provided state must be the internal IAsyncStateMachineBox (Task) type
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                }
+
+                UnsafeQueueUserWorkItemInternal((object)state, preferLocal);
+                return true;
             }
 
             EnsureVMInitialized();
