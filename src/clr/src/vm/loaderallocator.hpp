@@ -18,6 +18,7 @@
 
 class FuncPtrStubs;
 #include "qcall.h"
+#include "ilstubcache.h"
 
 #define VPTRU_LoaderAllocator 0x3200
 
@@ -177,6 +178,9 @@ protected:
     // U->M thunks that are not associated with a delegate.
     // The cache is keyed by MethodDesc pointers.
     UMEntryThunkCache * m_pUMEntryThunkCache;
+
+    // IL stub cache with fabricated MethodTable parented by a random module in this LoaderAllocator.
+    ILStubCache         m_ILStubCache;
 
 public:
     BYTE *GetVSDHeapInitialBlock(DWORD *pSize);
@@ -519,6 +523,17 @@ public:
     UMEntryThunkCache *GetUMEntryThunkCache();
 
 #endif
+
+    static LoaderAllocator* GetLoaderAllocator(ILStubCache* pILStubCache)
+    {
+         return CONTAINING_RECORD(pILStubCache, LoaderAllocator, m_ILStubCache);
+    }
+
+    ILStubCache* GetILStubCache()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return &m_ILStubCache;
+    }
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

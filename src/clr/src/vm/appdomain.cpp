@@ -3840,9 +3840,6 @@ void AppDomain::Init()
 
     BaseDomain::Init();
 
-    // Set up the IL stub cache
-    m_ILStubCache.Init(GetLoaderAllocator()->GetHighFrequencyHeap());
-
 // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
     m_UnmanagedCache.InitializeTable(this, &m_DomainCacheCrst);
