@@ -3527,7 +3527,7 @@ mono_field_get_value_object_checked (MonoDomain *domain, MonoClassField *field, 
 
 	error_init (error);
 
-	MonoObject *o;
+	MonoObject *o = NULL;
 	MonoClass *klass;
 	MonoVTable *vtable = NULL;
 	gpointer v;
