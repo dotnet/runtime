@@ -302,6 +302,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (isa)
     {
+        case InstructionSet_Base:
+            genBaseIntrinsic(node);
+            break;
         case InstructionSet_SSE:
             genSSEIntrinsic(node);
             break;
@@ -1228,6 +1231,56 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     }
 
     genDefineTempLabel(switchTableEnd);
+}
+
+//------------------------------------------------------------------------
+// genBaseIntrinsic: Generates the code for a base hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
+void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
+    regNumber      targetReg   = node->gtRegNum;
+    var_types      targetType  = node->TypeGet();
+    var_types      baseType    = node->gtSIMDBaseType;
+
+    assert(node->gtGetOp1() == nullptr);
+    assert(node->gtGetOp2() == nullptr);
+    assert(baseType >= TYP_BYTE && baseType <= TYP_DOUBLE);
+
+    emitter* emit = getEmitter();
+    emitAttr attr = EA_ATTR(node->gtSIMDSize);
+
+    switch (intrinsicId)
+    {
+        case NI_Base_Vector128_Zero:
+        {
+            // When SSE2 is supported, we generate pxor for integral types otherwise just use xorps
+            instruction ins =
+                (compiler->compSupports(InstructionSet_SSE2) && varTypeIsIntegral(baseType)) ? INS_pxor : INS_xorps;
+            emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
+            break;
+        }
+
+        case NI_Base_Vector256_Zero:
+        {
+            // When AVX2 is supported, we generate pxor for integral types otherwise just use xorps
+            instruction ins =
+                (compiler->compSupports(InstructionSet_AVX2) && varTypeIsIntegral(baseType)) ? INS_pxor : INS_xorps;
+            emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+            break;
+        }
+    }
+
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------

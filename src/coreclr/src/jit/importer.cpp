@@ -3422,7 +3422,54 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             ni = lookupNamedIntrinsic(method);
 
 #ifdef FEATURE_HW_INTRINSICS
-            if (ni > NI_HW_INTRINSIC_START && ni < NI_HW_INTRINSIC_END)
+            switch (ni)
+            {
+#if defined(_TARGET_ARM64_)
+                case NI_Base_Vector64_AsByte:
+                case NI_Base_Vector64_AsInt16:
+                case NI_Base_Vector64_AsInt32:
+                case NI_Base_Vector64_AsSByte:
+                case NI_Base_Vector64_AsSingle:
+                case NI_Base_Vector64_AsUInt16:
+                case NI_Base_Vector64_AsUInt32:
+#endif // _TARGET_ARM64_
+                case NI_Base_Vector128_As:
+                case NI_Base_Vector128_AsByte:
+                case NI_Base_Vector128_AsDouble:
+                case NI_Base_Vector128_AsInt16:
+                case NI_Base_Vector128_AsInt32:
+                case NI_Base_Vector128_AsInt64:
+                case NI_Base_Vector128_AsSByte:
+                case NI_Base_Vector128_AsSingle:
+                case NI_Base_Vector128_AsUInt16:
+                case NI_Base_Vector128_AsUInt32:
+                case NI_Base_Vector128_AsUInt64:
+#if defined(_TARGET_XARCH_)
+                case NI_Base_Vector128_Zero:
+                case NI_Base_Vector256_As:
+                case NI_Base_Vector256_AsByte:
+                case NI_Base_Vector256_AsDouble:
+                case NI_Base_Vector256_AsInt16:
+                case NI_Base_Vector256_AsInt32:
+                case NI_Base_Vector256_AsInt64:
+                case NI_Base_Vector256_AsSByte:
+                case NI_Base_Vector256_AsSingle:
+                case NI_Base_Vector256_AsUInt16:
+                case NI_Base_Vector256_AsUInt32:
+                case NI_Base_Vector256_AsUInt64:
+                case NI_Base_Vector256_Zero:
+#endif // _TARGET_XARCH_
+                {
+                    return impBaseIntrinsic(ni, method, sig);
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
                 GenTree* hwintrinsic = impHWIntrinsic(ni, method, sig, mustExpand);
 
@@ -4045,6 +4092,125 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     return retNode;
 }
 
+#ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// impBaseIntrinsic: dispatch intrinsics to their own implementation
+//
+// Arguments:
+//    intrinsic  -- id of the intrinsic function.
+//    method     -- method handle of the intrinsic function.
+//    sig        -- signature of the intrinsic call
+//
+// Return Value:
+//    the expanded intrinsic.
+//
+GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+{
+    GenTree*  retNode  = nullptr;
+    unsigned  simdSize = 0;
+    var_types baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
+    var_types retType  = getSIMDTypeForSize(simdSize);
+
+    if (sig->hasThis())
+    {
+        CORINFO_CLASS_HANDLE thisClass = info.compCompHnd->getArgClass(sig, sig->args);
+        var_types            thisType  = getBaseTypeOfSIMDType(thisClass);
+
+        if (!varTypeIsArithmetic(thisType))
+        {
+            return nullptr;
+        }
+    }
+
+    if (!varTypeIsArithmetic(baseType))
+    {
+        return nullptr;
+    }
+
+    switch (intrinsic)
+    {
+#if defined(_TARGET_ARM64_)
+        case NI_Base_Vector64_AsByte:
+        case NI_Base_Vector64_AsInt16:
+        case NI_Base_Vector64_AsInt32:
+        case NI_Base_Vector64_AsSByte:
+        case NI_Base_Vector64_AsSingle:
+        case NI_Base_Vector64_AsUInt16:
+        case NI_Base_Vector64_AsUInt32:
+#endif // _TARGET_ARM64_
+        case NI_Base_Vector128_As:
+        case NI_Base_Vector128_AsByte:
+        case NI_Base_Vector128_AsDouble:
+        case NI_Base_Vector128_AsInt16:
+        case NI_Base_Vector128_AsInt32:
+        case NI_Base_Vector128_AsInt64:
+        case NI_Base_Vector128_AsSByte:
+        case NI_Base_Vector128_AsSingle:
+        case NI_Base_Vector128_AsUInt16:
+        case NI_Base_Vector128_AsUInt32:
+        case NI_Base_Vector128_AsUInt64:
+#if defined(_TARGET_XARCH_)
+        case NI_Base_Vector256_As:
+        case NI_Base_Vector256_AsByte:
+        case NI_Base_Vector256_AsDouble:
+        case NI_Base_Vector256_AsInt16:
+        case NI_Base_Vector256_AsInt32:
+        case NI_Base_Vector256_AsInt64:
+        case NI_Base_Vector256_AsSByte:
+        case NI_Base_Vector256_AsSingle:
+        case NI_Base_Vector256_AsUInt16:
+        case NI_Base_Vector256_AsUInt32:
+        case NI_Base_Vector256_AsUInt64:
+#endif // _TARGET_XARCH_
+        {
+            // We fold away the cast here, as it only exists to satisfy
+            // the type system. It is safe to do this here since the retNode type
+            // and the signature return type are both the same TYP_SIMD.
+
+            assert(sig->numArgs == 0);
+            assert(sig->hasThis());
+
+            retNode = impSIMDPopStack(retType, true, sig->retTypeClass);
+            SetOpLclRelatedToSIMDIntrinsic(retNode);
+            assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            break;
+        }
+
+#ifdef _TARGET_XARCH_
+        case NI_Base_Vector128_Zero:
+        {
+            assert(sig->numArgs == 0);
+
+            if (compSupports(InstructionSet_SSE))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Base_Vector256_Zero:
+        {
+            assert(sig->numArgs == 0);
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+#endif // _TARGET_XARCH_
+
+        default:
+        {
+            unreached();
+            break;
+        }
+    }
+
+    return retNode;
+}
+#endif // FEATURE_HW_INTRINSICS
+
 GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig,
                                     var_types             callType,
@@ -4179,21 +4345,207 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Collections_Generic_EqualityComparer_get_Default;
         }
     }
-
 #ifdef FEATURE_HW_INTRINSICS
+    else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
+    {
+        namespaceName += 25;
+
+        if (namespaceName[0] == '\0')
+        {
+            if (strncmp(className, "Vector", 6) == 0)
+            {
+                className += 6;
+
+#if defined(_TARGET_ARM64_)
+                if (strncmp(className, "64", 2) == 0)
+                {
+                    className += 2;
+
+                    if (strcmp(className, "`1") == 0)
+                    {
+                        if (strncmp(methodName, "As", 2) == 0)
+                        {
+                            methodName += 2;
+
+                            // Vector64_As, Vector64_AsDouble, Vector64_AsInt64, and Vector64_AsUInt64
+                            // are not currently supported as they require additional plumbing to be
+                            // supported by the JIT as TYP_SIMD8.
+
+                            if (strcmp(methodName, "Byte") == 0)
+                            {
+                                result = NI_Base_Vector64_AsByte;
+                            }
+                            else if (strcmp(methodName, "Int16") == 0)
+                            {
+                                result = NI_Base_Vector64_AsInt16;
+                            }
+                            else if (strcmp(methodName, "Int32") == 0)
+                            {
+                                result = NI_Base_Vector64_AsInt32;
+                            }
+                            else if (strcmp(methodName, "SByte") == 0)
+                            {
+                                result = NI_Base_Vector64_AsSByte;
+                            }
+                            else if (strcmp(methodName, "Single") == 0)
+                            {
+                                result = NI_Base_Vector64_AsSingle;
+                            }
+                            else if (strcmp(methodName, "UInt16") == 0)
+                            {
+                                result = NI_Base_Vector64_AsUInt16;
+                            }
+                            else if (strcmp(methodName, "UInt32") == 0)
+                            {
+                                result = NI_Base_Vector64_AsUInt32;
+                            }
+                        }
+                    }
+                }
+                else
+#endif // _TARGET_ARM64_
+                    if (strncmp(className, "128", 3) == 0)
+                {
+                    className += 3;
+
+                    if (strcmp(className, "`1") == 0)
+                    {
+                        if (strncmp(methodName, "As", 2) == 0)
+                        {
+                            methodName += 2;
+
+                            if (strcmp(methodName, "`1") == 0)
+                            {
+                                result = NI_Base_Vector128_As;
+                            }
+                            else if (strcmp(methodName, "Byte") == 0)
+                            {
+                                result = NI_Base_Vector128_AsByte;
+                            }
+                            else if (strcmp(methodName, "Double") == 0)
+                            {
+                                result = NI_Base_Vector128_AsDouble;
+                            }
+                            else if (strcmp(methodName, "Int16") == 0)
+                            {
+                                result = NI_Base_Vector128_AsInt16;
+                            }
+                            else if (strcmp(methodName, "Int32") == 0)
+                            {
+                                result = NI_Base_Vector128_AsInt32;
+                            }
+                            else if (strcmp(methodName, "Int64") == 0)
+                            {
+                                result = NI_Base_Vector128_AsInt64;
+                            }
+                            else if (strcmp(methodName, "SByte") == 0)
+                            {
+                                result = NI_Base_Vector128_AsSByte;
+                            }
+                            else if (strcmp(methodName, "Single") == 0)
+                            {
+                                result = NI_Base_Vector128_AsSingle;
+                            }
+                            else if (strcmp(methodName, "UInt16") == 0)
+                            {
+                                result = NI_Base_Vector128_AsUInt16;
+                            }
+                            else if (strcmp(methodName, "UInt32") == 0)
+                            {
+                                result = NI_Base_Vector128_AsUInt32;
+                            }
+                            else if (strcmp(methodName, "UInt64") == 0)
+                            {
+                                result = NI_Base_Vector128_AsUInt64;
+                            }
+                        }
 #if defined(_TARGET_XARCH_)
-    if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0)
-    {
-        result = HWIntrinsicInfo::lookupId(className, methodName);
-    }
+                        else if (strcmp(methodName, "get_Zero") == 0)
+                        {
+                            result = NI_Base_Vector128_Zero;
+                        }
+#endif // _TARGET_XARCH_
+                    }
+                }
+#if defined(_TARGET_XARCH_)
+                else if (strncmp(className, "256", 3) == 0)
+                {
+                    className += 3;
+
+                    if (strcmp(className, "`1") == 0)
+                    {
+                        if (strncmp(methodName, "As", 2) == 0)
+                        {
+                            methodName += 2;
+
+                            if (strcmp(methodName, "`1") == 0)
+                            {
+                                result = NI_Base_Vector256_As;
+                            }
+                            else if (strcmp(methodName, "Byte") == 0)
+                            {
+                                result = NI_Base_Vector256_AsByte;
+                            }
+                            else if (strcmp(methodName, "Double") == 0)
+                            {
+                                result = NI_Base_Vector256_AsDouble;
+                            }
+                            else if (strcmp(methodName, "Int16") == 0)
+                            {
+                                result = NI_Base_Vector256_AsInt16;
+                            }
+                            else if (strcmp(methodName, "Int32") == 0)
+                            {
+                                result = NI_Base_Vector256_AsInt32;
+                            }
+                            else if (strcmp(methodName, "Int64") == 0)
+                            {
+                                result = NI_Base_Vector256_AsInt64;
+                            }
+                            else if (strcmp(methodName, "SByte") == 0)
+                            {
+                                result = NI_Base_Vector256_AsSByte;
+                            }
+                            else if (strcmp(methodName, "Single") == 0)
+                            {
+                                result = NI_Base_Vector256_AsSingle;
+                            }
+                            else if (strcmp(methodName, "UInt16") == 0)
+                            {
+                                result = NI_Base_Vector256_AsUInt16;
+                            }
+                            else if (strcmp(methodName, "UInt32") == 0)
+                            {
+                                result = NI_Base_Vector256_AsUInt32;
+                            }
+                            else if (strcmp(methodName, "UInt64") == 0)
+                            {
+                                result = NI_Base_Vector256_AsUInt64;
+                            }
+                        }
+                        else if (strcmp(methodName, "get_Zero") == 0)
+                        {
+                            result = NI_Base_Vector256_Zero;
+                        }
+                    }
+                }
+#endif // _TARGET_XARCH_
+            }
+        }
+#if defined(_TARGET_XARCH_)
+        else if (strcmp(namespaceName, ".X86") == 0)
+        {
+            result = HWIntrinsicInfo::lookupId(className, methodName);
+        }
 #elif defined(_TARGET_ARM64_)
-    if (strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0)
-    {
-        result = lookupHWIntrinsic(className, methodName);
-    }
+        else if (strcmp(namespaceName, ".Arm.Arm64") == 0)
+        {
+            result = lookupHWIntrinsic(className, methodName);
+        }
 #else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
 #error Unsupported platform
 #endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+    }
 #endif // FEATURE_HW_INTRINSICS
 
     return result;
