@@ -26,6 +26,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector256<T> Zero
         {
+            [Intrinsic]
             get
             {
                 ThrowIfUnsupportedType();
@@ -90,6 +91,7 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="U">The type of the vector the current instance should be reinterpreted as.</typeparam>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{U}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) or the type of the target (<typeparamref name="U" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector256<U> As<U>() where U : struct
         {
@@ -101,54 +103,64 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{byte}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{byte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<byte> AsByte() => As<byte>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{double}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{double}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<double> AsDouble() => As<double>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{short}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{short}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<short> AsInt16() => As<short>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{int}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{int}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<int> AsInt32() => As<int>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{long}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{long}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<long> AsInt64() => As<long>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{sbyte}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{sbyte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<sbyte> AsSByte() => As<sbyte>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{float}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{float}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<float> AsSingle() => As<float>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{ushort}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{ushort}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<ushort> AsUInt16() => As<ushort>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{uint}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{uint}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<uint> AsUInt32() => As<uint>();
 
         /// <summary>Reinterprets the current instance as a new <see cref="Vector256{ulong}" />.</summary>
         /// <returns>The current instance reinterpreted as a new <see cref="Vector256{ulong}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<ulong> AsUInt64() => As<ulong>();
 

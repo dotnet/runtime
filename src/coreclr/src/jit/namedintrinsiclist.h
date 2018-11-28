@@ -15,6 +15,7 @@ enum NamedIntrinsic : unsigned short
     NI_Math_Round                                               = 3,
     NI_System_Collections_Generic_EqualityComparer_get_Default  = 4,
     NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness = 5,
+
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,
 #if defined(_TARGET_XARCH_)

@@ -2366,7 +2366,13 @@ static bool configEnableISA(InstructionSet isa)
             }
             __fallthrough;
         case InstructionSet_SSE:
-            return JitConfig.EnableSSE() != 0;
+            if (JitConfig.EnableSSE() == 0)
+            {
+                return false;
+            }
+            __fallthrough;
+        case InstructionSet_Base:
+            return (JitConfig.EnableHWIntrinsic() != 0);
 
         // TODO:  BMI1/BMI2 actually don't depend on AVX, they depend on the VEX encoding; which is currently controlled
         // by InstructionSet_AVX
@@ -2434,6 +2440,10 @@ void Compiler::compSetProcessor()
 
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT))
     {
+        if (configEnableISA(InstructionSet_Base))
+        {
+            opts.setSupportedISA(InstructionSet_Base);
+        }
         if (configEnableISA(InstructionSet_SSE))
         {
             opts.setSupportedISA(InstructionSet_SSE);

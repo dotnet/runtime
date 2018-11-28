@@ -296,26 +296,25 @@ enum InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
 #ifdef _TARGET_XARCH_
+    InstructionSet_Base,
     // Start linear order SIMD instruction sets
     // These ISAs have strictly generation to generation order.
-    InstructionSet_SSE     = 1,
-    InstructionSet_SSE2    = 2,
-    InstructionSet_SSE3    = 3,
-    InstructionSet_SSSE3   = 4,
-    InstructionSet_SSE41   = 5,
-    InstructionSet_SSE42   = 6,
-    InstructionSet_AVX     = 7,
-    InstructionSet_AVX2    = 8,
-    // Reserve values <32 for future SIMD instruction sets (i.e., AVX512),
+    InstructionSet_SSE,
+    InstructionSet_SSE2,
+    InstructionSet_SSE3,
+    InstructionSet_SSSE3,
+    InstructionSet_SSE41,
+    InstructionSet_SSE42,
+    InstructionSet_AVX,
+    InstructionSet_AVX2,
     // End linear order SIMD instruction sets.
-
-    InstructionSet_AES     = 32,
-    InstructionSet_BMI1    = 33,
-    InstructionSet_BMI2    = 34,
-    InstructionSet_FMA     = 35,
-    InstructionSet_LZCNT   = 36,
-    InstructionSet_PCLMULQDQ  = 37,
-    InstructionSet_POPCNT  = 38,
+    InstructionSet_AES,
+    InstructionSet_BMI1,
+    InstructionSet_BMI2,
+    InstructionSet_FMA,
+    InstructionSet_LZCNT,
+    InstructionSet_PCLMULQDQ,
+    InstructionSet_POPCNT,
 #elif defined(_TARGET_ARM_)
     InstructionSet_NEON,
 #elif defined(_TARGET_ARM64_)
