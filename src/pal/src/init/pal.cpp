@@ -44,6 +44,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/init.h"
 #include "pal/numa.h"
 #include "pal/stackstring.hpp"
+#include "pal/cgroup.h"
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -387,6 +388,8 @@ Initialize(
             goto done;
         }
 
+        InitializeCGroup();
+
         // Initialize the environment.
         if (FALSE == EnvironInitialize())
         {
@@ -711,6 +714,7 @@ CLEANUP1a:
 CLEANUP1:
     SHMCleanup();
 CLEANUP0:
+    CleanupCGroup();
     TLSCleanup();
     ERROR("PAL_Initialize failed\n");
     SetLastError(palError);

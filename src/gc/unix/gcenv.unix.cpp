@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <unistd.h> // sysconf
 #include "globals.h"
+#include "cgroup.h"
 
 #if defined(_ARM_) || defined(_ARM64_)
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_CONF
@@ -118,6 +119,8 @@ bool GCToOSInterface::Initialize()
     }
 #endif // HAVE_MACH_ABSOLUTE_TIME
 
+    InitializeCGroup();
+
     return true;
 }
 
@@ -130,6 +133,8 @@ void GCToOSInterface::Shutdown()
     assert(ret == 0);
 
     munmap(g_helperPage, OS_PAGE_SIZE);
+
+    CleanupCGroup();
 }
 
 // Get numeric id of the current thread if possible on the
