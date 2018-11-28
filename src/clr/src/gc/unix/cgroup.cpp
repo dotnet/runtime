@@ -25,6 +25,8 @@ Abstract:
 #include <sys/resource.h>
 #include <errno.h>
 
+#include "cgroup.h"
+
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX (~(size_t)0)
 #endif
@@ -39,64 +41,64 @@ Abstract:
 
 class CGroup
 {
-    char* m_memory_cgroup_path;
-    char* m_cpu_cgroup_path;
+    static char* s_memory_cgroup_path;
+    static char* s_cpu_cgroup_path;
 public:
-    CGroup()
+    static void Initialize()
     {
-        m_memory_cgroup_path = FindCgroupPath(&IsMemorySubsystem);
-        m_cpu_cgroup_path = FindCgroupPath(&IsCpuSubsystem);
+        s_memory_cgroup_path = FindCgroupPath(&IsMemorySubsystem);
+        s_cpu_cgroup_path = FindCgroupPath(&IsCpuSubsystem);
     }
 
-    ~CGroup()
+    static void Cleanup()
     {
-        free(m_memory_cgroup_path);
-        free(m_cpu_cgroup_path);
+        free(s_memory_cgroup_path);
+        free(s_cpu_cgroup_path);
     }
 
-    bool GetPhysicalMemoryLimit(size_t *val)
+    static bool GetPhysicalMemoryLimit(size_t *val)
     {
         char *mem_limit_filename = nullptr;
         bool result = false;
 
-        if (m_memory_cgroup_path == nullptr)
+        if (s_memory_cgroup_path == nullptr)
             return result;
 
-        size_t len = strlen(m_memory_cgroup_path);
+        size_t len = strlen(s_memory_cgroup_path);
         len += strlen(MEM_LIMIT_FILENAME);
         mem_limit_filename = (char*)malloc(len+1);
         if (mem_limit_filename == nullptr)
             return result;
 
-        strcpy(mem_limit_filename, m_memory_cgroup_path);
+        strcpy(mem_limit_filename, s_memory_cgroup_path);
         strcat(mem_limit_filename, MEM_LIMIT_FILENAME);
         result = ReadMemoryValueFromFile(mem_limit_filename, val);
         free(mem_limit_filename);
         return result;
     }
 
-    bool GetPhysicalMemoryUsage(size_t *val)
+    static bool GetPhysicalMemoryUsage(size_t *val)
     {
         char *mem_usage_filename = nullptr;
         bool result = false;
 
-        if (m_memory_cgroup_path == nullptr)
+        if (s_memory_cgroup_path == nullptr)
             return result;
 
-        size_t len = strlen(m_memory_cgroup_path);
+        size_t len = strlen(s_memory_cgroup_path);
         len += strlen(MEM_USAGE_FILENAME);
         mem_usage_filename = (char*)malloc(len+1);
         if (mem_usage_filename == nullptr)
             return result;
 
-        strcpy(mem_usage_filename, m_memory_cgroup_path);
+        strcpy(mem_usage_filename, s_memory_cgroup_path);
         strcat(mem_usage_filename, MEM_USAGE_FILENAME);
         result = ReadMemoryValueFromFile(mem_usage_filename, val);
         free(mem_usage_filename);
         return result;
     }
 
-    bool GetCpuLimit(uint32_t *val)
+    static bool GetCpuLimit(uint32_t *val)
     {
         long long quota;
         long long period;
@@ -317,7 +319,7 @@ private:
         return cgroup_path;
     }
     
-    bool ReadMemoryValueFromFile(const char* filename, size_t* val)
+    static bool ReadMemoryValueFromFile(const char* filename, size_t* val)
     {
         bool result = false;
         char *line = nullptr;
@@ -363,19 +365,19 @@ private:
         return result;
     }
 
-    long long ReadCpuCGroupValue(const char* subsystemFilename){
+    static long long ReadCpuCGroupValue(const char* subsystemFilename){
         char *filename = nullptr;
         bool result = false;
         long long val;
 
-        if (m_cpu_cgroup_path == nullptr)
+        if (s_cpu_cgroup_path == nullptr)
             return -1;
 
-        filename = (char*)malloc(strlen(m_cpu_cgroup_path) + strlen(subsystemFilename) + 1);
+        filename = (char*)malloc(strlen(s_cpu_cgroup_path) + strlen(subsystemFilename) + 1);
         if (filename == nullptr)
             return -1;
 
-        strcpy(filename, m_cpu_cgroup_path);
+        strcpy(filename, s_cpu_cgroup_path);
         strcat(filename, subsystemFilename);
         result = ReadLongLongValueFromFile(filename, &val);
         free(filename);
@@ -385,7 +387,7 @@ private:
         return val;
     }
 
-    bool ReadLongLongValueFromFile(const char* filename, long long* val)
+    static bool ReadLongLongValueFromFile(const char* filename, long long* val)
     {
         bool result = false;
         char *line = nullptr;
@@ -417,12 +419,24 @@ private:
     }
 };
    
+char *CGroup::s_memory_cgroup_path = nullptr;
+char *CGroup::s_cpu_cgroup_path = nullptr;
+
+void InitializeCGroup()
+{
+    CGroup::Initialize();
+}
+
+void CleanupCGroup()
+{
+    CGroup::Cleanup();
+}
+
 size_t GetRestrictedPhysicalMemoryLimit()
 {
-    CGroup cgroup;
     size_t physical_memory_limit;
  
-    if (!cgroup.GetPhysicalMemoryLimit(&physical_memory_limit))
+    if (!CGroup::GetPhysicalMemoryLimit(&physical_memory_limit))
          physical_memory_limit = SIZE_T_MAX;
 
     struct rlimit curr_rlimit;
@@ -454,13 +468,12 @@ bool GetPhysicalMemoryUsed(size_t* val)
     bool result = false;
     size_t linelen;
     char* line = nullptr;
-    CGroup cgroup;
 
     if (val == nullptr)
         return false;
 
     // Linux uses cgroup usage to trigger oom kills.
-    if (cgroup.GetPhysicalMemoryUsage(val))
+    if (CGroup::GetPhysicalMemoryUsage(val))
         return true;
 
     // process resident set size.
@@ -492,10 +505,8 @@ bool GetPhysicalMemoryUsed(size_t* val)
 
 bool GetCpuLimit(uint32_t* val)
 {
-    CGroup cgroup;
-
     if (val == nullptr)
         return false;
 
-    return cgroup.GetCpuLimit(val);
+    return CGroup::GetCpuLimit(val);
 }
