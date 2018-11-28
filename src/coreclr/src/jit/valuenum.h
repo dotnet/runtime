@@ -397,8 +397,7 @@ public:
 
     ValueNumPair VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP);
 
-    // If "vnWx" is a "VNF_ValWithExc(normal, excSet)" value, this sets "*pvn" to the Normal value
-    // and sets "*pvnx" to Exception set value.  Otherwise, this just sets "*pvn" to to the Normal value.
+    // This sets "*pvn" to the Normal value and sets "*pvnx" to Exception set value.
     // "pvnx" represents the set of all exceptions that can happen for the expression
     void VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx);
 
