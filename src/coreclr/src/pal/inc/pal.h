@@ -4481,11 +4481,10 @@ unsigned int __cdecl _rotr(unsigned int value, int shift)
 #endif // !__has_builtin(_rotr)
 
 PALIMPORT int __cdecl abs(int);
-#ifndef PAL_STDCPP_COMPAT
-PALIMPORT LONG __cdecl labs(LONG);
-#endif // !PAL_STDCPP_COMPAT
 // clang complains if this is declared with __int64
 PALIMPORT long long __cdecl llabs(long long);
+#ifndef PAL_STDCPP_COMPAT
+PALIMPORT LONG __cdecl labs(LONG);
 
 PALIMPORT int __cdecl _signbit(double);
 PALIMPORT int __cdecl _finite(double);
@@ -4552,6 +4551,7 @@ PALIMPORT float __cdecl sinhf(float);
 PALIMPORT float __cdecl sqrtf(float);
 PALIMPORT float __cdecl tanf(float);
 PALIMPORT float __cdecl tanhf(float);
+#endif // !PAL_STDCPP_COMPAT
 
 #ifndef PAL_STDCPP_COMPAT
 
