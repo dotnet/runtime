@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "platformdefines.h"
+#include <platformdefines.h>
 
 WCHAR strManaged[] = W("Managed\0String\0");
 size_t lenstrManaged = sizeof(strManaged) - sizeof(WCHAR);

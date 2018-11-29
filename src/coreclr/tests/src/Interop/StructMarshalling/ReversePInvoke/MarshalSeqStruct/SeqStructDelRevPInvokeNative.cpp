@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <xplatform.h>
-#include "platformdefines.h"
+#include <platformdefines.h>
 #include "SeqStructDelRevPInvokeNative.h"
 
 const char* NativeStr = "Native";
