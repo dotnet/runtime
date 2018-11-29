@@ -29,5 +29,8 @@ namespace System.Security.Cryptography
         }
 
         internal static object CreateFromName(string name) => s_createFromName(name);
+
+        internal static HashAlgorithm CreateDefaultHashAlgorithm() =>
+            throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
     }
 }
