@@ -2437,7 +2437,7 @@ mono_main (int argc, char* argv[])
 #endif
 
 	/* Parse gac loading options before loading assemblies. */
-	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER) {
+	if (mono_compile_aot || action == DO_EXEC || action == DO_DEBUGGER || action == DO_REGRESSION) {
 		mono_config_parse (config_file);
 	}
 
