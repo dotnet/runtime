@@ -1553,7 +1553,6 @@ summarize_frame_managed_walk (MonoMethod *method, gpointer ip, size_t frame_nati
 static gboolean
 summarize_frame (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 {
-	MonoSummarizeUserData *ud = (MonoSummarizeUserData *) data;
 	// Don't record trampolines between managed frames
 	if (frame->ji && frame->ji->is_trampoline)
 		return TRUE;

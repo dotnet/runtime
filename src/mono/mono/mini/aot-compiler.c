@@ -6385,12 +6385,11 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	int pindex, buf_size, n_patches;
 	GPtrArray *patches;
 	MonoJumpInfo *patch_info;
-	guint32 method_index;
 	guint8 *p, *buf;
 
 	method = cfg->orig_method;
 
-	method_index = get_method_index (acfg, method);
+	(void)get_method_index (acfg, method);
 
 	/* Sort relocations */
 	patches = g_ptr_array_new ();

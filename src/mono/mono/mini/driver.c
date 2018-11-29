@@ -429,7 +429,6 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 		GTimer *timer, MonoDomain *domain)
 {
 	int result, expected, failed, cfailed, run, code_size;
-	TestMethod func;
 	double elapsed, comp_time, start_time;
 	char *n;
 	int i;
@@ -462,6 +461,7 @@ mini_regression_step (MonoImage *image, int verbose, int *total_run, int *total,
 		}
 		if (method_should_be_regression_tested (method, FALSE)) {
 			MonoCompile *cfg = NULL;
+			TestMethod func = NULL;
 
 			expected = atoi (method->name + 5);
 			run++;

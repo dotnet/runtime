@@ -724,7 +724,7 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_COND_EXC_INO:
 	case OP_COND_EXC_IC:
 	case OP_COND_EXC_INC:
-		g_string_append_printf (sbuf, " %s", ins->inst_p1);
+		g_string_append_printf (sbuf, " %s", (const char*)ins->inst_p1);
 		break;
 	default:
 		break;

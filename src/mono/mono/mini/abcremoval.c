@@ -1058,7 +1058,6 @@ add_non_null (MonoVariableRelationsEvaluationArea *area, MonoCompile *cfg, int r
  */
 static void
 process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
-	int inst_index;
 	MonoInst *ins;
 	MonoAdditionalVariableRelationsForBB additional_relations;
 	GSList *dominated_bb, *l;
@@ -1087,7 +1086,6 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 	apply_change_to_evaluation_area (area, &(additional_relations.relation1));
 	apply_change_to_evaluation_area (area, &(additional_relations.relation2));
 
-	inst_index = 0;
 	for (ins = bb->code; ins; ins = ins->next) {
 		MonoAdditionalVariableRelation *rel;
 		int array_var, index_var;
