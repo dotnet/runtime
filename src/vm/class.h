@@ -1127,13 +1127,13 @@ public:
         return m_VMFlags & VMFLAG_IS_EQUIVALENT_TYPE;
     }
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_TYPEEQUIVALENCE
     inline void SetIsEquivalentType()
     {
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_IS_EQUIVALENT_TYPE;
     }
-#endif
+#endif // FEATURE_TYPEEQUIVALENCE
 
     /*
      * Number of static handles allocated

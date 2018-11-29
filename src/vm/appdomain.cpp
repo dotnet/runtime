@@ -52,9 +52,8 @@
 #include "rcwrefcache.h"
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP
-#ifdef FEATURE_TYPEEQUIVALENCE
+
 #include "typeequivalencehash.hpp"
-#endif
 
 #include "appdomain.inl"
 #include "typeparse.h"
@@ -8826,7 +8825,7 @@ TypeEquivalenceHashTable * AppDomain::GetTypeEquivalenceCache()
 #endif
         if (m_pTypeEquivalenceTable.Load() == NULL)
         {
-            m_pTypeEquivalenceTable = TypeEquivalenceHashTable::Create(this, 12, &m_TypeEquivalenceCrst);
+            m_pTypeEquivalenceTable = TypeEquivalenceHashTable::Create(this, /* bucket count */ 12, &m_TypeEquivalenceCrst);
         }
     }
     return m_pTypeEquivalenceTable;

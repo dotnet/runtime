@@ -1615,15 +1615,8 @@ public:
     VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
     VOID GetFullMethodInfo(SString& fullMethodSigName);
 
-    BOOL HasTypeEquivalentStructParameters()
-#ifndef FEATURE_TYPEEQUIVALENCE
-    {
-        LIMITED_METHOD_CONTRACT;
-        return FALSE;
-    }
-#else
-        ;
-#endif
+    BOOL HasTypeEquivalentStructParameters();
+
     typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Module *pDefModule, mdToken tkDefToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData);
 
     void WalkValueTypeParameters(MethodTable *pMT, WalkValueTypeParameterFnPtr function, void *pData);
@@ -1749,7 +1742,7 @@ public:
 
     WORD InterlockedUpdateFlags3(WORD wMask, BOOL fSet);
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_TYPEEQUIVALENCE
     inline BOOL DoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1761,7 +1754,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         InterlockedUpdateFlags3(enum_flag3_DoesNotHaveEquivalentValuetypeParameters, TRUE);
     }
-#endif //FEATURE_COMINTEROP
+#endif // FEATURE_TYPEEQUIVALENCE
 
     inline BOOL HasForwardedValuetypeParameter()
     {
