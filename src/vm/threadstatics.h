@@ -533,7 +533,7 @@ class ThreadStatics
     {
         SUPPORTS_DAC;
 
-        return dac_cast<PTR_ThreadLocalBlock>(&pThread->m_ThreadLocalBlock);
+        return dac_cast<PTR_ThreadLocalBlock>(PTR_TO_MEMBER_TADDR(Thread, pThread, m_ThreadLocalBlock));
     }
 
 #ifndef DACCESS_COMPILE
