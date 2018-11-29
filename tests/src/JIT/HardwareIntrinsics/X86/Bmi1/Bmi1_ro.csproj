@@ -28,15 +28,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AndNot.UInt32.cs" />
-    <Compile Include="AndNot.UInt64.cs" />
     <Compile Include="ExtractLowestSetBit.UInt32.cs" />
-    <Compile Include="ExtractLowestSetBit.UInt64.cs" />
     <Compile Include="GetMaskUpToLowestSetBit.UInt32.cs" />
-    <Compile Include="GetMaskUpToLowestSetBit.UInt64.cs" />
     <Compile Include="ResetLowestSetBit.UInt32.cs" />
-    <Compile Include="ResetLowestSetBit.UInt64.cs" />
     <Compile Include="TrailingZeroCount.UInt32.cs" />
-    <Compile Include="TrailingZeroCount.UInt64.cs" />
     <Compile Include="Program.Bmi1.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
