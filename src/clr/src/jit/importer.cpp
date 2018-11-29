@@ -4109,7 +4109,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 //
 GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
 {
-    GenTree*  retNode  = nullptr;
+    GenTree* retNode = nullptr;
+
+    if (!featureSIMD)
+    {
+        return nullptr;
+    }
+
     unsigned  simdSize = 0;
     var_types baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
     var_types retType  = getSIMDTypeForSize(simdSize);
