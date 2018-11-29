@@ -5382,8 +5382,6 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
     // with a matching appdomain id
     // it.
 
-    _ASSERTE( SystemDomain::SystemAssembly()->IsDomainNeutral() );
-
     DebuggerModule* dmod = NULL;
 
     if (m_pModules != NULL)
