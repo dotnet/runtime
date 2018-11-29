@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TestCasesRunner\CompilerOptions.cs" />
+    <Compile Include="TestCasesRunner\FormattingUtils.cs" />
     <Compile Include="TestCasesRunner\ILCompiler.cs" />
     <Compile Include="TestCasesRunner\SourceAndDestinationPair.cs" />
     <Compile Include="TestCasesRunner\SetupCompileInfo.cs" />
