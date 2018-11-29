@@ -1153,13 +1153,14 @@ const char* interceptor_ICJI::getMethodName(CORINFO_METHOD_HANDLE ftn,       /* 
     return original_ICorJitInfo->getMethodName(ftn, moduleName);
 }
 
-const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,          /* IN */
-                                                        const char**          className,    /* OUT */
-                                                        const char**          namespaceName /* OUT */
+const char* interceptor_ICJI::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,                /* IN */
+                                                        const char**          className,          /* OUT */
+                                                        const char**          namespaceName,      /* OUT */
+                                                        const char**          enclosingClassName /* OUT */
                                                         )
 {
     mcs->AddCall("getMethodNameFromMetadata");
-    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName);
+    return original_ICorJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
 }
 
 // this function is for debugging only.  It returns a value that
