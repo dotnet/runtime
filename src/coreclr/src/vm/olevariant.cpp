@@ -472,6 +472,10 @@ BOOL OleVariant::IsValidArrayForSafeArrayElementType(BASEARRAYREF *pArrayRef, VA
         case VT_CY:
             return vtActual == VT_DECIMAL;
 
+        case VT_LPSTR:
+        case VT_LPWSTR:
+            return vtActual == VT_BSTR;
+
         default:
             return FALSE;
     }

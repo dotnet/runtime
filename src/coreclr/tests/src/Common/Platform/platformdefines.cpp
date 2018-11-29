@@ -438,7 +438,7 @@ HRESULT CbSysStringSize(ULONG cchSize, BOOL isByteLen, ULONG *result)
     return INTSAFE_E_ARITHMETIC_OVERFLOW;
 }
 
-BSTR TP_SysAllocString(LPWSTR psz)
+BSTR TP_SysAllocString(LPCWSTR psz)
 {
 #ifdef WINDOWS    
     return SysAllocString(psz);
@@ -449,7 +449,7 @@ BSTR TP_SysAllocString(LPWSTR psz)
 #endif
 }
 
-BSTR TP_SysAllocStringLen(LPWSTR psz, size_t len)
+BSTR TP_SysAllocStringLen(LPCWSTR psz, size_t len)
 {
     ULONG cbTotal = 0;
 
@@ -541,4 +541,15 @@ size_t TP_SysStringByteLen(BSTR bstr)
     //std::cout << d32 << d32_1 << endl;
     return (unsigned int)(((DWORD *)bstr)[-1]);
 #endif    
+}
+
+DWORD TP_SysStringLen(BSTR bstr)
+{
+#ifdef WINDOWS
+    return SysStringLen(bstr);
+#else
+    if(bstr == NULL)
+      return 0;
+    return (unsigned int)((((DWORD *)bstr)[-1]) / sizeof(OLECHAR));
+#endif
 }

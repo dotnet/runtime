@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include <xplatform.h>
-#include "platformdefines.h"
+#include <platformdefines.h>
 const int ARRAY_SIZE = 100;
 template<typename T> bool IsObjectEquals(T o1, T o2);
 
