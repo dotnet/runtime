@@ -387,11 +387,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
     if (!info.compIsStatic)
     {
         varDsc->lvIsParam = 1;
-#if ASSERTION_PROP
-        varDsc->lvSingleDef = 1;
-#endif
-
-        varDsc->lvIsPtr = 1;
+        varDsc->lvIsPtr   = 1;
 
         lvaArg0Var = info.compThisArg = varDscInfo->varNum;
         noway_assert(info.compThisArg == 0);
@@ -474,9 +470,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
         varDsc->lvType      = TYP_BYREF;
         varDsc->lvIsParam   = 1;
         varDsc->lvIsRegArg  = 1;
-#if ASSERTION_PROP
-        varDsc->lvSingleDef = 1;
-#endif
+
         if (hasFixedRetBuffReg())
         {
             varDsc->lvArgReg = theFixedRetBuffReg();
@@ -564,9 +558,6 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
         CorInfoTypeWithMod corInfoType = info.compCompHnd->getArgType(&info.compMethodInfo->args, argLst, &typeHnd);
         varDsc->lvIsParam              = 1;
-#if ASSERTION_PROP
-        varDsc->lvSingleDef = 1;
-#endif
 
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
 
@@ -1046,11 +1037,7 @@ void Compiler::lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo)
 
         LclVarDsc* varDsc = varDscInfo->varDsc;
         varDsc->lvIsParam = 1;
-#if ASSERTION_PROP
-        varDsc->lvSingleDef = 1;
-#endif
-
-        varDsc->lvType = TYP_I_IMPL;
+        varDsc->lvType    = TYP_I_IMPL;
 
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
@@ -1111,10 +1098,6 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         // hammer.  But I think it should be possible to switch; it may just work now
         // that other problems are fixed.
         lvaSetVarAddrExposed(varDscInfo->varNum);
-
-#if ASSERTION_PROP
-        varDsc->lvSingleDef = 1;
-#endif
 
         if (varDscInfo->canEnreg(TYP_I_IMPL))
         {
@@ -2706,54 +2689,60 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // We should already have a class
     assert(varDsc->lvClassHnd != nullptr);
 
-#if defined(DEBUG)
+    // We should only be updating classes for single-def locals.
+    assert(varDsc->lvSingleDef);
 
-    // In general we only expect one update per local var. However if
-    // a block is re-imported and that block has the only STLOC for
-    // the var, we may see multiple updates. All subsequent updates
-    // should agree on the type, since reimportation is triggered by
-    // type mismatches for things other than ref types.
-    if (varDsc->lvClassInfoUpdated)
+    // Now see if we should update.
+    //
+    // New information may not always be "better" so do some
+    // simple analysis to decide if the update is worthwhile.
+    const bool isNewClass   = (clsHnd != varDsc->lvClassHnd);
+    bool       shouldUpdate = false;
+
+    // Are we attempting to update the class? Only check this when we have
+    // an new type and the existing class is inexact... we should not be
+    // updating exact classes.
+    if (!varDsc->lvClassIsExact && isNewClass)
     {
-        assert(varDsc->lvClassHnd == clsHnd);
-        assert(varDsc->lvClassIsExact == isExact);
+        // Todo: improve this analysis by adding a new jit interface method
+        DWORD newAttrs = info.compCompHnd->getClassAttribs(clsHnd);
+        DWORD oldAttrs = info.compCompHnd->getClassAttribs(varDsc->lvClassHnd);
+
+        // Avoid funny things with __Canon by only merging if both shared or both unshared
+        if ((newAttrs & CORINFO_FLG_SHAREDINST) == (oldAttrs & CORINFO_FLG_SHAREDINST))
+        {
+            // If we merge types and we get back the old class, the new class is more
+            // specific and we should update to it.
+            CORINFO_CLASS_HANDLE mergeClass = info.compCompHnd->mergeClasses(clsHnd, varDsc->lvClassHnd);
+
+            if (mergeClass == varDsc->lvClassHnd)
+            {
+                shouldUpdate = true;
+            }
+        }
+        else if ((newAttrs & CORINFO_FLG_SHAREDINST) == 0)
+        {
+            // Update if we go from shared to unshared
+            shouldUpdate = true;
+        }
+    }
+    // Else are we attempting to update exactness?
+    else if (isExact && !varDsc->lvClassIsExact && !isNewClass)
+    {
+        shouldUpdate = true;
     }
 
-    // This counts as an update, even if nothing changes.
-    varDsc->lvClassInfoUpdated = true;
+    JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u from (%p) %s%s to (%p) %s%s\n", varNum,
+            shouldUpdate ? "" : " NOT", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
+            varDsc->lvClassIsExact ? " [exact]" : "", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd),
+            isExact ? " [exact]" : "");
 
-#endif // defined(DEBUG)
-
-    // If previous type was exact, there is nothing to update.  Would
-    // like to verify new type is compatible but can't do this yet.
-    if (varDsc->lvClassIsExact)
+    if (shouldUpdate)
     {
-        return;
-    }
-
-    // Are we updating the type?
-    if (varDsc->lvClassHnd != clsHnd)
-    {
-        JITDUMP("\nlvaUpdateClass: Updating class for V%02i from (%p) %s to (%p) %s %s\n", varNum,
-                dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd), dspPtr(clsHnd),
-                info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
-
         varDsc->lvClassHnd     = clsHnd;
         varDsc->lvClassIsExact = isExact;
-        return;
     }
 
-    // Class info matched. Are we updating exactness?
-    if (isExact)
-    {
-        JITDUMP("\nlvaUpdateClass: Updating class for V%02i (%p) %s to be exact\n", varNum, dspPtr(varDsc->lvClassHnd),
-                info.compCompHnd->getClassName(varDsc->lvClassHnd));
-
-        varDsc->lvClassIsExact = isExact;
-        return;
-    }
-
-    // Else we have the same handle and (in)exactness as before. Do nothing.
     return;
 }
 
@@ -4155,6 +4144,10 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
         {
             varDsc->lvSlotNum = lclNum;
         }
+
+        // Set initial value for lvSingleDef for explicit and implicit
+        // argument locals as they are "defined" on entry.
+        varDsc->lvSingleDef = varDsc->lvIsParam;
     }
 
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");

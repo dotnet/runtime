@@ -2255,6 +2255,9 @@ bool Compiler::impSpillStackEntry(unsigned level,
     // If temp is newly introduced and a ref type, grab what type info we can.
     if (isNewTemp && (lvaTable[tnum].lvType == TYP_REF))
     {
+        assert(lvaTable[tnum].lvSingleDef == 0);
+        lvaTable[tnum].lvSingleDef = 1;
+        JITDUMP("Marked V%02u as a single def temp\n", tnum);
         CORINFO_CLASS_HANDLE stkHnd = verCurrentState.esStack[level].seTypeInfo.GetClassHandle();
         lvaSetClass(tnum, tree, stkHnd);
 
@@ -6052,9 +6055,11 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         {
             // When optimizing, use a new temp for each box operation
             // since we then know the exact class of the box temp.
-            impBoxTemp                  = lvaGrabTemp(true DEBUGARG("Single-def Box Helper"));
-            lvaTable[impBoxTemp].lvType = TYP_REF;
-            const bool isExact          = true;
+            impBoxTemp                       = lvaGrabTemp(true DEBUGARG("Single-def Box Helper"));
+            lvaTable[impBoxTemp].lvType      = TYP_REF;
+            lvaTable[impBoxTemp].lvSingleDef = 1;
+            JITDUMP("Marking V%02u as a single def local\n", impBoxTemp);
+            const bool isExact = true;
             lvaSetClass(impBoxTemp, pResolvedToken->hClass, isExact);
         }
 
@@ -10559,6 +10564,10 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //
     // See also gtGetHelperCallClassHandle where we make the same
     // determination for the helper call variants.
+    LclVarDsc* lclDsc = lvaGetDesc(tmp);
+    assert(lclDsc->lvSingleDef == 0);
+    lclDsc->lvSingleDef = 1;
+    JITDUMP("Marked V%02u as a single def temp\n", tmp);
     lvaSetClass(tmp, pResolvedToken->hClass);
     return gtNewLclvNode(tmp, TYP_REF);
 #endif
@@ -11214,14 +11223,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // We should have seen a stloc in our IL prescan.
                     assert(lvaTable[lclNum].lvHasILStoreOp);
 
-                    const bool isSingleILStoreLocal =
-                        !lvaTable[lclNum].lvHasMultipleILStoreOp && !lvaTable[lclNum].lvHasLdAddrOp;
+                    // Is there just one place this local is defined?
+                    const bool isSingleDefLocal = lvaTable[lclNum].lvSingleDef;
 
                     // Conservative check that there is just one
                     // definition that reaches this store.
                     const bool hasSingleReachingDef = (block->bbStackDepthOnEntry() == 0);
 
-                    if (isSingleILStoreLocal && hasSingleReachingDef)
+                    if (isSingleDefLocal && hasSingleReachingDef)
                     {
                         lvaUpdateClass(lclNum, op1, clsHnd);
                     }
@@ -13085,6 +13094,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Propagate type info to the temp from the stack and the original tree
                     if (type == TYP_REF)
                     {
+                        assert(lvaTable[tmpNum].lvSingleDef == 0);
+                        lvaTable[tmpNum].lvSingleDef = 1;
+                        JITDUMP("Marked V%02u as a single def local\n", tmpNum);
                         lvaSetClass(tmpNum, tree, tiRetVal.GetClassHandle());
                     }
                 }
@@ -13801,6 +13813,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // without exhaustive walk over all expressions.
 
                         impAssignTempGen(lclNum, op1, (unsigned)CHECK_SPILL_NONE);
+
+                        assert(lvaTable[lclNum].lvSingleDef == 0);
+                        lvaTable[lclNum].lvSingleDef = 1;
+                        JITDUMP("Marked V%02u as a single def local\n", lclNum);
                         lvaSetClass(lclNum, resolvedToken.hClass, true /* is Exact */);
 
                         newObjThisPtr = gtNewLclvNode(lclNum, TYP_REF);
@@ -19105,6 +19121,14 @@ unsigned Compiler::impInlineFetchLocal(unsigned lclNum DEBUGARG(const char* reas
         // signature and pass in a more precise type.
         if (lclTyp == TYP_REF)
         {
+            assert(lvaTable[tmpNum].lvSingleDef == 0);
+
+            lvaTable[tmpNum].lvSingleDef = !inlineeLocal.lclHasMultipleStlocOp && !inlineeLocal.lclHasLdlocaOp;
+            if (lvaTable[tmpNum].lvSingleDef)
+            {
+                JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
+            }
+
             lvaSetClass(tmpNum, inlineeLocal.lclVerTypeInfo.GetClassHandleForObjRef());
         }
 
@@ -19296,6 +19320,9 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
                     // If the arg can't be modified in the method
                     // body, use the type of the value, if
                     // known. Otherwise, use the declared type.
+                    assert(lvaTable[tmpNum].lvSingleDef == 0);
+                    lvaTable[tmpNum].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def temp\n", tmpNum);
                     lvaSetClass(tmpNum, argInfo.argNode, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
                 }
                 else
