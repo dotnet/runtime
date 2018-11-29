@@ -18,7 +18,7 @@ internal partial class Interop
             IntPtr ApcRoutine,
             IntPtr ApcContext,
             out IO_STATUS_BLOCK IoStatusBlock,
-            byte[] FileInformation,
+            IntPtr FileInformation,
             uint Length,
             FILE_INFORMATION_CLASS FileInformationClass,
             BOOLEAN ReturnSingleEntry,
