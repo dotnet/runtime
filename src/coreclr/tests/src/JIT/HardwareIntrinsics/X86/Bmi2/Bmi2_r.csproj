@@ -28,9 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ParallelBitDeposit.UInt32.cs" />
-    <Compile Include="ParallelBitDeposit.UInt64.cs" />
     <Compile Include="ParallelBitExtract.UInt32.cs" />
-    <Compile Include="ParallelBitExtract.UInt64.cs" />
     <Compile Include="Program.Bmi2.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
