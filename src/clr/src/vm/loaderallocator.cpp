@@ -1588,18 +1588,6 @@ BOOL GlobalLoaderAllocator::CanUnload()
     return FALSE;
 }
 
-BOOL AppDomainLoaderAllocator::CanUnload()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    } CONTRACTL_END;
-
-    return FALSE;
-}
-
 BOOL AssemblyLoaderAllocator::CanUnload()
 {
     LIMITED_METHOD_CONTRACT;

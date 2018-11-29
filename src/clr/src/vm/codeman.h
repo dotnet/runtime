@@ -1121,12 +1121,11 @@ public:
         CrstHolder m_lockHolder;
         HeapList *m_pHeapList;
         LoaderAllocator *m_pLoaderAllocator;
-        BaseDomain *m_pDomain;
         MethodSectionIterator m_Iterator;
         MethodDesc *m_pCurrent;
 
     public:
-        CodeHeapIterator(BaseDomain *pDomainFilter = NULL, LoaderAllocator *pLoaderAllocatorFilter = NULL);
+        CodeHeapIterator(LoaderAllocator *pLoaderAllocatorFilter = NULL);
         ~CodeHeapIterator();
         BOOL Next();
 

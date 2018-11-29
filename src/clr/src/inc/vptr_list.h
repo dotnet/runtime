@@ -27,7 +27,6 @@ VPTR_CLASS(Module)
 VPTR_CLASS(ReflectionModule)
 
 VPTR_CLASS(AppDomain)
-VPTR_CLASS(SharedDomain)
 VPTR_CLASS(SystemDomain)
 
 VPTR_CLASS(DomainAssembly)
@@ -119,5 +118,4 @@ VPTR_CLASS(LoaderCodeHeap)
 VPTR_CLASS(HostCodeHeap)
 
 VPTR_CLASS(GlobalLoaderAllocator)
-VPTR_CLASS(AppDomainLoaderAllocator)
 VPTR_CLASS(AssemblyLoaderAllocator)

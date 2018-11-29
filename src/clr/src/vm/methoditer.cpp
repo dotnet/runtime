@@ -47,81 +47,42 @@ BOOL LoadedMethodDescIterator::Next(
     // This is the 1st time we've called Next(). must Initialize iterator
     if (m_mainMD == NULL)
     {
-		m_mainMD = m_module->LookupMethodDef(m_md);
-	}
-	
+        m_mainMD = m_module->LookupMethodDef(m_md);
+    }
+
     // note m_mainMD should be sufficiently restored to allow us to get
     // at the method table, flags and token etc.
     if (m_mainMD == NULL)
     {
         *pDomainAssemblyHolder = NULL;
         return FALSE;
-    }        
+    }
 
     // Needs to work w/ non-generic methods too.
-    // NOTE: this behavior seems odd. We appear to return the non-generic method even if
-    // that method doesn't reside in the set of assemblies defined by m_assemblyIterationMode.
-    // Presumably all the callers expect or at least cope with this so I'm just commenting without
-    // changing anything right now.
     if (!m_mainMD->HasClassOrMethodInstantiation())
     {
         *pDomainAssemblyHolder = NULL;
         return TRUE;
     }
 
-    if (m_assemblyIterationMode == kModeSharedDomainAssemblies)
-    {
-        // Nothing to do...  m_sharedAssemblyIterator is initialized on construction
-    }
-    else
-    {
-        m_assemIterator = m_pAppDomain->IterateAssembliesEx(m_assemIterationFlags);
-    }
+    m_assemIterator = m_pAppDomain->IterateAssembliesEx(m_assemIterationFlags);
 
 ADVANCE_ASSEMBLY:
-    if (m_assemblyIterationMode == kModeSharedDomainAssemblies)
+    if  (!m_assemIterator.Next(pDomainAssemblyHolder))
     {
-        if  (!m_sharedAssemblyIterator.Next())
-            return FALSE;
-
-        m_sharedModuleIterator = m_sharedAssemblyIterator.GetAssembly()->IterateModules();
+        _ASSERTE(*pDomainAssemblyHolder == NULL);
+        return FALSE;
     }
-    else
-    {
-        if  (!m_assemIterator.Next(pDomainAssemblyHolder))
-        {
-            _ASSERTE(*pDomainAssemblyHolder == NULL);
-            return FALSE;
-        }
-
-        if (m_assemblyIterationMode == kModeUnsharedADAssemblies)
-        {
-            // We're supposed to ignore shared assemblies, so check for them now
-            if ((*pDomainAssemblyHolder)->GetAssembly()->IsDomainNeutral())
-            {
-                goto ADVANCE_ASSEMBLY;
-            }
-        }
 
 #ifdef _DEBUG
-        dbg_m_pDomainAssembly = *pDomainAssemblyHolder;
+    dbg_m_pDomainAssembly = *pDomainAssemblyHolder;
 #endif //_DEBUG
 
-        m_moduleIterator = (*pDomainAssemblyHolder)->IterateModules(m_moduleIterationFlags);
-    }
-    
-    
+    m_moduleIterator = (*pDomainAssemblyHolder)->IterateModules(m_moduleIterationFlags);
+
 ADVANCE_MODULE:
-    if (m_assemblyIterationMode == kModeSharedDomainAssemblies)
-    {
-        if  (!NextSharedModule())
-            goto ADVANCE_ASSEMBLY;
-    }
-    else
-    {
-        if  (!m_moduleIterator.Next())
-            goto ADVANCE_ASSEMBLY;
-    }
+    if  (!m_moduleIterator.Next())
+        goto ADVANCE_ASSEMBLY;
 
     if (GetCurrentModule()->IsResource())
         goto ADVANCE_MODULE;
@@ -215,8 +176,7 @@ ADVANCE_METHOD:
     // Note: We don't need to keep the assembly alive in DAC - see code:CollectibleAssemblyHolder#CAH_DAC
 #ifndef DACCESS_COMPILE
     _ASSERTE_MSG(
-        ((m_assemblyIterationMode == kModeSharedDomainAssemblies) ||
-        (*pDomainAssemblyHolder == dbg_m_pDomainAssembly)),
+        *pDomainAssemblyHolder == dbg_m_pDomainAssembly,
         "Caller probably modified the assembly holder, which he shouldn't - see method comment.");
 #endif //DACCESS_COMPILE
     
@@ -234,41 +194,7 @@ Module * LoadedMethodDescIterator::GetCurrentModule()
     }
     CONTRACTL_END
 
-    if (m_assemblyIterationMode == kModeSharedDomainAssemblies)
-    {
-        return m_sharedModuleIterator.GetModule();
-    }
     return m_moduleIterator.GetLoadedModule();
-}
-
-
-BOOL LoadedMethodDescIterator::NextSharedModule()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END
-
-    _ASSERTE(m_assemblyIterationMode == kModeSharedDomainAssemblies);
-
-    while (m_sharedModuleIterator.Next())
-    {
-        // NOTE: If this code is to be shared with the dbgapi, the dbgapi
-        // will probably want to substitute its own test for "loadedness"
-        // here.
-#ifdef PROFILING_SUPPORTED
-        Module * pModule = m_sharedModuleIterator.GetModule();
-        if (!pModule->IsProfilerNotified())
-            continue;
-#endif // PROFILING_SUPPORTED
-
-        // If we made it this far, pModule is suitable for iterating over
-        return TRUE;
-    }
-    return FALSE;
 }
 
 MethodDesc *LoadedMethodDescIterator::Current()
@@ -308,7 +234,6 @@ LoadedMethodDescIterator::Start(
     AppDomain * pAppDomain, 
     Module *pModule,
     mdMethodDef md,
-    AssemblyIterationMode assemblyIterationMode,
     AssemblyIterationFlags assemblyIterationFlags,
     ModuleIterationOption moduleIterationFlags)
 {
@@ -321,18 +246,6 @@ LoadedMethodDescIterator::Start(
     }
     CONTRACTL_END;
 
-    // Specifying different assembly/module iteration flags has only been tested for UnsharedADAssemblies mode so far.
-    // It probably doesn't work as you would expect in other modes. In particular the shared assembly iterator
-    // doesn't use flags, and the logic in this iterator does a hard-coded filter that roughly matches the unshared
-    // mode if you had specified these flags:
-    // Assembly: Loading | Loaded | Execution
-    // Module: kModIterIncludeAvailableToProfilers
-    _ASSERTE((assemblyIterationMode == kModeUnsharedADAssemblies) ||
-        (assemblyIterationFlags == (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution)));
-    _ASSERTE((assemblyIterationMode == kModeUnsharedADAssemblies) ||
-        (moduleIterationFlags == kModIterIncludeLoaded));
-
-    m_assemblyIterationMode = assemblyIterationMode;
     m_assemIterationFlags = assemblyIterationFlags;
     m_moduleIterationFlags = moduleIterationFlags;
     m_mainMD = NULL;
@@ -341,9 +254,7 @@ LoadedMethodDescIterator::Start(
     m_pAppDomain = pAppDomain;
     m_fFirstTime = TRUE;
 
-    // If we're not iterating through the SharedDomain, caller must specify the
-    // pAppDomain to search.
-    _ASSERTE((assemblyIterationMode == kModeSharedDomainAssemblies) || (pAppDomain != NULL));
+    _ASSERTE(pAppDomain != NULL);
     _ASSERTE(TypeFromToken(m_md) == mdtMethodDef);
 }
 
@@ -356,7 +267,7 @@ LoadedMethodDescIterator::Start(
     mdMethodDef     md,
     MethodDesc      *pMethodDesc)
 {
-    Start(pAppDomain, pModule, md, kModeAllADAssemblies);
+    Start(pAppDomain, pModule, md);
     m_mainMD = pMethodDesc;
 }
 

@@ -510,38 +510,6 @@ HRESULT ProfilerModuleEnum::Init()
         return hr;
     }
 
-    // Next, find all SHARED modules that have a corresponding DomainModule loaded into
-    // at least one AppDomain with a load level high enough that it should be visible to
-    // profilers. For each such shared module, add it once to the enumerator. Note that
-    // enumerating assemblies/modules from the SharedDomain uses different internal CLR
-    // interators than enumerating DomainAssemblies/DomainModules from AppDomains. So we
-    // need to special case the iteration here. We could probably factor the following
-    // into yet more iterator helpers the same way we've already done for the
-    // DomainAssembly/DomainModule iterators above, but it's unclear how useful that
-    // would be.
-    SharedDomain::SharedAssemblyIterator sharedAssemblyIterator;
-    while (sharedAssemblyIterator.Next())
-    {
-        Assembly * pAssembly = sharedAssemblyIterator.GetAssembly();
-        Assembly::ModuleIterator moduleIterator = pAssembly->IterateModules();
-        while (moduleIterator.Next())
-        {
-            Module * pModule = moduleIterator.GetModule();
-
-            // Create an instance of this helper class (IterateAppDomainsForSharedModule)
-            // to remember which Module we're testing. This will be used as our callback
-            // for when we iterate AppDomains trying to find at least one AD that has loaded
-            // pModule enough that pModule would be made visible to profilers.
-            IterateAppDomainsForSharedModule iterateAppDomainsForSharedModule(&m_elements, pModule);
-            hr = IterateAppDomains<IterateAppDomainsForSharedModule>(
-                &iterateAppDomainsForSharedModule,
-                &IterateAppDomainsForSharedModule::AddSharedModuleForAppDomain);
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-        }
-    }
     return S_OK;
 }
 

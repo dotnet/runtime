@@ -136,25 +136,7 @@ PTR_BaseDomain TypeDesc::GetDomain()
     }
     CONTRACTL_END
 
-    Module *pZapModule = GetZapModule();
-    if (pZapModule != NULL)
-    {
-        return pZapModule->GetDomain();
-    }
-
-    if (HasTypeParam())
-    {
-        return GetBaseTypeParam().GetDomain();
-    }
-    if (IsGenericVariable())
-    {
-        PTR_TypeVarTypeDesc asVar = dac_cast<PTR_TypeVarTypeDesc>(this);
-        return asVar->GetModule()->GetDomain();
-    }
-    _ASSERTE(GetInternalCorElementType() == ELEMENT_TYPE_FNPTR);
-    PTR_FnPtrTypeDesc asFnPtr = dac_cast<PTR_FnPtrTypeDesc>(this);
-    return BaseDomain::ComputeBaseDomain(asFnPtr->GetRetAndArgTypesPointer()[0].GetDomain(),
-                                         Instantiation(asFnPtr->GetRetAndArgTypesPointer(), asFnPtr->GetNumArgs()+1));
+    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
 }
 
 PTR_Module TypeDesc::GetModule() {

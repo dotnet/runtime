@@ -22,19 +22,6 @@ inline void GlobalLoaderAllocator::Init(BaseDomain *pDomain)
     LoaderAllocator::Init(pDomain, m_ExecutableHeapInstance);
 }
 
-inline void AppDomainLoaderAllocator::Init(AppDomain *pAppDomain) 
-{
-    WRAPPER_NO_CONTRACT;
-    m_Id.Init(pAppDomain);
-    LoaderAllocator::Init((BaseDomain *)pAppDomain);
-}
-
-inline void LoaderAllocatorID::Init(AppDomain *pAppDomain)
-{
-    m_type = LAT_AppDomain;
-    m_pAppDomain = pAppDomain;
-}
-
 inline void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
 {
     m_Id.Init();
@@ -94,13 +81,6 @@ inline DomainAssemblyIterator LoaderAllocatorID::GetDomainAssemblyIterator()
     return DomainAssemblyIterator(m_pDomainAssembly);
 }
 
-inline AppDomain *LoaderAllocatorID::GetAppDomain()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(m_type == LAT_AppDomain);
-    return m_pAppDomain;
-}
-
 inline LoaderAllocatorID* AssemblyLoaderAllocator::Id()
 {
     LIMITED_METHOD_DAC_CONTRACT; 
@@ -110,12 +90,6 @@ inline LoaderAllocatorID* AssemblyLoaderAllocator::Id()
 inline LoaderAllocatorID* GlobalLoaderAllocator::Id()
 {
     LIMITED_METHOD_DAC_CONTRACT; 
-    return &m_Id;
-}
-
-inline LoaderAllocatorID* AppDomainLoaderAllocator::Id()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
     return &m_Id;
 }
 

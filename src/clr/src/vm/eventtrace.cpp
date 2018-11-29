@@ -5633,32 +5633,19 @@ VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptio
         return;
 
     PCWSTR szDtraceOutput1=W("");
-    BOOL bIsDefaultDomain = pBaseDomain->IsDefaultDomain();
     BOOL bIsAppDomain = pBaseDomain->IsAppDomain();
-    BOOL bIsExecutable = bIsAppDomain ? !(pBaseDomain->AsAppDomain()->IsPassiveDomain()) : FALSE;
-    BOOL bIsSharedDomain = pBaseDomain->IsSharedDomain();
-    UINT32 uSharingPolicy = 0;
 
     ULONGLONG ullDomainId = (ULONGLONG)pBaseDomain;
-    ULONG ulDomainFlags = ((bIsDefaultDomain ? ETW::LoaderLog::LoaderStructs::DefaultDomain : 0) | 
-                           (bIsExecutable ? ETW::LoaderLog::LoaderStructs::ExecutableDomain : 0) |
-                           (bIsSharedDomain ? ETW::LoaderLog::LoaderStructs::SharedDomain : 0) |
-                           (uSharingPolicy<<28));
+    ULONG ulDomainFlags = ETW::LoaderLog::LoaderStructs::DefaultDomain | ETW::LoaderLog::LoaderStructs::ExecutableDomain;
 
     LPCWSTR wsEmptyString = W("");
-    LPCWSTR wsSharedString = W("SharedDomain");
 
     LPWSTR lpswzDomainName = (LPWSTR)wsEmptyString;
 
-    if(bIsAppDomain)
-    {
-        if(wszFriendlyName)
-            lpswzDomainName = (PWCHAR)wszFriendlyName;
-        else
-            lpswzDomainName = (PWCHAR)pBaseDomain->AsAppDomain()->GetFriendlyName();
-    }
+    if(wszFriendlyName)
+        lpswzDomainName = (PWCHAR)wszFriendlyName;
     else
-        lpswzDomainName = (LPWSTR)wsSharedString;
+        lpswzDomainName = (PWCHAR)pBaseDomain->AsAppDomain()->GetFriendlyName();
 
     /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)lpswzDomainName;
@@ -6810,7 +6797,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(BaseDomain *pDomainFilter,
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    EEJitManager::CodeHeapIterator heapIterator(pDomainFilter, pLoaderAllocatorFilter);
+    EEJitManager::CodeHeapIterator heapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
         MethodDesc * pMD = heapIterator.GetMethod();
@@ -6953,7 +6940,6 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BaseDomain *pDomainFilter, LoaderAl
         // We only support getting rejit IDs when filtering by domain.
         if (pDomainFilter)
         {
-            CodeVersionManager::TableLockHolder lkRejitMgrSharedDomain(SharedDomain::GetDomain()->GetCodeVersionManager());
             CodeVersionManager::TableLockHolder lkRejitMgrModule(pDomainFilter->GetCodeVersionManager());
             SendEventsForJitMethodsHelper(pDomainFilter,
                 pLoaderAllocatorFilter,
@@ -7049,63 +7035,35 @@ VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
         {
             ETW::MethodLog::SendEventsForJitMethods(pDomain, NULL, enumerationOptions);
         }
-    
-        if (pDomain->IsAppDomain())
+
+        AppDomain::AssemblyIterator assemblyIterator = pDomain->AsAppDomain()->IterateAssembliesEx(
+            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        while (assemblyIterator.Next(pDomainAssembly.This()))
         {
-            AppDomain::AssemblyIterator assemblyIterator = pDomain->AsAppDomain()->IterateAssembliesEx(
-                (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-            CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-            while (assemblyIterator.Next(pDomainAssembly.This()))
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+            BOOL bIsDomainNeutral = pAssembly->IsDomainNeutral();
+            if (bIsDomainNeutral)
+                continue;
+            if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
             {
-                CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
-                BOOL bIsDomainNeutral = pAssembly->IsDomainNeutral();
-                if (bIsDomainNeutral)
-                    continue;
-                if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
-                {
-                    ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
-                }
+                ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
+            }
                 
-                DomainModuleIterator domainModuleIterator = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-                while (domainModuleIterator.Next()) 
-                {
-                    Module * pModule = domainModuleIterator.GetModule();
-                    ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
-                }
-
-                if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
-                   (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
-                {
-                    ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
-                }
-            }
-        }
-        else
-        {
-            SharedDomain::SharedAssemblyIterator sharedDomainIterator;
-            while (sharedDomainIterator.Next())
+            DomainModuleIterator domainModuleIterator = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
+            while (domainModuleIterator.Next()) 
             {
-                Assembly * pAssembly = sharedDomainIterator.GetAssembly();
-                if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
-                {
-                    ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
-                }
+                Module * pModule = domainModuleIterator.GetModule();
+                ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
+            }
 
-                ModuleIterator domainModuleIterator = pAssembly->IterateModules();
-                while (domainModuleIterator.Next()) 
-                {
-                    Module * pModule = domainModuleIterator.GetModule();
-                    ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
-                }
-
-                if ((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) || 
-                    (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
-                {
-                    ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
-                }
+            if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
+                (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
+            {
+                ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
         }
-        
+
         // DC Start or Load Jit Method events
         if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoadOrDCStartAny)
         {
@@ -7353,10 +7311,8 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
                     ETW::EnumerationLog::IterateAppDomain(pDomain, enumerationOptions);
                 }
             }
-
-            ETW::EnumerationLog::IterateDomain(SharedDomain::GetDomain(), enumerationOptions);
-        }    
-    }    
+        }
+    }
 }
 
 #endif // !FEATURE_REDHAWK

@@ -5695,8 +5695,6 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainInfo(AppDomainID appDomainId,
     LPCWSTR szFriendlyName;
     if (pDomain == SystemDomain::System())
         szFriendlyName = g_pwBaseLibrary;
-    else if (pDomain == SharedDomain::GetDomain())
-        szFriendlyName = W("EE Shared Assembly Repository");
     else
         szFriendlyName = ((AppDomain*)pDomain)->GetFriendlyNameForDebugger();
 

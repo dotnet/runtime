@@ -970,10 +970,9 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         else
         {
             pDeclMT->EnsureInstanceActive();
-            pDeclMT->CheckRunClassInitThrowing();   
+            pDeclMT->CheckRunClassInitThrowing();
 
-            if (declaringType.IsDomainNeutral() == FALSE)
-                *pDomainInitialized = TRUE;
+            *pDomainInitialized = TRUE;
         }
         }
         EX_CATCH_THROWABLE(&Throwable);
@@ -1181,8 +1180,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
             pDeclMT->EnsureInstanceActive();
             pDeclMT->CheckRunClassInitThrowing();   
 
-            if (!declaringType.IsDomainNeutral())
-                *pDomainInitialized = TRUE;
+            *pDomainInitialized = TRUE;
         }
         }
         EX_CATCH_THROWABLE(&Throwable);
