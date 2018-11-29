@@ -19,6 +19,18 @@ namespace Mono.Linker.Steps
 
 		void ProcessType (TypeDefinition type)
 		{
+			if (FeatureETW) {
+				//
+				// The pattern here is that EventSource has IsEnabled method(s) which are
+				// always called before accessing any other members. We stub them which should
+				// make all other members unreachable
+				//
+				if (BCL.EventTracingForWindows.IsEventSourceType (type))
+					ExcludeEventSource (type);
+				else if (BCL.EventTracingForWindows.IsEventSourceImplementation (type))
+					ExcludeEventSourceImplementation (type);
+			}
+
 			if (RemoveCustomAttributes (type)) {
 				if (FeatureCOM && type.IsImport) {
 					type.IsImport = false;
@@ -33,18 +45,6 @@ namespace Mono.Linker.Steps
 
 			foreach (var nested in type.NestedTypes)
 				ProcessType (nested);
-
-			if (FeatureETW) {
-				//
-				// The pattern here is that EventSource has IsEnabled method(s) which are
-				// always called before accessing any other members. We stub them which should
-				// make all other members unreachable
-				//
-				if (BCL.EventTracingForWindows.IsEventSourceType (type))
-					ExcludeEventSource (type);
-				else if (BCL.EventTracingForWindows.IsEventSourceImplementation (type))
-					ExcludeEventSourceImplementation (type);
-			}
 		}
 
 		void ExcludeEventSource (TypeDefinition type)
@@ -86,8 +86,24 @@ namespace Mono.Linker.Steps
 				if (method.IsStatic)
 					continue;
 
-				if (method.HasCustomAttributes)
+				bool skip = false;
+				if (method.HasCustomAttributes) {
+					if (!method.IsPrivate) {
+						foreach (var attr in method.CustomAttributes) {
+							//
+							// [NonEvent] attribute is commonly used to mark code which calls
+							// IsEnabled we could check for that as well to be more aggresive
+							// but for now I haven't seen such code in wild
+							//
+							if (BCL.EventTracingForWindows.IsNonEventAtribute (attr.AttributeType)) {
+								skip = true;
+								break;
+							}
+						}
+					}
+
 					method.CustomAttributes.Clear ();
+				}
 
 				if (method.IsFinalizer ()) {
 					annotations.SetAction (method, MethodAction.ConvertToStub);
@@ -104,7 +120,8 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				annotations.SetAction (method, MethodAction.ConvertToThrow);
+				if (!skip)
+					annotations.SetAction (method, MethodAction.ConvertToThrow);
 			}
 		}
 
