@@ -11,10 +11,10 @@ internal partial class Interop
     {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/aa364953.aspx
         [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public unsafe static extern bool GetFileInformationByHandleEx(
+        public static extern bool GetFileInformationByHandleEx(
             IntPtr hFile,
             FILE_INFO_BY_HANDLE_CLASS FileInformationClass,
-            byte[] lpFileInformation,
+            IntPtr lpFileInformation,
             uint dwBufferSize);
     }
 }
