@@ -26,7 +26,6 @@ enum LoaderAllocatorType
 {
     LAT_Invalid,
     LAT_Global,
-    LAT_AppDomain,
     LAT_Assembly
 };
 
@@ -71,7 +70,6 @@ protected:
     LoaderAllocatorType m_type;
     union
     {
-        AppDomain* m_pAppDomain;
         DomainAssembly* m_pDomainAssembly;
         void* m_pValue;
     };
@@ -85,11 +83,9 @@ public:
         m_pValue = value;
     };
     VOID Init();
-    VOID Init(AppDomain* pAppDomain);
     LoaderAllocatorType GetType();
     VOID AddDomainAssembly(DomainAssembly* pDomainAssembly);
     DomainAssemblyIterator GetDomainAssemblyIterator();
-    AppDomain* GetAppDomain();
     BOOL Equals(LoaderAllocatorID* pId);
     COUNT_T Hash();
 };
@@ -556,23 +552,6 @@ public:
 };
 
 typedef VPTR(GlobalLoaderAllocator) PTR_GlobalLoaderAllocator;
-
-
-class AppDomainLoaderAllocator : public LoaderAllocator
-{
-    VPTR_VTABLE_CLASS(AppDomainLoaderAllocator, LoaderAllocator)
-    VPTR_UNIQUE(VPTRU_LoaderAllocator+2)
-
-protected:
-    LoaderAllocatorID m_Id;
-public:    
-    AppDomainLoaderAllocator() : m_Id(LAT_AppDomain) { LIMITED_METHOD_CONTRACT;};
-    void Init(AppDomain *pAppDomain);
-    virtual LoaderAllocatorID* Id();
-    virtual BOOL CanUnload();
-};
-
-typedef VPTR(AppDomainLoaderAllocator) PTR_AppDomainLoaderAllocator;
 
 class ShuffleThunkCache;
 

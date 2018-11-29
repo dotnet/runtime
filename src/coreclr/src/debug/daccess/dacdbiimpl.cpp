@@ -3445,10 +3445,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
             AppDomain* pDomain = NULL;
             DomainFile* pDomainFile = NULL;
 
-            if (pBaseDomain->IsSharedDomain())
-                pDomain = SystemDomain::System()->DefaultDomain();
-            else
-                pDomain = pBaseDomain->AsAppDomain();
+            pDomain = pBaseDomain->AsAppDomain();
 
             _ASSERTE(pDomain != NULL);
 
@@ -6805,14 +6802,8 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
     PTR_Module module = mt->GetModule();
     PTR_Assembly assembly = module->GetAssembly();
     BaseDomain *baseDomain = assembly->GetDomain();
-    
-    if (baseDomain->IsSharedDomain())
-    {
-        pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-        *pAppDomain = VMPTR_AppDomain::NullPtr();
-        *pDomainFile = VMPTR_DomainFile::NullPtr();
-    }
-    else if (baseDomain->IsAppDomain())
+
+    if (baseDomain->IsAppDomain())
     {
         pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(baseDomain->AsAppDomain()));
         pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));

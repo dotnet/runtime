@@ -711,9 +711,7 @@ HRESULT CorHost2::_CreateAppDomain(
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
     GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
-    AppDomainCreationHolder<AppDomain> pDomain;
-
-    pDomain.Assign(SystemDomain::System()->DefaultDomain());
+    AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
 
     ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
 
@@ -721,9 +719,6 @@ HRESULT CorHost2::_CreateAppDomain(
     {
         pDomain->SetIgnoreUnhandledExceptions();
     }
-
-    if (dwFlags & APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE)
-        pDomain->SetReversePInvokeCannotEnter();
 
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
@@ -774,8 +769,6 @@ HRESULT CorHost2::_CreateAppDomain(
 
         m_fAppDomainCreated = TRUE;
     }
-    // DoneCreating releases ownership of AppDomain.  After this call, there should be no access to pDomain.
-    pDomain.DoneCreating();
 
     END_EXTERNAL_ENTRYPOINT;
 

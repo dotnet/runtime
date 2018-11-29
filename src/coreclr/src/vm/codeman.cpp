@@ -449,7 +449,7 @@ extern CrstStatic g_StubUnwindInfoHeapSegmentsCrst;
     STANDARD_VM_CONTRACT;
     {
         // CodeHeapIterator holds the m_CodeHeapCritSec, which insures code heaps don't get deallocated while being walked
-        EEJitManager::CodeHeapIterator heapIterator(NULL, NULL);
+        EEJitManager::CodeHeapIterator heapIterator(NULL);
 
         // Currently m_CodeHeapCritSec is given the CRST_UNSAFE_ANYMODE flag which allows it to be taken in a GC_NOTRIGGER
         // region but also disallows GC_TRIGGERS.  We need GC_TRIGGERS because we take another lock.   Ideally we would
@@ -571,7 +571,7 @@ DeleteJitHeapCache
 
 
 #if !defined(DACCESS_COMPILE)
-EEJitManager::CodeHeapIterator::CodeHeapIterator(BaseDomain *pDomainFilter, LoaderAllocator *pLoaderAllocatorFilter)
+EEJitManager::CodeHeapIterator::CodeHeapIterator(LoaderAllocator *pLoaderAllocatorFilter)
     : m_lockHolder(&(ExecutionManager::GetEEJitManager()->m_CodeHeapCritSec)), m_Iterator(NULL, 0, NULL, 0)
 {
     CONTRACTL
@@ -583,7 +583,6 @@ EEJitManager::CodeHeapIterator::CodeHeapIterator(BaseDomain *pDomainFilter, Load
     CONTRACTL_END;
 
     m_pHeapList = NULL;
-    m_pDomain = pDomainFilter;
     m_pLoaderAllocator = pLoaderAllocatorFilter;
     m_pHeapList = ExecutionManager::GetEEJitManager()->GetCodeHeapList();
     if(m_pHeapList)
@@ -628,12 +627,6 @@ BOOL EEJitManager::CodeHeapIterator::Next()
             BYTE * code = m_Iterator.GetMethodCode();
             CodeHeader * pHdr = (CodeHeader *)(code - sizeof(CodeHeader));
             m_pCurrent = !pHdr->IsStubCodeBlock() ? pHdr->GetMethodDesc() : NULL;
-            if (m_pDomain && m_pCurrent)
-            {
-                BaseDomain *pCurrentBaseDomain = m_pCurrent->GetDomain();
-                if(pCurrentBaseDomain != m_pDomain)
-                    continue;
-            }
 
             // LoaderAllocator filter
             if (m_pLoaderAllocator && m_pCurrent)

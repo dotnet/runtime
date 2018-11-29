@@ -3770,7 +3770,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     {
         DisplayWriteFieldPointer( m_pBinder, NULL, Module, MODULE );
     }
-    _ASSERTE(module->m_activeDependencies.GetCount() == 0);
 
 
     /* REVISIT_TODO Tue 10/25/2005

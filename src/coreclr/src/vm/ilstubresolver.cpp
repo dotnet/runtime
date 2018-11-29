@@ -56,14 +56,7 @@ LPCUTF8 ILStubResolver::GetStubClassName(MethodDesc* pMD)
     }
     CONTRACTL_END;
 
-    if (pMD->GetDomain()->IsSharedDomain())
-    {
-        return "DomainNeutralILStubClass";
-    }
-    else
-    {
-        return "DomainBoundILStubClass";
-    }
+    return "ILStubClass";
 }
 
 LPCUTF8 ILStubResolver::GetStubMethodName()
