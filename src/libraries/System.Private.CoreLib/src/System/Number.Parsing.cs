@@ -510,7 +510,7 @@ namespace System
         }
 
         /// <summary>Parses int limited to styles that make up NumberStyles.Integer.</summary>
-        private static bool TryParseInt32IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result, ref bool failureIsOverflow)
+        internal static bool TryParseInt32IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result, ref bool failureIsOverflow)
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
             Debug.Assert(!failureIsOverflow, $"failureIsOverflow should have been initialized to false");
@@ -681,7 +681,7 @@ namespace System
         }
 
         /// <summary>Parses long inputs limited to styles that make up NumberStyles.Integer.</summary>
-        private static bool TryParseInt64IntegerStyle(
+        internal static bool TryParseInt64IntegerStyle(
             ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result, ref bool failureIsOverflow)
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
@@ -919,7 +919,7 @@ namespace System
         }
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.Integer.</summary>
-        private static bool TryParseUInt32IntegerStyle(
+        internal static bool TryParseUInt32IntegerStyle(
             ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result, ref bool failureIsOverflow)
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
@@ -1240,7 +1240,7 @@ namespace System
         }
 
         /// <summary>Parses ulong limited to styles that make up NumberStyles.Integer.</summary>
-        private static bool TryParseUInt64IntegerStyle(
+        internal static bool TryParseUInt64IntegerStyle(
             ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result, ref bool failureIsOverflow)
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
