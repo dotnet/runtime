@@ -91,6 +91,7 @@ monoutils_sources = \
 	mono-filemap.c		\
 	mono-mmap.c  		\
 	mono-mmap-windows.c  		\
+	mono-mmap-wasm.c  		\
 	mono-mmap.h  		\
 	mono-mmap-internals.h	\
 	mono-mmap-windows-internals.h	\

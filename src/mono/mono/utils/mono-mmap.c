@@ -149,6 +149,10 @@ mono_mem_account_register_counters (void)
 // Windows specific implementation in mono-mmap-windows.c
 #define HAVE_VALLOC_ALIGNED
 
+#elif defined(HOST_WASM)
+// WebAssembly implementation in mono-mmap-wasm.c
+#define HAVE_VALLOC_ALIGNED
+
 #else
 
 static void* malloced_shared_area = NULL;
