@@ -2441,6 +2441,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
 #ifdef _TARGET_X86_
             case NI_SSE42_Crc32:
+            case NI_SSE42_X64_Crc32:
             {
                 // TODO-XArch-Cleanup: Currently we use the BaseType to bring the type of the second argument
                 // to the code generator. We may want to encode the overload info in another way.

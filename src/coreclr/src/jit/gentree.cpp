@@ -17379,6 +17379,7 @@ bool GenTree::isRMWHWIntrinsic(Compiler* comp)
         // TODO-XArch-Cleanup: Move this switch block to be table driven.
 
         case NI_SSE42_Crc32:
+        case NI_SSE42_X64_Crc32:
         case NI_FMA_MultiplyAdd:
         case NI_FMA_MultiplyAddNegated:
         case NI_FMA_MultiplyAddNegatedScalar:
