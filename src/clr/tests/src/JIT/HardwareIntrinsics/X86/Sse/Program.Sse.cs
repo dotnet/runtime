@@ -52,6 +52,7 @@ namespace JIT.HardwareIntrinsics.X86
                 ["CompareOrderedScalar.Single"] = CompareOrderedScalarSingle,
                 ["CompareUnordered.Single"] = CompareUnorderedSingle,
                 ["CompareUnorderedScalar.Single"] = CompareUnorderedScalarSingle,
+                ["ConvertScalarToVector128Single.Single"] = ConvertScalarToVector128SingleSingle,
                 ["Divide.Single"] = DivideSingle,
                 ["DivideScalar.Single"] = DivideScalarSingle,
                 ["LoadVector128.Single"] = LoadVector128Single,
