@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <xplatform.h>
-#include "platformdefines.h"
+#include <platformdefines.h>
 
 const int NumArrElements = 2;
 struct InnerSequential
