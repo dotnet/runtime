@@ -644,8 +644,7 @@ WORD MethodTable::GetNumMethods()
 PTR_BaseDomain MethodTable::GetDomain()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    g_IBCLogger.LogMethodTableAccess(this);
-    return GetLoaderModule()->GetDomain();
+    return dac_cast<PTR_BaseDomain>(AppDomain::GetCurrentDomain());
 }
 
 //==========================================================================================

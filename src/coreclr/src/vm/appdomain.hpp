@@ -52,7 +52,6 @@
 
 class BaseDomain;
 class SystemDomain;
-class SharedDomain;
 class AppDomain;
 class CompilationDomain;
 class AppDomainEnum;
@@ -1083,10 +1082,11 @@ public:
     }
     
     virtual BOOL IsAppDomain()    { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
-    virtual BOOL IsSharedDomain() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
 
-    inline BOOL IsDefaultDomain();  // defined later in this file
-    virtual PTR_LoaderAllocator GetLoaderAllocator() = 0;
+    BOOL IsSharedDomain() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
+    BOOL IsDefaultDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
+
+    PTR_LoaderAllocator GetLoaderAllocator();
     virtual PTR_AppDomain AsAppDomain()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1094,17 +1094,6 @@ public:
         _ASSERTE(!"Not an AppDomain");
         return NULL;
     }
-
-    
-    // If one domain is the SharedDomain and one is an AppDomain then
-    // return the AppDomain, i.e. return the domain with the shorter lifetime
-    // of the two given domains.
-    static PTR_BaseDomain ComputeBaseDomain(
-         BaseDomain *pGenericDefinitionDomain,    // the domain that owns the generic type or method
-         Instantiation classInst,                       // the type arguments to the type (if any)
-         Instantiation methodInst = Instantiation());   // the type arguments to the method (if any)
-
-    static PTR_BaseDomain ComputeBaseDomain(TypeKey * pTypeKey);
 
 #ifdef FEATURE_COMINTEROP
     //****************************************************************************************
@@ -1702,43 +1691,6 @@ public:
 };  // class CollectibleAssemblyHolder<>
 
 //---------------------------------------------------------------------------------------
-// 
-#ifdef FEATURE_LOADER_OPTIMIZATION
-class SharedAssemblyLocator
-{
-public:
-    enum
-    {
-        DOMAINASSEMBLY      = 1,
-        PEASSEMBLY          = 2,
-        PEASSEMBLYEXACT     = 3
-    };
-    DWORD GetType() {LIMITED_METHOD_CONTRACT; return m_type;};
-#ifndef DACCESS_COMPILE
-    DomainAssembly* GetDomainAssembly() {LIMITED_METHOD_CONTRACT; _ASSERTE(m_type==DOMAINASSEMBLY); return (DomainAssembly*)m_value;};
-    PEAssembly* GetPEAssembly() {LIMITED_METHOD_CONTRACT; _ASSERTE(m_type==PEASSEMBLY||m_type==PEASSEMBLYEXACT); return (PEAssembly*)m_value;};
-    SharedAssemblyLocator(DomainAssembly* pAssembly)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_type=DOMAINASSEMBLY;
-        m_value=pAssembly;
-    }
-    SharedAssemblyLocator(PEAssembly* pFile, DWORD type = PEASSEMBLY)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_type = type;
-        m_value = pFile;
-    }
-#endif // DACCESS_COMPILE
-
-    DWORD Hash();
-protected:
-    DWORD m_type;
-    LPVOID m_value;
-    ULONG   m_uIdentityHash;
-};
-#endif // FEATURE_LOADER_OPTIMIZATION
-
 //
 // Stores binding information about failed assembly loads for DAC
 //
@@ -1865,8 +1817,6 @@ class AppDomainIterator;
 
 const DWORD DefaultADID = 1;
 
-template <class AppDomainType> class AppDomainCreationHolder;
-
 // An Appdomain is the managed equivalent of a process.  It is an isolation unit (conceptually you don't
 // have pointers directly from one appdomain to another, but rather go through remoting proxies).  It is
 // also a unit of unloading.
@@ -1904,7 +1854,7 @@ public:
 
     //-----------------------------------------------------------------------------------------------------------------
     // Convenience wrapper for ::GetAppDomain to provide better encapsulation.
-    static AppDomain * GetCurrentDomain()
+    static PTR_AppDomain GetCurrentDomain()
     { return m_pTheAppDomain; }
     
     //-----------------------------------------------------------------------------------------------------------------
@@ -1915,8 +1865,6 @@ public:
     HRESULT SetWinrtApplicationContext(SString &appLocalWinMD);
 #endif // FEATURE_COMINTEROP
 
-    BOOL CanReversePInvokeEnter();
-    void SetReversePInvokeCannotEnter();
     bool MustForceTrivialWaitOperations();
     void SetForceTrivialWaitOperations();
 
@@ -1970,8 +1918,6 @@ public:
     OBJECTHANDLE GetRawExposedObjectHandleForDebugger() { LIMITED_METHOD_DAC_CONTRACT; return m_ExposedObject; }
 
 #ifdef FEATURE_COMINTEROP
-    HRESULT GetComIPForExposedObject(IUnknown **pComIP);
-
     MethodTable *GetRedirectedType(WinMDAdapter::RedirectedTypeIndex index);
 #endif // FEATURE_COMINTEROP
 
@@ -2304,9 +2250,6 @@ public:
 
 
     CHECK CheckValidModule(Module *pModule);
-#ifdef FEATURE_LOADER_OPTIMIZATION    
-    DomainFile *LoadDomainNeutralModuleDependency(Module *pModule, FileLoadLevel targetLevel);
-#endif
 
     // private:
     void LoadSystemAssemblies();
@@ -2614,17 +2557,6 @@ public:
     }
 
     IUnknown *CreateFusionContext();
-
-    void OverrideDefaultContextBinder(IUnknown *pOverrideBinder)
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        _ASSERTE(pOverrideBinder != NULL);
-        pOverrideBinder->AddRef();
-        m_pFusionContext->Release();
-        m_pFusionContext = pOverrideBinder;
-    }
-    
 
 #ifdef FEATURE_PREJIT
     CorCompileConfigFlags GetNativeConfigFlags();
@@ -3031,7 +2963,6 @@ public:
     PTR_LoaderHeap GetStubHeap();
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
-    virtual PTR_LoaderAllocator GetLoaderAllocator();
 
 #ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
     #define ARM_ETW_ALLOC_THRESHOLD (4 * 1024 * 1024)
@@ -3217,8 +3148,6 @@ private:
     // Return FALSE if more work is needed
     BOOL StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnloadRequestThread);
 
-    AppDomainLoaderAllocator m_LoaderAllocator;
-
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
     LoaderAllocator * m_pDelayedLoaderAllocatorUnloadList;
     
@@ -3231,12 +3160,12 @@ public:
     void SetGCRefPoint(int gccounter)
     {
         LIMITED_METHOD_CONTRACT;
-        m_LoaderAllocator.SetGCRefPoint(gccounter);
+        GetLoaderAllocator()->SetGCRefPoint(gccounter);
     }
     int  GetGCRefPoint()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_LoaderAllocator.GetGCRefPoint();
+        return GetLoaderAllocator()->GetGCRefPoint();
     }
 
     static USHORT GetOffsetOfId()
@@ -3269,7 +3198,7 @@ public:
 
 private:
     // The one and only AppDomain
-    static AppDomain* m_pTheAppDomain;
+    SPTR_DECL(AppDomain, m_pTheAppDomain);
 
     SString         m_friendlyName;
     PTR_Assembly    m_pRootAssembly;
@@ -3282,8 +3211,6 @@ private:
     LONG        m_cRef;                    // Ref count.
 
     OBJECTHANDLE    m_ExposedObject;
-
-    IUnknown        *m_pComIPForExposedObject;
 
     // Hash table that maps a clsid to a type
     PtrHashMap          m_clsidHash;
@@ -3311,8 +3238,6 @@ private:
     // The method table used for LicenseInteropHelper
     MethodTable*    m_pLicenseInteropHelperMT;
 #endif // FEATURE_COMINTEROP
-
-    AssemblySink*      m_pAsyncPool;  // asynchronous retrival object pool (only one is kept)
 
     // The index of this app domain among existing app domains (starting from 1)
     ADIndex m_dwIndex;
@@ -3738,7 +3663,6 @@ class SystemDomain : public BaseDomain
 
 public:  
     static PTR_LoaderAllocator GetGlobalLoaderAllocator();
-    virtual PTR_LoaderAllocator GetLoaderAllocator() { WRAPPER_NO_CONTRACT; return GetGlobalLoaderAllocator(); }
     static AppDomain* GetAppDomainFromId(ADID indx,DWORD ADValidityKind)
     {
         CONTRACTL
@@ -4135,11 +4059,6 @@ private:
 
     InlineSString<100>  m_SystemDirectory;
 
-
-    LPWSTR      m_pwDevpath;
-    DWORD       m_dwDevpath;
-    BOOL        m_fDevpath;  // have we searched the environment
-
     // <TODO>@TODO: CTS, we can keep the com modules in a single assembly or in different assemblies.
     // We are currently using different assemblies but this is potentitially to slow...</TODO>
 
@@ -4352,292 +4271,7 @@ class AppDomainIterator : public UnsafeAppDomainIterator
     }
 };  // class AppDomainIterator
 
-typedef VPTR(class SharedDomain) PTR_SharedDomain;
-
-class SharedDomain : public BaseDomain
-{
-    VPTR_VTABLE_CLASS_AND_CTOR(SharedDomain, BaseDomain)
-
-public:
-
-    static void Attach();
-    static void Detach();
-
-    virtual BOOL IsSharedDomain() { LIMITED_METHOD_DAC_CONTRACT; return TRUE; }
-    virtual PTR_LoaderAllocator GetLoaderAllocator() { WRAPPER_NO_CONTRACT; return SystemDomain::GetGlobalLoaderAllocator(); }
-
-    virtual PTR_AppDomain AsAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
-        _ASSERTE(!"Not an AppDomain");
-        return NULL;
-    }
-
-    static SharedDomain * GetDomain();
-
-    void Init();
-    void Terminate();
-
-    // This will also set the tenured bit if and only if the add was successful,
-    // and will make sure that the bit appears atomically set to all readers that
-    // might be accessing the hash on another thread.
-    MethodTable * FindIndexClass(SIZE_T index);
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    void AddShareableAssembly(Assembly * pAssembly);
-
-    class SharedAssemblyIterator
-    {
-        PtrHashMap::PtrIterator i;
-        Assembly * m_pAssembly;
-
-      public:
-        SharedAssemblyIterator() :
-          i(GetDomain() ? GetDomain()->m_assemblyMap.firstBucket() : NULL)
-        { LIMITED_METHOD_DAC_CONTRACT; }
-
-        BOOL Next()
-        {
-            WRAPPER_NO_CONTRACT;
-            SUPPORTS_DAC;
-
-            if (i.end())
-                return FALSE;
-
-            m_pAssembly = PTR_Assembly(dac_cast<TADDR>(i.GetValue()));
-            ++i;
-            return TRUE;
-        }
-
-        Assembly * GetAssembly()
-        {
-            LIMITED_METHOD_DAC_CONTRACT;
-
-            return m_pAssembly;
-        }
-
-      private:
-        friend class SharedDomain;
-    };
-    
-    Assembly * FindShareableAssembly(SharedAssemblyLocator * pLocator);
-    SIZE_T GetShareableAssemblyCount();
-#endif //FEATURE_LOADER_OPTIMIZATION
-
-private:
-    friend class SharedAssemblyIterator;
-    friend class SharedFileLockHolder;
-    friend class ClrDataAccess;
-
-#ifndef DACCESS_COMPILE
-    void *operator new(size_t size, void *pInPlace);
-    void operator delete(void *pMem);
-#endif
-
-    SPTR_DECL(SharedDomain, m_pSharedDomain);
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    PEFileListLock          m_FileCreateLock;
-    SIZE_T                  m_nextClassIndex;
-    PtrHashMap              m_assemblyMap;
-#endif
-    
-public:
-#ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                   bool enumThis);
-#endif
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    // Hash map comparison function`
-    static BOOL CompareSharedAssembly(UPTR u1, UPTR u2);
-#endif
-};
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-class SharedFileLockHolderBase : protected HolderBase<PEFile *>
-{
-  protected:
-    PEFileListLock      *m_pLock;
-    ListLockEntry   *m_pLockElement;
-
-    SharedFileLockHolderBase(PEFile *value)
-      : HolderBase<PEFile *>(value)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_pLock = NULL;
-        m_pLockElement = NULL;
-    }
-
-#ifndef DACCESS_COMPILE
-    void DoAcquire()
-    {
-        STATIC_CONTRACT_THROWS;
-        STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
-        PEFileListLockHolder lockHolder(m_pLock);
-
-        m_pLockElement = m_pLock->FindFileLock(m_value);
-        if (m_pLockElement == NULL)
-        {
-            m_pLockElement = new ListLockEntry(m_pLock, m_value);
-            m_pLock->AddElement(m_pLockElement);
-        }
-        else
-            m_pLockElement->AddRef();
-
-        lockHolder.Release();
-
-        m_pLockElement->Enter();
-    }
-
-    void DoRelease()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FORBID_FAULT;
-
-        m_pLockElement->Leave();
-        m_pLockElement->Release();
-        m_pLockElement = NULL;
-    }
-#endif // DACCESS_COMPILE
-};
-
-class SharedFileLockHolder : public BaseHolder<PEFile *, SharedFileLockHolderBase>
-{
-  public:
-    DEBUG_NOINLINE SharedFileLockHolder(SharedDomain *pDomain, PEFile *pFile, BOOL Take = TRUE)
-      : BaseHolder<PEFile *, SharedFileLockHolderBase>(pFile, FALSE)
-    {
-        STATIC_CONTRACT_THROWS;
-        STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
-
-        m_pLock = &pDomain->m_FileCreateLock;
-        if (Take)
-            Acquire();
-    }
-};
-#endif // FEATURE_LOADER_OPTIMIZATION
-
-inline BOOL BaseDomain::IsDefaultDomain()
-{ 
-    LIMITED_METHOD_DAC_CONTRACT; 
-    return (SystemDomain::System()->DefaultDomain() == this);
-}
-
 #include "comreflectioncache.inl"
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-// holds an extra reference so needs special Extract() and should not have SuppressRelease()
-// Holders/Wrappers have nonvirtual methods so cannot use them as the base class
-template <class AppDomainType>
-class AppDomainCreationHolder 
-{
-private:
-    // disable the copy ctor
-    AppDomainCreationHolder(const AppDomainCreationHolder<AppDomainType>&) {}
-
-protected:
-    AppDomainType* m_pDomain;
-    BOOL       m_bAcquired;
-    void ReleaseAppDomainDuringCreation()
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            WRAPPER(GC_TRIGGERS);
-            PRECONDITION(m_bAcquired);
-            PRECONDITION(CheckPointer(m_pDomain));
-        }
-        CONTRACTL_END;
-
-        if (m_pDomain->NotReadyForManagedCode())
-        {
-            m_pDomain->Release();
-        }
-    };
-    
-public:
-    AppDomainCreationHolder() 
-    {
-        m_pDomain=NULL;
-        m_bAcquired=FALSE;
-    };
-    ~AppDomainCreationHolder()
-    {
-        if (m_bAcquired) 
-        {
-            Release();
-        }
-    };
-    void Assign(AppDomainType* pDomain)
-    {
-        if(m_bAcquired)
-            Release();
-        m_pDomain=pDomain;
-        if(m_pDomain)
-        {
-            AppDomain::RefTakerAcquire(m_pDomain);
-#ifdef _DEBUG
-            m_pDomain->IncCreationCount();
-#endif // _DEBUG
-        }
-        m_bAcquired=TRUE;
-    };
-    
-    void Release()
-    {
-        _ASSERTE(m_bAcquired);
-        if(m_pDomain)
-        {
-#ifdef _DEBUG
-            m_pDomain->DecCreationCount();
-#endif // _DEBUG
-            if(!m_pDomain->IsDefaultDomain())
-                ReleaseAppDomainDuringCreation();
-            AppDomain::RefTakerRelease(m_pDomain);
-        };
-        m_bAcquired=FALSE;
-    };
-
-    AppDomainType* Extract()
-    {
-        _ASSERTE(m_bAcquired);
-        if(m_pDomain)
-        {
-#ifdef _DEBUG
-            m_pDomain->DecCreationCount();
-#endif // _DEBUG
-            AppDomain::RefTakerRelease(m_pDomain);
-        }
-        m_bAcquired=FALSE;
-        return m_pDomain;
-    };
-
-    AppDomainType* operator ->()
-    {
-        _ASSERTE(m_bAcquired);
-        return m_pDomain;
-    }
-
-    operator AppDomainType*()
-    {
-        _ASSERTE(m_bAcquired);
-        return m_pDomain;
-    }
-
-    void DoneCreating()
-    {
-        Extract();
-    }
-};
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 #define INVALID_APPDOMAIN_ID ((DWORD)-1)
 #define CURRENT_APPDOMAIN_ID ((ADID)(DWORD)0)

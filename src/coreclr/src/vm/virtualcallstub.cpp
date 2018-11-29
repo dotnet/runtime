@@ -1050,18 +1050,6 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     }
 
     //
-    // See if we are managed by the shared domain
-    //
-    pCur = SharedDomain::GetDomain()->GetLoaderAllocator()->GetVirtualCallStubManager();
-    kind = pCur->getStubKind(stubAddress, usePredictStubKind);
-    if (kind != SK_UNKNOWN)
-    {
-        if (wbStubKind)
-            *wbStubKind = kind;
-        return pCur;
-    }
-
-    //
     // See if we are managed by a collectible loader allocator
     //
     if (pDomain->GetCollectibleVSDRanges()->IsInRange(stubAddress, reinterpret_cast<TADDR *>(&pCur)))
@@ -3993,16 +3981,6 @@ VirtualCallStubManager *VirtualCallStubManagerManager::FindVirtualCallStubManage
             // Check the current domain
             {
                 BaseDomain *pDom = pThread->GetDomain();
-                VirtualCallStubManager *pMgr = pDom->GetLoaderAllocator()->GetVirtualCallStubManager();
-                if (pMgr->CheckIsStub_Internal(stubAddress))
-                {
-                    m_pCacheElem = pMgr;
-                    return pMgr;
-                }
-            }
-            // Check the shared domain
-            {
-                BaseDomain *pDom = SharedDomain::GetDomain();
                 VirtualCallStubManager *pMgr = pDom->GetLoaderAllocator()->GetVirtualCallStubManager();
                 if (pMgr->CheckIsStub_Internal(stubAddress))
                 {

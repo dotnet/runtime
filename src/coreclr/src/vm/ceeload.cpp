@@ -1524,9 +1524,7 @@ static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)
     // (System.dll or System.Core.dll) and the app assemblies. Because of this extra layer, the check below won't see the direct
     // reference between these low level system assemblies and the app assemblies. The prefererred zap module for instantiations of generic
     // collections from these low level system assemblies (like LinkedList<AppType>) should be module of AppType. It would be module of the generic 
-    // collection without this check. On desktop (FEATURE_FULL_NGEN defined), it would result into inefficient code because of the instantiations 
-    // would be speculative. On CoreCLR (FEATURE_FULL_NGEN not defined), it would result into the instantiations not getting saved into native
-    // image at all.
+    // collection without this check.
     //
     // Similar problem exists for Windows.Foundation.winmd. There is a cycle between Windows.Foundation.winmd and Windows.Storage.winmd. This cycle
     // would cause prefererred zap module for instantiations of foundation types (like IAsyncOperation<StorageFolder>) to be Windows.Foundation.winmd.
@@ -1885,11 +1883,6 @@ DomainFile *Module::GetDomainFile(AppDomain *pDomain)
     {
         DomainLocalBlock *pLocalBlock = pDomain->GetDomainLocalBlock();
         DomainFile *pDomainFile =  pLocalBlock->TryGetDomainFile(GetModuleIndex());
-
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_LOADER_OPTIMIZATION)
-        if (pDomainFile == NULL)
-            pDomainFile = pDomain->LoadDomainNeutralModuleDependency(this, FILE_LOADED);
-#endif // !DACCESS_COMPILE
 
         RETURN (PTR_DomainFile) pDomainFile;
     }
@@ -4742,151 +4735,12 @@ void Module::AddActiveDependency(Module *pModule, BOOL unconditional)
         PRECONDITION(pModule != this);
         PRECONDITION(!IsSystem());
         PRECONDITION(!GetAssembly()->IsDomainNeutral() || pModule->GetAssembly()->IsDomainNeutral() || GetAppDomain()->IsDefaultDomain());
-        POSTCONDITION(IsSingleAppDomain() || HasActiveDependency(pModule));
-        POSTCONDITION(IsSingleAppDomain() || !unconditional || HasUnconditionalActiveDependency(pModule));
         // Postcondition about activation
     }
     CONTRACT_END;
 
-    // Activation tracking is not require in single domain mode. Activate the target immediately.
-    if (IsSingleAppDomain())
-    {
-        pModule->EnsureActive();
-        RETURN;
-    }
-
-    // In the default AppDomain we delay a closure walk until a sharing attempt has been made
-    // This might result in a situation where a domain neutral assembly from the default AppDomain 
-    // depends on something resolved by assembly resolve event (even Ref.Emit assemblies) 
-    // Since we won't actually share such assemblies, and the default AD itself cannot go away we 
-    // do not need to assert for such assemblies, thus " || GetAppDomain()->IsDefaultDomain()"
-
-    CONSISTENCY_CHECK_MSG(!GetAssembly()->IsDomainNeutral() || pModule->GetAssembly()->IsDomainNeutral() || GetAppDomain()->IsDefaultDomain(),
-                          "Active dependency from domain neutral to domain bound is illegal");
-
-    // We must track this dependency for multiple domains' use
-    STRESS_LOG2(LF_CLASSLOADER, LL_INFO100000," %p -> %p\n",this,pModule);
-
-    _ASSERTE(!unconditional || pModule->HasNativeImage()); 
-    _ASSERTE(!unconditional || HasNativeImage()); 
-
-    COUNT_T index;
-
-    // this function can run in parallel with DomainFile::Activate and sychronizes via GetNumberOfActivations()
-    // because we expose dependency only in the end Domain::Activate might miss it, but it will increment a counter module
-    // so we can realize we have to additionally propagate a dependency into that appdomain.
-    // currently we do it just by rescanning al appdomains.
-    // needless to say, updating the counter and checking counter+adding dependency to the list should be atomic
-
-
-    BOOL propagate = FALSE;
-    ULONG startCounter=0;
-    ULONG endCounter=0;
-    do
-    {
-        // First, add the dependency to the physical dependency list
-        {
-#ifdef _DEBUG 
-            CHECK check;
-            if (unconditional)
-                check=DomainFile::CheckUnactivatedInAllDomains(this);
-#endif // _DEBUG
-
-            CrstHolder lock(&m_Crst);
-            startCounter=GetNumberOfActivations();
-
-            index = m_activeDependencies.FindElement(0, pModule);
-            if (index == (COUNT_T) ArrayList::NOT_FOUND)
-            {
-                propagate = TRUE;
-                STRESS_LOG3(LF_CLASSLOADER, LL_INFO100,"Adding new module dependency %p -> %p, unconditional=%i\n",this,pModule,unconditional);
-            }
-
-            if (unconditional)
-            {
-                if (propagate)
-                {
-                    CONSISTENCY_CHECK_MSG(check,
-                                      "Unconditional dependency cannot be added after module has already been activated");
-
-                    index = m_activeDependencies.GetCount();
-                    m_activeDependencies.Append(pModule);
-                    m_unconditionalDependencies.SetBit(index);
-                    STRESS_LOG2(LF_CLASSLOADER, LL_INFO100," Unconditional module dependency propagated %p -> %p\n",this,pModule);
-                    // Now other threads can skip this dependency without propagating.
-                }
-                RETURN;
-            }
-
-        }
-
-        // Now we have to propagate any module activations in the loader
-
-        if (propagate)
-        {
-
-            _ASSERTE(!unconditional);
-            DomainFile::PropagateNewActivation(this, pModule);
-
-            CrstHolder lock(&m_Crst);
-            STRESS_LOG2(LF_CLASSLOADER, LL_INFO100," Conditional module dependency propagated %p -> %p\n",this,pModule);
-            // Now other threads can skip this dependency without propagating.
-            endCounter=GetNumberOfActivations();
-            if(startCounter==endCounter)
-                m_activeDependencies.Append(pModule);
-        }
-        
-    }while(propagate && startCounter!=endCounter); //need to retry if someone was activated in parallel
+    pModule->EnsureActive();
     RETURN;
-}
-
-BOOL Module::HasActiveDependency(Module *pModule)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    if (pModule == this)
-        return TRUE;
-
-    DependencyIterator i = IterateActiveDependencies();
-    while (i.Next())
-    {
-        if (i.GetDependency() == pModule)
-            return TRUE;
-    }
-
-    return FALSE;
-}
-
-BOOL Module::HasUnconditionalActiveDependency(Module *pModule)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        CAN_TAKE_LOCK;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pModule));
-    }
-    CONTRACTL_END;
-
-    if (pModule == this)
-        return TRUE;
-
-    DependencyIterator i = IterateActiveDependencies();
-    while (i.Next())
-    {
-        if (i.GetDependency() == pModule
-            && i.IsUnconditional())
-            return TRUE;
-    }
-
-    return FALSE;
 }
 
 void Module::EnableModuleFailureTriggers(Module *pModuleTo, AppDomain *pDomain)
@@ -6304,38 +6158,6 @@ void Module::DebugLogRidMapOccupancy()
 #undef COMPUTE_RID_MAP_OCCUPANCY
 }
 #endif // _DEBUG
-
-BOOL Module::CanExecuteCode()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_PREJIT 
-    // In a passive domain, we lock down which assemblies can run code
-    if (!GetAppDomain()->IsPassiveDomain())
-        return TRUE;
-
-    Assembly * pAssembly = GetAssembly();
-    PEAssembly * pPEAssembly = pAssembly->GetManifestFile();
-
-    // Only mscorlib is allowed to execute code in an ngen passive domain
-    if (IsCompilationProcess())
-        return pPEAssembly->IsSystem();
-
-    // ExecuteDLLForAttach does not run the managed entry point in 
-    // a passive domain to avoid loader-lock deadlocks.
-    // Hence, it is not safe to execute any code from this assembly.
-    if (pPEAssembly->GetEntryPointToken(INDEBUG(TRUE)) != mdTokenNil)
-        return FALSE;
-
-    // EXEs loaded using LoadAssembly() may not be loaded at their
-    // preferred base address. If they have any relocs, these may
-    // not have been fixed up.
-    if (!pPEAssembly->IsDll() && !pPEAssembly->IsILOnly())
-        return FALSE;
-#endif // FEATURE_PREJIT
-
-    return TRUE;
-}
 
 //
 // FindMethod finds a MethodDesc for a global function methoddef or ref
@@ -9917,12 +9739,6 @@ void Module::Fixup(DataImage *image)
 
     image->ZeroField(this, offsetof(Module, m_pISymUnmanagedReader), sizeof(m_pISymUnmanagedReader));
     image->ZeroField(this, offsetof(Module, m_ISymUnmanagedReaderCrst), sizeof(m_ISymUnmanagedReaderCrst));
-
-    // Clear active dependencies - they will be refilled at load time
-    image->ZeroField(this, offsetof(Module, m_activeDependencies), sizeof(m_activeDependencies));
-    new (image->GetImagePointer(this, offsetof(Module, m_unconditionalDependencies))) SynchronizedBitMask();
-    image->ZeroField(this, offsetof(Module, m_unconditionalDependencies) + offsetof(SynchronizedBitMask, m_bitMaskLock) + offsetof(SimpleRWLock,m_spinCount), sizeof(m_unconditionalDependencies.m_bitMaskLock.m_spinCount));
-    image->ZeroField(this, offsetof(Module, m_dwNumberOfActivations), sizeof(m_dwNumberOfActivations));
 
     image->ZeroField(this, offsetof(Module, m_LookupTableCrst), sizeof(m_LookupTableCrst));
 

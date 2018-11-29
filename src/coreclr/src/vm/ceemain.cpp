@@ -1195,9 +1195,6 @@ void InnerCoEEShutDownCOM()
     while (i.Next())
         i.GetDomain()->DeleteMarshalingData();
 
-    // Release marshaling data  in shared domain as well
-    SharedDomain::GetDomain()->DeleteMarshalingData();
-
 #ifdef FEATURE_APPX    
     // Cleanup cached factory pointer in SynchronizationContextNative
     SynchronizationContextNative::Cleanup();

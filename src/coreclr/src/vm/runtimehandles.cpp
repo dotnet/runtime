@@ -504,17 +504,6 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
         Module *pModule = refType->GetType().GetAssembly()->GetManifestModule();
 
             pDomainFile = pModule->FindDomainFile(GetAppDomain());
-#ifdef FEATURE_LOADER_OPTIMIZATION        
-        if (pDomainFile == NULL)
-        {
-            HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-            
-            pDomainFile = GetAppDomain()->LoadDomainNeutralModuleDependency(pModule, FILE_LOADED);
-
-            HELPER_METHOD_FRAME_END();
-        }
-#endif // FEATURE_LOADER_OPTIMIZATION        
-
 
     FC_RETURN_ASSEMBLY_OBJECT((DomainAssembly *)pDomainFile, refType);
 }
@@ -1118,7 +1107,7 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(EnregisteredTypeHandle pTypeHandl
 
     TypeHandle th = TypeHandle::FromPtr(pTypeHandle);
     assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_WINRT);
-    objHandle = th.GetDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
+    objHandle = AppDomain::GetCurrentDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
     END_QCALL;
