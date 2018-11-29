@@ -76,6 +76,7 @@ set(VM_CROSSGEN_SOURCES
   ../stublink.cpp
   ../typectxt.cpp
   ../typedesc.cpp
+  ../typeequivalencehash.cpp
   ../typehandle.cpp
   ../typehash.cpp
   ../typeparse.cpp
@@ -172,6 +173,7 @@ set(VM_CROSSGEN_HEADERS
   ../typectxt.h
   ../typedesc.h
   ../typedesc.inl
+  ../typeequivalencehash.hpp
   ../typehandle.h
   ../typehandle.inl
   ../typehash.h

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('TypeEquivalence.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**/*.cs" />
+  </ItemGroup>
+
+</Project>

@@ -114,6 +114,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     tieredcompilation.cpp
     typectxt.cpp
     typedesc.cpp
+    typeequivalencehash.cpp
     typehandle.cpp
     typehash.cpp
     typestring.cpp
@@ -220,6 +221,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     typectxt.h
     typedesc.h
     typedesc.inl
+    typeequivalencehash.hpp
     typehandle.h
     typehandle.inl
     typehash.h

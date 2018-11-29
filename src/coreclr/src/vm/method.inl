@@ -170,14 +170,6 @@ inline ComPlusCallInfo *ComPlusCallInfo::FromMethodDesc(MethodDesc *pMD)
 
 #endif //FEATURE_COMINTEROP
 
-#ifndef FEATURE_TYPEEQUIVALENCE
-inline BOOL HasTypeEquivalentStructParameters()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-#endif // FEATURE_TYPEEQUIVALENCE
-
 #ifdef FEATURE_CODE_VERSIONING
 inline CodeVersionManager * MethodDesc::GetCodeVersionManager()
 {
