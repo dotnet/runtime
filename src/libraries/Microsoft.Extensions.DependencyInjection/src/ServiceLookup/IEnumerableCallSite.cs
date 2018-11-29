@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         internal Type ItemType { get; }
         internal ServiceCallSite[] ServiceCallSites { get; }
 
-        public IEnumerableCallSite(Type itemType, ServiceCallSite[] serviceCallSites) : base(ResultCache.None)
+        public IEnumerableCallSite(ResultCache cache, Type itemType, ServiceCallSite[] serviceCallSites) : base(cache)
         {
             ItemType = itemType;
             ServiceCallSites = serviceCallSites;
