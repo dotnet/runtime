@@ -313,6 +313,8 @@ public:
     static
     void * QCALLTYPE GetFunctionPointer(MethodDesc * pMethod);
 
+    static BOOL QCALLTYPE GetIsCollectible(MethodDesc * pMethod);
+
     static FCDECL1(INT32, GetAttributes, MethodDesc *pMethod);
     static FCDECL1(INT32, GetImplAttributes, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(ReflectClassBaseObject*, GetDeclaringType, MethodDesc *pMethod);

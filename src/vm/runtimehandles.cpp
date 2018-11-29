@@ -1732,6 +1732,21 @@ void * QCALLTYPE RuntimeMethodHandle::GetFunctionPointer(MethodDesc * pMethod)
 
     return funcPtr;
 }
+
+BOOL QCALLTYPE RuntimeMethodHandle::GetIsCollectible(MethodDesc * pMethod)
+{
+    QCALL_CONTRACT;
+
+    BOOL isCollectible = FALSE;
+
+    BEGIN_QCALL;
+
+    isCollectible = pMethod->GetLoaderAllocator()->IsCollectible();
+
+    END_QCALL;
+
+    return isCollectible;
+}
     
 FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc *pMethod) {
     CONTRACTL {

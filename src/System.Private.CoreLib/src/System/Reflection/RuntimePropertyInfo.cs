@@ -220,6 +220,7 @@ namespace System.Reflection
 
         public override Module Module { get { return GetRuntimeModule(); } }
         internal RuntimeModule GetRuntimeModule() { return m_declaringType.GetRuntimeModule(); }
+        public override bool IsCollectible => m_declaringType.IsCollectible;
         #endregion
 
         #region PropertyInfo Overrides
