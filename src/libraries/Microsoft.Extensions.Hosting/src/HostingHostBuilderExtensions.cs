@@ -120,6 +120,22 @@ namespace Microsoft.Extensions.Hosting
         }
 
         /// <summary>
+        /// Listens for Ctrl+C or SIGTERM and calls <see cref="IApplicationLifetime.StopApplication"/> to start the shutdown process.
+        /// This will unblock extensions like RunAsync and WaitForShutdownAsync.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions"></param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder UseConsoleLifetime(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions)
+        {
+            return hostBuilder.ConfigureServices((context, collection) =>
+            {
+                collection.AddSingleton<IHostLifetime, ConsoleLifetime>();
+                collection.Configure(configureOptions);
+            });
+        }
+
+        /// <summary>
         /// Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
@@ -128,6 +144,18 @@ namespace Microsoft.Extensions.Hosting
         public static Task RunConsoleAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {
             return hostBuilder.UseConsoleLifetime().Build().RunAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Enables console support, builds and starts the host, and waits for Ctrl+C or SIGTERM to shut down.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public static Task RunConsoleAsync(this IHostBuilder hostBuilder, Action<ConsoleLifetimeOptions> configureOptions, CancellationToken cancellationToken = default)
+        {
+            return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);
         }
     }
 }
