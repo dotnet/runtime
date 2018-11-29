@@ -17,7 +17,8 @@ namespace Microsoft.Extensions.DependencyInjection
         // Event source doesn't support large payloads so we chunk formatted call site tree
         private int MaxChunkSize = 10 * 1024;
 
-        private DependencyInjectionEventSource()
+
+        private DependencyInjectionEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
 
@@ -45,6 +46,12 @@ namespace Microsoft.Extensions.DependencyInjection
         public void ExpressionTreeGenerated(string serviceType, int nodeCount)
         {
             WriteEvent(3, serviceType, nodeCount);
+        }
+
+        [Event(4, Level = EventLevel.Verbose)]
+        public void DynamicMethodBuilt(string serviceType, int methodSize)
+        {
+            WriteEvent(4, serviceType, methodSize);
         }
 
         [NonEvent]
@@ -81,6 +88,15 @@ namespace Microsoft.Extensions.DependencyInjection
                 var visitor = new NodeCountingVisitor();
                 visitor.Visit(expression);
                 ExpressionTreeGenerated(serviceType.ToString(), visitor.NodeCount);
+            }
+        }
+
+        [NonEvent]
+        public void DynamicMethodBuilt(Type serviceType, int methodSize)
+        {
+            if (IsEnabled(EventLevel.Verbose, EventKeywords.All))
+            {
+                DynamicMethodBuilt(serviceType.ToString(), methodSize);
             }
         }
 
