@@ -730,9 +730,11 @@ void CodeGen::genSIMDScalarMove(
 
 void CodeGen::genSIMDZero(var_types targetType, var_types baseType, regNumber targetReg)
 {
-    // pxor reg, reg
-    instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType);
-    inst_RV_RV(ins, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
+    // We just use `INS_xorps` instead of `getOpForSIMDIntrinsic(SIMDIntrinsicBitwiseXor, baseType)`
+    // since `genSIMDZero` is used for both `System.Numerics.Vectors` and HardwareIntrinsics. Modern
+    // CPUs handle this specially in the renamer and it never hits the execution pipeline, additionally
+    // `INS_xorps` is always available (when using either the legacy or VEX encoding).
+    inst_RV_RV(INS_xorps, targetReg, targetReg, targetType, emitActualTypeSize(targetType));
 }
 
 //------------------------------------------------------------------------
