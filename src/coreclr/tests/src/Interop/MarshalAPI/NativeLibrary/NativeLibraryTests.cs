@@ -106,14 +106,15 @@ public class NativeLibraryTest
 
         if (TestLibrary.Utilities.IsWindows)
         {
+            libName = GetWin32LibName();
+
             // Calls on a valid library from System32 directory
-            libName = GetNativeLibraryPlainName();
-            success &= EXPECT(LoadLibraryAdvanced("mapi32", assembly, DllImportSearchPath.System32));
-            success &= EXPECT(TryLoadLibraryAdvanced("mapi32", assembly, DllImportSearchPath.System32));
+            success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.System32));
+            success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.System32));
 
             // Calls on a valid library from application directory
-            success &= EXPECT(LoadLibraryAdvanced("mapi32", assembly, DllImportSearchPath.ApplicationDirectory), TestResult.DllNotFound);
-            success &= EXPECT(TryLoadLibraryAdvanced("mapi32", assembly, DllImportSearchPath.ApplicationDirectory), TestResult.ReturnFailure);
+            success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.DllNotFound);
+            success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.ReturnFailure);
         }
 
         // Calls with null libName input
@@ -177,6 +178,11 @@ public class NativeLibraryTest
     static string GetNativeLibraryPlainName()
     {
         return "NativeLibrary";
+    }
+
+    static string GetWin32LibName()
+    {
+        return "msi.dll";
     }
 
     static string GetNativeLibraryName()
