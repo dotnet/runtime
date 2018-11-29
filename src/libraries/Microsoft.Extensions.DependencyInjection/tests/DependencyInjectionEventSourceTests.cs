@@ -191,6 +191,24 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(3, expressionTreeGeneratedEvent.EventId);
         }
 
+        [Fact]
+        public void EmitsDynamicMethodBuiltEvent()
+        {
+            // Arrange
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddTransient<IFakeService, FakeService>();
+
+            var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions { Mode = ServiceProviderMode.ILEmit });
+
+            serviceProvider.GetService<IFakeService>();
+
+            var expressionTreeGeneratedEvent = _listener.EventData.Single(e => e.EventName == "DynamicMethodBuilt");
+
+            Assert.Equal("Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService", GetProperty<string>(expressionTreeGeneratedEvent, "serviceType"));
+            Assert.Equal(12, GetProperty<int>(expressionTreeGeneratedEvent, "methodSize"));
+            Assert.Equal(4, expressionTreeGeneratedEvent.EventId);
+        }
+
         private T GetProperty<T>(EventWrittenEventArgs data, string propName)
             => (T)data.Payload[data.PayloadNames.IndexOf(propName)];
 

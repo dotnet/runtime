@@ -194,6 +194,27 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             Assert.NotNull(service);
         }
 
+        [Fact]
+        public void WorksWithWideScopedTrees()
+        {
+            var serviceCollection = new ServiceCollection();
+            for (int i = 0; i < 20; i++)
+            {
+                serviceCollection.AddScoped<IFakeOuterService, FakeOuterService>();
+                serviceCollection.AddScoped<IFakeMultipleService, FakeMultipleServiceWithIEnumerableDependency>();
+                serviceCollection.AddScoped<IFakeService, FakeService>();
+            }
+
+            var service = CreateServiceProvider(serviceCollection).GetService<IEnumerable<IFakeOuterService>>();
+        }
+
+        private class FakeMultipleServiceWithIEnumerableDependency: IFakeMultipleService
+        {
+            public FakeMultipleServiceWithIEnumerableDependency(IEnumerable<IFakeService> fakeServices)
+            {
+            }
+        }
+
         private abstract class AbstractFakeOpenGenericService<T> : IFakeOpenGenericService<T>
         {
             public abstract T Value { get; }
