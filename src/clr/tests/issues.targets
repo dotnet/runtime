@@ -807,6 +807,9 @@
     <!-- The following are tests that fail on non-Windows, which we must not run when building against packages -->
 
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildTestsAgainstPackages)' == 'true' and '$(TargetsWindows)' != 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/MarshalAPI/NativeLibrary/NativeLibraryTests/*">
+            <Issue>Issue building native components for the test. Since tests are currently built on Windows, the native components end up at Core_Root instead of Test directory, which is not suitable for the test.</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/cti/system/byte/ByteToString3/*">
             <Issue>needs triage</Issue>
         </ExcludeList>
