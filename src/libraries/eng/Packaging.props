@@ -6,7 +6,6 @@
     <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
-    <PackagingTaskDir>$(BuildToolsTaskDir)</PackagingTaskDir>
     <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
