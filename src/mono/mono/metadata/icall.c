@@ -7091,17 +7091,14 @@ ves_icall_System_Environment_GetLogicalDrives (void)
 	return mono_icall_get_logical_drives ();
 }
 
-MonoString *
-ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
+MonoStringHandle
+ves_icall_System_IO_DriveInfo_GetDriveFormat (const gunichar2 *path, gint32 path_length, MonoError *error)
 {
-	ERROR_DECL (error);
 	gunichar2 volume_name [MAX_PATH + 1];
 	
-	if (mono_w32file_get_file_system_type (mono_string_chars_internal (path), volume_name, MAX_PATH + 1) == FALSE)
-		return NULL;
-	MonoString *result = mono_string_from_utf16_checked (volume_name, error);
-	mono_error_set_pending_exception (error);
-	return result;
+	if (mono_w32file_get_file_system_type (path, volume_name, MAX_PATH + 1) == FALSE)
+		return NULL_HANDLE_STRING;
+	return mono_string_new_utf16_handle (mono_domain_get (), volume_name, g_utf16_len (volume_name), error);
 }
 
 MonoStringHandle
@@ -7110,7 +7107,7 @@ ves_icall_System_Environment_InternalGetHome (MonoError *error)
 	return mono_string_new_handle (mono_domain_get (), g_get_home_dir (), error);
 }
 
-static const char *encodings [] = {
+static const char * const encodings [] = {
 	(char *) 1,
 		"ascii", "us_ascii", "us", "ansi_x3.4_1968",
 		"ansi_x3.4_1986", "cp367", "csascii", "ibm367",
@@ -7183,8 +7180,7 @@ ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page, Mo
 	
 	if (want_name && *int_code_page == -1)
 		return mono_string_new_handle (mono_domain_get (), cset, error);
-	else
-		return MONO_HANDLE_CAST (MonoString, NULL_HANDLE);
+	return NULL_HANDLE_STRING;
 }
 
 MonoBoolean
@@ -7379,35 +7375,28 @@ ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer strea
 
 #ifndef PLATFORM_NO_DRIVEINFO
 MonoBoolean
-ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (MonoString *path_name, guint64 *free_bytes_avail,
+ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, gint32 path_name_length, guint64 *free_bytes_avail,
 						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
 						gint32 *error)
 {
-	gboolean result;
+	g_assert (error);
+	g_assert (free_bytes_avail);
+	g_assert (total_number_of_bytes);
+	g_assert (total_number_of_free_bytes);
+
+	// FIXME check for embedded nuls here or managed
 
 	*error = ERROR_SUCCESS;
+	*free_bytes_avail = (guint64)-1;
+	*total_number_of_bytes = (guint64)-1;
+	*total_number_of_free_bytes = (guint64)-1;
 
-	result = mono_w32file_get_disk_free_space (mono_string_chars_internal (path_name), free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes);
+	gboolean result = mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes);
 	if (!result)
 		*error = mono_w32error_get_last ();
 
 	return result;
 }
-
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) || G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-static inline guint32
-mono_icall_drive_info_get_drive_type (MonoString *root_path_name)
-{
-	return mono_w32file_get_drive_type (mono_string_chars_internal (root_path_name));
-}
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
-{
-	return mono_icall_drive_info_get_drive_type (root_path_name);
-}
-
 #endif /* PLATFORM_NO_DRIVEINFO */
 
 gpointer

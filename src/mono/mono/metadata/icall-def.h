@@ -376,9 +376,9 @@ NOHANDLES(ICALL(DEFLATESTREAM_5, "WriteZStream", ves_icall_System_IO_Compression
 
 #ifndef PLATFORM_NO_DRIVEINFO
 ICALL_TYPE(IODRIVEINFO, "System.IO.DriveInfo", IODRIVEINFO_1)
-ICALL(IODRIVEINFO_1, "GetDiskFreeSpaceInternal", ves_icall_System_IO_DriveInfo_GetDiskFreeSpace)
-ICALL(IODRIVEINFO_2, "GetDriveFormat", ves_icall_System_IO_DriveInfo_GetDriveFormat)
-ICALL(IODRIVEINFO_3, "GetDriveTypeInternal", ves_icall_System_IO_DriveInfo_GetDriveType)
+NOHANDLES(ICALL(IODRIVEINFO_1, "GetDiskFreeSpaceInternal", ves_icall_System_IO_DriveInfo_GetDiskFreeSpace))
+HANDLES(IODRIVEINFO_2, "GetDriveFormatInternal", ves_icall_System_IO_DriveInfo_GetDriveFormat, MonoString, 2, (const_gunichar2_ptr, int))
+HANDLES(IODRIVEINFO_3, "GetDriveTypeInternal", ves_icall_System_IO_DriveInfo_GetDriveType, guint32, 2, (const_gunichar2_ptr, int))
 #endif
 
 ICALL_TYPE(FAMW, "System.IO.FAMWatcher", FAMW_1)

@@ -4315,10 +4315,15 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 }
 #endif
 
-#if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
+#ifndef PLATFORM_NO_DRIVEINFO
 gboolean
 mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes)
 {
+	g_assert (free_bytes_avail);
+	g_assert (total_number_of_bytes);
+	g_assert (total_number_of_free_bytes);
+
+#if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
 #ifdef HAVE_STATVFS
 	struct statvfs fsstat;
 #elif defined(HAVE_STATFS)
@@ -4375,51 +4380,23 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	}
 
 	/* total number of free bytes for non-root */
-	if (free_bytes_avail != NULL) {
-		if (isreadonly) {
-			*free_bytes_avail = 0;
-		}
-		else {
-			*free_bytes_avail = block_size * (guint64)fsstat.f_bavail;
-		}
-	}
+	if (isreadonly)
+		*free_bytes_avail = 0;
+	else
+		*free_bytes_avail = block_size * (guint64)fsstat.f_bavail;
 
 	/* total number of bytes available for non-root */
-	if (total_number_of_bytes != NULL) {
-		*total_number_of_bytes = block_size * (guint64)fsstat.f_blocks;
-	}
+	*total_number_of_bytes = block_size * (guint64)fsstat.f_blocks;
 
 	/* total number of bytes available for root */
-	if (total_number_of_free_bytes != NULL) {
-		if (isreadonly) {
-			*total_number_of_free_bytes = 0;
-		}
-		else {
-			*total_number_of_free_bytes = block_size * (guint64)fsstat.f_bfree;
-		}
-	}
-	
-	return(TRUE);
-}
-#else
-gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes)
-{
-	if (free_bytes_avail != NULL) {
-		*free_bytes_avail = (guint64) -1;
-	}
-
-	if (total_number_of_bytes != NULL) {
-		*total_number_of_bytes = (guint64) -1;
-	}
-
-	if (total_number_of_free_bytes != NULL) {
-		*total_number_of_free_bytes = (guint64) -1;
-	}
-
-	return(TRUE);
-}
+	if (isreadonly)
+		*total_number_of_free_bytes = 0;
+	else
+		*total_number_of_free_bytes = block_size * (guint64)fsstat.f_bfree;
 #endif
+	return(TRUE);
+}
+#endif // PLATFORM_NO_DRIVEINFO
 
 /*
  * General Unix support
@@ -4708,8 +4685,10 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 #endif
 
 guint32
-mono_w32file_get_drive_type(const gunichar2 *root_path_name)
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
 {
+	// FIXME Check for embedded nuls here or in managed.
+
 	gchar *utf8_root_path_name;
 	guint32 drive_type;
 

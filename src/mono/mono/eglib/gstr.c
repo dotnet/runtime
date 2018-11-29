@@ -1056,3 +1056,16 @@ g_strnfill (gsize length, gchar fill_char)
 	ret [length] = 0;
 	return ret;
 }
+
+size_t
+g_utf16_len (const gunichar2 *a)
+{
+#ifdef G_OS_WIN32
+	return wcslen (a);
+#else
+	size_t length = 0;
+	while (a [length])
+		++length;
+	return length;
+#endif
+}
