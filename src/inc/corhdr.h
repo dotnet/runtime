@@ -1819,10 +1819,6 @@ typedef enum CorAttributeTargets
 #define DEFAULTDOMAIN_MTA_TYPE                   "System.MTAThreadAttribute"
 #define DEFAULTDOMAIN_MTA_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define DEFAULTDOMAIN_LOADEROPTIMIZATION_TYPE_W L"System.LoaderOptimizationAttribute"
-#define DEFAULTDOMAIN_LOADEROPTIMIZATION_TYPE    "System.LoaderOptimizationAttribute"
-#define DEFAULTDOMAIN_LOADEROPTIMIZATION_SIG    {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I1}
-
 #define NONVERSIONABLE_TYPE_W                   L"System.Runtime.Versioning.NonVersionableAttribute"
 #define NONVERSIONABLE_TYPE                      "System.Runtime.Versioning.NonVersionableAttribute"
 

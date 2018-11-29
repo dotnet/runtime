@@ -49,10 +49,6 @@ class LoadedMethodDescIterator
     AssemblyIterationFlags                  m_assemIterationFlags;
     ModuleIterationOption                   m_moduleIterationFlags;
 
-    // These are used when iterating over the SharedDomain
-    SharedDomain::SharedAssemblyIterator    m_sharedAssemblyIterator;
-    Assembly::ModuleIterator                m_sharedModuleIterator;
-
     EETypeHashTable::Iterator               m_typeIterator;
     EETypeHashEntry *                       m_typeIteratorEntry;
     BOOL                                    m_startedNonGenericType;
@@ -66,28 +62,6 @@ class LoadedMethodDescIterator
 #endif //_DEBUG
 
 public:
-    // Defines the set of assemblies that LoadedMethodDescIterator should consider. 
-    // Typical usages:
-    //     * Debugger controller (for setting breakpoint) just uses kModeAllADAssemblies.  
-    //     * RejitManager uses the iterator once with kModeSharedDomainAssemblies, and
-    //         then a bunch of times (once per AD) with kModeUnsharedADAssemblies to
-    //         ensure all assemblies in all ADs are considered, and to avoid unnecessary
-    //         dupes for domain-neutral assemblies.
-    enum AssemblyIterationMode
-    {
-        // Default, used by debugger's breakpoint controller.  Iterates through all
-        // Assemblies associated with the specified AppDomain
-        kModeAllADAssemblies,
-
-        // Iterate through only the *unshared* assemblies associated with the specified
-        // AppDomain.
-        kModeUnsharedADAssemblies,
-
-        // Rather than iterating through Assemblies associated with an AppDomain, just
-        // iterate over all Assemblies associated with the SharedDomain
-        kModeSharedDomainAssemblies,
-    };
-
     // Iterates next MethodDesc. Updates the holder only if the assembly differs from the previous one.
     // Caller should not release (i.e. change) the holder explicitly between calls, otherwise collectible 
     // assembly might be without a reference and get deallocated (even the native part).
@@ -96,7 +70,6 @@ public:
     void Start(AppDomain * pAppDomain,
                Module *pModule,
                mdMethodDef md,
-               AssemblyIterationMode assemblyIterationMode,
                AssemblyIterationFlags assemIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution),
                ModuleIterationOption moduleIterationFlags = kModIterIncludeLoaded);
     void Start(AppDomain * pAppDomain, Module *pModule, mdMethodDef md, MethodDesc *pDesc);
@@ -105,21 +78,16 @@ public:
         AppDomain * pAppDomain,
         Module *pModule,
         mdMethodDef md,
-        AssemblyIterationMode assemblyIterationMode = kModeAllADAssemblies,
         AssemblyIterationFlags assemblyIterationFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution),
         ModuleIterationOption moduleIterationFlags = kModIterIncludeLoaded)
     {
         LIMITED_METHOD_CONTRACT;
-        Start(pAppDomain, pModule, md, assemblyIterationMode, assemblyIterationFlags, moduleIterationFlags);
+        Start(pAppDomain, pModule, md, assemblyIterationFlags, moduleIterationFlags);
     }
     LoadedMethodDescIterator(void);
 
 protected:
-    AssemblyIterationMode m_assemblyIterationMode;
-    BOOL m_fSharedDomain;
-
     Module * GetCurrentModule();
-    BOOL NextSharedModule();
 
 };  // class LoadedMethodDescIterator
 

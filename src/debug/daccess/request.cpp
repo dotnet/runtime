@@ -2281,7 +2281,7 @@ ClrDataAccess::GetAppDomainStoreData(struct DacpAppDomainStoreData *adsData)
     SOSDacEnter();
 
     adsData->systemDomain = HOST_CDADDR(SystemDomain::System());
-    adsData->sharedDomain = HOST_CDADDR(SharedDomain::GetDomain());
+    adsData->sharedDomain = NULL;
 
     // Get an accurate count of appdomains.
     adsData->DomainCount = 0;
@@ -2314,17 +2314,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetStubHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
-        if (pBaseDomain->IsSharedDomain())
-        {
-    #ifdef FEATURE_LOADER_OPTIMIZATION    
-            SharedDomain::SharedAssemblyIterator i;
-            while (i.Next())
-            {
-                appdomainData->AssemblyCount++;
-            }
-    #endif // FEATURE_LOADER_OPTIMIZATION        
-        }
-        else if (pBaseDomain->IsAppDomain())
+        if (pBaseDomain->IsAppDomain())
         {
             AppDomain * pAppDomain = pBaseDomain->AsAppDomain();
             appdomainData->DomainLocalBlock = appdomainData->AppDomainPtr +
@@ -2458,28 +2448,7 @@ ClrDataAccess::GetAssemblyList(CLRDATA_ADDRESS addr, int count, CLRDATA_ADDRESS 
     BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(addr));
 
     int n=0;
-    if (pBaseDomain->IsSharedDomain())
-    {
-#ifdef FEATURE_LOADER_OPTIMIZATION    
-        SharedDomain::SharedAssemblyIterator i;
-        if (values)
-        {
-            while (i.Next() && n < count)
-                values[n++] = HOST_CDADDR(i.GetAssembly());
-        }
-        else
-        {
-            while (i.Next())
-                n++;
-        }
-
-        if (pNeeded)
-            *pNeeded = n;
-#else
-        hr = E_UNEXPECTED;
-#endif
-    }
-    else if (pBaseDomain->IsAppDomain())
+    if (pBaseDomain->IsAppDomain())
     {
         AppDomain::AssemblyIterator i = pBaseDomain->AsAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoading | kIncludeLoaded | kIncludeExecution));

@@ -10957,23 +10957,7 @@ void CEEJitInfo::addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MO
     Module *dependency = (Module *)moduleTo;
     _ASSERTE(!dependency->IsSystem());
 
-    if (m_pMethodBeingCompiled->IsLCGMethod())
-    {
-        // The context module of the m_pMethodBeingCompiled is irrelevant.  Rather than tracking
-        // the dependency, we just do immediate activation.
-        dependency->EnsureActive();
-    }
-    else
-    {
-#ifdef FEATURE_LOADER_OPTIMIZATION
-        Module *context = (Module *)moduleFrom;
-
-        // Record active dependency for loader.
-        context->AddActiveDependency(dependency, FALSE);
-#else
-        dependency->EnsureActive();
-#endif
-    }
+    dependency->EnsureActive();
 
     // EE_TO_JIT_TRANSITION();
 }

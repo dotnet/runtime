@@ -86,7 +86,7 @@ Crst AllowedFiles
 End
 
 Crst AppDomainCache
-    AcquiredBefore FusionBindContext FusionLoadContext LoaderHeap UniqueStack UnresolvedClassLock
+    AcquiredBefore UniqueStack UnresolvedClassLock
 End
 
 Crst AppDomainHandleTable
@@ -112,7 +112,7 @@ Crst AssemblyDependencyGraph
 End
 
 Crst AvailableParamTypes
-    AcquiredBefore FusionBindContext FusionLoadContext IbcProfile LoaderHeap
+    AcquiredBefore IbcProfile LoaderHeap
 End
 
 Crst BaseDomain
@@ -160,7 +160,7 @@ End
 Crst Contexts
     AcquiredBefore AvailableParamTypes Cer ClassInit DeadlockDetection DomainLocalBlock FuncPtrStubs
                    GlobalStrLiteralMap Jit LoaderHeap ModuleLookupTable RWLock SigConvert SingleUseLock
-                   StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock FusionClosure
+                   StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
 End
 
 Crst CoreCLRBinderLog
@@ -279,69 +279,7 @@ Crst FuncPtrStubs
 End
 
 Crst FusionAppCtx
-    AcquiredBefore FusionPolicyConfigPool FusionSingleUse  FusionAssemblyDownload
-End
-
-Crst FusionAssemblyDownload
-    AcquiredBefore FusionDownload UniqueStack
-End
-
-Crst FusionBindResult
-End
-
-Crst FusionClb
-End
-
-Crst FusionClosure
-    AcquiredBefore FusionBindContext FusionLoadContext FusionAppCtx FusionClosureGraph DomainLocalBlock ModuleFixup
-End
-
-Crst FusionClosureGraph
-    AcquiredBefore FusionAppCtx FusionBindContext FusionLoadContext
-End
-
-Crst FusionConfigSettings
-End
-
-Crst FusionDownload
-End
-
-Crst FusionLoadContext
     AcquiredBefore PEImage
-End
-
-Crst FusionBindContext
-    AcquiredBefore PEImage
-End
-
-Crst FusionLog
-    AcquiredBefore IbcProfile UniqueStack
-End
-
-Crst FusionWarningLog
-    AcquiredBefore FusionBindContext FusionLoadContext FusionLog
-End
-
-Crst FusionNgenIndex
-    AcquiredBefore SystemDomainDelayedUnloadList
-End
-
-Crst FusionNgenIndexPool
-    AcquiredBefore SystemDomainDelayedUnloadList
-End
-
-Crst FusionPcyCache
-End
-
-Crst FusionPolicyConfigPool
-     AcquiredBefore UniqueStack
-End
-
-Crst FusionSingleUse
-    AcquiredBefore PEImage
-End
-
-Crst FusionIsoLibInit
 End
 
 Crst NativeBinderInit
@@ -353,7 +291,7 @@ Crst NativeImageCache
 End
 
 Crst GCCover
-    AcquiredBefore LoaderHeap ReJITSharedDomainTable
+    AcquiredBefore LoaderHeap
 End
 
 Crst GCMemoryPressure
@@ -389,7 +327,7 @@ Crst ILStubGen
 End
 
 Crst InstMethodHashTable
-    AcquiredBefore FusionBindContext FusionLoadContext LoaderHeap UniqueStack JumpStubCache
+    AcquiredBefore LoaderHeap UniqueStack JumpStubCache
 End
 
 Crst InterfaceVTableMap
@@ -430,8 +368,8 @@ End
 
 Crst JumpStubCache
     AcquiredBefore ExecuteManRangeLock LoaderHeap SingleUseLock
-    AcquiredAfter AppDomainCache ExecuteManLock FusionAssemblyDownload FusionNgenIndex FusionNgenIndexPool 
-                  ILStubGen SharedBaseDomain ThreadpoolTimerQueue ThreadpoolWaitThreads 
+    AcquiredAfter AppDomainCache ExecuteManLock 
+                  ILStubGen ThreadpoolTimerQueue ThreadpoolWaitThreads 
                   TPMethodTable TypeIDMap BaseDomain AssemblyLoader
 End
 
@@ -502,15 +440,8 @@ End
 Crst PatchEntryPoint
 End
 
-Crst PEFileSecurityManager
-End
-
 Crst PEImage
     AcquiredBefore UniqueStack
-End
-
-Crst ILFingerprintCache
-    AcquiredBefore PEImage
 End
 
 Crst PEImagePDBStream
@@ -520,12 +451,10 @@ Crst PendingTypeLoadEntry
     AcquiredBefore AppDomainCache AppDomainHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
                    DomainLocalBlock DynLinkZapItems Exception ExecuteManRangeLock FuncPtrStubs
-                   FusionAppCtx FusionAssemblyDownload FusionBindResult FusionClosure FusionDownload
-                   FusionBindContext FusionLoadContext FusionNgenIndex FusionNgenIndexPool FusionPcyCache
-                   FusionPolicyConfigPool FusionSingleUse GlobalStrLiteralMap HandleTable IbcProfile
+                   FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
                    IJWFixupData IJWHash ISymUnmanagedReader Jit JumpStubCache LoaderHeap ModIntPairList
                    Module ModuleLookupTable PEImage SecurityStackwalkCache SharedAssemblyCreate
-                   SharedBaseDomain SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
+                   SigConvert SingleUseLock StubDispatchCache StubUnwindInfoHeapSegments
                    SyncBlockCache SystemDomain ThreadIdDispenser ThreadStore TypeIDMap UnresolvedClassLock
     SameLevelAs PendingTypeLoadEntry
 End
@@ -567,20 +496,9 @@ Crst Reflection
     AcquiredBefore LoaderHeap UnresolvedClassLock
 End
 
-// Used to synchronize all rejit information stored in a given AppDomain.  One of these
-// crsts exist per domain (except the SharedDomain--see below)
+// Used to synchronize all rejit information stored in a given AppDomain.
 Crst ReJITDomainTable
     AcquiredBefore LoaderHeap SingleUseLock DeadlockDetection JumpStubCache DebuggerController
-    AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex
-End
-
-// Same as ReJITDomainTable, but this is for the SharedDomain's ReJitManager.  Only
-// reason we have a special type for the SharedDomain's ReJitManager is so that we can
-// explicitly level this guy differently from ReJITDomainTable, so that both the
-// SharedDomain's ReJitManager table lock AND one non-SharedDomain's ReJitManager table
-// lock may be held simultaneously.  This is useful during ETW rundown.
-Crst ReJITSharedDomainTable
-    AcquiredBefore ReJITDomainTable
     AcquiredAfter ReJITGlobalRequest ThreadStore GlobalStrLiteralMap SystemDomain DebuggerMutex
 End
 
@@ -588,7 +506,7 @@ End
 // new functions to rejit tables, or request Reverts on existing functions in the rejit
 // tables.  One of these crsts exist per runtime.
 Crst ReJITGlobalRequest
-    AcquiredBefore ThreadStore ReJITSharedDomainTable ReJITDomainTable SystemDomain
+    AcquiredBefore ThreadStore ReJITDomainTable SystemDomain
 End
 
 // ETW infrastructure uses this crst to protect a hash table of TypeHandles which is
@@ -622,22 +540,11 @@ End
 Crst SaveModuleProfileData
 End
 
-Crst SecurityPolicyCache
-End
-
-Crst SecurityPolicyInit
-    AcquiredBefore SecurityPolicyCache
-End
-
 Crst SecurityStackwalkCache
 End
 
 Crst SharedAssemblyCreate
     AcquiredBefore DeadlockDetection UniqueStack
-End
-
-Crst SharedBaseDomain
-    AcquiredBefore UniqueStack
 End
 
 Crst SigConvert
@@ -682,10 +589,11 @@ Crst SyncHashLock
 End
 
 Crst SystemBaseDomain
+    AcquiredBefore LoaderHeap UniqueStack
 End
 
 Crst SystemDomain
-    AcquiredBefore DebuggerMutex HandleTable IbcProfile SaveModuleProfileData SecurityPolicyCache
+    AcquiredBefore DebuggerMutex HandleTable IbcProfile SaveModuleProfileData
                    ThreadIdDispenser ThreadStore
 End
 

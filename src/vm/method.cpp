@@ -218,15 +218,7 @@ BaseDomain *MethodDesc::GetDomain()
     }
     CONTRACTL_END
 
-    if (HasMethodInstantiation() && !IsGenericMethodDefinition())
-    {
-        return BaseDomain::ComputeBaseDomain(GetMethodTable()->GetDomain(),
-                                             GetMethodInstantiation());
-    }
-    else
-    {
-        return GetMethodTable()->GetDomain();
-    }
+    return AppDomain::GetCurrentDomain();
 }
 
 #ifndef DACCESS_COMPILE

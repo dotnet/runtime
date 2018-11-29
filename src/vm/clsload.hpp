@@ -1008,9 +1008,6 @@ private:
 
     static void LoadExactParentAndInterfacesTransitively(MethodTable *pMT);
 
-
-    static TypeHandle TryFindDynLinkZapType(TypeKey* pKey);
-
     // Create a non-canonical instantiation of a generic type based off the canonical instantiation
     // (For example, MethodTable for List<string> is based on the MethodTable for List<__Canon>)
     static TypeHandle CreateTypeHandleForNonCanonicalGenericInstantiation(TypeKey *pTypeKey,

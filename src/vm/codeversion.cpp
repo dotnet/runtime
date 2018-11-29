@@ -1730,14 +1730,10 @@ CodeVersionManager::CodeVersionManager()
 //---------------------------------------------------------------------------------------
 //
 // Called from BaseDomain::BaseDomain to do any constructor-time initialization.
-// Presently, this takes care of initializing the Crst, choosing the type based on
-// whether this ReJitManager belongs to the SharedDomain.
+// Presently, this takes care of initializing the Crst.
 //
-// Arguments:
-//    * fSharedDomain - nonzero iff this ReJitManager belongs to the SharedDomain.
-//    
 
-void CodeVersionManager::PreInit(BOOL fSharedDomain)
+void CodeVersionManager::PreInit()
 {
     CONTRACTL
     {
@@ -1750,7 +1746,7 @@ void CodeVersionManager::PreInit(BOOL fSharedDomain)
 
 #ifndef DACCESS_COMPILE
     m_crstTable.Init(
-        fSharedDomain ? CrstReJITSharedDomainTable : CrstReJITDomainTable,
+        CrstReJITDomainTable,
         CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 #endif // DACCESS_COMPILE
 }
@@ -2437,19 +2433,12 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     }
 #endif //_DEBUG
 
-    // If pAppDomainToSearch is NULL, iterate through all existing 
-    // instantiations loaded into the SharedDomain. If pAppDomainToSearch is non-NULL, 
-    // iterate through all existing instantiations in pAppDomainToSearch, and only consider
-    // instantiations in non-domain-neutral assemblies (as we already covered domain 
-    // neutral assemblies when we searched the SharedDomain).
-    LoadedMethodDescIterator::AssemblyIterationMode mode = LoadedMethodDescIterator::kModeSharedDomainAssemblies;
     // these are the default flags which won't actually be used in shared mode other than
     // asserting they were specified with their default values
     AssemblyIterationFlags assemFlags = (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution);
     ModuleIterationOption moduleFlags = (ModuleIterationOption)kModIterIncludeLoaded;
     if (pAppDomainToSearch != NULL)
     {
-        mode = LoadedMethodDescIterator::kModeUnsharedADAssemblies;
         assemFlags = (AssemblyIterationFlags)(kIncludeAvailableToProfilers | kIncludeExecution);
         moduleFlags = (ModuleIterationOption)kModIterIncludeAvailableToProfilers;
     }
@@ -2457,7 +2446,6 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
         pAppDomainToSearch,
         pModuleContainingMethodDef,
         methodDef,
-        mode,
         assemFlags,
         moduleFlags);
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;

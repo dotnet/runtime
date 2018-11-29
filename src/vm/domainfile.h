@@ -318,14 +318,6 @@ class DomainFile
     void Activate();
 #endif
 
-    // This is called when a new active dependency is added.
-    static BOOL PropagateNewActivation(Module *pModuleFrom, Module *pModuleTo);
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    static BOOL PropagateActivationInAppDomain(Module *pModuleFrom, Module *pModuleTo, AppDomain* pDomain);
-#endif
-    // This can be used to verify that no propagation is needed
-    static CHECK CheckUnactivatedInAllDomains(Module *pModule);
-
     // This should be used to permanently set the load to fail. Do not use with transient conditions
     void SetError(Exception *ex);
 
@@ -485,15 +477,6 @@ enum ModuleIterationOption
     kModIterIncludeAvailableToProfilers  = 3,
 };
 
-
-enum CMD_State
-{
-    CMD_Unknown,
-    CMD_NotNeeded,
-    CMD_IndeedMissing,
-    CMD_Resolved
-};
-
 // --------------------------------------------------------------------------------
 // DomainAssembly is a subclass of DomainFile which specifically represents a assembly.
 // --------------------------------------------------------------------------------
@@ -518,13 +501,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_pLoaderAllocator;
     }
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-    
-public:
-    CMD_State CheckMissingDependencies();
-    BOOL MissingDependenciesCheckDone();
-#endif // FEATURE_LOADER_OPTIMIZATION
 
 #ifndef DACCESS_COMPILE
     void ReleaseFiles();
@@ -677,9 +653,6 @@ public:
 
     void GetOptimizedIdentitySignature(CORCOMPILE_ASSEMBLY_SIGNATURE *pSignature);
     BOOL CheckZapDependencyIdentities(PEImage *pNativeImage);
-    BOOL CheckZapSecurity(PEImage *pNativeImage);
-
-    BOOL CheckFileSystemTimeStamps(PEFile *pZapManifest);
 
 #endif // FEATURE_PREJIT
 
@@ -769,7 +742,6 @@ private:
     LOADERHANDLE                            m_hExposedAssemblyObject;
     PTR_Assembly                            m_pAssembly;
     DebuggerAssemblyControlFlags            m_debuggerFlags;
-    CMD_State                               m_MissingDependenciesCheckStatus;
     ArrayList                               m_Modules;
     BOOL                                    m_fDebuggerUnloadStarted;
     BOOL                                    m_fCollectible;

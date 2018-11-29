@@ -565,7 +565,7 @@ class CodeVersionManager
 public:
     CodeVersionManager();
 
-    void PreInit(BOOL fSharedDomain);
+    void PreInit();
 
     class TableLockHolder : public CrstHolder
     {

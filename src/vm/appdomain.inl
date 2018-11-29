@@ -86,19 +86,6 @@ inline BOOL AppDomain::HasNativeDllSearchDirectories()
     return m_NativeDllSearchDirectories.GetCount() !=0;
 }
 
-
-inline BOOL AppDomain::CanReversePInvokeEnter()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_ReversePInvokeCanEnter;
-}
-
-inline void AppDomain::SetReversePInvokeCannotEnter()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_ReversePInvokeCanEnter=FALSE;
-}
-
 inline bool AppDomain::MustForceTrivialWaitOperations()
 {
     LIMITED_METHOD_CONTRACT;
@@ -127,12 +114,6 @@ inline PTR_LoaderHeap AppDomain::GetStubHeap()
 {
     WRAPPER_NO_CONTRACT;    
     return GetLoaderAllocator()->GetStubHeap();
-}
-
-inline PTR_LoaderAllocator AppDomain::GetLoaderAllocator()
-{
-    WRAPPER_NO_CONTRACT;
-    return PTR_LoaderAllocator(PTR_HOST_MEMBER_TADDR(AppDomain,this,m_LoaderAllocator));
 }
 
 /* static */

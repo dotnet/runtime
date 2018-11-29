@@ -177,17 +177,9 @@ PTR_Module ClassLoader::ComputeLoaderModuleWorker(
     }
     else if (pFirstNonSystemSharedModule != NULL)
     {
-#ifdef FEATURE_FULL_NGEN
-        // pFirstNonSystemSharedModule may be module of speculative generic instantiation.
-        // If we are domain neutral, we have to use constituent of the instantiation to store
-        // statics. We need to ensure that we can create DomainModule in all domains
-        // that this instantiations may get activated in. PZM is good approximation of such constituent.
-        pLoaderModule = Module::ComputePreferredZapModule(pDefinitionModule, classInst, methodInst);
-#else
         // Use pFirstNonSystemSharedModule just so C<object> ends up in module C - it
         // shouldn't actually matter at all though.
         pLoaderModule = pFirstNonSystemSharedModule;
-#endif
     }
     else
     {
@@ -1501,173 +1493,6 @@ TypeHandle ClassLoader::LookupTypeHandleForTypeKeyInner(TypeKey *pKey, BOOL fChe
 
     return TypeHandle();
 }
-
-
-//---------------------------------------------------------------------------
-// ClassLoader::TryFindDynLinkZapType
-//
-// This is a major routine in the process of finding and using
-// zapped generic instantiations (excluding those which were zapped into
-// their PreferredZapModule).
-//
-// DynLinkZapItems are generic instantiations that may have been NGEN'd
-// into more than one NGEN image (e.g. the code and TypeHandle for 
-// List<int> may in principle be zapped into several client images - it is theoretically
-// an NGEN policy decision about how often this done, though for now we
-// have hard-baked a strategy).  
-// 
-// There are lots of potential problems with this kind of duplication 
-// and the way we get around nearly all of these is to make sure that
-// we only use one at most one "unique" copy of each item 
-// at runtime. Thus we keep tables in the SharedDomain and the AppDomain indicating
-// which unique items have been chosen.  If an item is "loaded" by this technique
-// then it will not be loaded by any other technique.
-//
-// Note generic instantiations may have the good fortune to be zapped 
-// into the "PreferredZapModule".  If so we can eager bind to them and
-// they will not be considered to be DynLinkZapItems.  We always
-// look in the PreferredZapModule first, and we do not add an entry to the
-// DynLinkZapItems table for this case.
-//
-// Zap references to DynLinkZapItems are always via encoded fixups, except 
-// for a few intra-module references when one DynLinkZapItem is "TightlyBound"
-// to another, e.g. an canonical DynLinkZap MethodTable may directly refer to 
-// its EEClass - this is because we know that if one is used at runtime then the
-// other will also be.  These items should be thought of as together constituting
-// one DynLinkedZapItem.
-//
-// This function section searches for a copy of the instantiation in various NGEN images.
-// This is effectively like doing a load since we are choosing which copy of the instantiation
-// to use from among a number of potential candidates.  We have to have the loading lock
-// for this item before we can do this to make sure no other threads choose a
-// different copy of the instantiation, and that no other threads are JIT-loading
-// the instantiation.
-
-
-
-#ifndef DACCESS_COMPILE
-#ifdef FEATURE_FULL_NGEN
-/* static */
-TypeHandle ClassLoader::TryFindDynLinkZapType(TypeKey *pKey)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS; 
-        INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pKey));
-        PRECONDITION(pKey->IsConstructed());
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Never use dyn link zap items during ngen time. We will independently decide later 
-    // whether we want to store the item into ngen image or not.
-    // Note that it is not good idea to make decisions based on the list of depencies here 
-    // since their list may not be fully populated yet.
-    if (IsCompilationProcess())
-        return TypeHandle();
-
-    TypeHandle th = TypeHandle();
-
-#ifndef CROSSGEN_COMPILE
-    // We need to know which domain the item must live in (DomainNeutral or AppDomain)
-    // Note we can't use the domain from GetLoaderModule()->GetDomain() because at NGEN
-    // time this may not be accurate (we may be deliberately duplicating a domain-neutral
-    // instantiation into a domain-specific image, in the sense that the LoaderModule
-    // returned by ComputeLoaderModule may be the current module being 
-    // NGEN'd)....
-    
-    BaseDomain * pRequiredDomain = BaseDomain::ComputeBaseDomain(pKey);
-    
-    // Next look in each ngen'ed image in turn
-    
-    // Searching the shared domain and the app domain are slightly different.
-    if (pRequiredDomain->IsSharedDomain())
-    {
-        // This switch to cooperative mode makes the iteration below thread safe. It ensures that the underlying 
-        // async HashMap storage is not going to disapper while we are iterating it. Other uses of SharedAssemblyIterator 
-        // have same problem, but I have fixed just this one as targeted ask mode fix.
-        GCX_COOP();
-
-        // Searching for SharedDomain instantiation involves searching all shared assemblies....
-        // Note we may choose to use an instantiation from an assembly that is from an NGEN
-        // image that is not logically speaking part of the currently running AppDomain.  This
-        // tkaes advantage of the fact that at the moment SharedDomain NGEN images are never unloaded.
-        // Thus SharedDomain NGEN images effectively contribute all their instantiations to all
-        // AppDomains.
-        //
-        // <NOTE> This will have to change if we ever start unloading NGEN images from the SharedDomain </NOTE>
-        SharedDomain::SharedAssemblyIterator assem;
-        while (th.IsNull() && assem.Next())
-        {
-            ModuleIterator i = assem.GetAssembly()->IterateModules();
-
-            while (i.Next())
-            {
-                Module *pModule = i.GetModule();
-                if (!pModule->HasNativeImage())
-                    continue;
-
-                // If the module hasn't reached FILE_LOADED in some domain, it cannot provide candidate instantiations
-                if (!pModule->IsReadyForTypeLoad())
-                    continue;
-
-                TypeHandle thFromZapModule = pModule->GetAvailableParamTypes()->GetValue(pKey);
-                
-                // Check that the item really is a zapped item, i.e. that it has not been JIT-loaded to the module
-                if (thFromZapModule.IsNull() || !thFromZapModule.IsZapped())
-                    continue;
-
-                th = thFromZapModule;
-            }
-        }
-    }
-    else
-    {
-        // Searching for domain specific instantiation involves searching all 
-        // domain-specific assemblies in the relevant AppDomain....
-
-        AppDomain * pDomain = pRequiredDomain->AsAppDomain();
-        
-        AppDomain::AssemblyIterator assemblyIterator = pDomain->IterateAssembliesEx(
-            (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-        
-        while (th.IsNull() && assemblyIterator.Next(pDomainAssembly.This()))
-        {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
-            // Make sure the domain of the NGEN'd images associated with the assembly matches...
-            if (pAssembly->GetDomain() == pRequiredDomain)
-            {
-                DomainAssembly::ModuleIterator i = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-                while (th.IsNull() && i.Next())
-                {
-                    Module * pModule = i.GetLoadedModule();
-                    if (!pModule->HasNativeImage())
-                        continue;
-
-                    // If the module hasn't reached FILE_LOADED in some domain, it cannot provide candidate instantiations
-                    if (!pModule->IsReadyForTypeLoad())
-                        continue;
-
-                    TypeHandle thFromZapModule = pModule->GetAvailableParamTypes()->GetValue(pKey);
-                        
-                    // Check that the item really is a zapped item
-                    if (thFromZapModule.IsNull() || !thFromZapModule.IsZapped())
-                        continue;
-
-                    th = thFromZapModule;
-                }
-            }
-        }
-    }
-#endif // CROSSGEN_COMPILE
-
-    return th;
-}
-#endif // FEATURE_FULL_NGEN
-#endif // !DACCESS_COMPILE
 
 // FindClassModuleThrowing discovers which module the type you're looking for is in and loads the Module if necessary.
 // Basically, it iterates through all of the assembly's modules until a name match is found in a module's
@@ -3583,48 +3408,22 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
     }
     else if (pKey->HasInstantiation())
     {
-#ifdef FEATURE_FULL_NGEN
-        // Try to find the type in an NGEN'd image.
-        typeHnd = TryFindDynLinkZapType(pKey);
-
-        if (!typeHnd.IsNull())
+        if (IsCanonicalGenericInstantiation(pKey->GetInstantiation()))
         {
-#ifdef _DEBUG
-            if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
-            {
-                SString name;
-                TypeString::AppendTypeKeyDebug(name, pKey);
-                LOG((LF_CLASSLOADER, LL_INFO10000, "GENERICS:CreateTypeHandleForTypeKey: found dyn-link ngen type %S with pointer %p in module %S\n", name.GetUnicode(), typeHnd.AsPtr(),
-                     typeHnd.GetLoaderModule()->GetDebugName()));
-            }
-#endif
-            if (typeHnd.GetLoadLevel() == CLASS_LOAD_UNRESTOREDTYPEKEY)
-            {
-                OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
-
-                typeHnd.DoRestoreTypeKey();
-            }
+            typeHnd = CreateTypeHandleForTypeDefThrowing(pKey->GetModule(),
+                                                            pKey->GetTypeToken(),
+                                                            pKey->GetInstantiation(),
+                                                            pamTracker);
         }
         else 
-#endif // FEATURE_FULL_NGEN
         {
-            if (IsCanonicalGenericInstantiation(pKey->GetInstantiation()))
-            {
-                typeHnd = CreateTypeHandleForTypeDefThrowing(pKey->GetModule(),
-                                                                pKey->GetTypeToken(),
-                                                                pKey->GetInstantiation(),
-                                                                pamTracker);
-            }
-            else 
-            {
-                typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey,
-                                                                                            pamTracker);
-            }
-#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
-            if (Nullable::IsNullableType(typeHnd)) 
-                Nullable::CheckFieldOffsets(typeHnd);
-#endif
+            typeHnd = CreateTypeHandleForNonCanonicalGenericInstantiation(pKey,
+                                                                                        pamTracker);
         }
+#if defined(_DEBUG) && !defined(CROSSGEN_COMPILE)
+        if (Nullable::IsNullableType(typeHnd)) 
+            Nullable::CheckFieldOffsets(typeHnd);
+#endif
     }
     else if (pKey->GetKind() == ELEMENT_TYPE_FNPTR) 
     {
@@ -4804,29 +4603,7 @@ static MethodTable* GetEnclosingMethodTable(MethodTable *pMT)
     }
     CONTRACT_END;
 
-    MethodTable *pmtEnclosing = NULL;
-
-    // In the common case, the method table will be either shared or in the AppDomain we're currently
-    // running in.  If this is true, we can just access its enclosing method table directly.
-    // 
-    // However, if the current method table is actually in another AppDomain (for instance, we're reflecting
-    // across AppDomains), then we cannot get its enclsoing type in our AppDomain since doing that may involve
-    // loading the enclosing type.  Instead, we need to transition back to the original domain (which we
-    // should already be running in higher up on the stack) and get the method table we're looking for.
-
-    if (pMT->GetDomain()->IsSharedDomain() || pMT->GetDomain()->AsAppDomain() == GetAppDomain())
-    {
-        pmtEnclosing = pMT->LoadEnclosingMethodTable();
-    }
-    else
-    {
-        GCX_COOP();
-        ENTER_DOMAIN_PTR(pMT->GetDomain()->AsAppDomain(), ADV_RUNNINGIN);
-        pmtEnclosing = pMT->LoadEnclosingMethodTable();
-        END_DOMAIN_TRANSITION;
-    }
-
-    RETURN pmtEnclosing;    
+    RETURN pMT->LoadEnclosingMethodTable();
 }
 
 StaticAccessCheckContext::StaticAccessCheckContext(MethodDesc* pCallerMethod)
