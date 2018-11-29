@@ -462,6 +462,7 @@
     <Compile Include="BCLFeatures\ETW\Excluded.cs" />
     <Compile Include="BCLFeatures\ETW\BaseRemovedEventSource.cs" />
     <Compile Include="Generics\NewConstraintOnClass.cs" />
+    <Compile Include="BCLFeatures\ETW\NonEventWithLog.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />

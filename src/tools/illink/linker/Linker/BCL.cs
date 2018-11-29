@@ -35,6 +35,11 @@ namespace Mono.Linker
 				return type.Namespace == "System.Diagnostics.Tracing" && type.Name == "EventSource";
 			}
 
+			public static bool IsNonEventAtribute (TypeReference type)
+			{
+				return type.Namespace == "System.Diagnostics.Tracing" && type.Name == "NonEventAttribute";
+			}
+
 			public static bool IsProviderName (string name)
 			{
 				return name == "Keywords" || name == "Tasks" || name == "Opcodes";
