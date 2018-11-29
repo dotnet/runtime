@@ -4944,6 +4944,34 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     {
         fgAdjustForAddressExposedOrWrittenThis();
     }
+
+    // Now that we've seen the IL, set lvSingleDef for root method
+    // locals.
+    //
+    // We could also do this for root method arguments but single-def
+    // arguments are set by the caller and so we don't know anything
+    // about the possible values or types.
+    //
+    // For inlinees we do this over in impInlineFetchLocal and
+    // impInlineFetchArg (here args are included as we somtimes get
+    // new information about the types of inlinee args).
+    if (!isInlining)
+    {
+        const unsigned firstLcl = info.compArgsCount;
+        const unsigned lastLcl  = firstLcl + info.compMethodInfo->locals.numArgs;
+        for (unsigned lclNum = firstLcl; lclNum < lastLcl; lclNum++)
+        {
+            LclVarDsc* lclDsc = lvaGetDesc(lclNum);
+            assert(lclDsc->lvSingleDef == 0);
+            // could restrict this to TYP_REF
+            lclDsc->lvSingleDef = !lclDsc->lvHasMultipleILStoreOp && !lclDsc->lvHasLdAddrOp;
+
+            if (lclDsc->lvSingleDef)
+            {
+                JITDUMP("Marked V%02u as a single def local\n", lclNum);
+            }
+        }
+    }
 }
 
 #ifdef _PREFAST_
@@ -5876,6 +5904,9 @@ void Compiler::fgFindBasicBlocks()
                 // out we can prove the method returns a more specific type.
                 if (info.compRetType == TYP_REF)
                 {
+                    lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
+                    JITDUMP("Marked V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
+
                     CORINFO_CLASS_HANDLE retClassHnd = impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass;
                     if (retClassHnd != nullptr)
                     {
@@ -22440,6 +22471,31 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             unsigned               methodFlags = 0;
             CORINFO_CONTEXT_HANDLE context     = nullptr;
             comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr);
+        }
+    }
+    else if (tree->OperGet() == GT_ASG)
+    {
+        // If we're assigning to a ref typed local that has one definition,
+        // we may be able to sharpen the type for the local.
+        GenTree* lhs = tree->gtGetOp1()->gtEffectiveVal();
+
+        if ((lhs->OperGet() == GT_LCL_VAR) && (lhs->TypeGet() == TYP_REF))
+        {
+            const unsigned lclNum = lhs->gtLclVarCommon.gtLclNum;
+            LclVarDsc*     lcl    = comp->lvaGetDesc(lclNum);
+
+            if (lcl->lvSingleDef)
+            {
+                GenTree*             rhs       = tree->gtGetOp2();
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE newClass  = comp->gtGetClassHandle(rhs, &isExact, &isNonNull);
+
+                if (newClass != NO_CLASS_HANDLE)
+                {
+                    comp->lvaUpdateClass(lclNum, newClass, isExact);
+                }
+            }
         }
     }
 
