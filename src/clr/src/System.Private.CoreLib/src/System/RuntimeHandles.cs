@@ -791,6 +791,10 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool GetIsCollectible(RuntimeMethodHandleInternal handle);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern bool IsCAVisibleFromDecoratedType(
             RuntimeTypeHandle attrTypeHandle,
             IRuntimeMethodInfo attrCtor,
