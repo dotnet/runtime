@@ -7739,10 +7739,6 @@ emit_method_inner (EmitContext *ctx)
 	}
 
 	if (cfg->llvm_only) {
-		GHashTableIter iter;
-		MonoMethod *method;
-		GSList *callers, *l, *l2;
-
 		g_ptr_array_add (ctx->module->cfgs, cfg);
 
 		/*
@@ -9016,9 +9012,7 @@ void
 mono_llvm_fixup_aot_module (void)
 {
 	MonoLLVMModule *module = &aot_module;
-	GHashTableIter iter;
 	MonoMethod *method;
-	GSList *callers, *l;
 
 	if (!module->llvm_only)
 		return;
@@ -9032,7 +9026,7 @@ mono_llvm_fixup_aot_module (void)
 
 	GHashTable *patches_to_null = g_hash_table_new (mono_patch_info_hash, mono_patch_info_equal);
 	for (int sindex = 0; sindex < module->callsite_list->len; ++sindex) {
-		CallSite *site = g_ptr_array_index (module->callsite_list, sindex);
+		CallSite *site = (CallSite*)g_ptr_array_index (module->callsite_list, sindex);
 		method = site->method;
 		LLVMValueRef lmethod = (LLVMValueRef)g_hash_table_lookup (module->method_to_lmethod, method);
 
