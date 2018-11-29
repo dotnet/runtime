@@ -15,6 +15,7 @@
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-runtime.cpp">
       <ExcludedFromBuild>$(ExcludeLLVMFromWindowsBuild)</ExcludedFromBuild>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <_MonoLLVMSourceFile>true</_MonoLLVMSourceFile>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm-cpp.cpp">

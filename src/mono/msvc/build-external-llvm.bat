@@ -203,12 +203,12 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
 :: Run cmake.
 "%CMAKE%" ^
 -DCMAKE_INSTALL_PREFIX="%LLVM_INSTALL_DIR%" ^
--DLLVM_TARGETS_TO_BUILD="X86" ^
+-DLLVM_TARGETS_TO_BUILD="X86;ARM;AArch64" ^
 -DLLVM_BUILD_TESTS=Off ^
 -DLLVM_INCLUDE_TESTS=Off ^
 -DLLVM_BUILD_EXAMPLES=Off ^
 -DLLVM_INCLUDE_EXAMPLES=Off ^
--DLLVM_TOOLS_TO_BUILD="opt;llc;llvm-config;llvm-dis;llvm-mc" ^
+-DLLVM_TOOLS_TO_BUILD="opt;llc;llvm-config;llvm-dis;llvm-mc;llvm-as" ^
 -DLLVM_ENABLE_LIBXML2=Off ^
 -DCMAKE_SYSTEM_PROCESSOR="%LLVM_ARCH%" ^
 %CMAKE_GENERATOR_ARGS% ^
@@ -266,8 +266,26 @@ if not exist "%LLVM_INSTALL_DIR%\bin\llc.exe" (
     goto ON_ERROR
 )
 
+if not exist "%LLVM_INSTALL_DIR%\bin\llvm-dis.exe" (
+    echo Missing LLVM build output, "%LLVM_INSTALL_DIR%\bin\llvm-dis.exe"
+    goto ON_ERROR
+)
+
+if not exist "%LLVM_INSTALL_DIR%\bin\llvm-mc.exe" (
+    echo Missing LLVM build output, "%LLVM_INSTALL_DIR%\bin\llvm-mc.exe"
+    goto ON_ERROR
+)
+
+if not exist "%LLVM_INSTALL_DIR%\bin\llvm-as.exe" (
+    echo Missing LLVM build output, "%LLVM_INSTALL_DIR%\bin\llvm-as.exe"
+    goto ON_ERROR
+)
+
 copy /Y "%LLVM_INSTALL_DIR%\bin\opt.exe" "%MONO_DIST_DIR%" >nul 2>&1
 copy /Y "%LLVM_INSTALL_DIR%\bin\llc.exe" "%MONO_DIST_DIR%" >nul 2>&1
+copy /Y "%LLVM_INSTALL_DIR%\bin\llvm-dis.exe" "%MONO_DIST_DIR%" >nul 2>&1
+copy /Y "%LLVM_INSTALL_DIR%\bin\llvm-mc.exe" "%MONO_DIST_DIR%" >nul 2>&1
+copy /Y "%LLVM_INSTALL_DIR%\bin\llvm-as.exe" "%MONO_DIST_DIR%" >nul 2>&1
 
 goto ON_SUCCESS
 

@@ -2715,10 +2715,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	pindex = 0;
 
 	/* Stored after the stack arguments */
-	nullable_buffer = (guint8*)&(p->regs [PARAM_REGS + (dinfo->nstack_args * sizeof (mgreg_t))]);
-
-	if (dinfo->nullable_area)
-		printf ("%d\n", dinfo->nullable_area);
+	nullable_buffer = (guint8*)&(p->regs [PARAM_REGS + dinfo->nstack_args]);
 
 	if (sig->hasthis || dinfo->cinfo->vret_arg_index == 1) {
 		p->regs [greg ++] = PTR_TO_GREG(*(args [arg_index ++]));
@@ -4821,7 +4818,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Restore callee saved registers */
 			save_area_offset = cfg->arch.reg_save_area_offset;
 			for (i = 0; i < AMD64_NREG; ++i)
-				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & (1 << i))) {
+				if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->used_int_regs & ((regmask_t)1 << i))) {
 					amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
 					save_area_offset += 8;
 				}

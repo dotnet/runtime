@@ -5210,6 +5210,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildSub (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), convert (ctx, lhs, LLVMInt32Type ()), dname);
 			break;
 		case OP_LNEG:
+			if (LLVMTypeOf (lhs) != LLVMInt64Type ())
+				lhs = convert (ctx, lhs, LLVMInt64Type ());
 			values [ins->dreg] = LLVMBuildSub (builder, LLVMConstInt (LLVMInt64Type (), 0, FALSE), lhs, dname);
 			break;
 		case OP_FNEG:
@@ -5226,6 +5228,8 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_LNOT: {
+			if (LLVMTypeOf (lhs) != LLVMInt64Type ())
+				lhs = convert (ctx, lhs, LLVMInt64Type ());
 			guint64 v = 0xffffffffffffffffLL;
 			values [ins->dreg] = LLVMBuildXor (builder, LLVMConstInt (LLVMInt64Type (), v, FALSE), lhs, dname);
 			break;
@@ -5236,7 +5240,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 
 			rhs = LLVMBuildSExt (builder, convert (ctx, rhs, LLVMInt32Type ()), LLVMInt64Type (), "");
 
-			v1 = LLVMBuildMul (builder, convert (ctx, rhs, IntPtrType ()), LLVMConstInt (IntPtrType (), (1 << ins->backend.shift_amount), FALSE), "");
+			v1 = LLVMBuildMul (builder, convert (ctx, rhs, IntPtrType ()), LLVMConstInt (IntPtrType (), ((unsigned long long)1 << ins->backend.shift_amount), FALSE), "");
 			v2 = LLVMBuildAdd (builder, convert (ctx, lhs, IntPtrType ()), v1, "");
 			values [ins->dreg] = LLVMBuildAdd (builder, v2, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), dname);
 			break;
@@ -8928,11 +8932,15 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 		default_lib_nodes[i] = LLVMMDNode (default_lib_args + i, 1);
 	}
 
+#if LLVM_API_VERSION < 600
 	linker_option_args[0] = LLVMConstInt (LLVMInt32Type (), 1, FALSE);
 	linker_option_args[1] = LLVMMDString (linker_options, G_N_ELEMENTS (linker_options) - 1);
 	linker_option_args[2] = LLVMMDNode (default_lib_nodes, G_N_ELEMENTS (default_lib_nodes));
 
 	LLVMAddNamedMetadataOperand (module->lmodule, "llvm.module.flags", LLVMMDNode (linker_option_args, G_N_ELEMENTS (linker_option_args)));
+#else
+	LLVMAddNamedMetadataOperand (module->lmodule, "llvm.linker.options", LLVMMDNode (default_lib_args, G_N_ELEMENTS (default_lib_args)));
+#endif
 #endif
 
 	/* Add GOT */

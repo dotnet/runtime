@@ -716,7 +716,10 @@ LOSObject*
 sgen_los_header_for_object (GCObject *data)
 {
 #if _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4311) // variable' : pointer truncation from 'type' to 'type'
 	return (LOSObject*)((char*)data - (int)(&(((LOSObject*)0)->data)));
+#pragma warning(pop)
 #else
 	return (LOSObject*)((char*)data - sizeof (LOSObject));
 #endif
