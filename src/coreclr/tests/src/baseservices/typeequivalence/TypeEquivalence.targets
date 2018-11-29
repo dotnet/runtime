@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Target
+    Name="CreateEmbedResponseFile"
+    AfterTargets="ResolveProjectReferences">
+
+    <!-- Get the output for each project reference -->
+    <Message Text="Generating Response File for embedding type metadata: $(CompilerResponseFile)"/>
+    <MSBuild
+      Projects="@(ProjectReference)"
+      Condition=" '%(ProjectReference.EmbedTypes)' == 'true'"
+      Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="ResolvedProjectReferencePaths" />
+    </MSBuild>
+
+    <WriteLinesToFile
+        File="$(CompilerResponseFile)"
+        Lines="@(ResolvedProjectReferencePaths -> '/link:%(fullpath)')"
+        Overwrite="true"
+        Encoding="Unicode" />
+  </Target>
+
+</Project>

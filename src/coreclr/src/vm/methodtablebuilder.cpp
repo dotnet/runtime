@@ -11433,7 +11433,12 @@ void MethodTableBuilder::CheckForTypeEquivalence(
 
     if (bmtProp->fIsTypeEquivalent)
     {
-        BOOL fTypeEquivalentNotPermittedDueToType = !(((IsComImport() || bmtProp->fComEventItfType) && IsInterface()) || IsValueClass() || IsDelegate());
+        BOOL comImportOrEventInterface = IsComImport();
+#ifdef FEATURE_COMINTEROP
+        comImportOrEventInterface = comImportOrEventInterface || bmtProp->fComEventItfType;
+#endif // FEATURE_COMINTEROP
+
+        BOOL fTypeEquivalentNotPermittedDueToType = !((comImportOrEventInterface && IsInterface()) || IsValueClass() || IsDelegate());
         BOOL fTypeEquivalentNotPermittedDueToGenerics = bmtGenerics->HasInstantiation();
 
         if (fTypeEquivalentNotPermittedDueToType || fTypeEquivalentNotPermittedDueToGenerics)

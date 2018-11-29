@@ -746,11 +746,6 @@ public:
 
     BOOL            IsExtensibleRCW();
 
-#if defined(FEATURE_TYPEEQUIVALENCE)
-    // mark the type as opted into type equivalence
-    void SetHasTypeEquivalence();
-#endif
-
     // Helper to get parent class skipping over COM class in 
     // the hierarchy
     MethodTable* GetComPlusParentMethodTable();
@@ -822,19 +817,24 @@ public:
     BOOL IsICastable(); // This type implements ICastable interface
 
 #ifdef FEATURE_TYPEEQUIVALENCE
+    // mark the type as opted into type equivalence
+    void SetHasTypeEquivalence()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SetFlag(enum_flag_HasTypeEquivalence);
+    }
+#endif // FEATURE_TYPEEQUIVALENCE
+
     // type has opted into type equivalence or is instantiated by/derived from a type that is
     BOOL HasTypeEquivalence()
     {
         LIMITED_METHOD_CONTRACT;
+#ifdef FEATURE_TYPEEQUIVALENCE
         return GetFlag(enum_flag_HasTypeEquivalence);
-    }
 #else
-    BOOL HasTypeEquivalence()
-    {
-        LIMITED_METHOD_CONTRACT;
         return FALSE;
+#endif // FEATURE_TYPEEQUIVALENCE
     }
-#endif
 
     //-------------------------------------------------------------------
     // DYNAMIC ADDITION OF INTERFACES FOR COM INTEROP
@@ -2019,12 +2019,12 @@ public:
 #ifndef DACCESS_COMPILE
     FORCEINLINE BOOL IsEquivalentTo(MethodTable *pOtherMT COMMA_INDEBUG(TypeHandlePairList *pVisited = NULL));
 
-#ifdef FEATURE_COMINTEROP
+#ifdef FEATURE_TYPEEQUIVALENCE
     // This method is public so that TypeHandle has direct access to it
     BOOL IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(TypeHandlePairList *pVisited));      // out-of-line part, SO tolerant
 private:
     BOOL IsEquivalentTo_WorkerInner(MethodTable *pOtherMT COMMA_INDEBUG(TypeHandlePairList *pVisited)); // out-of-line part, SO intolerant
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_TYPEEQUIVALENCE
 #endif
 
 public:
@@ -4168,9 +4168,9 @@ public:
 #ifndef CROSSBITNESS_COMPILE
 static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
 #endif
-#if defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
+#if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 WORD GetEquivalentMethodSlot(MethodTable * pOldMT, MethodTable * pNewMT, WORD wMTslot, BOOL *pfFound);
-#endif // defined(FEATURE_COMINTEROP) && !defined(DACCESS_COMPILE)
+#endif // defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
 
 MethodTable* CreateMinimalMethodTable(Module* pContainingModule, 
                                       LoaderHeap* pCreationHeap,

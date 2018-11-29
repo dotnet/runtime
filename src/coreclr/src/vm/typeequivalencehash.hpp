@@ -10,13 +10,13 @@
 #ifndef __TYPEEQUIVALENCE_HASH_INCLUDED
 #define __TYPEEQUIVALENCE_HASH_INCLUDED
 
-#include "ngenhash.h"
-
 #ifdef FEATURE_TYPEEQUIVALENCE
+
+#include "ngenhash.h"
 
 // The type of each entry in the hash.
 typedef DPTR(struct TypeEquivalenceEntry) PTR_TypeEquivalenceEntry;
-typedef struct TypeEquivalenceEntry
+struct TypeEquivalenceEntry
 {
     static NgenHashValue HashTypeHandles(TypeHandle thA, TypeHandle thB)
     {
@@ -33,8 +33,8 @@ typedef struct TypeEquivalenceEntry
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (((thA == m_thA) && (thB == m_thB)) ||
-            ((thB == m_thA) && (thA == m_thB)));
+        return (((thA == m_thA) && (thB == m_thB))
+                || ((thB == m_thA) && (thA == m_thB)));
     }
 
     void SetData(TypeHandle thA, TypeHandle thB, bool fEquivalent)
@@ -53,11 +53,10 @@ typedef struct TypeEquivalenceEntry
     }
 
 private:
-
     TypeHandle m_thA;
     TypeHandle m_thB;
     bool       m_fEquivalent;
-} TypeEquivalenceEntry_t;
+};
 
 // The hash type itself. All common logic is provided by the NgenHashTable templated base class. See
 // NgenHash.h for details.
@@ -70,7 +69,7 @@ class TypeEquivalenceHashTable : public NgenHashTable<TypeEquivalenceHashTable, 
 #endif
 
 public:
-    typedef enum EquivalenceMatch
+    enum EquivalenceMatch
     {
         MatchUnknown,
         Match,
@@ -88,29 +87,29 @@ public:
     EquivalenceMatch CheckEquivalence(TypeHandle thA, TypeHandle thB);
 
 #ifdef DACCESS_COMPILE
-    void EnumMemoryRegionsForEntry(TypeEquivalenceEntry_t *pEntry, CLRDataEnumMemoryFlags flags) { return; }
+    void EnumMemoryRegionsForEntry(TypeEquivalenceEntry *pEntry, CLRDataEnumMemoryFlags flags) { return; }
 #endif
 
 #if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
 private:
-
-    bool ShouldSave(DataImage *pImage, TypeEquivalenceEntry_t *pEntry) { return false; }
-    bool IsHotEntry(TypeEquivalenceEntry_t *pEntry, CorProfileData *pProfileData) { return false; }
-    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, TypeEquivalenceEntry_t *pOldEntry, TypeEquivalenceEntry_t *pNewEntry, EntryMappingTable *pMap) { return true; }
-    void FixupEntry(DataImage *pImage, TypeEquivalenceEntry_t *pEntry, void *pFixupBase, DWORD cbFixupOffset) { return; }
+    // Override operations from NgenHashTable - see ngenhash.h
+    bool ShouldSave(DataImage *pImage, TypeEquivalenceEntry *pEntry) { return false; }
+    bool IsHotEntry(TypeEquivalenceEntry *pEntry, CorProfileData *pProfileData) { return false; }
+    bool SaveEntry(DataImage *pImage, CorProfileData *pProfileData, TypeEquivalenceEntry *pOldEntry, TypeEquivalenceEntry *pNewEntry, EntryMappingTable *pMap) { return true; }
+    void FixupEntry(DataImage *pImage, TypeEquivalenceEntry *pEntry, void *pFixupBase, DWORD cbFixupOffset) { return; }
 #endif // FEATURE_PREJIT && !DACCESS_COMPILE
 
 private:
 #ifndef DACCESS_COMPILE
-    TypeEquivalenceHashTable(LoaderHeap *pHeap, DWORD cInitialBuckets, CrstExplicitInit *pCrst) :
-        NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>(NULL, pHeap, cInitialBuckets),
-        m_pHashTableCrst(pCrst)
+    TypeEquivalenceHashTable(LoaderHeap *pHeap, DWORD cInitialBuckets, CrstExplicitInit *pCrst)
+        : NgenHashTable<TypeEquivalenceHashTable, TypeEquivalenceEntry, 4>(NULL, pHeap, cInitialBuckets)
+        , m_pHashTableCrst(pCrst)
     {
     }
-#endif
-    CrstExplicitInit*               m_pHashTableCrst;
+#endif // DACCESS_COMPILE
+
+    CrstExplicitInit*   m_pHashTableCrst;
 };
 
 #endif // FEATURE_TYPEEQUIVALENCE
-
-#endif // !__CLASS_HASH_INCLUDED
+#endif // !__TYPEEQUIVALENCE_HASH_INCLUDED
