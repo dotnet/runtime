@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
@@ -168,6 +168,8 @@
     <Compile Include="Basic\UsedEventOnInterfaceIsRemovedWhenUsedFromClass.cs" />
     <Compile Include="Basic\UsedPropertyIsKept.cs" />
     <Compile Include="Basic\UsedStructIsKept.cs" />
+    <Compile Include="BCLFeatures\ETW\LocalsOfModifiedMethodAreRemoved.cs" />
+    <Compile Include="BCLFeatures\ETW\StubbedMethodWithExceptionHandlers.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
     <Compile Include="Inheritance.AbstractClasses\UnusedAbstractMethodRemoved.cs" />
@@ -375,6 +377,7 @@
     <Compile Include="TestFramework\VerifyAttributesInAssemblyWorksWithStrings.cs" />
     <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
     <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
+    <Compile Include="TestFramework\VerifyExpectModifiedAttributesWork.cs" />
     <Compile Include="TestFramework\VerifyResourceInAssemblyAttributesBehavior.cs" />
     <Compile Include="Tracing\Individual\CanDumpDependenciesToUncompressedXml.cs" />
     <Compile Include="Tracing\Individual\CanEnableDependenciesDump.cs" />

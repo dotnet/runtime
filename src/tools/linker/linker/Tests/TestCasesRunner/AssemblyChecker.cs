@@ -328,6 +328,81 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
+			VerifyMethodBody (src, linked);
+		}
+
+		protected virtual void VerifyMethodBody (MethodDefinition src, MethodDefinition linked)
+		{
+			if (!src.HasBody)
+				return;
+
+			VerifyExceptionHandlers (src, linked);
+			VerifyInstructions (src, linked);
+			VerifyLocals (src, linked);
+		}
+		
+		protected static void VerifyInstructions (MethodDefinition src, MethodDefinition linked)
+		{
+			VerifyBodyProperties (
+				src,
+				linked,
+				nameof (ExpectedInstructionSequenceAttribute),
+				nameof (ExpectBodyModifiedAttribute),
+				"instructions",
+				m => m.Body.Instructions.Select (ins => ins.OpCode.ToString ().ToLower()).ToArray (),
+				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
+		}
+		
+		static void VerifyExceptionHandlers (MethodDefinition src, MethodDefinition linked)
+		{
+			VerifyBodyProperties (
+				src,
+				linked,
+				nameof (ExpectedExceptionHandlerSequenceAttribute),
+				nameof (ExpectExceptionHandlersModifiedAttribute),
+				"exception handlers",
+				m => m.Body.ExceptionHandlers.Select (h => h.HandlerType.ToString ().ToLower ()).ToArray (),
+				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
+		}
+
+		static void VerifyLocals (MethodDefinition src, MethodDefinition linked)
+		{
+			VerifyBodyProperties (
+				src,
+				linked,
+				nameof (ExpectedLocalsSequenceAttribute),
+				nameof (ExpectLocalsModifiedAttribute),
+				"locals",
+				m => m.Body.Variables.Select (v => v.VariableType.ToString ()).ToArray (),
+				attr => GetStringOrTypeArrayAttributeValue (attr).ToArray ());
+		}
+
+		protected static void VerifyBodyProperties (MethodDefinition src, MethodDefinition linked, string sequenceAttributeName, string expectModifiedAttributeName,
+			string propertyDescription,
+			Func<MethodDefinition, string []> valueCollector,
+			Func<CustomAttribute, string []> getExpectFromSequenceAttribute)
+		{
+			var expectedSequenceAttribute = src.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == sequenceAttributeName);
+			var linkedValues = valueCollector (linked);
+			var srcValues = valueCollector (src);
+
+			if (src.CustomAttributes.Any (attr => attr.AttributeType.Name == expectModifiedAttributeName)) {
+				Assert.That (
+					linkedValues,
+					Is.Not.EquivalentTo (srcValues),
+					$"Expected method `{src} to have {propertyDescription} modified, however, the {propertyDescription} were the same as the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
+			} else if (expectedSequenceAttribute != null) {
+				var expected = getExpectFromSequenceAttribute(expectedSequenceAttribute).ToArray();
+				Assert.That(
+					linkedValues,
+					Is.EquivalentTo (expected),
+					$"Expected method `{src} to have it's {propertyDescription} modified, however, the sequence of {propertyDescription} does not match the expected value\n{FormattingUtils.FormatSequenceCompareFailureMessage2 (linkedValues, expected, srcValues)}");
+			} else {
+				Assert.That(
+					linkedValues,
+					Is.EquivalentTo (srcValues),
+					$"Expected method `{src} to have it's {propertyDescription} unchanged, however, the {propertyDescription} differ from the original\n{FormattingUtils.FormatSequenceCompareFailureMessage (linkedValues, srcValues)}");
+			}
 		}
 
 		void VerifyReferences (AssemblyDefinition original, AssemblyDefinition linked)
@@ -651,6 +726,21 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return provider.CustomAttributes.
 							Where (w => w.AttributeType.Name == attributeName && w.Constructor.Parameters.Count == 1).
 							Select (l => l.ConstructorArguments [0].Value as T);
+		}
+		
+		protected static IEnumerable<string> GetStringOrTypeArrayAttributeValue (CustomAttribute attribute)
+		{
+			foreach (var arg in ((CustomAttributeArgument[]) attribute.ConstructorArguments [0].Value)) {
+				if (arg.Value is TypeReference tRef)
+					yield return tRef.ToString ();
+				else
+					yield return (string) arg.Value;
+			}
+		}
+		
+		protected static IEnumerable<string> GetStringArrayAttributeValue (CustomAttribute attribute)
+		{
+			return ((CustomAttributeArgument[]) attribute.ConstructorArguments [0].Value)?.Select (arg => arg.Value.ToString ());
 		}
 	}
 }

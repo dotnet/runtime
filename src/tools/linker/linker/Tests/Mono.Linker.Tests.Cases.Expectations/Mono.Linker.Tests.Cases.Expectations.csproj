@@ -38,6 +38,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assertions\BaseInAssemblyAttribute.cs" />
+    <Compile Include="Assertions\ExpectBodyModifiedAttribute.cs" />
+    <Compile Include="Assertions\ExpectedExceptionHandlerSequenceAttribute.cs" />
+    <Compile Include="Assertions\ExpectedInstructionSequenceAttribute.cs" />
+    <Compile Include="Assertions\ExpectedLocalsSequenceAttribute.cs" />
+    <Compile Include="Assertions\ExpectExceptionHandlersModifiedAttribute.cs" />
+    <Compile Include="Assertions\ExpectLocalsModifiedAttribute.cs" />
     <Compile Include="Assertions\IgnoreTestCaseAttribute.cs" />
     <Compile Include="Assertions\KeptAllTypesAndMembersInAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptAssemblyAttribute.cs" />

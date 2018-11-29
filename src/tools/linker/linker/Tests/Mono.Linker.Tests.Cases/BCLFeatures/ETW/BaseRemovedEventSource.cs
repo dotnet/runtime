@@ -30,17 +30,35 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 		public static CustomCtorEventSource Log = new MyEventSourceBasedOnCustomCtorEventSource (1);
 
 		[Kept]
+		[ExpectedInstructionSequence (new []
+		{
+			"ldarg.0",
+			"call",
+			"ret",
+		})]
 		public CustomCtorEventSource (int value)
 		{
 			Removed ();
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new []
+		{
+			"ldstr",
+			"newobj",
+			"throw",
+		})]
 		protected override void OnEventCommand (EventCommandEventArgs command)
 		{
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new []
+		{
+			"ldstr",
+			"newobj",
+			"throw",
+		})]
 		[Event (8)]
 		public void SomeMethod ()
 		{

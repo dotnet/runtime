@@ -29,6 +29,12 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 		}
 
 		[Kept]
+		[ExpectedInstructionSequence (new []
+		{
+			"ldstr",
+			"newobj",
+			"throw",
+		})]
 		private void Test2 ()
 		{
 			Console.WriteLine ();

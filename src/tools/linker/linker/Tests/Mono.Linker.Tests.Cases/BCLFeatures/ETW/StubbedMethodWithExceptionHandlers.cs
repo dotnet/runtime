@@ -1,26 +1,25 @@
-﻿using System;
+using System;
 using System.Diagnostics.Tracing;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
-	public class Excluded 
-	{
+	public class StubbedMethodWithExceptionHandlers {
 		public static void Main ()
 		{
-			var b = RemovedEventSource.Log.IsEnabled ();
+			var b = StubbedMethodWithExceptionHandlers_RemovedEventSource.Log.IsEnabled ();
 			if (b)
-				RemovedEventSource.Log.SomeMethod ();
+				StubbedMethodWithExceptionHandlers_RemovedEventSource.Log.SomeMethod ();
 		}
 	}
-
+	
 	[Kept]
 	[KeptBaseType (typeof (EventSource))]
 	[KeptMember (".ctor()")]
 	[KeptMember (".cctor()")]
 	[EventSource (Name = "MyCompany")]
-	class RemovedEventSource : EventSource {
+	class StubbedMethodWithExceptionHandlers_RemovedEventSource : EventSource {
 		public class Keywords {
 			public const EventKeywords Page = (EventKeywords)1;
 
@@ -28,7 +27,7 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 		}
 
 		[Kept]
-		public static RemovedEventSource Log = new RemovedEventSource ();
+		public static StubbedMethodWithExceptionHandlers_RemovedEventSource Log = new StubbedMethodWithExceptionHandlers_RemovedEventSource ();
 
 		[Kept]
 		[ExpectedInstructionSequence (new []
@@ -37,8 +36,20 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 			"newobj",
 			"throw",
 		})]
+		[ExpectedExceptionHandlerSequence (new string[0])]
 		protected override void OnEventCommand (EventCommandEventArgs command)
 		{
+			try {
+				Removed ();
+			} catch {
+				try {
+					Removed ();
+				} catch {
+					Removed ();
+					throw;
+				}
+				throw;
+			}
 		}
 
 		[Kept]
