@@ -75,7 +75,7 @@
 #endif
 
 #ifdef _MSC_VER
-#pragma warning(disable:4102)
+#pragma warning(disable:4102) // label' : unreferenced label
 #endif
 
 static inline void
