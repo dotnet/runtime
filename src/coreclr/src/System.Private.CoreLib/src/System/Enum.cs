@@ -31,7 +31,6 @@ namespace System
     {
         #region Private Constants
         private const char enumSeparatorChar = ',';
-        private const string enumSeparatorString = ", ";
         #endregion
 
         #region Private Static Methods
@@ -159,7 +158,7 @@ namespace System
             return InternalFlagsFormat(eT, entry, result);
         }
 
-        private static string InternalFlagsFormat(RuntimeType eT, TypeValuesAndNames entry, ulong result)
+        private static string InternalFlagsFormat(RuntimeType eT, TypeValuesAndNames entry, ulong resultValue)
         {
             Debug.Assert(eT != null);
 
@@ -167,57 +166,94 @@ namespace System
             ulong[] values = entry.Values;
             Debug.Assert(names.Length == values.Length);
 
-            int index = values.Length - 1;
-            StringBuilder sb = StringBuilderCache.Acquire();
-            bool firstTime = true;
-            ulong saveResult = result;
+            // Values are sorted, so if the incoming value is 0, we can check to see whether
+            // the first entry matches it, in which case we can return its name; otherwise,
+            // we can just return "0".
+            if (resultValue == 0)
+            {
+                return values.Length > 0 && values[0] == 0 ?
+                    names[0] :
+                    "0";
+            }
 
-            // We will not optimize this code further to keep it maintainable. There are some boundary checks that can be applied
-            // to minimize the comparsions required. This code works the same for the best/worst case. In general the number of
-            // items in an enum are sufficiently small and not worth the optimization.
+            // With a ulong result value, regardless of the enum's base type, the maximum
+            // possible number of consistent name/values we could have is 64, since every
+            // value is made up of one or more bits, and when we see values and incorporate
+            // their names, we effectively switch off those bits.
+            Span<int> foundItems = stackalloc int[64];
+
+            // Walk from largest to smallest. It's common to have a flags enum with a single
+            // value that matches a single entry, in which case we can just return the existing
+            // name string.
+            int index = values.Length - 1;
             while (index >= 0)
             {
-                if ((index == 0) && (values[index] == 0))
-                    break;
-
-                if ((result & values[index]) == values[index])
+                if (values[index] == resultValue)
                 {
-                    result -= values[index];
-                    if (!firstTime)
-                        sb.Insert(0, enumSeparatorString);
+                    return names[index];
+                }
 
-                    sb.Insert(0, names[index]);
-                    firstTime = false;
+                if (values[index] < resultValue)
+                {
+                    break;
                 }
 
                 index--;
             }
 
-            string returnString;
-            if (result != 0)
+            // Now look for multiple matches, storing the indices of the values
+            // into our span.
+            int resultLength = 0, foundItemsCount = 0;
+            while (index >= 0)
             {
-                // We were unable to represent this number as a bitwise or of valid flags
-                returnString = null; // return null so the caller knows to .ToString() the input
-            }
-            else if (saveResult == 0)
-            {
-                // For the cases when we have zero
-                if (values.Length > 0 && values[0] == 0)
+                ulong currentValue = values[index];
+                if (index == 0 && currentValue == 0)
                 {
-                    returnString = names[0]; // Zero was one of the enum values.
+                    break;
                 }
-                else
+
+                if ((resultValue & currentValue) == currentValue)
                 {
-                    returnString = "0";
+                    resultValue -= currentValue;
+                    foundItems[foundItemsCount++] = index;
+                    resultLength = checked(resultLength + names[index].Length);
                 }
-            }
-            else
-            {
-                returnString = sb.ToString(); // Return the string representation
+
+                index--;
             }
 
-            StringBuilderCache.Release(sb);
-            return returnString;
+            // If we exhausted looking through all the values and we still have
+            // a non-zero result, we couldn't match the result to only named values.
+            // In that case, we return null and let the call site just generate
+            // a string for the integral value.
+            if (resultValue != 0)
+            {
+                return null;
+            }
+
+            // We know what strings to concatenate.  Do so.
+
+            Debug.Assert(foundItemsCount > 0);
+            const int SeparatorStringLength = 2; // ", "
+            string result = string.FastAllocateString(checked(resultLength + (SeparatorStringLength * (foundItemsCount - 1))));
+
+            Span<char> resultSpan = MemoryMarshal.CreateSpan(ref result.GetRawStringData(), result.Length);
+            string name = names[foundItems[--foundItemsCount]];
+            name.AsSpan().CopyTo(resultSpan);
+            resultSpan = resultSpan.Slice(name.Length);
+            while (--foundItemsCount >= 0)
+            {
+                resultSpan[0] = ',';
+                resultSpan[1] = ' ';
+                resultSpan = resultSpan.Slice(2);
+
+                name = names[foundItems[foundItemsCount]];
+                name.AsSpan().CopyTo(resultSpan);
+                resultSpan = resultSpan.Slice(name.Length);
+            }
+            Debug.Assert(resultSpan.IsEmpty);
+
+            return result;
         }
 
         internal static ulong ToUInt64(object value)
