@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('TypeEquivalence.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="**/*.cs" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CompilerResponseFile>$(IntermediateOutputPath)Simple.rsp</CompilerResponseFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../contracts/TypeContracts.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <EmbedTypes>true</EmbedTypes>
+    </ProjectReference>
+    <ProjectReference Include="../impl/TypeImpl.csproj"/>
+    <ProjectReference Include="../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('TypeEquivalence.targets', '$(MSBuildThisFileDirectory)../'))" />
+
+</Project>

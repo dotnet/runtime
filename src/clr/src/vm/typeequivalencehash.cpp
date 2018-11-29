@@ -55,8 +55,8 @@ TypeEquivalenceHashTable *TypeEquivalenceHashTable::Create(AppDomain *pAppDomain
     LoaderHeap *pHeap = pAppDomain->GetLowFrequencyHeap();
     TypeEquivalenceHashTable *pThis = (TypeEquivalenceHashTable*)amt.Track(pHeap->AllocMem((S_SIZE_T)sizeof(TypeEquivalenceHashTable)));
 
-    // The base class get initialized through chaining of constructors. We allocated the hash instance via the
-    // loader heap instead of new so use an in-place new to call the constructors now.
+    // The base class gets initialized through chaining of constructors.
+    // Use in-place new to create instance.
     new (pThis) TypeEquivalenceHashTable(pHeap, dwNumBuckets, pCrst);
     amt.SuppressRelease();
 

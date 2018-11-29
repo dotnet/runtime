@@ -2795,7 +2795,11 @@ HRESULT TypeIdentifierData::Init(Module *pModule, mdToken tk)
     else
     {
         // no TypeIdentifierAttribute -> the assembly must be a type library
-        bool has_eq = !pModule->GetAssembly()->IsDynamic() && pModule->GetAssembly()->IsPIAOrImportedFromTypeLib();
+        bool has_eq = !pModule->GetAssembly()->IsDynamic();
+
+#ifdef FEATURE_COMINTEROP
+        has_eq = has_eq && pModule->GetAssembly()->IsPIAOrImportedFromTypeLib();
+#endif // FEATURE_COMINTEROP
 
         if (!has_eq)
         {
@@ -2898,33 +2902,6 @@ BOOL TypeIdentifierData::IsEqual(const TypeIdentifierData & data) const
     return (memcmp(m_pchIdentifierNamespace, data.m_pchIdentifierName, m_cbIdentifierNamespace) == 0) &&
            (data.m_pchIdentifierName[m_cbIdentifierNamespace] == NAMESPACE_SEPARATOR_CHAR) &&
            (memcmp(m_pchIdentifierName, data.m_pchIdentifierName + m_cbIdentifierNamespace + 1, m_cbIdentifierName) == 0);
-}
-
-#endif //FEATURE_TYPEEQUIVALENCE
-#ifdef FEATURE_COMINTEROP
-
-//---------------------------------------------------------------------------------------
-// 
-static CorElementType GetFieldSigElementType(PCCOR_SIGNATURE pSig, DWORD cbSig)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    SigPointer sigptr(pSig, cbSig);
-    
-    ULONG data;
-    IfFailThrow(sigptr.GetCallingConv(&data));
-    _ASSERTE(data == IMAGE_CEE_CS_CALLCONV_FIELD);
-
-    CorElementType etype;
-    IfFailThrow(sigptr.GetElemType(&etype));
-
-    return etype;
 }
 
 //---------------------------------------------------------------------------------------
@@ -3073,7 +3050,7 @@ static BOOL CompareDelegatesForEquivalence(mdToken tk1, mdToken tk2, Module *pMo
     return MetaSig::CompareMethodSigs(pSig1, cbSig1, pModule1, NULL, pSig2, cbSig2, pModule2, NULL, pVisited);
 }
 
-#endif // FEATURE_COMINTEROP
+#endif // FEATURE_TYPEEQUIVALENCE
 #endif // #ifndef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -3178,7 +3155,12 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
     // 1. Type is within assembly marked with ImportedFromTypeLibAttribute or PrimaryInteropAssemblyAttribute
     if (hr != S_OK)
     {
-        bool has_eq = !pModule->GetAssembly()->IsDynamic() && pModule->GetAssembly()->IsPIAOrImportedFromTypeLib();
+        // no TypeIdentifierAttribute -> the assembly must be a type library
+        bool has_eq = !pModule->GetAssembly()->IsDynamic();
+
+#ifdef FEATURE_COMINTEROP
+        has_eq = has_eq && pModule->GetAssembly()->IsPIAOrImportedFromTypeLib();
+#endif // FEATURE_COMINTEROP
 
         if (!has_eq)
             return FALSE;
@@ -3426,7 +3408,7 @@ BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, M
     }
     return TRUE;
 
-#else //!defined(DACCESS_COMPILE) && defined(FEATURE_COMINTEROP)
+#else //!defined(DACCESS_COMPILE) && defined(FEATURE_TYPEEQUIVALENCE)
 
 #ifdef DACCESS_COMPILE
     // We shouldn't execute this code in dac builds.
