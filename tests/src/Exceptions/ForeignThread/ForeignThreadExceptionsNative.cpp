@@ -12,7 +12,7 @@
 // Work around typedef redefinition: platformdefines.h defines error_t
 // as unsigned while it's defined as int in errno.h.
 #define error_t error_t_ignore
-#include "platformdefines.h"
+#include <platformdefines.h>
 #undef error_t
 
 typedef void (*PFNACTION1)();

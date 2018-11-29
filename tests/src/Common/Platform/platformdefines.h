@@ -146,8 +146,9 @@ typedef WCHAR* BSTR;
 BSTR TP_SysAllocStringByteLen(LPCSTR psz, size_t len);
 void TP_SysFreeString(BSTR bstr);
 size_t TP_SysStringByteLen(BSTR bstr);
-BSTR TP_SysAllocStringLen(LPWSTR psz, size_t len);
-BSTR TP_SysAllocString(LPWSTR psz);
+BSTR TP_SysAllocStringLen(LPCWSTR psz, size_t len);
+BSTR TP_SysAllocString(LPCWSTR psz);
+DWORD TP_SysStringLen(BSTR bstr);
 
 //
 // Method redirects
