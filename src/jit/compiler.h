@@ -359,8 +359,11 @@ public:
 #if OPT_BOOL_OPS
     unsigned char lvIsBoolean : 1; // set if variable is boolean
 #endif
+    unsigned char lvSingleDef : 1; // variable has a single def
+                                   // before lvaMarkLocalVars: identifies ref type locals that can get type updates
+                                   // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
+
 #if ASSERTION_PROP
-    unsigned char lvSingleDef : 1;    // variable has a single def
     unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 #endif
