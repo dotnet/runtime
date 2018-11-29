@@ -214,7 +214,7 @@ namespace System
             return (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.DecimalDigitNumber);
         }
 
-        private static bool IsInRange(char c, char min, char max) => (uint)(c - min) <= (uint)(max - min);
+        internal static bool IsInRange(char c, char min, char max) => (uint)(c - min) <= (uint)(max - min);
 
         private static bool IsInRange(UnicodeCategory c, UnicodeCategory min, UnicodeCategory max) => (uint)(c - min) <= (uint)(max - min);
 
