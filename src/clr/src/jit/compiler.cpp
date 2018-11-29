@@ -2447,16 +2447,25 @@ void Compiler::compSetProcessor()
         if (configEnableISA(InstructionSet_SSE))
         {
             opts.setSupportedISA(InstructionSet_SSE);
+#ifdef _TARGET_AMD64_
+            opts.setSupportedISA(InstructionSet_SSE_X64);
+#endif
         }
         if (configEnableISA(InstructionSet_SSE2))
         {
             opts.setSupportedISA(InstructionSet_SSE2);
+#ifdef _TARGET_AMD64_
+            opts.setSupportedISA(InstructionSet_SSE2_X64);
+#endif
         }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_LZCNT))
         {
             if (configEnableISA(InstructionSet_LZCNT))
             {
                 opts.setSupportedISA(InstructionSet_LZCNT);
+#ifdef _TARGET_AMD64_
+                opts.setSupportedISA(InstructionSet_LZCNT_X64);
+#endif
             }
         }
         if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_POPCNT))
@@ -2464,6 +2473,9 @@ void Compiler::compSetProcessor()
             if (configEnableISA(InstructionSet_POPCNT))
             {
                 opts.setSupportedISA(InstructionSet_POPCNT);
+#ifdef _TARGET_AMD64_
+                opts.setSupportedISA(InstructionSet_POPCNT_X64);
+#endif
             }
         }
 
@@ -2484,6 +2496,9 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_SSE41))
                 {
                     opts.setSupportedISA(InstructionSet_SSE41);
+#ifdef _TARGET_AMD64_
+                    opts.setSupportedISA(InstructionSet_SSE41_X64);
+#endif
                 }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSE42))
@@ -2491,6 +2506,9 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_SSE42))
                 {
                     opts.setSupportedISA(InstructionSet_SSE42);
+#ifdef _TARGET_AMD64_
+                    opts.setSupportedISA(InstructionSet_SSE42_X64);
+#endif
                 }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_SSSE3))

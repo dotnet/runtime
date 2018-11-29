@@ -315,6 +315,14 @@ enum InstructionSet
     InstructionSet_LZCNT,
     InstructionSet_PCLMULQDQ,
     InstructionSet_POPCNT,
+    InstructionSet_BMI1_X64,
+    InstructionSet_BMI2_X64,
+    InstructionSet_LZCNT_X64,
+    InstructionSet_POPCNT_X64,
+    InstructionSet_SSE_X64,
+    InstructionSet_SSE2_X64,
+    InstructionSet_SSE41_X64,
+    InstructionSet_SSE42_X64,
 #elif defined(_TARGET_ARM_)
     InstructionSet_NEON,
 #elif defined(_TARGET_ARM64_)
