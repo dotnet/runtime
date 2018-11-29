@@ -112,11 +112,7 @@
     <Compile Include="ConvertToInt32.Vector128Double.cs" />
     <Compile Include="ConvertToInt32.Vector128Int32.cs" />
     <Compile Include="ConvertToInt32WithTruncation.Vector128Double.cs" />
-    <Compile Include="ConvertToInt64.Vector128Double.cs" />
-    <Compile Include="ConvertToInt64.Vector128Int64.cs" />
-    <Compile Include="ConvertToInt64WithTruncation.Vector128Double.cs" />
     <Compile Include="ConvertToUInt32.Vector128UInt32.cs" />
-    <Compile Include="ConvertToUInt64.Vector128UInt64.cs" />
     <Compile Include="ConvertToVector128Double.Vector128Single.cs" />
     <Compile Include="ConvertToVector128Double.Vector128Int32.cs" />
     <Compile Include="ConvertToVector128Int32.Vector128Double.cs" />
@@ -125,6 +121,7 @@
     <Compile Include="ConvertToVector128Int32WithTruncation.Vector128Single.cs" />
     <Compile Include="ConvertToVector128Single.Vector128Double.cs" />
     <Compile Include="ConvertToVector128Single.Vector128Int32.cs" />
+    <Compile Include="ConvertScalarToVector128Double.Double.cs" />
     <Compile Include="Divide.Double.cs" />
     <Compile Include="DivideScalar.Double.cs" />
     <Compile Include="Extract.UInt16.1.cs" />
@@ -265,6 +262,7 @@
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\ScalarSimdUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
     <Compile Include="Sse2Verify.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
