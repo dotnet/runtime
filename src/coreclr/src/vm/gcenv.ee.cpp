@@ -320,7 +320,11 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
     WRAPPER_NO_CONTRACT;
 
     Thread* pThread = ::GetThread();
-    assert(pThread != nullptr);
+    if (!pThread)
+    {
+        return nullptr;
+    }
+
     return pThread->GetAllocContext();
 }
 
