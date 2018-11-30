@@ -9,10 +9,6 @@
     <Compile Include="**/*.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <CompilerResponseFile>$(IntermediateOutputPath)Simple.rsp</CompilerResponseFile>
-  </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="../contracts/TypeContracts.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
