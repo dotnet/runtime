@@ -62,7 +62,7 @@ namespace System.CodeDom.Compiler
                 {
                     WorkingDirectory = currentDir,
                     RedirectStandardOutput = true,
-                    RedirectStandardInput = true
+                    RedirectStandardError = true
                 };
 
                 using (Process p = Process.Start(psi))
