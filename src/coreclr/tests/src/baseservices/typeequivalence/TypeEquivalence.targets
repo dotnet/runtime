@@ -13,11 +13,20 @@
       <Output TaskParameter="TargetOutputs" ItemName="ResolvedProjectReferencePaths" />
     </MSBuild>
 
+    <PropertyGroup>
+      <EmbedProjectReferenceResponseFile>$(IntermediateOutputPath)$(MSBuildProjectName).rsp</EmbedProjectReferenceResponseFile>
+    </PropertyGroup>
+
     <WriteLinesToFile
-        File="$(CompilerResponseFile)"
+        File="$(EmbedProjectReferenceResponseFile)"
         Lines="@(ResolvedProjectReferencePaths -> '/link:%(fullpath)')"
         Overwrite="true"
         Encoding="Unicode" />
+
+    <PropertyGroup Condition="Exists('$(EmbedProjectReferenceResponseFile)')">
+      <CompilerResponseFile>$(EmbedProjectReferenceResponseFile);$(CompilerResponseFile)</CompilerResponseFile>
+    </PropertyGroup>
+
   </Target>
 
 </Project>
