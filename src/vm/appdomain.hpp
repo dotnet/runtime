@@ -2603,18 +2603,11 @@ public:
         return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
     }
 
-    BOOL IsPassiveDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & PASSIVE_DOMAIN);
-    }
-
     void SetCompilationDomain()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_dwFlags |= (PASSIVE_DOMAIN|COMPILATION_DOMAIN);
+        m_dwFlags |= (COMPILATION_DOMAIN);
     }
 
     BOOL IsCompilationDomain();
@@ -3283,7 +3276,6 @@ public:
         ALLOCATEDCOM =                      0x0008,
         LOAD_SYSTEM_ASSEMBLY_EVENT_SENT =   0x0040,
         COMPILATION_DOMAIN =                0x0400, // Are we ngenning?
-        PASSIVE_DOMAIN =                    0x2000, // Can we execute code in this AppDomain
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
         ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP    =      0x20000, // AppDomain was created using the APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP flag
         ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
