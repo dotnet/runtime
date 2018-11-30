@@ -224,12 +224,12 @@ mono_encode_merp_params (MERPStruct *merp)
 	// Provided by icall
 	g_string_append_printf (output, "BlameModuleName: %s\n", merp->moduleName);
 	g_string_append_printf (output, "BlameModuleVersion: %s\n", merp->moduleVersion);
-	g_string_append_printf (output, "BlameModuleOffset: 0x%x\n", merp->moduleOffset);
+	g_string_append_printf (output, "BlameModuleOffset: 0x%llx\n", (unsigned long long)merp->moduleOffset);
 
 	g_string_append_printf (output, "ExceptionType: %s\n", get_merp_exctype (merp->exceptionArg));
 
-	g_string_append_printf (output, "StackChecksum: 0x%x\n", merp->hashes.offset_free_hash);
-	g_string_append_printf (output, "StackHash: 0x%x\n", merp->hashes.offset_rich_hash);
+	g_string_append_printf (output, "StackChecksum: 0x%llx\n", merp->hashes.offset_free_hash);
+	g_string_append_printf (output, "StackHash: 0x%llx\n", merp->hashes.offset_rich_hash);
 
 	// Provided by icall
 	g_string_append_printf (output, "OSVersion: %s\n", merp->osVersion);
