@@ -20,6 +20,11 @@ function Create-Directory([string[]] $path) {
   }
 }
 
+function Unzip([string]$zipfile, [string]$outpath) {
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
+}
+
 function InitializeDotNetCli([bool]$install) {
   # Don't resolve runtime, shared framework, or SDK from other locations to ensure build determinism
   $env:DOTNET_MULTILEVEL_LOOKUP=0
@@ -79,39 +84,104 @@ function InstallDotNetSdk([string] $dotnetRoot, [string] $version) {
   }
 }
 
-function InitializeVisualStudioBuild {
-  $vsToolsPath = $env:VS150COMNTOOLS
-  if ($vsToolsPath -eq $null) { 
-    $vsToolsPath = $env:VS160COMNTOOLS
+#
+# Locates Visual Studio MSBuild installation. 
+# The preference order for MSBuild to use is as follows:
+#
+#   1. MSBuild from an active VS command prompt
+#   2. MSBuild from a compatible VS installation
+#   3. MSBuild from the xcopy tool package
+#
+# Returns full path to msbuild.exe.
+# Throws on failure.
+#
+function InitializeVisualStudioMSBuild {
+  $vsMinVersionStr = if (!$GlobalJson.tools.vs.version) { $GlobalJson.tools.vs.version } else { "15.9" }
+  $vsMinVersion = [Version]::new($vsMinVersionStr) 
+
+  # Try msbuild command available in the environment.
+  if ($env:VSINSTALLDIR -ne $null) {
+    $msbuildCmd = Get-Command "msbuild.exe" -ErrorAction SilentlyContinue
+    if ($msbuildCmd -ne $null) {
+      if ($msbuildCmd.Version -ge $vsMinVersion) {
+        return $msbuildCmd.Path
+      }
+
+      # Report error - the developer environment is initialized with incompatible VS version.
+      throw "Developer Command Prompt for VS $($env:VisualStudioVersion) is not recent enough. Please upgrade to $vsMinVersionStr or build from a plain CMD window"
+    }
   }
 
-  if (($vsToolsPath -ne $null) -and (Test-Path $vsToolsPath)) {
-    $vsInstallDir = [System.IO.Path]::GetFullPath((Join-Path $vsToolsPath "..\.."))
-  } else {
-    $vsInfo = LocateVisualStudio
-
+  # Locate Visual Studio installation or download x-copy msbuild.
+  $vsInfo = LocateVisualStudio  
+  if ($vsInfo -ne $null) {
     $vsInstallDir = $vsInfo.installationPath
-    $vsSdkInstallDir = Join-Path $vsInstallDir "VSSDK\"
-    $vsVersion = $vsInfo.installationVersion.Split('.')[0] + "0"
+    $vsMajorVersion = $vsInfo.installationVersion.Split('.')[0]
 
-    Set-Item "env:VS$($vsVersion)COMNTOOLS" (Join-Path $vsInstallDir "Common7\Tools\")    
-    Set-Item "env:VSSDK$($vsVersion)Install" $vsSdkInstallDir
-    $env:VSSDKInstall = $vsSdkInstallDir
+    InitializeVisualStudioEnvironmentVariables $vsInstallDir $vsMajorVersion
+  } else {
+
+    if (Get-Member -InputObject $GlobalJson.tools -Name "xcopy-msbuild") {
+      $xcopyMSBuildVersion = $GlobalJson.tools.'xcopy-msbuild'
+      $vsMajorVersion = $xcopyMSBuildVersion.Split('.')[0]
+    } else {
+      $vsMajorVersion = $vsMinVersion.Major
+      $xcopyMSBuildVersion = "$vsMajorVersion.$($vsMinVersion.Minor).0-alpha"
+    }
+
+    $vsInstallDir = InstallXCopyMSBuild $xcopyMSBuildVersion
   }
 
-  return $vsInstallDir
+  $msbuildVersionDir = if ([int]$vsMajorVersion -lt 16) { "$vsMajorVersion.0" } else { "Current" }
+  return Join-Path $vsInstallDir "MSBuild\$msbuildVersionDir\Bin\msbuild.exe"
 }
 
-function LocateVisualStudio {
-  $vswhereVersion = $GlobalJson.tools.vswhere
+function InitializeVisualStudioEnvironmentVariables([string] $vsInstallDir, [string] $vsMajorVersion) {
+  $env:VSINSTALLDIR = $vsInstallDir
+  Set-Item "env:VS$($vsMajorVersion)0COMNTOOLS" (Join-Path $vsInstallDir "Common7\Tools\")
+  
+  $vsSdkInstallDir = Join-Path $vsInstallDir "VSSDK\"
+  if (Test-Path $vsSdkInstallDir) {
+    Set-Item "env:VSSDK$($vsMajorVersion)0Install" $vsSdkInstallDir
+    $env:VSSDKInstall = $vsSdkInstallDir
+  }
+}
 
-  if (!$vsWhereVersion) {
-    Write-Host "vswhere version must be specified in /global.json." -ForegroundColor Red
-    ExitWithExitCode 1
+function InstallXCopyMSBuild([string] $packageVersion) {
+  $packageName = "RoslynTools.MSBuild"
+  $packageDir = Join-Path $ToolsDir "msbuild\$packageVersion"
+  $packagePath = Join-Path $packageDir "$packageName.$packageVersion.nupkg"
+
+  if (!(Test-Path $packageDir)) {
+    Create-Directory $packageDir
+    Write-Host "Downloading $packageName $packageVersion"
+    Invoke-WebRequest "https://dotnet.myget.org/F/roslyn-tools/api/v2/package/$packageName/$packageVersion/" -OutFile $packagePath
+    Unzip $packagePath $packageDir
   }
 
-  $toolsRoot = Join-Path $RepoRoot ".tools"
-  $vsWhereDir = Join-Path $toolsRoot "vswhere\$vswhereVersion"
+  return Join-Path $packageDir "tools"
+}
+
+#
+# Locates Visual Studio instance that meets the minimal requirements specified by tools.vs object in global.json.
+#
+# The following properties of tools.vs are recognized:
+#   "version": "{major}.{minor}"    
+#       Two part minimal VS version, e.g. "15.9", "16.0", etc.
+#   "components": ["componentId1", "componentId2", ...] 
+#       Array of ids of workload components that must be available in the VS instance.
+#       See e.g. https://docs.microsoft.com/en-us/visualstudio/install/workload-component-id-vs-enterprise?view=vs-2017
+#
+# Returns JSON describing the located VS instance (same format as returned by vswhere), 
+# or $null if no instance meeting the requirements is found on the machine.
+#
+function LocateVisualStudio {
+  $vswhereVersion = Get-Member -InputObject $GlobalJson.tools -Name "vswhere"
+  if ($vsWhereVersion -eq $null) {
+    $vswhereVersion = "2.5.2"
+  }
+
+  $vsWhereDir = Join-Path $ToolsDir "vswhere\$vswhereVersion"
   $vsWhereExe = Join-Path $vsWhereDir "vswhere.exe"
 
   if (!(Test-Path $vsWhereExe)) {
@@ -120,17 +190,25 @@ function LocateVisualStudio {
     Invoke-WebRequest "https://github.com/Microsoft/vswhere/releases/download/$vswhereVersion/vswhere.exe" -OutFile $vswhereExe
   }
 
-  $vsInfo = & $vsWhereExe `
-    -latest `
-    -prerelease `
-    -format json `
-    -requires Microsoft.Component.MSBuild `
-    -requires Microsoft.VisualStudio.Component.VSSDK `
-    -requires Microsoft.VisualStudio.Component.Roslyn.Compiler | ConvertFrom-Json
+  $vs = $GlobalJson.tools.vs
+  $args = @("-latest", "-prerelease", "-format", "json", "-requires", "Microsoft.Component.MSBuild")
+  
+  if (Get-Member -InputObject $vs -Name "version") { 
+    $args += "-version"
+    $args += $vs.version
+  }
+
+  if (Get-Member -InputObject $vs -Name "components") { 
+    foreach ($component in $vs.components) {
+      $args += "-requires"
+      $args += $component
+    }    
+  }
+
+  $vsInfo =& $vsWhereExe $args | ConvertFrom-Json
 
   if ($lastExitCode -ne 0) {
-    Write-Host "Failed to locate Visual Studio (exit code '$lastExitCode')." -ForegroundColor Red
-    ExitWithExitCode $lastExitCode
+    return $null
   }
 
   # use first matching instance
@@ -153,18 +231,18 @@ function InitializeTools() {
 
   # Initialize dotnet cli if listed in 'tools'
   $dotnetRoot = $null
-  if ((Get-Member -InputObject $tools -Name "dotnet") -ne $null) {
+  if (Get-Member -InputObject $tools -Name "dotnet") {
     $dotnetRoot = InitializeDotNetCli -install:$restore
   }
 
   if (-not $msbuildEngine) {
-    # Presence of vswhere.version indicates the repo needs to build using VS msbuild.
-    if ((Get-Member -InputObject $tools -Name "vswhere") -ne $null) {
+    # Presence of tools.vs indicates the repo needs to build using VS msbuild on Windows.
+    if (Get-Member -InputObject $tools -Name "vs") {
       $msbuildEngine = "vs"
     } elseif ($dotnetRoot -ne $null) {
       $msbuildEngine = "dotnet"
     } else {
-      Write-Host "-msbuildEngine must be specified, or /global.json must specify 'tools.dotnet' or 'tools.vswhere'." -ForegroundColor Red
+      Write-Host "-msbuildEngine must be specified, or /global.json must specify 'tools.dotnet' or 'tools.vs'." -ForegroundColor Red
       ExitWithExitCode 1
     }
   }
@@ -178,10 +256,13 @@ function InitializeTools() {
     $script:buildDriver = Join-Path $dotnetRoot "dotnet.exe"
     $script:buildArgs = "msbuild"
   } elseif ($msbuildEngine -eq "vs") {
-    $vsInstallDir = InitializeVisualStudioBuild
-
-    $script:buildDriver = Join-Path $vsInstallDir "MSBuild\15.0\Bin\msbuild.exe"
-    $script:buildArgs = ""
+    try {
+      $script:buildDriver = InitializeVisualStudioMSBuild
+      $script:buildArgs = ""
+    } catch { 
+      Write-Host $_ -ForegroundColor Red
+      ExitWithExitCode 1
+    }
   } else {
     Write-Host "Unexpected value of -msbuildEngine: '$msbuildEngine'." -ForegroundColor Red
     ExitWithExitCode 1
@@ -262,6 +343,7 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 $EngRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $ArtifactsDir = Join-Path $RepoRoot "artifacts"
 $ToolsetDir = Join-Path $ArtifactsDir "toolset"
+$ToolsDir = Join-Path $RepoRoot ".tools"
 $LogDir = Join-Path (Join-Path $ArtifactsDir "log") $configuration
 $TempDir = Join-Path (Join-Path $ArtifactsDir "tmp") $configuration
 $GlobalJson = Get-Content -Raw -Path (Join-Path $RepoRoot "global.json") | ConvertFrom-Json

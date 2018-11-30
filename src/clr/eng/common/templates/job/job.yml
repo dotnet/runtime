@@ -43,8 +43,8 @@ parameters:
   # Optional: enable sending telemetry
   #           if 'true', these "variables" must be specified in the variables object or as part of the queue matrix
   #             _HelixBuildConfig - differentiate between Debug, Release, other
-  #             _HelixSource - Example: build/product
-  #             _HelixType - Example: official/dotnet/arcade/$(Build.SourceBranch)
+  #             _HelixType - Example: build/product/
+  #             _HelixSource - Example: official/dotnet/arcade/$(Build.SourceBranch)
   enableTelemetry: false
 
   # Optional: If specified, then automatically derive "_HelixSource" variable for telemetry
