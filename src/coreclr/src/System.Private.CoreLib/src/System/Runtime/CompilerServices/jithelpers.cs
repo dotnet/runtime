@@ -7,13 +7,8 @@
 //    Low-level Jit Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Threading;
-using System.Runtime;
-using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
@@ -51,11 +46,8 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    // Helper class to assist with unsafe pinning of arbitrary objects. The typical usage pattern is:
-    // fixed (byte * pData = &JitHelpers.GetPinningHelper(value).m_data)
-    // {
-    //    ... pData is what Object::GetData() returns in VM ...
-    // }
+    // Helper class to assist with unsafe pinning of arbitrary objects.
+    // It's used by VM code.
     internal class PinningHelper
     {
         public byte m_data;
@@ -173,10 +165,12 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void UnsafeSetArrayElement(object[] target, int index, object element);
 
-        // Used for unsafe pinning of arbitrary objects.
-        internal static PinningHelper GetPinningHelper(object o)
+        internal static ref byte GetRawData(this object obj) =>
+            ref Unsafe.As<RawData>(obj).Data;
+
+        private sealed class RawData
         {
-            return Unsafe.As<PinningHelper>(o);
+            public byte Data;
         }
 
 #if DEBUG
