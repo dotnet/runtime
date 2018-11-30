@@ -3103,49 +3103,8 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
 
     DomainLocalModule* pModuleData = 0;
 
-    // Do we need to allocate memory for the non GC statics?
-    if (m_ModuleID == NULL)
-    {
-        // Allocate memory for the module statics.
-        LoaderAllocator *pLoaderAllocator = NULL;
-        if (GetAssembly()->IsCollectible())
-        {
-            pLoaderAllocator = GetAssembly()->GetLoaderAllocator();
-        }
-        else
-        {
-            pLoaderAllocator = pDomainFile->GetAppDomain()->GetLoaderAllocator();
-        }
-
-        SIZE_T size = GetDomainLocalModuleSize();
-
-        LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocating %i bytes for precomputed statics in module %S in LoaderAllocator %p\n",
-            size, this->GetDebugName(), pLoaderAllocator));
-
-        // We guarantee alignment for 64-bit regular statics on 32-bit platforms even without FEATURE_64BIT_ALIGNMENT for performance reasons.
-
-        _ASSERTE(size >= DomainLocalModule::OffsetOfDataBlob());
-
-        pModuleData = (DomainLocalModule*)(void*)
-            pLoaderAllocator->GetHighFrequencyHeap()->AllocAlignedMem(
-                size, MAX_PRIMITIVE_FIELD_SIZE);
-
-        // Note: Memory allocated on loader heap is zero filled
-        // memset(pModuleData, 0, size);
-
-        // Verify that the space is really zero initialized
-        _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() == NULL);
-
-        // If the module was loaded as domain-specific, then we need to assign
-        // this module a domain-neutral module ID.
-        pModuleData->m_ModuleIndex = Module::AllocateModuleIndex();
-        m_ModuleIndex = pModuleData->m_ModuleIndex;
-    }
-    else
-    {
-        pModuleData = this->m_ModuleID;
-        LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocation not needed for ngened non shared module %s in Appdomain %08x\n"));
-    }
+    pModuleData = this->m_ModuleID;
+    LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocation not needed for ngened non shared module %s in Appdomain %08x\n"));
 
     // Non shared case, module points directly to the statics. In ngen case
     // m_pDomainModule is already set for the non shared case
@@ -6684,7 +6643,7 @@ void Module::FixupVTables()
     // <REVISIT_TODO>@todo: workaround!</REVISIT_TODO>
     // If we are compiling in-process, we don't want to fixup the vtables - as it
     // will have side effects on the other copy of the module!
-    if (SystemDomain::GetCurrentDomain()->IsPassiveDomain()) {
+    if (SystemDomain::GetCurrentDomain()->IsCompilationDomain()) {
         return;
     }
 

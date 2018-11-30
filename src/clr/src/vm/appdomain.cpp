@@ -3822,8 +3822,7 @@ BOOL AppDomain::IsCompilationDomain()
 
     BOOL isCompilationDomain = (m_dwFlags & COMPILATION_DOMAIN) != 0;
 #ifdef FEATURE_PREJIT
-    _ASSERTE(!isCompilationDomain ||
-             (IsCompilationProcess() && IsPassiveDomain()));
+    _ASSERTE(!isCompilationDomain || IsCompilationProcess());
 #endif // FEATURE_PREJIT
     return isCompilationDomain;
 }
