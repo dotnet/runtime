@@ -9,8 +9,6 @@
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
     <DefineConstants>BLOCK_WINDOWS_NANO</DefineConstants>
-    <!-- Issue 21221, https://github.com/dotnet/coreclr/issues/21221 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(InteropCommonDir)ExeLauncherProgram.cs" />
