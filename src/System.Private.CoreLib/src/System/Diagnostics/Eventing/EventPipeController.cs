@@ -60,6 +60,9 @@ namespace System.Diagnostics.Tracing
         // Singleton controller instance.
         private static EventPipeController s_controllerInstance = null;
 
+        // Initialization flag used to avoid initializing FrameworkEventSource on the startup path.
+        private static bool s_initializing = false;
+
         // Controller object state.
         private Timer m_timer;
         private string m_configFilePath;
@@ -67,11 +70,18 @@ namespace System.Diagnostics.Tracing
         private string m_traceFilePath = null;
         private bool m_configFileExists = false;
 
+        internal static bool Initializing
+        {
+            get { return s_initializing; }
+        }
+
         internal static void Initialize()
         {
             // Don't allow failures to propagate upstream.  Ensure program correctness without tracing.
             try
             {
+                s_initializing = true;
+
                 if (s_controllerInstance == null)
                 {
                     if (Config_EnableEventPipe > 0)
@@ -88,6 +98,10 @@ namespace System.Diagnostics.Tracing
                 }
             }
             catch { }
+            finally
+            {
+                s_initializing = false;
+            }
         }
 
         private EventPipeController()
