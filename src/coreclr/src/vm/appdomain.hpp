@@ -2603,46 +2603,11 @@ public:
         return (m_dwFlags & IGNORE_UNHANDLED_EXCEPTIONS);
     }
 
-    void SetPassiveDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= PASSIVE_DOMAIN;
-    }
-
     BOOL IsPassiveDomain()
     {
         LIMITED_METHOD_CONTRACT;
 
         return (m_dwFlags & PASSIVE_DOMAIN);
-    }
-
-    void SetVerificationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= VERIFICATION_DOMAIN;
-    }
-
-    BOOL IsVerificationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & VERIFICATION_DOMAIN);
-    }
-
-    void SetIllegalVerificationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= ILLEGAL_VERIFICATION_DOMAIN;
-    }
-
-    BOOL IsIllegalVerificationDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & ILLEGAL_VERIFICATION_DOMAIN);
     }
 
     void SetCompilationDomain()
@@ -2660,34 +2625,6 @@ public:
 
         _ASSERTE(IsCompilationDomain());
         return dac_cast<PTR_CompilationDomain>(this);
-    }
-
-    void SetRemotingConfigured()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
-        FastInterlockOr((ULONG*)&m_dwFlags, REMOTING_CONFIGURED_FOR_DOMAIN);
-    }
-
-    BOOL IsRemotingConfigured()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
-        return m_dwFlags & REMOTING_CONFIGURED_FOR_DOMAIN;
-    }
-
-    void SetOrphanedLocks()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
-        FastInterlockOr((ULONG*)&m_dwFlags, ORPHANED_LOCKS);
-    }
-
-    BOOL HasOrphanedLocks()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;
-        return m_dwFlags & ORPHANED_LOCKS;
     }
 
     static void ExceptionUnwind(Frame *pFrame);
@@ -3345,12 +3282,8 @@ public:
         USER_CREATED_DOMAIN =               0x0002, // created by call to AppDomain.CreateDomain
         ALLOCATEDCOM =                      0x0008,
         LOAD_SYSTEM_ASSEMBLY_EVENT_SENT =   0x0040,
-        REMOTING_CONFIGURED_FOR_DOMAIN =    0x0100,
         COMPILATION_DOMAIN =                0x0400, // Are we ngenning?
-        ORPHANED_LOCKS =                    0x1000, // Orphaned locks exist in this appdomain.
         PASSIVE_DOMAIN =                    0x2000, // Can we execute code in this AppDomain
-        VERIFICATION_DOMAIN =               0x4000, // This is a verification domain
-        ILLEGAL_VERIFICATION_DOMAIN =       0x8000, // This can't be a verification domain
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
         ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP    =      0x20000, // AppDomain was created using the APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP flag
         ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
