@@ -227,7 +227,7 @@ namespace System.Runtime.CompilerServices
             // method table pointer, so just back up one pointer and immediately deref.
             // This is not ideal in terms of minimizing instruction count but is the best we can do at the moment.
 
-            return Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref JitHelpers.GetPinningHelper(obj).m_data), -1);
+            return Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
             
             // The JIT currently implements this as:
             // lea tmp, [rax + 8h] ; assume rax contains the object reference, tmp is type IntPtr&
