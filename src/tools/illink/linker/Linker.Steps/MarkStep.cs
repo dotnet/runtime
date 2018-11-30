@@ -38,7 +38,7 @@ using Mono.Collections.Generic;
 
 namespace Mono.Linker.Steps {
 
-	public class MarkStep : IStep {
+	public partial class MarkStep : IStep {
 
 		protected LinkContext _context;
 		protected Queue<MethodDefinition> _methods;
@@ -1956,7 +1956,11 @@ namespace Mono.Linker.Steps {
 				MarkInstruction (instruction);
 
 			MarkThingsUsedViaReflection (body);
+
+			PostMarkMethodBody (body);
 		}
+
+		partial void PostMarkMethodBody (MethodBody body);
 
 		protected virtual void MarkThingsUsedViaReflection (MethodBody body)
 		{

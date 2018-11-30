@@ -35,7 +35,7 @@ using Mono.Linker.Steps;
 
 namespace Mono.Linker {
 
-	public class Driver {
+	public partial class Driver {
 
 #if FEATURE_ILLINK
 		static readonly string _linker = "IL Linker";
@@ -295,6 +295,8 @@ namespace Mono.Linker {
 					}
 				}
 
+				PreProcessPipeline (p);
+
 				try {
 					p.Process (context);
 				}
@@ -304,6 +306,8 @@ namespace Mono.Linker {
 				}
 			}
 		}
+
+		partial void PreProcessPipeline (Pipeline pipeline);
 
 		protected static void AddCustomStep (Pipeline pipeline, string arg)
 		{
