@@ -31,7 +31,6 @@
       <DisabledProjects Include="Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
       <DisabledProjects Include="Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
-      <DisabledProjects Include="baseservices\typeequivalence\**\*.csproj" />
     </ItemGroup>
 
     <!-- Test build is divided in slices which can be created within Test Group
