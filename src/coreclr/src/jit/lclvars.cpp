@@ -2732,10 +2732,10 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
         shouldUpdate = true;
     }
 
-    JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u from (%p) %s%s to (%p) %s%s\n", varNum,
-            shouldUpdate ? "" : " NOT", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
-            varDsc->lvClassIsExact ? " [exact]" : "", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd),
-            isExact ? " [exact]" : "");
+    JITDUMP("\nlvaUpdateClass:%s Updating class for V%02u", shouldUpdate ? "" : " NOT", varNum);
+    JITDUMP(" from(%p) %s%s", dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd),
+            varDsc->lvClassIsExact ? " [exact]" : "");
+    JITDUMP(" to(%p) %s%s\n", dspPtr(clsHnd), info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
 
     if (shouldUpdate)
     {
