@@ -230,12 +230,12 @@ mono_w32file_get_attributes (const gunichar2 *name)
 
 	MONO_ENTER_GC_SAFE;
 	res = GetFileAttributes (name);
+	error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 
 	if (res != INVALID_FILE_ATTRIBUTES)
 		return res;
 
-	error = GetLastError ();
 	if (error != ERROR_SHARING_VIOLATION)
 		return INVALID_FILE_ATTRIBUTES;
 
@@ -270,6 +270,7 @@ mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat)
 
 	MONO_ENTER_GC_SAFE;
 	res = GetFileAttributesEx (name, GetFileExInfoStandard, &file_attribute_data);
+	error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 	if (res) {
 		stat->attributes = file_attribute_data.dwFileAttributes;
@@ -280,7 +281,6 @@ mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat)
 		return TRUE;
 	}
 
-	error = GetLastError ();
 	if (error != ERROR_SHARING_VIOLATION)
 		return FALSE;
 
