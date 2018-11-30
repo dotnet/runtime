@@ -55,39 +55,73 @@ namespace System
             return entry;
         }
 
-        private unsafe string InternalFormattedHexString()
+        private string ValueToString()
         {
-            fixed (void* pValue = &JitHelpers.GetPinningHelper(this).m_data)
+            ref byte data = ref this.GetRawData();
+            switch (InternalGetCorElementType())
             {
-                switch (InternalGetCorElementType())
-                {
-                    case CorElementType.I1:
-                    case CorElementType.U1:
-                        return (*(byte*)pValue).ToString("X2", null);
-                    case CorElementType.Boolean:
-                        // direct cast from bool to byte is not allowed
-                        return Convert.ToByte(*(bool*)pValue).ToString("X2", null);
-                    case CorElementType.I2:
-                    case CorElementType.U2:
-                    case CorElementType.Char:
-                        return (*(ushort*)pValue).ToString("X4", null);
-                    case CorElementType.I4:
-                    case CorElementType.U4:
-                        return (*(uint*)pValue).ToString("X8", null);
-                    case CorElementType.I8:
-                    case CorElementType.U8:
-                        return (*(ulong*)pValue).ToString("X16", null);
-                    default:
-                        throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-                }
+                case CorElementType.I1:
+                    return Unsafe.As<byte, sbyte>(ref data).ToString();
+                case CorElementType.U1:
+                    return data.ToString();
+                case CorElementType.Boolean:
+                    return Unsafe.As<byte, bool>(ref data).ToString();
+                case CorElementType.I2:
+                    return Unsafe.As<byte, short>(ref data).ToString();
+                case CorElementType.U2:
+                    return Unsafe.As<byte, ushort>(ref data).ToString();
+                case CorElementType.Char:
+                    return Unsafe.As<byte, char>(ref data).ToString();
+                case CorElementType.I4:
+                    return Unsafe.As<byte, int>(ref data).ToString();
+                case CorElementType.U4:
+                    return Unsafe.As<byte, uint>(ref data).ToString();
+                case CorElementType.R4:
+                    return Unsafe.As<byte, float>(ref data).ToString();
+                case CorElementType.I8:
+                    return Unsafe.As<byte, long>(ref data).ToString();
+                case CorElementType.U8:
+                    return Unsafe.As<byte, ulong>(ref data).ToString();
+                case CorElementType.R8:
+                    return Unsafe.As<byte, double>(ref data).ToString();
+                case CorElementType.I:
+                    return Unsafe.As<byte, IntPtr>(ref data).ToString();
+                case CorElementType.U:
+                    return Unsafe.As<byte, UIntPtr>(ref data).ToString();
+                default:
+                    Debug.Fail("Invalid primitive type");
+                    return null;
             }
         }
 
-        private static string InternalFormattedHexString(object value)
+        private string ValueToHexString()
         {
-            TypeCode typeCode = Convert.GetTypeCode(value);
+            ref byte data = ref this.GetRawData();
+            switch (InternalGetCorElementType())
+            {
+                case CorElementType.I1:
+                case CorElementType.U1:
+                    return data.ToString("X2", null);
+                case CorElementType.Boolean:
+                    return Convert.ToByte(Unsafe.As<byte, bool>(ref data)).ToString("X2", null);
+                case CorElementType.I2:
+                case CorElementType.U2:
+                case CorElementType.Char:
+                    return Unsafe.As<byte, ushort>(ref data).ToString("X4", null);
+                case CorElementType.I4:
+                case CorElementType.U4:
+                    return Unsafe.As<byte, uint>(ref data).ToString("X8", null);
+                case CorElementType.I8:
+                case CorElementType.U8:
+                    return Unsafe.As<byte, ulong>(ref data).ToString("X16", null);
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
+        }
 
-            switch (typeCode)
+        private static string ValueToHexString(object value)
+        {
+            switch (Convert.GetTypeCode(value))
             {
                 case TypeCode.SByte:
                     return ((byte)(sbyte)value).ToString("X2", null);
@@ -346,18 +380,7 @@ namespace System
         {
             // Validation on the enum type itself.  Failures here are considered non-parsing failures
             // and thus always throw rather than returning false.
-            if (enumType == null)
-            {
-                throw new ArgumentNullException(nameof(enumType));
-            }
-            if (!(enumType is RuntimeType rt))
-            {
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-            }
-            if (!rt.IsEnum)
-            {
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
-            }
+            RuntimeType rt = ValidateRuntimeType(enumType);
 
             ReadOnlySpan<char> valueSpan = value.AsSpan().TrimStart();
             if (valueSpan.Length == 0)
@@ -872,28 +895,16 @@ namespace System
 
         public static string Format(Type enumType, object value, string format)
         {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            if (!enumType.IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));
+            RuntimeType rtType = ValidateRuntimeType(enumType);
 
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
-
-            RuntimeType rtType = enumType as RuntimeType;
-            if (rtType == null)
-                throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
-
-            // Check if both of them are of the same type
-            Type valueType = value.GetType();
-
-            Type underlyingType = GetUnderlyingType(enumType);
-
+            
             // If the value is an Enum then we need to extract the underlying value from it
+            Type valueType = value.GetType();
             if (valueType.IsEnum)
             {
                 if (!valueType.IsEquivalentTo(enumType))
@@ -906,33 +917,38 @@ namespace System
                 }
                 return ((Enum)value).ToString(format);
             }
+            
             // The value must be of the same type as the Underlying type of the Enum
-            else if (valueType != underlyingType)
+            Type underlyingType = GetUnderlyingType(enumType);
+            if (valueType != underlyingType)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumFormatUnderlyingTypeAndObjectMustBeSameType, valueType.ToString(), underlyingType.ToString()));
             }
-            if (format.Length != 1)
+
+            if (format.Length == 1)
             {
-                // all acceptable format string are of length 1
-                throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
+                switch (format[0])
+                {
+                    case 'G':
+                    case 'g':
+                        return GetEnumName(rtType, ToUInt64(value)) ?? value.ToString();
+
+                    case 'D':
+                    case 'd':
+                        return value.ToString();
+
+                    case 'X':
+                    case 'x':
+                        return ValueToHexString(value);
+
+                    case 'F':
+                    case 'f':
+                        return InternalFlagsFormat(rtType, ToUInt64(value)) ?? value.ToString();
+                }
             }
-
-            char formatCh = format[0];
-            if (formatCh == 'G' || formatCh == 'g')
-                return GetEnumName(rtType, ToUInt64(value)) ?? value.ToString();
-
-            if (formatCh == 'D' || formatCh == 'd')
-                return value.ToString();
-
-            if (formatCh == 'X' || formatCh == 'x')
-                return InternalFormattedHexString(value);
-
-            if (formatCh == 'F' || formatCh == 'f')
-                return Enum.InternalFlagsFormat(rtType, ToUInt64(value)) ?? value.ToString();
 
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
         }
-
         #endregion
 
         #region Definitions
@@ -953,96 +969,78 @@ namespace System
         #endregion
 
         #region Private Methods
-        internal unsafe object GetValue()
+        internal object GetValue()
         {
-            fixed (void* pValue = &JitHelpers.GetPinningHelper(this).m_data)
+            ref byte data = ref this.GetRawData();
+            switch (InternalGetCorElementType())
             {
-                switch (InternalGetCorElementType())
-                {
-                    case CorElementType.I1:
-                        return *(sbyte*)pValue;
-                    case CorElementType.U1:
-                        return *(byte*)pValue;
-                    case CorElementType.Boolean:
-                        return *(bool*)pValue;
-                    case CorElementType.I2:
-                        return *(short*)pValue;
-                    case CorElementType.U2:
-                        return *(ushort*)pValue;
-                    case CorElementType.Char:
-                        return *(char*)pValue;
-                    case CorElementType.I4:
-                        return *(int*)pValue;
-                    case CorElementType.U4:
-                        return *(uint*)pValue;
-                    case CorElementType.R4:
-                        return *(float*)pValue;
-                    case CorElementType.I8:
-                        return *(long*)pValue;
-                    case CorElementType.U8:
-                        return *(ulong*)pValue;
-                    case CorElementType.R8:
-                        return *(double*)pValue;
-                    case CorElementType.I:
-                        return *(IntPtr*)pValue;
-                    case CorElementType.U:
-                        return *(UIntPtr*)pValue;
-                    default:
-                        Debug.Fail("Invalid primitive type");
-                        return null;
-                }
+                case CorElementType.I1:
+                    return Unsafe.As<byte, sbyte>(ref data);
+                case CorElementType.U1:
+                    return data;
+                case CorElementType.Boolean:
+                    return Unsafe.As<byte, bool>(ref data);
+                case CorElementType.I2:
+                    return Unsafe.As<byte, short>(ref data);
+                case CorElementType.U2:
+                    return Unsafe.As<byte, ushort>(ref data);
+                case CorElementType.Char:
+                    return Unsafe.As<byte, char>(ref data);
+                case CorElementType.I4:
+                    return Unsafe.As<byte, int>(ref data);
+                case CorElementType.U4:
+                    return Unsafe.As<byte, uint>(ref data);
+                case CorElementType.R4:
+                    return Unsafe.As<byte, float>(ref data);
+                case CorElementType.I8:
+                    return Unsafe.As<byte, long>(ref data);
+                case CorElementType.U8:
+                    return Unsafe.As<byte, ulong>(ref data);
+                case CorElementType.R8:
+                    return Unsafe.As<byte, double>(ref data);
+                case CorElementType.I:
+                    return Unsafe.As<byte, IntPtr>(ref data);
+                case CorElementType.U:
+                    return Unsafe.As<byte, UIntPtr>(ref data);
+                default:
+                    Debug.Fail("Invalid primitive type");
+                    return null;
             }
         }
 
-        private unsafe ulong ToUInt64()
+        private ulong ToUInt64()
         {
-            fixed (void* pValue = &JitHelpers.GetPinningHelper(this).m_data)
+            ref byte data = ref this.GetRawData();
+            switch (InternalGetCorElementType())
             {
-                switch (InternalGetCorElementType())
-                {
-                    case CorElementType.I1:
-                        return (ulong)*(sbyte*)pValue;
-                    case CorElementType.U1:
-                        return *(byte*)pValue;
-                    case CorElementType.Boolean:
-                        return Convert.ToUInt64(*(bool*)pValue, CultureInfo.InvariantCulture);
-                    case CorElementType.I2:
-                        return (ulong)*(short*)pValue;
-                    case CorElementType.U2:
-                    case CorElementType.Char:
-                        return *(ushort*)pValue;
-                    case CorElementType.I4:
-                        return (ulong)*(int*)pValue;
-                    case CorElementType.U4:
-                    case CorElementType.R4:
-                        return *(uint*)pValue;
-                    case CorElementType.I8:
-                        return (ulong)*(long*)pValue;
-                    case CorElementType.U8:
-                    case CorElementType.R8:
-                        return *(ulong*)pValue;
-                    case CorElementType.I:
-                        if (IntPtr.Size == 8)
-                        {
-                            return *(ulong*)pValue;
-                        }
-                        else
-                        {
-                            return (ulong)*(int*)pValue;
-                        }
-                    case CorElementType.U:
-                        if (IntPtr.Size == 8)
-                        {
-                            return *(ulong*)pValue;
-                        }
-                        else
-                        {
-                            return *(uint*)pValue;
-                        }
-                    default:
-                        Debug.Fail("Invalid primitive type");
-                        return 0;
-                }
+                case CorElementType.I1:
+                    return (ulong)Unsafe.As<byte, sbyte>(ref data);
+                case CorElementType.U1:
+                    return data;
+                case CorElementType.Boolean:
+                    return Convert.ToUInt64(Unsafe.As<byte, bool>(ref data), CultureInfo.InvariantCulture);
+                case CorElementType.I2:
+                    return (ulong)Unsafe.As<byte, short>(ref data);
+                case CorElementType.U2:
+                case CorElementType.Char:
+                    return Unsafe.As<byte, ushort>(ref data);
+                case CorElementType.I4:
+                    return (ulong)Unsafe.As<byte, int>(ref data);
+                case CorElementType.U4:
+                case CorElementType.R4:
+                    return Unsafe.As<byte, uint>(ref data);
+                case CorElementType.I8:
+                    return (ulong)Unsafe.As<byte, long>(ref data);
+                case CorElementType.U8:
+                case CorElementType.R8:
+                    return Unsafe.As<byte, ulong>(ref data);
+                case CorElementType.I:
+                    return (ulong)Unsafe.As<byte, IntPtr>(ref data);
+                case CorElementType.U:
+                    return (ulong)Unsafe.As<byte, UIntPtr>(ref data);
+                default:
+                    Debug.Fail("Invalid primitive type");
+                    return 0;
             }
         }
 
@@ -1058,48 +1056,45 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern override bool Equals(object obj);
 
-        public override unsafe int GetHashCode()
+        public override int GetHashCode()
         {
             // CONTRACT with the runtime: GetHashCode of enum types is implemented as GetHashCode of the underlying type.
             // The runtime can bypass calls to Enum::GetHashCode and call the underlying type's GetHashCode directly
             // to avoid boxing the enum.
-
-            fixed (void* pValue = &JitHelpers.GetPinningHelper(this).m_data)
+            ref byte data = ref this.GetRawData();
+            switch (InternalGetCorElementType())
             {
-                switch (InternalGetCorElementType())
-                {
-                    case CorElementType.I1:
-                        return (*(sbyte*)pValue).GetHashCode();
-                    case CorElementType.U1:
-                        return (*(byte*)pValue).GetHashCode();
-                    case CorElementType.Boolean:
-                        return (*(bool*)pValue).GetHashCode();
-                    case CorElementType.I2:
-                        return (*(short*)pValue).GetHashCode();
-                    case CorElementType.U2:
-                        return (*(ushort*)pValue).GetHashCode();
-                    case CorElementType.Char:
-                        return (*(char*)pValue).GetHashCode();
-                    case CorElementType.I4:
-                        return (*(int*)pValue).GetHashCode();
-                    case CorElementType.U4:
-                        return (*(uint*)pValue).GetHashCode();
-                    case CorElementType.R4:
-                        return (*(float*)pValue).GetHashCode();
-                    case CorElementType.I8:
-                        return (*(long*)pValue).GetHashCode();
-                    case CorElementType.U8:
-                        return (*(ulong*)pValue).GetHashCode();
-                    case CorElementType.R8:
-                        return (*(double*)pValue).GetHashCode();
-                    case CorElementType.I:
-                        return (*(IntPtr*)pValue).GetHashCode();
-                    case CorElementType.U:
-                        return (*(UIntPtr*)pValue).GetHashCode();
-                    default:
-                        Debug.Fail("Invalid primitive type");
-                        return 0;
-                }
+                case CorElementType.I1:
+                    return Unsafe.As<byte, sbyte>(ref data).GetHashCode();
+                case CorElementType.U1:
+                    return data.GetHashCode();
+                case CorElementType.Boolean:
+                    return Unsafe.As<byte, bool>(ref data).GetHashCode();
+                case CorElementType.I2:
+                    return Unsafe.As<byte, short>(ref data).GetHashCode();
+                case CorElementType.U2:
+                    return Unsafe.As<byte, ushort>(ref data).GetHashCode();
+                case CorElementType.Char:
+                    return Unsafe.As<byte, char>(ref data).GetHashCode();
+                case CorElementType.I4:
+                    return Unsafe.As<byte, int>(ref data).GetHashCode();
+                case CorElementType.U4:
+                    return Unsafe.As<byte, uint>(ref data).GetHashCode();
+                case CorElementType.R4:
+                    return Unsafe.As<byte, float>(ref data).GetHashCode();
+                case CorElementType.I8:
+                    return Unsafe.As<byte, long>(ref data).GetHashCode();
+                case CorElementType.U8:
+                    return Unsafe.As<byte, ulong>(ref data).GetHashCode();
+                case CorElementType.R8:
+                    return Unsafe.As<byte, double>(ref data).GetHashCode();
+                case CorElementType.I:
+                    return Unsafe.As<byte, IntPtr>(ref data).GetHashCode();
+                case CorElementType.U:
+                    return Unsafe.As<byte, UIntPtr>(ref data).GetHashCode();
+                default:
+                    Debug.Fail("Invalid primitive type");
+                    return 0;
             }
         }
 
@@ -1108,12 +1103,11 @@ namespace System
             // Returns the value in a human readable format.  For PASCAL style enums who's value maps directly the name of the field is returned.
             // For PASCAL style enums who's values do not map directly the decimal value of the field is returned.
             // For BitFlags (indicated by the Flags custom attribute): If for each bit that is set in the value there is a corresponding constant
-            //(a pure power of 2), then the  OR string (ie "Red | Yellow") is returned. Otherwise, if the value is zero or if you can't create a string that consists of
+            // (a pure power of 2), then the OR string (ie "Red, Yellow") is returned. Otherwise, if the value is zero or if you can't create a string that consists of
             // pure powers of 2 OR-ed together, you return a hex value
 
-
             // Try to see if its one of the enum values, then we return a String back else the value
-            return Enum.InternalFormat((RuntimeType)GetType(), ToUInt64()) ?? GetValue().ToString();
+            return InternalFormat((RuntimeType)GetType(), ToUInt64()) ?? ValueToString();
         }
         #endregion
 
@@ -1161,25 +1155,32 @@ namespace System
         #region Public Methods
         public string ToString(string format)
         {
-            char formatCh;
-            if (format == null || format.Length == 0)
-                formatCh = 'G';
-            else if (format.Length != 1)
-                throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
-            else
-                formatCh = format[0];
-
-            if (formatCh == 'G' || formatCh == 'g')
+            if (string.IsNullOrEmpty(format))
+            {
                 return ToString();
+            }
 
-            if (formatCh == 'D' || formatCh == 'd')
-                return GetValue().ToString();
+            if (format.Length == 1)
+            {
+                switch (format[0])
+                {
+                    case 'G':
+                    case 'g':
+                        return ToString();
 
-            if (formatCh == 'X' || formatCh == 'x')
-                return InternalFormattedHexString();
+                    case 'D':
+                    case 'd':
+                        return ValueToString();
 
-            if (formatCh == 'F' || formatCh == 'f')
-                return InternalFlagsFormat((RuntimeType)GetType(), ToUInt64()) ?? GetValue().ToString();
+                    case 'X':
+                    case 'x':
+                        return ValueToHexString();
+
+                    case 'F':
+                    case 'f':
+                        return InternalFlagsFormat((RuntimeType)GetType(), ToUInt64()) ?? ValueToString();
+                }
+            }
 
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
         }

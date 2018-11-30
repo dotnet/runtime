@@ -366,7 +366,7 @@ namespace System.Reflection.Emit
                     case CorElementType.I8:
                     case CorElementType.U8:
                     case CorElementType.R8:
-                        fixed (byte* pData = &JitHelpers.GetPinningHelper(value).m_data)
+                        fixed (byte* pData = &value.GetRawData())
                             SetConstantValue(module.GetNativeHandle(), tk, (int)corType, pData);
                         break;
 
