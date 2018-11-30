@@ -575,17 +575,9 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #endif // FEATURE_COMINTEROP
     }
 
-    if (GetAssembly()->IsDomainNeutral() && !IsSingleAppDomain())
-    {
-        m_ModuleIndex = Module::AllocateModuleIndex();
-        m_ModuleID = (DomainLocalModule*)Module::IndexToID(m_ModuleIndex);
-    }
-    else
-    {
-        // this will be initialized a bit later.
-        m_ModuleID = NULL;
-        m_ModuleIndex.m_dwIndex = (SIZE_T)-1;
-    }
+    // this will be initialized a bit later.
+    m_ModuleID = NULL;
+    m_ModuleIndex.m_dwIndex = (SIZE_T)-1;
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     if (GetAssembly()->IsCollectible())
@@ -1888,8 +1880,6 @@ DomainFile *Module::GetDomainFile(AppDomain *pDomain)
     }
     else
     {
-
-        CONSISTENCY_CHECK(dac_cast<TADDR>(pDomain) == dac_cast<TADDR>(GetDomain()) || IsSingleAppDomain());
         RETURN dac_cast<PTR_DomainFile>(m_ModuleID->GetDomainFile());
     }
 }
@@ -1955,10 +1945,7 @@ DomainFile *Module::FindDomainFile(AppDomain *pDomain)
     }
     else
     {
-        if (dac_cast<TADDR>(pDomain) == dac_cast<TADDR>(GetDomain()) || IsSingleAppDomain())
-            RETURN m_ModuleID->GetDomainFile();
-        else
-            RETURN NULL;
+        RETURN m_ModuleID->GetDomainFile();
     }
 }
 
@@ -3117,7 +3104,7 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
     DomainLocalModule* pModuleData = 0;
 
     // Do we need to allocate memory for the non GC statics?
-    if ((GetAssembly()->IsDomainNeutral() && !IsSingleAppDomain())|| m_ModuleID == NULL)
+    if (m_ModuleID == NULL)
     {
         // Allocate memory for the module statics.
         LoaderAllocator *pLoaderAllocator = NULL;
@@ -3149,26 +3136,10 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         // Verify that the space is really zero initialized
         _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() == NULL);
 
-        // Make sure that the newly allocated DomainLocalModule gets 
-        // a copy of the domain-neutral module ID. 
-        if (GetAssembly()->IsDomainNeutral() && !IsSingleAppDomain())
-        {
-            // If the module was loaded as domain-neutral, we can find the ID by 
-            // casting 'm_ModuleID'.
-            
-            _ASSERTE(Module::IDToIndex((SIZE_T)m_ModuleID) == this->m_ModuleIndex);
-            pModuleData->m_ModuleIndex = Module::IDToIndex((SIZE_T)m_ModuleID);
-
-            // Eventually I want to just do this instead...
-            //pModuleData->m_ModuleIndex = this->m_ModuleIndex;
-        }
-        else
-        {
-            // If the module was loaded as domain-specific, then we need to assign
-            // this module a domain-neutral module ID.
-            pModuleData->m_ModuleIndex = Module::AllocateModuleIndex();
-            m_ModuleIndex = pModuleData->m_ModuleIndex;
-        }
+        // If the module was loaded as domain-specific, then we need to assign
+        // this module a domain-neutral module ID.
+        pModuleData->m_ModuleIndex = Module::AllocateModuleIndex();
+        m_ModuleIndex = pModuleData->m_ModuleIndex;
     }
     else
     {
@@ -3176,27 +3147,14 @@ void Module::SetDomainFile(DomainFile *pDomainFile)
         LOG((LF_CLASSLOADER, LL_INFO10, "STATICS: Allocation not needed for ngened non shared module %s in Appdomain %08x\n"));
     }
 
-    if (GetAssembly()->IsDomainNeutral() && !IsSingleAppDomain())
+    // Non shared case, module points directly to the statics. In ngen case
+    // m_pDomainModule is already set for the non shared case
+    if (m_ModuleID == NULL)
     {
-        DomainLocalBlock *pLocalBlock;
-        {
-            pLocalBlock = pDomainFile->GetAppDomain()->GetDomainLocalBlock();
-            pLocalBlock->SetModuleSlot(GetModuleIndex(), pModuleData);
-        }
-
-        pLocalBlock->SetDomainFile(GetModuleIndex(), pDomainFile);
+        m_ModuleID = pModuleData;
     }
-    else
-    {
-        // Non shared case, module points directly to the statics. In ngen case
-        // m_pDomainModule is already set for the non shared case
-        if (m_ModuleID == NULL)
-        {
-            m_ModuleID = pModuleData;
-        }
 
-        m_ModuleID->SetDomainFile(pDomainFile);
-    }
+    m_ModuleID->SetDomainFile(pDomainFile);
 
     // Allocate static handles now.
     // NOTE: Bootstrapping issue with mscorlib - we will manually allocate later

@@ -3477,10 +3477,4 @@ struct VASigCookieEx : public VASigCookie
     const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
 };
 
-inline bool IsSingleAppDomain()
-{
-    // CoreCLR always runs as single AppDomain
-    return true;
-}
-
 #endif // !CEELOAD_H_

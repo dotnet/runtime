@@ -107,7 +107,6 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
         g_pOverlappedDataClass = MscorlibBinder::GetClass(CLASS__OVERLAPPEDDATA);
         // We have optimization to avoid creating event if IO is in default domain.  This depends on default domain 
         // can not be unloaded.
-        _ASSERTE(IsSingleAppDomain());
         _ASSERTE(SystemDomain::System()->DefaultDomain()->GetId().m_dwId == DefaultADID);
     }
 
