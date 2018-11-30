@@ -83,16 +83,11 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         if (gc.requestingAssembly == NULL)
         {
             pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-        
-            // Cross-appdomain callers aren't allowed as the parent
-            if (pRefAssembly &&
-                (pRefAssembly->GetDomain() != pThread->GetDomain()))
-            {
-                pRefAssembly = NULL;
-            }
         }
         else
+        {
             pRefAssembly = gc.requestingAssembly->GetAssembly();
+        }
         
         // Shared or collectible assemblies should not be used for the parent in the
         // late-bound case.

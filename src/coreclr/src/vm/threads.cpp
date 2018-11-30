@@ -7849,62 +7849,8 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
     AppDomain *pReturnDomain = pReturnContext->GetDomain();
     AppDomain* pCurrentDomain = m_pDomain;
 
-    bool fChangedDomains = m_pDomain != pReturnDomain;
-
-    if (fChangedDomains)
-    {
-        if (HasLockInCurrentDomain())
-        {
-            if (GetAppDomain()->IsDefaultDomain() || // We should never orphan a lock in default domain.
-                !IsRudeAbort())                      // If rudeabort, managed backout may not be run.
-            {
-                // One would like to assert that this case never occurs, but
-                // a rude abort can easily leave unreachable locked objects,
-                // which we have to allow.
-                STRESS_LOG2(LF_SYNC, LL_INFO1000, "Locks are orphaned while exiting a domain (enter: %d, exit: %d)\n", m_dwBeginLockCount, m_dwLockCount);
-#ifdef _DEBUG
-            STRESS_LOG0 (LF_APPDOMAIN, LL_INFO10, "Thread::ReturnToContext Lock not released\n");
-#endif
-        }
-
-            AppDomain *pFromDomain = GetAppDomain();
-
-            // There is a race when EE Thread for a new thread is allocated in the place of the old EE Thread.
-            // The lock accounting will get confused if there are orphaned locks. Set the flag that allows us to relax few asserts.
-            SetThreadStateNC(TSNC_UnbalancedLocks);
-            pFromDomain->SetOrphanedLocks();
-
-            if (!pFromDomain->IsDefaultDomain())
-            {
-                // If a Thread orphaned a lock, we don't want a host to recycle the Thread object,
-                // since the lock count is reset when the thread leaves this domain.
-                SetThreadStateNC(TSNC_CannotRecycle);
-            }
-
-            // It is a disaster if a lock leaks in default domain.  We can never unload default domain.
-            // _ASSERTE (!pFromDomain->IsDefaultDomain());
-            EPolicyAction action = GetEEPolicy()->GetActionOnFailure(FAIL_OrphanedLock);
-            switch (action)
-            {
-            case eExitProcess:
-            case eFastExitProcess:
-            case eRudeExitProcess:
-            case eDisableRuntime:
-                GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
-                break;
-            default:
-                break;
-            }
-        }
-
-        m_dwLockCount = m_dwBeginLockCount;
-        m_dwBeginLockCount = pFrame->GetLockCount();
-
-    }
-
     if (m_Context == pReturnContext)
     {
-        _ASSERTE(m_Context->GetDomain() == pReturnContext->GetDomain());
         return;
     }
 
@@ -7930,63 +7876,7 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
 
     m_Context = pReturnContext;
 
-    if (fChangedDomains)
-    {
-        STRESS_LOG2(LF_APPDOMAIN, LL_INFO100000, "Returning from %d to %d\n", pADOnStack.m_dwId, pReturnContext->GetDomain()->GetId().m_dwId);
-
-        _ASSERTE(pADOnStack == m_pDomain->GetId());
-
-        _ASSERTE(pFrame);
-        //_ASSERTE(!fLinkFrame || pThread->GetFrame() == pFrame);
-
-        FlushIBCInfo();
-
-        m_pDomain = pReturnDomain;
-        SetAppDomain(pReturnDomain);
-
-        // Restore the last thrown object to what it was before the AD transition. Note that if
-        // an exception was thrown out of the AD we transitionned into, it will be raised in
-        // RaiseCrossContextException and the EH system will store it as the last thrown 
-        // object if it gets handled by an EX_CATCH.
-        SafeSetLastThrownObject(pFrame->GetLastThrownObjectInParentContext());
-    }
-
     pFrame->Pop();
-
-    if (fChangedDomains)
-    {
-
-        // Do this last so that thread is not labeled as out of the domain until all cleanup is done.
-        ADID adid=pCurrentDomain->GetId();
-        pCurrentDomain->ThreadExit(this, pFrame);
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-        if (g_fEnableARM)
-        {
-            // Update the old AppDomain's count of processor usage by threads executing within it.
-            pCurrentDomain->UpdateProcessorUsage(QueryThreadProcessorUsage());
-            FireEtwThreadDomainEnter((ULONGLONG)this, (ULONGLONG)pReturnDomain, GetClrInstanceId());
-        }
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    }
-
-    if (fChangedDomains && IsAbortRequested() && HasLockInCurrentDomain())
-    {
-        EPolicyAction action = GetEEPolicy()->GetActionOnFailure(FAIL_CriticalResource);
-        // It is a disaster if a lock leaks in default domain.  We can never unload default domain.
-        // _ASSERTE (action == eThrowException || !pReturnDomain->IsDefaultDomain());
-        switch (action)
-        {
-        case eExitProcess:
-        case eFastExitProcess:
-        case eRudeExitProcess:
-        case eDisableRuntime:
-            GetEEPolicy()->HandleExitProcessFromEscalation(action,HOST_E_EXITPROCESS_ADUNLOAD);
-            break;
-        default:
-            break;
-        }
-    }
 
 #ifdef _DEBUG_ADUNLOAD
     printf("Thread::ReturnToContext %x,%8.8x pop? %d current frame is %8.8x\n", GetThreadId(), this, 1, GetFrame());
@@ -8155,32 +8045,6 @@ Frame *Thread::GetFirstTransitionInto(AppDomain *pDomain, int *count)
     if (count)
         *count = fct.count;
     return fct.pFrame;
-}
-
-// Get outermost (oldest) AppDomain for this thread (not counting the default
-// domain every one starts in).
-AppDomain *Thread::GetInitialDomain()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    AppDomain *pDomain = m_pDomain;
-    AppDomain *pPrevDomain = NULL;
-    Frame *pFrame = GetFrame();
-    while (pFrame != FRAME_TOP)
-    {
-        if (pFrame->GetVTablePtr() == ContextTransitionFrame::GetMethodFrameVPtr())
-        {
-            if (pPrevDomain)
-                pDomain = pPrevDomain;
-            pPrevDomain = pFrame->GetReturnDomain();
-        }
-        pFrame = pFrame->Next();
-    }
-    return pDomain;
 }
 
 BOOL Thread::HaveExtraWorkForFinalizer()
@@ -8596,20 +8460,6 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
     {
         _ASSERTE(flags == MTCSF_NormalBase);
 
-        if(!IsSingleAppDomain())
-        {
-            // This assert shouldnt be hit in CoreCLR since:
-            //
-            // 1) It has no concept of managed entry point that is invoked by the shim. You can
-            //    only run managed code via hosting APIs that will run code in non-default domains.
-            //
-            // 2) Managed threads cannot be created in DefaultDomain since no user code executes
-            //    in default domain.
-            //
-            // So, if this is hit, something is not right!
-            _ASSERTE(!"How come a managed thread in CoreCLR has suffered unhandled exception in DefaultDomain?");
-        }
-
         LOG((LF_EH, LL_INFO100, "ThreadBaseRedirectingFilter: setting TSNC_ProcessedUnhandledException\n"));
 
         //
@@ -8638,7 +8488,7 @@ static LONG ThreadBaseRedirectingFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVO
         // The next time Thread A has an exception go unhandled, our UEF will see TSNC_ProcessedUnhandledException set and assume (incorrectly) UE processing has happened and
         // will fail to honor the host policy (e.g. swallow unhandled exception). Thus, the 2nd unhandled exception may end up crashing the app when it should not.
         //
-        if (IsSingleAppDomain() && (ret != EXCEPTION_EXECUTE_HANDLER))
+        if (ret != EXCEPTION_EXECUTE_HANDLER)
         {
             // Since we have already done unhandled exception processing for it, we dont want it 
             // to happen again if our UEF gets invoked upon returning back to the OS.

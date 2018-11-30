@@ -2850,11 +2850,6 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
                     bool fNeedsNonTrivialHelper = false;
 
-                    if (pMT->IsDomainNeutral() && !IsSingleAppDomain())
-                    {
-                        fNeedsNonTrivialHelper = true;
-                    }
-                    else
                     if (pMT->Collectible() && (kind != ENCODE_CCTOR_TRIGGER))
                     {
                         // Collectible statics are not pinned - the fast getters expect statics to be pinned
