@@ -14,21 +14,6 @@
   <PropertyGroup>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
   </PropertyGroup>
-  <!--
-    DARC doesn't currently update properties that end in PackageVersion yet but that is the convention
-    we want to use for our properties so for now we will define both and set the PackageVersion properties
-    to the set that DARC updates automatically.
-
-    see issue https://github.com/dotnet/arcade/issues/1114
-  -->
-  <PropertyGroup>
-    <MicrosoftDotNetApiCompatVersion>1.0.0-beta.18565.8</MicrosoftDotNetApiCompatVersion>
-    <MicrosoftDotNetCodeAnalysisVersion>1.0.0-beta.18565.8</MicrosoftDotNetCodeAnalysisVersion>
-    <MicrosoftDotNetGenAPIVersion>1.0.0-beta.18565.8</MicrosoftDotNetGenAPIVersion>
-    <MicrosoftDotNetGenFacadesVersion>1.0.0-beta.18565.8</MicrosoftDotNetGenFacadesVersion>
-    <MicrosoftDotNetXUnitExtensionsVersion>2.4.0-beta.18562.25</MicrosoftDotNetXUnitExtensionsVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.18565.8</MicrosoftDotNetBuildTasksPackagingVersion>
-  </PropertyGroup>
   <PropertyGroup>
     <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.18578.2</MicrosoftDotNetApiCompatPackageVersion>
     <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.18578.2</MicrosoftDotNetCodeAnalysisPackageVersion>
