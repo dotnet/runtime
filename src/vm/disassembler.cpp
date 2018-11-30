@@ -67,6 +67,76 @@ bool Disassembler::IsAvailable()
 #endif // USE_COREDISTOOLS_DISASSEMBLER
 }
 
+#if _DEBUG
+#define DISPLAYERROR(FMT, ...) wprintf(FMT, __VA_ARGS__)
+#else
+#define DISPLAYERROR(FMT, ...) (void)0
+#endif
+
+namespace
+{
+    HMODULE LoadCoreDisToolsModule(PathString &libPath)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        //
+        // Look for the coredistools module next to the hosting binary
+        //
+
+        DWORD result = WszGetModuleFileName(nullptr, libPath);
+        if (result == 0)
+        {
+            DISPLAYERROR(
+                W("GetModuleFileName failed, function 'DisasmInstruction': error %u\n"),
+                GetLastError());
+            return nullptr;
+        }
+
+        LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
+        PathString::Iterator iter = libPath.End();
+        if (libPath.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W))
+        {
+            libPath.Truncate(++iter);
+            libPath.Append(libFileName);
+        }
+        else
+        {
+            _ASSERTE(false && "unreachable");
+        }
+
+        LPCWSTR libraryName = libPath.GetUnicode();
+        HMODULE libraryHandle = CLRLoadLibrary(libraryName);
+        if (libraryHandle != nullptr)
+            return libraryHandle;
+
+        DISPLAYERROR(W("LoadLibrary failed for '%s': error %u\n"), libraryName, GetLastError());
+
+        //
+        // Fallback to the CORE_ROOT path
+        //
+
+        DWORD pathLen = GetEnvironmentVariableW(W("CORE_ROOT"), nullptr, 0);
+        if (pathLen == 0) // not set
+            return nullptr;
+
+        pathLen += 1; // Add 1 for null
+        PathString coreRoot;
+        WCHAR *coreRootRaw = coreRoot.OpenUnicodeBuffer(pathLen);
+        GetEnvironmentVariableW(W("CORE_ROOT"), coreRootRaw, pathLen);
+
+        libPath.Clear();
+        libPath.AppendPrintf(W("%s%s%s"), coreRootRaw, DIRECTORY_SEPARATOR_STR_W, libFileName);
+
+        libraryName = libPath.GetUnicode();
+        libraryHandle = CLRLoadLibrary(libraryName);
+        if (libraryHandle != nullptr)
+            return libraryHandle;
+
+        DISPLAYERROR(W("LoadLibrary failed for '%s': error %u\n"), libraryName, GetLastError());
+        return nullptr;
+    }
+}
+
 void Disassembler::StaticInitialize()
 {
     LIMITED_METHOD_CONTRACT;
@@ -74,92 +144,47 @@ void Disassembler::StaticInitialize()
 #if USE_COREDISTOOLS_DISASSEMBLER
     _ASSERTE(!IsAvailable());
 
-    HMODULE libraryHandle = nullptr;
     PathString libPath;
-    DWORD result = WszGetModuleFileName(nullptr, libPath);
-    if (result == 0) {
-#ifdef _DEBUG
-        wprintf(
-            W("GetModuleFileName failed, function 'DisasmInstruction': error %u\n"),
-            GetLastError());
-#endif // _DEBUG
+    HMODULE libraryHandle = LoadCoreDisToolsModule(libPath);
+    if (libraryHandle == nullptr)
         return;
-    }
 
-#if defined(FEATURE_PAL)
-    WCHAR delim = W('/');
-#else
-    WCHAR delim = W('\\');
-#endif
-    LPCWSTR libFileName = MAKEDLLNAME(W("coredistools"));
-    PathString::Iterator iter = libPath.End();
-    if (libPath.FindBack(iter, delim)) {
-        libPath.Truncate(++iter);
-        libPath.Append(libFileName);
-    }
-    else {
-        _ASSERTE(!"unreachable");
-    }
-
-    LPCWSTR libraryName = libPath.GetUnicode();
-    libraryHandle = CLRLoadLibrary(libraryName);
-    do
+    External_InitDisasm =
+        reinterpret_cast<decltype(External_InitDisasm)>(GetProcAddress(libraryHandle, "InitDisasm"));
+    if (External_InitDisasm == nullptr)
     {
-        if (libraryHandle == nullptr)
-        {
-        #ifdef _DEBUG
-            wprintf(W("LoadLibrary failed for '%s': error %u\n"), libraryName, GetLastError());
-        #endif // _DEBUG
-            break;
-        }
-
-        External_InitDisasm =
-            reinterpret_cast<decltype(External_InitDisasm)>(GetProcAddress(libraryHandle, "InitDisasm"));
-        if (External_InitDisasm == nullptr)
-        {
-        #ifdef _DEBUG
-            wprintf(
-                W("GetProcAddress failed for library '%s', function 'InitDisasm': error %u\n"),
-                libraryName,
-                GetLastError());
-        #endif // _DEBUG
-            break;
-        }
-
-        External_DisasmInstruction =
-            reinterpret_cast<decltype(External_DisasmInstruction)>(GetProcAddress(libraryHandle, "DisasmInstruction"));
-        if (External_DisasmInstruction == nullptr)
-        {
-        #ifdef _DEBUG
-            wprintf(
-                W("GetProcAddress failed for library '%s', function 'DisasmInstruction': error %u\n"),
-                libraryName,
-                GetLastError());
-        #endif // _DEBUG
-            break;
-        }
-
-        External_FinishDisasm =
-            reinterpret_cast<decltype(External_FinishDisasm)>(GetProcAddress(libraryHandle, "FinishDisasm"));
-        if (External_FinishDisasm == nullptr)
-        {
-        #ifdef _DEBUG
-            wprintf(
-                W("GetProcAddress failed for library '%s', function 'FinishDisasm': error %u\n"),
-                libraryName,
-                GetLastError());
-        #endif // _DEBUG
-            break;
-        }
-
-        // Set this last to indicate successful load of the library and all exports
-        s_libraryHandle = libraryHandle;
-        _ASSERTE(IsAvailable());
+        DISPLAYERROR(
+            W("GetProcAddress failed for library '%s', function 'InitDisasm': error %u\n"),
+            libPath.GetUnicode(),
+            GetLastError());
         return;
-    } while (false);
+    }
 
-    _ASSERTE(!IsAvailable());
-    
+    External_DisasmInstruction =
+        reinterpret_cast<decltype(External_DisasmInstruction)>(GetProcAddress(libraryHandle, "DisasmInstruction"));
+    if (External_DisasmInstruction == nullptr)
+    {
+        DISPLAYERROR(
+            W("GetProcAddress failed for library '%s', function 'DisasmInstruction': error %u\n"),
+            libPath.GetUnicode(),
+            GetLastError());
+        return;
+    }
+
+    External_FinishDisasm =
+        reinterpret_cast<decltype(External_FinishDisasm)>(GetProcAddress(libraryHandle, "FinishDisasm"));
+    if (External_FinishDisasm == nullptr)
+    {
+        DISPLAYERROR(
+            W("GetProcAddress failed for library '%s', function 'FinishDisasm': error %u\n"),
+            libPath.GetUnicode(),
+            GetLastError());
+        return;
+    }
+
+    // Set this last to indicate successful load of the library and all exports
+    s_libraryHandle = libraryHandle;
+    _ASSERTE(IsAvailable());
 #endif // USE_COREDISTOOLS_DISASSEMBLER
 }
 

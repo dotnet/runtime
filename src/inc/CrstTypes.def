@@ -69,14 +69,7 @@
 // running our test suites). Feel free to add meaningful comments to existing rules if you feel they can
 // usefully clarify the reasons for particular dependencies.
 //
-// CrstTypeTool is a csScript file at file:..\..\bin\CrstTypeTool.csScript. Simply typing "CrstTypeTool" from a
-// clrenv command window prompt should rebuild file:CrstTypes.h from the current CrstTypes.def (again,
-// remember to check out CrstTypes.h first).
-// Note: If you cannot run the script from command line, because of this error:
-//     Script language type is unsupported.
-//     Use /? for more help on usage.
-// Or because .csscript extension is not associated with anything on your machine,
-// Then use "csc.exe CrstTypeTool.csscript" from ClrEnv environment and run the resulting executable.
+// See CrstTypeTool.cs for how to consume this file.
 //
 // Each Crst type definition is currently in alphabetical order. Please maintain this convention.
 //
@@ -291,7 +284,7 @@ Crst NativeImageCache
 End
 
 Crst GCCover
-    AcquiredBefore LoaderHeap
+    AcquiredBefore LoaderHeap ReJITDomainTable
 End
 
 Crst GCMemoryPressure
