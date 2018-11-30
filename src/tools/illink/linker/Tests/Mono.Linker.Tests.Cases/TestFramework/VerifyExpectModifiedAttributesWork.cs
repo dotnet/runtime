@@ -9,6 +9,8 @@ namespace Mono.Linker.Tests.Cases.TestFramework {
 	/// one that modifies bodies currently
 	/// </summary>
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
+	// Used to avoid different compilers generating different IL which can mess up the instruction asserts
+	[SetupCompileArgument ("/optimize+")]
 	public class VerifyExpectModifiedAttributesWork {
 		public static void Main ()
 		{
