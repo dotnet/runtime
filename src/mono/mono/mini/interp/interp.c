@@ -2376,7 +2376,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	MonoMethodSignature *sig;
 	CallContext *ccontext = (CallContext*) ccontext_untyped;
 	InterpMethod *rmethod = (InterpMethod*) rmethod_untyped;
-	gpointer orig_domain, attach_cookie;
+	gpointer orig_domain = NULL, attach_cookie;
 	int i;
 
 	if (rmethod->needs_thread_attach)
@@ -2609,7 +2609,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, guint16 *st
 #endif
 	int i32;
 	unsigned char *vt_sp;
-	unsigned char *locals;
+	unsigned char *locals = NULL;
 	ERROR_DECL (error);
 	MonoObject *o = NULL;
 	MonoClass *c;
