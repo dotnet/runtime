@@ -1121,12 +1121,6 @@ BOOL Thread::ReadyForAsyncException()
         return FALSE;
     }
 
-    // If we are doing safe abort, we can not abort a thread if it has locks.
-    if (m_AbortType == EEPolicy::TA_Safe && HasLockInCurrentDomain()) {
-        STRESS_LOG0(LF_APPDOMAIN, LL_INFO10, "in Thread::ReadyForAbort  HasLock\n");
-        return FALSE;
-    }
-
     REGDISPLAY rd;
 
     Frame *pStartFrame = NULL;
