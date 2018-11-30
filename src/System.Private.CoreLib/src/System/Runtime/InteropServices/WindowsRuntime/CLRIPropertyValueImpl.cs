@@ -477,7 +477,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return false;
         }
 
-        // Unbox the data stored in the property value to a structurally equivilent type
+        // Unbox the data stored in the property value to a structurally equivalent type
         private unsafe T Unbox<T>(Type expectedBoxedType) where T : struct
         {
             Debug.Assert(expectedBoxedType != null);
@@ -490,7 +490,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             T unboxed = new T();
 
-            fixed (byte* pData = &JitHelpers.GetPinningHelper(_data).m_data)
+            fixed (byte* pData = &_data.GetRawData())
             {
                 byte* pUnboxed = (byte*)JitHelpers.UnsafeCastToStackPointer(ref unboxed);
                 Buffer.Memcpy(pUnboxed, pData, Marshal.SizeOf(unboxed));
@@ -515,15 +515,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (converted.Length > 0)
             {
-                fixed (byte* dataPin = &JitHelpers.GetPinningHelper(dataArray).m_data)
+                fixed (byte* dataPin = &dataArray.GetRawData())
+                fixed (byte* convertedPin = &converted.GetRawData())
                 {
-                    fixed (byte* convertedPin = &JitHelpers.GetPinningHelper(converted).m_data)
-                    {
-                        byte* pData = (byte*)Marshal.UnsafeAddrOfPinnedArrayElement(dataArray, 0);
-                        byte* pConverted = (byte*)Marshal.UnsafeAddrOfPinnedArrayElement(converted, 0);
+                    byte* pData = (byte*)Marshal.UnsafeAddrOfPinnedArrayElement(dataArray, 0);
+                    byte* pConverted = (byte*)Marshal.UnsafeAddrOfPinnedArrayElement(converted, 0);
 
-                        Buffer.Memcpy(pConverted, pData, checked(Marshal.SizeOf(typeof(T)) * converted.Length));
-                    }
+                    Buffer.Memcpy(pConverted, pData, checked(Marshal.SizeOf(typeof(T)) * converted.Length));
                 }
             }
 
