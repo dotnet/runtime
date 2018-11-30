@@ -2166,6 +2166,10 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case ArgGSharedVtOnStack:
 			linfo->args [i].storage = LLVMArgGSharedVt;
 			break;
+		case ArgValuetypeAddrInIReg:
+		case ArgValuetypeAddrOnStack:
+			linfo->args [i].storage = LLVMArgVtypeByRef;
+			break;
 		default:
 			cfg->exception_message = g_strdup ("ainfo->storage");
 			cfg->disable_llvm = TRUE;
