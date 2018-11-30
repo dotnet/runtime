@@ -393,17 +393,17 @@ namespace System.IO.Pipelines
                 readerCompleted = _readerCompletion.IsCompleted;
             }
 
+            if (readerCompleted)
+            {
+                CompletePipe();
+            }
+
             if (completionCallbacks != null)
             {
                 TrySchedule(_readerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
             }
 
             TrySchedule(_readerScheduler, completionData);
-
-            if (readerCompleted)
-            {
-                CompletePipe();
-            }
         }
 
         internal void AdvanceReader(in SequencePosition consumed)
@@ -531,17 +531,17 @@ namespace System.IO.Pipelines
                 writerCompleted = _writerCompletion.IsCompleted;
             }
 
+            if (writerCompleted)
+            {
+                CompletePipe();
+            }
+
             if (completionCallbacks != null)
             {
                 TrySchedule(_writerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
             }
 
             TrySchedule(_writerScheduler, completionData);
-
-            if (writerCompleted)
-            {
-                CompletePipe();
-            }
         }
 
         internal void OnWriterCompleted(Action<Exception, object> callback, object state)
