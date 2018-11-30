@@ -29,6 +29,10 @@
 #include "mono-logger-internals.h"
 #include "mono-proclib.h"
 
+// Expand non-portable strftime shorthands.
+#define MONO_STRFTIME_F "%Y-%m-%d" // %F in some systems, but this works on all.
+#define MONO_STRFTIME_T "%H:%M:%S" // %T in some systems, but this works on all.
+
 static FILE *logFile = NULL;
 static void *logUserData = NULL;
 
@@ -111,12 +115,12 @@ mono_log_write_logfile (const char *log_domain, GLogLevelFlags level, mono_bool 
 		struct tm tod;
 		time(&t);
 		localtime_r(&t, &tod);
-		strftime(logTime, sizeof(logTime), "%Y-%m-%d %H:%M:%S", &tod);
+		strftime(logTime, sizeof(logTime), MONO_STRFTIME_F " " MONO_STRFTIME_T, &tod);
 #else
 		struct tm *tod;
 		time(&t);
 		tod = localtime(&t);
-		strftime(logTime, sizeof(logTime), "%F %T", tod);
+		strftime(logTime, sizeof(logTime), MONO_STRFTIME_F " " MONO_STRFTIME_T, tod);
 #endif
 
 		pid = mono_process_current_pid ();
