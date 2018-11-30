@@ -243,7 +243,9 @@
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
-    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\CoreLib\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
