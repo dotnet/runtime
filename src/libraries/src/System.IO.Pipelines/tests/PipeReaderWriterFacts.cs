@@ -5,9 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -763,6 +760,27 @@ namespace System.IO.Pipelines.Tests
             await _pipe.Writer.FlushAsync();
 
             Assert.False(task.IsCompleted);
+        }
+
+        [Fact]
+        public async Task ReadAsyncReturnsDataAfterCanceledRead()
+        {
+            var pipe = new Pipe();
+
+            ValueTask<ReadResult> readTask = pipe.Reader.ReadAsync();
+            pipe.Reader.CancelPendingRead();
+            ReadResult readResult = await readTask;
+            Assert.True(readResult.IsCanceled);
+
+            readTask = pipe.Reader.ReadAsync();
+            await pipe.Writer.WriteAsync(new byte[] { 1, 2, 3 });
+            readResult = await readTask;
+
+            Assert.False(readResult.IsCanceled);
+            Assert.False(readResult.IsCompleted);
+            Assert.Equal(3, readResult.Buffer.Length);
+
+            pipe.Reader.AdvanceTo(readResult.Buffer.End);
         }
 
         private bool IsTaskWithResult<T>(ValueTask<T> task)
