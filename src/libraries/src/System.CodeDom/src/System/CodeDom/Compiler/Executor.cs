@@ -91,6 +91,8 @@ namespace System.CodeDom.Compiler
                         throw new ExternalException(SR.Format(SR.ExecTimeout, cmd), WAIT_TIMEOUT);
                     }
 
+                    p.WaitForExit();
+
                     return p.ExitCode;
                 }
             }
