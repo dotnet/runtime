@@ -354,18 +354,18 @@ namespace System.Reflection.Emit
 
                 switch (corType)
                 {
-                    case CorElementType.I1:
-                    case CorElementType.U1:
-                    case CorElementType.Boolean:
-                    case CorElementType.I2:
-                    case CorElementType.U2:
-                    case CorElementType.Char:
-                    case CorElementType.I4:
-                    case CorElementType.U4:
-                    case CorElementType.R4:
-                    case CorElementType.I8:
-                    case CorElementType.U8:
-                    case CorElementType.R8:
+                    case CorElementType.ELEMENT_TYPE_I1:
+                    case CorElementType.ELEMENT_TYPE_U1:
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
+                    case CorElementType.ELEMENT_TYPE_I2:
+                    case CorElementType.ELEMENT_TYPE_U2:
+                    case CorElementType.ELEMENT_TYPE_CHAR:
+                    case CorElementType.ELEMENT_TYPE_I4:
+                    case CorElementType.ELEMENT_TYPE_U4:
+                    case CorElementType.ELEMENT_TYPE_R4:
+                    case CorElementType.ELEMENT_TYPE_I8:
+                    case CorElementType.ELEMENT_TYPE_U8:
+                    case CorElementType.ELEMENT_TYPE_R8:
                         fixed (byte* pData = &value.GetRawData())
                             SetConstantValue(module.GetNativeHandle(), tk, (int)corType, pData);
                         break;
@@ -374,13 +374,13 @@ namespace System.Reflection.Emit
                         if (type == typeof(string))
                         {
                             fixed (char* pString = (string)value)
-                                SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.String, pString);
+                                SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.ELEMENT_TYPE_STRING, pString);
                         }
                         else if (type == typeof(DateTime))
                         {
                             //date is a I8 representation
                             long ticks = ((DateTime)value).Ticks;
-                            SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.I8, &ticks);
+                            SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.ELEMENT_TYPE_I8, &ticks);
                         }
                         else
                         {
@@ -395,7 +395,7 @@ namespace System.Reflection.Emit
                 // (See ECMA-335 II.15.4.1.4 "The .param directive" and II.22.9 "Constant" for details.)
                 // This is how the Roslyn compilers generally encode `default(TValueType)` default values.
 
-                SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.Class, null);
+                SetConstantValue(module.GetNativeHandle(), tk, (int)CorElementType.ELEMENT_TYPE_CLASS, null);
             }
         }
 

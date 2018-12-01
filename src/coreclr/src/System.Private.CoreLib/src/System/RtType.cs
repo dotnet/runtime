@@ -3069,33 +3069,33 @@ namespace System
             CorElementType corElementType = RuntimeTypeHandle.GetCorElementType(this);
             switch (corElementType)
             {
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     typeCode = TypeCode.Boolean; break;
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     typeCode = TypeCode.Char; break;
-                case CorElementType.I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     typeCode = TypeCode.SByte; break;
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     typeCode = TypeCode.Byte; break;
-                case CorElementType.I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     typeCode = TypeCode.Int16; break;
-                case CorElementType.U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     typeCode = TypeCode.UInt16; break;
-                case CorElementType.I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     typeCode = TypeCode.Int32; break;
-                case CorElementType.U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     typeCode = TypeCode.UInt32; break;
-                case CorElementType.I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     typeCode = TypeCode.Int64; break;
-                case CorElementType.U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     typeCode = TypeCode.UInt64; break;
-                case CorElementType.R4:
+                case CorElementType.ELEMENT_TYPE_R4:
                     typeCode = TypeCode.Single; break;
-                case CorElementType.R8:
+                case CorElementType.ELEMENT_TYPE_R8:
                     typeCode = TypeCode.Double; break;
-                case CorElementType.String:
+                case CorElementType.ELEMENT_TYPE_STRING:
                     typeCode = TypeCode.String; break;
-                case CorElementType.ValueType:
+                case CorElementType.ELEMENT_TYPE_VALUETYPE:
                     if (this == Convert.ConvertTypes[(int)TypeCode.Decimal])
                         typeCode = TypeCode.Decimal;
                     else if (this == Convert.ConvertTypes[(int)TypeCode.DateTime])
