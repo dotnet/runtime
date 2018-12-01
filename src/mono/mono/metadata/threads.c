@@ -2653,26 +2653,38 @@ ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThreadObjectHandle
 	MonoInternalThread *thread = thread_handle_to_internal_ptr (this_obj);
 
 	if (!thread->abort_state_handle)
-		return MONO_HANDLE_NEW (MonoObject, NULL);
+		return NULL_HANDLE; // No state. No error.
 
+	// Convert gc handle to coop handle.
 	MonoObjectHandle state = mono_gchandle_get_target_handle (thread->abort_state_handle);
-	g_assert (!MONO_HANDLE_IS_NULL (state));
+	g_assert (MONO_HANDLE_BOOL (state));
 
 	MonoDomain *domain = mono_domain_get ();
 	if (MONO_HANDLE_DOMAIN (state) == domain)
-		return state;
+		return state; // No need to cross domain, return state directly.
 
+	// Attempt move state cross-domain.
 	MonoObjectHandle deserialized = mono_object_xdomain_representation (state, domain, error);
-	if (!MONO_HANDLE_IS_NULL (deserialized))
-		return deserialized;
 
+	// If deserialized is null, there must be an error, and vice versa.
+	g_assert (is_ok (error) == MONO_HANDLE_BOOL (deserialized));
+
+	if (MONO_HANDLE_BOOL (deserialized))
+		return deserialized; // Cross-domain serialization succeeded. Return it.
+
+	// Wrap error in InvalidOperationException.
 	ERROR_DECL (error_creating_exception);
 	MonoExceptionHandle invalid_op_exc = mono_exception_new_invalid_operation (
 		"Thread.ExceptionState cannot access an ExceptionState from a different AppDomain", error_creating_exception);
 	mono_error_assert_ok (error_creating_exception);
-	if (g_assert (!is_ok (error)))
-		MONO_HANDLE_SET (invalid_op_exc, inner_ex, mono_error_convert_to_exception_handle (error));
-	return deserialized;
+	g_assert (!is_ok (error) && 1);
+	MONO_HANDLE_SET (invalid_op_exc, inner_ex, mono_error_convert_to_exception_handle (error));
+	error_init_reuse (error);
+	mono_error_set_exception_handle (error, invalid_op_exc);
+	g_assert (!is_ok (error) && 2);
+
+	// There is state, but we failed to return it.
+	return NULL_HANDLE;
 }
 
 static gboolean
