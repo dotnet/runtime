@@ -132,4 +132,10 @@
   <data name="PlatformNotSupported_X509Certificate2UI" xml:space="preserve">
     <value>X509Certificate2UI is not supported on this platform.</value>
   </data>
+  <data name="TextParseFailedFormat" xml:space="preserve">
+    <value>Text "{0}" cannot be parsed. The expected text format is "{1}".</value>
+  </data>
+  <data name="PropertyValueInvalidEntry" xml:space="preserve">
+    <value>IDictionary parameter contains at least one entry that is not valid. Ensure all values are consistent with the object's properties.</value>
+  </data>
 </root>
