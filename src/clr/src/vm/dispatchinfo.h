@@ -138,7 +138,7 @@ struct DispatchMemberInfo
         return m_bLastParamOleVarArg;
     }
 
-    void SetHandle(OBJECTHANDLE objhnd)
+    void SetHandle(LOADERHANDLE objhnd)
     {
         m_hndMemberInfo = objhnd;
     }
@@ -148,6 +148,11 @@ struct DispatchMemberInfo
         LIMITED_METHOD_CONTRACT;
         return m_bRequiresManagedCleanup;
     }
+
+#ifndef DACCESS_COMPILE
+    OBJECTREF GetMemberInfoObject();
+    void ClearMemberInfoObject();
+#endif // DACCESS_COMPILE
 
     // Parameter marshaling methods.
     void MarshalParamNativeToManaged(int iParam, VARIANT *pSrcVar, OBJECTREF *pDestObj);
@@ -174,7 +179,7 @@ private:
     void SetUpDispParamAttributes(int iParam, MarshalInfo* Info);
 public:
     DISPID                  m_DispID;
-    OBJECTHANDLE            m_hndMemberInfo;
+    LOADERHANDLE            m_hndMemberInfo;
     DispParamMarshaler**    m_apParamMarshaler;
     BOOL*                   m_pParamInOnly;
     DispatchMemberInfo*     m_pNext;
@@ -276,9 +281,6 @@ public:
                                                int*                  pManagedMethodParamIndexMap,
                                                VARIANT**             aByrefArgOleVariant);
 
-    // Method to NULL the handles inside DispatchMemberInfo
-    void                    DestroyMemberInfoHandles();
-
     // Methods to retrieve the cached MD's
     static MethodDesc*      GetFieldInfoMD(BinderMethodID Method, TypeHandle hndFieldInfoType);
     static MethodDesc*      GetPropertyInfoMD(BinderMethodID Method, TypeHandle hndPropInfoType);
@@ -295,6 +297,11 @@ public:
 
     // Returns TRUE if the argument is "Missing"
     static BOOL             VariantIsMissing(VARIANT *pOle);
+
+    LoaderAllocator*        GetLoaderAllocator()
+    {
+        return m_pMT->GetLoaderAllocator();
+    }
 
 protected:
     // Parameter marshaling helpers.

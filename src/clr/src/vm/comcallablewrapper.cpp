@@ -1149,13 +1149,6 @@ VOID SimpleComCallWrapper::Neuter(bool fSkipHandleCleanup)
     // NULL the context, we shall only use m_dwDomainId from this point on
     m_pContext = NULL;
     
-    // NULL the handles of DispatchMemberInfo if the AppDomain host them has been unloaded
-    DispatchExInfo *pDispatchExInfo = GetDispatchExInfo();
-    if (pDispatchExInfo)
-    {
-        pDispatchExInfo->DestroyMemberInfoHandles();
-    }
-
     StackSString ssMessage;
     ComCallWrapper *pWrap = m_pWrap;
     if (g_pConfig->LogCCWRefCountChangeEnabled())
@@ -2242,10 +2235,7 @@ ComCallWrapper* ComCallWrapper::CopyFromTemplate(ComCallWrapperTemplate* pTempla
     size_t numInterfaces = pTemplate->GetNumInterfaces();
 
     // we have a template, create a wrapper and initialize from the template
-    // alloc wrapper, aligned 32 bytes
-    if (pWrapperCache->IsDomainUnloading())
-        COMPlusThrow(kAppDomainUnloadedException);
-    
+    // alloc wrapper, aligned to cache line
     NewCCWHolder pStartWrapper(pWrapperCache);
     pStartWrapper = (ComCallWrapper*)pWrapperCache->GetCacheLineAllocator()->
 #ifdef _WIN64
@@ -2588,15 +2578,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
     ComCallWrapperCache *pWrapperCache = NULL;
     TypeHandle thClass = pServer->GetTrueTypeHandle();
 
-    //
-    // Collectible types do not support com interop
-    //
-    if (thClass.GetMethodTable()->Collectible())
-    {
-        COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleCOM"));
-    }
-
-    pWrapperCache = pContext->GetDomain()->GetComCallWrapperCache();
+    pWrapperCache = thClass.GetMethodTable()->GetLoaderAllocator()->GetComCallWrapperCache();
 
     {
         // check if somebody beat us to it    
@@ -3809,7 +3791,7 @@ ComCallWrapperCache::ComCallWrapperCache() :
     m_lock(CrstCOMWrapperCache),
     m_cbRef(0),
     m_pCacheLineAllocator(NULL),
-    m_pDomain(NULL)
+    m_pLoaderAllocator(NULL)
 {
     WRAPPER_NO_CONTRACT;
     
@@ -3824,26 +3806,25 @@ ComCallWrapperCache::~ComCallWrapperCache()
     CONTRACTL
     {
         NOTHROW;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
     
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::~ComCallWrapperCache %8.8x in domain [%d] %8.8x %S\n", 
-            this, GetDomain()?GetDomain()->GetId().m_dwId:0,
-            GetDomain(), GetDomain() ? GetDomain()->GetFriendlyNameForLogging() : NULL));
+    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::~ComCallWrapperCache %8.8x in loader allocator [%d] %8.8x\n", 
+            this, GetLoaderAllocator() ? GetLoaderAllocator()->GetCreationNumber() : 0, GetLoaderAllocator()));
     
-    if (m_pCacheLineAllocator) 
+    if (m_pCacheLineAllocator)
     {
         delete m_pCacheLineAllocator;
         m_pCacheLineAllocator = NULL;
     }
     
-    AppDomain *pDomain = GetDomain();   // don't use member directly, need to mask off flags
-    if (pDomain) 
+    LoaderAllocator *pLoaderAllocator = GetLoaderAllocator();   // don't use member directly, need to mask off flags
+    if (pLoaderAllocator) 
     {
-        // clear hook in AppDomain as we're going away
-        pDomain->ResetComCallWrapperCache();
+        // clear hook in LoaderAllocator as we're going away
+        pLoaderAllocator->ResetComCallWrapperCache();
     }
 }
 
@@ -3852,7 +3833,7 @@ ComCallWrapperCache::~ComCallWrapperCache()
 // ComCallable wrapper manager
 // Create/Init method
 //-------------------------------------------------------------------
-ComCallWrapperCache *ComCallWrapperCache::Create(AppDomain *pDomain)
+ComCallWrapperCache *ComCallWrapperCache::Create(LoaderAllocator *pLoaderAllocator)
 {
     CONTRACT (ComCallWrapperCache*)
     {
@@ -3860,19 +3841,19 @@ ComCallWrapperCache *ComCallWrapperCache::Create(AppDomain *pDomain)
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM());
-        PRECONDITION(CheckPointer(pDomain));
+        PRECONDITION(CheckPointer(pLoaderAllocator));
         POSTCONDITION(CheckPointer(RETVAL));
     }
     CONTRACT_END;
     
     NewHolder<ComCallWrapperCache> pWrapperCache = new ComCallWrapperCache();
 
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Create %8.8x in domain %8.8x %S\n",
-        (ComCallWrapperCache *)pWrapperCache, pDomain, pDomain->GetFriendlyName(FALSE)));
+    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Create %8.8x in loader allocator [%d] %8.8x\n",
+        (ComCallWrapperCache *)pWrapperCache, pLoaderAllocator ? pLoaderAllocator->GetCreationNumber() : 0, pLoaderAllocator));
 
     NewHolder<CCacheLineAllocator> line = new CCacheLineAllocator;
 
-    pWrapperCache->m_pDomain = pDomain;
+    pWrapperCache->m_pLoaderAllocator = pLoaderAllocator;
     pWrapperCache->m_pCacheLineAllocator = line;
 
     pWrapperCache->AddRef();
@@ -3881,18 +3862,6 @@ ComCallWrapperCache *ComCallWrapperCache::Create(AppDomain *pDomain)
     pWrapperCache.SuppressRelease();
     RETURN pWrapperCache;
 }
-
-
-void ComCallWrapperCache::Neuter()
-{
-    WRAPPER_NO_CONTRACT;
-    
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Neuter %8.8x in domain [%d] %8.8x %S\n", 
-        this, GetDomain()?GetDomain()->GetId().m_dwId:0,
-        GetDomain(),GetDomain() ? GetDomain()->GetFriendlyNameForLogging() : NULL));
-    ClearDomain();
-}
-
 
 //-------------------------------------------------------------------
 // ComCallable wrapper manager 
@@ -3911,9 +3880,8 @@ LONG ComCallWrapperCache::AddRef()
     COUNTER_ONLY(GetPerfCounters().m_Interop.cCCW++);
     
     LONG i = FastInterlockIncrement(&m_cbRef);
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Addref %8.8x with %d in domain [%d] %8.8x %S\n", 
-        this, i, GetDomain()?GetDomain()->GetId().m_dwId:0,
-        GetDomain(), GetDomain() ? GetDomain()->GetFriendlyNameForLogging() : NULL));
+    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Addref %8.8x with %d in loader allocator [%d] %8.8x\n", 
+        this, i, GetLoaderAllocator()?GetLoaderAllocator()->GetCreationNumber() : 0, GetLoaderAllocator()));
     
     return i;
 }
@@ -3937,9 +3905,8 @@ LONG ComCallWrapperCache::Release()
     LONG i = FastInterlockDecrement(&m_cbRef);
     _ASSERTE(i >= 0);
     
-    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Release %8.8x with %d in domain [%d] %8.8x %S\n",
-        this, i, GetDomain()?GetDomain()->GetId().m_dwId:0,
-        GetDomain(), GetDomain() ? GetDomain()->GetFriendlyNameForLogging() : NULL));
+    LOG((LF_INTEROP, LL_INFO100, "ComCallWrapperCache::Release %8.8x with %d in loader allocator [%d] %8.8x\n",
+        this, i, GetLoaderAllocator() ? GetLoaderAllocator()->GetCreationNumber() : 0, GetLoaderAllocator()));
     if ( i == 0)
         delete this;
 

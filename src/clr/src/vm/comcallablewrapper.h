@@ -41,11 +41,6 @@ typedef DPTR(struct SimpleComCallWrapper) PTR_SimpleComCallWrapper;
 
 class ComCallWrapperCache
 {
-    enum
-    {
-        AD_IS_UNLOADING = 0x01,
-    };
-    
 public:
     // Encapsulate a SpinLockHolder, so that clients of our lock don't have to know
     // the details of our implementation.
@@ -62,12 +57,8 @@ public:
     ComCallWrapperCache();
     ~ComCallWrapperCache();
 
-    // create a new WrapperCache (one per domain)
-    static ComCallWrapperCache* Create(AppDomain *pDomain);
-
-    // Called when the domain is going away.  We may have outstanding references to this cache,
-    //  so we keep it around in a neutered state.
-    void    Neuter();
+    // create a new WrapperCache (one per each LoaderAllocator)
+    static ComCallWrapperCache* Create(LoaderAllocator *pLoaderAllocator);
 
     // refcount
     LONG    AddRef();
@@ -87,9 +78,9 @@ public:
         RETURN m_pCacheLineAllocator;
     }
 
-    AppDomain* GetDomain()
+    LoaderAllocator* GetLoaderAllocator()
     {
-        CONTRACT (AppDomain*)
+        CONTRACT (LoaderAllocator*)
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
@@ -98,41 +89,13 @@ public:
         }
         CONTRACT_END;
         
-        RETURN ((AppDomain*)((size_t)m_pDomain & ~AD_IS_UNLOADING));
-    }
-
-    void ClearDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        m_pDomain = (AppDomain *)AD_IS_UNLOADING;
-    }
-
-    void SetDomainIsUnloading()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        m_pDomain = (AppDomain*)((size_t)m_pDomain | AD_IS_UNLOADING);
-    }
-
-    void ResetDomainIsUnloading()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        m_pDomain = (AppDomain*)((size_t)m_pDomain & (~AD_IS_UNLOADING));
-    }
-
-    BOOL IsDomainUnloading()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        return ((size_t)m_pDomain & AD_IS_UNLOADING) != 0;
+        RETURN m_pLoaderAllocator;
     }
 
 private:
     LONG                    m_cbRef;
     CCacheLineAllocator*    m_pCacheLineAllocator;
-    AppDomain*              m_pDomain;
+    LoaderAllocator*        m_pLoaderAllocator;
 
     // spin lock for fast synchronization
     Crst                    m_lock;

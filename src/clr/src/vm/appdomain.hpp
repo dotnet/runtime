@@ -1101,45 +1101,6 @@ public:
     // This will look up interop data for a method table
     //
 
-#ifndef DACCESS_COMPILE
-    // Returns the data pointer if present, NULL otherwise
-    InteropMethodTableData *LookupComInteropData(MethodTable *pMT)
-    {
-        // Take the lock
-        CrstHolder holder(&m_InteropDataCrst);
-
-        // Lookup
-        InteropMethodTableData *pData = (InteropMethodTableData*) m_interopDataHash.LookupValue((UPTR) pMT, (LPVOID) NULL);
-
-        // Not there...
-        if (pData == (InteropMethodTableData*) INVALIDENTRY)
-            return NULL;
-
-        // Found it
-        return pData;
-    }
-
-    // Returns TRUE if successfully inserted, FALSE if this would be a duplicate entry
-    BOOL InsertComInteropData(MethodTable* pMT, InteropMethodTableData *pData)
-    {
-        // We don't keep track of this kind of information for interfaces
-        _ASSERTE(!pMT->IsInterface());
-
-        // Take the lock
-        CrstHolder holder(&m_InteropDataCrst);
-
-        // Check to see that it's not already in there
-        InteropMethodTableData *pDupData = (InteropMethodTableData*) m_interopDataHash.LookupValue((UPTR) pMT, (LPVOID) NULL);
-        if (pDupData != (InteropMethodTableData*) INVALIDENTRY)
-            return FALSE;
-
-        // Not in there, so insert
-        m_interopDataHash.InsertValue((UPTR) pMT, (LPVOID) pData);
-
-        // Success
-        return TRUE;
-    }
-#endif // DACCESS_COMPILE
 #endif // FEATURE_COMINTEROP
 
     void SetDisableInterfaceCache()
@@ -2508,7 +2469,6 @@ public:
     }
 
 #ifdef FEATURE_COMINTEROP
-    ComCallWrapperCache* GetComCallWrapperCache();
     RCWCache *GetRCWCache()
     {
         WRAPPER_NO_CONTRACT;
@@ -2529,12 +2489,6 @@ public:
     }
 
     RCWRefCache *GetRCWRefCache();
-
-    void ResetComCallWrapperCache()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pComCallWrapperCache = NULL;
-    }
 
     MethodTable* GetLicenseInteropHelperMethodTable();
 #endif // FEATURE_COMINTEROP
@@ -3155,10 +3109,6 @@ private:
     // Hash table that remembers the last cached WinRT factory object per type per appdomain.
     WinRTFactoryCache   *m_pWinRTFactoryCache;
 
-    // The wrapper cache for this domain - it has its own CCacheLineAllocator on a per domain basis
-    // to allow the domain to go away and eventually kill the memory when all refs are gone
-    ComCallWrapperCache *m_pComCallWrapperCache;
-    
     // this cache stores the RCWs in this domain
     RCWCache *m_pRCWCache;
 

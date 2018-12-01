@@ -8313,7 +8313,8 @@ Instantiation MethodTable::GetInstantiationOfParentClass(MethodTable *pWhichPare
 InteropMethodTableData *MethodTable::LookupComInteropData()
 {
     WRAPPER_NO_CONTRACT;
-    return GetDomain()->LookupComInteropData(this);
+
+    return GetLoaderAllocator()->LookupComInteropData(this);
 }
 
 //==========================================================================================
@@ -8321,7 +8322,8 @@ InteropMethodTableData *MethodTable::LookupComInteropData()
 BOOL MethodTable::InsertComInteropData(InteropMethodTableData *pData)
 {
     WRAPPER_NO_CONTRACT;
-    return GetDomain()->InsertComInteropData(this, pData);
+
+    return GetLoaderAllocator()->InsertComInteropData(this, pData);
 }
 
 //==========================================================================================

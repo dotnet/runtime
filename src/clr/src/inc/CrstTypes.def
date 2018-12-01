@@ -696,3 +696,6 @@ End
 Crst TieredCompilation
     AcquiredBefore ThreadpoolTimerQueue
 End
+
+Crst COMCallWrapper
+End
