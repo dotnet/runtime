@@ -402,7 +402,7 @@ public:
         CONTRACTL
         {
             NOTHROW;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
             MODE_ANY;
         }
         CONTRACTL_END;

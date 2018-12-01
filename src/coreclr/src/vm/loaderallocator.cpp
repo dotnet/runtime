@@ -10,6 +10,7 @@
 #ifndef DACCESS_COMPILE
 #include "comdelegate.h"
 #endif
+#include "comcallablewrapper.h"
 
 //*****************************************************************************
 // Used by LoaderAllocator::Init for easier readability.
@@ -71,6 +72,10 @@ LoaderAllocator::LoaderAllocator()
     m_pLastUsedDynamicCodeHeap = NULL;
     m_pJumpStubCache = NULL;
     m_IsCollectible = false;
+
+#ifdef FEATURE_COMINTEROP
+    m_pComCallWrapperCache = NULL;
+#endif
 
     m_pUMEntryThunkCache = NULL;
 
@@ -657,6 +662,27 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         // This will probably change for shared code unloading
         _ASSERTE(pID->GetType() == LAT_Assembly);
 
+#ifdef FEATURE_COMINTEROP
+        if (pLoaderAllocator->m_pComCallWrapperCache)
+        {
+            pLoaderAllocator->m_pComCallWrapperCache->Release();
+
+            // if the above released the wrapper cache, then it will call back and reset our
+            // m_pComCallWrapperCache to null.
+            if (!pLoaderAllocator->m_pComCallWrapperCache)
+            {
+                LOG((LF_CLASSLOADER, LL_INFO10, "LoaderAllocator::Destroy ComCallWrapperCache released\n"));
+            }
+    #ifdef _DEBUG
+            else
+            {
+                pLoaderAllocator->m_pComCallWrapperCache = NULL;
+                LOG((LF_CLASSLOADER, LL_INFO10, "LoaderAllocator::Destroy ComCallWrapperCache not released\n"));
+            }
+    #endif // _DEBUG
+        }
+#endif // FEATURE_COMINTEROP
+
         DomainAssembly* pDomainAssembly = (DomainAssembly*)(pID->GetDomainAssemblyIterator());
         if (pDomainAssembly != NULL)
         {
@@ -1043,6 +1069,10 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
     m_pDomain = pDomain;
 
     m_crstLoaderAllocator.Init(CrstLoaderAllocator, (CrstFlags)CRST_UNSAFE_COOPGC);
+#ifdef FEATURE_COMINTEROP
+    m_InteropDataCrst.Init(CrstInteropData, CRST_REENTRANCY);
+    m_ComCallWrapperCrst.Init(CrstCOMCallWrapper);
+#endif
 
     //
     // Initialize the heaps
@@ -1189,6 +1219,14 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     // Set up the IL stub cache
     m_ILStubCache.Init(m_pHighFrequencyHeap);
+
+#ifdef FEATURE_COMINTEROP
+    // Init the COM Interop data hash
+    {
+        LockOwner lock = { &m_InteropDataCrst, IsOwnerOfCrst };
+        m_interopDataHash.Init(0, NULL, false, &lock);
+    }
+#endif // FEATURE_COMINTEROP
 }
 
 
@@ -1295,6 +1333,10 @@ void LoaderAllocator::Terminate()
     m_pUMEntryThunkCache = NULL;
 
     m_crstLoaderAllocator.Destroy();
+#ifdef FEATURE_COMINTEROP
+    m_ComCallWrapperCrst.Destroy();
+    m_InteropDataCrst.Destroy();
+#endif
     m_LoaderAllocatorReferences.RemoveAll();
 
     // In collectible types we merge the low frequency and high frequency heaps
@@ -1858,6 +1900,30 @@ void AssemblyLoaderAllocator::ReleaseManagedAssemblyLoadContext()
     }
 }
 
+#ifdef FEATURE_COMINTEROP
+ComCallWrapperCache * LoaderAllocator::GetComCallWrapperCache()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    if (!m_pComCallWrapperCache)
+    {
+        CrstHolder lh(&m_ComCallWrapperCrst);
+
+        if (!m_pComCallWrapperCache)
+            m_pComCallWrapperCache = ComCallWrapperCache::Create(this);
+    }
+    _ASSERTE(m_pComCallWrapperCache);
+    return m_pComCallWrapperCache;
+}
+#endif // FEATURE_COMINTEROP
+
 // U->M thunks created in this LoaderAllocator and not associated with a delegate.
 UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
 {
@@ -1885,5 +1951,48 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
 }
 
 #endif // !CROSSGEN_COMPILE
+
+#ifdef FEATURE_COMINTEROP
+
+// Look up interop data for a method table
+// Returns the data pointer if present, NULL otherwise
+InteropMethodTableData *LoaderAllocator::LookupComInteropData(MethodTable *pMT)
+{
+    // Take the lock
+    CrstHolder holder(&m_InteropDataCrst);
+
+    // Lookup
+    InteropMethodTableData *pData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+
+    // Not there...
+    if (pData == (InteropMethodTableData*)INVALIDENTRY)
+        return NULL;
+
+    // Found it
+    return pData;
+}
+
+// Returns TRUE if successfully inserted, FALSE if this would be a duplicate entry
+BOOL LoaderAllocator::InsertComInteropData(MethodTable* pMT, InteropMethodTableData *pData)
+{
+    // We don't keep track of this kind of information for interfaces
+    _ASSERTE(!pMT->IsInterface());
+
+    // Take the lock
+    CrstHolder holder(&m_InteropDataCrst);
+
+    // Check to see that it's not already in there
+    InteropMethodTableData *pDupData = (InteropMethodTableData*)m_interopDataHash.LookupValue((UPTR)pMT, (LPVOID)NULL);
+    if (pDupData != (InteropMethodTableData*)INVALIDENTRY)
+        return FALSE;
+
+    // Not in there, so insert
+    m_interopDataHash.InsertValue((UPTR)pMT, (LPVOID)pData);
+
+    // Success
+    return TRUE;
+}
+
+#endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
