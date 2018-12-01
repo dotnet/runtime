@@ -2,7 +2,7 @@
 
   <Target
     Name="CreateEmbedResponseFile"
-    AfterTargets="ResolveProjectReferences">
+    BeforeTargets="BeforeCompile">
 
     <!-- Get the output for each project reference -->
     <Message Text="Generating Response File for embedding type metadata: $(CompilerResponseFile)"/>
