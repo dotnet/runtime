@@ -35,46 +35,46 @@ namespace System.Reflection
                 {
                     #region Switch
 
-                    case CorElementType.Void:
+                    case CorElementType.ELEMENT_TYPE_VOID:
                         return DBNull.Value;
 
-                    case CorElementType.Char:
+                    case CorElementType.ELEMENT_TYPE_CHAR:
                         defaultValue = *(char*)&buffer;
                         break;
 
-                    case CorElementType.I1:
+                    case CorElementType.ELEMENT_TYPE_I1:
                         defaultValue = *(sbyte*)&buffer;
                         break;
 
-                    case CorElementType.U1:
+                    case CorElementType.ELEMENT_TYPE_U1:
                         defaultValue = *(byte*)&buffer;
                         break;
 
-                    case CorElementType.I2:
+                    case CorElementType.ELEMENT_TYPE_I2:
                         defaultValue = *(short*)&buffer;
                         break;
 
-                    case CorElementType.U2:
+                    case CorElementType.ELEMENT_TYPE_U2:
                         defaultValue = *(ushort*)&buffer;
                         break;
 
-                    case CorElementType.I4:
+                    case CorElementType.ELEMENT_TYPE_I4:
                         defaultValue = *(int*)&buffer;
                         break;
 
-                    case CorElementType.U4:
+                    case CorElementType.ELEMENT_TYPE_U4:
                         defaultValue = *(uint*)&buffer;
                         break;
 
-                    case CorElementType.I8:
+                    case CorElementType.ELEMENT_TYPE_I8:
                         defaultValue = buffer;
                         break;
 
-                    case CorElementType.U8:
+                    case CorElementType.ELEMENT_TYPE_U8:
                         defaultValue = buffer;
                         break;
 
-                    case CorElementType.Class:
+                    case CorElementType.ELEMENT_TYPE_CLASS:
                         return null;
 
                     default:
@@ -92,18 +92,18 @@ namespace System.Reflection
                 {
                     #region Switch
 
-                    case CorElementType.Void:
+                    case CorElementType.ELEMENT_TYPE_VOID:
                         return DBNull.Value;
 
-                    case CorElementType.I8:
+                    case CorElementType.ELEMENT_TYPE_I8:
                         defaultValue = buffer;
                         break;
 
-                    case CorElementType.U8:
+                    case CorElementType.ELEMENT_TYPE_U8:
                         defaultValue = buffer;
                         break;
 
-                    case CorElementType.Class:
+                    case CorElementType.ELEMENT_TYPE_CLASS:
                         return null;
 
                     default:
@@ -119,54 +119,54 @@ namespace System.Reflection
                 {
                     #region Switch
 
-                    case CorElementType.Void:
+                    case CorElementType.ELEMENT_TYPE_VOID:
                         return DBNull.Value;
 
-                    case CorElementType.Char:
+                    case CorElementType.ELEMENT_TYPE_CHAR:
                         return *(char*)&buffer;
 
-                    case CorElementType.I1:
+                    case CorElementType.ELEMENT_TYPE_I1:
                         return *(sbyte*)&buffer;
 
-                    case CorElementType.U1:
+                    case CorElementType.ELEMENT_TYPE_U1:
                         return *(byte*)&buffer;
 
-                    case CorElementType.I2:
+                    case CorElementType.ELEMENT_TYPE_I2:
                         return *(short*)&buffer;
 
-                    case CorElementType.U2:
+                    case CorElementType.ELEMENT_TYPE_U2:
                         return *(ushort*)&buffer;
 
-                    case CorElementType.I4:
+                    case CorElementType.ELEMENT_TYPE_I4:
                         return *(int*)&buffer;
 
-                    case CorElementType.U4:
+                    case CorElementType.ELEMENT_TYPE_U4:
                         return *(uint*)&buffer;
 
-                    case CorElementType.I8:
+                    case CorElementType.ELEMENT_TYPE_I8:
                         return buffer;
 
-                    case CorElementType.U8:
+                    case CorElementType.ELEMENT_TYPE_U8:
                         return (ulong)buffer;
 
-                    case CorElementType.Boolean:
+                    case CorElementType.ELEMENT_TYPE_BOOLEAN:
                         // The boolean value returned from the metadata engine is stored as a
                         // BOOL, which actually maps to an int. We need to read it out as an int
                         // to avoid problems on big-endian machines.
                         return (*(int*)&buffer != 0);
 
-                    case CorElementType.R4:
+                    case CorElementType.ELEMENT_TYPE_R4:
                         return *(float*)&buffer;
 
-                    case CorElementType.R8:
+                    case CorElementType.ELEMENT_TYPE_R8:
                         return *(double*)&buffer;
 
-                    case CorElementType.String:
+                    case CorElementType.ELEMENT_TYPE_STRING:
                         // A string constant can be empty but never null.
-                        // A nullref constant can only be type CorElementType.Class.
+                        // A nullref constant can only be type CorElementType.ELEMENT_TYPE_CLASS.
                         return stringVal == null ? string.Empty : stringVal;
 
-                    case CorElementType.Class:
+                    case CorElementType.ELEMENT_TYPE_CLASS:
                         return null;
 
                     default:
