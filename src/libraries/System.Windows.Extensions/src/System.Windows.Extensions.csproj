@@ -43,6 +43,7 @@
     <Compile Include="System\Drawing\IconConverter.cs" />
     <Compile Include="System\Drawing\ImageConverter.cs" />
     <Compile Include="System\Drawing\ImageFormatConverter.cs" />
+    <Compile Include="System\Drawing\Printing\MarginsConverter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Buffers" />
@@ -57,6 +58,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>
