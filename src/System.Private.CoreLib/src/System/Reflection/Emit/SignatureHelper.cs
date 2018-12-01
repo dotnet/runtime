@@ -278,7 +278,7 @@ namespace System.Reflection.Emit
         private void AddOneArgTypeHelper(Type argument, bool pinned)
         {
             if (pinned)
-                AddElementType(CorElementType.Pinned);
+                AddElementType(CorElementType.ELEMENT_TYPE_PINNED);
 
             AddOneArgTypeHelper(argument);
         }
@@ -305,7 +305,7 @@ namespace System.Reflection.Emit
                     if (t.ContainsGenericParameters)
                         throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(optionalCustomModifiers));
 
-                    AddElementType(CorElementType.CModOpt);
+                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_OPT);
 
                     int token = m_module.GetTypeToken(t).Token;
                     Debug.Assert(!MetadataToken.IsNullToken(token));
@@ -328,7 +328,7 @@ namespace System.Reflection.Emit
                     if (t.ContainsGenericParameters)
                         throw new ArgumentException(SR.Argument_GenericsInvalid, nameof(requiredCustomModifiers));
 
-                    AddElementType(CorElementType.CModReqd);
+                    AddElementType(CorElementType.ELEMENT_TYPE_CMOD_REQD);
 
                     int token = m_module.GetTypeToken(t).Token;
                     Debug.Assert(!MetadataToken.IsNullToken(token));
@@ -345,15 +345,15 @@ namespace System.Reflection.Emit
             if (clsArgument.IsGenericParameter)
             {
                 if (clsArgument.DeclaringMethod != null)
-                    AddElementType(CorElementType.MVar);
+                    AddElementType(CorElementType.ELEMENT_TYPE_MVAR);
                 else
-                    AddElementType(CorElementType.Var);
+                    AddElementType(CorElementType.ELEMENT_TYPE_VAR);
 
                 AddData(clsArgument.GenericParameterPosition);
             }
             else if (clsArgument.IsGenericType && (!clsArgument.IsGenericTypeDefinition || !lastWasGenericInst))
             {
-                AddElementType(CorElementType.GenericInst);
+                AddElementType(CorElementType.ELEMENT_TYPE_GENERICINST);
 
                 AddOneArgTypeHelperWorker(clsArgument.GetGenericTypeDefinition(), true);
 
@@ -380,11 +380,11 @@ namespace System.Reflection.Emit
 
                 if (clsArgument.IsValueType)
                 {
-                    InternalAddTypeToken(tkType, CorElementType.ValueType);
+                    InternalAddTypeToken(tkType, CorElementType.ELEMENT_TYPE_VALUETYPE);
                 }
                 else
                 {
-                    InternalAddTypeToken(tkType, CorElementType.Class);
+                    InternalAddTypeToken(tkType, CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
             else if (clsArgument is EnumBuilder)
@@ -403,35 +403,35 @@ namespace System.Reflection.Emit
 
                 if (clsArgument.IsValueType)
                 {
-                    InternalAddTypeToken(tkType, CorElementType.ValueType);
+                    InternalAddTypeToken(tkType, CorElementType.ELEMENT_TYPE_VALUETYPE);
                 }
                 else
                 {
-                    InternalAddTypeToken(tkType, CorElementType.Class);
+                    InternalAddTypeToken(tkType, CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
             else if (clsArgument.IsByRef)
             {
-                AddElementType(CorElementType.ByRef);
+                AddElementType(CorElementType.ELEMENT_TYPE_BYREF);
                 clsArgument = clsArgument.GetElementType();
                 AddOneArgTypeHelper(clsArgument);
             }
             else if (clsArgument.IsPointer)
             {
-                AddElementType(CorElementType.Ptr);
+                AddElementType(CorElementType.ELEMENT_TYPE_PTR);
                 AddOneArgTypeHelper(clsArgument.GetElementType());
             }
             else if (clsArgument.IsArray)
             {
                 if (clsArgument.IsSZArray)
                 {
-                    AddElementType(CorElementType.SzArray);
+                    AddElementType(CorElementType.ELEMENT_TYPE_SZARRAY);
 
                     AddOneArgTypeHelper(clsArgument.GetElementType());
                 }
                 else
                 {
-                    AddElementType(CorElementType.Array);
+                    AddElementType(CorElementType.ELEMENT_TYPE_ARRAY);
 
                     AddOneArgTypeHelper(clsArgument.GetElementType());
 
@@ -446,19 +446,19 @@ namespace System.Reflection.Emit
             }
             else
             {
-                CorElementType type = CorElementType.Max;
+                CorElementType type = CorElementType.ELEMENT_TYPE_MAX;
 
                 if (clsArgument is RuntimeType)
                 {
                     type = RuntimeTypeHandle.GetCorElementType((RuntimeType)clsArgument);
 
-                    //GetCorElementType returns CorElementType.Class for both object and string
-                    if (type == CorElementType.Class)
+                    //GetCorElementType returns CorElementType.ELEMENT_TYPE_CLASS for both object and string
+                    if (type == CorElementType.ELEMENT_TYPE_CLASS)
                     {
                         if (clsArgument == typeof(object))
-                            type = CorElementType.Object;
+                            type = CorElementType.ELEMENT_TYPE_OBJECT;
                         else if (clsArgument == typeof(string))
-                            type = CorElementType.String;
+                            type = CorElementType.ELEMENT_TYPE_STRING;
                     }
                 }
 
@@ -472,11 +472,11 @@ namespace System.Reflection.Emit
                 }
                 else if (clsArgument.IsValueType)
                 {
-                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ValueType);
+                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ELEMENT_TYPE_VALUETYPE);
                 }
                 else
                 {
-                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.Class);
+                    InternalAddTypeToken(m_module.GetTypeToken(clsArgument), CorElementType.ELEMENT_TYPE_CLASS);
                 }
             }
         }
@@ -557,7 +557,7 @@ namespace System.Reflection.Emit
 
         private void InternalAddTypeToken(TypeToken clsToken, CorElementType CorType)
         {
-            // Add a type token into signature. CorType will be either CorElementType.Class or CorElementType.ValueType
+            // Add a type token into signature. CorType will be either CorElementType.ELEMENT_TYPE_CLASS or CorElementType.ELEMENT_TYPE_VALUETYPE
             AddElementType(CorType);
             AddToken(clsToken.Token);
         }
@@ -566,7 +566,7 @@ namespace System.Reflection.Emit
         {
             // Add a runtime type into the signature. 
 
-            AddElementType(CorElementType.Internal);
+            AddElementType(CorElementType.ELEMENT_TYPE_INTERNAL);
 
             IntPtr handle = type.GetTypeHandleInternal().Value;
 
@@ -682,10 +682,10 @@ namespace System.Reflection.Emit
 
         internal static bool IsSimpleType(CorElementType type)
         {
-            if (type <= CorElementType.String)
+            if (type <= CorElementType.ELEMENT_TYPE_STRING)
                 return true;
 
-            if (type == CorElementType.TypedByRef || type == CorElementType.I || type == CorElementType.U || type == CorElementType.Object)
+            if (type == CorElementType.ELEMENT_TYPE_TYPEDBYREF || type == CorElementType.ELEMENT_TYPE_I || type == CorElementType.ELEMENT_TYPE_U || type == CorElementType.ELEMENT_TYPE_OBJECT)
                 return true;
 
             return false;
@@ -757,7 +757,7 @@ namespace System.Reflection.Emit
             // copy the sig part of the sig
             Buffer.BlockCopy(m_signature, 2, temp, sigCopyIndex, currSigLength - 2);
             // mark the end of sig
-            temp[newSigSize - 1] = (byte)CorElementType.End;
+            temp[newSigSize - 1] = (byte)CorElementType.ELEMENT_TYPE_END;
 
             return temp;
         }
@@ -817,7 +817,7 @@ namespace System.Reflection.Emit
 
         public void AddSentinel()
         {
-            AddElementType(CorElementType.Sentinel);
+            AddElementType(CorElementType.ELEMENT_TYPE_SENTINEL);
         }
 
         public override bool Equals(object obj)
@@ -871,7 +871,7 @@ namespace System.Reflection.Emit
             if (!m_sigDone)
             {
                 if (appendEndOfSig)
-                    AddElementType(CorElementType.End);
+                    AddElementType(CorElementType.ELEMENT_TYPE_END);
                 SetNumberOfSignatureElements(true);
                 m_sigDone = true;
             }

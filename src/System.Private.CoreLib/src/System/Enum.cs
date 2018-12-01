@@ -60,33 +60,33 @@ namespace System
             ref byte data = ref this.GetRawData();
             switch (InternalGetCorElementType())
             {
-                case CorElementType.I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return Unsafe.As<byte, sbyte>(ref data).ToString();
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return data.ToString();
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Unsafe.As<byte, bool>(ref data).ToString();
-                case CorElementType.I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return Unsafe.As<byte, short>(ref data).ToString();
-                case CorElementType.U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return Unsafe.As<byte, ushort>(ref data).ToString();
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, char>(ref data).ToString();
-                case CorElementType.I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return Unsafe.As<byte, int>(ref data).ToString();
-                case CorElementType.U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return Unsafe.As<byte, uint>(ref data).ToString();
-                case CorElementType.R4:
+                case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, float>(ref data).ToString();
-                case CorElementType.I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return Unsafe.As<byte, long>(ref data).ToString();
-                case CorElementType.U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref data).ToString();
-                case CorElementType.R8:
+                case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, double>(ref data).ToString();
-                case CorElementType.I:
+                case CorElementType.ELEMENT_TYPE_I:
                     return Unsafe.As<byte, IntPtr>(ref data).ToString();
-                case CorElementType.U:
+                case CorElementType.ELEMENT_TYPE_U:
                     return Unsafe.As<byte, UIntPtr>(ref data).ToString();
                 default:
                     Debug.Fail("Invalid primitive type");
@@ -99,20 +99,20 @@ namespace System
             ref byte data = ref this.GetRawData();
             switch (InternalGetCorElementType())
             {
-                case CorElementType.I1:
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_I1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return data.ToString("X2", null);
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Convert.ToByte(Unsafe.As<byte, bool>(ref data)).ToString("X2", null);
-                case CorElementType.I2:
-                case CorElementType.U2:
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_I2:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref data).ToString("X4", null);
-                case CorElementType.I4:
-                case CorElementType.U4:
+                case CorElementType.ELEMENT_TYPE_I4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return Unsafe.As<byte, uint>(ref data).ToString("X8", null);
-                case CorElementType.I8:
-                case CorElementType.U8:
+                case CorElementType.ELEMENT_TYPE_I8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref data).ToString("X16", null);
                 default:
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
@@ -974,33 +974,33 @@ namespace System
             ref byte data = ref this.GetRawData();
             switch (InternalGetCorElementType())
             {
-                case CorElementType.I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return Unsafe.As<byte, sbyte>(ref data);
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return data;
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Unsafe.As<byte, bool>(ref data);
-                case CorElementType.I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return Unsafe.As<byte, short>(ref data);
-                case CorElementType.U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return Unsafe.As<byte, ushort>(ref data);
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, char>(ref data);
-                case CorElementType.I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return Unsafe.As<byte, int>(ref data);
-                case CorElementType.U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return Unsafe.As<byte, uint>(ref data);
-                case CorElementType.R4:
+                case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, float>(ref data);
-                case CorElementType.I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return Unsafe.As<byte, long>(ref data);
-                case CorElementType.U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref data);
-                case CorElementType.R8:
+                case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, double>(ref data);
-                case CorElementType.I:
+                case CorElementType.ELEMENT_TYPE_I:
                     return Unsafe.As<byte, IntPtr>(ref data);
-                case CorElementType.U:
+                case CorElementType.ELEMENT_TYPE_U:
                     return Unsafe.As<byte, UIntPtr>(ref data);
                 default:
                     Debug.Fail("Invalid primitive type");
@@ -1013,30 +1013,30 @@ namespace System
             ref byte data = ref this.GetRawData();
             switch (InternalGetCorElementType())
             {
-                case CorElementType.I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return (ulong)Unsafe.As<byte, sbyte>(ref data);
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return data;
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Convert.ToUInt64(Unsafe.As<byte, bool>(ref data), CultureInfo.InvariantCulture);
-                case CorElementType.I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return (ulong)Unsafe.As<byte, short>(ref data);
-                case CorElementType.U2:
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_U2:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, ushort>(ref data);
-                case CorElementType.I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return (ulong)Unsafe.As<byte, int>(ref data);
-                case CorElementType.U4:
-                case CorElementType.R4:
+                case CorElementType.ELEMENT_TYPE_U4:
+                case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, uint>(ref data);
-                case CorElementType.I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return (ulong)Unsafe.As<byte, long>(ref data);
-                case CorElementType.U8:
-                case CorElementType.R8:
+                case CorElementType.ELEMENT_TYPE_U8:
+                case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, ulong>(ref data);
-                case CorElementType.I:
+                case CorElementType.ELEMENT_TYPE_I:
                     return (ulong)Unsafe.As<byte, IntPtr>(ref data);
-                case CorElementType.U:
+                case CorElementType.ELEMENT_TYPE_U:
                     return (ulong)Unsafe.As<byte, UIntPtr>(ref data);
                 default:
                     Debug.Fail("Invalid primitive type");
@@ -1064,33 +1064,33 @@ namespace System
             ref byte data = ref this.GetRawData();
             switch (InternalGetCorElementType())
             {
-                case CorElementType.I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return Unsafe.As<byte, sbyte>(ref data).GetHashCode();
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return data.GetHashCode();
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return Unsafe.As<byte, bool>(ref data).GetHashCode();
-                case CorElementType.I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return Unsafe.As<byte, short>(ref data).GetHashCode();
-                case CorElementType.U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return Unsafe.As<byte, ushort>(ref data).GetHashCode();
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return Unsafe.As<byte, char>(ref data).GetHashCode();
-                case CorElementType.I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return Unsafe.As<byte, int>(ref data).GetHashCode();
-                case CorElementType.U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return Unsafe.As<byte, uint>(ref data).GetHashCode();
-                case CorElementType.R4:
+                case CorElementType.ELEMENT_TYPE_R4:
                     return Unsafe.As<byte, float>(ref data).GetHashCode();
-                case CorElementType.I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return Unsafe.As<byte, long>(ref data).GetHashCode();
-                case CorElementType.U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return Unsafe.As<byte, ulong>(ref data).GetHashCode();
-                case CorElementType.R8:
+                case CorElementType.ELEMENT_TYPE_R8:
                     return Unsafe.As<byte, double>(ref data).GetHashCode();
-                case CorElementType.I:
+                case CorElementType.ELEMENT_TYPE_I:
                     return Unsafe.As<byte, IntPtr>(ref data).GetHashCode();
-                case CorElementType.U:
+                case CorElementType.ELEMENT_TYPE_U:
                     return Unsafe.As<byte, UIntPtr>(ref data).GetHashCode();
                 default:
                     Debug.Fail("Invalid primitive type");
@@ -1212,25 +1212,25 @@ namespace System
         {
             switch (InternalGetCorElementType())
             {
-                case CorElementType.I1:
+                case CorElementType.ELEMENT_TYPE_I1:
                     return TypeCode.SByte;
-                case CorElementType.U1:
+                case CorElementType.ELEMENT_TYPE_U1:
                     return TypeCode.Byte;
-                case CorElementType.Boolean:
+                case CorElementType.ELEMENT_TYPE_BOOLEAN:
                     return TypeCode.Boolean;
-                case CorElementType.I2:
+                case CorElementType.ELEMENT_TYPE_I2:
                     return TypeCode.Int16;
-                case CorElementType.U2:
+                case CorElementType.ELEMENT_TYPE_U2:
                     return TypeCode.UInt16;
-                case CorElementType.Char:
+                case CorElementType.ELEMENT_TYPE_CHAR:
                     return TypeCode.Char;
-                case CorElementType.I4:
+                case CorElementType.ELEMENT_TYPE_I4:
                     return TypeCode.Int32;
-                case CorElementType.U4:
+                case CorElementType.ELEMENT_TYPE_U4:
                     return TypeCode.UInt32;
-                case CorElementType.I8:
+                case CorElementType.ELEMENT_TYPE_I8:
                     return TypeCode.Int64;
-                case CorElementType.U8:
+                case CorElementType.ELEMENT_TYPE_U8:
                     return TypeCode.UInt64;
                 default:
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
