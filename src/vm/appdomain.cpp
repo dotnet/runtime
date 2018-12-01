@@ -3554,7 +3554,6 @@ AppDomain::AppDomain()
     m_dwFlags = 0;
     m_pDefaultContext = NULL;
 #ifdef FEATURE_COMINTEROP
-    m_pComCallWrapperCache = NULL;
     m_pRCWCache = NULL;
     m_pRCWRefCache = NULL;
     m_pLicenseInteropHelperMT = NULL;
@@ -3892,28 +3891,6 @@ void AppDomain::Terminate()
         delete m_pRCWRefCache;
         m_pRCWRefCache = NULL;
     }
-    
-    if (m_pComCallWrapperCache)
-    {
-        m_pComCallWrapperCache->Neuter();
-        m_pComCallWrapperCache->Release();
-    }
-
-    // if the above released the wrapper cache, then it will call back and reset our
-    // m_pComCallWrapperCache to null. If not null, then need to set it's domain pointer to
-    // null.
-    if (! m_pComCallWrapperCache)
-    {
-        LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::Terminate ComCallWrapperCache released\n"));
-    }
-#ifdef _DEBUG
-    else
-    {
-        m_pComCallWrapperCache = NULL;
-        LOG((LF_APPDOMAIN, LL_INFO10, "AppDomain::Terminate ComCallWrapperCache not released\n"));
-    }
-#endif // _DEBUG
-
 #endif // FEATURE_COMINTEROP
 
 
@@ -6909,28 +6886,6 @@ BOOL AppDomain::WasSystemAssemblyLoadEventSent(void)
 #ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_COMINTEROP
-
-ComCallWrapperCache *AppDomain::GetComCallWrapperCache()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if (! m_pComCallWrapperCache)
-    {
-        BaseDomain::LockHolder lh(this);
-
-        if (! m_pComCallWrapperCache)
-            m_pComCallWrapperCache = ComCallWrapperCache::Create(this);
-    }
-    _ASSERTE(m_pComCallWrapperCache);
-    return m_pComCallWrapperCache;
-}
 
 RCWRefCache *AppDomain::GetRCWRefCache()
 {

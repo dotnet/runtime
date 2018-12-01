@@ -129,6 +129,10 @@ class ListLockEntryBase;
 typedef ListLockEntryBase<void*> ListLockEntry;
 class UMEntryThunkCache;
 
+#ifdef FEATURE_COMINTEROP
+class ComCallWrapperCache;
+#endif // FEATURE_COMINTEROP
+
 class LoaderAllocator
 {
     VPTR_BASE_VTABLE_CLASS(LoaderAllocator)
@@ -248,6 +252,18 @@ private:
     SList<FailedTypeInitCleanupListItem> m_failedTypeInitCleanupList;
 
     SegmentedHandleIndexStack m_freeHandleIndexesStack;
+#ifdef FEATURE_COMINTEROP
+    // The wrapper cache for this loader allocator - it has its own CCacheLineAllocator on a per loader allocator basis
+    // to allow the loader allocator to go away and eventually kill the memory when all refs are gone
+    
+    VolatilePtr<ComCallWrapperCache> m_pComCallWrapperCache;
+    // Used for synchronizing creation of the m_pComCallWrapperCache
+    CrstExplicitInit m_ComCallWrapperCrst;
+    // Hash table that maps a MethodTable to COM Interop compatibility data.
+    PtrHashMap m_interopDataHash;
+    // Used for synchronizing access to the m_interopDataHash
+    CrstExplicitInit m_InteropDataCrst;
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -509,6 +525,7 @@ public:
 
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
+
 #ifndef CROSSGEN_COMPILE
     inline VirtualCallStubManager *GetVirtualCallStubManager()
     {
@@ -530,6 +547,30 @@ public:
         LIMITED_METHOD_CONTRACT;
         return &m_ILStubCache;
     }
+
+#ifdef FEATURE_COMINTEROP
+
+    ComCallWrapperCache * GetComCallWrapperCache();
+
+    void ResetComCallWrapperCache()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pComCallWrapperCache = NULL;
+    }
+
+#ifndef DACCESS_COMPILE
+
+    // Look up interop data for a method table
+    // Returns the data pointer if present, NULL otherwise
+    InteropMethodTableData *LookupComInteropData(MethodTable *pMT);
+
+    // Returns TRUE if successfully inserted, FALSE if this would be a duplicate entry
+    BOOL InsertComInteropData(MethodTable* pMT, InteropMethodTableData *pData);
+
+#endif // DACCESS_COMPILE
+
+#endif // FEATURE_COMINTEROP
+
 };  // class LoaderAllocator
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;

@@ -3771,10 +3771,6 @@ BOOL IsTypeVisibleFromCom(TypeHandle hndType)
             return FALSE;
     }
 
-    // If the type is collectible, then it is not visible from COM.
-    if (hndType.GetLoaderAllocator()->IsCollectible())
-        return FALSE;
-
     return SpecialIsGenericTypeVisibleFromCom(hndType);
 }
 
@@ -5095,11 +5091,11 @@ ClassFactoryBase *GetComClassFactory(MethodTable* pClassMT)
     if (pClsFac == NULL)
     {
         //
-        // Collectible types do not support com interop
+        // Collectible types do not support WinRT interop
         //
-        if (pClassMT->Collectible())
+        if (pClassMT->Collectible() && (pClassMT->IsExportedToWinRT() || pClassMT->IsProjectedFromWinRT()))
         {
-            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleCOM"));
+            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleWinRT"));
         }
 
         NewHolder<ClassFactoryBase> pNewFactory;
