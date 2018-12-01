@@ -2884,8 +2884,8 @@
   <data name="NotSupported_CollectibleBoundNonCollectible" xml:space="preserve">
     <value>A non-collectible assembly may not reference a collectible assembly.</value>
   </data>
-  <data name="NotSupported_CollectibleCOM" xml:space="preserve">
-    <value>COM Interop is not supported for collectible types.</value>
+  <data name="NotSupported_CollectibleWinRT" xml:space="preserve">
+    <value>WinRT Interop is not supported for collectible types.</value>
   </data>
   <data name="NotSupported_CreateInstanceWithTypeBuilder" xml:space="preserve">
     <value>CreateInstance cannot be used with an object of type TypeBuilder.</value>

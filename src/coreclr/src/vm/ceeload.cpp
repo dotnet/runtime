@@ -829,6 +829,12 @@ BOOL Module::CanCacheWinRTTypeByGuid(MethodTable *pMT)
     }
     CONTRACTL_END;
 
+    // Don't cache WinRT types in collectible modules.
+    if (IsCollectible())
+    {
+        return FALSE;
+    }
+
     // Don't cache mscorlib-internal declarations of WinRT types.
     if (IsSystem() && pMT->IsProjectedFromWinRT())
         return FALSE;

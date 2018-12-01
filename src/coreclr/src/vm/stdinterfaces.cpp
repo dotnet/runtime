@@ -1948,7 +1948,7 @@ HRESULT __stdcall   DispatchEx_GetMemberName (
         DispatchMemberInfo *pDispMemberInfo = pDispExInfo->SynchFindMember(id);
 
         // If the member does not exist then we return DISP_E_MEMBERNOTFOUND.
-        if (!pDispMemberInfo || !ObjectFromHandle(pDispMemberInfo->m_hndMemberInfo))
+        if (!pDispMemberInfo || !pDispMemberInfo->GetMemberInfoObject())
         {
             hr = DISP_E_MEMBERNOTFOUND;
         }
@@ -2008,7 +2008,7 @@ HRESULT __stdcall   DispatchEx_GetMemberProperties (
             DispatchMemberInfo *pDispMemberInfo = pDispExInfo->SynchFindMember(id);
 
             // If the member does not exist then we return DISP_E_MEMBERNOTFOUND.
-            if (!pDispMemberInfo || (MemberInfoObj = ObjectFromHandle(pDispMemberInfo->m_hndMemberInfo)) == NULL)
+            if (!pDispMemberInfo || (MemberInfoObj = pDispMemberInfo->GetMemberInfoObject()) == NULL)
             {
                 hr = DISP_E_MEMBERNOTFOUND;
             }
