@@ -178,7 +178,7 @@ add_general (guint32 *gr, const guint32 *param_regs, guint32 *stack_size, ArgInf
     if (!param_regs || param_regs [*gr] == X86_NREG) {
 		ainfo->storage = ArgOnStack;
 		ainfo->nslots = 1;
-		(*stack_size) += sizeof (gpointer);
+		(*stack_size) += sizeof (target_mgreg_t);
     }
     else {
 		ainfo->storage = ArgInIReg;
@@ -195,7 +195,7 @@ add_general_pair (guint32 *gr, const guint32 *param_regs , guint32 *stack_size, 
 	g_assert(!param_regs || param_regs[*gr] == X86_NREG);
 
 	ainfo->storage = ArgOnStack;
-	(*stack_size) += sizeof (gpointer) * 2;
+	(*stack_size) += sizeof (target_mgreg_t) * 2;
 	ainfo->nslots = 2;
 }
 
@@ -314,8 +314,8 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 
 	ainfo->offset = *stack_size;
 	ainfo->storage = ArgOnStack;
-	*stack_size += ALIGN_TO (size, sizeof (gpointer));
-	ainfo->nslots = ALIGN_TO (size, sizeof (gpointer)) / sizeof (gpointer);
+	*stack_size += ALIGN_TO (size, sizeof (target_mgreg_t));
+	ainfo->nslots = ALIGN_TO (size, sizeof (target_mgreg_t)) / sizeof (target_mgreg_t);
 }
 
 /*
@@ -607,18 +607,18 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	arg_info [0].offset = offset;
 
 	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 0) {
-		args_size += sizeof (gpointer);
+		args_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
 	if (csig->hasthis && !storage_in_ireg (cinfo->args [0].storage)) {
-		args_size += sizeof (gpointer);
+		args_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
 	if (cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && csig->hasthis) {
 		/* Emitted after this */
-		args_size += sizeof (gpointer);
+		args_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
@@ -649,7 +649,7 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 
 		if (k == 0 && cinfo->vtype_retaddr && cinfo->vret_arg_index == 1 && !csig->hasthis) {
 			/* Emitted after the first arg */
-			args_size += sizeof (gpointer);
+			args_size += sizeof (target_mgreg_t);
 			offset += 4;
 		}
 	}
@@ -1114,7 +1114,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	 * they have the appropriate offset.
 	 */
 	if (MONO_ARCH_FRAME_ALIGNMENT > 8 && locals_stack_align > 8) {
-		int extra_size = MONO_ARCH_FRAME_ALIGNMENT - sizeof (gpointer) * 2;
+		int extra_size = MONO_ARCH_FRAME_ALIGNMENT - sizeof (target_mgreg_t) * 2;
 		offset += extra_size;
 		locals_stack_size += extra_size;
 	}
@@ -1506,8 +1506,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			g_assert (in->klass);
 
 			if (t->type == MONO_TYPE_TYPEDBYREF) {
-				size = sizeof (MonoTypedRef);
-				align = sizeof (gpointer);
+				size = MONO_ABI_SIZEOF (MonoTypedRef);
+				align = sizeof (target_mgreg_t);
 			}
 			else {
 				size = mini_type_stack_size_full (m_class_get_byval_arg (in->klass), &align, sig->pinvoke);
@@ -5225,13 +5225,13 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		for (quad = 0; quad < 2; quad ++) {
 			switch (cinfo->ret.pair_storage [quad]) {
 			case ArgInIReg:
-				x86_mov_reg_membase (code, cinfo->ret.pair_regs [quad], cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (gpointer)), 4);
+				x86_mov_reg_membase (code, cinfo->ret.pair_regs [quad], cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (target_mgreg_t)), 4);
 				break;
 			case ArgOnFloatFpStack:
-				x86_fld_membase (code, cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (gpointer)), FALSE);
+				x86_fld_membase (code, cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (target_mgreg_t)), FALSE);
 				break;
 			case ArgOnDoubleFpStack:
-				x86_fld_membase (code, cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (gpointer)), TRUE);
+				x86_fld_membase (code, cfg->ret->inst_basereg, cfg->ret->inst_offset + (quad * sizeof (target_mgreg_t)), TRUE);
 				break;
 			case ArgNone:
 				break;
@@ -5829,7 +5829,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 	char *tramp_name;
 	GSList *unwind_ops;
 
-	if (offset / (int)sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
+	if (offset / (int)sizeof (target_mgreg_t) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
 
 	/*
@@ -6220,7 +6220,7 @@ guint8*
 mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target)
 {
 	/* Load the mscorlib got address */
-	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (gpointer), 4);
+	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (target_mgreg_t), 4);
 	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);
 	/* arch_emit_got_access () patches this */
 	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0xf0f0f0f0, 4);

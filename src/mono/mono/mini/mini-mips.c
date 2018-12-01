@@ -474,14 +474,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	int offset = 0;
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
-		frame_size += sizeof (gpointer);
+		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
 	arg_info [0].offset = offset;
 
 	if (csig->hasthis) {
-		frame_size += sizeof (gpointer);
+		frame_size += sizeof (target_mgreg_t);
 		offset += 4;
 	}
 
@@ -1143,13 +1143,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_OBJECT:
-			cinfo->args [n].size = sizeof (gpointer);
+			cinfo->args [n].size = sizeof (target_mgreg_t);
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (!mono_type_generic_inst_is_valuetype (simpletype)) {
-				cinfo->args [n].size = sizeof (gpointer);
+				cinfo->args [n].size = sizeof (target_mgreg_t);
 				add_int32_arg (cinfo, &cinfo->args[n]);
 				n++;
 				break;
@@ -1165,8 +1165,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			MonoClass *klass;
 
 			if (simpletype->type == MONO_TYPE_TYPEDBYREF) {
-				size = sizeof (MonoTypedRef);
-				alignment = sizeof (gpointer);
+				size = MONO_ABI_SIZEOF (MonoTypedRef);
+				alignment = sizeof (target_mgreg_t);
 			} else {
 				klass = mono_class_from_mono_type_internal (sig->params [i]);
 				if (is_pinvoke)
@@ -1193,7 +1193,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				  mono_class_native_size (sig->params [i]->data.klass, NULL),
 				  cinfo->stack_size, alignment);
 #endif
-			nwords = (size + sizeof (gpointer) -1 ) / sizeof (gpointer);
+			nwords = (size + sizeof (target_mgreg_t) -1 ) / sizeof (target_mgreg_t);
 			g_assert (cinfo->args [n].size == 0);
 			g_assert (cinfo->args [n].vtsize == 0);
 			for (j = 0; j < nwords; ++j) {
@@ -1407,14 +1407,14 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	 * call convs needs to be handled this way.
 	 */
 	if (cfg->flags & MONO_CFG_HAS_VARARGS)
-		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
+		cfg->param_area = MAX (cfg->param_area, sizeof (target_mgreg_t)*8);
 
 	/* gtk-sharp and other broken code will dllimport vararg functions even with
 	 * non-varargs signatures. Since there is little hope people will get this right
 	 * we assume they won't.
 	 */
 	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
-		cfg->param_area = MAX (cfg->param_area, sizeof (gpointer)*8);
+		cfg->param_area = MAX (cfg->param_area, sizeof (target_mgreg_t)*8);
 
 	/* a0-a3 always present */
 	cfg->param_area = MAX (cfg->param_area, MIPS_STACK_PARAM_OFFSET);
@@ -1873,7 +1873,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			soffset += SIZEOF_REGISTER;
 		}
 		if (ovf_size != 0) {
-			mini_emit_memcpy (cfg, mips_sp, doffset, src->dreg, soffset, ovf_size * sizeof (gpointer), TARGET_SIZEOF_VOID_P);
+			mini_emit_memcpy (cfg, mips_sp, doffset, src->dreg, soffset, ovf_size * sizeof (target_mgreg_t), TARGET_SIZEOF_VOID_P);
 		}
 	} else if (ainfo->storage == ArgInFReg) {
 		int tmpr = mono_alloc_freg (cfg);
@@ -3130,7 +3130,7 @@ emit_load_volatile_arguments(MonoCompile *cfg, guint8 *code)
 				int doffset = inst->inst_offset;
 
 				g_assert (mips_is_imm16 (inst->inst_offset));
-				g_assert (mips_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
+				g_assert (mips_is_imm16 (inst->inst_offset + ainfo->size * sizeof (target_mgreg_t)));
 				for (i = 0; i < ainfo->size; ++i) {
 					mips_lw (code, ainfo->reg + i, inst->inst_basereg, doffset);
 					doffset += SIZEOF_REGISTER;
@@ -5000,7 +5000,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				int doffset = inst->inst_offset;
 
 				g_assert (mips_is_imm16 (inst->inst_offset));
-				g_assert (mips_is_imm16 (inst->inst_offset + ainfo->size * sizeof (gpointer)));
+				g_assert (mips_is_imm16 (inst->inst_offset + ainfo->size * sizeof (target_mgreg_t)));
 				/* Push the argument registers into their stack slots */
 				for (i = 0; i < ainfo->size; ++i) {
 					g_assert (mips_is_imm16(doffset));
@@ -5010,7 +5010,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			} else if (ainfo->storage == ArgStructByAddr) {
 				g_assert (mips_is_imm16 (inst->inst_offset));
 				/* FIXME: handle overrun! with struct sizes not multiple of 4 */
-				code = emit_memcpy (code, ainfo->vtsize * sizeof (gpointer), inst->inst_basereg, inst->inst_offset, ainfo->reg, 0);
+				code = emit_memcpy (code, ainfo->vtsize * sizeof (target_mgreg_t), inst->inst_basereg, inst->inst_offset, ainfo->reg, 0);
 			} else
 				g_assert_not_reached ();
 		}
@@ -5411,7 +5411,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 				}
 				else {
 					mips_lw (code, mips_t9, mips_t7,
-						(sizeof (gpointer) * item->value.vtable_slot));
+						(sizeof (target_mgreg_t) * item->value.vtable_slot));
 				}
 				mips_jr (code, mips_t9);
 				mips_nop (code);
@@ -5445,7 +5445,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 					ppc_bc (code, PPC_BR_FALSE, PPC_BR_EQ, 0);
 #endif
 					mips_lw (code, mips_t9, mips_t7,
-						 (sizeof (gpointer) * item->value.vtable_slot));
+						 (sizeof (target_mgreg_t) * item->value.vtable_slot));
 					mips_jr (code, mips_t9);
 					mips_nop (code);
 

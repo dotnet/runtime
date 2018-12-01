@@ -409,7 +409,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean pair)
 		}
 
 		/* Allways reserve stack space for parameters passed in registers */
-		(*stack_size) += sizeof (gpointer);
+		(*stack_size) += sizeof (target_mgreg_t);
 	}
 	else {
 		if (*gr < PARAM_REGS - 1) {
@@ -428,7 +428,7 @@ add_general (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean pair)
 			(*gr) ++;
 		}
 
-		(*stack_size) += 2 * sizeof (gpointer);
+		(*stack_size) += 2 * sizeof (target_mgreg_t);
 	}
 }
 
@@ -464,7 +464,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo, gboolean single)
 		}
 	}
 
-	(*stack_size) += sizeof (gpointer);
+	(*stack_size) += sizeof (target_mgreg_t);
 }
 
 #endif
@@ -538,20 +538,20 @@ get_call_info (MonoCompile *cfg, MonoMethodSignature *sig, gboolean is_pinvoke)
 		case MONO_TYPE_U1:
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			/* the value is in the ls byte */
-			ainfo->offset += sizeof (gpointer) - 1;
+			ainfo->offset += sizeof (target_mgreg_t) - 1;
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 		case MONO_TYPE_CHAR:
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			/* the value is in the ls word */
-			ainfo->offset += sizeof (gpointer) - 2;
+			ainfo->offset += sizeof (target_mgreg_t) - 2;
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 			add_general (&gr, &stack_size, ainfo, FALSE);
 			/* the value is in the ls dword */
-			ainfo->offset += sizeof (gpointer) - 4;
+			ainfo->offset += sizeof (target_mgreg_t) - 4;
 			break;
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
@@ -850,7 +850,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	 * handling.
 	 */
 	if (header->num_clauses)
-		offset += sizeof (gpointer) * 2;
+		offset += sizeof (target_mgreg_t) * 2;
 
 	if (cfg->method->save_lmf) {
 		offset += sizeof (MonoLMF);
@@ -1169,8 +1169,8 @@ emit_pass_vtype (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo, ArgInfo 
 	guint32 align, offset, pad, size;
 
 	if (arg_type->type == MONO_TYPE_TYPEDBYREF) {
-		size = sizeof (MonoTypedRef);
-		align = sizeof (gpointer);
+		size = MONO_ABI_SIZEOF (MonoTypedRef);
+		align = sizeof (target_mgreg_t);
 	}
 	else if (pinvoke)
 		size = mono_type_native_stack_size (m_class_get_byval_arg (in->klass), &align);
@@ -1185,8 +1185,8 @@ emit_pass_vtype (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo, ArgInfo 
 	}
 
 	/* The first 6 argument locations are reserved */
-	if (cinfo->stack_usage < 6 * sizeof (gpointer))
-		cinfo->stack_usage = 6 * sizeof (gpointer);
+	if (cinfo->stack_usage < 6 * sizeof (target_mgreg_t))
+		cinfo->stack_usage = 6 * sizeof (target_mgreg_t);
 
 	offset = ALIGN_TO ((ARGS_OFFSET - STACK_BIAS) + cinfo->stack_usage, align);
 	pad = offset - ((ARGS_OFFSET - STACK_BIAS) + cinfo->stack_usage);
@@ -3009,7 +3009,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 
 			/* To compensate for the rounding of localloc_offset */
-			offset += sizeof (gpointer);
+			offset += sizeof (target_mgreg_t);
 			offset = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 			if (sparc_is_imm13 (offset))
 				sparc_sub_imm (code, FALSE, sparc_sp, offset, sparc_sp);
@@ -3712,7 +3712,7 @@ mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean ena
 
 	/* Save registers to stack */
 	for (i = 0; i < 6; ++i)
-		sparc_sti_imm (code, sparc_i0 + i, sparc_fp, ARGS_OFFSET + (i * sizeof (gpointer)));
+		sparc_sti_imm (code, sparc_i0 + i, sparc_fp, ARGS_OFFSET + (i * sizeof (target_mgreg_t)));
 
 	cinfo = get_call_info (cfg, sig, FALSE);
 
@@ -3884,15 +3884,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* FIXME: Generate intermediate code instead */
 
 	offset = cfg->stack_offset;
-	offset += (16 * sizeof (gpointer)); /* register save area */
+	offset += (16 * sizeof (target_mgreg_t)); /* register save area */
 #ifndef SPARCV9
 	offset += 4; /* struct/union return pointer */
 #endif
 
 	/* add parameter area size for called functions */
-	if (cfg->param_area < (6 * sizeof (gpointer)))
+	if (cfg->param_area < (6 * sizeof (target_mgreg_t)))
 		/* Reserve space for the first 6 arguments even if it is unused */
-		offset += 6 * sizeof (gpointer);
+		offset += 6 * sizeof (target_mgreg_t);
 	else
 		offset += cfg->param_area;
 	
