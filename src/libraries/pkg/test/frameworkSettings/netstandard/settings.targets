@@ -11,5 +11,8 @@
     <!-- intentionally dangling refs in shims -->
     <ExcludeFromClosure Include="@(NetFxReference)" />
     <IgnoredReference Include="@(NetFxReference)" />
+
+    <!-- windows.winmd is not part of the framework -->
+    <IgnoredReference Include="Windows" />
   </ItemGroup>
 </Project>
