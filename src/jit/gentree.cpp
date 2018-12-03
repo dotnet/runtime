@@ -15162,7 +15162,7 @@ Compiler::TypeProducerKind Compiler::gtGetTypeProducerKind(GenTree* tree)
         bool                 isNonNull = false;
         CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(tree, &isExact, &isNonNull);
 
-        if (clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE))
+        if (clsHnd != NO_CLASS_HANDLE && clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE))
         {
             return TPK_Other;
         }
@@ -16373,9 +16373,11 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             if (intrinsic->gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType)
             {
                 CORINFO_CLASS_HANDLE runtimeType = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
-                objClass                         = runtimeType;
-                *pIsExact                        = false;
-                *pIsNonNull                      = true;
+                assert(runtimeType != NO_CLASS_HANDLE);
+
+                objClass    = runtimeType;
+                *pIsExact   = false;
+                *pIsNonNull = true;
             }
 
             break;
@@ -16527,6 +16529,8 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // need to claim exactness here.
             const bool           helperResultNonNull = (helper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE);
             CORINFO_CLASS_HANDLE runtimeType         = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+
+            assert(runtimeType != NO_CLASS_HANDLE);
 
             objClass    = runtimeType;
             *pIsNonNull = helperResultNonNull;
