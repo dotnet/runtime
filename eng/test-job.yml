@@ -2,6 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
+  osGroupName: ''
   priority: 0
   crossgen: false
   scenarios: ''
@@ -17,14 +18,15 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
+    osGroupName: ${{ parameters.osGroupName }}
 
     # Compute job name from template parameters
     ${{ if eq(parameters.crossgen, 'false') }}:
-        name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
-        displayName: ${{ format('Test pri{0} {1} {2} {3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Test pri{0} {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
     ${{ if eq(parameters.crossgen, 'true') }}:
-        name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
-        displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+        name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
 
     variables:
       # Map template parameters to command line arguments
@@ -52,12 +54,16 @@ jobs:
       condition: false
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+
+    # Run all steps in the container.
+    # Note that the containers are resources defined in azure-pipelines.yml
+    containerName: ${{ parameters.containerName }}
 
     steps:
 
     # Install test build dependencies
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 
@@ -67,13 +73,13 @@ jobs:
       - task: DownloadPipelineArtifact@0
         displayName: Download product build pipeline artifact
         inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - task: DownloadPipelineArtifact@0
         displayName: Download product build pipeline artifact
         inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)\bin\Product\Windows_NT.$(archType).$(buildConfigUpper)
 
       
@@ -105,7 +111,7 @@ jobs:
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             # Access token variable for internal project
-            HelixAccessToken: $(HelixApiAccessToken)
+            HelixAccessToken: $(DotNet-HelixApi-Access)
           ${{ if eq(variables['System.TeamProject'], 'public') }}:
             # Access token variable for public project
             HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
@@ -115,7 +121,7 @@ jobs:
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             # Access token variable for internal project
-            HelixAccessToken: $(HelixApiAccessToken)
+            HelixAccessToken: $(DotNet-HelixApi-Access)
           ${{ if eq(variables['System.TeamProject'], 'public') }}:
             # Access token variable for public project
             HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
