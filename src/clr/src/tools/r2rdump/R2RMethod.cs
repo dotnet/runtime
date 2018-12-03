@@ -137,21 +137,19 @@ namespace R2RDump
             EHInfo = ehInfo;
         }
 
-        public override string ToString()
+        public void WriteTo(TextWriter writer, DumpOptions options)
         {
-            StringBuilder sb = new StringBuilder();
-
-            sb.AppendLine($"Id: {Id}");
-            sb.AppendLine($"StartAddress: 0x{StartAddress:X8}");
+            writer.WriteLine($"Id: {Id}");
+            writer.WriteLine($"StartAddress: 0x{StartAddress:X8}");
             if (Size == -1)
             {
-                sb.AppendLine("Size: Unavailable");
+                writer.WriteLine("Size: Unavailable");
             }
             else
             {
-                sb.AppendLine($"Size: {Size} bytes");
+                writer.WriteLine($"Size: {Size} bytes");
             }
-            sb.AppendLine($"UnwindRVA: 0x{UnwindRVA:X8}");
+            writer.WriteLine($"UnwindRVA: 0x{UnwindRVA:X8}");
             if (UnwindInfo is Amd64.UnwindInfo amd64UnwindInfo)
             {
                 string parsedFlags = "";
@@ -171,40 +169,38 @@ namespace R2RDump
                 {
                     parsedFlags = " NHANDLER";
                 }
-                sb.AppendLine($"Version:            {amd64UnwindInfo.Version}");
-                sb.AppendLine($"Flags:              0x{amd64UnwindInfo.Flags:X2}{parsedFlags}");
-                sb.AppendLine($"SizeOfProlog:       0x{amd64UnwindInfo.SizeOfProlog:X4}");
-                sb.AppendLine($"CountOfUnwindCodes: {amd64UnwindInfo.CountOfUnwindCodes}");
-                sb.AppendLine($"FrameRegister:      {amd64UnwindInfo.FrameRegister}");
-                sb.AppendLine($"FrameOffset:        0x{amd64UnwindInfo.FrameOffset}");
-                sb.AppendLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
+                writer.WriteLine($"Version:            {amd64UnwindInfo.Version}");
+                writer.WriteLine($"Flags:              0x{amd64UnwindInfo.Flags:X2}{parsedFlags}");
+                writer.WriteLine($"SizeOfProlog:       0x{amd64UnwindInfo.SizeOfProlog:X4}");
+                writer.WriteLine($"CountOfUnwindCodes: {amd64UnwindInfo.CountOfUnwindCodes}");
+                writer.WriteLine($"FrameRegister:      {amd64UnwindInfo.FrameRegister}");
+                writer.WriteLine($"FrameOffset:        0x{amd64UnwindInfo.FrameOffset}");
+                writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
 
                 for (int unwindCodeIndex = 0; unwindCodeIndex < amd64UnwindInfo.CountOfUnwindCodes; unwindCodeIndex++)
                 {
                     Amd64.UnwindCode unwindCode = amd64UnwindInfo.UnwindCodeArray[unwindCodeIndex];
-                    sb.Append($"UnwindCode[{unwindCode.Index}]: ");
-                    sb.Append($"CodeOffset 0x{unwindCode.CodeOffset:X4} ");
-                    sb.Append($"FrameOffset 0x{unwindCode.FrameOffset:X4} ");
-                    sb.Append($"NextOffset 0x{unwindCode.NextFrameOffset} ");
-                    sb.Append($"Op {unwindCode.OpInfoStr}");
-                    sb.AppendLine();
+                    writer.Write($"UnwindCode[{unwindCode.Index}]: ");
+                    writer.Write($"CodeOffset 0x{unwindCode.CodeOffset:X4} ");
+                    writer.Write($"FrameOffset 0x{unwindCode.FrameOffset:X4} ");
+                    writer.Write($"NextOffset 0x{unwindCode.NextFrameOffset} ");
+                    writer.Write($"Op {unwindCode.OpInfoStr}");
+                    writer.WriteLine();
                 }
             }
-            sb.AppendLine();
+            writer.WriteLine();
 
             if (EHInfo != null)
             {
-                sb.AppendLine($@"EH info @ {EHInfo.EHInfoRVA:X4}, #clauses = {EHInfo.EHClauses.Length}");
-                EHInfo.WriteTo(sb);
-                sb.AppendLine();
+                writer.WriteLine($@"EH info @ {EHInfo.EHInfoRVA:X4}, #clauses = {EHInfo.EHClauses.Length}");
+                EHInfo.WriteTo(writer);
+                writer.WriteLine();
             }
 
             if (DebugInfo != null)
             {
-                sb.AppendLine(DebugInfo.ToString());
+                DebugInfo.WriteTo(writer, options);
             }
-
-            return sb.ToString();
         }
     }
 
