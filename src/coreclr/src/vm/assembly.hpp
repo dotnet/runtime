@@ -448,8 +448,6 @@ public:
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
-
     BOOL IsSIMDVectorAssembly() { LIMITED_METHOD_DAC_CONTRACT; return m_fIsSIMDVectorAssembly; }
 
 #ifdef FEATURE_PREJIT

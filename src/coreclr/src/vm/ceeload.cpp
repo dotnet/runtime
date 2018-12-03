@@ -1098,9 +1098,6 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 #ifdef DEBUGGING_SUPPORTED 
     BOOL setEnC = ((newBits & DACF_ENC_ENABLED) != 0) && IsEditAndContinueCapable();
 
-    // IsEditAndContinueCapable should already check !GetAssembly()->IsDomainNeutral
-    _ASSERTE(!setEnC || !GetAssembly()->IsDomainNeutral());
-
     // The only way can change Enc is through debugger override.
     if (setEnC)
     {
@@ -1165,9 +1162,6 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEFile *file, Allo
 #ifdef EnC_SUPPORTED
         if (IsEditAndContinueCapable(pAssembly, file))
         {
-            // IsEditAndContinueCapable should already check !pAssembly->IsDomainNeutral
-            _ASSERTE(!pAssembly->IsDomainNeutral());
-            
             // if file is EnCCapable, always create an EnC-module, but EnC won't necessarily be enabled.
             // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
 
@@ -1830,7 +1824,6 @@ BOOL Module::IsEditAndContinueCapable(Assembly *pAssembly, PEFile *file)
     
     // Some modules are never EnC-capable
     return ! (pAssembly->GetDebuggerInfoBits() & DACF_ALLOW_JIT_OPTS ||
-              pAssembly->IsDomainNeutral() ||
               file->IsSystem() ||
               file->IsResource() ||
               file->HasNativeImage() ||
@@ -2877,39 +2870,32 @@ void Module::FreeModuleIndex()
         MODE_ANY;
     }
     CONTRACTL_END;
-    if (GetAssembly()->IsDomainNeutral())
+    if (m_ModuleID != NULL)
     {
-        // We do not recycle ModuleIndexes used by domain neutral Modules.
-    }
-    else 
-    {
-        if (m_ModuleID != NULL)
-        {
-            // Module's m_ModuleID should not contain the ID, it should 
-            // contain a pointer to the DLM
-            _ASSERTE(!Module::IsEncodedModuleIndex((SIZE_T)m_ModuleID));
-            _ASSERTE(m_ModuleIndex == m_ModuleID->GetModuleIndex());
+        // Module's m_ModuleID should not contain the ID, it should 
+        // contain a pointer to the DLM
+        _ASSERTE(!Module::IsEncodedModuleIndex((SIZE_T)m_ModuleID));
+        _ASSERTE(m_ModuleIndex == m_ModuleID->GetModuleIndex());
 
 #ifndef CROSSGEN_COMPILE
-            if (IsCollectible())
+        if (IsCollectible())
+        {
+            ThreadStoreLockHolder tsLock;
+            Thread *pThread = NULL;
+            while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
             {
-                ThreadStoreLockHolder tsLock;
-                Thread *pThread = NULL;
-                while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
-                {
-                    pThread->DeleteThreadStaticData(m_ModuleIndex);
-                }
+                pThread->DeleteThreadStaticData(m_ModuleIndex);
             }
+        }
 #endif // CROSSGEN_COMPILE
 
-            // Get the ModuleIndex from the DLM and free it
-            Module::FreeModuleIndex(m_ModuleIndex);
-        }
-        else
-        {
-            // This was an empty, short-lived Module object that
-            // was never assigned a ModuleIndex...
-        }
+        // Get the ModuleIndex from the DLM and free it
+        Module::FreeModuleIndex(m_ModuleIndex);
+    }
+    else
+    {
+        // This was an empty, short-lived Module object that
+        // was never assigned a ModuleIndex...
     }
 }
 
@@ -4698,7 +4684,6 @@ void Module::AddActiveDependency(Module *pModule, BOOL unconditional)
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(pModule != this);
         PRECONDITION(!IsSystem());
-        PRECONDITION(!GetAssembly()->IsDomainNeutral() || pModule->GetAssembly()->IsDomainNeutral() || GetAppDomain()->IsDefaultDomain());
         // Postcondition about activation
     }
     CONTRACT_END;

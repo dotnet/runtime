@@ -5386,15 +5386,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
 
     if (m_pModules != NULL)
     {
-        if (pModule->GetAssembly()->IsDomainNeutral())
-        {
-            // We have to make sure to lookup the module with the app domain parameter if the module lives in a shared assembly
-            dmod = m_pModules->GetModule(pModule, pAppDomain);
-        }
-        else
-        {
-            dmod = m_pModules->GetModule(pModule);
-        }
+        dmod = m_pModules->GetModule(pModule);
     }
 
     // If it doesn't exist, create it.
@@ -10039,11 +10031,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
         // Remove all patches that apply to this module/AppDomain combination
         AppDomain* domainToRemovePatchesIn = NULL;  // all domains by default
-        if( pRuntimeModule->GetAssembly()->IsDomainNeutral() )
-        {
-            // Deactivate all the patches specific to the AppDomain being unloaded
-            domainToRemovePatchesIn = pAppDomain;
-        }
+
         // Note that we'll explicitly NOT delete DebuggerControllers, so that
         // the Right Side can delete them later.
         DebuggerController::RemovePatchesFromModule(pRuntimeModule, domainToRemovePatchesIn);
@@ -10051,27 +10039,24 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
         // Deactive all JMC functions in this module.  We don't do this for shared assemblies
         // because JMC status is not maintained on a per-AppDomain basis and we don't
         // want to change the JMC behavior of the module in other domains.
-        if( !pRuntimeModule->GetAssembly()->IsDomainNeutral() )
+        LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
+        DebuggerDataLockHolder debuggerDataLockHolder(this);
+        DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
+        if (pTable != NULL)
         {
-            LOG((LF_CORDB, LL_EVERYTHING, "Setting all JMC methods to false:\n"));
-            DebuggerDataLockHolder debuggerDataLockHolder(this);
-            DebuggerMethodInfoTable * pTable = GetMethodInfoTable();
-            if (pTable != NULL)
-            {
-                HASHFIND info;
+            HASHFIND info;
 
-                for (DebuggerMethodInfo *dmi = pTable->GetFirstMethodInfo(&info);
-                    dmi != NULL;
-                    dmi = pTable->GetNextMethodInfo(&info))
+            for (DebuggerMethodInfo *dmi = pTable->GetFirstMethodInfo(&info);
+                dmi != NULL;
+                dmi = pTable->GetNextMethodInfo(&info))
+            {
+                if (dmi->m_module == pRuntimeModule)
                 {
-                    if (dmi->m_module == pRuntimeModule)
-                    {
-                        dmi->SetJMCStatus(false);
-                    }
+                    dmi->SetJMCStatus(false);
                 }
             }
-            LOG((LF_CORDB, LL_EVERYTHING, "Done clearing JMC methods!\n"));
         }
+        LOG((LF_CORDB, LL_EVERYTHING, "Done clearing JMC methods!\n"));
 
         // Delete the Left Side representation of the module.
         if (m_pModules != NULL)

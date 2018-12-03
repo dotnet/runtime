@@ -282,12 +282,6 @@ HRESULT IterateUnsharedModules(AppDomain * pAppDomain,
         _ASSERTE(pDomainAssembly != NULL);
         _ASSERTE(pDomainAssembly->GetAssembly() != NULL);
 
-        // We're only adding unshared assemblies / modules
-        if (pDomainAssembly->GetAssembly()->IsDomainNeutral())
-        {
-            continue;
-        }
-
         // #ProfilerEnumModules (See also code:#ProfilerEnumGeneral)
         // 
         // When enumerating modules, ensure this timeline:

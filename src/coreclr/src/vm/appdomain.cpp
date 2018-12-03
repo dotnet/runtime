@@ -1001,7 +1001,7 @@ void AppDomain::DeleteNativeCodeRanges()
     while (i.Next(pDomainAssembly.This()))
     {
         Assembly * assembly = pDomainAssembly->m_pAssembly;
-        if ((assembly != NULL) && !assembly->IsDomainNeutral())
+        if ((assembly != NULL))
             assembly->DeleteNativeCodeRanges();
     }
 }
@@ -1036,7 +1036,7 @@ void AppDomain::ShutdownAssemblies()
         // loaded to at least the FILE_LOAD_ALLOCATE level. Since domain shutdown can take place
         // asynchronously this property cannot be guaranteed. Access the m_pAssembly field directly instead.
         Assembly * assembly = pDomainAssembly->m_pAssembly;
-        if (assembly && !assembly->IsDomainNeutral())
+        if (assembly)
             assembly->Terminate();
     }
     
@@ -1178,8 +1178,7 @@ void AppDomain::ReleaseFiles()
         }
         else
         {
-            if (!pAsm->GetCurrentAssembly()->IsDomainNeutral())
-                pAsm->ReleaseFiles();
+            pAsm->ReleaseFiles();
         }
     }
 } // AppDomain::ReleaseFiles

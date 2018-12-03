@@ -849,7 +849,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     else
     {
         OBJECTREF* pRef = GetDomain()->AllocateObjRefPtrsInLargeTable(1);
-        SetObjectReference(pRef, gc.value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
+        SetObjectReference(pRef, gc.value, GetDomain()->AsAppDomain());
         retVal = (((UINT_PTR)pRef) + 1);
     }
 
@@ -934,7 +934,7 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
         gc.previous = *ptr;
         if ((*ptr) == gc.compare)
         {
-            SetObjectReference(ptr, gc.value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
+            SetObjectReference(ptr, gc.value, GetDomain()->AsAppDomain());
         }
     }
     else
@@ -981,7 +981,7 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
     if ((((UINT_PTR)handle) & 1) != 0)
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-        SetObjectReference(ptr, value, IsDomainNeutral() ? NULL : GetDomain()->AsAppDomain());
+        SetObjectReference(ptr, value, GetDomain()->AsAppDomain());
     }
     else
     {
