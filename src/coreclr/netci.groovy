@@ -2508,11 +2508,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // Add some useful information to the log file. Ignore return codes.
                     buildCommands += "uname -a || true"
 
-                    def additionalOpts = ""
-                    if (architecture == 'arm') {
-                        additionalOpts = "-e CAC_ROOTFS_DIR=/crossrootfs/x86"
-                    }
-
                     // Cross build the Ubuntu/arm product using docker with a docker image that contains the correct
                     // Ubuntu cross-compilation toolset (running on a Ubuntu x64 host).
                     // For CoreFX testing, we only need the product build; we don't need to generate the layouts. The product
@@ -2520,7 +2515,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // ZIP up the generated CoreFX runtime and tests.
 
                     def dockerImage = getDockerImageName(architecture, os, true)
-                    def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/${architecture} ${additionalOpts} ${dockerImage} "
+                    def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/${architecture} ${dockerImage} "
 
                     buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh ${lowerConfiguration} ${architecture} cross"
 

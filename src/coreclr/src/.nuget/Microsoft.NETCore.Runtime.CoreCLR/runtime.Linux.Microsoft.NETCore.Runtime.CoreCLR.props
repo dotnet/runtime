@@ -26,6 +26,5 @@
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
     <CrossArchitectureSpecificToolFile Condition="'$(HasCrossTargetComponents)' == 'true'" Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen" />
-    <_ObsoleteCrossArchitectureSpecificToolFile Condition="'$(_HasObsoleteCrossTargetComponents)' == 'true'" Include="$(BinDir)$(_ObsoleteCrossTargetComponentFolder)\crossgen" />
   </ItemGroup>
 </Project>
