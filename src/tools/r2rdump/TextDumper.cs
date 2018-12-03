@@ -149,7 +149,7 @@ namespace R2RDump
         internal override void DumpRuntimeFunction(RuntimeFunction rtf, XmlNode parentNode = null)
         {
             _writer.WriteLine(rtf.Method.SignatureString);
-            _writer.Write($"{rtf}");
+            rtf.WriteTo(_writer, _options);
 
             if (_options.Disasm)
             {
