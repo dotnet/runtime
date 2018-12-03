@@ -115,234 +115,98 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\clr.defines.targets" />
   <!-- Sources -->
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Attributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\COMException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GcHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandleCookieTable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomMarshaler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMap.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMarshal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UnknownWrapper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\VariantWrapper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComMemberType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomQueryInterface.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
-    <Compile Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
-    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
-    <Compile Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComActivator.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeMethods.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IStream.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ConstantSplittableMap.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryKeyCollection.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryValueCollection.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EnumeratorToIteratorAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToListAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToCollectionAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorViewToReadOnlyCollectionAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToDictionaryAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToCollectionAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapViewToReadOnlyCollectionAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToVectorAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryToMapAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToListAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToCollectionAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorViewAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IRestrictedErrorInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMapViewToIReadOnlyDictionaryAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVectorViewToIReadOnlyListAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyDictionaryToIMapViewAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyListToIVectorViewAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IteratorToEnumeratorAdapter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ManagedActivationFactory.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\NativeMethods.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\PropertyValue.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMetadata.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IClosable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\RuntimeClass.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIPropertyValueImpl.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIReferenceImpl.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReference.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsFoundationEventHandler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomPropertyProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomProperty.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVector.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMap.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\AppContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\DateTime.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Resources\PRIExceptionInfo.cs" Condition="'$(FeatureAppX)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Resources\WindowsRuntimeResourceManagerBase.cs" Condition="'$(FeatureAppX)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomain.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ByReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DateTime.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DefaultBinder.CanConvert.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\ContractsBCL.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\DotNETRuntimeEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeController.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeMetadataGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipePayloadDecoder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventHandleTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stacktrace.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymDocumentWriter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\Stream.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\mda.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
-    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\__ComObject.cs" />
-    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
-    <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\ByReference.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
-    <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
-    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
-    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
-    <Compile Condition="'$(FeatureAppX)' == 'true'" Include="$(BclSourcesRoot)\Internal\Resources\PRIExceptionInfo.cs" />
-    <Compile Condition="'$(FeatureAppX)' == 'true'" Include="$(BclSourcesRoot)\Internal\Resources\WindowsRuntimeResourceManagerBase.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\OleAutBinder.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeExtensions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\INVOCATION_FLAGS.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdFieldInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Internal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodBody.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeLocalVariableInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeExtensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ISymWrapperCore.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilderData.cs" />
@@ -353,128 +217,204 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\StringToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeToken.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
-  </ItemGroup>
-  <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\INVOCATION_FLAGS.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Internal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeConstructorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeFieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeLocalVariableInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodBody.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeMethodInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeModule.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Attributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\COMException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComMemberType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IStream.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GcHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandleCookieTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomMarshaler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomQueryInterface.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" Condition="'$(FeatureCominterop)' != 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMap.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMarshal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UnknownWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\VariantWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StartupHookProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.cs" Condition="'$(FeatureCoreFxGlobalization)' != 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\CodePageDataItem.Unix.cs" Condition="'$(FeatureCoreFxGlobalization)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.cs" Condition="'$(FeatureCoreFxGlobalization)' != 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.Unix.cs" Condition="'$(FeatureCoreFxGlobalization)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenRegistration.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenRegistration.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\AsyncCausalityTracer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\future.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\Task.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskContinuation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskExceptionHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskFactory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskScheduler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\AsyncCausalityTracer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TPLETWProvider.cs" />
-    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\Stream.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stacktrace.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrameHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackFrame.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
-    <Compile Condition="'$(FeatureXplatEventSource)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\DotNETRuntimeEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
     <Compile Include="$(IntermediateOutputPath)..\eventing\DotNETRuntimeEventSource.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeController.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventDispatcher.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeMetadataGenerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipePayloadDecoder.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventHandleTable.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\ContractsBCL.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymDocumentWriter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionDispatchInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
-    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
-    <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
+  <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Threading\Tasks\AsyncCausalitySupport.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComActivator.cs" Condition="'$(FeatureCominteropUnmanagedActivation)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeMethods.cs" Condition="'$(FeatureClassicCominterop)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToListAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIPropertyValueImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIReferenceImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ConstantSplittableMap.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryKeyCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryToMapAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryValueCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EnumeratorToIteratorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IClosable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomProperty.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomPropertyProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMap.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMapViewToIReadOnlyDictionaryAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyDictionaryToIMapViewAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyListToIVectorViewAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IRestrictedErrorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IteratorToEnumeratorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVector.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVectorViewToIReadOnlyListAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorViewAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToVectorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ManagedActivationFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToDictionaryAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapViewToReadOnlyCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\NativeMethods.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\PropertyValue.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\RuntimeClass.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToListAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorViewToReadOnlyCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsFoundationEventHandler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMetadata.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
