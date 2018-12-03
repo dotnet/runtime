@@ -630,13 +630,13 @@ namespace System
                             }
                             else
                             {
-                                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0 && tokenLen >= 4)
+                                if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                                 {
                                     result.Append(
                                         dtfi.internalGetMonthName(
                                             month,
                                             IsUseGenitiveForm(format, i, tokenLen, 'd') ? MonthNameStyles.Genitive : MonthNameStyles.Regular,
-                                            false));
+                                            tokenLen == 3));
                                 }
                                 else
                                 {
