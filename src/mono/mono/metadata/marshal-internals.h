@@ -14,7 +14,7 @@ MonoObjectHandle
 mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error);
 
 // On Windows platform implementation of bellow methods are hosted in separate source file
-// masrshal-windows.c or marshal-windows-*.c. On other platforms the implementation is still keept
+// marshal-windows.c or marshal-windows-*.c. On other platforms the implementation is still keept
 // in marshal.c still declared as static and in some places even inlined.
 #ifdef HOST_WIN32
 void*
@@ -35,9 +35,22 @@ mono_marshal_realloc_hglobal (gpointer ptr, size_t size);
 void
 mono_marshal_free_hglobal (void *ptr);
 
+// Allocates with CoTaskMemAlloc. Free with mono_marshal_free (CoTaskMemFree).
+gpointer
+mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error);
+
+#else
+
+// Allocates with g_malloc. Free with mono_marshal_free (g_free).
+#define mono_string_to_utf8str_handle mono_string_handle_to_utf8
+
+#endif // HOST_WIN32
+
+// Windows: Allocates with CoTaskMemAlloc.
+// Unix: Allocates with g_malloc.
+// Either way: Free with mono_marshal_free (Windows:CoTaskMemFree, Unix:g_free).
 gpointer
 mono_string_to_utf8str (MonoString *s);
-#endif  /* HOST_WIN32 */
 
 typedef enum {
 	TYPECHECK_OBJECT_ARG_POS = 0,

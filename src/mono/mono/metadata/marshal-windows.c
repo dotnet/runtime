@@ -113,16 +113,4 @@ mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
 	}
 }
 
-/* This is a JIT icall, it sets the pending exception and returns NULL on error. */
-gpointer
-mono_string_to_utf8str (MonoString *s_raw)
-{
-	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL (error);
-	MONO_HANDLE_DCL (MonoString, s);
-	gpointer result = mono_string_to_utf8str_handle (s, error);
-	mono_error_set_pending_exception (error);
-	HANDLE_FUNCTION_RETURN_VAL (result);
-}
-
 #endif /* HOST_WIN32 */

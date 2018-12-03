@@ -1039,8 +1039,6 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 	return str;
 }
 
-#ifndef HOST_WIN32
-
 /* This is a JIT icall, it sets the pending exception and returns NULL on error. */
 gpointer
 mono_string_to_utf8str (MonoString *s_raw)
@@ -1048,17 +1046,10 @@ mono_string_to_utf8str (MonoString *s_raw)
 	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoString, s);
-	gpointer result = mono_string_handle_to_utf8 (s, error);
+	gpointer result = mono_string_to_utf8str_handle (s, error);
 	mono_error_set_pending_exception (error);
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
-
-
-#else
-
-// Win32 version uses CoTaskMemAlloc.
-
-#endif
 
 gpointer
 mono_string_to_ansibstr (MonoString *string_obj)
@@ -5878,7 +5869,7 @@ mono_marshal_asany_handle (MonoObjectHandle o, MonoMarshalNative string_encoding
 		case MONO_NATIVE_LPSTR:
 		case MONO_NATIVE_UTF8STR:
 			// Same code path, because in Mono, we treated strings as Utf8
-			return mono_string_handle_to_utf8 (MONO_HANDLE_CAST (MonoString, o), error);
+			return mono_string_to_utf8str_handle (MONO_HANDLE_CAST (MonoString, o), error);
 		default:
 			g_warning ("marshaling conversion %d not implemented", string_encoding);
 			g_assert_not_reached ();
