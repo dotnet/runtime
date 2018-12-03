@@ -3380,6 +3380,19 @@ needs_extra_arg (EmitContext *ctx, MonoMethod *method)
 	return TRUE;
 }
 
+static inline gboolean
+is_supported_callconv (EmitContext *ctx, MonoCallInst *call)
+{
+#if defined(TARGET_WIN32) && defined(TARGET_AMD64)
+	gboolean result = (call->signature->call_convention == MONO_CALL_DEFAULT) ||
+			  (call->signature->call_convention == MONO_CALL_C) ||
+			  (call->signature->call_convention == MONO_CALL_STDCALL);
+#else
+	gboolean result = (call->signature->call_convention == MONO_CALL_DEFAULT) || ((call->signature->call_convention == MONO_CALL_C) && ctx->llvm_only);
+#endif
+	return result;
+}
+
 static void
 process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, MonoInst *ins)
 {
@@ -3403,7 +3416,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (call->imt_arg_reg)
 		call->rgctx_arg_reg = 0;
 
-	if ((call->signature->call_convention != MONO_CALL_DEFAULT) && !((call->signature->call_convention == MONO_CALL_C) && ctx->llvm_only)) {
+	if (!is_supported_callconv (ctx, call)) {
 		set_failure (ctx, "non-default callconv");
 		return;
 	}
