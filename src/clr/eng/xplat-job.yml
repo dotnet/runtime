@@ -2,10 +2,12 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
+  osGroupName: ''
   name: ''
   displayName: ''
   condition: ''
   dependsOn: ''
+  containerName: ''
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
@@ -20,17 +22,22 @@ jobs:
     dependsOn: ${{ parameters.dependsOn }}
 
     queue:
-      ${{ if eq(parameters.osGroup, 'Linux') }}:
+      ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
         name: Hosted Ubuntu 1604
-      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
+      ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
+        name: dnceng-linux-internal-temp
+      ${{ if and(eq(parameters.osGroup, 'OSX'), ne(variables['System.TeamProject'], 'public')) }}:
         name: Hosted Mac Internal
-      ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
+      ${{ if and(eq(parameters.osGroup, 'OSX'), eq(variables['System.TeamProject'], 'public')) }}:
         name: Hosted MacOS
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
         name: dotnet-internal-temp
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
         name: dotnet-external-temp
       timeoutInMinutes: 240
+
+      ${{ if ne(parameters.containerName, '') }}:
+        container: ${{ parameters.containerName }}
 
     ${{ if eq(parameters.osGroup, 'Linux') }}:
       agentOs: Ubuntu
@@ -49,6 +56,15 @@ jobs:
         buildConfigUpper: 'Release'
       archType: ${{ parameters.archType }}
       osGroup: ${{ parameters.osGroup }}
+      osGroupName: ${{ parameters.osGroupName }}
+      
+      # Crossbuild specific variables.
+      ${{ if eq(parameters.archType, 'arm') }}:
+        rootfsDir: /crossrootfs/arm
+        cacRootfsDir: /crossrootfs/x86
+      ${{ if eq(parameters.archType, 'arm64') }}:
+        rootfsDir: /crossrootfs/arm64
+
       ${{insert}}: ${{ parameters.variables }}
 
     steps: ${{ parameters.steps }}
