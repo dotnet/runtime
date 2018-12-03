@@ -51,6 +51,14 @@ namespace System
             if ((uint)b.Length != 16)
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
 
+            if (BitConverter.IsLittleEndian)
+            {
+                this = MemoryMarshal.Read<Guid>(b);
+                return;
+            }
+
+            // slower path for BigEndian:
+            _k = b[15];  // hoist bounds checks
             _a = b[3] << 24 | b[2] << 16 | b[1] << 8 | b[0];
             _b = (short)(b[5] << 8 | b[4]);
             _c = (short)(b[7] << 8 | b[6]);
@@ -61,7 +69,6 @@ namespace System
             _h = b[12];
             _i = b[13];
             _j = b[14];
-            _k = b[15];
         }
 
         [CLSCompliant(false)]
@@ -93,6 +100,7 @@ namespace System
             _a = a;
             _b = b;
             _c = c;
+            _k = d[7]; // hoist bounds checks
             _d = d[0];
             _e = d[1];
             _f = d[2];
@@ -100,7 +108,6 @@ namespace System
             _h = d[4];
             _i = d[5];
             _j = d[6];
-            _k = d[7];
         }
 
         // Creates a new GUID initialized to the value represented by the
@@ -768,9 +775,34 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteByteHelper(Span<byte> destination)
+        // Returns an unsigned byte array containing the GUID.
+        public byte[] ToByteArray()
         {
+            var g = new byte[16];
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.TryWrite<Guid>(g, ref this);
+            }
+            else
+            {
+                TryWriteBytes(g);
+            }
+            return g;
+        }
+
+        // Returns whether bytes are sucessfully written to given span.
+        public bool TryWriteBytes(Span<byte> destination)
+        {
+            if (BitConverter.IsLittleEndian)
+            {
+                return MemoryMarshal.TryWrite(destination, ref this);
+            }
+
+            // slower path for BigEndian
+            if (destination.Length < 16)
+                return false;
+
+            destination[15] = _k; // hoist bounds checks
             destination[0] = (byte)(_a);
             destination[1] = (byte)(_a >> 8);
             destination[2] = (byte)(_a >> 16);
@@ -786,24 +818,6 @@ namespace System
             destination[12] = _h;
             destination[13] = _i;
             destination[14] = _j;
-            destination[15] = _k;
-        }
-
-        // Returns an unsigned byte array containing the GUID.
-        public byte[] ToByteArray()
-        {
-            var g = new byte[16];
-            WriteByteHelper(g);
-            return g;
-        }
-
-        // Returns whether bytes are sucessfully written to given span.
-        public bool TryWriteBytes(Span<byte> destination)
-        {
-            if (destination.Length < 16)
-                return false;
-
-            WriteByteHelper(destination);
             return true;
         }
 
