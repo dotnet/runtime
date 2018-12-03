@@ -16,17 +16,11 @@ using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
-    using System.Threading;
-    using System.Runtime;
     using System.Runtime.InteropServices;
     using System;
     using System.Globalization;
-    using System.Collections.Generic;
-    using System.Runtime.Serialization;
     using System.Runtime.CompilerServices;
     using System.Runtime.ConstrainedExecution;
-    using System.Security;
-    using System.Runtime.Versioning;
     using System.Diagnostics;
 
     internal class ThreadHelper
@@ -145,6 +139,8 @@ namespace System.Threading
         internal static CultureInfo m_CurrentCulture;
         [ThreadStatic]
         internal static CultureInfo m_CurrentUICulture;
+        [ThreadStatic]
+        private static Thread t_currentThread;
 
         // Adding an empty default ctor for annotation purposes
         internal Thread() { }
@@ -331,13 +327,14 @@ namespace System.Threading
             return YieldInternal();
         }
 
-        public static new Thread CurrentThread
+        public static new Thread CurrentThread => t_currentThread ?? InitializeCurrentThread();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Thread InitializeCurrentThread()
         {
-            get
-            {
-                return GetCurrentThreadNative();
-            }
+            return (t_currentThread = GetCurrentThreadNative());
         }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall), ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         private static extern Thread GetCurrentThreadNative();
 
