@@ -157,11 +157,13 @@ namespace R2RDump
                         {
                             colon += 3;
                         }
-                        nakedInstruction.AppendLine(new string(' ', 32) + line.Substring(colon).TrimStart());
+                        nakedInstruction.Append(new string(' ', 32) + line.Substring(colon).TrimStart());
+                        nakedInstruction.Append('\n');
                     }
                     else
                     {
-                        nakedInstruction.AppendLine(line);
+                        nakedInstruction.Append(line);
+                        nakedInstruction.Append('\n');
                     }
                 }
                 instruction = nakedInstruction.ToString();
@@ -306,11 +308,6 @@ namespace R2RDump
         /// <param name="instruction">Textual representation of the instruction</param>
         private void ProbeCommonIntelQuirks(RuntimeFunction rtf, int imageOffset, int rtfOffset, int instrSize, ref string instruction)
         {
-            if (_options.Naked)
-            {
-                // Don't relocate relative offsets in naked mode
-                return;
-            }
             if (instrSize == 2 && IsIntelJumpInstructionWithByteOffset(imageOffset + rtfOffset))
             {
                 sbyte offset = (sbyte)_reader.Image[imageOffset + rtfOffset + 1];
