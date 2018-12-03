@@ -2,6 +2,8 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
+  osGroupName: ''
+  containerName: ''
 
 ### Product build
 jobs:
@@ -10,15 +12,22 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
+    osGroupName: ${{ parameters.osGroupName }}
 
     # Compute job name from template parameters
-    name: ${{ format('build_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
-    displayName: ${{ format('Build {0} {1} {2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+    name: ${{ format('build_{0}_{1}_{2}', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('Build {0} {1} {2}', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+
+    # Run all steps in the container.
+    # Note that the containers are resources defined in azure-pipelines.yml
+    containerName: ${{ parameters.containerName }}
 
     steps:
 
     # Install native dependencies
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    #
+    # This is only required for non-docker builds.
+    - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: sh eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -26,19 +35,17 @@ jobs:
       - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-
     # Run init-tools (pre-arcade dependency bootstrapping)
     # TODO: replace this with an arcade equivalent
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: ./init-tools.sh
         displayName: Init tools
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: .\init-tools.cmd
         displayName: Init tools
 
-
     # Sync
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: ./Tools/dotnetcli/dotnet msbuild build.proj /p:RestoreDuringBuild=true /t:Sync
         displayName: Sync
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
@@ -47,8 +54,14 @@ jobs:
 
 
     # Build
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    - ${{ if and(and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')), ne(parameters.osGroup, 'Windows_NT')) }}:
       - script: ./build.sh $(buildConfig) $(archType) -skipnuget -skiprestore
+        displayName: Build product
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.archType, 'arm')) }}:
+      - script: ROOTFS_DIR=$(rootfsDir) CAC_ROOTFS_DIR=$(cacRootfsDir) ./build.sh $(buildConfig) $(archType) -cross -skipnuget -skiprestore
+        displayName: Build product
+    - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.archType, 'arm64')) }}:
+      - script: ROOTFS_DIR=$(rootfsDir) ./build.sh $(buildConfig) $(archType) -cross -skipnuget -skiprestore
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # TODO: IBCOptimize? EnforcePGO? pass an OfficialBuildId? SignType? file logging parameters?
@@ -57,11 +70,11 @@ jobs:
 
 
     # Upload build as pipeline artifact
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - task: PublishPipelineArtifact@0
         displayName: Save product build as pipeline artifact
         inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - task: PublishPipelineArtifact@0
