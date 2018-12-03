@@ -3605,9 +3605,9 @@ const char* ZapInfo::getMethodName(CORINFO_METHOD_HANDLE ftn, const char **modul
     return m_pEEJitInfo->getMethodName(ftn, moduleName);
 }
 
-const char* ZapInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char** namespaceName)
+const char* ZapInfo::getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn, const char **className, const char** namespaceName, const char **enclosingClassName)
 {
-    return m_pEEJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName);
+    return m_pEEJitInfo->getMethodNameFromMetadata(ftn, className, namespaceName, enclosingClassName);
 }
 
 unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)

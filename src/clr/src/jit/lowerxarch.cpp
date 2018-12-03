@@ -2512,6 +2512,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
                 }
 
                 case NI_SSE41_Insert:
+                case NI_SSE41_X64_Insert:
                 {
                     if (containingNode->gtSIMDBaseType == TYP_FLOAT)
                     {
@@ -2743,9 +2744,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     case NI_SSE2_ConvertToInt32:
-                    case NI_SSE2_ConvertToInt64:
+                    case NI_SSE2_X64_ConvertToInt64:
                     case NI_SSE2_ConvertToUInt32:
-                    case NI_SSE2_ConvertToUInt64:
+                    case NI_SSE2_X64_ConvertToUInt64:
                     case NI_AVX2_ConvertToInt32:
                     case NI_AVX2_ConvertToUInt32:
                     {
@@ -3083,6 +3084,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_Blend:
                         case NI_SSE41_DotProduct:
                         case NI_SSE41_Insert:
+                        case NI_SSE41_X64_Insert:
                         case NI_SSE41_MultipleSumAbsoluteDifferences:
                         case NI_AVX_Blend:
                         case NI_AVX_Compare:

@@ -265,16 +265,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static uint Extract(Vector128<uint> value, byte index) => Extract(value, index);
         /// <summary>
-        /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
-        ///   PEXTRQ reg/m64, xmm, imm8
-        /// </summary>
-        public static long Extract(Vector128<long> value, byte index) => Extract(value, index);
-        /// <summary>
-        /// __int64 _mm_extract_epi64 (__m128i a, const int imm8)
-        ///   PEXTRQ reg/m64, xmm, imm8
-        /// </summary>
-        public static ulong Extract(Vector128<ulong> value, byte index) => Extract(value, index);
-        /// <summary>
         /// int _mm_extract_ps (__m128 a, const int imm8)
         ///   EXTRACTPS xmm, xmm/m32, imm8
         /// </summary>
@@ -335,16 +325,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   PINSRD xmm, reg/m32, imm8
         /// </summary>
         public static Vector128<uint> Insert(Vector128<uint> value, uint data, byte index) => Insert(value, data, index);
-        /// <summary>
-        /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
-        ///   PINSRQ xmm, reg/m64, imm8
-        /// </summary>
-        public static Vector128<long> Insert(Vector128<long> value, long data, byte index) => Insert(value, data, index);
-        /// <summary>
-        /// __m128i _mm_insert_epi64 (__m128i a, __int64 i, const int imm8)
-        ///   PINSRQ xmm, reg/m64, imm8
-        /// </summary>
-        public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) => Insert(value, data, index);
         /// <summary>
         /// __m128 _mm_insert_ps (__m128 a, __m128 b, const int imm8)
         ///   INSERTPS xmm, xmm/m32, imm8

@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 09F7AAE2-07DF-4433-B8C5-BA864CCABDA3 */
-    0x9f7aae2,
-    0x7df,
-    0x4433,
-    {0xb8, 0xc5, 0xba, 0x86, 0x4c, 0xca, 0xbd, 0xa3}
+SELECTANY const GUID JITEEVersionIdentifier = { /* FF09DB9F-26A8-4A0B-AF2C-78E32A516FE1 */
+    0xff09db9f,
+    0x26a8,
+    0x4a0b,
+    {0xaf, 0x2c, 0x78, 0xe3, 0x2a, 0x51, 0x6f, 0xe1}
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2894,12 +2894,14 @@ public:
             ) = 0;
 
     // Return method name as in metadata, or nullptr if there is none,
-    // and optionally return the class and namespace names as in metadata.
+    // and optionally return the class, enclosing class, and namespace names 
+    // as in metadata.
     // Suitable for non-debugging use.
     virtual const char* getMethodNameFromMetadata(
-            CORINFO_METHOD_HANDLE       ftn,            /* IN */
-            const char                **className,      /* OUT */
-            const char                **namespaceName   /* OUT */
+            CORINFO_METHOD_HANDLE       ftn,                  /* IN */
+            const char                **className,            /* OUT */
+            const char                **namespaceName,        /* OUT */
+            const char                **enclosingClassName   /* OUT */
             ) = 0;
 
     // this function is for debugging only.  It returns a value that

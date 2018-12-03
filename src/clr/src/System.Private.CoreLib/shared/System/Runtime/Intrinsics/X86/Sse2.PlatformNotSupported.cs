@@ -579,36 +579,16 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static int ConvertToInt32(Vector128<int> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __int64 _mm_cvtsd_si64 (__m128d a)
-        ///   CVTSD2SI r64, xmm/m64
-        /// </summary>
-        public static long ConvertToInt64(Vector128<double> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int64 _mm_cvtsi128_si64 (__m128i a)
-        ///   MOVQ reg/m64, xmm
-        /// </summary>
-        public static long ConvertToInt64(Vector128<long> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
         /// int _mm_cvtsi128_si32 (__m128i a)
         ///   MOVD reg/m32, xmm
         /// </summary>
         public static uint ConvertToUInt32(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int64 _mm_cvtsi128_si64 (__m128i a)
-        ///   MOVQ reg/m64, xmm
-        /// </summary>
-        public static ulong ConvertToUInt64(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_cvtsi32_sd (__m128d a, int b)
-        ///   CVTSI2SD xmm, reg/m64
+        ///   CVTSI2SD xmm, reg/m32
         /// </summary>
         public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, int value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __m128d _mm_cvtsi64_sd (__m128d a, int b)
-        ///   CVTSI2SD xmm, reg/m64
-        /// </summary>
-        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, long value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128d _mm_cvtss_sd (__m128d a, __m128 b)
         ///   CVTSS2SD xmm, xmm/m32
@@ -620,11 +600,6 @@ namespace System.Runtime.Intrinsics.X86
         /// </summary>
         public static Vector128<int> ConvertScalarToVector128Int32(int value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m128i _mm_cvtsi64_si128 (__int64 a)
-        ///   MOVQ xmm, reg/m64
-        /// </summary>
-        public static Vector128<long> ConvertScalarToVector128Int64(long value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
         /// __m128 _mm_cvtsd_ss (__m128 a, __m128d b)
         ///   CVTSD2SS xmm, xmm/m64
         /// </summary>
@@ -634,11 +609,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVD xmm, reg/m32
         /// </summary>
         public static Vector128<uint> ConvertScalarToVector128UInt32(uint value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __m128i _mm_cvtsi64_si128 (__int64 a)
-        ///   MOVQ xmm, reg/m64
-        /// </summary>
-        public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_cvttps_epi32 (__m128 a)
@@ -656,11 +626,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   CVTTSD2SI reg, xmm/m64
         /// </summary>
         public static int ConvertToInt32WithTruncation(Vector128<double> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int64 _mm_cvttsd_si64 (__m128d a)
-        ///   CVTTSD2SI reg, xmm/m64
-        /// </summary>
-        public static long ConvertToInt64WithTruncation(Vector128<double> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128d _mm_div_pd (__m128d a,  __m128d b)
@@ -1499,17 +1464,6 @@ namespace System.Runtime.Intrinsics.X86
         ///   MOVNTI m32, r32
         /// </summary>
         public static unsafe void StoreNonTemporal(uint* address, uint value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// void _mm_stream_si64(__int64 *p, __int64 a)
-        ///   MOVNTI m64, r64
-        /// </summary>
-        public static unsafe void StoreNonTemporal(long* address, long value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// void _mm_stream_si64(__int64 *p, __int64 a)
-        ///   MOVNTI m64, r64
-        /// </summary>
-        public static unsafe void StoreNonTemporal(ulong* address, ulong value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm_sub_epi8 (__m128i a,  __m128i b)
