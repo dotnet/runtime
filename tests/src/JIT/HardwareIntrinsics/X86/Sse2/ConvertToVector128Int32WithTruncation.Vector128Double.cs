@@ -144,7 +144,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimpleUnaryOpTest__DataTable<Int32, Double>(_data, new Int32[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Sse2.IsSupported && (Environment.Is64BitProcess || ((typeof(Int32) != typeof(long)) && (typeof(Int32) != typeof(ulong))));
+        public bool IsSupported => Sse2.IsSupported;
 
         public bool Succeeded { get; set; }
 

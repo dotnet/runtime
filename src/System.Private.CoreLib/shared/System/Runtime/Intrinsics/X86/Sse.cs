@@ -291,33 +291,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   CVTSS2SI r32, xmm/m32
         /// </summary>
         public static int ConvertToInt32(Vector128<float> value) => ConvertToInt32(value);
-        /// <summary>
-        /// __int64 _mm_cvtss_si64 (__m128 a)
-        ///   CVTSS2SI r64, xmm/m32
-        /// </summary>
-        public static long ConvertToInt64(Vector128<float> value) => ConvertToInt64(value);
 
         /// <summary>
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
         ///   CVTSI2SS xmm, reg/m32
         /// </summary>
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value) => ConvertScalarToVector128Single(upper, value);
-        /// <summary>
-        /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
-        ///   CVTSI2SS xmm, reg/m64
-        /// </summary>
-        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) => ConvertScalarToVector128Single(upper, value);
 
         /// <summary>
         /// int _mm_cvttss_si32 (__m128 a)
         ///   CVTTSS2SI r32, xmm/m32
         /// </summary>
         public static int ConvertToInt32WithTruncation(Vector128<float> value) => ConvertToInt32WithTruncation(value);
-        /// <summary>
-        /// __int64 _mm_cvttss_si64 (__m128 a)
-        ///   CVTTSS2SI r64, xmm/m32
-        /// </summary>
-        public static long ConvertToInt64WithTruncation(Vector128<float> value) => ConvertToInt64WithTruncation(value);
 
         /// <summary>
         /// __m128 _mm_div_ps (__m128 a,  __m128 b)

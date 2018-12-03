@@ -306,15 +306,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             genBaseIntrinsic(node);
             break;
         case InstructionSet_SSE:
+        case InstructionSet_SSE_X64:
             genSSEIntrinsic(node);
             break;
         case InstructionSet_SSE2:
+        case InstructionSet_SSE2_X64:
             genSSE2Intrinsic(node);
             break;
         case InstructionSet_SSE41:
+        case InstructionSet_SSE41_X64:
             genSSE41Intrinsic(node);
             break;
         case InstructionSet_SSE42:
+        case InstructionSet_SSE42_X64:
             genSSE42Intrinsic(node);
             break;
         case InstructionSet_AVX:
@@ -325,21 +329,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             genAESIntrinsic(node);
             break;
         case InstructionSet_BMI1:
+        case InstructionSet_BMI1_X64:
             genBMI1Intrinsic(node);
             break;
         case InstructionSet_BMI2:
+        case InstructionSet_BMI2_X64:
             genBMI2Intrinsic(node);
             break;
         case InstructionSet_FMA:
             genFMAIntrinsic(node);
             break;
         case InstructionSet_LZCNT:
+        case InstructionSet_LZCNT_X64:
             genLZCNTIntrinsic(node);
             break;
         case InstructionSet_PCLMULQDQ:
             genPCLMULQDQIntrinsic(node);
             break;
         case InstructionSet_POPCNT:
+        case InstructionSet_POPCNT_X64:
             genPOPCNTIntrinsic(node);
             break;
         default:
@@ -1398,6 +1406,16 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE_X64_ConvertScalarToVector128Single:
+        {
+            assert(baseType == TYP_LONG);
+            assert(op1 != nullptr);
+            assert(op2 != nullptr);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
+            break;
+        }
+
         case NI_SSE_MoveMask:
         {
             assert(baseType == TYP_FLOAT);
@@ -1566,19 +1584,18 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_ConvertScalarToVector128Double:
-        case NI_SSE2_ConvertScalarToVector128Single:
+        case NI_SSE2_X64_ConvertScalarToVector128Double:
         {
-            assert(baseType == TYP_INT || baseType == TYP_LONG || baseType == TYP_FLOAT || baseType == TYP_DOUBLE);
+            assert(baseType == TYP_LONG);
             assert(op1 != nullptr);
             assert(op2 != nullptr);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            genHWIntrinsic_R_R_RM(node, ins, EA_ATTR(node->gtSIMDSize));
+            genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE);
             break;
         }
 
-        case NI_SSE2_ConvertScalarToVector128Int64:
-        case NI_SSE2_ConvertScalarToVector128UInt64:
+        case NI_SSE2_X64_ConvertScalarToVector128Int64:
+        case NI_SSE2_X64_ConvertScalarToVector128UInt64:
         {
             assert(baseType == TYP_LONG || baseType == TYP_ULONG);
             assert(op1 != nullptr);
@@ -1590,9 +1607,9 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
 
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToInt32WithTruncation:
-        case NI_SSE2_ConvertToInt64:
         case NI_SSE2_ConvertToUInt32:
-        case NI_SSE2_ConvertToUInt64:
+        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_SSE2_X64_ConvertToInt64:
         {
             assert(op2 == nullptr);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1639,6 +1656,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_SSE2_StoreNonTemporal:
+        case NI_SSE2_X64_StoreNonTemporal:
         {
             assert(baseType == TYP_INT || baseType == TYP_UINT || baseType == TYP_LONG || baseType == TYP_ULONG);
             assert(op1 != nullptr);
@@ -1730,6 +1748,7 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_SSE41_Extract:
+        case NI_SSE41_X64_Extract:
         {
             regNumber   tmpTargetReg = REG_NA;
             instruction ins          = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1804,6 +1823,7 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
     switch (intrinsicId)
     {
         case NI_SSE42_Crc32:
+        case NI_SSE42_X64_Crc32:
         {
             if (op1Reg != targetReg)
             {
@@ -2141,6 +2161,7 @@ void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
     switch (intrinsicId)
     {
         case NI_BMI1_AndNot:
+        case NI_BMI1_X64_AndNot:
         {
             assert(op2 != nullptr);
             assert(op1->TypeGet() == op2->TypeGet());
@@ -2152,6 +2173,9 @@ void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI1_ExtractLowestSetBit:
         case NI_BMI1_GetMaskUpToLowestSetBit:
         case NI_BMI1_ResetLowestSetBit:
+        case NI_BMI1_X64_ExtractLowestSetBit:
+        case NI_BMI1_X64_GetMaskUpToLowestSetBit:
+        case NI_BMI1_X64_ResetLowestSetBit:
         {
             assert(op2 == nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
@@ -2160,6 +2184,7 @@ void CodeGen::genBMI1Intrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_BMI1_TrailingZeroCount:
+        case NI_BMI1_X64_TrailingZeroCount:
         {
             assert(op2 == nullptr);
             assert((targetType == TYP_INT) || (targetType == TYP_LONG));
@@ -2206,6 +2231,8 @@ void CodeGen::genBMI2Intrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_BMI2_ParallelBitDeposit:
         case NI_BMI2_ParallelBitExtract:
+        case NI_BMI2_X64_ParallelBitDeposit:
+        case NI_BMI2_X64_ParallelBitExtract:
         {
             assert(op2 != nullptr);
             assert(op1->TypeGet() == op2->TypeGet());
@@ -2330,7 +2357,8 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genLZCNTIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(node->gtHWIntrinsicId == NI_LZCNT_LeadingZeroCount);
+    assert(node->gtHWIntrinsicId == NI_LZCNT_LeadingZeroCount ||
+           node->gtHWIntrinsicId == NI_LZCNT_X64_LeadingZeroCount);
 
     genConsumeOperands(node);
     genXCNTIntrinsic(node, INS_lzcnt);
@@ -2356,7 +2384,7 @@ void CodeGen::genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genPOPCNTIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(node->gtHWIntrinsicId == NI_POPCNT_PopCount);
+    assert(node->gtHWIntrinsicId == NI_POPCNT_PopCount || node->gtHWIntrinsicId == NI_POPCNT_X64_PopCount);
 
     genConsumeOperands(node);
     genXCNTIntrinsic(node, INS_popcnt);

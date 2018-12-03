@@ -4314,9 +4314,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
     NamedIntrinsic result = NI_Illegal;
 
-    const char* className     = nullptr;
-    const char* namespaceName = nullptr;
-    const char* methodName    = info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName);
+    const char* className          = nullptr;
+    const char* namespaceName      = nullptr;
+    const char* enclosingClassName = nullptr;
+    const char* methodName =
+        info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, &enclosingClassName);
 
     if ((namespaceName == nullptr) || (className == nullptr) || (methodName == nullptr))
     {
@@ -4544,7 +4546,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #if defined(_TARGET_XARCH_)
         else if (strcmp(namespaceName, ".X86") == 0)
         {
-            result = HWIntrinsicInfo::lookupId(className, methodName);
+            result = HWIntrinsicInfo::lookupId(className, methodName, enclosingClassName);
         }
 #elif defined(_TARGET_ARM64_)
         else if (strcmp(namespaceName, ".Arm.Arm64") == 0)
