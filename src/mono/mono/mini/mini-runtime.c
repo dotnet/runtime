@@ -173,8 +173,8 @@ find_tramp (gpointer key, gpointer value, gpointer user_data)
 }
 
 /* debug function */
-G_GNUC_UNUSED static char*
-get_method_from_ip (void *ip)
+char*
+mono_get_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;
 	MonoMethod *method;
@@ -239,7 +239,7 @@ get_method_from_ip (void *ip)
 G_GNUC_UNUSED char *
 mono_pmip (void *ip)
 {
-	return get_method_from_ip (ip);
+	return mono_get_method_from_ip (ip);
 }
 
 /**

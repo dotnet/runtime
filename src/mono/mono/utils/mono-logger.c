@@ -527,3 +527,42 @@ mono_trace_set_printerr_handler (MonoPrintCallback callback)
 	printerr_callback = callback;
 	g_set_printerr_handler (printerr_handler);
 }
+
+static gchar
+conv_ascii_char (gchar s)
+{
+	if (s < 0x20)
+		return '.';
+	if (s > 0x7e)
+		return '.';
+	return s;
+}
+
+/* No memfree because only called during crash */
+void
+mono_dump_mem (gpointer d, int len)
+{
+	guint8 *data = (guint8 *) d;
+
+	for (int off = 0; off < len; off += 0x10) {
+		char *line = g_strdup_printf ("%p  ", data + off);
+
+		for (int i = 0; i < 0x10; i++) {
+			if ((i + off) >= len)
+				line = g_strdup_printf ("%s   ", line);
+			else
+				line = g_strdup_printf ("%s%02x ", line, data [off + i]);
+		}
+
+		line = g_strdup_printf ("%s ", line);
+
+		for (int i = 0; i < 0x10; i++) {
+			if ((i + off) >= len)
+				line = g_strdup_printf ("%s ", line);
+			else
+				line = g_strdup_printf ("%s%c", line, conv_ascii_char (data [off + i]));
+		}
+
+		mono_runtime_printf_err ("%s", line);
+	}
+}

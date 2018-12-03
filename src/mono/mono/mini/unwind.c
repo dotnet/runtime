@@ -14,6 +14,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/freebsd-dwarf.h>
 #include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mono-endian.h>
 
@@ -657,7 +658,11 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	if (save_locations)
 		memset (save_locations, 0, save_locations_len * sizeof (host_mgreg_t*));
 
-	g_assert (cfa_reg != -1);
+	if (cfa_reg == -1) {
+		mono_runtime_printf_err ("Unset cfa_reg in method %s. Memory around ip (%p):", mono_get_method_from_ip (ip), ip);
+		mono_dump_mem (ip - 0x10, 0x40);
+		g_assert_not_reached ();
+	}
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (hwreg = 0; hwreg < NUM_HW_REGS; ++hwreg) {
 		if (reg_saved [hwreg] && locations [hwreg].loc_type == LOC_OFFSET) {

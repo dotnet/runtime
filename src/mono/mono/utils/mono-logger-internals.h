@@ -161,6 +161,8 @@ void mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono
 void mono_log_close_recorder (void);
 void mono_log_dump_recorder (void);
 
+void mono_dump_mem (gpointer d, int len);
+
 G_END_DECLS
 
 #endif /* __MONO_LOGGER_INTERNAL_H__ */
