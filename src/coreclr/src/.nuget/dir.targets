@@ -39,15 +39,6 @@
       </NativeWithSymbolFile>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(_HasObsoleteCrossTargetComponents)'=='true'">
-      <NativeWithSymbolFile Include="@(_ObsoleteCrossArchitectureSpecificNativeFileAndSymbol)">
-        <TargetPath>runtimes/$(_ObsoleteCrossTargetComponentFolder)_$(Platform)/native</TargetPath>
-      </NativeWithSymbolFile>
-      <NativeWithSymbolFile Include="@(_ObsoleteCrossArchitectureSpecificToolFile)">
-        <TargetPath>tools/$(_ObsoleteCrossTargetComponentFolder)_$(Platform)</TargetPath>
-      </NativeWithSymbolFile>
-   </ItemGroup>
-
     <ItemGroup>
       <!-- The symbols for these files are already in place together with respective *.ni.pdb -->
       <IlForCrossGenedFile Include="@(CrossGenBinary -> '%(RootDir)%(Directory)IL\%(Filename).dll')">
