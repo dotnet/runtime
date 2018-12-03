@@ -716,7 +716,8 @@ const char* getMethodName(CORINFO_METHOD_HANDLE ftn,       /* IN */
 // Suitable for non-debugging use.
 const char* getMethodNameFromMetadata(CORINFO_METHOD_HANDLE ftn,       /* IN */
                                       const char**          className, /* OUT */
-                                      const char**          namespaceName /* OUT */
+                                      const char**          namespaceName, /* OUT */
+                                      const char**          enclosingClassName /* OUT */
                                       );
 
 // this function is for debugging only.  It returns a value that
