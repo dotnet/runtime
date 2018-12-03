@@ -2482,19 +2482,6 @@ public:
     // ClearContext are to be called only during shutdown
     void ClearContext();
 
-    // Used by security to prevent recursive stackwalking.
-    BOOL IsSecurityStackwalkInProgess()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_fSecurityStackwalk;
-    }
-
-    void SetSecurityStackwalkInProgress(BOOL fSecurityStackwalk)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_fSecurityStackwalk = fSecurityStackwalk;
-    }
-
 private:
     void ReturnToContextAndThrow(ContextTransitionFrame* pFrame, EEException* pEx, BOOL* pContextSwitched);
     void ReturnToContextAndOOM(ContextTransitionFrame* pFrame);
@@ -2502,8 +2489,6 @@ private:
 private:
     // don't ever call these except when creating thread!!!!!
     void InitContext();
-
-    BOOL m_fSecurityStackwalk;
 
 public:
     PTR_AppDomain GetDomain(INDEBUG(BOOL fMidContextTransitionOK = FALSE))
@@ -2515,9 +2500,6 @@ public:
 
     Frame *IsRunningIn(AppDomain* pDomain, int *count);
     Frame *GetFirstTransitionInto(AppDomain *pDomain, int *count);
-
-    // Get outermost (oldest) AppDomain for this thread.
-    AppDomain *GetInitialDomain();
 
     //---------------------------------------------------------------
     // Track use of the thread block.  See the general comments on

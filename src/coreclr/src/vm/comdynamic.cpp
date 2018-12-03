@@ -897,9 +897,6 @@ void QCALLTYPE COMDynamicWrite::DefineCustomAttribute(QCall::ModuleHandle pModul
         Assembly*       pAssembly       = pModule->GetAssembly();
         DomainAssembly* pDomainAssembly = pAssembly->GetDomainAssembly();
 
-        // Dynamic assemblies should be 1:1 with DomainAssemblies.
-        _ASSERTE(!pAssembly->IsDomainNeutral());
-
         DWORD actualFlags;
         actualFlags =  ((DWORD)pDomainAssembly->GetDebuggerInfoBits() & mask) | flags;
         pDomainAssembly->SetDebuggerInfoBits((DebuggerAssemblyControlFlags)actualFlags);

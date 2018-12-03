@@ -6133,20 +6133,7 @@ void MethodTable::Restore()
 
         EnsureWritablePages(pWriteableData, sizeof(MethodTableWriteableData) + sizeof(CrossModuleGenericsStaticsInfo));
 
-        if (IsDomainNeutral())
-        {
-            // If we are domain neutral, we have to use constituent of the instantiation to store
-            // statics. We need to ensure that we can create DomainModule in all domains
-            // that this instantiations may get activated in. PZM is good approximation of such constituent.
-            Module * pModuleForStatics = Module::GetPreferredZapModuleForMethodTable(this);
-
-            pInfo->m_pModuleForStatics = pModuleForStatics;
-            pInfo->m_DynamicTypeID = pModuleForStatics->AllocateDynamicEntry(this);
-        }
-        else
-        {
-            pInfo->m_pModuleForStatics = GetLoaderModule();
-        }
+        pInfo->m_pModuleForStatics = GetLoaderModule();
     }
 
     LOG((LF_ZAP, LL_INFO10000,

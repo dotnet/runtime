@@ -91,7 +91,7 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         
         // Shared or collectible assemblies should not be used for the parent in the
         // late-bound case.
-        if (pRefAssembly && (!pRefAssembly->IsDomainNeutral()) && (!pRefAssembly->IsCollectible()))
+        if (pRefAssembly && (!pRefAssembly->IsCollectible()))
         {
             pParentAssembly= pRefAssembly->GetDomainAssembly();
         }

@@ -1582,8 +1582,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = intrinsicAccessor;
             }
             else
-            if (// Domain neutral access.
-                m_pMethodBeingCompiled->IsDomainNeutral() || m_pMethodBeingCompiled->IsZapped() || IsCompilingForNGen() ||
+            if (m_pMethodBeingCompiled->IsZapped() || IsCompilingForNGen() ||
                 // Static fields are not pinned in collectible types. We will always access 
                 // them using a helper since the address cannot be embeded into the code.
                 pFieldMT->Collectible() ||
@@ -4120,12 +4119,12 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodDesc *methodBeingCompiled = m_pMethodBeingCompiled;
 
-    BOOL fMethodDomainNeutral = methodBeingCompiled->IsDomainNeutral() || methodBeingCompiled->IsZapped() || IsCompilingForNGen();
+    BOOL fMethodZappedOrNGen = methodBeingCompiled->IsZapped() || IsCompilingForNGen();
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
     // This should be the most common early-out case.
-    if (fMethodDomainNeutral)
+    if (fMethodZappedOrNGen)
     {
         if (pTypeToInitMT->IsClassPreInited())
         {
@@ -4242,7 +4241,7 @@ CorInfoInitClassResult CEEInfo::initClass(
         }
     }
 
-    if (fMethodDomainNeutral)
+    if (fMethodZappedOrNGen)
     {
         // Well, because of code sharing we can't do anything at coge generation time.
         // We have to do it at runtime.
