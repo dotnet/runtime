@@ -121,7 +121,7 @@ The CI system and official builds use Docker to build ARM for Linux (for example
 
 ```
 ROOT=/Users/me/git/coreclr
-DOCKER_ARGS="run -i --rm -v ${ROOT}:/mnt/coreclr -w /mnt/coreclr -e ROOTFS_DIR=/crossrootfs/arm -e CAC_ROOTFS_DIR=/crossrootfs/x86 microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420"
+DOCKER_ARGS="run -i --rm -v ${ROOT}:/mnt/coreclr -w /mnt/coreclr -e ROOTFS_DIR=/crossrootfs/arm microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420"
 docker ${DOCKER_ARGS} /mnt/coreclr/build.sh arm checked cross
 docker ${DOCKER_ARGS} /mnt/coreclr/build-test.sh arm checked cross generatelayoutonly
 ```

@@ -148,9 +148,7 @@
             "DockerTag": "ubuntu-14.04-cross-e435274-20180426002420",
             "Architecture": "arm",
             "Rid": "linux",
-            "CrossArchitecture": "x86",
-            "CrossArchBuildPackagesArgs": "-__DoCrossArchBuild=1",
-            "CAC_ROOTFS_DIR": "/crossrootfs/$(CrossArchitecture)"
+            "CrossArchBuildPackagesArgs": "-__DoCrossArchBuild=1"
           },
           "ReportingParameters": {
             "OperatingSystem": "Linux",
