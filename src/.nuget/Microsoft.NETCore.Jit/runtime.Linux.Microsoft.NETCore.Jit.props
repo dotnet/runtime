@@ -3,6 +3,5 @@
   <ItemGroup>
     <NativeBinary Include="$(BinDir)libclrjit.so" />
     <CrossArchitectureSpecificNativeFileAndSymbol Condition="'$(HasCrossTargetComponents)' == 'true'" Include="$(BinDir)$(CrossTargetComponentFolder)\libclrjit.so" />
-    <_ObsoleteCrossArchitectureSpecificNativeFileAndSymbol Condition="'$(_HasObsoleteCrossTargetComponents)' == 'true'" Include="$(BinDir)$(_ObsoleteCrossTargetComponentFolder)\libclrjit.so" />
   </ItemGroup>
 </Project>

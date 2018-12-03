@@ -44,7 +44,7 @@ Jitutils_url = 'https://github.com/dotnet/jitutils.git'
 # The Docker file and possibly options should be hoisted out to a text file to be shared between scripts.
 
 Docker_name_arm32 = 'microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420'
-Docker_opts_arm32 = '-e ROOTFS_DIR=/crossrootfs/arm -e CAC_ROOTFS_DIR=/crossrootfs/x86'
+Docker_opts_arm32 = '-e ROOTFS_DIR=/crossrootfs/arm'
 
 Docker_name_arm64 = 'microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921'
 Docker_opts_arm64 = '-e ROOTFS_DIR=/crossrootfs/arm64'
@@ -313,7 +313,7 @@ def baseline_build():
                 dockerOpts = Docker_opts_arm64
 
             dockerCmd = 'docker run -i --rm -v %s:%s -w %s %s %s ' % (baseCoreClrPath, baseCoreClrPath, baseCoreClrPath, dockerOpts, dockerFile)
-            buildOpts = 'cross crosscomponent'
+            buildOpts = 'cross'
             scriptPath = baseCoreClrPath
 
         # Build a checked baseline jit 

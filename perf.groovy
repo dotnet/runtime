@@ -463,9 +463,8 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
             python = "python3.6"
             def buildCommands = []
             def newBuildJob = job(fullBuildJobName) {
-                def additionalOpts = "-e CAC_ROOTFS_DIR=/crossrootfs/x86"
                 def dockerImage = getDockerImageName(architecture, 'Ubuntu', true)
-                def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/${architecture} ${additionalOpts} ${dockerImage} "
+                def dockerCmd = "docker run -i --rm -v \${WORKSPACE}:\${WORKSPACE} -w \${WORKSPACE} -e ROOTFS_DIR=/crossrootfs/${architecture} ${dockerImage} "
 
                 buildCommands += "${dockerCmd}\${WORKSPACE}/build.sh release ${architecture} cross"
 

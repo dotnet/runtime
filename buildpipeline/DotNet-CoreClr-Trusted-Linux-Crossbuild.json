@@ -179,7 +179,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm -e ROOTFS_DIR=$(ROOTFS_DIR) -e CAC_ROOTFS_DIR=$(CAC_ROOTFS_DIR) $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) skipnuget cross -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
+        "arguments": "run --rm -e ROOTFS_DIR=$(ROOTFS_DIR) $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) skipnuget cross -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -519,10 +519,6 @@
     },
     "ROOTFS_DIR": {
       "value": "/crossrootfs/$(Architecture)"
-    },
-    "CAC_ROOTFS_DIR": {
-      "value": "",
-      "allowOverride": true
     },
     "DockerVolumeName": {
       "value": "coreclr-cross-$(Build.BuildId)"
