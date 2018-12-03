@@ -586,12 +586,6 @@ typedef LONG_PTR LPARAM;
 
 #ifdef PAL_STDCPP_COMPAT
 
-#ifdef BIT64
-typedef unsigned long int uintptr_t;
-#else // !BIT64
-typedef unsigned int uintptr_t;
-#endif // !BIT64
-
 typedef char16_t WCHAR;
 
 #else // PAL_STDCPP_COMPAT
