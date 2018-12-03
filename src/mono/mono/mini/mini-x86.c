@@ -5716,9 +5716,9 @@ mono_x86_get_this_arg_offset (MonoMethodSignature *sig)
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
-	guint32 esp = regs [X86_ESP];
+	host_mgreg_t esp = regs [X86_ESP];
 	gpointer res;
 	int offset;
 

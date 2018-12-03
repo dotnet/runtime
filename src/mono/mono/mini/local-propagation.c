@@ -677,7 +677,7 @@ mono_local_cprop (MonoCompile *cfg)
 						mono_inst_set_src_registers (ins, sregs);
 
 						if ((opcode2 == OP_VOIDCALL) || (opcode2 == OP_CALL) || (opcode2 == OP_LCALL) || (opcode2 == OP_FCALL))
-							((MonoCallInst*)ins)->fptr = (gpointer)ins->inst_imm;
+							((MonoCallInst*)ins)->fptr = (gpointer)(uintptr_t)ins->inst_imm;
 
 						/* Allow further iterations */
 						srcindex = -1;

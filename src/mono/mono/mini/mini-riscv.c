@@ -227,7 +227,7 @@ mono_arch_fregname (int reg)
 }
 
 gpointer
-mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
 	return (gpointer) regs [RISCV_A0];
 }
