@@ -1,6 +1,25 @@
 variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
+resources:
+  containers:
+  - container: ubuntu_1404_arm_cross_build_image
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180426002420
+
+  - container: ubuntu_1604_arm64_cross_build_image
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+
+  - container: ubuntu_1604_x64_build_image
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-c103199-20180628134544
+
+  - container: musl_x64_build_image
+    image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-e2521f8-20180716231200
+
+  - container: centos7_x64_build_image
+    image: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
+
+  - container: centos6_x64_build_image
+    image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
 
 jobs:
 
@@ -58,30 +77,30 @@ jobs:
 ##                                            |  (passed-in jobTemplate)  |                    (arcade)
 ##                                            \------> test-job.yml ------/
 
-
-
-#
-# Debug build
-#
-
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: build-job.yml
-    buildConfig: debug
+# TODO: simplify logic surrounding official build/ci. See
+# https://github.com/Microsoft/azure-pipelines-yaml/pull/46 for more information
 
 #
-# Checked build
+# Debug build (CI)
 #
-
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: build-job.yml
-    buildConfig: checked
+- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: build-job.yml
+      buildConfig: debug
 
 #
-# Release build
+# Checked build (CI)
 #
+- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: build-job.yml
+      buildConfig: checked
 
+#
+# Release build (Official Build)
+#
 - template: eng/platform-matrix.yml
   parameters:
     jobTemplate: build-job.yml
@@ -91,53 +110,58 @@ jobs:
 # Checked test builds
 #
 
-# Pri0
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: test-job.yml
-    buildConfig: checked
-    jobParameters:
-      priority: 0
+# Pri0 (CI)
+- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: checked
+      jobParameters:
+        priority: 0
 
-# Pri1
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: test-job.yml
-    buildConfig: checked
-    jobParameters:
-      priority: 1
-      scenarios: 'normal;jitstress2'
+# Pri1 (CI)
+- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: checked
+      jobParameters:
+        priority: 1
+        scenarios: 'normal;jitstress2'
 
-# Pri1 crossgen
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: test-job.yml
-    buildConfig: checked
-    jobParameters:
-      priority: 1
-      crossgen: true
-      scenarios: 'normal;jitstress2'
+# Pri1 crossgen (CI)
+- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: checked
+      jobParameters:
+        priority: 1
+        crossgen: true
+        scenarios: 'normal;jitstress2'
 
 #
-# Release test builds
+# Release test builds (Official Build)
 #
 
 # Pri1
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: test-job.yml
-    buildConfig: release
-    jobParameters:
-      priority: 1
+- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: release
+      jobParameters:
+        priority: 1
 
-# Pri1 crossgen
-- template: eng/platform-matrix.yml
-  parameters:
-    jobTemplate: test-job.yml
-    buildConfig: release
-    jobParameters:
-      priority: 1
-      crossgen: true
+# Pri1 crossgen (Official Build)
+- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: release
+      jobParameters:
+        priority: 1
+        crossgen: true
 
 
 # Publish build information to Build Assets Registry

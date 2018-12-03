@@ -5,6 +5,59 @@ parameters:
 
 jobs:
 
+# TODO: simplify osGroupName by adding osGroup and osSubGroup. See
+# https://github.com/Microsoft/azure-pipelines-yaml/pull/46 for more information
+
+# Linux arm
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: arm
+    osGroup: Linux
+    osGroupName: Linux
+    containerName: ubuntu_1404_arm_cross_build_image
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux arm64
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: arm64
+    osGroup: Linux
+    osGroupName: Linux
+    containerName: ubuntu_1604_arm64_cross_build_image
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux musl
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: Linux
+    osGroupName: Linux_musl
+    containerName: musl_x64_build_image
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
+# RHEL 6
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: Linux
+    osGroupName: Linux_rhel6
+    containerName: centos6_x64_build_image
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
+# RHEL 7
+- template: ${{ parameters.jobTemplate }}
+  parameters:
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: x64
+    osGroup: Linux
+    osGroupName: Linux_rhel7
+    containerName: centos7_x64_build_image
+    ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux x64
 
 - template: ${{ parameters.jobTemplate }}
@@ -12,6 +65,8 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: x64
     osGroup: Linux
+    osGroupName: Linux
+    containerName: ubuntu_1604_x64_build_image
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
@@ -21,6 +76,7 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: x64
     osGroup: OSX
+    osGroupName: OSX
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Windows x64/x86/arm/arm64
@@ -30,6 +86,7 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: x64
     osGroup: Windows_NT
+    osGroupName: Windows_NT
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 - template: ${{ parameters.jobTemplate }}
@@ -37,6 +94,7 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: x86
     osGroup: Windows_NT
+    osGroupName: Windows_NT
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 - template: ${{ parameters.jobTemplate }}
@@ -44,6 +102,7 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: arm
     osGroup: Windows_NT
+    osGroupName: Windows_NT
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 - template: ${{ parameters.jobTemplate }}
@@ -51,11 +110,5 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: arm64
     osGroup: Windows_NT
+    osGroupName: Windows_NT
     ${{ insert }}: ${{ parameters.jobParameters }}
-
-# TODO for official build:
-# RedHat x64
-# Linux crossbuild arm
-# Linux crossbuild arm64
-# Linux musl x64
-
