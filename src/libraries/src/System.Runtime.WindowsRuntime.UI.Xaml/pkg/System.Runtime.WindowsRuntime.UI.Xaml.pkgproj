@@ -51,12 +51,11 @@
     <PackageFile Include=".\build\net45\System.Runtime.WindowsRuntime.UI.Xaml.targets">
       <TargetPath>\build\net45\</TargetPath>
     </PackageFile>
-    <PackageFile Include=".\build\net451\System.Runtime.WindowsRuntime.UI.Xaml.targets">
-      <TargetPath>\build\net451\</TargetPath>
-    </PackageFile>
     <PackageFile Include=".\build\net461\System.Runtime.WindowsRuntime.UI.Xaml.targets">
       <TargetPath>\build\net461\</TargetPath>
     </PackageFile>
+    <!-- We need to manually ref S.R.WinRT since it is treated as inbox, but requires a package for reference -->
+    <ProjectReference Include="..\..\System.Runtime.WindowsRuntime\pkg\System.Runtime.WindowsRuntime.pkgproj" TargetFramework="net45" />
 
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />

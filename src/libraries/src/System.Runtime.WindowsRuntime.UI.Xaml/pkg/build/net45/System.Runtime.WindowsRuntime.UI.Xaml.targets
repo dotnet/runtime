@@ -10,7 +10,7 @@
         <_HasReferenceToSystemRuntime>true</_HasReferenceToSystemRuntime>
       </PropertyGroup>
       <ItemGroup>
-        <ReferencePath Include="$(MSBuildThisFileDirectory)..\..\ref\netstandard1.0\System.Runtime.WindowsRuntime.UI.Xaml.dll">
+        <ReferencePath Include="$(MSBuildThisFileDirectory)..\..\ref\netstandard1.1\System.Runtime.WindowsRuntime.UI.Xaml.dll">
           <!-- Private = false to make these reference only -->
           <Private>false</Private>
           <!-- given this package does not have NugetPackage metadata it will not show in solution explorer, making it explicit -->
