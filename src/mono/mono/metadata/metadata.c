@@ -1118,11 +1118,7 @@ mono_metadata_guid_heap (MonoImage *meta, guint32 index)
 static const unsigned char *
 dword_align (const unsigned char *ptr)
 {
-#if SIZEOF_VOID_P == 8
-	return (const unsigned char *) (((guint64) (ptr + 3)) & ~3);
-#else
-	return (const unsigned char *) (((guint32) (ptr + 3)) & ~3);
-#endif
+	return (const unsigned char *) (((gsize) (ptr + 3)) & ~3);
 }
 
 /**
@@ -5154,13 +5150,8 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 {
 	int tmp;
 	MonoTypeEnum simple_type;
-#if TARGET_SIZEOF_VOID_P == SIZEOF_REGISTER
-	int stack_slot_size = MONO_ABI_SIZEOF (gpointer);
-	int stack_slot_align = MONO_ABI_ALIGNOF (gpointer);
-#elif TARGET_SIZEOF_VOID_P < SIZEOF_REGISTER
-	int stack_slot_size = SIZEOF_REGISTER;
-	int stack_slot_align = SIZEOF_REGISTER;
-#endif
+	int stack_slot_size = TARGET_SIZEOF_VOID_P;
+	int stack_slot_align = TARGET_SIZEOF_VOID_P;
 
 	g_assert (t != NULL);
 

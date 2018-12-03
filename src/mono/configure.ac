@@ -4256,12 +4256,10 @@ case "$TARGET" in
 WASM)
 	AC_DEFINE(TARGET_WASM, 1, [...])
 	arch_target=wasm
-	target_sizeof_void_p=4
 	;;
 X86)
 	AC_DEFINE(TARGET_X86, 1, [...])
 	arch_target=x86
-	target_sizeof_void_p=4
 	;;
 AMD64)
 	AC_DEFINE(TARGET_AMD64, 1, [...])
@@ -4271,7 +4269,6 @@ ARM)
 	AC_DEFINE(TARGET_ARM, 1, [...])
 	arch_target=arm
 	ACCESS_UNALIGNED="no"
-	target_sizeof_void_p=4
 	;;
 ARM64)
 	AC_DEFINE(TARGET_ARM64, 1, [...])
@@ -4304,6 +4301,18 @@ RISCV64)
 	AC_DEFINE([TARGET_RISCV], [1], [Target is RISC-V])
 	AC_DEFINE([TARGET_RISCV64], [1], [Target is 64-bit RISC-V])
 	;;
+esac
+
+case "$TARGET" in
+*32* | ARM | X86 | POWERPC | MIPS | SPARC | WASM | ARM6432)
+    target_sizeof_void_p=4
+    ;;
+*64* | S390X)
+    target_sizeof_void_p=8
+    ;;
+*)
+    AC_MSG_ERROR([unknown target])
+    ;;
 esac
 
 case "$HOST" in
@@ -4456,19 +4465,14 @@ else
    AC_DEFINE(TARGET_BYTE_ORDER,G_BYTE_ORDER,[byte order of target])
 fi
 
-if test "x$target_sizeof_void_p" != "x"; then
-   AC_DEFINE_UNQUOTED(TARGET_SIZEOF_VOID_P,${target_sizeof_void_p},[wordsize of target])
-   # This is true for all the current cross-compiling targets
-   AC_DEFINE(SIZEOF_REGISTER,TARGET_SIZEOF_VOID_P,[size of target machine integer registers])
+AC_DEFINE_UNQUOTED(TARGET_SIZEOF_VOID_P,${target_sizeof_void_p},[wordsize of target])
+
+if test "x$sizeof_register" = "x4"; then
+  AC_DEFINE(SIZEOF_REGISTER,4,[size of target machine integer registers])
+elif test "x$sizeof_register" = "x8"; then
+  AC_DEFINE(SIZEOF_REGISTER,8,[size of target machine integer registers])
 else
-   AC_DEFINE(TARGET_SIZEOF_VOID_P,SIZEOF_VOID_P,[wordsize of target])
-   if test "x$sizeof_register" = "x4"; then
-      AC_DEFINE(SIZEOF_REGISTER,4,[size of target machine integer registers])
-   elif test "x$sizeof_register" = "x8"; then
-      AC_DEFINE(SIZEOF_REGISTER,8,[size of target machine integer registers])
-   else
-      AC_DEFINE(SIZEOF_REGISTER,SIZEOF_VOID_P,[size of target machine integer registers])
-   fi
+  AC_DEFINE_UNQUOTED(SIZEOF_REGISTER,${target_sizeof_void_p},[size of target machine integer registers])
 fi
 
 if test "x$have_visibility_hidden" = "xyes"; then
