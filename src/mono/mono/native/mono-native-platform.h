@@ -2,13 +2,14 @@
 
 #include "mono/utils/mono-publib.h"
 
-// Keep in sync with mcs/class/System/Mono/MonoNativePlatformType.cs
+// Keep in sync with mcs/class/corlib/Mono/MonoNativePlatformType.cs
 
 typedef enum {
 	MONO_NATIVE_PLATFORM_TYPE_UNKNOWN	= 0,
 	MONO_NATIVE_PLATFORM_TYPE_MACOS		= 1,
 	MONO_NATIVE_PLATFORM_TYPE_IOS		= 2,
 	MONO_NATIVE_PLATFORM_TYPE_LINUX		= 3,
+	MONO_NATIVE_PLATFORM_TYPE_AIX		= 4,
 
 	MONO_NATIVE_PLATFORM_TYPE_IPHONE	= 0x100,
 	MONO_NATIVE_PLATFORM_TYPE_TV		= 0x200,
