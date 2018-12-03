@@ -118,13 +118,12 @@ typedef SList<CustomMarshalerInfo, true> CMINFOLIST;
 class EECMHelperHashtableKey
 {
 public:
-    EECMHelperHashtableKey(DWORD cMarshalerTypeNameBytes, LPCSTR strMarshalerTypeName, DWORD cCookieStrBytes, LPCSTR strCookie, Instantiation instantiation, BOOL bSharedHelper) 
+    EECMHelperHashtableKey(DWORD cMarshalerTypeNameBytes, LPCSTR strMarshalerTypeName, DWORD cCookieStrBytes, LPCSTR strCookie, Instantiation instantiation)
     : m_cMarshalerTypeNameBytes(cMarshalerTypeNameBytes)
     , m_strMarshalerTypeName(strMarshalerTypeName)
     , m_cCookieStrBytes(cCookieStrBytes)
     , m_strCookie(strCookie)
     , m_Instantiation(instantiation)
-    , m_bSharedHelper(bSharedHelper)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -154,19 +153,12 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_Instantiation;
     }
-    inline BOOL IsSharedHelper() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_bSharedHelper;
-    }
-
 
     DWORD           m_cMarshalerTypeNameBytes;
     LPCSTR          m_strMarshalerTypeName;
     DWORD           m_cCookieStrBytes;
     LPCSTR          m_strCookie;
     Instantiation   m_Instantiation;
-    BOOL            m_bSharedHelper;
 };
 
 

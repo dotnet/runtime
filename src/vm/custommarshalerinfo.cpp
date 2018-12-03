@@ -383,7 +383,6 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
         pEntryKey->m_Instantiation = Instantiation(
             (TypeHandle *) (pEntryKey->m_strCookie + pEntryKey->m_cCookieStrBytes),
             pKey->GetMarshalerInstantiation().GetNumArgs());
-        pEntryKey->m_bSharedHelper = pKey->IsSharedHelper();
         memcpy((void*)pEntryKey->m_strMarshalerTypeName, pKey->GetMarshalerTypeName(), pKey->GetMarshalerTypeNameByteCount()); 
         memcpy((void*)pEntryKey->m_strCookie, pKey->GetCookieString(), pKey->GetCookieStringByteCount()); 
         memcpy((void*)pEntryKey->m_Instantiation.GetRawArgs(), pKey->GetMarshalerInstantiation().GetRawArgs(),
@@ -402,7 +401,6 @@ EEHashEntry_t * EECMHelperHashtableHelper::AllocateEntry(EECMHelperHashtableKey 
         pEntryKey->m_cCookieStrBytes = pKey->GetCookieStringByteCount();
         pEntryKey->m_strCookie = pKey->GetCookieString();
         pEntryKey->m_Instantiation = Instantiation(pKey->GetMarshalerInstantiation());
-        pEntryKey->m_bSharedHelper = pKey->IsSharedHelper();
     }
 
     return pEntry;
@@ -438,9 +436,6 @@ BOOL EECMHelperHashtableHelper::CompareKeys(EEHashEntry_t *pEntry, EECMHelperHas
     
     EECMHelperHashtableKey *pEntryKey = (EECMHelperHashtableKey *) pEntry->Key;
 
-    if (pEntryKey->IsSharedHelper() != pKey->IsSharedHelper())
-        return FALSE;
-
     if (pEntryKey->GetMarshalerTypeNameByteCount() != pKey->GetMarshalerTypeNameByteCount())
         return FALSE;
 
@@ -474,8 +469,7 @@ DWORD EECMHelperHashtableHelper::Hash(EECMHelperHashtableKey *pKey)
     return (DWORD)
         (HashBytes((const BYTE *) pKey->GetMarshalerTypeName(), pKey->GetMarshalerTypeNameByteCount()) + 
         HashBytes((const BYTE *) pKey->GetCookieString(), pKey->GetCookieStringByteCount()) + 
-        HashBytes((const BYTE *) pKey->GetMarshalerInstantiation().GetRawArgs(), pKey->GetMarshalerInstantiation().GetNumArgs() * sizeof(LPVOID)) +
-        (pKey->IsSharedHelper() ? 1 : 0));
+        HashBytes((const BYTE *) pKey->GetMarshalerInstantiation().GetRawArgs(), pKey->GetMarshalerInstantiation().GetNumArgs() * sizeof(LPVOID)));
 }
 
 

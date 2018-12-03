@@ -1735,7 +1735,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             MTData->cl = pMT->GetCl();
             MTData->dwAttrClass = pMT->GetAttrClass();
             MTData->bContainsPointers = pMT->ContainsPointers();
-            MTData->bIsShared = (pMT->IsDomainNeutral() ? TRUE : FALSE); // flags & enum_flag_DomainNeutral
+            MTData->bIsShared = FALSE;
             MTData->bIsDynamic = pMT->IsDynamicStatics();
         }
     }
@@ -2614,12 +2614,9 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->ParentDomain = HOST_CDADDR(pAssembly->GetDomain());
     assemblyData->isDynamic = pAssembly->IsDynamic();
     assemblyData->ModuleCount = 0;
-    assemblyData->isDomainNeutral = pAssembly->IsDomainNeutral();
+    assemblyData->isDomainNeutral = FALSE;
 
-    if (pAssembly->GetManifestFile())
-    {
-        
-    }
+    pAssembly->GetManifestFile();
 
     ModuleIterator mi = pAssembly->IterateModules();
     while (mi.Next())
@@ -3198,28 +3195,17 @@ ClrDataAccess::GetDomainLocalModuleDataFromModule(CLRDATA_ADDRESS addr, struct D
     SOSDacEnter();
 
     Module* pModule = PTR_Module(TO_TADDR(addr));
-    if( pModule->GetAssembly()->IsDomainNeutral() )
+    DomainLocalModule* pLocalModule = PTR_DomainLocalModule(pModule->GetDomainLocalModule(NULL));
+    if (!pLocalModule)
     {
-        // The module is loaded domain-neutral, then we need to know the specific AppDomain in order to
-        // choose a DomainLocalModule instance.  Rather than try and guess an AppDomain (eg. based on
-        // whatever the current debugger thread is in), we'll fail and force the debugger to explicitly use
-        // a specific AppDomain.
         hr = E_INVALIDARG;
     }
     else
-    {    
-        DomainLocalModule* pLocalModule = PTR_DomainLocalModule(pModule->GetDomainLocalModule(NULL));
-        if (!pLocalModule)
-        {
-            hr = E_INVALIDARG;
-        }
-        else
-        {
-            pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
-            pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
-            pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
-            pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
-        }
+    {
+        pLocalModuleData->pGCStaticDataStart    = TO_CDADDR(PTR_TO_TADDR(pLocalModule->GetPrecomputedGCStaticsBasePointer()));
+        pLocalModuleData->pNonGCStaticDataStart = TO_CDADDR(pLocalModule->GetPrecomputedNonGCStaticsBasePointer());
+        pLocalModuleData->pDynamicClassTable    = PTR_CDADDR(pLocalModule->m_pDynamicClassTable.Load());
+        pLocalModuleData->pClassData            = (TADDR) (PTR_HOST_MEMBER_TADDR(DomainLocalModule, pLocalModule, m_pDataBlob));
     }
 
     SOSDacLeave();

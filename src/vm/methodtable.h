@@ -699,9 +699,6 @@ public:
     PTR_DomainLocalModule   GetDomainLocalModule();
 #endif
 
-    // Return whether the type lives in the shared domain.
-    BOOL IsDomainNeutral() { LIMITED_METHOD_DAC_CONTRACT; return FALSE; }
-
     MethodTable *LoadEnclosingMethodTable(ClassLoadLevel targetLevel = CLASS_DEPENDENCIES_LOADED);
 
     LPCWSTR GetPathForErrorMessages();

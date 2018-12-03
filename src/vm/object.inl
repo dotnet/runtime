@@ -27,10 +27,9 @@ inline ADIndex Object::GetAppDomainIndex()
     WRAPPER_NO_CONTRACT;
 #ifndef _DEBUG
     // ok to cast to AppDomain because we know it's a real AppDomain if it's not shared
-    if (!GetGCSafeMethodTable()->IsDomainNeutral())
-        return (dac_cast<PTR_AppDomain>(GetGCSafeMethodTable()->GetDomain())->GetIndex());
+    return (dac_cast<PTR_AppDomain>(GetGCSafeMethodTable()->GetDomain())->GetIndex());
 #endif
-        return GetHeader()->GetAppDomainIndex();
+    return GetHeader()->GetAppDomainIndex();
 }
 
 inline DWORD Object::GetNumComponents()

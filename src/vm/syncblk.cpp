@@ -2591,18 +2591,11 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
         //but thread ID doesn't have to be valid because the lock could be orphanend
         ASSERT_AND_CHECK (lockThreadId != 0 || recursionLevel == 0 );     
 
+#ifndef _DEBUG
         DWORD adIndex  = (bits >> SBLK_APPDOMAIN_SHIFT) & SBLK_MASK_APPDOMAININDEX;
-        if (adIndex!= 0)
-        {
-#ifndef _DEBUG            
-            //in non debug build, only objects of domain neutral type have appdomain index in header
-            ASSERT_AND_CHECK (obj->GetGCSafeMethodTable()->IsDomainNeutral());
+        //in non debug build, objects do not have appdomain index in header
+        ASSERT_AND_CHECK (adIndex == 0);
 #endif //!_DEBUG
-            //todo: validate the AD index. 
-            //The trick here is agile objects could have a invalid AD index. Ideally we should call 
-            //Object::GetAppDomain to do all the agile validation but it has side effects like mark the object to 
-            //be agile and it only does the check if g_pConfig->AppDomainLeaks() is on
-        }
     }
     
     return TRUE;

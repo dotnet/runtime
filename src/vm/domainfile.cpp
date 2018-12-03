@@ -274,8 +274,7 @@ void DomainFile::SetError(Exception *ex)
         SetProfilerNotified();
 
 #ifdef PROFILING_SUPPORTED
-        if (GetCurrentModule() != NULL
-            && !GetCurrentModule()->GetAssembly()->IsDomainNeutral())
+        if (GetCurrentModule() != NULL)
         {
             // Only send errors for non-shared assemblies; other assemblies might be successfully completed
             // in another app domain later.
@@ -1314,7 +1313,7 @@ DomainAssembly::~DomainAssembly()
             delete i.GetDomainFile();
     }
 
-    if (m_pAssembly != NULL && !m_pAssembly->IsDomainNeutral())
+    if (m_pAssembly != NULL)
     {
         delete m_pAssembly;
     }
@@ -1605,7 +1604,6 @@ void DomainAssembly::FindNativeImage()
 }
 #endif // FEATURE_PREJIT
 
-// This is where the decision whether an assembly is DomainNeutral (shared) nor not is made.
 void DomainAssembly::Allocate()
 {
     CONTRACTL

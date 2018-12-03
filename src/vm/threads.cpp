@@ -1540,13 +1540,6 @@ Thread::Thread()
         m_State = (ThreadState) (m_State | TS_GCOnTransitions);
    }
 
-    //m_pSharedStaticData = NULL;
-    //m_pUnsharedStaticData = NULL;
-    //m_pStaticDataHash = NULL;
-    //m_pSDHCrst = NULL;
-
-    m_fSecurityStackwalk = FALSE;
-
     m_AbortType = EEPolicy::TA_None;
     m_AbortInfo = 0;
     m_AbortEndTime = MAXULONGLONG;
