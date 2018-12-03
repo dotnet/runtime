@@ -1823,7 +1823,7 @@ DomainAssembly * LoadDomainAssembly(
     {
         spec.SetHostBinder(pPrivHostBinder);
     }
-    else if (pRequestingAssembly && (!pRequestingAssembly->IsDomainNeutral()) && (!pRequestingAssembly->IsCollectible())) 
+    else if (pRequestingAssembly && (!pRequestingAssembly->IsCollectible()))
     {
         GCX_PREEMP();
         spec.SetParentAssembly(pRequestingAssembly->GetDomainAssembly());

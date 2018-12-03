@@ -154,26 +154,17 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     }
     else
     {
-        if (!IsDomainNeutral())
+        if (!IsCollectible())
         {
-            if (!IsCollectible())
-            {
-                // pLoaderAllocator will only be non-null for reflection emit assemblies
-                _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == GetDomain()->AsAppDomain()->GetLoaderAllocator()));
-                m_pLoaderAllocator = GetDomain()->AsAppDomain()->GetLoaderAllocator();
-            }
-            else
-            {
-                _ASSERTE(pLoaderAllocator != NULL); // ppLoaderAllocator must be non-null for collectible assemblies
-
-                m_pLoaderAllocator = pLoaderAllocator;
-            }
+            // pLoaderAllocator will only be non-null for reflection emit assemblies
+            _ASSERTE((pLoaderAllocator == NULL) || (pLoaderAllocator == GetDomain()->AsAppDomain()->GetLoaderAllocator()));
+            m_pLoaderAllocator = GetDomain()->AsAppDomain()->GetLoaderAllocator();
         }
         else
         {
-            _ASSERTE(pLoaderAllocator == NULL); // pLoaderAllocator may only be non-null for collectible types
-            // use global loader heaps
-            m_pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
+            _ASSERTE(pLoaderAllocator != NULL); // ppLoaderAllocator must be non-null for collectible assemblies
+
+            m_pLoaderAllocator = pLoaderAllocator;
         }
     }
     _ASSERTE(m_pLoaderAllocator != NULL);

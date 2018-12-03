@@ -80,15 +80,7 @@ void DebuggerModule::PickPrimaryModule()
         if (m->GetRuntimeModule() == this->GetRuntimeModule())
         {
             // Make sure we're picking another primary module.
-            if (m->GetPrimaryModule() == m)
-            {
-                // If we find another one, it must be domain neutral
-                _ASSERTE( m_pRuntimeModule->GetAssembly()->IsDomainNeutral() );
-                
-                m_pPrimaryModule = m;
-                LOG((LF_CORDB, LL_INFO100000, "DM::PickPrimaryModule, this=0x%p, primary=0x%p\n", this, m));
-                return;
-            }
+            _ASSERTE(m->GetPrimaryModule() != m);
         }
     } // end for
 
@@ -248,106 +240,12 @@ void DebuggerModuleTable::RemoveModule(Module* module, AppDomain *pAppDomain)
     }
     CONTRACTL_END;
 
-    _ASSERTE(module != NULL);
-    _ASSERTE(ThreadHoldsLock());
-    
-    DebuggerModule * pDeletedModule = NULL;
-
-    LOG((LF_CORDB, LL_EVERYTHING, "DMT::RM: mod:0x%x AD:0x%x neutral:0x%x\n",
-        module, pAppDomain, module->GetAssembly()->IsDomainNeutral() ));
-
     // If this is a domain neutral module, then scan the complete list of DebuggerModules looking
     // for the one with a matching appdomain id.
     // Note: we have to make sure to lookup the module with the app domain parameter if the module lives in a shared
     // assembly or the system assembly. <BUGNUM>Bugs 65943 & 81728.</BUGNUM>
-    _ASSERTE( SystemDomain::SystemAssembly()->IsDomainNeutral() );
-    if (module->GetAssembly()->IsDomainNeutral())
-    {
-        // This module is being unloaded from a specific AppDomain, but may still exist in other AppDomains
-
-        HASHFIND findmodule;
-        DebuggerModuleEntry *moduleentry;
-
-        for (moduleentry =  (DebuggerModuleEntry*) FindFirstEntry(&findmodule);
-             moduleentry != NULL;
-             moduleentry =  (DebuggerModuleEntry*) FindNextEntry(&findmodule))
-        {
-            DebuggerModule *pModule = moduleentry->module;
-
-            if ((pModule->GetRuntimeModule() == module) &&
-                (pModule->GetAppDomain() == pAppDomain))
-            {
-                LOG((LF_CORDB, LL_EVERYTHING, "DMT::RM: found 0x%x (DM:0x%x)\n",
-                    moduleentry, moduleentry->module));
-
-                pDeletedModule = pModule;
-
-                // Remove from table
-                Delete(HASH(module), (HASHENTRY *)moduleentry);
-
-                break;
-            }
-        }
-        // we should always find the module!!
-        _ASSERTE (moduleentry != NULL);
-    }
-    else
-    {
-        // This module is not shared among multiple AppDomains
+    _ASSERTE( FALSE );
         
-        DebuggerModuleEntry *entry
-          = (DebuggerModuleEntry *) Find(HASH(module), KEY(module));
-
-        _ASSERTE(entry != NULL); // it had better be in there!
-        
-        if (entry != NULL) // if its not, we fail gracefully in a free build
-        {
-            LOG((LF_CORDB, LL_EVERYTHING, "DMT::RM: found 0x%x (DM:0x%x)\n",
-                entry, entry->module));
-
-            pDeletedModule = entry->module;
-
-            // Remove from table
-            Delete(HASH(module), (HASHENTRY *)entry);
-
-            // There should not be any other entry in the table for the same module
-            _ASSERTE( Find(HASH(module), KEY(module)) == NULL );
-        }
-    }
-
-    _ASSERTE(pDeletedModule != NULL);
-
-    // Update the primary module pointers. If any other module had this as a
-    // primary module, then we have to update that pointer (since we can't
-    // have our primary module be deleted!)
-    {
-        HASHFIND findmodule;
-        DebuggerModuleEntry *moduleentry;
-
-        DebuggerModule * pNewPrimary = NULL;
-
-        for (moduleentry =  (DebuggerModuleEntry*) FindFirstEntry(&findmodule);
-             moduleentry != NULL;
-             moduleentry =  (DebuggerModuleEntry*) FindNextEntry(&findmodule))
-        {
-            DebuggerModule *pOther = moduleentry->module;
-            _ASSERTE(pOther != NULL);
-            _ASSERTE(pOther != pDeletedModule);
-
-            // If pOther's primary was just deleted, then update it.
-            if (pOther->GetPrimaryModule() == pDeletedModule)
-            {
-                if (pNewPrimary == NULL)
-                {
-                    pNewPrimary = pOther;
-                    LOG((LF_CORDB, LL_INFO1000, "DMT::RM changed primary module from 0x%p to 0x%p\n", pDeletedModule, pNewPrimary));
-                }
-                pOther->SetPrimaryModule(pNewPrimary);
-            }
-        } // end for
-    }
-
-    DeleteInteropSafe(pDeletedModule);
 }
 
 

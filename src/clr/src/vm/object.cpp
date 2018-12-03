@@ -326,27 +326,21 @@ void Object::SetAppDomain(AppDomain *pDomain)
     CONTRACTL_END;
 
 #ifndef _DEBUG
-    if (!GetMethodTable()->IsDomainNeutral())
-    {
-        //
-        // If we have a per-app-domain method table, we can 
-        // infer the app domain from the method table, so 
-        // there is no reason to mark the object.
-        //
-        // But we don't do this in a debug build, because
-        // we want to be able to detect the case when the
-        // domain was unloaded from underneath an object (and
-        // the MethodTable will be toast in that case.)
-        //
-
-        _ASSERTE(pDomain == GetMethodTable()->GetDomain());
-    }
-    else
+    //
+    // If we have a per-app-domain method table, we can 
+    // infer the app domain from the method table, so 
+    // there is no reason to mark the object.
+    //
+    // But we don't do this in a debug build, because
+    // we want to be able to detect the case when the
+    // domain was unloaded from underneath an object (and
+    // the MethodTable will be toast in that case.)
+    //
+    _ASSERTE(pDomain == GetMethodTable()->GetDomain());
+#else
+    ADIndex index = pDomain->GetIndex();
+    GetHeader()->SetAppDomainIndex(index);
 #endif
-    {
-        ADIndex index = pDomain->GetIndex();
-        GetHeader()->SetAppDomainIndex(index);
-    }
 
     _ASSERTE(GetHeader()->GetAppDomainIndex().m_dwIndex != 0);
 }
@@ -388,8 +382,7 @@ AppDomain *Object::GetAppDomain()
     }
     CONTRACTL_END;
 #ifndef _DEBUG
-    if (!GetMethodTable()->IsDomainNeutral())
-        return (AppDomain*) GetMethodTable()->GetDomain();
+    return (AppDomain*) GetMethodTable()->GetDomain();
 #endif
 
     ADIndex index = GetHeader()->GetAppDomainIndex();

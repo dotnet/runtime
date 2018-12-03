@@ -299,7 +299,7 @@ struct MSLAYOUT DacpMethodTableData : ZeroInit<DacpMethodTableData>
     DWORD ComponentSize;
     mdTypeDef cl; // Metadata token    
     DWORD dwAttrClass; // cached metadata
-    BOOL bIsShared; // flags & enum_flag_DomainNeutral
+    BOOL bIsShared;  // Always false, preserved for backward compatibility
     BOOL bIsDynamic;
     BOOL bContainsPointers;
 
@@ -472,7 +472,7 @@ struct MSLAYOUT DacpAssemblyData : ZeroInit<DacpAssemblyData>
     BOOL isDynamic;
     UINT ModuleCount;
     UINT LoadContext;
-    BOOL isDomainNeutral;
+    BOOL isDomainNeutral; // Always false, preserved for backward compatibility
     DWORD dwLocationFlags;
 
     HRESULT Request(ISOSDacInterface *sos, CLRDATA_ADDRESS addr, CLRDATA_ADDRESS baseDomainPtr)

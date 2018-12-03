@@ -1088,7 +1088,6 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
     EnCAddedField *pEntry = new EnCAddedField;
     pEntry->m_pFieldDesc = pFD;
 
-    _ASSERTE(!pFD->GetApproxEnclosingMethodTable()->IsDomainNeutral());
     AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
 
     // We need to associate the contents of the new field with the object it is attached to 
@@ -1398,7 +1397,6 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
     }
     CONTRACTL_END;
 
-    _ASSERTE(!pFD->GetEnclosingMethodTable()->IsDomainNeutral());
     AppDomain *pDomain = (AppDomain*) pFD->GetApproxEnclosingMethodTable()->GetDomain();
 
     // Compute the size of the fieldData entry

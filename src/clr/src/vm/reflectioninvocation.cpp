@@ -731,10 +731,6 @@ static BOOL IsActivationNeededForMethodInvoke(MethodDesc * pMD)
     if (!pMD->IsStatic() && !pMD->HasMethodInstantiation() && !pMD->IsInterface())
         return FALSE;
 
-    // We need to activate each time for domain neutral types
-    if (pMD->IsDomainNeutral())
-        return TRUE;
-
     // We need to activate the instance at least once
     pMD->EnsureActive();
     return FALSE;
