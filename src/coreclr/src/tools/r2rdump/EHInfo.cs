@@ -100,35 +100,35 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Emit a textual representation of the EH info to a given string builder.
+        /// Emit a textual representation of the EH info to a given text writer.
         /// </summary>
-        /// <param name="stringBuilder">Output builder for the textual representation</param>
+        /// <param name="writer">Output writer for the textual representation</param>
         /// <param name="methodRva">Starting RVA of the runtime function is used to display the try / handler info as RVA intervals</param>
-        public void WriteTo(StringBuilder stringBuilder, int methodRva)
+        public void WriteTo(TextWriter writer, int methodRva)
         {
-            stringBuilder.Append($@"Flags {(uint)Flags:X2} ");
-            stringBuilder.Append($@"TryOff {TryOffset:X4} (RVA {(TryOffset + methodRva):X4}) ");
-            stringBuilder.Append($@"TryEnd {TryEnd:X4} (RVA {(TryEnd + methodRva):X4}) ");
-            stringBuilder.Append($@"HndOff {HandlerOffset:X4} (RVA {(HandlerOffset + methodRva):X4}) ");
-            stringBuilder.Append($@"HndEnd {HandlerEnd:X4} (RVA {(HandlerEnd + methodRva):X4}) ");
-            stringBuilder.Append($@"ClsFlt {ClassTokenOrFilterOffset:X4}");
+            writer.Write($@"Flags {(uint)Flags:X2} ");
+            writer.Write($@"TryOff {TryOffset:X4} (RVA {(TryOffset + methodRva):X4}) ");
+            writer.Write($@"TryEnd {TryEnd:X4} (RVA {(TryEnd + methodRva):X4}) ");
+            writer.Write($@"HndOff {HandlerOffset:X4} (RVA {(HandlerOffset + methodRva):X4}) ");
+            writer.Write($@"HndEnd {HandlerEnd:X4} (RVA {(HandlerEnd + methodRva):X4}) ");
+            writer.Write($@"ClsFlt {ClassTokenOrFilterOffset:X4}");
 
             switch (Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK)
             {
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_NONE:
-                    stringBuilder.AppendFormat(" CATCH: {0}", ClassName ?? "null");
+                    writer.Write($" CATCH: {0}", ClassName ?? "null");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FILTER:
-                    stringBuilder.AppendFormat(" FILTER (RVA {0:X4})", ClassTokenOrFilterOffset + methodRva);
+                    writer.Write($" FILTER (RVA {0:X4})", ClassTokenOrFilterOffset + methodRva);
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FINALLY:
-                    stringBuilder.AppendFormat(" FINALLY");
+                    writer.Write(" FINALLY");
                     break;
 
                 case CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_FAULT:
-                    stringBuilder.AppendFormat(" FAULT");
+                    writer.Write(" FAULT");
                     break;
 
                 default:
@@ -137,7 +137,7 @@ namespace R2RDump
 
             if ((Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_DUPLICATED) != (CorExceptionFlag)0)
             {
-                stringBuilder.Append(" DUPLICATED");
+                writer.Write(" DUPLICATED");
             }
         }
     }
@@ -189,12 +189,12 @@ namespace R2RDump
         /// <summary>
         /// Emit the textual representation of the EH info into a given writer.
         /// </summary>
-        public void WriteTo(StringBuilder stringBuilder)
+        public void WriteTo(TextWriter writer)
         {
             foreach (EHClause ehClause in EHClauses)
             {
-                ehClause.WriteTo(stringBuilder, MethodRVA);
-                stringBuilder.AppendLine();
+                ehClause.WriteTo(writer, MethodRVA);
+                writer.WriteLine();
             }
         }
     }
