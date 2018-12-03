@@ -5904,8 +5904,12 @@ void Compiler::fgFindBasicBlocks()
                 // out we can prove the method returns a more specific type.
                 if (info.compRetType == TYP_REF)
                 {
-                    lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
-                    JITDUMP("Marked V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
+                    // The return spill temp is single def only if the method has a single return block.
+                    if (retBlocks == 1)
+                    {
+                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
+                        JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
+                    }
 
                     CORINFO_CLASS_HANDLE retClassHnd = impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass;
                     if (retClassHnd != nullptr)
