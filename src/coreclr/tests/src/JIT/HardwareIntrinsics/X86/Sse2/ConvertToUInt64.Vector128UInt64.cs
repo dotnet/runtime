@@ -141,7 +141,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimdScalarUnaryOpTest__DataTable<UInt64>(_data, LargestVectorSize);
         }
 
-        public bool IsSupported => Sse2.IsSupported && (Environment.Is64BitProcess || ((typeof(UInt64) != typeof(long)) && (typeof(UInt64) != typeof(ulong))));
+        public bool IsSupported => Sse2.IsSupported;
 
         public bool Succeeded { get; set; }
 

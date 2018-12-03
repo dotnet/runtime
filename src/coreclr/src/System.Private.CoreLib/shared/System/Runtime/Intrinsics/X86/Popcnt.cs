@@ -34,10 +34,5 @@ namespace System.Runtime.Intrinsics.X86
         ///   POPCNT reg, reg/m32
         /// </summary>
         public static uint PopCount(uint value) => PopCount(value);
-        /// <summary>
-        /// __int64 _mm_popcnt_u64 (unsigned __int64 a)
-        ///   POPCNT reg, reg/m64
-        /// </summary>
-        public static ulong PopCount(ulong value) => PopCount(value);
     }
 }
