@@ -48,6 +48,8 @@ ios_sources = \
 
 linux_sources = $(unix_sources)
 
+aix_sources = $(unix_sources)
+
 unix_sources = \
 	pal-icalls.h \
 	pal-icalls.c \
@@ -72,7 +74,7 @@ macos_sources += $(gss_sources)
 ios_sources += $(gss_sources)
 endif
 
-EXTRA_libmono_native_la_SOURCES = $(common_sources) $(macos_sources) $(ios_sources) $(linux_sources) $(unix_sources) $(gss_sources)
+EXTRA_libmono_native_la_SOURCES = $(common_sources) $(macos_sources) $(ios_sources) $(linux_sources) $(aix_sources) $(unix_sources) $(gss_sources)
 
 if MONO_NATIVE_PLATFORM_MACOS
 platform_sources = $(macos_sources)
@@ -82,6 +84,10 @@ platform_sources = $(ios_sources)
 else
 if MONO_NATIVE_PLATFORM_LINUX
 platform_sources = $(linux_sources)
+else
+if MONO_NATIVE_PLATFORM_AIX
+platform_sources = $(aix_sources)
+endif
 endif
 endif
 endif
