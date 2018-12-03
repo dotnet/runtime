@@ -132,6 +132,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"PEAPI", 0},
 	{"System", 0},
 	FACADE_ASSEMBLY ("System.AppContext"),
+	FACADE_ASSEMBLY ("System.Buffers"),
 	FACADE_ASSEMBLY ("System.Collections"),
 	FACADE_ASSEMBLY ("System.Collections.Concurrent"),
 	FACADE_ASSEMBLY ("System.Collections.NonGeneric"),
