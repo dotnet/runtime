@@ -13,7 +13,7 @@
     <PackagesPattern Condition="'$(PackagesPattern)' == ''">$(PackagesPatternDir)pkg\*.nupkg</PackagesPattern>
     <TestNativeBinariesPattern Condition="'$(TestNativeBinariesPattern)' == ''">$(OutputPath)\bin\**</TestNativeBinariesPattern>
     <SymbolsPackagesPattern Condition="'$(SymbolPackagesPattern)' == ''">$(PackagesPatternDir)symbolpkg\*.nupkg</SymbolsPackagesPattern>
-    <SymbolsExcludePattern Condition="'$(SymbolsExcludePattern)' == ''"></SymbolsExcludePattern>
+    <SymbolsExcludePattern Condition="'$(SymbolsExcludePattern)' == ''">$(PackagesPatternDir)symbolpkg\*freebsd*.nupkg</SymbolsExcludePattern>
     <PublishFlatContainer Condition="'$(PublishFlatContainer)' == ''">true</PublishFlatContainer>
     <RelativePathWithSlash>$(RelativePath)</RelativePathWithSlash>
     <RelativePathWithSlash Condition="'$(RelativePathWithSlash)' != '' and !HasTrailingSlash('$(RelativePathWithSlash)')">$(RelativePathWithSlash)/</RelativePathWithSlash>
