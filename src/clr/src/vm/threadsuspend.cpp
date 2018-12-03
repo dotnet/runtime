@@ -3830,7 +3830,7 @@ void __stdcall Thread::RedirectedHandledJITCaseForGCStress()
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
                           CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
 #else
-#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_EXCEPTION_REQUEST)
+#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
 #endif
 
 BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
@@ -5129,7 +5129,7 @@ BOOL Thread::HandleJITCaseForAbort()
     _ASSERTE (m_fPreemptiveGCDisabled);
 
     CONTEXT ctx;
-    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_EXCEPTION_REQUEST;
+    ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST;
     BOOL success     = EEGetThreadContext(this, &ctx);
     _ASSERTE(success && "Thread::HandleJITCaseForAbort : Failed to get thread context");
 
