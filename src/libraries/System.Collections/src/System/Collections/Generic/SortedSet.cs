@@ -680,7 +680,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="parent">The (possibly <c>null</c>) parent.</param>
         /// <param name="child">The child node to replace.</param>
-        /// <param name="newChild">The node to replace <paramref name="child"> with.</param>
+        /// <param name="newChild">The node to replace <paramref name="child"/> with.</param>
         private void ReplaceChildOrRoot(Node parent, Node child, Node newChild)
         {
             if (parent != null)
