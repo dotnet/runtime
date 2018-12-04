@@ -244,7 +244,7 @@ class AssemblySpec  : public BaseAssemblySpec
     void MatchRetargetedPublicKeys(Assembly *pAssembly);
   public:
     void MatchPublicKeys(Assembly *pAssembly);
-    PEAssembly *ResolveAssemblyFile(AppDomain *pAppDomain, BOOL fPreBind);
+    PEAssembly *ResolveAssemblyFile(AppDomain *pAppDomain);
 
     AppDomain *GetAppDomain() 
     {

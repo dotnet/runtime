@@ -276,7 +276,7 @@ namespace System.Threading.Tasks
 
         private static ulong GetOperationId(uint taskId)
         {
-            return (((ulong)AppDomain.CurrentDomain.Id) << 32) + taskId;
+            return (((ulong)Thread.GetDomainID()) << 32) + taskId;
         }
     }
 }

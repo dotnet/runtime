@@ -3657,37 +3657,6 @@ IUnknown * ComCallWrapper::GetComIPFromCCW_ForIntfMT_Worker(
     RETURN NULL;
 }
 
-
-//--------------------------------------------------------------------------
-// Get an interface from wrapper, based on riid or pIntfMT. The returned interface is AddRef'd.
-//--------------------------------------------------------------------------
-IUnknown* ComCallWrapper::GetComIPFromCCWNoThrow(ComCallWrapper *pWrap, REFIID riid, MethodTable* pIntfMT, 
-                                                 GetComIPFromCCW::flags flags)
-{
-    CONTRACT(IUnknown*)
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pWrap));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
-
-    IUnknown * pUnk = NULL;
-
-    EX_TRY
-    {
-        pUnk = GetComIPFromCCW(pWrap, riid, pIntfMT, flags);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    RETURN pUnk;
-}
-
 //--------------------------------------------------------------------------
 // Get the IDispatch interface pointer for the wrapper. 
 // The returned interface is AddRef'd.

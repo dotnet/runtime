@@ -210,26 +210,23 @@ public:
     // Binds WinRT assemblies only.
     HRESULT BindWinRTAssemblyByName(
         IAssemblyName * pIAssemblyName,
-        CLRPrivAssemblyWinRT ** ppAssembly,
-        BOOL fPreBind = FALSE);
+        CLRPrivAssemblyWinRT ** ppAssembly);
 
     // Binds WinRT assemblies only.
     HRESULT BindWinRTAssemblyByName(
         IAssemblyName * pIAssemblyName,
-        ICLRPrivAssembly ** ppPrivAssembly,
-        BOOL fPreBind = FALSE);
+        ICLRPrivAssembly ** ppPrivAssembly);
 
     // Binds WinRT assemblies only.
     HRESULT BindWinRTAssemblyByName(
         IAssemblyName * pIAssemblyName,
-        IBindResult ** ppIBindResult,
-        BOOL fPreBind = FALSE);
+        IBindResult ** ppIBindResult);
 
     HRESULT GetAssemblyAndTryFindNativeImage(SString &sWinmdFilename, LPCWSTR pwzSimpleName, BINDER_SPACE::Assembly ** ppAssembly);
     // On Phone the application's APP_PATH CoreCLR hosting config property is used as the app
     // package graph for RoResolveNamespace to find 3rd party WinMDs.  This method wires up
     // the app paths so the WinRT binder will find 3rd party WinMDs.
-    HRESULT SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, SString &appLocalWinMD);
+    HRESULT SetApplicationContext(BINDER_SPACE::ApplicationContext *pApplicationContext, LPCWSTR pwzAppLocalWinMD);
     // Finds assembly with WinRT type if it is already loaded
     // Note: This method could implement interface code:ICLRPrivWinRtTypeBinder if it is ever needed
     PTR_Assembly FindAssemblyForTypeIfLoaded(

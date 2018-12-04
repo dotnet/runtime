@@ -1122,6 +1122,52 @@ void AppDomain::RegisterLoaderAllocatorForDeletion(LoaderAllocator * pLoaderAllo
     m_pDelayedLoaderAllocatorUnloadList = pLoaderAllocator;
 }
 
+void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirectories)
+{
+    STANDARD_VM_CONTRACT;
+
+    SString sDirectories(wszNativeDllSearchDirectories);
+
+    if (sDirectories.GetCount() > 0)
+    {
+        SString::CIterator start = sDirectories.Begin();
+        SString::CIterator itr = sDirectories.Begin();
+        SString::CIterator end = sDirectories.End();
+        SString qualifiedPath;
+
+        while (itr != end)
+        {
+            start = itr;
+            BOOL found = sDirectories.Find(itr, PATH_SEPARATOR_CHAR_W);
+            if (!found)
+            {
+                itr = end;
+            }
+
+            SString qualifiedPath(sDirectories, start, itr);
+
+            if (found)
+            {
+                itr++;
+            }
+
+            unsigned len = qualifiedPath.GetCount();
+
+            if (len > 0)
+            {
+                if (qualifiedPath[len - 1] != DIRECTORY_SEPARATOR_CHAR_W)
+                {
+                    qualifiedPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
+                }
+
+                NewHolder<SString> stringHolder(new SString(qualifiedPath));
+                IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder.GetValue()));
+                stringHolder.SuppressRelease();
+            }
+        }
+    }
+}
+
 void AppDomain::ShutdownNativeDllSearchDirectories()
 {
     LIMITED_METHOD_CONTRACT;
@@ -3548,8 +3594,6 @@ AppDomain::AppDomain()
 
     m_pRootAssembly = NULL;
 
-    m_pwDynamicDir = NULL;
-
     m_dwFlags = 0;
     m_pDefaultContext = NULL;
 #ifdef FEATURE_COMINTEROP
@@ -3578,7 +3622,6 @@ AppDomain::AppDomain()
 #endif
 
     m_pRefClassFactHash = NULL;
-    m_anonymouslyHostedDynamicMethodsAssembly = NULL;
 
     m_ReversePInvokeCanEnter=TRUE;
     m_ForceTrivialWaitOperations = false;
@@ -3610,8 +3653,6 @@ AppDomain::AppDomain()
 #ifdef FEATURE_PREJIT
     m_pDomainFileWithNativeImageList = NULL;
 #endif
-
-    m_fIsBindingModelLocked.Store(FALSE);
 
 } // AppDomain::AppDomain
 
@@ -3795,15 +3836,7 @@ void AppDomain::Init()
 
     m_ExposedObject = CreateHandle(NULL);
 
-    // Create the Application Security Descriptor
-
     COUNTER_ONLY(GetPerfCounters().m_Loading.cAppDomains++);
-
-#ifdef FEATURE_COMINTEROP
-    if (!AppX::IsAppXProcess())
-    {
-    }
-#endif //FEATURE_COMINTEROP
 
 #ifdef FEATURE_TIERED_COMPILATION
     m_tieredCompilationManager.Init(GetId());
@@ -5505,12 +5538,6 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     }
 }
 
-void AppDomain::ResetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
-{
-    WRAPPER_NO_CONTRACT;
-    SetFriendlyName(NULL, fDebuggerCares);
-}
-
 LPCWSTR AppDomain::GetFriendlyName(BOOL fDebuggerCares/*=TRUE*/)
 {
     CONTRACT (LPCWSTR)
@@ -5849,7 +5876,7 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
         (hrBindResult == FUSION_E_REF_DEF_MISMATCH) ||
         (hrBindResult == FUSION_E_INVALID_NAME))
     {
-        result = TryResolveAssembly(*ppFailedSpec, FALSE /* fPreBind */);
+        result = TryResolveAssembly(*ppFailedSpec);
 
         if (result != NULL && pPrePolicySpec->CanUseWithBindingCache() && result->CanUseWithBindingCache())
         {
@@ -6438,7 +6465,7 @@ EndTry2:;
 
 
 
-PEAssembly *AppDomain::TryResolveAssembly(AssemblySpec *pSpec, BOOL fPreBind)
+PEAssembly *AppDomain::TryResolveAssembly(AssemblySpec *pSpec)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -6448,7 +6475,7 @@ PEAssembly *AppDomain::TryResolveAssembly(AssemblySpec *pSpec, BOOL fPreBind)
 
     EX_TRY
     {
-        result = pSpec->ResolveAssemblyFile(this, fPreBind);
+        result = pSpec->ResolveAssemblyFile(this);
     }
     EX_HOOK
     {
@@ -7779,8 +7806,7 @@ Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR
 
 Assembly * 
 AppDomain::RaiseAssemblyResolveEvent(
-    AssemblySpec * pSpec, 
-    BOOL           fPreBind)
+    AssemblySpec * pSpec)
 {
     CONTRACT(Assembly*)
     {
@@ -7792,19 +7818,8 @@ AppDomain::RaiseAssemblyResolveEvent(
     }
     CONTRACT_END;
 
-    BinderMethodID methodId;
     StackSString ssName;
     pSpec->GetFileOrDisplayName(0, ssName);
-    
-    if (!fPreBind) 
-    {
-        methodId = METHOD__APP_DOMAIN__ON_ASSEMBLY_RESOLVE;  // post-bind execution event (the classic V1.0 event)
-    }
-    else
-    {
-        RETURN NULL;
-    }
-        
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted
     // condition.  Note, however, that this exposes us to possible recursion failures, if the host tries to
@@ -7829,11 +7844,10 @@ AppDomain::RaiseAssemblyResolveEvent(
     {
         if (pSpec->GetParentAssembly() != NULL)
         {
-            {
-                gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedAssemblyObject();
-            }
+            gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedAssemblyObject();
         }
-        MethodDescCallSite onAssemblyResolve(methodId, &gc.AppDomainRef);
+
+        MethodDescCallSite onAssemblyResolve(METHOD__APP_DOMAIN__ON_ASSEMBLY_RESOLVE, &gc.AppDomainRef);
 
         gc.str = StringObject::NewString(ssName);
         ARG_SLOT args[3] = {
@@ -8284,66 +8298,6 @@ BOOL AppDomain::IsImageFromTrustedPath(PEImage* pPEImage)
 #endif //!DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-
-// Returns a BOOL indicating if the binding model has been locked for the AppDomain
-BOOL AppDomain::IsBindingModelLocked()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    
-    return m_fIsBindingModelLocked.Load();
-}
-
-// Marks the binding model locked for AppDomain
-BOOL AppDomain::LockBindingModel()
-{
-    LIMITED_METHOD_CONTRACT;
-    
-    BOOL fDidWeLockBindingModel = FALSE;
-    
-    if (InterlockedCompareExchangeT<BOOL>(&m_fIsBindingModelLocked, TRUE, FALSE) == FALSE)
-    {
-        fDidWeLockBindingModel = TRUE;
-    }
-    
-    return fDidWeLockBindingModel;
-}
-
-BOOL AppDomain::IsHostAssemblyResolverInUse()
-{
-    LIMITED_METHOD_CONTRACT;
-    
-    return (GetFusionContext() != GetTPABinderContext());
-}
-
-// Helper used by the assembly binder to check if the specified AppDomain can use apppath assembly resolver
-BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid)
-{
-    CONTRACTL
-    {
-        NOTHROW; // Cannot throw since it is invoked by the Binder that expects to get a hresult
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    ADID id(adid);
-
-    // We need to be in COOP mode to get the AppDomain*
-    GCX_COOP();
-        
-    AppDomain *pTargetDomain = SystemDomain::GetAppDomainFromId(id, ADV_CURRENTAD);
-    _ASSERTE(pTargetDomain != NULL);
-
-    pTargetDomain->LockBindingModel();
-        
-    return !pTargetDomain->IsHostAssemblyResolverInUse();
-}
 
 // Returns S_OK if the assembly was successfully loaded
 HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, IAssemblyName *pIAssemblyName, CLRPrivBinderCoreCLR *pTPABinder, BINDER_SPACE::AssemblyName *pAssemblyName, ICLRPrivAssembly **ppLoadedAssembly)
@@ -8935,7 +8889,7 @@ void AppDomain::UnPublishHostedAssembly(
 }
 
 #if defined(FEATURE_COMINTEROP)
-HRESULT AppDomain::SetWinrtApplicationContext(SString &appLocalWinMD)
+HRESULT AppDomain::SetWinrtApplicationContext(LPCWSTR pwzAppLocalWinMD)
 {
     STANDARD_VM_CONTRACT;
     
@@ -8946,7 +8900,7 @@ HRESULT AppDomain::SetWinrtApplicationContext(SString &appLocalWinMD)
     BINDER_SPACE::ApplicationContext *pApplicationContext = GetTPABinderContext()->GetAppContext();
     _ASSERTE(pApplicationContext != NULL);
     
-    return m_pWinRtBinder->SetApplicationContext(pApplicationContext, appLocalWinMD);
+    return m_pWinRtBinder->SetApplicationContext(pApplicationContext, pwzAppLocalWinMD);
 }
 
 #endif // FEATURE_COMINTEROP
@@ -8996,8 +8950,7 @@ void ZapperSetBindingPaths(ICorCompilationDomain *pDomain, SString &trustedPlatf
     _ASSERTE(pBinder != NULL);
     pBinder->SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths);
 #ifdef FEATURE_COMINTEROP
-    SString emptString;
-    ((CompilationDomain*)pDomain)->SetWinrtApplicationContext(emptString);
+    ((CompilationDomain*)pDomain)->SetWinrtApplicationContext(NULL);
 #endif
 }
 

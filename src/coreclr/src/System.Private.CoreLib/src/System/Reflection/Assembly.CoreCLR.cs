@@ -84,7 +84,7 @@ namespace System.Reflection
                 {
                     if (!s_LoadFromResolveHandlerSetup)
                     {
-                        AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(LoadFromResolveHandler);
+                        AssemblyLoadContext.AssemblyResolve += LoadFromResolveHandler;
                         s_LoadFromResolveHandlerSetup = true;
                     }
                 }

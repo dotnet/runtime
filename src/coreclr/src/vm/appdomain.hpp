@@ -1823,7 +1823,7 @@ public:
     void Init();
 
 #if defined(FEATURE_COMINTEROP)
-    HRESULT SetWinrtApplicationContext(SString &appLocalWinMD);
+    HRESULT SetWinrtApplicationContext(LPCWSTR pwzAppLocalWinMD);
 #endif // FEATURE_COMINTEROP
 
     bool MustForceTrivialWaitOperations();
@@ -2157,7 +2157,6 @@ public:
             return dac_cast<PTR_SString>(m_i.GetElement());
         }
     };
-    BOOL BindingByManifestFile();
 
     PathIterator IterateNativeDllSearchDirectories();
     void SetNativeDllSearchDirectories(LPCWSTR paths);
@@ -2274,7 +2273,6 @@ public:
     PVOID GetFriendlyNameNoSet(bool* isUtf8);
 #endif
     void SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares = TRUE);
-    void ResetFriendlyName(BOOL fDebuggerCares = TRUE);
 
     //****************************************************************************************
 
@@ -2300,7 +2298,7 @@ public:
         PEAssembly **      ppAssembly) DAC_EMPTY_RET(S_OK);
 
 
-    PEAssembly *TryResolveAssembly(AssemblySpec *pSpec, BOOL fPreBind);
+    PEAssembly *TryResolveAssembly(AssemblySpec *pSpec);
 
     // Store a successful binding into the cache.  This will keep the file from
     // being physically unmapped, as well as shortcutting future attempts to bind
@@ -2512,37 +2510,6 @@ public:
 
     IUnknown *CreateFusionContext();
 
-#ifdef FEATURE_PREJIT
-    CorCompileConfigFlags GetNativeConfigFlags();
-#endif // FEATURE_PREJIT
-
-    //****************************************************************************************
-    // Create a domain context rooted at the fileName. The directory containing the file name
-    // is the application base and the configuration file is the fileName appended with
-    // .config. If no name is passed in then no domain is created.
-    static AppDomain* CreateDomainContext(LPCWSTR fileName);
-
-    // Sets up the current domain's fusion context based on the given exe file name
-    // (app base & config file)
-    void SetupExecutableFusionContext(LPCWSTR exePath);
-
-    //****************************************************************************************
-    // Manage a pool of asyncrhonous objects used to fetch assemblies.  When a sink is released
-    // it places itself back on the pool list.  Only one object is kept in the pool.
-    void SetIsUserCreatedDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_dwFlags |= USER_CREATED_DOMAIN;
-    }
-
-    BOOL IsUserCreatedDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (m_dwFlags & USER_CREATED_DOMAIN);
-    }
-
     void SetIgnoreUnhandledExceptions()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2561,7 +2528,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_dwFlags |= (COMPILATION_DOMAIN);
+        m_dwFlags |= COMPILATION_DOMAIN;
     }
 
     BOOL IsCompilationDomain();
@@ -2655,20 +2622,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_Stage >= STAGE_READYFORMANAGEDCODE;
-    }
-
-    void SetAnonymouslyHostedDynamicMethodsAssembly(DomainAssembly * pDomainAssembly)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(pDomainAssembly != NULL);
-        _ASSERTE(m_anonymouslyHostedDynamicMethodsAssembly == NULL);
-        m_anonymouslyHostedDynamicMethodsAssembly = pDomainAssembly;
-    }
-
-    DomainAssembly * GetAnonymouslyHostedDynamicMethodsAssembly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_anonymouslyHostedDynamicMethodsAssembly;
     }
 
     static void RefTakerAcquire(AppDomain* pDomain)
@@ -2788,7 +2741,7 @@ public:
     static void RaiseExitProcessEvent();
     Assembly* RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName);
     DomainAssembly* RaiseTypeResolveEventThrowing(DomainAssembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
-    Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec, BOOL fPreBind);
+    Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec);
 
 private:
     CrstExplicitInit    m_ReflectionCrst;
@@ -2967,8 +2920,6 @@ public:
 
 protected:
 #endif // FEATURE_COMINTEROP
-
-    LPWSTR m_pwDynamicDir;
 
 private:
     void RaiseLoadingAssemblyEvent(DomainAssembly* pAssembly);
@@ -3155,8 +3106,6 @@ private:
 
     ArrayList        m_failedAssemblies;
 
-    DomainAssembly * m_anonymouslyHostedDynamicMethodsAssembly;
-
 #ifdef _DEBUG
     Volatile<LONG> m_dwIterHolders;
     Volatile<LONG> m_dwRefTakers;
@@ -3213,24 +3162,11 @@ private:
 
 public:
 
-private:
-    Volatile<BOOL> m_fIsBindingModelLocked;
-public:
-    BOOL IsHostAssemblyResolverInUse();
-    BOOL IsBindingModelLocked();
-    BOOL LockBindingModel();
-
     enum {
         CONTEXT_INITIALIZED =               0x0001,
-        USER_CREATED_DOMAIN =               0x0002, // created by call to AppDomain.CreateDomain
-        ALLOCATEDCOM =                      0x0008,
         LOAD_SYSTEM_ASSEMBLY_EVENT_SENT =   0x0040,
         COMPILATION_DOMAIN =                0x0400, // Are we ngenning?
         IGNORE_UNHANDLED_EXCEPTIONS =      0x10000, // AppDomain was created using the APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS flag
-        ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP    =      0x20000, // AppDomain was created using the APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP flag
-        ENABLE_SKIP_PLAT_CHECKS         = 0x200000, // Skip various assembly checks (like platform check)
-        ENABLE_ASSEMBLY_LOADFILE        = 0x400000, // Allow Assembly.LoadFile in CoreCLR
-        DISABLE_TRANSPARENCY_ENFORCEMENT= 0x800000, // Disable enforcement of security transparency rules
     };
 
     AssemblySpecBindingCache  m_AssemblyCache;

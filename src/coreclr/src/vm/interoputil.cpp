@@ -2149,40 +2149,6 @@ void ReleaseRCWsInCaches(LPVOID pCtxCookie)
     }
 }
 
-// Out-of-line to keep SafeComHolder's required C++ prolog/epilog out of GetCCWfromIUnknown
-NOINLINE ComCallWrapper* GetCCWFromIUnknown_CrossDomain(IUnknown* pUnk, ComCallWrapper* pWrap, AppDomain* pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // We ignore PreferComInsteadOfManagedRemoting/ICustomQueryInterface if the CCW is from
-    // the current domain (we never create RCWs pointing to CCWs in the same domain).
-
-    if (pDomain)
-    {
-        return NULL;
-    }
-
-    // If the user specifically does not support IManagedObject then don't do this bypass
-    if (pWrap && pWrap->GetSimpleWrapper() && pWrap->GetSimpleWrapper()->SupportsICustomQueryInterface())
-    {
-        SafeComHolder<IUnknown> pUnk = ComCallWrapper::GetComIPFromCCWNoThrow(
-                                            pWrap, IID_IManagedObject, NULL, 
-                                            GetComIPFromCCW::CheckVisibility);
-        if(!pUnk)
-        {
-            // They bypassed QueryInterface so don't collapse this IUnknown to the underlying managed object
-            pWrap = NULL;
-        }
-    }
-    return pWrap;
-}
-
 //--------------------------------------------------------------------------------
 // Marshalling Helpers
 //--------------------------------------------------------------------------------
@@ -2210,16 +2176,6 @@ ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
         if (pWrap->GetOuter() != NULL)
         {
             pWrap = NULL;
-        }
-
-        // Only check for an interface if caller set bEnableCustomization to TRUE
-        if (bEnableCustomization)
-        {
-            AppDomain *pDomain = GetAppDomain();
-            if (pDomain == NULL || pWrap == NULL || pDomain->GetId() != pWrap->GetDomainID())
-            {
-                pWrap = GetCCWFromIUnknown_CrossDomain(pUnk, pWrap, pDomain);
-            }
         }
     }
     

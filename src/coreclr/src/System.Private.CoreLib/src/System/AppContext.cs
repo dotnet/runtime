@@ -23,6 +23,14 @@ namespace System
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
         }
 
+        internal static unsafe void Setup(char** pNames, char** pValues, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                s_dataStore.Add(new string(pNames[i]), new string(pValues[i]));
+            }
+        }
+
         public static string BaseDirectory
         {
             get

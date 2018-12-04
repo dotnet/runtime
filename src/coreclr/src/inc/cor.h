@@ -1956,7 +1956,6 @@ typedef enum
     nltAnsi         = 2,    // ansi keyword specified
     nltUnicode      = 3,    // unicode keyword specified
     nltAuto         = 4,    // auto keyword specified
-    nltOle          = 5,    // ole keyword specified
     nltMaxValue     = 7,    // used so we can assert how many bits are required for this enum
 } CorNativeLinkType;
 

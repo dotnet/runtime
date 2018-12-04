@@ -2611,9 +2611,6 @@
   <data name="InvalidOperation_ShouldNotHaveMethodBody" xml:space="preserve">
     <value>Method body should not exist.</value>
   </data>
-  <data name="InvalidOperation_StrongNameKeyPairRequired" xml:space="preserve">
-    <value>A strong name key pair is required to emit a strong-named dynamic assembly.</value>
-  </data>
   <data name="InvalidOperation_ThreadWrongThreadStart" xml:space="preserve">
     <value>The thread was created with a ThreadStart delegate that does not accept a parameter.</value>
   </data>
