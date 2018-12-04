@@ -122,6 +122,8 @@
     <Compile Include="ConvertToVector128Single.Vector128Double.cs" />
     <Compile Include="ConvertToVector128Single.Vector128Int32.cs" />
     <Compile Include="ConvertScalarToVector128Double.Double.cs" />
+    <Compile Include="ConvertScalarToVector128Int32.Int32.cs" />
+    <Compile Include="ConvertScalarToVector128UInt32.UInt32.cs" />
     <Compile Include="Divide.Double.cs" />
     <Compile Include="DivideScalar.Double.cs" />
     <Compile Include="Extract.UInt16.1.cs" />
