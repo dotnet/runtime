@@ -330,14 +330,13 @@ namespace System.IO.Pipelines
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
         {
             CompletionData completionData;
-            CancellationTokenRegistration cancellationTokenRegistration;
             ValueTask<FlushResult> result;
             lock (_sync)
             {
                 var wasEmpty = CommitUnsynchronized();
 
                 // AttachToken before completing reader awaiter in case cancellationToken is already completed
-                cancellationTokenRegistration = _writerAwaitable.BeginOperation(cancellationToken, s_signalWriterAwaitable, this);
+                _writerAwaitable.BeginOperation(cancellationToken, s_signalWriterAwaitable, this);
 
                 // If the writer is completed (which it will be most of the time) then return a completed ValueTask
                 if (_writerAwaitable.IsCompleted)
@@ -368,8 +367,6 @@ namespace System.IO.Pipelines
                 // if it always adds new data to pipe and wakes up the reader but assert anyway
                 Debug.Assert(_writerAwaitable.IsCompleted || _readerAwaitable.IsCompleted);
             }
-
-            cancellationTokenRegistration.Dispose();
 
             TrySchedule(_readerScheduler, completionData);
 
@@ -603,7 +600,6 @@ namespace System.IO.Pipelines
 
         internal ValueTask<ReadResult> ReadAsync(CancellationToken token)
         {
-            CancellationTokenRegistration cancellationTokenRegistration;
             if (_readerCompletion.IsCompleted)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
@@ -612,7 +608,7 @@ namespace System.IO.Pipelines
             ValueTask<ReadResult> result;
             lock (_sync)
             {
-                cancellationTokenRegistration = _readerAwaitable.BeginOperation(token, s_signalReaderAwaitable, this);
+                _readerAwaitable.BeginOperation(token, s_signalReaderAwaitable, this);
 
                 // If the awaitable is already complete then return the value result directly
                 if (_readerAwaitable.IsCompleted)
@@ -626,7 +622,6 @@ namespace System.IO.Pipelines
                     result = new ValueTask<ReadResult>(_reader, token: 0);
                 }
             }
-            cancellationTokenRegistration.Dispose();
 
             return result;
         }
@@ -778,16 +773,29 @@ namespace System.IO.Pipelines
 
         internal ReadResult GetReadAsyncResult()
         {
-            if (!_readerAwaitable.IsCompleted)
+            ReadResult result;
+            CancellationTokenRegistration cancellationTokenRegistration = default;
+            CancellationToken cancellationToken = default;
+            try
             {
-                ThrowHelper.ThrowInvalidOperationException_GetResultNotCompleted();
+                lock (_sync)
+                {
+                    if (!_readerAwaitable.IsCompleted)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_GetResultNotCompleted();
+                    }
+
+                    cancellationTokenRegistration = _readerAwaitable.ReleaseCancellationTokenRegistration(out cancellationToken);
+                    GetReadResult(out result);
+                }
+            }
+            finally
+            {
+                cancellationTokenRegistration.Dispose();
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
-            lock (_sync)
-            {
-                GetReadResult(out ReadResult result);
-                return result;
-            }
+            return result;
         }
 
         private void GetReadResult(out ReadResult result)
@@ -834,15 +842,28 @@ namespace System.IO.Pipelines
 
         internal FlushResult GetFlushAsyncResult()
         {
-            var result = new FlushResult();
-            lock (_sync)
-            {
-                if (!_writerAwaitable.IsCompleted)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_GetResultNotCompleted();
-                }
+            FlushResult result = default;
+            CancellationToken cancellationToken = default;
+            CancellationTokenRegistration cancellationTokenRegistration = default;
 
-                GetFlushResult(ref result);
+            try
+            {
+                lock (_sync)
+                {
+                    if (!_writerAwaitable.IsCompleted)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_GetResultNotCompleted();
+                    }
+
+                    GetFlushResult(ref result);
+
+                    cancellationTokenRegistration = _writerAwaitable.ReleaseCancellationTokenRegistration(out cancellationToken);
+                }
+            }
+            finally
+            {
+                cancellationTokenRegistration.Dispose();
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             return result;
@@ -881,7 +902,7 @@ namespace System.IO.Pipelines
             CompletionData completionData;
             lock (_sync)
             {
-                _readerAwaitable.Cancel(out completionData);
+                _readerAwaitable.CancellationTokenFired(out completionData);
             }
             TrySchedule(_readerScheduler, completionData);
         }
@@ -891,7 +912,7 @@ namespace System.IO.Pipelines
             CompletionData completionData;
             lock (_sync)
             {
-                _writerAwaitable.Cancel(out completionData);
+                _writerAwaitable.CancellationTokenFired(out completionData);
             }
             TrySchedule(_writerScheduler, completionData);
         }

@@ -15,10 +15,16 @@ namespace System.IO.Pipelines
         private AwaitableState _awaitableState;
         private Action<object> _completion;
         private object _completionState;
-        private CancellationToken _cancellationToken;
         private CancellationTokenRegistration _cancellationTokenRegistration;
         private SynchronizationContext _synchronizationContext;
         private ExecutionContext _executionContext;
+
+#if netcoreapp
+        private CancellationToken CancellationToken => _cancellationTokenRegistration.Token;
+#else
+        private CancellationToken _cancellationToken;
+        private CancellationToken CancellationToken => _cancellationToken;
+#endif
 
         public PipeAwaitable(bool completed, bool useSynchronizationContext)
         {
@@ -26,10 +32,12 @@ namespace System.IO.Pipelines
                               (useSynchronizationContext ? AwaitableState.UseSynchronizationContext : AwaitableState.None);
             _completion = null;
             _completionState = null;
-            _cancellationToken = CancellationToken.None;
             _cancellationTokenRegistration = default;
             _synchronizationContext = null;
             _executionContext = null;
+#if !netcoreapp
+            _cancellationToken = CancellationToken.None;
+#endif
         }
 
         public bool IsCompleted => (_awaitableState & (AwaitableState.Completed | AwaitableState.Canceled)) != 0;
@@ -37,22 +45,20 @@ namespace System.IO.Pipelines
         public bool IsRunning => (_awaitableState & AwaitableState.Running) != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CancellationTokenRegistration BeginOperation(CancellationToken cancellationToken, Action<object> callback, object state)
+        public void BeginOperation(CancellationToken cancellationToken, Action<object> callback, object state)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             _awaitableState |= AwaitableState.Running;
 
-            CancellationTokenRegistration oldRegistration = default;
-            if (!cancellationToken.Equals(_cancellationToken))
+            // Don't register if already completed, we would immediately unregistered in ObserveCancellation
+            if (cancellationToken.CanBeCanceled && !IsCompleted)
             {
-                oldRegistration = _cancellationTokenRegistration;
+#if !netcoreapp
                 _cancellationToken = cancellationToken;
-                if (_cancellationToken.CanBeCanceled)
-                {
-                    _cancellationToken.ThrowIfCancellationRequested();
-                    _cancellationTokenRegistration = _cancellationToken.UnsafeRegister(callback, state);
-                }
+#endif
+                _cancellationTokenRegistration = cancellationToken.UnsafeRegister(callback, state);
             }
-            return oldRegistration;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -109,7 +115,7 @@ namespace System.IO.Pipelines
                 SynchronizationContext sc = SynchronizationContext.Current;
                 if (sc != null && sc.GetType() != typeof(SynchronizationContext))
                 {
-                    _synchronizationContext = SynchronizationContext.Current;
+                    _synchronizationContext = sc;
                 }
             }
 
@@ -127,6 +133,19 @@ namespace System.IO.Pipelines
             _awaitableState |= AwaitableState.Canceled;
         }
 
+        public void CancellationTokenFired(out CompletionData completionData)
+        {
+            // We might be getting stale callbacks that we already unsubscribed from
+            if (CancellationToken.IsCancellationRequested)
+            {
+                Cancel(out completionData);
+            }
+            else
+            {
+                completionData = default;
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ObserveCancellation()
         {
@@ -134,9 +153,21 @@ namespace System.IO.Pipelines
 
             _awaitableState &= ~(AwaitableState.Canceled | AwaitableState.Running);
 
-            _cancellationToken.ThrowIfCancellationRequested();
-
             return isCanceled;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CancellationTokenRegistration ReleaseCancellationTokenRegistration(out CancellationToken cancellationToken)
+        {
+            cancellationToken = CancellationToken;
+            CancellationTokenRegistration cancellationTokenRegistration = _cancellationTokenRegistration;
+
+#if !netcoreapp
+            _cancellationToken = default;
+#endif
+            _cancellationTokenRegistration = default;
+
+            return cancellationTokenRegistration;
         }
 
         [Flags]
