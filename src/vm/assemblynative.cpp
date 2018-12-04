@@ -75,10 +75,6 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     }
     else
     {
-        // name specified, if immersive ignore the codebase
-        if (GetThread()->GetDomain()->HasLoadContextHostBinder())
-            gc.codeBase = NULL;
-
         // Compute parent assembly
         if (gc.requestingAssembly == NULL)
         {
@@ -95,7 +91,6 @@ FCIMPL7(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         {
             pParentAssembly= pRefAssembly->GetDomainAssembly();
         }
-
     }
 
     // Initialize spec
