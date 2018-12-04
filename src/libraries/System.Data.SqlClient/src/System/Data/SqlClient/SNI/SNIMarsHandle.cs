@@ -151,6 +151,7 @@ namespace System.Data.SqlClient.SNI
             return smuxPacket;
         }
 
+        /// <summary>
         /// Send a packet synchronously
         /// </summary>
         /// <param name="packet">SNI packet</param>

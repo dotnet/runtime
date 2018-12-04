@@ -101,7 +101,7 @@ namespace System.Net
         }
 
         /// <summary>
-        ///    <para>Provides a wrapper for the async accept operations
+        /// Provides a wrapper for the async accept operations.
         /// </summary>
         private static void AcceptCallback(IAsyncResult asyncResult)
         {
@@ -804,7 +804,7 @@ namespace System.Net
 
         /// <summary>
         ///    <para>Formats an IP address (v6) to a FTP style command string
-        ///    Looks something in this form: |2|1080::8:800:200C:417A|5282| <para>
+        ///    Looks something in this form: |2|1080::8:800:200C:417A|5282| </para>
         ///    |2|4567::0123:5678:0123:5678|0123|
         /// </summary>
         private string FormatAddressV6(IPAddress address, int port)

@@ -183,7 +183,7 @@ namespace System.Net.Mail
 
         /// <summary>
         /// this returns the full address with quoted display name.
-        /// i.e. "some email address display name" <user@host>
+        /// i.e. "some email address display name" &lt;user@host&gt;
         /// if displayname is not provided then this returns only user@host (no angle brackets)
         /// </summary>
         public override string ToString()

@@ -179,7 +179,7 @@ namespace System.Net
     }
 
     /// <summary>
-    /// <para>The FtpWebRequest class implements a basic FTP client interface.
+    /// The FtpWebRequest class implements a basic FTP client interface.
     /// </summary>
     public sealed class FtpWebRequest : WebRequest
     {
@@ -1512,7 +1512,7 @@ namespace System.Net
         }
 
         /// <summary>
-        /// <para>Aborts underlying connection to FTP server (command & data)</para>
+        /// <para>Aborts underlying connection to FTP server (command &amp; data)</para>
         /// </summary>
         public override void Abort()
         {
