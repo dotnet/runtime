@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -18,9 +20,9 @@ namespace System.IO
     /// </devdoc>
     public partial class FileSystemWatcher : Component, ISupportInitialize
     {
-        /// <devdoc>
-        ///     Private instance variables
-        /// </devdoc>
+        // Filters collection
+        private readonly NormalizedFilterCollection _filters = new NormalizedFilterCollection();
+
         // Directory being monitored
         private string _directory;
 
@@ -124,7 +126,7 @@ namespace System.IO
             }
         }
 
-        public Collection<string> Filters { get; } = new NormalizedFilterCollection();
+        public Collection<string> Filters => _filters;
 
         /// <devdoc>
         ///    Gets or sets a value indicating whether the component is enabled.
@@ -390,10 +392,11 @@ namespace System.IO
             if (name.Length == 0)
                 return false;
 
-            if (Filters.Count == 0)
+            string[] filters = _filters.GetFilters();
+            if (filters.Length == 0)
                 return true;
 
-            foreach (string filter in Filters)
+            foreach (string filter in filters)
             {
                 if (FileSystemName.MatchesSimpleExpression(filter, name, ignoreCase: !PathInternal.IsCaseSensitive))
                     return true;
@@ -682,8 +685,12 @@ namespace System.IO
             return _initializing || DesignMode;
         }
 
-        private class NormalizedFilterCollection : Collection<string>
+        private sealed class NormalizedFilterCollection : Collection<string>
         {
+            internal NormalizedFilterCollection() : base(new ImmutableStringList())
+            {
+            }
+
             protected override void InsertItem(int index, string item)
             {
                 base.InsertItem(index, string.IsNullOrEmpty(item) || item == "*.*" ? "*" : item);
@@ -692,6 +699,85 @@ namespace System.IO
             protected override void SetItem(int index, string item)
             {
                 base.SetItem(index, string.IsNullOrEmpty(item) || item == "*.*" ? "*" : item);
+            }
+
+            internal string[] GetFilters() => ((ImmutableStringList)Items).Items;
+
+            /// <summary>
+            /// List that maintains its underlying data in an immutable array, such that the list
+            /// will never modify an array returned from its Items property. This is to allow
+            /// the array to be enumerated safely while another thread might be concurrently mutating
+            /// the collection.
+            /// </summary>
+            private sealed class ImmutableStringList : IList<string>
+            {
+                public string[] Items = Array.Empty<string>();
+
+                public string this[int index]
+                {
+                    get
+                    {
+                        string[] items = Items;
+                        if ((uint)index >= (uint)items.Length)
+                        {
+                            throw new ArgumentOutOfRangeException(nameof(index));
+                        }
+                        return items[index];
+                    }
+                    set
+                    {
+                        string[] clone = (string[])Items.Clone();
+                        clone[index] = value;
+                        Items = clone;
+                    }
+                }
+
+                public int Count => Items.Length;
+
+                public bool IsReadOnly => false;
+
+                public void Add(string item)
+                {
+                    // Collection<T> doesn't use this method.
+                    throw new NotSupportedException();
+                }
+
+                public void Clear() => Items = Array.Empty<string>();
+
+                public bool Contains(string item) => Array.IndexOf(Items, item) != -1;
+
+                public void CopyTo(string[] array, int arrayIndex) => Items.CopyTo(array, arrayIndex);
+
+                public IEnumerator<string> GetEnumerator() => ((IEnumerable<string>)Items).GetEnumerator();
+
+                public int IndexOf(string item) => Array.IndexOf(Items, item);
+
+                public void Insert(int index, string item)
+                {
+                    string[] items = Items;
+                    string[] newItems = new string[items.Length + 1];
+                    items.AsSpan(0, index).CopyTo(newItems);
+                    items.AsSpan(index).CopyTo(newItems.AsSpan(index + 1));
+                    newItems[index] = item;
+                    Items = newItems;
+                }
+
+                public bool Remove(string item)
+                {
+                    // Collection<T> doesn't use this method.
+                    throw new NotSupportedException();
+                }
+
+                public void RemoveAt(int index)
+                {
+                    string[] items = Items;
+                    string[] newItems = new string[items.Length - 1];
+                    items.AsSpan(0, index).CopyTo(newItems);
+                    items.AsSpan(index + 1).CopyTo(newItems.AsSpan(index));
+                    Items = newItems;
+                }
+
+                IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
             }
         }
     }
