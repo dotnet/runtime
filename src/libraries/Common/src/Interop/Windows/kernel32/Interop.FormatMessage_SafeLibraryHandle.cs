@@ -13,7 +13,6 @@ internal partial class Interop
     {
         public const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         public const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
-        public const int FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000;
         public const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
         public const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
@@ -23,7 +22,7 @@ internal partial class Interop
             SafeLibraryHandle lpSource,
             uint dwMessageId,
             int dwLanguageId,
-            StringBuilder lpBuffer,
+            [Out] char[] lpBuffer,
             int nSize,
             IntPtr[] arguments);
     }

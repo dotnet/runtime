@@ -276,19 +276,19 @@ namespace System.Diagnostics
 
                 int userNameLen = 256;
                 int domainNameLen = 256;
-                int sidNameUse = 0;
-                StringBuilder bufUserName = new StringBuilder(userNameLen);
-                StringBuilder bufDomainName = new StringBuilder(domainNameLen);
-                StringBuilder retUserName = new StringBuilder();
-
-                if (Interop.Kernel32.LookupAccountSid(MachineName, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
+                unsafe
                 {
-                    retUserName.Append(bufDomainName.ToString());
-                    retUserName.Append("\\");
-                    retUserName.Append(bufUserName.ToString());
+                    fixed (char* bufUserName = new char[userNameLen])
+                    fixed (char* bufDomainName = new char[domainNameLen])
+                    {
+                        if (Interop.Advapi32.LookupAccountSid(MachineName, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, out int sidNameUse) != 0)
+                        {
+                            return new string(bufDomainName) + "\\" + new string(bufUserName);
+                        }
+                    }
                 }
 
-                return retUserName.ToString();
+                return string.Empty;
             }
         }
 

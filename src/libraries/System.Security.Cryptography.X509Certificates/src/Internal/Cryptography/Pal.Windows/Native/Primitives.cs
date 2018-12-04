@@ -443,14 +443,6 @@ namespace Internal.Cryptography.Pal.Native
         None = 0,
     }
 
-    [Flags]
-    internal enum FormatObjectStringType : int
-    {
-        CRYPT_FORMAT_STR_MULTI_LINE = 0x00000001,
-        CRYPT_FORMAT_STR_NO_HEX     = 0x00000010,
-        None                        = 0x00000000,
-    }
-
     internal enum FormatObjectStructType : int
     {
         X509_NAME = 7,

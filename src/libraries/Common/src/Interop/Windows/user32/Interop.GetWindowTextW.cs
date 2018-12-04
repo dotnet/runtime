@@ -11,6 +11,6 @@ internal partial class Interop
     internal partial class User32
     {
         [DllImport(Libraries.User32, ExactSpelling = true, SetLastError = true, CharSet = CharSet.Unicode)]
-        public static extern int GetWindowTextW(IntPtr hWnd, [Out]StringBuilder lpString, int nMaxCount);
+        public static extern unsafe int GetWindowTextW(IntPtr hWnd, char* lpString, int nMaxCount);
     }
 }

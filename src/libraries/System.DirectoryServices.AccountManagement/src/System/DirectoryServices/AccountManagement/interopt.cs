@@ -556,40 +556,16 @@ namespace System.DirectoryServices.AccountManagement
         public static extern IntPtr LocalFree(IntPtr ptr);
 
         [DllImport("Credui.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "CredUIParseUserNameW", CharSet = CharSet.Unicode)]
-        public static extern int CredUIParseUserName(
-                                                                                        string pszUserName,
-                                                                                        StringBuilder pszUser,
-                                                                                        uint ulUserMaxChars,
-                                                                                        StringBuilder pszDomain,
-                                                                                        uint ulDomainMaxChars
-                                                                                        );
+        public static extern unsafe int CredUIParseUserName(
+            string pszUserName,
+            char* pszUser,
+            uint ulUserMaxChars,
+            char* pszDomain,
+            uint ulDomainMaxChars);
 
         // These contants were taken from the wincred.h file
         public const int CRED_MAX_USERNAME_LENGTH = 514;
         public const int CRED_MAX_DOMAIN_TARGET_LENGTH = 338;
-
-        /*
-        BOOL LookupAccountSid(
-          LPCTSTR lpSystemName,
-          PSID lpSid,
-          LPTSTR lpName,
-          LPDWORD cchName,
-          LPTSTR lpReferencedDomainName,
-          LPDWORD cchReferencedDomainName,
-          PSID_NAME_USE peUse
-        );
-
-        */
-
-        [DllImport("advapi32.dll", SetLastError = true, CallingConvention = CallingConvention.StdCall, EntryPoint = "LookupAccountSidW", CharSet = CharSet.Unicode)]
-        public static extern bool LookupAccountSid(
-                                        string computerName,
-                                        IntPtr sid,
-                                        StringBuilder name,
-                                        ref int nameLength,
-                                        StringBuilder domainName,
-                                        ref int domainNameLength,
-                                        ref int usage);
 
         //
         // AuthZ functions
@@ -847,18 +823,6 @@ namespace System.DirectoryServices.AccountManagement
 
         [DllImport("Advapi32.dll", CallingConvention = CallingConvention.StdCall, EntryPoint = "RevertToSelf", CharSet = CharSet.Unicode)]
         static extern public int RevertToSelf();
-
-        public const int FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100,
-            FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-            FORMAT_MESSAGE_FROM_STRING = 0x00000400,
-            FORMAT_MESSAGE_FROM_HMODULE = 0x00000800,
-            FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
-            FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000,
-            FORMAT_MESSAGE_MAX_WIDTH_MASK = 0x000000FF;
-
-        [DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-        public static extern int FormatMessageW(int dwFlags, IntPtr lpSource, int dwMessageId,
-                                                int dwLanguageId, StringBuilder lpBuffer, int nSize, IntPtr arguments);
     }
 }
 
