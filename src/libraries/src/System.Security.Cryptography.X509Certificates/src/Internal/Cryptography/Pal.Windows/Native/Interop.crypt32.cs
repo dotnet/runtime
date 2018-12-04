@@ -178,19 +178,8 @@ internal static partial class Interop
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool PFXExportCertStore(SafeCertStoreHandle hStore, [In, Out] ref CRYPTOAPI_BLOB pPFX, SafePasswordHandle szPassword, PFXExportFlags dwFlags);
 
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertNameToStrW")]
-        public static extern unsafe int CertNameToStr(CertEncodingType dwCertEncodingType, [In] ref CRYPTOAPI_BLOB pName, CertNameStrTypeAndFlags dwStrType, char* psz, int csz);
-
         [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "CertStrToNameW")]
         public static extern bool CertStrToName(CertEncodingType dwCertEncodingType, string pszX500, CertNameStrTypeAndFlags dwStrType, IntPtr pvReserved, [Out] byte[] pbEncoded, [In, Out] ref int pcbEncoded, IntPtr ppszError);
-
-        public static unsafe bool CryptFormatObject(CertEncodingType dwCertEncodingType, FormatObjectType dwFormatType, FormatObjectStringType dwFormatStrType, IntPtr pFormatStruct, FormatObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, byte* pbFormat, ref int pcbFormat)
-        {
-            return CryptFormatObject(dwCertEncodingType, dwFormatType, dwFormatStrType, pFormatStruct, (IntPtr)lpszStructType, pbEncoded, cbEncoded, pbFormat, ref pcbFormat);
-        }
-
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern unsafe bool CryptFormatObject(CertEncodingType dwCertEncodingType, FormatObjectType dwFormatType, FormatObjectStringType dwFormatStrType, IntPtr pFormatStruct, IntPtr lpszStructType, [In] byte[] pbEncoded, int cbEncoded, byte* pbFormat, [In, Out] ref int pcbFormat);
 
         public static bool CryptDecodeObject(CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, byte[] pbEncoded, int cbEncoded, CryptDecodeObjectFlags dwFlags, byte[] pvStructInfo, ref int pcbStructInfo)
         {

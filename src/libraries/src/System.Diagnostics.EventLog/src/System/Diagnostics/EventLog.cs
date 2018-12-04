@@ -871,7 +871,7 @@ namespace System.Diagnostics
             string msg = null;
 
             int msgLen = 0;
-            StringBuilder buf = new StringBuilder(1024);
+            var buf = new char[1024];
             int flags = Interop.Kernel32.FORMAT_MESSAGE_FROM_HMODULE | Interop.Kernel32.FORMAT_MESSAGE_ARGUMENT_ARRAY;
 
             IntPtr[] addresses = new IntPtr[insertionStrings.Length];
@@ -899,14 +899,14 @@ namespace System.Diagnostics
                         messageNum,
                         0,
                         buf,
-                        buf.Capacity,
+                        buf.Length,
                         addresses);
 
                     if (msgLen == 0)
                     {
                         lastError = Marshal.GetLastWin32Error();
                         if (lastError == Interop.Kernel32.ERROR_INSUFFICIENT_BUFFER)
-                            buf.Capacity = buf.Capacity * 2;
+                            buf = new char[buf.Length * 2];
                     }
                 }
             }
@@ -926,10 +926,9 @@ namespace System.Diagnostics
 
             if (msgLen > 0)
             {
-                msg = buf.ToString();
-                // chop off a single CR/LF pair from the end if there is one. FormatMessage always appends one extra.
-                if (msg.Length > 1 && msg[msg.Length - 1] == '\n')
-                    msg = msg.Substring(0, msg.Length - 2);
+                msg = msgLen > 1 && buf[msgLen - 1] == '\n' ?
+                    new string(buf, 0, msgLen - 2) : // chop off a single CR/LF pair from the end if there is one. FormatMessage always appends one extra.
+                    new string(buf, 0, msgLen);
             }
 
             return msg;

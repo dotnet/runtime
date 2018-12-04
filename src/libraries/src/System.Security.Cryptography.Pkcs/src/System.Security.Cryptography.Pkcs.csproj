@@ -145,6 +145,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptGetProvParam.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.CryptGetProvParam.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertNameToStr.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs</Link>
+    </Compile>
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_ID.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
@@ -157,7 +160,6 @@
     <Compile Include="Interop\Windows\Crypt32\Interop.CertGetPublicKeyLength.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertIdChoice.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CertNameStrTypeAndFlags.cs" />
-    <Compile Include="Interop\Windows\Crypt32\Interop.CertNameToStr.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CMSG_CMS_RECIPIENT_INFO.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CMSG_CTRL_DECRYPT_PARA.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CMSG_CTRL_KEY_AGREE_DECRYPT_PARA.cs" />

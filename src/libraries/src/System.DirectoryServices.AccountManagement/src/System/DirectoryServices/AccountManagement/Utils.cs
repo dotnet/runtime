@@ -611,15 +611,10 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        internal static int LookupSid(string serverName, NetCred credentials, byte[] sid, out string name, out string domainName, out int accountUsage)
+        internal static unsafe int LookupSid(string serverName, NetCred credentials, byte[] sid, out string name, out string domainName, out int accountUsage)
         {
-            IntPtr pSid = IntPtr.Zero;
-
             int nameLength = 0;
             int domainNameLength = 0;
-
-            StringBuilder sbName;
-            StringBuilder sbDomainName;
 
             accountUsage = 0;
             name = null;
@@ -629,15 +624,13 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                pSid = ConvertByteArrayToIntPtr(sid);
-
                 Utils.BeginImpersonation(credentials, out hUser);
 
                 // hUser could be null if no credentials were specified
                 Debug.Assert(hUser != IntPtr.Zero ||
                                 (credentials == null || (credentials.UserName == null && credentials.Password == null)));
 
-                bool f = UnsafeNativeMethods.LookupAccountSid(serverName, pSid, null, ref nameLength, null, ref domainNameLength, ref accountUsage);
+                int f = Interop.Advapi32.LookupAccountSid(serverName, sid, null, ref nameLength, null, ref domainNameLength, out accountUsage);
 
                 int lastErr = Marshal.GetLastWin32Error();
                 if (lastErr != 122) // ERROR_INSUFFICIENT_BUFFER
@@ -646,35 +639,33 @@ namespace System.DirectoryServices.AccountManagement
                     return lastErr;
                 }
 
-                Debug.Assert(f == false);   // should never succeed, with a 0 buffer size                
+                Debug.Assert(f == 0);   // should never succeed, with a 0 buffer size                
 
                 Debug.Assert(nameLength > 0);
                 Debug.Assert(domainNameLength > 0);
 
-                sbName = new StringBuilder(nameLength);
-                sbDomainName = new StringBuilder(domainNameLength);
-
-                f = UnsafeNativeMethods.LookupAccountSid(serverName, pSid, sbName, ref nameLength, sbDomainName, ref domainNameLength, ref accountUsage);
-
-                if (f == false)
+                fixed (char* sbName = new char[nameLength])
+                fixed (char* sbDomainName = new char[domainNameLength])
                 {
-                    lastErr = Marshal.GetLastWin32Error();
-                    Debug.Assert(lastErr != 0);
+                    f = Interop.Advapi32.LookupAccountSid(serverName, sid, sbName, ref nameLength, sbDomainName, ref domainNameLength, out accountUsage);
 
-                    GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "LookupSid: LookupAccountSid (2nd try) failed, gle=" + lastErr);
-                    return lastErr;
+                    if (f == 0)
+                    {
+                        lastErr = Marshal.GetLastWin32Error();
+                        Debug.Assert(lastErr != 0);
+
+                        GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "LookupSid: LookupAccountSid (2nd try) failed, gle=" + lastErr);
+                        return lastErr;
+                    }
+
+                    name = new string(sbName);
+                    domainName = new string(sbDomainName);
                 }
-
-                name = sbName.ToString();
-                domainName = sbDomainName.ToString();
 
                 return 0;
             }
             finally
             {
-                if (pSid != IntPtr.Zero)
-                    Marshal.FreeHGlobal(pSid);
-
                 if (hUser != IntPtr.Zero)
                     Utils.EndImpersonation(hUser);
             }
