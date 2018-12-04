@@ -15,7 +15,8 @@ namespace System.Drawing.Internal
 
         /// <summary>
         /// WindowsGraphicsCacheManager needs to track DeviceContext objects so it can ask them if a font is in use
-        /// before they it's deleted.  
+        /// before they it's deleted.
+        /// </summary>
         internal static void AddDeviceContext(DeviceContext dc)
         {
             if (t_activeDeviceContexts == null)

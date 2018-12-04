@@ -32,7 +32,7 @@ namespace System.Drawing
         /// The GDI+ equivalent for this is StringFormatFlags::StringFormatFlagsNoFitBlackBox,
         /// which is defined as 0x4.  This was a mistake introduced since the first version of
         /// the product and fixing it at this point would be a breaking change.
-        /// https://docs.microsoft.com/en-us/windows/desktop/api/gdiplusenums/ne-gdiplusenums-stringformatflags, 
+        /// <see href="https://docs.microsoft.com/en-us/windows/desktop/api/gdiplusenums/ne-gdiplusenums-stringformatflags"/>
         /// </summary>
         FitBlackBox = 0x00000004,
 
