@@ -67,7 +67,7 @@ namespace System.Buffers
         public static implicit operator StandardFormat(char symbol) => new StandardFormat(symbol);
 
         /// <summary>
-        /// Converts a ReadOnlySpan<char> into a StandardFormat
+        /// Converts a <see cref="ReadOnlySpan{Char}"/> into a StandardFormat
         /// </summary>
         public static StandardFormat Parse(ReadOnlySpan<char> format)
         {
@@ -82,7 +82,7 @@ namespace System.Buffers
         public static StandardFormat Parse(string format) => format == null ? default : Parse(format.AsSpan());
 
         /// <summary>
-        /// Tries to convert a ReadOnlySpan<char> into a StandardFormat. A return value indicates whether the conversion succeeded or failed.
+        /// Tries to convert a <see cref="ReadOnlySpan{Char}"/> into a StandardFormat. A return value indicates whether the conversion succeeded or failed.
         /// </summary>
         public static bool TryParse(ReadOnlySpan<char> format, out StandardFormat result)
         {

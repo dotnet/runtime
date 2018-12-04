@@ -29,9 +29,9 @@ namespace System.Threading.Tasks
                 Task.FromCanceled(new CancellationToken(true));
         }
 
-        /// <summary>Creates a proxy <see cref="Task{TResult}"/> that represents the asynchronous operation of a <see cref="Task{Task{TResult}}"/>.</summary>
-        /// <param name="task">The <see cref="Task{Task{TResult}}"/> to unwrap.</param>
-        /// <returns>A <see cref="Task{TResult}"/> that represents the asynchronous operation of the provided <see cref="Task{Task{TResult}}"/>.</returns>
+        /// <summary>Creates a proxy <see cref="Task{TResult}"/> that represents the asynchronous operation of a wrapped <see cref="Task{TResult}"/>.</summary>
+        /// <param name="task">The wrapped <see cref="Task{TResult}"/> to unwrap.</param>
+        /// <returns>A <see cref="Task{TResult}"/> that represents the asynchronous operation of the provided wrapped <see cref="Task{TResult}"/>.</returns>
         public static Task<TResult> Unwrap<TResult>(this Task<Task<TResult>> task)
         {
             if (task == null)

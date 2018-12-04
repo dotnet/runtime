@@ -13,25 +13,25 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     public static class Aes
     {
         public static bool IsSupported {  get { return false; } }
-        // <summary>
+        /// <summary>
         /// Performs AES single round decryption
         /// vaesdq_u8 (uint8x16_t data, uint8x16_t key)
         ///</summary>
         public static Vector128<byte> Decrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw new PlatformNotSupportedException(); }
 
-        // <summary>
+        /// <summary>
         /// Performs AES single round encryption
         /// vaeseq_u8 (uint8x16_t data, uint8x16_t key)
         ///</summary>
         public static Vector128<byte> Encrypt(Vector128<byte> value, Vector128<byte> roundKey) { throw new PlatformNotSupportedException(); }
 
-        // <summary>
+        /// <summary>
         /// Performs AES  Mix Columns
         /// vaesmcq_u8 (uint8x16_t data)
         ///</summary>
         public static Vector128<byte> MixColumns(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
 
-        // <summary>
+        /// <summary>
         /// Performs AES inverse mix columns
         /// vaesimcq_u8  (uint8x16_t data)
         ///</summary>
