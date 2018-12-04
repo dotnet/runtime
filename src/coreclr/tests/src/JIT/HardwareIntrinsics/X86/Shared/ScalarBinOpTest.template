@@ -112,7 +112,7 @@ namespace JIT.HardwareIntrinsics.X86
             _data2 = {NextValueOp2};
         }
 
-        public bool IsSupported => {Isa}.IsSupported && (Environment.Is64BitProcess || ((typeof({RetBaseType}) != typeof(long)) && (typeof({RetBaseType}) != typeof(ulong))));
+        public bool IsSupported => {Isa}.IsSupported;
 
         public bool Succeeded { get; set; }
 
