@@ -223,12 +223,25 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				// Use the parent type for locating the source file
 				var parentType = ParentMostType (valueAsTypeRef);
 				var pathRelativeToAssembly = $"{parentType.FullName.Substring (parentType.Module.Name.Length - 3).Replace ('.', '/')}.cs".ToNPath ();
-				var topMostDirectoryName = pathRelativeToAssembly.Elements.First ();
+				var pathElements = pathRelativeToAssembly.Elements.ToArray ();
+				var topMostDirectoryName = pathElements [0];
 				var topMostDirectory = _testCase.SourceFile.RecursiveParents.Reverse ().FirstOrDefault (d => !d.IsRoot && d.FileName == topMostDirectoryName);
-						
-				if (topMostDirectory == null)
-					throw new ArgumentException ($"Unable to locate the source file for type {valueAsTypeRef}.  Could not locate directory {topMostDirectoryName}.  Ensure the type name matches the file name.  And the namespace match the directory structure on disk");
-						
+
+				if (topMostDirectory == null) {
+					// Before giving up, try and detect the naming scheme for tests that use a dot in the top level directory name.
+					// Ex:
+					// Attributes.Debugger
+					// + 1 because the file name is one of the elements
+					if (pathElements.Length >= 3) {
+						topMostDirectoryName = $"{pathElements[0]}.{pathElements[1]}";
+						topMostDirectory = _testCase.SourceFile.RecursiveParents.Reverse ().FirstOrDefault (d => !d.IsRoot && d.FileName == topMostDirectoryName);
+						pathRelativeToAssembly = topMostDirectoryName.ToNPath ().Combine (pathElements.Skip (2).Aggregate (new NPath (string.Empty), (path, s) => path.Combine (s)));
+					}
+
+					if (topMostDirectory == null)
+						throw new ArgumentException ($"Unable to locate the source file for type {valueAsTypeRef}.  Could not locate directory {topMostDirectoryName}.  Ensure the type name matches the file name.  And the namespace match the directory structure on disk");
+				}
+
 				var fullPath = topMostDirectory.Parent.Combine (pathRelativeToAssembly);
 						
 				if (!fullPath.Exists ())
