@@ -10,9 +10,9 @@ namespace System.Runtime.Intrinsics
     {
         internal const int Size = 16;
 
-        /// <summary>Creates a new <see cref="Vector128{byte}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{byte}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{Byte}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector128<byte> Create(byte value)
         {
             var pResult = stackalloc byte[16]
@@ -38,9 +38,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<byte>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{double}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{double}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{Double}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector128<double> Create(double value)
         {
             var pResult = stackalloc double[2]
@@ -52,9 +52,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<double>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{short}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{short}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{Int16}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector128<short> Create(short value)
         {
             var pResult = stackalloc short[8]
@@ -72,9 +72,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<short>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{int}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{int}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{Int32}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector128<int> Create(int value)
         {
             var pResult = stackalloc int[4]
@@ -88,9 +88,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<int>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{long}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{long}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{Int64}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector128<long> Create(long value)
         {
             var pResult = stackalloc long[2]
@@ -102,9 +102,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<long>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{sbyte}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{sbyte}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{SByte}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte value)
         {
@@ -131,9 +131,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<sbyte>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{float}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{float}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{Single}" /> with all elements initialized to <paramref name="value" />.</returns>
         public static unsafe Vector128<float> Create(float value)
         {
             var pResult = stackalloc float[4]
@@ -147,9 +147,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<float>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ushort}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ushort}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{UInt16}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort value)
         {
@@ -168,9 +168,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<ushort>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{uint}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{uint}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{UInt32}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint value)
         {
@@ -185,9 +185,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<uint>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ulong}" /> instance with all elements initialized to the specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with all elements initialized to the specified value.</summary>
         /// <param name="value">The value that all elements will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ulong}" /> with all elements initialized to <paramref name="value" />.</returns>
+        /// <returns>A new <see cref="Vector128{UInt64}" /> with all elements initialized to <paramref name="value" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong value)
         {
@@ -200,7 +200,7 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<ulong>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{byte}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -217,7 +217,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{byte}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{Byte}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
         {
             var pResult = stackalloc byte[16]
@@ -243,10 +243,10 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<byte>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{double}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{double}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{Double}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector128<double> Create(double e0, double e1)
         {
             var pResult = stackalloc double[2]
@@ -258,7 +258,7 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<double>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{short}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -267,7 +267,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{short}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{Int16}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector128<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
         {
             var pResult = stackalloc short[8]
@@ -285,12 +285,12 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<short>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{int}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{int}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{Int32}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector128<int> Create(int e0, int e1, int e2, int e3)
         {
             var pResult = stackalloc int[4]
@@ -304,10 +304,10 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<int>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{long}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{long}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{Int64}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector128<long> Create(long e0, long e1)
         {
             var pResult = stackalloc long[2]
@@ -319,7 +319,7 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<long>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{sbyte}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -336,7 +336,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e13">The value that element 13 will be initialized to.</param>
         /// <param name="e14">The value that element 14 will be initialized to.</param>
         /// <param name="e15">The value that element 15 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{sbyte}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{SByte}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
         {
@@ -363,12 +363,12 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<sbyte>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{float}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{float}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{Single}" /> with each element initialized to corresponding specified value.</returns>
         public static unsafe Vector128<float> Create(float e0, float e1, float e2, float e3)
         {
             var pResult = stackalloc float[4]
@@ -382,7 +382,7 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<float>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ushort}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
@@ -391,7 +391,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="e5">The value that element 5 will be initialized to.</param>
         /// <param name="e6">The value that element 6 will be initialized to.</param>
         /// <param name="e7">The value that element 7 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ushort}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{UInt16}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7)
         {
@@ -410,12 +410,12 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<ushort>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{uint}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
         /// <param name="e2">The value that element 2 will be initialized to.</param>
         /// <param name="e3">The value that element 3 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{uint}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{UInt32}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(uint e0, uint e1, uint e2, uint e3)
         {
@@ -430,10 +430,10 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<uint>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ulong}" /> instance with each element initialized to the corresponding specified value.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with each element initialized to the corresponding specified value.</summary>
         /// <param name="e0">The value that element 0 will be initialized to.</param>
         /// <param name="e1">The value that element 1 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ulong}" /> with each element initialized to corresponding specified value.</returns>
+        /// <returns>A new <see cref="Vector128{UInt64}" /> with each element initialized to corresponding specified value.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(ulong e0, ulong e1)
         {
@@ -446,10 +446,10 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<ulong>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{byte}" /> instance from two <see cref="Vector64{byte}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance from two <see cref="Vector64{Byte}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{byte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{Byte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static unsafe Vector128<byte> Create(Vector64<byte> lower, Vector64<byte> upper)
         {
             Vector128<byte> result128 = Vector128<byte>.Zero;
@@ -461,10 +461,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{double}" /> instance from two <see cref="Vector64{double}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Double}" /> instance from two <see cref="Vector64{Double}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{double}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{Double}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static unsafe Vector128<double> Create(Vector64<double> lower, Vector64<double> upper)
         {
             Vector128<double> result128 = Vector128<double>.Zero;
@@ -476,10 +476,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{short}" /> instance from two <see cref="Vector64{short}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance from two <see cref="Vector64{Int16}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{short}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{Int16}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static unsafe Vector128<short> Create(Vector64<short> lower, Vector64<short> upper)
         {
             Vector128<short> result128 = Vector128<short>.Zero;
@@ -491,10 +491,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{int}" /> instance from two <see cref="Vector64{int}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance from two <see cref="Vector64{Int32}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{int}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{Int32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static unsafe Vector128<int> Create(Vector64<int> lower, Vector64<int> upper)
         {
             Vector128<int> result128 = Vector128<int>.Zero;
@@ -506,10 +506,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{long}" /> instance from two <see cref="Vector64{long}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance from two <see cref="Vector64{Int64}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{long}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{Int64}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static unsafe Vector128<long> Create(Vector64<long> lower, Vector64<long> upper)
         {
             Vector128<long> result128 = Vector128<long>.Zero;
@@ -521,10 +521,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{sbyte}" /> instance from two <see cref="Vector64{sbyte}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance from two <see cref="Vector64{SByte}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{sbyte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{SByte}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> Create(Vector64<sbyte> lower, Vector64<sbyte> upper)
         {
@@ -537,10 +537,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{float}" /> instance from two <see cref="Vector64{float}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Single}" /> instance from two <see cref="Vector64{Single}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{float}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{Single}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         public static unsafe Vector128<float> Create(Vector64<float> lower, Vector64<float> upper)
         {
             Vector128<float> result128 = Vector128<float>.Zero;
@@ -552,10 +552,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ushort}" /> instance from two <see cref="Vector64{ushort}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance from two <see cref="Vector64{UInt16}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ushort}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{UInt16}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> Create(Vector64<ushort> lower, Vector64<ushort> upper)
         {
@@ -568,10 +568,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{uint}" /> instance from two <see cref="Vector64{uint}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance from two <see cref="Vector64{UInt32}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{uint}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{UInt32}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> Create(Vector64<uint> lower, Vector64<uint> upper)
         {
@@ -584,10 +584,10 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ulong}" /> instance from two <see cref="Vector64{ulong}" /> instances.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance from two <see cref="Vector64{UInt64}" /> instances.</summary>
         /// <param name="lower">The value that the lower 64-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 64-bits will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ulong}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        /// <returns>A new <see cref="Vector128{UInt64}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> Create(Vector64<ulong> lower, Vector64<ulong> upper)
         {
@@ -600,9 +600,9 @@ namespace System.Runtime.Intrinsics
             return result128;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{byte}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<byte> CreateScalar(byte value)
         {
             var result = Vector128<byte>.Zero;
@@ -610,9 +610,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{double}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<double> CreateScalar(double value)
         {
             var result = Vector128<double>.Zero;
@@ -620,9 +620,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{short}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{short}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<short> CreateScalar(short value)
         {
             var result = Vector128<short>.Zero;
@@ -630,9 +630,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{int}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{int}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<int> CreateScalar(int value)
         {
             var result = Vector128<int>.Zero;
@@ -640,9 +640,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{long}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{long}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<long> CreateScalar(long value)
         {
             var result = Vector128<long>.Zero;
@@ -650,9 +650,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{sbyte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{sbyte}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> CreateScalar(sbyte value)
         {
@@ -661,9 +661,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{float}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{float}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         public static unsafe Vector128<float> CreateScalar(float value)
         {
             var result = Vector128<float>.Zero;
@@ -671,9 +671,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ushort}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ushort}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> CreateScalar(ushort value)
         {
@@ -682,9 +682,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{uint}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{uint}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> CreateScalar(uint value)
         {
@@ -693,9 +693,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ulong}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ulong}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements initialized to zero.</returns>
+        /// <returns>A new <see cref="Vector128{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> CreateScalar(ulong value)
         {
@@ -704,9 +704,9 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{byte}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         public static unsafe Vector128<byte> CreateScalarUnsafe(byte value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -717,9 +717,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<byte>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{double}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Double}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{double}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         public static unsafe Vector128<double> CreateScalarUnsafe(double value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -730,9 +730,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<double>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{short}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{short}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         public static unsafe Vector128<short> CreateScalarUnsafe(short value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -743,9 +743,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<short>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{int}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{int}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         public static unsafe Vector128<int> CreateScalarUnsafe(int value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -756,9 +756,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<int>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{long}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Int64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{long}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         public static unsafe Vector128<long> CreateScalarUnsafe(long value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -769,9 +769,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<long>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{sbyte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{sbyte}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<sbyte> CreateScalarUnsafe(sbyte value)
         {
@@ -783,9 +783,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<sbyte>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{float}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{float}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         public static unsafe Vector128<float> CreateScalarUnsafe(float value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -796,9 +796,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<float>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ushort}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ushort}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ushort> CreateScalarUnsafe(ushort value)
         {
@@ -810,9 +810,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<ushort>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{uint}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{uint}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<uint> CreateScalarUnsafe(uint value)
         {
@@ -824,9 +824,9 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector128<uint>>(pResult);
         }
 
-        /// <summary>Creates a new <see cref="Vector128{ulong}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <summary>Creates a new <see cref="Vector128{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
-        /// <returns>A new <see cref="Vector128{ulong}" /> instance with the first element initialized to <see cref="value" /> and the remaining elements left uninitialized.</returns>
+        /// <returns>A new <see cref="Vector128{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         public static unsafe Vector128<ulong> CreateScalarUnsafe(ulong value)
         {

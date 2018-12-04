@@ -243,7 +243,7 @@ namespace System.Diagnostics.Contracts
         /// </summary>
         /// <param name="condition">Expression to assume will always be true.</param>
         /// <remarks>
-        /// At runtime this is equivalent to an <seealso cref="System.Diagnostics.Contracts.Debug.Assert(bool)"/>.
+        /// At runtime this is equivalent to an <seealso cref="System.Diagnostics.Contracts.Contract.Assert(bool)"/>.
         /// </remarks>
         [Pure]
         [Conditional("DEBUG")]
@@ -262,7 +262,7 @@ namespace System.Diagnostics.Contracts
         /// <param name="condition">Expression to assume will always be true.</param>
         /// <param name="userMessage">If it is not a constant string literal, then the contract may not be understood by tools.</param>
         /// <remarks>
-        /// At runtime this is equivalent to an <seealso cref="System.Diagnostics.Contracts.Debug.Assert(bool)"/>.
+        /// At runtime this is equivalent to an <seealso cref="System.Diagnostics.Contracts.Contract.Assert(bool)"/>.
         /// </remarks>
         [Pure]
         [Conditional("DEBUG")]

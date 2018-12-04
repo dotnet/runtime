@@ -227,12 +227,8 @@ namespace System.Runtime.CompilerServices
 #if CORECLR
         /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="task">The task being awaited.</param>
-        /// <param name="continuation">The action to invoke when the await operation completes.</param>
+        /// <param name="stateMachineBox">The box to invoke when the await operation completes.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
-        /// <param name="flowExecutionContext">Whether to flow ExecutionContext across the await.</param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
-        /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
-        /// <remarks>This method is intended for compiler user rather than use directly in code.</remarks>
         internal static void UnsafeOnCompletedInternal(Task task, IAsyncStateMachineBox stateMachineBox, bool continueOnCapturedContext)
         {
             Debug.Assert(stateMachineBox != null);
