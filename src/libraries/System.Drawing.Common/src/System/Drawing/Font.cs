@@ -118,7 +118,7 @@ namespace System.Drawing
         public string OriginalFontName => _originalFontName;
 
         /// <summary>
-        /// Gets the name of this <see cref='Drawing.SystemFont'/>.
+        /// Gets the name of this <see cref='Font'/>.
         /// </summary>
         [Browsable(false)]
         public string SystemFontName => _systemFontName;
