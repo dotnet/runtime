@@ -20,6 +20,7 @@ namespace System
         /// <param name="bytes">The output span which contains the result of the operation, i.e. the decoded binary data.</param>
         /// <param name="consumed">The number of input bytes consumed during the operation. This can be used to slice the input for subsequent calls, if necessary.</param>
         /// <param name="written">The number of bytes written into the output span. This can be used to slice the output for subsequent calls, if necessary.</param>
+        /// </summary> 
         /// <returns>Returns:
         /// - true  - The entire input span was successfully parsed.
         /// - false - Only a part of the input span was successfully parsed. Failure causes may include embedded or trailing whitespace, 
@@ -29,8 +30,7 @@ namespace System
         ///           
         /// Note: This is a cut down version of the implementation of Base64.DecodeFromUtf8(), modified the accept UTF16 chars and act as a fast-path
         /// helper for the Convert routines when the input string contains no whitespace.
-        ///           
-        /// </summary> 
+        /// </returns>
         private static bool TryDecodeFromUtf16(ReadOnlySpan<char> utf16, Span<byte> bytes, out int consumed, out int written)
         {
             ref char srcChars = ref MemoryMarshal.GetReference(utf16);

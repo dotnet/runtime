@@ -154,9 +154,9 @@ namespace System.Text
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSurrogateCodePoint(uint value) => IsInRangeInclusive(value, 0xD800U, 0xDFFFU);
-        
+
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode code
+        /// Returns <see langword="true"/> iff <paramref name="codePoint"/> is a valid Unicode code
         /// point, i.e., is in [ U+0000..U+10FFFF ], inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

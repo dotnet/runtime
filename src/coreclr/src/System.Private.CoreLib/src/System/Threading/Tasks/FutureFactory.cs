@@ -1227,7 +1227,7 @@ namespace System.Threading.Tasks
         /// and delegate allocations.
         /// </summary>
         /// <typeparam name="TInstance">Specifies the type of the instance on which the APM implementation lives.</typeparam>
-        /// <typeparam name="TArg1">Specifies the type containing the arguments.</typeparam>
+        /// <typeparam name="TArgs">Specifies the type containing the arguments.</typeparam>
         /// <param name="thisRef">The instance from which the begin and end methods are invoked.</param>
         /// <param name="beginMethod">The begin method.</param>
         /// <param name="endMethod">The end method.</param>
@@ -1326,10 +1326,6 @@ namespace System.Threading.Tasks
             /// <param name="thisRef">The target instance on which the end method should be called.</param>
             /// <param name="endMethod">The end method to call to retrieve the result.</param>
             /// <param name="asyncResult">The IAsyncResult for the async operation.</param>
-            /// <permission cref="requiresSynchronization">
-            /// Whether completing the task requires synchronization.  This should be true
-            /// unless absolutely sure that the task has not yet been handed out to any consumers.
-            /// </permission>
             internal void Complete(
                 TInstance thisRef, Func<TInstance, IAsyncResult, TResult> endMethod, IAsyncResult asyncResult,
                 bool requiresSynchronization)

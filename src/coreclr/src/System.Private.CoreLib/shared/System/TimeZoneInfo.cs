@@ -789,7 +789,7 @@ namespace System
         public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(_id);
 
         /// <summary>
-        /// Returns a ReadOnlyCollection<TimeZoneInfo> containing all valid TimeZone's
+        /// Returns a <see cref="ReadOnlyCollection{TimeZoneInfo}"/> containing all valid TimeZone's
         /// from the local machine. The entries in the collection are sorted by
         /// <see cref="DisplayName"/>.
         /// This method does *not* throw TimeZoneNotFoundException or InvalidTimeZoneException.
@@ -1831,7 +1831,7 @@ namespace System
         }
 
         /// <summary>
-        /// Helper function for retrieving a TimeZoneInfo object by <time_zone_name>.
+        /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
         ///
         /// This function may return null.
         ///

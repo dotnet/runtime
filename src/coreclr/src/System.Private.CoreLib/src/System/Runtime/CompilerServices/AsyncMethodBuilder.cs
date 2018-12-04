@@ -522,7 +522,6 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>A strongly-typed box for Task-based async state machines.</summary>
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
-        /// <typeparam name="TResult">Specifies the type of the Task's result.</typeparam>
         private class AsyncStateMachineBox<TStateMachine> : // SOS DumpAsync command depends on this name
             Task<TResult>, IAsyncStateMachineBox
             where TStateMachine : IAsyncStateMachine
@@ -530,14 +529,14 @@ namespace System.Runtime.CompilerServices
             /// <summary>Delegate used to invoke on an ExecutionContext when passed an instance of this box type.</summary>
             private static readonly ContextCallback s_callback = s => ((AsyncStateMachineBox<TStateMachine>)s).StateMachine.MoveNext();
 
-            /// <summary>A delegate to the <see cref="MoveNext"/> method.</summary>
+            /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             private Action _moveNextAction;
             /// <summary>The state machine itself.</summary>
             public TStateMachine StateMachine; // mutable struct; do not make this readonly. SOS DumpAsync command depends on this name.
             /// <summary>Captured ExecutionContext with which to invoke <see cref="MoveNextAction"/>; may be null.</summary>
             public ExecutionContext Context;
 
-            /// <summary>A delegate to the <see cref="MoveNext"/> method.</summary>
+            /// <summary>A delegate to the <see cref="MoveNext()"/> method.</summary>
             public Action MoveNextAction => _moveNextAction ?? (_moveNextAction = new Action(MoveNext));
 
             internal sealed override void ExecuteFromThreadPool(Thread threadPoolThread) => MoveNext(threadPoolThread);
@@ -910,7 +909,7 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>
-    /// An interface implemented by all <see cref="AsyncStateMachineBox{TStateMachine, TResult}"/> instances, regardless of generics.
+    /// An interface implemented by all <see cref="AsyncTaskMethodBuilder{TResult}.AsyncStateMachineBox{TStateMachine}"/> instances, regardless of generics.
     /// </summary>
     internal interface IAsyncStateMachineBox
     {
@@ -1067,7 +1066,7 @@ namespace System.Runtime.CompilerServices
         /// the action after that is and after that.   To solve this problem we create a 'ContinuationWrapper 
         /// which when invoked just does the original action (the invoke action), but also remembers other information
         /// (like the action after that (which is also a ContinuationWrapper and thus form a linked list).  
-        //  We also store that task if the action is associate with at task.  
+        ///  We also store that task if the action is associate with at task.  
         /// </summary>
         private sealed class ContinuationWrapper
         {
