@@ -930,7 +930,7 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         /// <summary>
-        ///  EnsureCanSet<T> must be called from within a lock.
+        /// EnsureCanSet{T} must be called from within a lock.
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="currentValue"></param>

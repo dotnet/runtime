@@ -245,7 +245,7 @@ namespace System.Drawing
         /// Multiplies <see cref="Size"/> by an <see cref="int"/> producing <see cref="Size"/>.
         /// </summary>
         /// <param name="size">Multiplicand of type <see cref="Size"/>.</param>
-        /// <param name="multiplier">Multiplier of type <see cref='int'>.</param>
+        /// <param name="multiplier">Multiplier of type <see cref='int'/>.</param>
         /// <returns>Product of type <see cref="Size"/>.</returns>
         private static Size Multiply(Size size, int multiplier) =>
             new Size(unchecked(size.width * multiplier), unchecked(size.height * multiplier));

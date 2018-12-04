@@ -5,7 +5,7 @@
 namespace System.Xml.Xsl.Qil
 {
     /// <summary>An enumeration of all the possible QilExpression node types.</summary>
-    /// <remarks>See <see cref="http://dynamo/qil/qil.xml">the QIL functional specification</see> for documentation.</remarks>
+    /// <remarks>See <see href="http://dynamo/qil/qil.xml">the QIL functional specification</see> for documentation.</remarks>
     internal enum QilNodeType
     {
         // Do not edit this region

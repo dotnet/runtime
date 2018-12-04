@@ -33,9 +33,7 @@ internal partial class Interop
             /// </summary>
             FILE_WRITE_DATA = 0x02
 
-            /// <summary>
-            ///FILE_READ_DATA and FILE_WRITE_DATA can be ORed together if the caller must have both read and write access rights.
-            /// </summary>
+            // FILE_READ_DATA and FILE_WRITE_DATA can be ORed together if the caller must have both read and write access rights.
         }
     }
 }
