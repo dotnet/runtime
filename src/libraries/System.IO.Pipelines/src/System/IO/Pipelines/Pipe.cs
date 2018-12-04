@@ -183,7 +183,7 @@ namespace System.IO.Pipelines
                 int bytesLeftInBuffer = segment.WritableBytes;
 
                 // If inadequate bytes left or if the segment is readonly
-                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint || segment.ReadOnly)
+                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
                     BufferSegment nextSegment = CreateSegmentUnsynchronized();
                     nextSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
@@ -195,7 +195,7 @@ namespace System.IO.Pipelines
             }
             else
             {
-                if (_commitHead != null && !_commitHead.ReadOnly)
+                if (_commitHead != null)
                 {
                     // Try to return the tail so the calling code can append to it
                     int remaining = _commitHead.WritableBytes;
@@ -308,7 +308,6 @@ namespace System.IO.Pipelines
 
             if (bytesWritten >= 0)
             {
-                Debug.Assert(!_writingHead.ReadOnly);
                 Debug.Assert(_writingHead.Next == null);
 
                 Memory<byte> buffer = _writingHead.AvailableMemory;
@@ -436,7 +435,7 @@ namespace System.IO.Pipelines
                 var examinedEverything = false;
                 if (examinedSegment == _commitHead)
                 {
-                    examinedEverything = _commitHead != null ? examinedIndex == _commitHeadIndex - _commitHead.Start : examinedIndex == 0;
+                    examinedEverything = _commitHead != null ? examinedIndex == _commitHeadIndex : examinedIndex == 0;
                 }
 
                 if (consumedSegment != null)
@@ -801,7 +800,7 @@ namespace System.IO.Pipelines
             if (head != null)
             {
                 // Reading commit head shared with writer
-                var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex - _commitHead.Start);
+                var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex);
                 result = new ReadResult(readOnlySequence, isCanceled, isCompleted);
             }
             else
