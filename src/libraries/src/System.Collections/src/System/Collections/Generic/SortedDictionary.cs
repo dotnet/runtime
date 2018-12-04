@@ -947,7 +947,7 @@ namespace System.Collections.Generic
 
     /// <summary>
     /// This class is intended as a helper for backwards compatibility with existing SortedDictionaries.
-    /// TreeSet has been converted into SortedSet<T>, which will be exposed publicly. SortedDictionaries
+    /// TreeSet has been converted into SortedSet{T}, which will be exposed publicly. SortedDictionaries
     /// have the problem where they have already been serialized to disk as having a backing class named
     /// TreeSet. To ensure that we can read back anything that has already been written to disk, we need to
     /// make sure that we have a class named TreeSet that does everything the way it used to.
