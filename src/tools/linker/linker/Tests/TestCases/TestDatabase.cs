@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Collections.Generic;
 using NUnit.Framework;
 using System.Runtime.CompilerServices;
@@ -13,112 +13,112 @@ namespace Mono.Linker.Tests.TestCases
 		
 		public static IEnumerable<TestCaseData> XmlTests()
 		{
-			return NUnitCasesByPrefix("LinkXml.");
+			return NUnitCasesBySuiteName("LinkXml");
 		}
 
 		public static IEnumerable<TestCaseData> BasicTests()
 		{
-			return NUnitCasesByPrefix("Basic.");
+			return NUnitCasesBySuiteName("Basic");
 		}
 
 		public static IEnumerable<TestCaseData> AttributeTests()
 		{
-			return NUnitCasesByPrefix("Attributes.");
+			return NUnitCasesBySuiteName("Attributes");
 		}
 		
 		public static IEnumerable<TestCaseData> AttributeDebuggerTests ()
 		{
-			return NUnitCasesByPrefix ("Attributes.Debugger.");
+			return NUnitCasesBySuiteName ("Attributes.Debugger");
 		}
 
 		public static IEnumerable<TestCaseData> GenericsTests()
 		{
-			return NUnitCasesByPrefix("Generics.");
+			return NUnitCasesBySuiteName("Generics");
 		}
 
 		public static IEnumerable<TestCaseData> CoreLinkTests()
 		{
-			return NUnitCasesByPrefix("CoreLink.");
+			return NUnitCasesBySuiteName("CoreLink");
 		}
 
 		public static IEnumerable<TestCaseData> StaticsTests()
 		{
-			return NUnitCasesByPrefix("Statics.");
+			return NUnitCasesBySuiteName("Statics");
 		}
 
 		public static IEnumerable<TestCaseData> InteropTests()
 		{
-			return NUnitCasesByPrefix("Interop.");
+			return NUnitCasesBySuiteName("Interop");
 		}
 
 		public static IEnumerable<TestCaseData> ReferencesTests()
 		{
-			return NUnitCasesByPrefix("References.");
+			return NUnitCasesBySuiteName("References");
 		}
 
 		public static IEnumerable<TestCaseData> ResourcesTests ()
 		{
-			return NUnitCasesByPrefix ("Resources.");
+			return NUnitCasesBySuiteName ("Resources");
 		}
 
 		public static IEnumerable<TestCaseData> TypeForwardingTests ()
 		{
-			return NUnitCasesByPrefix ("TypeForwarding.");
+			return NUnitCasesBySuiteName ("TypeForwarding");
 		}
 
 		public static IEnumerable<TestCaseData> TestFrameworkTests ()
 		{
-			return NUnitCasesByPrefix ("TestFramework.");
+			return NUnitCasesBySuiteName ("TestFramework");
 		}
 
 		public static IEnumerable<TestCaseData> ReflectionTests ()
 		{
-			return NUnitCasesByPrefix ("Reflection.");
+			return NUnitCasesBySuiteName ("Reflection");
 		}
 		
 		public static IEnumerable<TestCaseData> SymbolsTests ()
 		{
-			return NUnitCasesByPrefix ("Symbols.");
+			return NUnitCasesBySuiteName ("Symbols");
 		}
 		
 		public static IEnumerable<TestCaseData> PreserveDependenciesTests ()
 		{
-			return NUnitCasesByPrefix ("PreserveDependencies.");
+			return NUnitCasesBySuiteName ("PreserveDependencies");
 		}
 		
 		public static IEnumerable<TestCaseData> LibrariesTests ()
 		{
-			return NUnitCasesByPrefix ("Libraries.");
+			return NUnitCasesBySuiteName ("Libraries");
 		}
 
 		public static IEnumerable<TestCaseData> AdvancedTests ()
 		{
-			return NUnitCasesByPrefix ("Advanced.");
+			return NUnitCasesBySuiteName ("Advanced");
 		}
 		
 		public static IEnumerable<TestCaseData> InheritanceInterfaceTests ()
 		{
-			return NUnitCasesByPrefix ("Inheritance.Interfaces.");
+			return NUnitCasesBySuiteName ("Inheritance.Interfaces");
 		}
 		
 		public static IEnumerable<TestCaseData> InheritanceAbstractClassTests ()
 		{
-			return NUnitCasesByPrefix ("Inheritance.AbstractClasses.");
+			return NUnitCasesBySuiteName ("Inheritance.AbstractClasses");
 		}
 		
 		public static IEnumerable<TestCaseData> InheritanceVirtualMethodsTests ()
 		{
-			return NUnitCasesByPrefix ("Inheritance.VirtualMethods.");
+			return NUnitCasesBySuiteName ("Inheritance.VirtualMethods");
 		}
 		
 		public static IEnumerable<TestCaseData> InheritanceComplexTests ()
 		{
-			return NUnitCasesByPrefix ("Inheritance.Complex.");
+			return NUnitCasesBySuiteName ("Inheritance.Complex");
 		}
 
 		public static IEnumerable<TestCaseData> BCLFeaturesTests ()
 		{
-			return NUnitCasesByPrefix ("BCLFeatures.");
+			return NUnitCasesBySuiteName ("BCLFeatures");
 		}
 
 		public static TestCaseCollector CreateCollector ()
@@ -140,11 +140,11 @@ namespace Mono.Linker.Tests.TestCases
 			return _cachedAllCases;
 		}
 
-		static IEnumerable<TestCaseData> NUnitCasesByPrefix(string testNamePrefix)
+		static IEnumerable<TestCaseData> NUnitCasesBySuiteName(string suiteName)
 		{
 			return AllCases()
-				.Where(c => c.DisplayName.StartsWith(testNamePrefix))
-				.Select(c => CreateNUnitTestCase(c, c.DisplayName.Substring(testNamePrefix.Length)))
+				.Where(c => c.TestSuiteDirectory.FileName == suiteName)
+				.Select(c => CreateNUnitTestCase(c, c.DisplayName.Substring(suiteName.Length + 1)))
 				.OrderBy(c => c.TestName);
 		}
 

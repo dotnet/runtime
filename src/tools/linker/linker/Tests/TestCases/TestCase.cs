@@ -1,4 +1,5 @@
 ﻿﻿using System;
+using System.Linq;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCases {
@@ -13,6 +14,9 @@ namespace Mono.Linker.Tests.TestCases {
 			// A little hacky, but good enough for name.  No reason why namespace & type names
 			// should not follow the directory structure
 			ReconstructedFullTypeName = $"{sourceFile.Parent.RelativeTo (rootCasesDirectory.Parent).ToString (SlashMode.Forward).Replace ('/', '.')}.{sourceFile.FileNameWithoutExtension}";
+
+			var firstParentRelativeToRoot = SourceFile.RelativeTo (rootCasesDirectory).Elements.First ();
+			TestSuiteDirectory = rootCasesDirectory.Combine (firstParentRelativeToRoot);
 		}
 
 		public string Name { get; }
@@ -38,5 +42,7 @@ namespace Mono.Linker.Tests.TestCases {
 				return SourceFile.ChangeExtension ("xml");
 			}
 		}
+
+		public NPath TestSuiteDirectory { get; }
 	}
 }
