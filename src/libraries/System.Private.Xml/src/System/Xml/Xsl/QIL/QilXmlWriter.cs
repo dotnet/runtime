@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.Qil
         /// Write all annotations as comments:
         ///     1. string -- <!-- (string) ann -->
         ///     2. IQilAnnotation -- <!-- ann.Name = ann.ToString() -->
-        ///     3. IList<object> -- recursively call WriteAnnotations for each object in list
+        ///     3. IList{object} -- recursively call WriteAnnotations for each object in list
         ///     4. otherwise, do not write the annotation
         /// </summary>
         protected virtual void WriteAnnotations(object ann)

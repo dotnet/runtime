@@ -7,7 +7,7 @@ using System.IO;
 namespace System.Net
 {
     /// <summary>
-    /// <para>The FtpWebResponse class contains the result of the FTP request.
+    /// The FtpWebResponse class contains the result of the FTP request.
     /// </summary>
     public class FtpWebResponse : WebResponse, IDisposable
     {

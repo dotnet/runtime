@@ -289,12 +289,12 @@ namespace System.Xml.Xsl.Runtime
     /// 1. Assume that the list I of input nodes is in document order, with no duplicates.  There are N nodes in list I.
     /// 2. For each node in list I, derive a list of nodes consisting of matching children or following-sibling nodes.
     /// Call these lists S(1)...S(N).
-    /// 3. Let F be the first node in any list S(X), where X >= 1 and X < N
-    /// 4. There exists exactly one contiguous sequence of lists S(Y)...S(Z), where Y > X and Z <= N, such that the lists
+    /// 3. Let F be the first node in any list S(X), where X &gt;= 1 and X &lt; N
+    /// 4. There exists exactly one contiguous sequence of lists S(Y)...S(Z), where Y &gt; X and Z &lt;= N, such that the lists
     /// S(X+1)...S(N) can be partitioned into these three groups:
     /// a. 1st group (S(X+1)...S(Y-1)) -- All nodes in these lists precede F in document order
     /// b. 2nd group (S(Y)...S(Z)) -- All nodes in these lists are duplicates of nodes in list S(X)
-    /// c. 3rd group (> S(Z)) -- All nodes in these lists succeed F in document order
+    /// c. 3rd group (&gt; S(Z)) -- All nodes in these lists succeed F in document order
     /// 5. Given #4, node F can be returned once all nodes in the 1st group have been returned.  Lists S(Y)...S(Z) can be
     /// discarded.  And only a single node in the 3rd group need be generated in order to guarantee that all nodes in
     /// the 1st and 2nd groups have already been generated.
