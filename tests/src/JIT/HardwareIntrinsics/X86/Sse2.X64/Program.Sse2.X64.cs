@@ -17,6 +17,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["ConvertToUInt64.Vector128UInt64"] = ConvertToUInt64Vector128UInt64,
                 ["ConvertToInt64WithTruncation.Vector128Double"] = ConvertToInt64WithTruncationVector128Double,
                 ["ConvertScalarToVector128Double.Double"] = ConvertScalarToVector128DoubleDouble,
+                ["ConvertScalarToVector128Int64.Int64"] = ConvertScalarToVector128Int64Int64,
+                ["ConvertScalarToVector128UInt64.UInt64"] = ConvertScalarToVector128UInt64UInt64,
             };
         }
     }
