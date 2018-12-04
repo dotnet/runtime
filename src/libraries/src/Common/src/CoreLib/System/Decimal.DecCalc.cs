@@ -528,7 +528,7 @@ PosRem:
             /// Perform needed scaling. Adjust scale factor accordingly.
             /// </summary>
             /// <param name="bufRes">Array of uints with value, least-significant first</param>
-            /// <param name="hiRes">Index of last non-zero value in bufRes
+            /// <param name="hiRes">Index of last non-zero value in bufRes</param>
             /// <param name="scale">Scale factor for this value, range 0 - 2 * DEC_SCALE_MAX</param>
             /// <returns>Returns new scale factor. bufRes updated in place, always 3 uints.</returns>
             private static unsafe int ScaleResult(Buf24* bufRes, uint hiRes, int scale)
