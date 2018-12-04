@@ -66,9 +66,6 @@ namespace System.Threading.Tasks
     [DebuggerTypeProxy(typeof(SystemThreadingTasks_FutureDebugView<>))]
     [DebuggerDisplay("Id = {Id}, Status = {Status}, Method = {DebuggerDisplayMethodDescription}, Result = {DebuggerDisplayResultDescription}")]
     public class Task<TResult> : Task
-#if SUPPORT_IOBSERVABLE        
-        ,  IObservable<TResult>
-#endif
     {
         internal TResult m_result; // The value itself, if set.
 
@@ -1465,74 +1462,7 @@ namespace System.Threading.Tasks
         #endregion
 
         #endregion
-
-        /// <summary>
-        /// Subscribes an <see cref="IObserver{TResult}"/> to receive notification of the final state of this <see cref="Task{TResult}"/>.
-        /// </summary>
-        /// <param name="observer">
-        /// The <see cref="IObserver{TResult}"/> to call on task completion. If this Task throws an exception, 
-        /// observer.OnError is called with this Task's AggregateException. If this Task RanToCompletion, 
-        /// observer.OnNext is called with this Task's result, followed by a call to observer.OnCompleted.
-        /// If this Task is Canceled,  observer.OnError is called with a TaskCanceledException
-        /// containing this Task's CancellationToken
-        /// </param>
-        /// <returns>An IDisposable object <see cref="Task"/>.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
-        /// The <paramref name="observer"/> argument is null.
-        /// </exception>
-#if SUPPORT_IOBSERVABLE
-        IDisposable IObservable<TResult>.Subscribe(IObserver<TResult> observer)
-        {
-            if (observer == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.observer);
-
-            
-            var continuationTask = 
-                this.ContinueWith(delegate(Task<TResult> observedTask, object taskObserverObject)
-                {
-                    IObserver<TResult> taskObserver = (IObserver<TResult>)taskObserverObject;
-                    if (observedTask.IsFaulted)
-                        taskObserver.OnError(observedTask.Exception);
-                    else if (observedTask.IsCanceled)
-                        taskObserver.OnError(new TaskCanceledException(observedTask));
-                    else
-                    {
-                        taskObserver.OnNext(observedTask.Result);
-                        taskObserver.OnCompleted();
-                    }
-
-                }, observer, TaskScheduler.Default);
-    
-            return new DisposableSubscription(this, continuationTask);
-        }
-#endif
     }
-
-#if SUPPORT_IOBSERVABLE
-    // Class that calls RemoveContinuation if Dispose() is called before task completion
-    internal class DisposableSubscription : IDisposable
-    {
-        private Task _notifyObserverContinuationTask;
-        private Task _observedTask;
-        
-        internal DisposableSubscription(Task observedTask, Task notifyObserverContinuationTask)
-        {
-            _observedTask = observedTask;
-            _notifyObserverContinuationTask = notifyObserverContinuationTask;
-        }
-        void IDisposable.Dispose()
-        {
-            Task localObservedTask = _observedTask;
-            Task localNotifyingContinuationTask = _notifyObserverContinuationTask;
-            if (localObservedTask != null && localNotifyingContinuationTask != null && !localObservedTask.IsCompleted)
-            {
-                localObservedTask.RemoveContinuation(localNotifyingContinuationTask);
-            }
-            _observedTask = null;
-            _notifyObserverContinuationTask = null;
-        }
-    }
-#endif
 
     // Proxy class for better debugging experience
     internal class SystemThreadingTasks_FutureDebugView<TResult>
