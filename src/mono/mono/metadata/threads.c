@@ -57,6 +57,10 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-state.h>
 
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
@@ -6117,6 +6121,7 @@ mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx)
 	return success;
 }
 
+#define TIMEOUT_CRASH_REPORTER_FATAL 30
 #define MAX_NUM_THREADS 128
 typedef struct {
 	gint32 has_owner; // state of this memory
@@ -6131,6 +6136,99 @@ typedef struct {
 
 	gboolean silent; // print to stdout
 } SummarizerGlobalState;
+
+#if defined(HAVE_KILL) && !defined(HOST_ANDROID) && defined(HAVE_WAITPID) && ((!defined(HOST_DARWIN) && defined(SYS_fork)) || HAVE_FORK)
+#define HAVE_MONO_SUMMARIZER_SUPERVISOR 1
+#endif
+
+typedef struct {
+	MonoSemType supervisor;
+	pid_t pid;
+	pid_t supervisor_pid;
+} SummarizerSupervisorState;
+
+#ifndef HAVE_MONO_SUMMARIZER_SUPERVISOR
+static void
+summarizer_supervisor_wait (SummarizerSupervisorState *state)
+{
+	return;
+}
+
+static pid_t
+summarizer_supervisor_start (SummarizerSupervisorState *state)
+{
+	// nonzero, so caller doesn't think it's the supervisor
+	return (pid_t) 1;
+}
+
+static void
+summarizer_supervisor_end (SummarizerSupervisorState *state)
+{
+	return;
+}
+
+#else
+static void
+summarizer_supervisor_wait (SummarizerSupervisorState *state)
+{
+	sleep (TIMEOUT_CRASH_REPORTER_FATAL);
+
+	// If we haven't been SIGKILL'ed yet, we signal our parent
+	// and then exit
+#ifdef HAVE_KILL
+	MOSTLY_ASYNC_SAFE_PRINTF("Crash Reporter has timed out, sending SIGSEGV\n");
+	kill (state->pid, SIGSEGV);
+#else
+	g_error ("kill () is not supported by this platform");
+#endif
+
+	exit (1);
+}
+
+static pid_t
+summarizer_supervisor_start (SummarizerSupervisorState *state)
+{
+	memset (state, 0, sizeof (*state));
+	pid_t pid;
+
+	state->pid = getpid();
+
+	/*
+	* glibc fork acquires some locks, so if the crash happened inside malloc/free,
+	* it will deadlock. Call the syscall directly instead.
+	*/
+#if defined(HOST_ANDROID)
+	/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
+	// We disable this when we set HAVE_MONO_SUMMARIZER_SUPERVISOR above
+	g_assert_not_reached ();
+#elif !defined(HOST_DARWIN) && defined(SYS_fork)
+	pid = (pid_t) syscall (SYS_fork);
+#elif HAVE_FORK
+	pid = (pid_t) fork ();
+#else
+	g_assert_not_reached ();
+#endif
+
+	if (pid != 0)
+		state->supervisor_pid = pid;
+
+	return pid;
+}
+
+static void
+summarizer_supervisor_end (SummarizerSupervisorState *state)
+{
+#ifdef HAVE_KILL
+	kill (state->supervisor_pid, SIGKILL);
+#endif
+
+#if defined (HAVE_WAITPID)
+	// Accessed on same thread that sets it.
+	int status;
+	waitpid (state->supervisor_pid, &status, 0);
+#endif
+}
+#endif
 
 static gboolean
 summarizer_state_init (SummarizerGlobalState *state, MonoNativeThreadId current, int *my_index)
@@ -6209,7 +6307,7 @@ summarizer_post_dump (SummarizerGlobalState *state, MonoThreadSummary *this_thre
 static void
 summary_timedwait (SummarizerGlobalState *state, int timeout_seconds)
 {
-	gint64 milliseconds_in_second = 1000;
+	const gint64 milliseconds_in_second = 1000;
 	gint64 timeout_total = milliseconds_in_second * timeout_seconds;
 
 	gint64 end = mono_msec_ticks () + timeout_total;
@@ -6379,7 +6477,13 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gb
 			if (!already_async)
 				mono_thread_info_set_is_async_context (TRUE);
 
-			success = mono_threads_summarize_execute (ctx, out, hashes, silent, mem, provided_size);
+			SummarizerSupervisorState synch;
+			if (summarizer_supervisor_start (&synch)) {
+				success = mono_threads_summarize_execute (ctx, out, hashes, silent, mem, provided_size);
+				summarizer_supervisor_end (&synch);
+			} else {
+				summarizer_supervisor_wait (&synch);
+			}
 
 			if (!already_async)
 				mono_thread_info_set_is_async_context (FALSE);

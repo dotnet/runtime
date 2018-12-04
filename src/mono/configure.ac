@@ -2917,6 +2917,7 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(setpgid)
 	AC_CHECK_FUNCS(system)
 	AC_CHECK_FUNCS(fork execv execve)
+	AC_CHECK_FUNCS(waitpid)
 	AC_CHECK_FUNCS(accept4)
 	AC_CHECK_FUNCS(localtime_r)
 	AC_CHECK_FUNCS(mkdtemp)
@@ -4650,6 +4651,7 @@ AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 AC_CHECK_FUNCS(getrlimit)
 AC_CHECK_FUNCS(fork execv execve)
+AC_CHECK_FUNCS(waitpid)
 
 AC_ARG_WITH([overridable-allocators], [  --with-overridable-allocators	allow g_*alloc/g_free to call custom allocators set via g_mem_set_vtable])
 
