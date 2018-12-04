@@ -439,23 +439,6 @@ FCFuncStart(gCompatibilitySwitchFuncs)
     FCFuncElement("GetValueInternalCall", CompatibilitySwitch::GetValue)
 FCFuncEnd()
 
-FCFuncStart(gAppDomainFuncs)
-    FCFuncElement("nSetupFriendlyName", AppDomainNative::SetupFriendlyName)
-    FCFuncElement("GetId", AppDomainNative::GetId)
-    QCFuncElement("nSetupBindingPaths", AppDomainNative::SetupBindingPaths)
-    QCFuncElement("nSetNativeDllSearchDirectories", AppDomainNative::SetNativeDllSearchDirectories)
-    FCFuncElement("PublishAnonymouslyHostedDynamicMethodsAssembly", AppDomainNative::PublishAnonymouslyHostedDynamicMethodsAssembly)
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    FCFuncElement("nEnableMonitoring", AppDomainNative::EnableMonitoring)
-    FCFuncElement("nMonitoringIsEnabled", AppDomainNative::MonitoringIsEnabled)
-    FCFuncElement("nGetTotalProcessorTime", AppDomainNative::GetTotalProcessorTime)
-    FCFuncElement("nGetTotalAllocatedMemorySize", AppDomainNative::GetTotalAllocatedMemorySize)
-    FCFuncElement("nGetLastSurvivedMemorySize", AppDomainNative::GetLastSurvivedMemorySize)
-    FCFuncElement("nGetLastSurvivedProcessMemorySize", AppDomainNative::GetLastSurvivedProcessMemorySize)
-
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-FCFuncEnd()
-
 #ifdef FEATURE_APPX
 FCFuncStart(gApplicationModelFuncs)
     QCFuncElement("IsAppXProcess", AppDomainNative::IsAppXProcess)
@@ -1238,7 +1221,6 @@ FCFuncEnd()
 // Note these have to remain sorted by name:namespace pair (Assert will wack you if you don't)
 // The sorting is case-sensitive
 
-FCClassElement("AppDomain", "System", gAppDomainFuncs)
 #ifdef FEATURE_APPX
 FCClassElement("ApplicationModel", "System", gApplicationModelFuncs)
 #endif

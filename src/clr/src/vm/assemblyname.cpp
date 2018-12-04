@@ -176,7 +176,7 @@ FCIMPL3(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAss
     }
     else if ((hr == FUSION_E_INVALID_NAME) && fRaiseResolveEvent)
     {
-        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, FALSE);
+        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec);
 
         if (pAssembly == NULL)
         {

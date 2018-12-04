@@ -694,31 +694,30 @@ HRESULT CorHost2::_CreateAppDomain(
     EMPTY_STRING_TO_NULL(wszAppDomainManagerAssemblyName);
     EMPTY_STRING_TO_NULL(wszAppDomainManagerTypeName);
 
-    if(pAppDomainID==NULL)
+    if (pAppDomainID==NULL)
         return E_POINTER;
 
     if (!m_fStarted)
         return HOST_E_INVALIDOPERATION;
 
-    if(wszFriendlyName == NULL)
+    if (wszFriendlyName == NULL)
         return E_INVALIDARG;
 
-    if((wszAppDomainManagerAssemblyName == NULL) != (wszAppDomainManagerTypeName == NULL))
+    if ((wszAppDomainManagerAssemblyName != NULL) || (wszAppDomainManagerTypeName != NULL))
         return E_INVALIDARG;
 
     BEGIN_ENTRYPOINT_NOTHROW;
 
     BEGIN_EXTERNAL_ENTRYPOINT(&hr);
-    GCX_COOP_THREAD_EXISTS(GET_THREAD());
 
     AppDomain* pDomain = SystemDomain::System()->DefaultDomain();
+
+    pDomain->SetFriendlyName(wszFriendlyName);
 
     ETW::LoaderLog::DomainLoad(pDomain, (LPWSTR)wszFriendlyName);
 
     if (dwFlags & APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS)
-    {
         pDomain->SetIgnoreUnhandledExceptions();
-    }
 
     if (dwFlags & APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS)
         pDomain->SetForceTrivialWaitOperations();
@@ -727,56 +726,95 @@ HRESULT CorHost2::_CreateAppDomain(
 
     {
         GCX_COOP();
-    
-        struct 
-        {
-            STRINGREF friendlyName;
-            PTRARRAYREF propertyNames;
-            PTRARRAYREF propertyValues;
-        } _gc;
 
-        ZeroMemory(&_gc,sizeof(_gc));
-
-        GCPROTECT_BEGIN(_gc)
-        _gc.friendlyName=StringObject::NewString(wszFriendlyName);
-        
-        if (nProperties>0)
-        {
-            _gc.propertyNames = (PTRARRAYREF) AllocateObjectArray(nProperties, g_pStringClass);
-            _gc.propertyValues= (PTRARRAYREF) AllocateObjectArray(nProperties, g_pStringClass);
-            for (int i=0;i< nProperties;i++)
-            {
-                STRINGREF obj = StringObject::NewString(pPropertyNames[i]);
-                _gc.propertyNames->SetAt(i, obj);
-                
-                obj = StringObject::NewString(pPropertyValues[i]);
-                _gc.propertyValues->SetAt(i, obj);
-            }
-        }
-
-        MethodDescCallSite setup(METHOD__APP_DOMAIN__SETUP);
+        MethodDescCallSite setup(METHOD__APPCONTEXT__SETUP);
 
         ARG_SLOT args[3];
-        args[0]=ObjToArgSlot(_gc.friendlyName);
-        args[1]=ObjToArgSlot(_gc.propertyNames);
-        args[2]=ObjToArgSlot(_gc.propertyValues);
+        args[0] = PtrToArgSlot(pPropertyNames);
+        args[1] = PtrToArgSlot(pPropertyValues);
+        args[2] = PtrToArgSlot(nProperties);
 
         setup.Call(args);
-        
-        GCPROTECT_END();
-
-        *pAppDomainID=pDomain->GetId().m_dwId;
-
-        m_fAppDomainCreated = TRUE;
     }
+
+    LPCWSTR pwzNativeDllSearchDirectories = NULL;
+    LPCWSTR pwzTrustedPlatformAssemblies = NULL;
+    LPCWSTR pwzPlatformResourceRoots = NULL;
+    LPCWSTR pwzAppPaths = NULL;
+    LPCWSTR pwzAppNiPaths = NULL;
+#ifdef FEATURE_COMINTEROP
+    LPCWSTR pwzAppLocalWinMD = NULL;
+#endif
+
+    for (int i = 0; i < nProperties; i++)
+    {
+        if (wcscmp(pPropertyNames[i], W("NATIVE_DLL_SEARCH_DIRECTORIES")) == 0)
+        {
+            pwzNativeDllSearchDirectories = pPropertyValues[i];
+        }
+        else
+        if (wcscmp(pPropertyNames[i], W("TRUSTED_PLATFORM_ASSEMBLIES")) == 0)
+        {
+            pwzTrustedPlatformAssemblies = pPropertyValues[i];
+        }
+        else
+        if (wcscmp(pPropertyNames[i], W("PLATFORM_RESOURCE_ROOTS")) == 0)
+        {
+            pwzPlatformResourceRoots = pPropertyValues[i];
+        }
+        else
+        if (wcscmp(pPropertyNames[i], W("APP_PATHS")) == 0)
+        {
+            pwzAppPaths = pPropertyValues[i];
+        }
+        else
+        if (wcscmp(pPropertyNames[i], W("APP_NI_PATHS")) == 0)
+        {
+            pwzAppNiPaths = pPropertyValues[i];
+        }
+#ifdef FEATURE_COMINTEROP
+        else
+        if (wcscmp(pPropertyNames[i], W("APP_LOCAL_WINMETADATA")) == 0)
+        {
+            pwzAppLocalWinMD = pPropertyValues[i];
+        }
+#endif
+    }
+
+    pDomain->SetNativeDllSearchDirectories(pwzNativeDllSearchDirectories);
+
+    {
+        SString sTrustedPlatformAssemblies(pwzTrustedPlatformAssemblies);
+        SString sPlatformResourceRoots(pwzPlatformResourceRoots);
+        SString sAppPaths(pwzAppPaths);
+        SString sAppNiPaths(pwzAppNiPaths);
+
+        CLRPrivBinderCoreCLR *pBinder = pDomain->GetTPABinderContext();
+        _ASSERTE(pBinder != NULL);
+        IfFailThrow(pBinder->SetupBindingPaths(
+            sTrustedPlatformAssemblies,
+            sPlatformResourceRoots,
+            sAppPaths,
+            sAppNiPaths));
+    }
+
+#ifdef FEATURE_COMINTEROP
+    if (WinRTSupported())
+    {
+        pDomain->SetWinrtApplicationContext(pwzAppLocalWinMD);
+    }
+#endif
+
+    *pAppDomainID=pDomain->GetId().m_dwId;
+
+    m_fAppDomainCreated = TRUE;
 
     END_EXTERNAL_ENTRYPOINT;
 
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
-
-};
+}
 
 HRESULT CorHost2::_CreateDelegate(
     DWORD appDomainID,

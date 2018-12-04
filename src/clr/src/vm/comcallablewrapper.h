@@ -1335,8 +1335,6 @@ public:
 
     // Get an interface from wrapper, based on riid or pIntfMT
     static IUnknown* GetComIPFromCCW(ComCallWrapper *pWrap, REFIID riid, MethodTable* pIntfMT, GetComIPFromCCW::flags flags = GetComIPFromCCW::None);
-    static IUnknown* GetComIPFromCCWNoThrow(ComCallWrapper *pWrap, REFIID riid, MethodTable* pIntfMT, GetComIPFromCCW::flags flags = GetComIPFromCCW::None);
-
 
 private:
     // pointer to OBJECTREF

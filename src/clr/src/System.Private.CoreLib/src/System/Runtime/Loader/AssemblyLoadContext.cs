@@ -148,7 +148,7 @@ namespace System.Runtime.Loader
         public bool IsCollectible { get; }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContet, string ilPath, string niPath, ObjectHandleOnStack retAssembly);
+        private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string ilPath, string niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern Assembly[] GetLoadedAssemblies();
@@ -382,9 +382,7 @@ namespace System.Runtime.Loader
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
-            Assembly loadedAssembly = Assembly.Load(assemblyName, m_pNativeAssemblyLoadContext);
-
-            return loadedAssembly;
+            return Assembly.Load(assemblyName, m_pNativeAssemblyLoadContext);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -611,6 +609,4 @@ namespace System.Runtime.Loader
             return null;
         }
     }
-
 }
-
