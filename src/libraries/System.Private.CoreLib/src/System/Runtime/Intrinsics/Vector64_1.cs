@@ -270,7 +270,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public string ToString(string format)
         {
-            return ToString(format, CultureInfo.CurrentCulture);
+            return ToString(format, formatProvider: null);
         }
 
         /// <summary>Converts the current instance to an equivalent string representation using the specified format.</summary>
