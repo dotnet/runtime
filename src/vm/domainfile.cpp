@@ -1715,16 +1715,6 @@ void DomainAssembly::DeliverSyncEvents()
     {
         SetShouldNotifyDebugger();
 
-        if (m_pDomain->IsDebuggerAttached())
-        {
-            // If this is the first assembly in the AppDomain, it may be possible to get a better name than the
-            // default.
-            CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-            m_pDomain->m_Assemblies.Get(m_pDomain, 0, pDomainAssembly.This());
-            if ((pDomainAssembly == this) && !m_pDomain->IsUserCreatedDomain())
-                m_pDomain->ResetFriendlyName();
-        }
-
         // Still work to do even if no debugger is attached.
         NotifyDebuggerLoad(ATTACH_ASSEMBLY_LOAD, FALSE);
 

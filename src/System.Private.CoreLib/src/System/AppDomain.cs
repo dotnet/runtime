@@ -104,27 +104,7 @@ namespace System
 
         private IntPtr _pDomain;                      // this is an unmanaged pointer (AppDomain * m_pDomain)` used from the VM.
 
-        /// <summary>
-        ///     If this AppDomain is configured to have an AppDomain manager then create the instance of it.
-        ///     This method is also called from the VM to create the domain manager in the default domain.
-        /// </summary>
-        private void CreateAppDomainManager()
-        {
-            string trustedPlatformAssemblies = (string)AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES");
-            if (trustedPlatformAssemblies != null)
-            {
-                string platformResourceRoots = (string)AppContext.GetData("PLATFORM_RESOURCE_ROOTS") ?? string.Empty;
-                string appPaths = (string)AppContext.GetData("APP_PATHS") ?? string.Empty;
-                string appNiPaths = (string)AppContext.GetData("APP_NI_PATHS") ?? string.Empty;
-                string appLocalWinMD = (string)AppContext.GetData("APP_LOCAL_WINMETADATA") ?? string.Empty;
-                SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths, appLocalWinMD);
-            }
-        }
-
         public static AppDomain CurrentDomain => Thread.GetDomain();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void PublishAnonymouslyHostedDynamicMethodsAssembly(RuntimeAssembly assemblyHandle);
 
         [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         [DllImport(Interop.Libraries.Kernel32)]
@@ -133,14 +113,6 @@ namespace System
         private AppDomain()
         {
             Debug.Fail("Object cannot be created through this constructor.");
-        }
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void nSetupBindingPaths(string trustedPlatformAssemblies, string platformResourceRoots, string appPath, string appNiPaths, string appLocalWinMD);
-
-        internal void SetupBindingPaths(string trustedPlatformAssemblies, string platformResourceRoots, string appPath, string appNiPaths, string appLocalWinMD)
-        {
-            nSetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPath, appNiPaths, appLocalWinMD);
         }
 
         // support reliability for certain event handlers, if the target
@@ -284,55 +256,6 @@ namespace System
                 null;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void nSetNativeDllSearchDirectories(string paths);
-
-        private static void Setup(string friendlyName,
-                                    string[] propertyNames,
-                                    string[] propertyValues)
-        {
-            AppDomain ad = CurrentDomain;
-
-            if (propertyNames != null && propertyValues != null)
-            {
-                for (int i = 0; i < propertyNames.Length; i++)
-                {
-                    // We want to set native dll probing directories before any P/Invokes have a
-                    // chance to fire. The Path class, for one, has P/Invokes.
-                    if (propertyNames[i] == "NATIVE_DLL_SEARCH_DIRECTORIES")
-                    {
-                        if (propertyValues[i] == null)
-                            throw new ArgumentNullException("NATIVE_DLL_SEARCH_DIRECTORIES");
-
-                        string paths = propertyValues[i];
-                        if (paths.Length == 0)
-                            break;
-
-                        nSetNativeDllSearchDirectories(paths);
-                    }
-                }
-
-                for (int i = 0; i < propertyNames.Length; i++)
-                {
-                    if (propertyNames[i] != null)
-                    {
-                        AppContext.SetData(propertyNames[i], propertyValues[i]);
-                    }
-                }
-            }
-
-            // set up the friendly name
-            ad.nSetupFriendlyName(friendlyName);
-
-            ad.CreateAppDomainManager(); // could modify FusionStore's object
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void nSetupFriendlyName(string friendlyName);
-
-        public int Id => GetId();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern int GetId();
+        internal int GetId() => 1;
     }
 }

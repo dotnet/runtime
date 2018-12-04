@@ -39,7 +39,5 @@
     <type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
     <!-- Accessed via reflection in TraceLogging-style EventSource events. -->
     <type fullname="*f__AnonymousType*" />
-    <!-- Accessed by native code in the VM -->
-    <type fullname="System.Runtime.CompilerServices.PinningHelper" />
   </assembly>
 </linker>
