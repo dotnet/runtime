@@ -64,7 +64,6 @@ namespace System.DirectoryServices
             }
         }
 
-        /// </devdoc>
         public ICollection PropertyNames => new KeysCollection(this);
 
         public ICollection Values => new ValuesCollection(this);
