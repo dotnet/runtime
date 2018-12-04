@@ -62,7 +62,7 @@ namespace System.CodeDom.Compiler
                 {
                     WorkingDirectory = currentDir,
                     RedirectStandardOutput = true,
-                    RedirectStandardInput = true
+                    RedirectStandardError = true
                 };
 
                 using (Process p = Process.Start(psi))
@@ -90,6 +90,8 @@ namespace System.CodeDom.Compiler
                         const int WAIT_TIMEOUT = 0x102;
                         throw new ExternalException(SR.Format(SR.ExecTimeout, cmd), WAIT_TIMEOUT);
                     }
+
+                    p.WaitForExit();
 
                     return p.ExitCode;
                 }
