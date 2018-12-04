@@ -477,13 +477,6 @@ SHARED_API int corehost_resolve_component_dependencies(
         }
     }
 
-    // TODO: Need to redirect error writing (trace::error even with tracing disabled)
-    // to some local buffer and return the buffer to the caller as detailed error message.
-    // Like this the error is written to the stderr of the process which is pretty bad.
-    // It makes sense for startup code path as there's no other way to report it to the user.
-    // But with API call from managed code, the error should be invisible outside of exception.
-    // Tracing should still contain the error just like now.
-
     // IMPORTANT: g_init is static/global and thus potentially accessed from multiple threads
     // We must only use it as read-only here (unlike the run scenarios which own it).
     // For example the frameworks in g_init.fx_definitions can't be used "as-is" by the resolver
@@ -579,4 +572,31 @@ SHARED_API int corehost_resolve_component_dependencies(
         probe_paths.resources.data());
     
     return 0;
+}
+
+
+typedef void(*corehost_error_writer_fn)(const pal::char_t* message);
+
+//
+// Sets a callback which is to be used to write errors to.
+//
+// Parameters:
+//     error_writer 
+//         A callback function which will be invoked every time an error is to be reported.
+//         Or nullptr to unregister previously registered callback and return to the default behavior.
+// Return value:
+//     The previously registered callback (which is now unregistered), or nullptr if no previous callback
+//     was registered
+// 
+// The error writer is registered per-thread, so the registration is thread-local. On each thread
+// only one callback can be registered. Subsequent registrations overwrite the previous ones.
+// 
+// By default no callback is registered in which case the errors are written to stderr.
+// 
+// Each call to the error writer is sort of like writing a single line (the EOL character is omitted).
+// Multiple calls to the error writer may occure for one failure.
+//
+SHARED_API corehost_error_writer_fn corehost_set_error_writer(corehost_error_writer_fn error_writer)
+{
+    return trace::set_error_writer(error_writer);
 }

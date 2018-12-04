@@ -17,13 +17,16 @@ typedef int(*corehost_load_fn) (const host_interface_t* init);
 typedef int(*corehost_main_fn) (const int argc, const pal::char_t* argv[]);
 typedef int(*corehost_main_with_output_buffer_fn) (const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
 typedef int(*corehost_unload_fn) ();
+typedef void(*corehost_error_writer_fn) (const pal::char_t* message);
+typedef corehost_error_writer_fn(*corehost_set_error_writer_fn) (corehost_error_writer_fn error_writer);
 
 int load_host_library_common(
     const pal::string_t& lib_dir,
     pal::string_t& host_path,
     pal::dll_t* h_host,
     corehost_load_fn* load_fn,
-    corehost_unload_fn* unload_fn)
+    corehost_unload_fn* unload_fn,
+    corehost_set_error_writer_fn* set_error_writer_fn)
 {
     if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
     {
@@ -40,6 +43,11 @@ int load_host_library_common(
     // Obtain entrypoint symbols
     *load_fn = (corehost_load_fn)pal::get_symbol(*h_host, "corehost_load");
     *unload_fn = (corehost_unload_fn)pal::get_symbol(*h_host, "corehost_unload");
+    *set_error_writer_fn = (corehost_set_error_writer_fn)pal::get_symbol(*h_host, "corehost_set_error_writer");
+
+    // It's possible to not have corehost_set_error_writer, since this was only introduced in 3.0
+    // so 2.0 hostpolicy would not have the export. In this case we will not propagate the error writer
+    // and errors will still be reported to stderr.
 
     return (*load_fn != nullptr) && (*unload_fn != nullptr)
         ? StatusCode::Success
@@ -51,10 +59,11 @@ int load_host_library(
     pal::dll_t* h_host,
     corehost_load_fn* load_fn,
     corehost_main_fn* main_fn,
-    corehost_unload_fn* unload_fn)
+    corehost_unload_fn* unload_fn,
+    corehost_set_error_writer_fn* set_error_writer_fn)
 {
     pal::string_t host_path;
-    int rc = load_host_library_common(lib_dir, host_path, h_host, load_fn, unload_fn);
+    int rc = load_host_library_common(lib_dir, host_path, h_host, load_fn, unload_fn, set_error_writer_fn);
     if (rc != StatusCode::Success)
     {
         return rc;
@@ -73,10 +82,11 @@ int load_host_library_with_return(
     pal::dll_t* h_host,
     corehost_load_fn* load_fn,
     corehost_main_with_output_buffer_fn* main_fn,
-    corehost_unload_fn* unload_fn)
+    corehost_unload_fn* unload_fn,
+    corehost_set_error_writer_fn* set_error_writer_fn)
 {
     pal::string_t host_path;
-    int rc = load_host_library_common(lib_dir, host_path, h_host, load_fn, unload_fn);
+    int rc = load_host_library_common(lib_dir, host_path, h_host, load_fn, unload_fn, set_error_writer_fn);
     if (rc != StatusCode::Success)
     {
         return rc;
@@ -90,6 +100,37 @@ int load_host_library_with_return(
         : StatusCode::CoreHostEntryPointFailure;
 }
 
+// Helper class to make it easy to propagate error writer to the hostpolicy
+class propagate_error_writer_to_corehost_t
+{
+private:
+    corehost_set_error_writer_fn m_set_error_writer_fn;
+    bool m_error_writer_set;
+
+public:
+    propagate_error_writer_to_corehost_t(corehost_set_error_writer_fn set_error_writer_fn)
+    {
+        m_set_error_writer_fn = set_error_writer_fn;
+        m_error_writer_set = false;
+
+        trace::error_writer_fn error_writer = trace::get_error_writer();
+        if (error_writer != nullptr && m_set_error_writer_fn != nullptr)
+        {
+            m_set_error_writer_fn(error_writer);
+            m_error_writer_set = true;
+        }
+    }
+
+    ~propagate_error_writer_to_corehost_t()
+    {
+        if (m_error_writer_set && m_set_error_writer_fn != nullptr)
+        {
+            m_set_error_writer_fn(nullptr);
+            m_error_writer_set = false;
+        }
+    }
+};
+
 int execute_app(
     const pal::string_t& impl_dll_dir,
     corehost_init_t* init,
@@ -100,8 +141,9 @@ int execute_app(
     corehost_main_fn host_main = nullptr;
     corehost_load_fn host_load = nullptr;
     corehost_unload_fn host_unload = nullptr;
+    corehost_set_error_writer_fn host_set_error_writer = nullptr;
 
-    int code = load_host_library(impl_dll_dir, &corehost, &host_load, &host_main, &host_unload);
+    int code = load_host_library(impl_dll_dir, &corehost, &host_load, &host_main, &host_unload, &host_set_error_writer);
     if (code != StatusCode::Success)
     {
         trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, impl_dll_dir.c_str());
@@ -111,11 +153,15 @@ int execute_app(
     // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
     trace::flush();
 
-    const host_interface_t& intf = init->get_host_init_data();
-    if ((code = host_load(&intf)) == 0)
     {
-        code = host_main(argc, argv);
-        (void)host_unload();
+        propagate_error_writer_to_corehost_t propagate_error_writer_to_corehost(host_set_error_writer);
+
+        const host_interface_t& intf = init->get_host_init_data();
+        if ((code = host_load(&intf)) == 0)
+        {
+            code = host_main(argc, argv);
+            (void)host_unload();
+        }
     }
 
     pal::unload_library(corehost);
@@ -136,8 +182,9 @@ int execute_host_command(
     corehost_main_with_output_buffer_fn host_main = nullptr;
     corehost_load_fn host_load = nullptr;
     corehost_unload_fn host_unload = nullptr;
+    corehost_set_error_writer_fn host_set_error_writer = nullptr;
 
-    int code = load_host_library_with_return(impl_dll_dir, &corehost, &host_load, &host_main, &host_unload);
+    int code = load_host_library_with_return(impl_dll_dir, &corehost, &host_load, &host_main, &host_unload, &host_set_error_writer);
 
     if (code != StatusCode::Success)
     {
@@ -148,11 +195,15 @@ int execute_host_command(
     // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
     trace::flush();
 
-    const host_interface_t& intf = init->get_host_init_data();
-    if ((code = host_load(&intf)) == 0)
     {
-        code = host_main(argc, argv, result_buffer, buffer_size, required_buffer_size);
-        (void)host_unload();
+        propagate_error_writer_to_corehost_t propagate_error_writer_to_corehost(host_set_error_writer);
+
+        const host_interface_t& intf = init->get_host_init_data();
+        if ((code = host_load(&intf)) == 0)
+        {
+            code = host_main(argc, argv, result_buffer, buffer_size, required_buffer_size);
+            (void)host_unload();
+        }
     }
 
     pal::unload_library(corehost);
@@ -513,4 +564,36 @@ SHARED_API int32_t hostfxr_get_native_search_directories(const int argc, const p
     fx_muxer_t muxer;
     int rc = muxer.execute(_X("get-native-search-directories"), argc, argv, startup_info, buffer, buffer_size, required_buffer_size);
     return rc;
+}
+
+
+
+typedef void(*hostfxr_error_writer_fn)(const pal::char_t* message);
+
+//
+// Sets a callback which is to be used to write errors to.
+//
+// Parameters:
+//     error_writer 
+//         A callback function which will be invoked every time an error is to be reported.
+//         Or nullptr to unregister previously registered callback and return to the default behavior.
+// Return value:
+//     The previously registered callback (which is now unregistered), or nullptr if no previous callback
+//     was registered
+// 
+// The error writer is registered per-thread, so the registration is thread-local. On each thread
+// only one callback can be registered. Subsequent registrations overwrite the previous ones.
+// 
+// By default no callback is registered in which case the errors are written to stderr.
+// 
+// Each call to the error writer is sort of like writing a single line (the EOL character is omitted).
+// Multiple calls to the error writer may occure for one failure.
+//
+// If the hostfxr invokes functions in hostpolicy as part of its operation, the error writer
+// will be propagated to hostpolicy for the duration of the call. This means that errors from
+// both hostfxr and hostpolicy will be reporter through the same error writer.
+//
+SHARED_API hostfxr_error_writer_fn hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
+{
+    return trace::set_error_writer(error_writer);
 }

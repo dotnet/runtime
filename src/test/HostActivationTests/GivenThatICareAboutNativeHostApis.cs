@@ -45,6 +45,57 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .HaveStdOutContaining("hostfxr_get_native_search_directories buffer:[" + dotnet.GreatestVersionSharedFxPath);
         }
 
+        // This test also validates that hostfxr_set_error_writer captures errors
+        // from hostfxr itself.
+        [Fact]
+        public void Hostfxr_get_native_search_directories_invalid_buffer()
+        {
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_hostfxr_get_native_search_directories_invalid_buffer")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And.HaveStdOutContaining($"hostfxr reported errors:")
+                .And.HaveStdOutContaining("hostfxr_get_native_search_directories received an invalid argument.");
+        }
+
+        // This test also validates that hostfxr_set_error_writer propagates the custom writer
+        // to the hostpolicy.dll for the duration of those calls.
+        [Fact]
+        public void Muxer_hostfxr_get_native_search_directories_with_invalid_deps()
+        {
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var appFixture = sharedTestState.PreviouslyPublishedAndRestoredPortableAppProjectFixture.Copy();
+            var dotnet = fixture.BuiltDotnet;
+
+            // Corrupt the .deps.json by appending } to it (malformed json)
+            File.WriteAllText(
+                appFixture.TestProject.DepsJson,
+                File.ReadAllLines(appFixture.TestProject.DepsJson) + "}");
+
+            var dotnetLocation = Path.Combine(dotnet.BinPath, $"dotnet{fixture.ExeExtension}");
+            string[] args =
+            {
+                "hostfxr_get_native_search_directories",
+                dotnetLocation,
+                appFixture.TestProject.AppDll
+            };
+
+            dotnet.Exec(fixture.TestProject.AppDll, args)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And.HaveStdOutContaining("hostfxr_get_native_search_directories:Fail[2147516555]") // StatusCode::ResolverInitFailure
+                .And.HaveStdOutContaining("hostfxr reported errors:")
+                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{appFixture.TestProject.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
+                .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {appFixture.TestProject.DepsJson}");
+        }
+
         [Fact]
         public void Breadcrumb_thread_finishes_when_app_closes_normally()
         {
@@ -263,6 +314,32 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .HaveStdOutContaining("hostfxr_resolve_sdk2:Success")
                 .And
                 .HaveStdOutContaining($"hostfxr_resolve_sdk2 data:[{expectedData}]");
+        }
+
+        [Fact]
+        public void Hostfxr_corehost_set_error_writer_test()
+        {
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_hostfxr_set_error_writer")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass();
+        }
+
+        [Fact]
+        public void Hostpolicy_corehost_set_error_writer_test()
+        {
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "Test_corehost_set_error_writer")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass();
         }
 
         public class SharedTestState : IDisposable
