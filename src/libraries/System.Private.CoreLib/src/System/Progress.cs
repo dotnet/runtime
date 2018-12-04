@@ -43,7 +43,7 @@ namespace System
         /// A handler to invoke for each reported progress value.  This handler will be invoked
         /// in addition to any delegates registered with the <see cref="ProgressChanged"/> event.
         /// Depending on the <see cref="System.Threading.SynchronizationContext"/> instance captured by 
-        /// the <see cref="Progress"/> at construction, it's possible that this handler instance
+        /// the <see cref="Progress{T}"/> at construction, it's possible that this handler instance
         /// could be invoked concurrently with itself.
         /// </param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="handler"/> is null (Nothing in Visual Basic).</exception>

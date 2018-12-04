@@ -17,7 +17,7 @@ namespace System.Threading
     /// token may have cancellation requested by calling to the source's <see cref="Cancel()"/> method.
     /// </para>
     /// <para>
-    /// All members of this class, except <see cref="Dispose"/>, are thread-safe and may be used
+    /// All members of this class, except <see cref="Dispose()"/>, are thread-safe and may be used
     /// concurrently from multiple threads.
     /// </para>
     /// </remarks>
@@ -908,7 +908,7 @@ namespace System.Threading
             public readonly CancellationTokenSource Source;
             /// <summary>Lock that protects all state in the partition.</summary>
             public SpinLock Lock = new SpinLock(enableThreadOwnerTracking: false); // mutable struct; do not make this readonly
-            /// <summary>Doubly-linked list of callbacks registered with the partition. Callbacks are removed during unregistration and as they're invoked.</remarks>
+            /// <summary>Doubly-linked list of callbacks registered with the partition. Callbacks are removed during unregistration and as they're invoked.</summary>
             public CallbackNode Callbacks;
             /// <summary>Singly-linked list of free nodes that can be used for subsequent callback registrations.</summary>
             public CallbackNode FreeNodeList;

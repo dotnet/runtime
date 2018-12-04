@@ -1266,7 +1266,7 @@ namespace System.Threading.Tasks
         /// Gets the Task instance currently executing if the specified creation options
         /// contain AttachedToParent.
         /// </summary>
-        /// <param name="options">The options to check.</param>
+        /// <param name="creationOptions">The options to check.</param>
         /// <returns>The current task if there is one and if AttachToParent is in the options; otherwise, null.</returns>
         internal static Task InternalCurrentIfAttached(TaskCreationOptions creationOptions)
         {
@@ -5100,7 +5100,6 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
-        /// <typeparam name="TResult">The type of the result returned by the task.</typeparam>
         /// <param name="exception">The exception with which to complete the task.</param>
         /// <returns>The faulted task.</returns>
         public static Task FromException(Exception exception)
@@ -6633,7 +6632,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Transfer the completion status from "task" to ourself.</summary>
-        /// <param name="task">The source task whose results should be transfered to <paramref name="promise"/>.</param>
+        /// <param name="task">The source task whose results should be transfered to this.</param>
         /// <param name="lookForOce">Whether or not to look for OperationCanceledExceptions in task's exceptions if it faults.</param>
         /// <returns>true if the transfer was successful; otherwise, false.</returns>
         private bool TrySetFromTask(Task task, bool lookForOce)

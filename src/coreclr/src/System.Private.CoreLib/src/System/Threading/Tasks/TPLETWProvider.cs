@@ -320,9 +320,10 @@ namespace System.Threading.Tasks
         /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         /// <param name="Behavior">Configured behavior for the wait.</param>
-        /// <param name="ContinueWithTaskID">If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.  
-        ///      0 means unknown.   This allows better visualization of the common sequential chaining case.</param>
-        /// </summary>
+        /// <param name="ContinueWithTaskID">
+        /// If known, if 'TaskID' has a 'continueWith' task, mention give its ID here.  
+        /// 0 means unknown.   This allows better visualization of the common sequential chaining case.
+        /// </param>
         [Event(TASKWAITBEGIN_ID, Version = 3, Task = TplEtwProvider.Tasks.TaskWait, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void TaskWaitBegin(
@@ -383,8 +384,6 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Fired when the work (method) associated with a TaskWaitEnd completes
         /// </summary>
-        /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
-        /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         [Event(TASKWAITCONTINUATIONCOMPLETE_ID,
          Level = EventLevel.Verbose, Keywords = Keywords.TaskStops)]
@@ -398,8 +397,6 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Fired when the work (method) associated with a TaskWaitEnd completes
         /// </summary>
-        /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
-        /// <param name="OriginatingTaskID">The task ID.</param>
         /// <param name="TaskID">The task ID.</param>
         [Event(TASKWAITCONTINUATIONSTARTED_ID,
          Level = EventLevel.Verbose, Keywords = Keywords.TaskStops)]
@@ -415,7 +412,6 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="OriginatingTaskSchedulerID">The scheduler ID.</param>
         /// <param name="OriginatingTaskID">The task ID.</param>
-        /// <param name="TaskID">The activityId for the continuation.</param>
         [Event(AWAITTASKCONTINUATIONSCHEDULED_ID, Task = Tasks.AwaitTaskContinuationScheduled, Opcode = EventOpcode.Send,
          Level = EventLevel.Informational, Keywords = Keywords.TaskTransfer | Keywords.Tasks)]
         public void AwaitTaskContinuationScheduled(
