@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
         }
 
         private const string corehost_resolve_component_dependencies = "corehost_resolve_component_dependencies";
+        private const string corehost_resolve_component_dependencies_multithreaded = "corehost_resolve_component_dependencies_multithreaded";
 
         [Fact]
         public void InvalidMainComponentAssemblyPathFails()
@@ -39,7 +40,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .StdErrAfter("corehost_resolve_component_dependencies = {")
                 .Should().Pass()
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Fail[0x80008092]")
-                .And.HaveStdErrContaining("Failed to locate managed application");
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining("Failed to locate managed application");
         }
 
         [Fact]
@@ -273,12 +275,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .StdErrAfter("corehost_resolve_component_dependencies = {")
                 .Should().Pass()
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Fail[0x8000808C]")
-                .And.HaveStdErrContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
-                .And.HaveStdErrContaining("package: 'ComponentDependency_Dupe', version: '1.0.0'")
-                .And.HaveStdErrContaining("path: 'ComponentDependency.notdll'")
-                .And.HaveStdErrContaining($"previously found assembly: '{Path.Combine(componentFixture.TestProject.OutputDirectory, "ComponentDependency.dll")}'");
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining("An assembly specified in the application dependencies manifest (ComponentWithDependencies.deps.json) has already been found but with a different file extension")
+                .And.HaveStdOutContaining("package: 'ComponentDependency_Dupe', version: '1.0.0'")
+                .And.HaveStdOutContaining("path: 'ComponentDependency.notdll'")
+                .And.HaveStdOutContaining($"previously found assembly: '{Path.Combine(componentFixture.TestProject.OutputDirectory, "ComponentDependency.dll")}'");
         }
 
+        // This test also validates that corehost_set_error_writer custom writer
+        // correctly captures errors from hostpolicy.
         [Fact]
         public void ComponentWithCorruptedDepsJsonShouldFail()
         {
@@ -301,8 +306,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .StdErrAfter("corehost_resolve_component_dependencies = {")
                 .Should().Pass()
                 .And.HaveStdOutContaining("corehost_resolve_component_dependencies:Fail[0x8000808B]")
-                .And.HaveStdErrContaining($"A JSON parsing exception occurred in [{componentFixture.TestProject.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
-                .And.HaveStdErrContaining($"Error initializing the dependency resolver: An error occurred while parsing: {componentFixture.TestProject.DepsJson}");
+                .And.HaveStdOutContaining("corehost reported errors:")
+                .And.HaveStdOutContaining($"A JSON parsing exception occurred in [{componentFixture.TestProject.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
+                .And.HaveStdOutContaining($"Error initializing the dependency resolver: An error occurred while parsing: {componentFixture.TestProject.DepsJson}");
         }
 
         [Fact]
@@ -378,6 +384,66 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHostApis
                 .And.HaveStdOutContaining($"corehost_resolve_component_dependencies assemblies:[{componentFixture.TestProject.AppDll}{Path.PathSeparator}]");
         }
 
+        [Fact]
+        public void MultiThreadedComponentDependencyResolutionWhichSucceeeds()
+        {
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var componentWithNoDependenciesFixture = sharedTestState.PreviouslyPublishedAndRestoredComponentWithNoDependenciesFixture.Copy();
+            var componentWithResourcesFixture = sharedTestState.PreviouslyPublishedAndRestoredComponentWithResourcesFixture.Copy();
+
+            string componentWithNoDependenciesPrefix = Path.GetFileNameWithoutExtension(componentWithNoDependenciesFixture.TestProject.AppDll);
+            string componentWithResourcesPrefix = Path.GetFileNameWithoutExtension(componentWithResourcesFixture.TestProject.AppDll);
+
+            string[] args =
+            {
+                corehost_resolve_component_dependencies_multithreaded,
+                componentWithNoDependenciesFixture.TestProject.AppDll,
+                componentWithResourcesFixture.TestProject.AppDll
+            };
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, args)
+                .CaptureStdOut().CaptureStdErr().EnvironmentVariable("COREHOST_TRACE", "1")
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"{componentWithNoDependenciesPrefix}: corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"{componentWithNoDependenciesPrefix}: corehost_resolve_component_dependencies assemblies:[{componentWithNoDependenciesFixture.TestProject.AppDll}{Path.PathSeparator}]")
+                .And.HaveStdOutContaining($"{componentWithResourcesPrefix}: corehost_resolve_component_dependencies:Success")
+                .And.HaveStdOutContaining($"{componentWithResourcesPrefix}: corehost_resolve_component_dependencies resource_search_paths:[" +
+                    $"{ExpectedProbingPaths(componentWithResourcesFixture.TestProject.OutputDirectory)}]");
+        }
+
+        [Fact]
+        public void MultiThreadedComponentDependencyResolutionWhichFailures()
+        {
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredPortableApiTestProjectFixture.Copy();
+            var componentWithNoDependenciesFixture = sharedTestState.PreviouslyPublishedAndRestoredComponentWithNoDependenciesFixture.Copy();
+            var componentWithResourcesFixture = sharedTestState.PreviouslyPublishedAndRestoredComponentWithResourcesFixture.Copy();
+
+            string componentWithNoDependenciesPrefix = Path.GetFileNameWithoutExtension(componentWithNoDependenciesFixture.TestProject.AppDll);
+            string componentWithResourcesPrefix = Path.GetFileNameWithoutExtension(componentWithResourcesFixture.TestProject.AppDll);
+
+            // Corrupt the .deps.json by appending } to it (malformed json)
+            File.WriteAllText(
+                componentWithNoDependenciesFixture.TestProject.DepsJson,
+                File.ReadAllLines(componentWithNoDependenciesFixture.TestProject.DepsJson) + "}");
+
+            string[] args =
+            {
+                corehost_resolve_component_dependencies_multithreaded,
+                componentWithNoDependenciesFixture.TestProject.AppDll,
+                componentWithResourcesFixture.TestProject.AppDll + "_invalid"
+            };
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, args)
+                .CaptureStdOut().CaptureStdErr().EnvironmentVariable("COREHOST_TRACE", "1")
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"{componentWithNoDependenciesPrefix}: corehost_resolve_component_dependencies:Fail[0x8000808B]")
+                .And.HaveStdOutContaining($"{componentWithNoDependenciesPrefix}: corehost reported errors:")
+                .And.HaveStdOutContaining($"{componentWithNoDependenciesPrefix}: A JSON parsing exception occurred in [{componentWithNoDependenciesFixture.TestProject.DepsJson}]: * Line 1, Column 2 Syntax error: Malformed token")
+                .And.HaveStdOutContaining($"{componentWithNoDependenciesPrefix}: Error initializing the dependency resolver: An error occurred while parsing: {componentWithNoDependenciesFixture.TestProject.DepsJson}")
+                .And.HaveStdOutContaining($"{componentWithResourcesPrefix}: corehost_resolve_component_dependencies:Fail[0x80008092]")
+                .And.HaveStdOutContaining($"{componentWithResourcesPrefix}: corehost reported errors:")
+                .And.HaveStdOutContaining($"{componentWithResourcesPrefix}: Failed to locate managed application");
+        }
 
         public class SharedTestState : IDisposable
         {
