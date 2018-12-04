@@ -342,7 +342,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	ppc_stptr (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r12);
 
 	/*
-	 * Now we're ready to call trampoline (mgreg_t *regs, guint8 *code, gpointer value, guint8 *tramp)
+	 * Now we are ready to call trampoline (target_mgreg_t *regs, guint8 *code, gpointer value, guint8 *tramp)
 	 * Note that the last argument is unused.
 	 */
 	/* Arg 1: a pointer to the registers */

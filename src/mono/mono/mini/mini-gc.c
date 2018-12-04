@@ -45,7 +45,8 @@ get_provenance_func (void)
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/unlocked.h>
 
-#define SIZEOF_SLOT ((int)sizeof (mgreg_t))
+//#define SIZEOF_SLOT ((int)sizeof (host_mgreg_t))
+//#define SIZEOF_SLOT ((int)sizeof (target_mgreg_t))
 
 #define GC_BITS_PER_WORD (sizeof (mword) * 8)
 

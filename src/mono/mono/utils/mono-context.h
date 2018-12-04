@@ -897,13 +897,13 @@ typedef struct ucontext MonoContext;
 #include <mono/arch/riscv/riscv-codegen.h>
 
 typedef struct {
-	mgreg_t gregs [RISCV_N_GREGS]; // [0] contains pc since x0 is hard-wired to zero anyway.
+	host_mgreg_t gregs [RISCV_N_GREGS]; // [0] contains pc since x0 is hard-wired to zero anyway.
 	double fregs [RISCV_N_FREGS * 2 + 2]; // [32] contains fcsr (32 bits), the rest is for quad-precision values (currently unused).
 } MonoContext;
 
-#define MONO_CONTEXT_SET_IP(ctx, ip) do { (ctx)->gregs [RISCV_ZERO] = (mgreg_t) (ip); } while (0)
-#define MONO_CONTEXT_SET_BP(ctx, bp) do { (ctx)->gregs [RISCV_FP] = (mgreg_t) (bp); } while (0)
-#define MONO_CONTEXT_SET_SP(ctx, sp) do { (ctx)->gregs [RISCV_SP] = (mgreg_t) (sp); } while (0)
+#define MONO_CONTEXT_SET_IP(ctx, ip) do { (ctx)->gregs [RISCV_ZERO] = (host_mgreg_t) (ip); } while (0)
+#define MONO_CONTEXT_SET_BP(ctx, bp) do { (ctx)->gregs [RISCV_FP] = (host_mgreg_t) (bp); } while (0)
+#define MONO_CONTEXT_SET_SP(ctx, sp) do { (ctx)->gregs [RISCV_SP] = (host_mgreg_t) (sp); } while (0)
 
 #define MONO_CONTEXT_GET_IP(ctx) ((gpointer) ((ctx)->gregs [RISCV_ZERO]))
 #define MONO_CONTEXT_GET_BP(ctx) ((gpointer) ((ctx)->gregs [RISCV_FP]))

@@ -1739,7 +1739,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	p->ret = ret;
 	p->n_fpargs = dinfo->n_fpargs;
 	p->n_fpret = dinfo->n_fpret;
-	p->n_stackargs = cinfo->stack_usage / sizeof (mgreg_t);
+	p->n_stackargs = cinfo->stack_usage / sizeof (host_mgreg_t);
 
 	arg_index = 0;
 	greg = 0;
@@ -2686,7 +2686,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_INST_NEW (cfg, load, OP_LOADI8_MEMBASE);
 			load->dreg = mono_alloc_ireg (cfg);
 			load->inst_basereg = src->dreg;
-			load->inst_offset = i * sizeof(mgreg_t);
+			load->inst_offset = i * sizeof (target_mgreg_t);
 			MONO_ADD_INS (cfg->cbb, load);
 			add_outarg_reg (cfg, call, ArgInIReg, ainfo->reg + i, load);
 		}
@@ -3210,7 +3210,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	MonoCallInst *call;
 	guint8 *code = cfg->native_code + cfg->code_len;
 	int start_offset, max_len, dreg, sreg1, sreg2;
-	mgreg_t imm;
+	target_mgreg_t imm;
 
 	if (cfg->verbose_level > 2)
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
@@ -4370,7 +4370,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			g_assert (!cfg->method->save_lmf);
 
-			max_len += call->stack_usage / sizeof (mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
+			max_len += call->stack_usage / sizeof (target_mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
 			while (G_UNLIKELY (offset + max_len > cfg->code_size)) {
 				cfg->code_size *= 2;
 				cfg->native_code = (unsigned char *)mono_realloc_native_code (cfg);
@@ -4415,7 +4415,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			// Copy stack arguments.
 			// FIXME a fixed size memcpy is desirable here,
 			// at least for larger values of stack_usage.
-			for (int i = 0; i < call->stack_usage; i += sizeof (mgreg_t)) {
+			for (int i = 0; i < call->stack_usage; i += sizeof (target_mgreg_t)) {
 				code = emit_ldrx (code, ARMREG_LR, ARMREG_SP, i);
 				code = emit_strx (code, ARMREG_LR, ARMREG_R28, i);
 			}
@@ -4494,7 +4494,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* R1 = limit */
 			code = emit_ldrx (code, ARMREG_R1, ARMREG_LR, MONO_STRUCT_OFFSET (DynCallArgs, n_stackargs));
 			/* R2 = pointer into 'regs' */
-			code = emit_imm (code, ARMREG_R2, MONO_STRUCT_OFFSET (DynCallArgs, regs) + ((PARAM_REGS + 1) * sizeof (mgreg_t)));
+			code = emit_imm (code, ARMREG_R2, MONO_STRUCT_OFFSET (DynCallArgs, regs) + ((PARAM_REGS + 1) * sizeof (target_mgreg_t)));
 			arm_addx (code, ARMREG_R2, ARMREG_LR, ARMREG_R2);
 			/* R3 = pointer to stack */
 			arm_movspx (code, ARMREG_R3, ARMREG_SP);
@@ -4503,8 +4503,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			labels [1] = code;
 			code = emit_ldrx (code, ARMREG_R5, ARMREG_R2, 0);
 			code = emit_strx (code, ARMREG_R5, ARMREG_R3, 0);
-			code = emit_addx_imm (code, ARMREG_R2, ARMREG_R2, sizeof (mgreg_t));
-			code = emit_addx_imm (code, ARMREG_R3, ARMREG_R3, sizeof (mgreg_t));
+			code = emit_addx_imm (code, ARMREG_R2, ARMREG_R2, sizeof (target_mgreg_t));
+			code = emit_addx_imm (code, ARMREG_R3, ARMREG_R3, sizeof (target_mgreg_t));
 			code = emit_subx_imm (code, ARMREG_R1, ARMREG_R1, 1);
 			arm_patch_rel (labels [0], code, MONO_R_ARM64_B);
 			arm_cmpw (code, ARMREG_R1, ARMREG_RZR);
@@ -4678,7 +4678,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FILL_PROF_CALL_CTX:
 			for (int i = 0; i < MONO_MAX_IREGS; i++)
 				if ((MONO_ARCH_CALLEE_SAVED_REGS & (1 << i)) || i == ARMREG_SP || i == ARMREG_FP)
-					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (mgreg_t));
+					arm_strx (code, i, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, regs) + i * sizeof (target_mgreg_t));
 			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);

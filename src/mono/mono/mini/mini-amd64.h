@@ -282,13 +282,13 @@ struct SeqPointInfo {
 };
 
 typedef struct {
-	mgreg_t res;
+	host_mgreg_t res;
 	guint8 *ret;
 	double fregs [8];
-	mgreg_t has_fp;
-	mgreg_t nstack_args;
+	host_mgreg_t has_fp;
+	host_mgreg_t nstack_args;
 	/* This should come last as the structure is dynamically extended */
-	mgreg_t regs [PARAM_REGS];
+	host_mgreg_t regs [PARAM_REGS];
 } DynCallArgs;
 
 typedef enum {
@@ -582,6 +582,9 @@ mono_arch_unwindinfo_get_size (guchar code_count)
 	// as well. Also make sure to allocate room for a padding UNWIND_CODE, if needed.
 	return (sizeof (mgreg_t) + sizeof (UNWIND_INFO)) -
 		(sizeof (UNWIND_CODE) * ((MONO_MAX_UNWIND_CODES - ((code_count + 1) & ~1))));
+/* FIXME Something simpler should work:
+	return sizeof (UNWIND_INFO) + sizeof (UNWIND_CODE) * (code_count + (code_count & 1));
+*/
 }
 
 guchar

@@ -3429,7 +3429,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE:
 		case OP_ICOMPARE:
 		CASE_PPC64 (OP_LCOMPARE)
-			L = (sizeof (mgreg_t) == 4 || ins->opcode == OP_ICOMPARE) ? 0 : 1;
+			L = (sizeof (target_mgreg_t) == 4 || ins->opcode == OP_ICOMPARE) ? 0 : 1;
 			next = ins->next;
 			if (next && compare_opcode_is_unsigned (next->opcode))
 				ppc_cmpl (code, 0, L, ins->sreg1, ins->sreg2);
@@ -3439,7 +3439,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_COMPARE_IMM:
 		case OP_ICOMPARE_IMM:
 		CASE_PPC64 (OP_LCOMPARE_IMM)
-			L = (sizeof (mgreg_t) == 4 || ins->opcode == OP_ICOMPARE_IMM) ? 0 : 1;
+			L = (sizeof (target_mgreg_t) == 4 || ins->opcode == OP_ICOMPARE_IMM) ? 0 : 1;
 			next = ins->next;
 			if (next && compare_opcode_is_unsigned (next->opcode)) {
 				if (ppc_is_uimm16 (ins->inst_imm)) {
@@ -4788,7 +4788,7 @@ save_registers (MonoCompile *cfg, guint8* code, int pos, int base_reg, gboolean 
 			if (used_int_regs & (1 << i)) {
 				ppc_str (code, i, pos, base_reg);
 				mono_emit_unwind_op_offset (cfg, code, i, pos - cfa_offset);
-				pos += sizeof (mgreg_t);
+				pos += sizeof (target_mgreg_t);
 			}
 		}
 	} else {
@@ -4797,7 +4797,7 @@ save_registers (MonoCompile *cfg, guint8* code, int pos, int base_reg, gboolean 
 		for (i = 13; i <= 31; i++) {
 			ppc_str (code, i, offset, base_reg);
 			mono_emit_unwind_op_offset (cfg, code, i, offset - cfa_offset);
-			offset += sizeof (mgreg_t);
+			offset += sizeof (target_mgreg_t);
 		}
 		offset = pos + G_STRUCT_OFFSET (MonoLMF, fregs);
 		for (i = 14; i < 32; i++) {
@@ -4865,7 +4865,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (!method->save_lmf) {
 		for (i = 31; i >= 13; --i) {
 			if (cfg->used_int_regs & (1 << i)) {
-				pos += sizeof (mgreg_t);
+				pos += sizeof (target_mgreg_t);
 			}
 		}
 	} else {
@@ -5368,7 +5368,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			int offset = cfg->stack_usage;
 			for (i = 13; i <= 31; i++) {
 				if (cfg->used_int_regs & (1 << i))
-					offset -= sizeof (mgreg_t);
+					offset -= sizeof (target_mgreg_t);
 			}
 			if (cfg->frame_reg != ppc_sp)
 				ppc_mr (code, ppc_r12, cfg->frame_reg);
@@ -5376,7 +5376,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			for (i = 13; i <= 31; i++) {
 				if (cfg->used_int_regs & (1 << i)) {
 					ppc_ldr (code, i, offset, cfg->frame_reg);
-					offset += sizeof (mgreg_t);
+					offset += sizeof (target_mgreg_t);
 				}
 			}
 			if (cfg->frame_reg != ppc_sp)
@@ -5389,7 +5389,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				ppc_add (code, ppc_r12, cfg->frame_reg, ppc_r12);
 				for (i = 31; i >= 13; --i) {
 					if (cfg->used_int_regs & (1 << i)) {
-						pos += sizeof (mgreg_t);
+						pos += sizeof (target_mgreg_t);
 						ppc_ldr (code, i, -pos, ppc_r12);
 					}
 				}
@@ -5767,7 +5767,7 @@ host_mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
 	if (reg == ppc_r1)
-		return (mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
+		return (host_mgreg_t)(gsize)MONO_CONTEXT_GET_SP (ctx);
 
 	return ctx->regs [reg];
 }

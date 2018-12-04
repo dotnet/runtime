@@ -2057,14 +2057,14 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/* Unwind info for specifc trampolines */
 	sprintf (symbol, "%sspecific_trampolines_page_gen_p", acfg->user_symbol_prefix);
 	/* We unwind to the original caller, from the stack, since lr is clobbered */
-	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 14 * sizeof (mgreg_t));
+	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 14 * sizeof (target_mgreg_t));
 	mono_add_unwind_op_offset (unwind_ops, 0, 0, ARMREG_LR, -4);
 	save_unwind_info (acfg, symbol, unwind_ops);
 	mono_free_unwind_info (unwind_ops);
 
 	sprintf (symbol, "%sspecific_trampolines_page_sp_p", acfg->user_symbol_prefix);
 	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 14 * sizeof (mgreg_t));
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 14 * sizeof (target_mgreg_t));
 	save_unwind_info (acfg, symbol, unwind_ops);
 	mono_free_unwind_info (unwind_ops);
 
@@ -2080,7 +2080,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/* Unwind info for gsharedvt trampolines */
 	sprintf (symbol, "%sgsharedvt_trampolines_page_gen_p", acfg->user_symbol_prefix);
 	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 4 * sizeof (mgreg_t));
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 4 * sizeof (target_mgreg_t));
 	save_unwind_info (acfg, symbol, unwind_ops);
 	mono_free_unwind_info (unwind_ops);
 
@@ -2101,7 +2101,7 @@ arch_emit_specific_trampoline_pages (MonoAotCompile *acfg)
 	/* Unwind info for imt trampolines */
 	sprintf (symbol, "%simt_trampolines_page_gen_p", acfg->user_symbol_prefix);
 	mono_add_unwind_op_def_cfa (unwind_ops, 0, 0, ARMREG_SP, 0);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 3 * sizeof (mgreg_t));
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, 4, 0, 3 * sizeof (target_mgreg_t));
 	save_unwind_info (acfg, symbol, unwind_ops);
 	mono_free_unwind_info (unwind_ops);
 
