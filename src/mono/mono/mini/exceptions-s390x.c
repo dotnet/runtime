@@ -25,14 +25,14 @@
 #define S390_CALLFILTER_ACCREGS		(S390_CALLFILTER_FLTREGS+(16*sizeof(gdouble)))
 #define S390_CALLFILTER_SIZE		(S390_CALLFILTER_ACCREGS+(16*sizeof(gint32)))
 
-#define S390_THROWSTACK_ACCPRM		S390_MINIMAL_STACK_SIZE
-#define S390_THROWSTACK_FPCPRM		(S390_THROWSTACK_ACCPRM+sizeof(gpointer))
-#define S390_THROWSTACK_PRESERVE_IPS (S390_THROWSTACK_FPCPRM+sizeof(gulong))
-#define S390_THROWSTACK_RETHROW		(S390_THROWSTACK_PRESERVE_IPS+sizeof(gboolean))
-#define S390_THROWSTACK_INTREGS		(S390_THROWSTACK_RETHROW+sizeof(gboolean))
-#define S390_THROWSTACK_FLTREGS		(S390_THROWSTACK_INTREGS+(16*sizeof(gulong)))
-#define S390_THROWSTACK_ACCREGS		(S390_THROWSTACK_FLTREGS+(16*sizeof(gdouble)))
-#define S390_THROWSTACK_SIZE		(S390_THROWSTACK_ACCREGS+(16*sizeof(gint32)))
+#define S390_THROWSTACK_ACCPRM		S390_MINIMAL_STACK_SIZE				// 160
+#define S390_THROWSTACK_FPCPRM		(S390_THROWSTACK_ACCPRM+sizeof(gpointer))	// 168
+#define S390_THROWSTACK_RETHROW		(S390_THROWSTACK_FPCPRM+sizeof(gulong))		// 170
+#define S390_THROWSTACK_PRESERVE_IPS	(S390_THROWSTACK_RETHROW+sizeof(gulong))  	// 178
+#define S390_THROWSTACK_INTREGS		(S390_THROWSTACK_PRESERVE_IPS+sizeof(gulong))	// 180
+#define S390_THROWSTACK_FLTREGS		(S390_THROWSTACK_INTREGS+(16*sizeof(gulong)))	// 308
+#define S390_THROWSTACK_ACCREGS		(S390_THROWSTACK_FLTREGS+(16*sizeof(gdouble)))	// 430
+#define S390_THROWSTACK_SIZE		(S390_THROWSTACK_ACCREGS+(16*sizeof(gint32)))	// 494
 
 #define SZ_THROW	384
 
@@ -297,8 +297,8 @@ throw_exception (MonoObject *exc, unsigned long ip, unsigned long sp,
 /*------------------------------------------------------------------*/
 
 static gpointer 
-mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, 
-				int corlib, gboolean rethrow, gboolean aot, gboolean preserve_ips)
+mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corlib, 
+				       gboolean rethrow, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *code, *start;
 	int alloc_size, pos, i;
