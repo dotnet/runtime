@@ -111,7 +111,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new ScalarSimdUnaryOpTest__DataTable<{RetBaseType}>(new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => {Isa}.IsSupported && (Environment.Is64BitProcess || ((typeof({RetBaseType}) != typeof(long)) && (typeof({RetBaseType}) != typeof(ulong))));
+        public bool IsSupported => {Isa}.IsSupported;
 
         public bool Succeeded { get; set; }
 
