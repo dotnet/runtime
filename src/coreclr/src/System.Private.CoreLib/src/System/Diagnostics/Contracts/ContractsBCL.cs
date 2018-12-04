@@ -248,9 +248,9 @@ namespace System.Runtime.CompilerServices
         /// 1. Call any contract hooks (such as listeners to Contract failed events)
         /// 2. Determine if the listeners deem the failure as handled (then resultFailureMessage should be set to null)
         /// 3. Produce a localized resultFailureMessage used in advertising the failure subsequently.
-        /// </summary>
         /// On exit: null if the event was handled and should not trigger a failure.
-        ///          Otherwise, returns the localized failure message</param>
+        ///          Otherwise, returns the localized failure message.
+        /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
         public static string RaiseContractFailedEvent(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
         {

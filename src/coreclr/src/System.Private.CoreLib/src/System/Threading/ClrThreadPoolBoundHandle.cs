@@ -239,7 +239,7 @@ namespace System.Threading
 
         /// <summary>
         ///     Returns the user-provided object specified when the <see cref="NativeOverlapped"/> instance was
-        ///     allocated using the <see cref="AllocateNativeOverlapped(IOCompletionCallback, object, byte[])"/>.
+        ///     allocated using the <see cref="AllocateNativeOverlapped(IOCompletionCallback, object, object)"/>.
         /// </summary>
         /// <param name="overlapped">
         ///     An unmanaged pointer to the <see cref="NativeOverlapped"/> structure from which to return the 
