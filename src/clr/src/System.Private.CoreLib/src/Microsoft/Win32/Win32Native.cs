@@ -11,7 +11,7 @@
 **
 **
 ===========================================================*/
-/**
+/*
  * Notes to PInvoke users:  Getting the syntax exactly correct is crucial, and
  * more than a little confusing.  Here's some guidelines.
  *
@@ -51,7 +51,7 @@
  * but your function prototype must use different syntax depending on your 
  * choice.  For example, if your native method is prototyped as such:
  *
- *    bool GetVersionEx(OSVERSIONINFO & lposvi);
+ *    bool GetVersionEx(OSVERSIONINFO &amp; lposvi);
  *
  *
  * you must use EITHER THIS OR THE NEXT syntax:
@@ -76,7 +76,7 @@
  * Also note the CharSet.Auto on GetVersionEx - while it does not take a String
  * as a parameter, the OSVERSIONINFO contains an embedded array of TCHARs, so
  * the size of the struct varies on different platforms, and there's a
- * GetVersionExA & a GetVersionExW.  Also, the OSVERSIONINFO struct has a sizeof
+ * GetVersionExA &amp; a GetVersionExW.  Also, the OSVERSIONINFO struct has a sizeof
  * field so the OS can ensure you've passed in the correctly-sized copy of an
  * OSVERSIONINFO.  You must explicitly set this using Marshal.SizeOf(Object);
  *

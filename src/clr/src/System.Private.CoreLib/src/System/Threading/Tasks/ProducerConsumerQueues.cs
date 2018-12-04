@@ -357,7 +357,7 @@ namespace System.Threading.Tasks
             private readonly SingleProducerSingleConsumerQueue<T> m_queue;
 
             /// <summary>Initializes the debug view.</summary>
-            /// <param name="enumerable">The queue being debugged.</param>
+            /// <param name="queue">The queue being debugged.</param>
             public SingleProducerSingleConsumerQueue_DebugView(SingleProducerSingleConsumerQueue<T> queue)
             {
                 Debug.Assert(queue != null, "Expected a non-null queue.");

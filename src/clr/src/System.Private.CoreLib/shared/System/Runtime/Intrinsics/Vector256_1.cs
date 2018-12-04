@@ -103,65 +103,65 @@ namespace System.Runtime.Intrinsics
             return Unsafe.As<Vector256<T>, Vector256<U>>(ref Unsafe.AsRef(in this));
         }
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{byte}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{byte}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Byte}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Byte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public Vector256<byte> AsByte() => As<byte>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{double}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{double}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Double}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Double}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public Vector256<double> AsDouble() => As<double>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{short}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{short}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Int16}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Int16}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public Vector256<short> AsInt16() => As<short>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{int}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{int}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Int32}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Int32}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public Vector256<int> AsInt32() => As<int>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{long}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{long}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Int64}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Int64}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public Vector256<long> AsInt64() => As<long>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{sbyte}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{sbyte}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{SByte}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{SByte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<sbyte> AsSByte() => As<sbyte>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{float}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{float}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{Single}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{Single}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public Vector256<float> AsSingle() => As<float>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{ushort}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{ushort}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{UInt16}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{UInt16}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<ushort> AsUInt16() => As<ushort>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{uint}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{uint}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{UInt32}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{UInt32}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         public Vector256<uint> AsUInt32() => As<uint>();
 
-        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{ulong}" />.</summary>
-        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{ulong}" />.</returns>
+        /// <summary>Reinterprets the current instance as a new <see cref="Vector256{UInt64}" />.</summary>
+        /// <returns>The current instance reinterpreted as a new <see cref="Vector256{UInt64}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]

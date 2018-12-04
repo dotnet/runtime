@@ -4532,7 +4532,7 @@ namespace System
 
         /// <summary>
         /// Helper to invoke the default (parameterless) constructor.
-        /// <summary>
+        /// </summary>
         [DebuggerStepThrough]
         [DebuggerHidden]
         internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
