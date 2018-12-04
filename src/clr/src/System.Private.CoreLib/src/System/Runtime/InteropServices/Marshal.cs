@@ -1767,7 +1767,7 @@ namespace System.Runtime.InteropServices
         /// NativeLibrary Loader: Simple API
         /// This method is a wrapper around OS loader, using "default" flags.
         /// </summary>
-        /// <param name="libraryName">The name of the native library to be loaded</param>
+        /// <param name="libraryPath">The name of the native library to be loaded</param>
         /// <returns>The handle for the loaded native library</returns>  
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
         /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
@@ -1783,7 +1783,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// NativeLibrary Loader: Simple API that doesn't throw
         /// </summary>
-        /// <param name="libraryName">The name of the native library to be loaded</param>
+        /// <param name="libraryPath">The name of the native library to be loaded</param>
         /// <param name="handle">The out-parameter for the loaded native library handle</param>
         /// <returns>True on successful load, false otherwise</returns>  
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
@@ -1807,8 +1807,8 @@ namespace System.Runtime.InteropServices
         /// * AssemblyLoadContext.LoadUnmanagedDll()
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
-        /// <param name="dllImportSearchPath">The search path</param>
         /// <param name="assembly">The assembly loading the native library</param>
+        /// <param name="searchPath">The search path</param>
         /// <returns>The handle for the loaded library</returns>  
         /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
         /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
@@ -1834,7 +1834,7 @@ namespace System.Runtime.InteropServices
         /// NativeLibrary Loader: High-level API that doesn't throw.
         /// </summary>
         /// <param name="libraryName">The name of the native library to be loaded</param>
-        /// <param name="dllImportSearchPath">The search path</param>
+        /// <param name="searchPath">The search path</param>
         /// <param name="assembly">The assembly loading the native library</param>
         /// <param name="handle">The out-parameter for the loaded native library handle</param>
         /// <returns>True on successful load, false otherwise</returns>  

@@ -1466,6 +1466,7 @@ namespace System.Threading.Tasks
 
         #endregion
 
+#if SUPPORT_IOBSERVABLE
         /// <summary>
         /// Subscribes an <see cref="IObserver{TResult}"/> to receive notification of the final state of this <see cref="Task{TResult}"/>.
         /// </summary>
@@ -1480,7 +1481,6 @@ namespace System.Threading.Tasks
         /// <exception cref="T:System.ArgumentNullException">
         /// The <paramref name="observer"/> argument is null.
         /// </exception>
-#if SUPPORT_IOBSERVABLE
         IDisposable IObservable<TResult>.Subscribe(IObserver<TResult> observer)
         {
             if (observer == null)
