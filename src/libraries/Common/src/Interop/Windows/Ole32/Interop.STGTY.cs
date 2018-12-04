@@ -8,7 +8,7 @@ internal static partial class Interop
     {
         /// <summary>
         /// Type of the storage element. Used with <see cref="STATSTG"/>.
-        /// <see cref="https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ne-objidl-tagstgty"/>
+        /// <see href="https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ne-objidl-tagstgty"/>
         /// </summary>
         internal enum STGTY : uint
         {

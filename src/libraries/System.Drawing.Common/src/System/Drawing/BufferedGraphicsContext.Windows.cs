@@ -239,7 +239,7 @@ namespace System.Drawing
         /// <summary>
         /// Create a DIB section with an optimal format w.r.t. the specified hdc.
         ///
-        /// If DIB <= 8bpp, then the DIB color table is initialized based on the
+        /// If DIB &lt;= 8bpp, then the DIB color table is initialized based on the
         /// specified palette. If the palette handle is NULL, then the system
         /// palette is used.
         ///

@@ -12,7 +12,7 @@ internal static partial class Interop
     {
         /// <summary>
         /// Statistics for <see cref="IStream"/>.
-        /// <see cref="https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ns-objidl-tagstatstg"/>
+        /// <see href="https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ns-objidl-tagstatstg"/>
         /// </summary>
         /// <remarks>
         /// The definition in <see cref="System.Runtime.InteropServices.ComTypes"/> isn't blittable.
@@ -42,7 +42,7 @@ internal static partial class Interop
 
             /// <summary>
             /// Supported locking modes.
-            /// <see cref="https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ne-objidl-taglocktype"/>
+            /// <see href="https://docs.microsoft.com/en-us/windows/desktop/api/objidl/ne-objidl-taglocktype"/>
             /// </summary>
             /// <remarks>
             /// '0' means does not support lock modes.
