@@ -108,8 +108,6 @@ public:
 #endif //FEATURE_COMINTEROP
     static FCDECL1(FC_BOOL_RET,IsThreadpoolThread,             ThreadBaseObject* thread);
 
-    static FCDECL1(void, SetIsThreadStaticsArray, Object* pObject);
-
     static FCDECL2(void,    SetAbortReason, ThreadBaseObject* pThisUNSAFE, Object* pObject);
     static FCDECL1(void,    ClearAbortReason, ThreadBaseObject* pThisUNSAFE);
 

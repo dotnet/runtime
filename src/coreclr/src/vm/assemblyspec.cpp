@@ -723,7 +723,7 @@ void AssemblySpec::MatchPublicKeys(Assembly *pAssembly)
 }
 
 
-PEAssembly *AssemblySpec::ResolveAssemblyFile(AppDomain *pDomain, BOOL fPreBind)
+PEAssembly *AssemblySpec::ResolveAssemblyFile(AppDomain *pDomain)
 {
     CONTRACT(PEAssembly *)
     {
@@ -740,7 +740,7 @@ PEAssembly *AssemblySpec::ResolveAssemblyFile(AppDomain *pDomain, BOOL fPreBind)
     if (GetName() == NULL)
         RETURN NULL;
 
-    Assembly *pAssembly = pDomain->RaiseAssemblyResolveEvent(this, fPreBind);
+    Assembly *pAssembly = pDomain->RaiseAssemblyResolveEvent(this);
 
     if (pAssembly != NULL) {
         PEAssembly *pFile = pAssembly->GetManifestFile();

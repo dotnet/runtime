@@ -665,24 +665,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         pAssem->m_isDynamic = true;
 
-        if (publicKey.GetSize() > 0)
-        {
-            // Since we have no way to validate the public key of a dynamic assembly we don't allow 
-            // partial trust code to emit a dynamic assembly with an arbitrary public key.
-            // Ideally we shouldn't allow anyone to emit a dynamic assembly with only a public key,
-            // but we allow a couple of exceptions to reduce the compat risk: full trust, caller's own key.
-            // As usual we treat anonymously hosted dynamic methods as partial trust code.
-            DomainAssembly* pCallerDomainAssembly = pCallerAssembly->GetDomainAssembly(pCallersDomain);
-            if (pCallerDomainAssembly == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
-            {
-                DWORD cbKey = 0;
-                const void* pKey = pCallerAssembly->GetPublicKey(&cbKey);
-
-                if (!publicKey.Equals((const BYTE *)pKey, cbKey))
-                    COMPlusThrow(kInvalidOperationException, W("InvalidOperation_StrongNameKeyPairRequired"));
-            }
-        }
-
         //we need to suppress release for pAssem to avoid double release
         pAssem.SuppressRelease ();
 

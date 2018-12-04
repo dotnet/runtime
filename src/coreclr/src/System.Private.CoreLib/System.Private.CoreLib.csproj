@@ -241,7 +241,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />

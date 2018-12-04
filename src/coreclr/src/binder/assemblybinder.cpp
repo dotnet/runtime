@@ -54,9 +54,6 @@ extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadCon
                                                 IAssemblyName *pIAssemblyName, CLRPrivBinderCoreCLR *pTPABinder,
                                                 BINDER_SPACE::AssemblyName *pAssemblyName, ICLRPrivAssembly **ppLoadedAssembly);
 
-// Helper to check if we have a host assembly resolver set
-extern BOOL RuntimeCanUseAppPathAssemblyResolver(DWORD adid);
-
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 namespace BINDER_SPACE
@@ -1402,149 +1399,142 @@ namespace BINDER_SPACE
                 // We either didn't find a candidate, or the ref-def failed.  Either way; fall back to app path probing.
             }
 
-            bool fUseAppPathsBasedResolver = !excludeAppPaths;
-            
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-            // If Host Assembly Resolver is specified, then we will use that as the override for the default resolution mechanism (that uses AppPath probing).
-            if (fUseAppPathsBasedResolver && !RuntimeCanUseAppPathAssemblyResolver(pApplicationContext->GetAppDomainId()))
+            if (!excludeAppPaths)
             {
-                fUseAppPathsBasedResolver = false;
-            }
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-             
-            // This loop executes twice max.  First time through we probe AppNiPaths, the second time we probe AppPaths
-            bool parseNiPaths = true;
-            while (fUseAppPathsBasedResolver)
-            {
-                StringArrayList *pBindingPaths = parseNiPaths ? pApplicationContext->GetAppNiPaths() : pApplicationContext->GetAppPaths();
-                
-                // Loop through the binding paths looking for a matching assembly
-                for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
+                // This loop executes twice max.  First time through we probe AppNiPaths, the second time we probe AppPaths
+                bool parseAppNiPaths = true;
+                for (;;)
                 {
-                    ReleaseHolder<Assembly> pAssembly;
-                    LPCWSTR wszBindingPath = (*pBindingPaths)[i];
-                    
-                    SString &simpleName = pRequestedAssemblyName->GetSimpleName();
+                    StringArrayList *pBindingPaths = parseAppNiPaths ? pApplicationContext->GetAppNiPaths() : pApplicationContext->GetAppPaths();
 
-                    // Look for a matching dll first
-                    hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
-                    
+                    // Loop through the binding paths looking for a matching assembly
+                    for (DWORD i = 0; i < pBindingPaths->GetCount(); i++)
                     {
-                        SString fileName(wszBindingPath);
-                        CombinePath(fileName, simpleName, fileName);
-                        if (parseNiPaths)
-                        {
-                            fileName.Append(W(".ni.dll"));
-                            hr = GetAssembly(fileName,
-                                            fInspectionOnly,
-                                            FALSE, /* fIsInGAC */
-                                            TRUE /* fExplicitBindToNativeImage */,
-                                            &pAssembly);
-                        }
-                        else
-                        {
-                            if (FAILED(hr))
-                            {
-                                fileName.Append(W(".dll"));
+                        ReleaseHolder<Assembly> pAssembly;
+                        LPCWSTR wszBindingPath = (*pBindingPaths)[i];
 
+                        SString &simpleName = pRequestedAssemblyName->GetSimpleName();
+
+                        // Look for a matching dll first
+                        hr = HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND);
+
+                        {
+                            SString fileName(wszBindingPath);
+                            CombinePath(fileName, simpleName, fileName);
+                            if (parseAppNiPaths)
+                            {
+                                fileName.Append(W(".ni.dll"));
                                 hr = GetAssembly(fileName,
-                                                fInspectionOnly,
-                                                FALSE, /* fIsInGAC */
-                                                FALSE /* fExplicitBindToNativeImage */,
-                                                &pAssembly);
-                            }
-                        }
-                    }
-
-                    if (FAILED(hr))
-                    {
-                        SString fileName(wszBindingPath);
-                        CombinePath(fileName, simpleName, fileName);
-
-                        if (parseNiPaths)
-                        {
-                            fileName.Append(W(".ni.exe"));
-                            hr = GetAssembly(fileName,
-                                            fInspectionOnly,
-                                            FALSE, /* fIsInGAC */
-                                            TRUE /* fExplicitBindToNativeImage */,
-                                            &pAssembly);
-                        }
-                        else
-                        {
-                            if (FAILED(hr))
-                            {
-                                fileName.Append(W(".exe"));
-
-                                hr = GetAssembly(fileName,
-                                                fInspectionOnly,
-                                                FALSE, /* fIsInGAC */
-                                                FALSE /* fExplicitBindToNativeImage */,
-                                                &pAssembly);
-                            }
-                        }
-                    }
-                    
-                    // Since we're probing, file not founds are ok and we should just try another
-                    // probing path
-                    if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
-                    {
-                        continue;
-                    }
-                    IF_FAIL_GO(hr);
-
-                    // We found a candidate.  
-                    //
-                    // Below this point, we either establish that the ref-def matches, or
-                    // we fail the bind.
-
-                    // Compare requested AssemblyName with that from the candidate assembly 
-                    if (TestCandidateRefMatchesDef(pApplicationContext, pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
-                    {
-                        // At this point, we have found an assembly with the expected name in the App paths. If this was also found on TPA,
-                        // make sure that the app assembly has the same fullname (excluding version) as the TPA version. If it does, then
-                        // we should bind to the TPA assembly. If it does not, then bind to the app assembly since it has a different fullname than the 
-                        // TPA assembly.
-                        if (fPartialMatchOnTpa)
-                        {
-                            if (TestCandidateRefMatchesDef(pApplicationContext, pAssembly->GetAssemblyName(), pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
-                            {
-                                // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
-                                pBindResult->SetResult(pTPAAssembly);
-                                GO_WITH_HRESULT(S_OK);
+                                    fInspectionOnly,
+                                    FALSE, /* fIsInGAC */
+                                    TRUE /* fExplicitBindToNativeImage */,
+                                    &pAssembly);
                             }
                             else
                             {
-                                // Fullname (SimpleName+Culture+PKT) did not match for TPA and app assembly - so bind to app instance.
+                                if (FAILED(hr))
+                                {
+                                    fileName.Append(W(".dll"));
+
+                                    hr = GetAssembly(fileName,
+                                        fInspectionOnly,
+                                        FALSE, /* fIsInGAC */
+                                        FALSE /* fExplicitBindToNativeImage */,
+                                        &pAssembly);
+                                }
+                            }
+                        }
+
+                        if (FAILED(hr))
+                        {
+                            SString fileName(wszBindingPath);
+                            CombinePath(fileName, simpleName, fileName);
+
+                            if (parseAppNiPaths)
+                            {
+                                fileName.Append(W(".ni.exe"));
+                                hr = GetAssembly(fileName,
+                                    fInspectionOnly,
+                                    FALSE, /* fIsInGAC */
+                                    TRUE /* fExplicitBindToNativeImage */,
+                                    &pAssembly);
+                            }
+                            else
+                            {
+                                if (FAILED(hr))
+                                {
+                                    fileName.Append(W(".exe"));
+
+                                    hr = GetAssembly(fileName,
+                                        fInspectionOnly,
+                                        FALSE, /* fIsInGAC */
+                                        FALSE /* fExplicitBindToNativeImage */,
+                                        &pAssembly);
+                                }
+                            }
+                        }
+
+                        // Since we're probing, file not founds are ok and we should just try another
+                        // probing path
+                        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+                        {
+                            continue;
+                        }
+                        IF_FAIL_GO(hr);
+
+                        // We found a candidate.  
+                        //
+                        // Below this point, we either establish that the ref-def matches, or
+                        // we fail the bind.
+
+                        // Compare requested AssemblyName with that from the candidate assembly 
+                        if (TestCandidateRefMatchesDef(pApplicationContext, pRequestedAssemblyName, pAssembly->GetAssemblyName(), false /*tpaListAssembly*/))
+                        {
+                            // At this point, we have found an assembly with the expected name in the App paths. If this was also found on TPA,
+                            // make sure that the app assembly has the same fullname (excluding version) as the TPA version. If it does, then
+                            // we should bind to the TPA assembly. If it does not, then bind to the app assembly since it has a different fullname than the 
+                            // TPA assembly.
+                            if (fPartialMatchOnTpa)
+                            {
+                                if (TestCandidateRefMatchesDef(pApplicationContext, pAssembly->GetAssemblyName(), pTPAAssembly->GetAssemblyName(), true /*tpaListAssembly*/))
+                                {
+                                    // Fullname (SimpleName+Culture+PKT) matched for TPA and app assembly - so bind to TPA instance.
+                                    pBindResult->SetResult(pTPAAssembly);
+                                    GO_WITH_HRESULT(S_OK);
+                                }
+                                else
+                                {
+                                    // Fullname (SimpleName+Culture+PKT) did not match for TPA and app assembly - so bind to app instance.
+                                    pBindResult->SetResult(pAssembly);
+                                    GO_WITH_HRESULT(S_OK);
+                                }
+                            }
+                            else
+                            {
+                                // We didnt see this assembly on TPA - so simply bind to the app instance.
                                 pBindResult->SetResult(pAssembly);
                                 GO_WITH_HRESULT(S_OK);
                             }
                         }
-                        else
-                        {
-                            // We didnt see this assembly on TPA - so simply bind to the app instance.
-                            pBindResult->SetResult(pAssembly);
-                            GO_WITH_HRESULT(S_OK);
-                        }
+
+#ifdef FEATURE_VERSIONING_LOG
+                        // Log the candidates we throw out for diagnostics
+                        IF_FAIL_GO(LogConfigurationError(pApplicationContext,
+                            pRequestedAssemblyName,
+                            pAssembly->GetAssemblyName()));
+#endif // FEATURE_VERSIONING_LOG
+
+                        IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
+
                     }
 
-        #ifdef FEATURE_VERSIONING_LOG
-                    // Log the candidates we throw out for diagnostics
-                    IF_FAIL_GO(LogConfigurationError(pApplicationContext,
-                                                     pRequestedAssemblyName,
-                                                     pAssembly->GetAssemblyName()));
-        #endif // FEATURE_VERSIONING_LOG
-        
-                    IF_FAIL_GO(FUSION_E_REF_DEF_MISMATCH);
+                    if (!parseAppNiPaths)
+                    {
+                        break;
+                    }
 
+                    parseAppNiPaths = false;
                 }
-                
-                if (!parseNiPaths)
-                {
-                    break;
-                }
-                
-                parseNiPaths = false;
             }
         }
         
