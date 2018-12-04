@@ -152,6 +152,7 @@
     <Reference Include="System.Security.Principal.Windows" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />

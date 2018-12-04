@@ -111,14 +111,6 @@ internal partial class Interop
         public static extern bool WinHttpQueryOption(
             SafeWinHttpHandle handle,
             uint option,
-            [Out] StringBuilder buffer,
-            ref uint bufferSize);
-
-        [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        public static extern bool WinHttpQueryOption(
-            SafeWinHttpHandle handle,
-            uint option,
             ref IntPtr buffer,
             ref uint bufferSize);
 

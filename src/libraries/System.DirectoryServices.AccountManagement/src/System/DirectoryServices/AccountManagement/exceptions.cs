@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -327,22 +328,8 @@ namespace System.DirectoryServices.AccountManagement
             {
                 temp = ((((temp) & 0x0000FFFF) | (7 << 16) | 0x80000000));
             }
-            string errorMsg = "";
-            StringBuilder sb = new StringBuilder(256);
-            int result = UnsafeNativeMethods.FormatMessageW(UnsafeNativeMethods.FORMAT_MESSAGE_IGNORE_INSERTS |
-                                       UnsafeNativeMethods.FORMAT_MESSAGE_FROM_SYSTEM |
-                                       UnsafeNativeMethods.FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                                       IntPtr.Zero, (int)temp, 0, sb, sb.Capacity + 1, IntPtr.Zero);
-            if (result != 0)
-            {
-                errorMsg = sb.ToString(0, result);
-            }
-            else
-            {
-                errorMsg = SR.DSUnknown + Convert.ToString(temp, 16);
-            }
 
-            return errorMsg;
+            return new Win32Exception((int)temp).Message;
         }
     }
 }

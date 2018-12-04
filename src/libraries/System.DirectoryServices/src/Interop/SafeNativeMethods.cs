@@ -27,15 +27,10 @@ namespace System.DirectoryServices.Interop
             ERROR_SUCCESS = 0;
 
         [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
-        public static extern int ADsGetLastError(out int error, StringBuilder errorBuffer,
-                                                 int errorBufferLength, StringBuilder nameBuffer, int nameBufferLength);
+        public static extern unsafe int ADsGetLastError(out int error, char* errorBuffer, int errorBufferLength, char* nameBuffer, int nameBufferLength);
 
         [DllImport(ExternDll.Activeds, CharSet = CharSet.Unicode)]
         public static extern int ADsSetLastError(int error, string errorString, string provider);
-
-        [DllImport(ExternDll.Kernel32, CharSet = CharSet.Unicode)]
-        public static extern int FormatMessageW(int dwFlags, int lpSource, int dwMessageId,
-                                                int dwLanguageId, StringBuilder lpBuffer, int nSize, int arguments);
 
         public class EnumVariant
         {

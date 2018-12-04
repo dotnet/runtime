@@ -197,22 +197,6 @@ namespace Internal.NativeCrypto
             public const string BCRYPT_HASH_LENGTH = "HashDigestLength";
         }
 
-        public static string CryptFormatObject(string oidValue, byte[] rawData, bool multiLine)
-        {
-            const int X509_ASN_ENCODING = 0x00000001;
-            const int CRYPT_FORMAT_STR_MULTI_LINE = 0x00000001;
-
-            int dwFormatStrType = multiLine ? CRYPT_FORMAT_STR_MULTI_LINE : 0;
-
-            int cbFormat = 0;
-            if (!Interop.CryptFormatObject(X509_ASN_ENCODING, 0, dwFormatStrType, IntPtr.Zero, oidValue, rawData, rawData.Length, null, ref cbFormat))
-                return null;
-            StringBuilder sb = new StringBuilder((cbFormat + 1) / 2);
-            if (!Interop.CryptFormatObject(X509_ASN_ENCODING, 0, dwFormatStrType, IntPtr.Zero, oidValue, rawData, rawData.Length, sb, ref cbFormat))
-                return null;
-            return sb.ToString();
-        }
-
         private static Exception CreateCryptographicException(NTSTATUS ntStatus)
         {
             int hr = ((int)ntStatus) | 0x01000000;
@@ -247,20 +231,6 @@ namespace Internal.NativeCrypto
 
             [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
             public static extern unsafe NTSTATUS BCryptDecrypt(SafeKeyHandle hKey, byte* pbInput, int cbInput, IntPtr paddingInfo, [In, Out] byte[] pbIV, int cbIV, byte* pbOutput, int cbOutput, out int cbResult, int dwFlags);
-
-            [DllImport(Libraries.Crypt32, CharSet = CharSet.Ansi, SetLastError = true, BestFitMapping = false)]
-            public static extern bool CryptFormatObject(
-                [In]      int dwCertEncodingType,   // only valid value is X509_ASN_ENCODING
-                [In]      int dwFormatType,         // unused - pass 0.
-                [In]      int dwFormatStrType,      // select multiline
-                [In]      IntPtr pFormatStruct,     // unused - pass IntPtr.Zero
-                [MarshalAs(UnmanagedType.LPStr)]
-                [In]      string lpszStructType,    // OID value
-                [In]      byte[] pbEncoded,         // Data to be formatted
-                [In]      int cbEncoded,            // Length of data to be formatted
-                [MarshalAs(UnmanagedType.LPWStr)]
-                [Out]     StringBuilder pbFormat,   // Receives formatted string.
-                [In, Out] ref int pcbFormat);       // Sends/receives length of formatted String.
         }
     }
 
