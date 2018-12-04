@@ -5032,35 +5032,6 @@ Module::GetAssemblyIfLoaded(
                 _ASSERTE(szWinRtClassName != NULL);
                 
                 CLRPrivBinderWinRT * pWinRtBinder = pAppDomainExamine->GetWinRtBinder();
-                if (pWinRtBinder == nullptr)
-                {   // We are most likely in AppX mode (calling AppX::IsAppXProcess() for verification is painful in DACCESS)
-#ifndef DACCESS_COMPILE
-                    // Note: We should also look
-                    // Check designer binding context present (only in AppXDesignMode)
-                    ICLRPrivBinder * pCurrentBinder = pAppDomainExamine->GetLoadContextHostBinder();
-                    if (pCurrentBinder != nullptr)
-                    {   // We have designer binding context, look for the type in it
-                        ReleaseHolder<ICLRPrivWinRtTypeBinder> pCurrentWinRtTypeBinder;
-                        HRESULT hr = pCurrentBinder->QueryInterface(__uuidof(ICLRPrivWinRtTypeBinder), (void **)&pCurrentWinRtTypeBinder);
-                        
-                        // The binder should be an instance of code:CLRPrivBinderAppX class that implements the interface
-                        _ASSERTE(SUCCEEDED(hr) && (pCurrentWinRtTypeBinder != nullptr));
-                        
-                        if (SUCCEEDED(hr))
-                        {
-                            ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();
-                            pAssembly = (Assembly *)pCurrentWinRtTypeBinder->FindAssemblyForWinRtTypeIfLoaded(
-                                (void *)pAppDomainExamine, 
-                                szWinRtNamespace, 
-                                szWinRtClassName);
-                        }
-                    }
-#endif //!DACCESS_COMPILE
-                    if (pAssembly == nullptr)
-                    {   
-                    }
-                }
-                
                 if (pWinRtBinder != nullptr)
                 {
                     ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE();

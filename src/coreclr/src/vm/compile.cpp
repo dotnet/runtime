@@ -363,7 +363,7 @@ HRESULT CEECompileInfo::LoadAssemblyByPath(
 #endif //FEATURE_COMINTEROP
 
             // If there is a host binder then use it to bind the assembly.
-            if (pDomain->HasLoadContextHostBinder() || isWinRT)
+            if (isWinRT)
             {
                 pAssemblyHolder = pDomain->BindAssemblySpec(&spec, TRUE, FALSE);
             }
