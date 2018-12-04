@@ -112,7 +112,7 @@ namespace System.DirectoryServices
 
         /// <devdoc>
         /// Initializes a new instance of the <see cref='System.DirectoryServices.DirectorySearcher'/> class with <see cref='System.DirectoryServices.DirectorySearcher.SearchRoot'/> set to its default 
-        /// value, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to the respective given values.</para>
+        /// value, and <see cref='System.DirectoryServices.DirectorySearcher.Filter'/>, <see cref='System.DirectoryServices.DirectorySearcher.PropertiesToLoad'/>, and <see cref='System.DirectoryServices.DirectorySearcher.SearchScope'/> set to the respective given values.
         /// </devdoc>
         public DirectorySearcher(string filter, string[] propertiesToLoad, SearchScope scope) : this(null, filter, propertiesToLoad, scope)
         {
@@ -168,7 +168,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         ///  Gets or sets the maximum amount of time that the client waits for
         ///  the server to return results. If the server does not respond within this time,
-        ///  the search is aborted, and no results are returned.</para>
+        ///  the search is aborted, and no results are returned.
         /// </devdoc>
         public TimeSpan ClientTimeout
         {
@@ -187,7 +187,7 @@ namespace System.DirectoryServices
 
         /// <devdoc>
         /// Gets or sets a value indicating whether the search should retrieve only the names of requested
-        /// properties or the names and values of requested properties.</para>
+        /// properties or the names and values of requested properties.
         /// </devdoc>        
         [DefaultValue(false)]
         public bool PropertyNamesOnly { get; set; }

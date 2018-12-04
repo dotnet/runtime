@@ -19,7 +19,7 @@ namespace System.DirectoryServices.AccountManagement
         /// The result validator should return true if the result is valid
         /// and false if the result is invalid and needs to be skipped.
         /// </summary>
-        /// <param name="resultDirEntry">
+        /// <param name="resultPropCollection">
         /// Directory entry object of the result.
         /// NOTE: ADDNLinkedAttrSet class is responsible for disposing this DirectoryEntry object.
         /// </param>
