@@ -53,7 +53,16 @@ namespace HostApiInvokerApp
                 string exe_dir,
                 hostfxr_get_available_sdks_result_fn result);
 
+            internal const uint InvalidArgFailure = 0x80008081;
             internal const uint HostApiBufferTooSmall = 0x80008098;
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = Utils.OSCharSet)]
+            internal delegate void hostfxr_error_writer_fn(
+                string message);
+
+            [DllImport(nameof(hostfxr), CharSet = Utils.OSCharSet, ExactSpelling = true, CallingConvention = CallingConvention.Cdecl)]
+            internal static extern IntPtr hostfxr_set_error_writer(
+                hostfxr_error_writer_fn error_writer);
         }
 
         /// <summary>
@@ -78,15 +87,28 @@ namespace HostApiInvokerApp
             int required_buffer_size = 0;
 
             uint rc = 0;
-            for (int i = 0; i < 2; i++)
-            {
-                rc = hostfxr.hostfxr_get_native_search_directories(argv.Length, argv, buffer, buffer.Capacity + 1, ref required_buffer_size);
-                if (rc != hostfxr.HostApiBufferTooSmall)
-                {
-                    break;
-                }
+            StringBuilder errorBuilder = new StringBuilder();
 
-                buffer = new StringBuilder(required_buffer_size);
+            hostfxr.hostfxr_set_error_writer((message) =>
+            {
+                errorBuilder.AppendLine(message);
+            });
+            try
+            {
+                for (int i = 0; i < 2; i++)
+                {
+                    rc = hostfxr.hostfxr_get_native_search_directories(argv.Length, argv, buffer, buffer.Capacity + 1, ref required_buffer_size);
+                    if (rc != hostfxr.HostApiBufferTooSmall)
+                    {
+                        break;
+                    }
+
+                    buffer = new StringBuilder(required_buffer_size);
+                }
+            }
+            finally
+            {
+                hostfxr.hostfxr_set_error_writer(null);
             }
 
             if (rc == 0)
@@ -97,6 +119,54 @@ namespace HostApiInvokerApp
             else
             {
                 Console.WriteLine($"hostfxr_get_native_search_directories:Fail[{rc}]");
+            }
+
+            if (errorBuilder.Length > 0)
+            {
+                Console.WriteLine($"hostfxr reported errors:{Environment.NewLine}{errorBuilder.ToString()}");
+            }
+        }
+
+        /// <summary>
+        /// Test invoking the native hostfxr api hostfxr_get_native_search_directories with invalid buffer
+        /// </summary>
+        static void Test_hostfxr_get_native_search_directories_invalid_buffer(string[] args)
+        {
+            StringBuilder errorBuilder = new StringBuilder();
+
+            hostfxr.hostfxr_set_error_writer((message) =>
+            {
+                errorBuilder.AppendLine(message);
+            });
+
+            try
+            {
+                int required_buffer_size = 0;
+                Console.WriteLine("null buffer with non-zero size.");
+                uint rc = hostfxr.hostfxr_get_native_search_directories(0, null, null, 1, ref required_buffer_size);
+                Console.WriteLine($"hostfxr_get_native_search_directories error code: {rc}");
+                if (rc != hostfxr.InvalidArgFailure)
+                {
+                    throw new ApplicationException("hostfxr API should have returned InvalidArgFailure error code.");
+                }
+
+                Console.WriteLine("negative buffer size.");
+                StringBuilder buffer = new StringBuilder(100);
+                rc = hostfxr.hostfxr_get_native_search_directories(0, null, buffer, -1, ref required_buffer_size);
+                Console.WriteLine($"hostfxr_get_native_search_directories error code: {rc}");
+                if (rc != hostfxr.InvalidArgFailure)
+                {
+                    throw new ApplicationException("hostfxr API should have returned InvalidArgFailure error code.");
+                }
+            }
+            finally
+            {
+                hostfxr.hostfxr_set_error_writer(null);
+            }
+
+            if (errorBuilder.Length > 0)
+            {
+                Console.WriteLine($"hostfxr reported errors:{Environment.NewLine}{errorBuilder.ToString()}");
             }
         }
 
@@ -161,6 +231,32 @@ namespace HostApiInvokerApp
             }
         }
 
+        static void Test_hostfxr_set_error_writer(string[] args)
+        {
+            hostfxr.hostfxr_error_writer_fn writer1 = (message) => { Console.WriteLine(nameof(writer1)); };
+            IntPtr writer1Ptr = Marshal.GetFunctionPointerForDelegate(writer1);
+
+            if (hostfxr.hostfxr_set_error_writer(writer1) != IntPtr.Zero)
+            {
+                throw new ApplicationException("Error writer should be null by default.");
+            }
+
+            hostfxr.hostfxr_error_writer_fn writer2 = (message) => { Console.WriteLine(nameof(writer2)); };
+            IntPtr writer2Ptr = Marshal.GetFunctionPointerForDelegate(writer2);
+            IntPtr previousWriterPtr = hostfxr.hostfxr_set_error_writer(writer2);
+
+            if (previousWriterPtr != writer1Ptr)
+            {
+                throw new ApplicationException("First: The previous writer returned is not the one expected.");
+            }
+
+            previousWriterPtr = hostfxr.hostfxr_set_error_writer(null);
+            if (previousWriterPtr != writer2Ptr)
+            {
+                throw new ApplicationException("Second: The previous writer returned is not the one expected.");
+            }
+        }
+
         public static bool RunTest(string apiToTest, string[] args)
         {
             switch (apiToTest)
@@ -173,6 +269,12 @@ namespace HostApiInvokerApp
                     break;
                 case nameof(hostfxr.hostfxr_get_available_sdks):
                     Test_hostfxr_get_available_sdks(args);
+                    break;
+                case nameof(Test_hostfxr_set_error_writer):
+                    Test_hostfxr_set_error_writer(args);
+                    break;
+                case nameof(Test_hostfxr_get_native_search_directories_invalid_buffer):
+                    Test_hostfxr_get_native_search_directories_invalid_buffer(args);
                     break;
                 default:
                     return false;
