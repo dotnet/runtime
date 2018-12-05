@@ -20,7 +20,7 @@
     <Compile Include="System\IO\Pipelines\PipeCompletionCallbacks.cs" />
     <Compile Include="System\IO\Pipelines\PipeOptions.cs" />
     <Compile Include="System\IO\Pipelines\PipeReader.cs" />
-    <Compile Include="System\IO\Pipelines\PipeReaderState.cs" />
+    <Compile Include="System\IO\Pipelines\PipeOperationState.cs" />
     <Compile Include="System\IO\Pipelines\PipeScheduler.cs" />
     <Compile Include="System\IO\Pipelines\PipeWriter.cs" />
     <Compile Include="System\IO\Pipelines\ReadResult.cs" />

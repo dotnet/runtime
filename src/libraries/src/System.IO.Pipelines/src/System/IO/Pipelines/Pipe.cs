@@ -66,13 +66,13 @@ namespace System.IO.Pipelines
         private int _readHeadIndex;
 
         // The commit head which is the extent of the bytes available to the IPipelineReader to consume
-        private BufferSegment _commitHead;
-        private int _commitHeadIndex;
+        private BufferSegment _readTail;
+        private int _readTailIndex;
 
         // The write head which is the extent of the IPipelineWriter's written bytes
         private BufferSegment _writingHead;
 
-        private PipeReaderState _readingState;
+        private PipeOperationState _operationState;
 
         private bool _disposed;
 
@@ -97,7 +97,7 @@ namespace System.IO.Pipelines
 
             _bufferSegmentPool = new BufferSegment[SegmentPoolSize];
 
-            _readingState = default;
+            _operationState = default;
             _readerCompletion = default;
             _writerCompletion = default;
 
@@ -120,7 +120,8 @@ namespace System.IO.Pipelines
             _writerCompletion.Reset();
             _readerAwaitable = new PipeAwaitable(completed: false, _useSynchronizationContext);
             _writerAwaitable = new PipeAwaitable(completed: true, _useSynchronizationContext);
-            _commitHeadIndex = 0;
+            _readTailIndex = 0;
+            _readHeadIndex = 0;
             _currentWriteLength = 0;
             _length = 0;
         }
@@ -175,60 +176,28 @@ namespace System.IO.Pipelines
 
         private void AllocateWriteHeadUnsynchronized(int sizeHint)
         {
-            BufferSegment segment = null;
-            if (_writingHead != null)
+            _operationState.BeginWrite();
+            if (_writingHead == null)
             {
-                segment = _writingHead;
+                // We need to allocate memory to write since nobody has written before
+                BufferSegment newSegment = CreateSegmentUnsynchronized();
+                newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
 
-                int bytesLeftInBuffer = segment.WritableBytes;
-
-                // If inadequate bytes left or if the segment is readonly
-                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
-                {
-                    BufferSegment nextSegment = CreateSegmentUnsynchronized();
-                    nextSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
-
-                    segment.SetNext(nextSegment);
-
-                    _writingHead = nextSegment;
-                }
+                // Set all the pointers
+                _writingHead = _readHead = _readTail = newSegment;
             }
             else
             {
-                if (_commitHead != null)
+                int bytesLeftInBuffer = _writingHead.WritableBytes;
+
+                if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
                 {
-                    // Try to return the tail so the calling code can append to it
-                    int remaining = _commitHead.WritableBytes;
+                    BufferSegment newSegment = CreateSegmentUnsynchronized();
+                    newSegment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
 
-                    if (sizeHint <= remaining && remaining > 0)
-                    {
-                        // Free tail space of the right amount, use that
-                        segment = _commitHead;
-
-                        // Set write head to assigned segment
-                        _writingHead = segment;
-                        return;
-                    }
+                    _writingHead.SetNext(newSegment);
+                    _writingHead = newSegment;
                 }
-
-                // No free tail space, allocate a new segment
-                segment = CreateSegmentUnsynchronized();
-                segment.SetMemory(_pool.Rent(GetSegmentSize(sizeHint)));
-
-                if (_commitHead == null)
-                {
-                    // No previous writes have occurred
-                    _commitHead = segment;
-                }
-                else if (segment != _commitHead && _commitHead.Next == null)
-                {
-                    // Append the segment to the commit head if writes have been committed
-                    // and it isn't the same segment (unused tail space)
-                    _commitHead.SetNext(segment);
-                }
-
-                // Set write head to assigned segment
-                _writingHead = segment;
             }
         }
 
@@ -263,25 +232,18 @@ namespace System.IO.Pipelines
 
         internal bool CommitUnsynchronized()
         {
-            if (_writingHead == null)
+            _operationState.EndWrite();
+
+            if (_currentWriteLength == 0)
             {
                 // Nothing written to commit
                 return true;
             }
 
-            if (_readHead == null)
-            {
-                // Update the head to point to the head of the buffer.
-                // This happens if we called alloc(0) then write
-                _readHead = _commitHead;
-                _readHeadIndex = 0;
-            }
-
-            // Always move the commit head to the write head
-            var bytesWritten = _currentWriteLength;
-            _commitHead = _writingHead;
-            _commitHeadIndex = _writingHead.End;
-            _length += bytesWritten;
+            // Always move the read tail to the write head
+            _readTail = _writingHead;
+            _readTailIndex = _writingHead.End;
+            _length += _currentWriteLength;
 
             // Do not reset if reader is complete
             if (_pauseWriterThreshold > 0 &&
@@ -291,11 +253,9 @@ namespace System.IO.Pipelines
                 _writerAwaitable.Reset();
             }
 
-            // Clear the writing state
-            _writingHead = null;
             _currentWriteLength = 0;
 
-            return bytesWritten == 0;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -420,7 +380,7 @@ namespace System.IO.Pipelines
             AdvanceReader((BufferSegment)consumed.GetObject(), consumed.GetInteger(), (BufferSegment)examined.GetObject(), examined.GetInteger());
         }
 
-        internal void AdvanceReader(BufferSegment consumedSegment, int consumedIndex, BufferSegment examinedSegment, int examinedIndex)
+        private void AdvanceReader(BufferSegment consumedSegment, int consumedIndex, BufferSegment examinedSegment, int examinedIndex)
         {
             BufferSegment returnStart = null;
             BufferSegment returnEnd = null;
@@ -430,9 +390,9 @@ namespace System.IO.Pipelines
             lock (_sync)
             {
                 var examinedEverything = false;
-                if (examinedSegment == _commitHead)
+                if (examinedSegment == _readTail)
                 {
-                    examinedEverything = _commitHead != null ? examinedIndex == _commitHeadIndex : examinedIndex == 0;
+                    examinedEverything = examinedIndex == _readTailIndex;
                 }
 
                 if (consumedSegment != null)
@@ -460,17 +420,28 @@ namespace System.IO.Pipelines
                     // Check if we consumed entire last segment
                     // if we are going to return commit head we need to check that there is no writing operation that
                     // might be using tailspace
-                    if (consumedIndex == returnEnd.Length && _writingHead != returnEnd)
+                    if (consumedIndex == returnEnd.Length && !_operationState.IsWritingActive)
                     {
                         BufferSegment nextBlock = returnEnd.NextSegment;
-                        if (_commitHead == returnEnd)
+                        if (_readTail == returnEnd)
                         {
-                            _commitHead = nextBlock;
-                            _commitHeadIndex = 0;
+                            _readTail = nextBlock;
+                            _readTailIndex = 0;
                         }
 
                         _readHead = nextBlock;
                         _readHeadIndex = 0;
+
+                        // Reset the writing head to null if it's the return block
+                        // then null it out as we're about to reset that memory
+                        if (_writingHead == returnEnd)
+                        {
+                            // If we're about to null out the _writingHead then assert the list is empty
+                            Debug.Assert(_readHead == null);
+                            Debug.Assert(_readTail == null);
+                            _writingHead = null;
+                        }
+
                         returnEnd = nextBlock;
                     }
                     else
@@ -499,7 +470,7 @@ namespace System.IO.Pipelines
                     returnStart = returnStart.NextSegment;
                 }
 
-                _readingState.End();
+                _operationState.EndRead();
             }
 
             TrySchedule(_writerScheduler, completionData);
@@ -514,9 +485,9 @@ namespace System.IO.Pipelines
             lock (_sync)
             {
                 // If we're reading, treat clean up that state before continuting
-                if (_readingState.IsActive)
+                if (_operationState.IsReadingActive)
                 {
-                    _readingState.End();
+                    _operationState.EndRead();
                 }
 
                 // REVIEW: We should consider cleaning up all of the allocated memory
@@ -645,6 +616,8 @@ namespace System.IO.Pipelines
                 {
                     ThrowHelper.ThrowInvalidOperationException_AlreadyReading();
                 }
+
+                _operationState.BeginReadTentative();
                 result = default;
                 return false;
             }
@@ -727,7 +700,7 @@ namespace System.IO.Pipelines
                 // Return all segments
                 // if _readHead is null we need to try return _commitHead
                 // because there might be a block allocated for writing
-                BufferSegment segment = _readHead ?? _commitHead;
+                BufferSegment segment = _readHead ?? _readTail;
                 while (segment != null)
                 {
                     BufferSegment returnSegment = segment;
@@ -738,7 +711,7 @@ namespace System.IO.Pipelines
 
                 _writingHead = null;
                 _readHead = null;
-                _commitHead = null;
+                _readTail = null;
             }
         }
 
@@ -808,7 +781,7 @@ namespace System.IO.Pipelines
             if (head != null)
             {
                 // Reading commit head shared with writer
-                var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _commitHead, _commitHeadIndex);
+                var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _readTail, _readTailIndex);
                 result = new ReadResult(readOnlySequence, isCanceled, isCompleted);
             }
             else
@@ -818,11 +791,11 @@ namespace System.IO.Pipelines
 
             if (isCanceled)
             {
-                _readingState.BeginTentative();
+                _operationState.BeginReadTentative();
             }
             else
             {
-                _readingState.Begin();
+                _operationState.BeginRead();
             }
         }
 
