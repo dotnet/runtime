@@ -3838,4 +3838,138 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 
     } // op1 must be multi-reg GT_CALL
 }
+
+//------------------------------------------------------------------------
+// genAllocLclFrame: Probe the stack and allocate the local stack frame: subtract from SP.
+//
+// Notes:
+//      On ARM64, this only does the probing; allocating the frame is done when
+//      callee-saved registers are saved.
+//
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+{
+    assert(compiler->compGeneratingProlog);
+
+    if (frameSize == 0)
+    {
+        return;
+    }
+
+    const target_size_t pageSize = compiler->eeGetPageSize();
+
+    assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
+
+    if (frameSize < pageSize)
+    {
+#ifdef _TARGET_ARM_
+        // Frame size is (0x0008..0x1000)
+        inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
+#endif // _TARGET_ARM_
+    }
+    else if (frameSize < compiler->getVeryLargeFrameSize())
+    {
+        // Frame size is (0x1000..0x3000)
+
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)pageSize);
+        getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, initReg, REG_SPBASE, initReg);
+        regSet.verifyRegUsed(initReg);
+        *pInitRegZeroed = false; // The initReg does not contain zero
+
+        if (frameSize >= 0x2000)
+        {
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -2 * (ssize_t)pageSize);
+            getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, initReg, REG_SPBASE, initReg);
+            regSet.verifyRegUsed(initReg);
+        }
+
+#ifdef _TARGET_ARM64_
+        compiler->unwindPadding();
+#else  // !_TARGET_ARM64_
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
+        compiler->unwindPadding();
+        getEmitter()->emitIns_R_R_R(INS_sub, EA_4BYTE, REG_SPBASE, REG_SPBASE, initReg);
+#endif // !_TARGET_ARM64_
+    }
+    else
+    {
+        // Frame size >= 0x3000
+        assert(frameSize >= compiler->getVeryLargeFrameSize());
+
+        // Emit the following sequence to 'tickle' the pages.
+        // Note it is important that stack pointer not change until this is
+        // complete since the tickles could cause a stack overflow, and we
+        // need to be able to crawl the stack afterward (which means the
+        // stack pointer needs to be known).
+
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
+
+        //
+        // Can't have a label inside the ReJIT padding area
+        //
+        genPrologPadForReJit();
+
+        // TODO-ARM64-Bug?: set the availMask properly!
+        regMaskTP availMask =
+            (regSet.rsGetModifiedRegsMask() & RBM_ALLINT) | RBM_R12 | RBM_LR; // Set of available registers
+        availMask &= ~maskArgRegsLiveIn;   // Remove all of the incoming argument registers as they are currently live
+        availMask &= ~genRegMask(initReg); // Remove the pre-calculated initReg
+
+        regNumber rOffset = initReg;
+        regNumber rLimit;
+        regNumber rTemp;
+        regMaskTP tempMask;
+
+        // We pick the next lowest register number for rTemp
+        noway_assert(availMask != RBM_NONE);
+        tempMask = genFindLowestBit(availMask);
+        rTemp    = genRegNumFromMask(tempMask);
+        availMask &= ~tempMask;
+
+        // We pick the next lowest register number for rLimit
+        noway_assert(availMask != RBM_NONE);
+        tempMask = genFindLowestBit(availMask);
+        rLimit   = genRegNumFromMask(tempMask);
+        availMask &= ~tempMask;
+
+        // TODO-LdStArch-Bug?: review this. The first time we load from [sp+0] which will always succeed. That doesn't
+        // make sense.
+        // TODO-ARM64-CQ: we could probably use ZR on ARM64 instead of rTemp.
+        //
+        //      mov rLimit, -frameSize
+        // loop:
+        //      ldr rTemp, [sp+rOffset]
+        //      sub rOffset, 0x1000     // Note that 0x1000 on ARM32 uses the funky Thumb immediate encoding
+        //      cmp rOffset, rLimit
+        //      jge loop
+        noway_assert((ssize_t)(int)frameSize == (ssize_t)frameSize); // make sure framesize safely fits within an int
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, rLimit, -(int)frameSize);
+        getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, rTemp, REG_SPBASE, rOffset);
+        regSet.verifyRegUsed(rTemp);
+#if defined(_TARGET_ARM_)
+        getEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, rOffset, pageSize);
+#elif defined(_TARGET_ARM64_)
+        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, rOffset, rOffset, pageSize);
+#endif // _TARGET_ARM64_
+        getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, rOffset, rLimit);
+        getEmitter()->emitIns_J(INS_bhi, NULL, -4);
+
+        *pInitRegZeroed = false; // The initReg does not contain zero
+
+        compiler->unwindPadding();
+
+#ifdef _TARGET_ARM_
+        inst_RV_RV(INS_add, REG_SPBASE, rLimit, TYP_I_IMPL);
+#endif // _TARGET_ARM_
+    }
+
+#ifdef _TARGET_ARM_
+    compiler->unwindAllocStack(frameSize);
+
+    if (!doubleAlignOrFramePointerUsed())
+    {
+        psiAdjustStackLevel(frameSize);
+    }
+#endif // _TARGET_ARM_
+}
+
 #endif // _TARGET_ARMARCH_
