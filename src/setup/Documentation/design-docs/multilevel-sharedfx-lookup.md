@@ -41,7 +41,10 @@ There are two possibilities for a muxer: it can be a framework-dependent app or 
 
 In the first case the app file path should have been specified as an argument to the dotnet.exe.
 
-In the second case the dotnet.dll from SDK must be invoked as a framework-dependent app. At first the running program searches for the global.json file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the sdk\CLI_version subfolder in the executable directory. If the version defined in the global.json file or the specified version folder cannot be found, then it must choose the most appropriate one. The most appropriate version is defined as the latest version according to the Semantic Versioning system.
+In the second case the `dotnet.dll` from SDK must be invoked as a framework-dependent app. At first the running program searches for the `global.json` file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the `sdk\<CLI_version>` sub-folder in the executable directory.
+The exact algorithm how versions as matched is described (with some history) in the [docs](https://docs.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules)
+
+Note: if the SDK lookup is invoked through `hostfxr_resolve_sdk2` the algorithm is the same, expect that the function can disallow pre-release versions via the `hostfxr_resolve_sdk2_flags_t::disallow_prerelease` flag.
 
 ### Framework search and rolling forward
 

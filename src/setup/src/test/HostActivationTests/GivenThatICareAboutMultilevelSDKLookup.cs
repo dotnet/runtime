@@ -140,7 +140,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining("A compatible installed dotnet SDK for global.json version")
                 .And
-                .HaveStdErrContaining("It was not possible to find any installed dotnet SDKs");
+                .HaveStdErrContaining("It was not possible to find any installed dotnet SDKs")
+                .And
+                .NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add some dummy versions
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.4.1", "9999.3.4-dummy");
@@ -674,7 +676,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // CWD: 10000.0.0                 --> should not be picked
             // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy, 9999.0.3, 9999.0.100, 9999.0.80, 9999.0.5500000, 9999.0.52000000
-            // Expected: 9999.0.5500000 from exe dir
+            // Expected: 9999.0.52000000 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)

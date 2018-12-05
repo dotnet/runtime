@@ -111,14 +111,17 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool disallow_prerelea
         }
     }
 
-    pal::string_t max_ver_str = max_ver.as_str();
-    append_path(&sdk_path, max_ver_str.c_str());
-
-    trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
-    if (pal::directory_exists(sdk_path))
+    if (!max_ver.is_empty())
     {
-        trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
-        retval = max_ver_str;
+        pal::string_t max_ver_str = max_ver.as_str();
+        append_path(&sdk_path, max_ver_str.c_str());
+
+        trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
+        if (pal::directory_exists(sdk_path))
+        {
+            trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
+            retval = max_ver_str;
+        }
     }
 
     return retval;
