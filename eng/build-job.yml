@@ -35,37 +35,19 @@ jobs:
       - script: eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
-    # Run init-tools (pre-arcade dependency bootstrapping)
-    # TODO: replace this with an arcade equivalent
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./init-tools.sh
-        displayName: Init tools
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: .\init-tools.cmd
-        displayName: Init tools
-
-    # Sync
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./Tools/dotnetcli/dotnet msbuild build.proj /p:RestoreDuringBuild=true /t:Sync
-        displayName: Sync
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: .\Tools\dotnetcli\dotnet.exe msbuild build.proj /p:RestoreDuringBuild=true /t:Sync
-        displayName: Sync
-
-
     # Build
     - ${{ if and(and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')), ne(parameters.osGroup, 'Windows_NT')) }}:
-      - script: ./build.sh $(buildConfig) $(archType) -skipnuget -skiprestore
+      - script: ./build.sh $(buildConfig) $(archType) -skiptests
         displayName: Build product
     - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.archType, 'arm')) }}:
-      - script: ROOTFS_DIR=$(rootfsDir) CAC_ROOTFS_DIR=$(cacRootfsDir) ./build.sh $(buildConfig) $(archType) -cross -skipnuget -skiprestore
+      - script: ROOTFS_DIR=$(rootfsDir) CAC_ROOTFS_DIR=$(cacRootfsDir) ./build.sh $(buildConfig) $(archType) -cross -skiptests
         displayName: Build product
     - ${{ if and(ne(parameters.osGroup, 'Windows_NT'), eq(parameters.archType, 'arm64')) }}:
-      - script: ROOTFS_DIR=$(rootfsDir) ./build.sh $(buildConfig) $(archType) -cross -skipnuget -skiprestore
+      - script: ROOTFS_DIR=$(rootfsDir) ./build.sh $(buildConfig) $(archType) -cross -skiptests
         displayName: Build product
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       # TODO: IBCOptimize? EnforcePGO? pass an OfficialBuildId? SignType? file logging parameters?
-      - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests -skipbuildpackages -skiprestore
+      - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests
         displayName: Build product
 
 
