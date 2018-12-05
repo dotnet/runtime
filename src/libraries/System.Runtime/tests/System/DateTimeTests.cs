@@ -6,11 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Serialization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static partial class DateTimeTests
+    public partial class DateTimeTests
     {
         [Fact]
         public static void MaxValue()
@@ -31,189 +32,308 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Ctor_Long_InvalidTicks_ThrowsArgumentOutOfRangeException()
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MinValue.Ticks - 1)); // Ticks < DateTime.MinValue.Ticks
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MaxValue.Ticks + 1)); // Ticks > DateTime.MaxValue.Ticks
-        }
-
-        [Fact]
         public static void Ctor_Long_DateTimeKind()
         {
             VerifyDateTime(new DateTime(999999999999999999, DateTimeKind.Utc), 3169, 11, 16, 9, 46, 39, 999, DateTimeKind.Utc);
         }
 
-        [Fact]
-        public static void Ctor_Long_DateTimeKind_Invalid()
+        public static IEnumerable<object[]> Ctor_InvalidTicks_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MinValue.Ticks - 1, DateTimeKind.Utc)); // Ticks < DateTime.MinValue.Ticks
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(DateTime.MaxValue.Ticks + 1, DateTimeKind.Utc)); // Ticks > DateTime.MaxValue.Ticks
+            yield return new object[] { DateTime.MinValue.Ticks - 1 };
+            yield return new object[] { DateTime.MaxValue.Ticks + 1 };
+        }
 
-            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(0, DateTimeKind.Unspecified - 1)); // Invalid date time kind
-            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(0, DateTimeKind.Local + 1)); // Invalid date time kind
+        [Theory]
+        [MemberData(nameof(Ctor_InvalidTicks_TestData))]
+        public void Ctor_InvalidTicks_ThrowsArgumentOutOfRangeException(long ticks)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(ticks));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new DateTime(ticks, DateTimeKind.Utc));
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int()
+        public void Ctor_Int_Int_Int()
         {
             var dateTime = new DateTime(2012, 6, 11);
             VerifyDateTime(dateTime, 2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Unspecified);
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Invalid()
+        public void Ctor_Int_Int_Int_Calendar()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1)); // Year < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1)); // Year > 9999
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 0, 1)); // Month < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 13, 1)); // Month > 12
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 0)); // Day < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 32)); // Day > days in month
+            var dateTime = new DateTime(2012, 6, 11, new GregorianCalendar());
+            VerifyDateTime(dateTime, 2012, 6, 11, 0, 0, 0, 0, DateTimeKind.Unspecified);
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int()
+        public void Ctor_Int_Int_Int_Int_Int_Int()
         {
             var dateTime = new DateTime(2012, 12, 31, 13, 50, 10);
             VerifyDateTime(dateTime, 2012, 12, 31, 13, 50, 10, 0, DateTimeKind.Unspecified);
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1)); // Year < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1)); // Year > 9999
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 0, 1, 1, 1, 1)); // Month < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 13, 1, 1, 1, 1)); // Month > 12
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 0, 1, 1, 1)); // Day < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 32, 1, 1, 1)); // Day > days in month
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, -1, 1, 1)); // Hour < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 24, 1, 1)); // Hour > 23
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, -1, 1)); // Minute < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 60, 1)); // Minute > 59
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, -1)); // Second < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, 60)); // Second > 59
-        }
-
-        [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_Int_DateTimeKind()
+        public void Ctor_Int_Int_Int_Int_Int_Int_DateTimeKind()
         {
             var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, DateTimeKind.Local);
             VerifyDateTime(dateTime, 1986, 8, 15, 10, 20, 5, 0, DateTimeKind.Local);
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_DateTimeKind_Invalid()
+        public void Ctor_Int_Int_Int_Int_Int_Int_Calendar()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year > 9999
+            var dateTime = new DateTime(2012, 12, 31, 13, 50, 10, new GregorianCalendar());
+            VerifyDateTime(dateTime, 2012, 12, 31, 13, 50, 10, 0, DateTimeKind.Unspecified);
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 0, 1, 1, 1, 1, DateTimeKind.Utc)); // Month < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 13, 1, 1, 1, 1, DateTimeKind.Utc)); // Month > 12
+        public static IEnumerable<object[]> Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData()
+        {
+            yield return new object[] { 1986, 8, 15, 10, 20, 5, 600 };
+            yield return new object[] { 1986, 2, 28, 10, 20, 5, 600 };
+            yield return new object[] { 1986, 12, 31, 10, 20, 5, 600 };
+            yield return new object[] { 2000, 2, 28, 10, 20, 5, 600 };
+            yield return new object[] { 2000, 2, 29, 10, 20, 5, 600 };
+            yield return new object[] { 2000, 12, 31, 10, 20, 5, 600 };
+            yield return new object[] { 1900, 2, 28, 10, 20, 5, 600 };
+            yield return new object[] { 1900, 12, 31, 10, 20, 5, 600 };
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 0, 1, 1, 1, DateTimeKind.Utc)); // Day < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 32, 1, 1, 1, DateTimeKind.Utc)); // Day > days in month
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_Int_Int_Int_Int_Int_Int_Int(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond);
+            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Unspecified);
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, -1, 1, 1, DateTimeKind.Utc)); // Hour < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 24, 1, 1, DateTimeKind.Utc)); // Hour > 23
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_Int_Int_Int_Int_Int_Int_Int_Calendar(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, new GregorianCalendar());
+            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Unspecified);
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, -1, 1, DateTimeKind.Utc)); // Minute < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 60, 1, DateTimeKind.Utc)); // Minute > 59
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_Int_Int_Int_Int_Int_Int_Int_Int_DateTimeKind(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Local);
+            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Local);
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, -1, DateTimeKind.Utc)); // Second < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, 60, DateTimeKind.Utc)); // Second > 59
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Calendar_DateTimeKind(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, new GregorianCalendar(), DateTimeKind.Local);
+            VerifyDateTime(dateTime, year, month, day, hour, minute, second, millisecond, DateTimeKind.Local);
+        }
 
-            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, DateTimeKind.Unspecified - 1)); // Invalid date time kind
-            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, DateTimeKind.Local + 1)); // Invalid date time kind
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10000)]
+        public void Ctor_InvalidYear_ThrowsArgumentOutOfRangeException(int year)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(year, 1, 1, 1, 1, 1, 1, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(13)]
+        public void Ctor_InvalidMonth_ThrowsArgumentOutOfRangeException(int month)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, month, 1, 1, 1, 1, 1, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(32)]
+        public void Ctor_InvalidDay_ThrowsArgumentOutOfRangeException(int day)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, day, 1, 1, 1, 1, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(24)]
+        public void Ctor_InvalidHour_ThrowsArgumentOutOfRangeException(int hour)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, hour, 1, 1, 1, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(60)]
+        public void Ctor_InvalidMinute_ThrowsArgumentOutOfRangeException(int minute)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1, 1, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, minute, 1, 1, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(60)]
+        public void Ctor_InvalidSecond_ThrowsArgumentOutOfRangeException(int second)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, second));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, second, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, second, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, second, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, second, 1, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, second, 1, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(1000)]
+        public void Ctor_InvalidMillisecond_ThrowsArgumentOutOfRangeException(int millisecond)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, millisecond));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, millisecond, DateTimeKind.Utc));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, millisecond, new GregorianCalendar()));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, millisecond, new GregorianCalendar(), DateTimeKind.Utc));
+        }
+
+        [Theory]
+        [InlineData(DateTimeKind.Unspecified - 1)]
+        [InlineData(DateTimeKind.Local + 1)]
+        public void Ctor_InvalidDateTimeKind_ThrowsArgumentException(DateTimeKind kind)
+        {
+            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(0, kind));
+            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, kind));
+            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, 1, kind));
+            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, 1, new GregorianCalendar(), kind));
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_Int()
+        public void Ctor_NullCalendar_ThrowsArgumentNullException()
         {
-            var dateTime = new DateTime(1973, 10, 6, 14, 30, 0, 500);
-            VerifyDateTime(dateTime, 1973, 10, 6, 14, 30, 0, 500, DateTimeKind.Unspecified);
+            AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_Int_Invalid()
+        public void Ctor_OverflowingCalendar_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1, 1)); // Year < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1, 1)); // Year > 9999
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 0, 1, 1, 1, 1, 1)); // Month < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 13, 1, 1, 1, 1, 1)); // Month > 12
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 0, 1, 1, 1, 1)); // Day < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 32, 1, 1, 1, 1)); // Day > days in month
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, -1, 1, 1, 1)); // Hour < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 24, 1, 1, 1)); // Hour > 23
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, -1, 1, 1)); // Minute < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 60, 1, 1)); // Minute > 59
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, -1, 1)); // Second < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, 60, 1)); // Second > 59
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, -1)); // Milisecond < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, 1000)); // Millisecond > 999
+            AssertExtensions.Throws<ArgumentException>(null, () => new DateTime(1, 1, 1, 1, 1, 1, 1, new DateMaxCalendar()));
+            AssertExtensions.Throws<ArgumentException>(null, () => new DateTime(1, 1, 1, 1, 1, 1, 1, new DateMaxCalendar(), DateTimeKind.Local));
         }
 
-        [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_Int_Int_DateTimeKind()
+        [Theory]
+        [InlineData(2004, 1, 31)]
+        [InlineData(2004, 2, 29)]
+        [InlineData(2004, 3, 31)]
+        [InlineData(2004, 4, 30)]
+        [InlineData(2004, 5, 31)]
+        [InlineData(2004, 6, 30)]
+        [InlineData(2004, 7, 31)]
+        [InlineData(2004, 8, 31)]
+        [InlineData(2004, 9, 30)]
+        [InlineData(2004, 10, 31)]
+        [InlineData(2004, 11, 30)]
+        [InlineData(2004, 12, 31)]
+        [InlineData(2005, 1, 31)]
+        [InlineData(2005, 2, 28)]
+        [InlineData(2005, 3, 31)]
+        [InlineData(2005, 4, 30)]
+        [InlineData(2005, 5, 31)]
+        [InlineData(2005, 6, 30)]
+        [InlineData(2005, 7, 31)]
+        [InlineData(2005, 8, 31)]
+        [InlineData(2005, 9, 30)]
+        [InlineData(2005, 10, 31)]
+        [InlineData(2005, 11, 30)]
+        [InlineData(2005, 12, 31)]
+        public void DaysInMonth_Invoke_ReturnsExpected(int year, int month, int expected)
         {
-            var dateTime = new DateTime(1986, 8, 15, 10, 20, 5, 600, DateTimeKind.Local);
-            VerifyDateTime(dateTime, 1986, 8, 15, 10, 20, 5, 600, DateTimeKind.Local);
+            Assert.Equal(expected, DateTime.DaysInMonth(year, month));
         }
 
-        [Fact]
-        public static void Ctor_Int_Int_Int_Int_Int_Int_Int_DateTimeKind_Invalid()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(13)]
+        public void DaysInMonth_InvalidMonth_ThrowsArgumentOutOfRangeException(int month)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(0, 1, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year < 1
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(10000, 1, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Year > 9999
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("month", () => DateTime.DaysInMonth(1, month));
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 0, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Month < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 13, 1, 1, 1, 1, 1, DateTimeKind.Utc)); // Month > 12
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 0, 1, 1, 1, 1, DateTimeKind.Utc)); // Day < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 32, 1, 1, 1, 1, DateTimeKind.Utc)); // Day > days in month
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, -1, 1, 1, 1, DateTimeKind.Utc)); // Hour < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 24, 1, 1, 1, DateTimeKind.Utc)); // Hour > 23
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, -1, 1, 1, DateTimeKind.Utc)); // Minute < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 60, 1, 1, DateTimeKind.Utc)); // Minute > 59
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, -1, 1, DateTimeKind.Utc)); // Second < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new DateTime(1, 1, 1, 1, 1, 60, 1, DateTimeKind.Utc)); // Second > 59
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, -1, DateTimeKind.Utc)); // Millisecond < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("millisecond", () => new DateTime(1, 1, 1, 1, 1, 1, 1000, DateTimeKind.Utc)); // Millisecond > 999
-
-            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, 1, DateTimeKind.Unspecified - 1)); // Invalid date time kind
-            AssertExtensions.Throws<ArgumentException>("kind", () => new DateTime(1, 1, 1, 1, 1, 1, 1, DateTimeKind.Local + 1)); // Invalid date time kind
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10000)]
+        public void DaysInMonth_InvalidYear_ThrowsArgumentOutOfRangeException(int year)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => DateTime.DaysInMonth(year, 1));
         }
 
         [Theory]
         [InlineData(2004, true)]
+        [InlineData(2000, true)]
+        [InlineData(1900, false)]
         [InlineData(2005, false)]
-        public static void IsLeapYear(int year, bool expected)
+        public void IsLeapYear_Invoke_ReturnsExpected(int year, bool expected)
         {
             Assert.Equal(expected, DateTime.IsLeapYear(year));
         }
 
-        [Fact]
-        public static void IsLeapYear_InvalidYear_ThrowsArgumentOutOfRangeException()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(10000)]
+        public void IsLeapYear_InvalidYear_ThrowsArgumentOutOfRangeException(int year)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("year", () => DateTime.IsLeapYear(10000));
+        }
+
+        public static IEnumerable<object[]> IsDaylightSavingTime_TestData()
+        {
+            yield return new object[] { new DateTime(2018, 11, 24, 0, 0, 0, DateTimeKind.Utc), false };
+            yield return new object[] { DateTime.MinValue, false };
+            yield return new object[] { DateTime.MaxValue, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(IsDaylightSavingTime_TestData))]
+        public void IsDaylightSavingTime_Invoke_ReturnsExpected(DateTime date, bool expected)
+        {
+            Assert.Equal(expected, date.IsDaylightSavingTime());
         }
 
         public static IEnumerable<object[]> Add_TimeSpan_TestData()
@@ -225,16 +345,26 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Add_TimeSpan_TestData))]
-        public static void Add_TimeSpan(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
+        public void Add_TimeSpan_ReturnsExpected(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
         {
             Assert.Equal(expected, dateTime.Add(timeSpan));
+            Assert.Equal(expected, dateTime + timeSpan);
         }
 
-        [Fact]
-        public static void Add_TimeSpan_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> Add_TimeSpanOutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.Add(TimeSpan.FromTicks(-1)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.Add(TimeSpan.FromTicks(11)));
+            yield return new object[] { DateTime.Now, TimeSpan.MaxValue };
+            yield return new object[] { DateTime.Now, TimeSpan.MinValue };
+            yield return new object[] { DateTime.MaxValue, new TimeSpan(1) };
+            yield return new object[] { DateTime.MinValue, new TimeSpan(-1) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Add_TimeSpanOutOfRange_TestData))]
+        public void Add_TimeSpan_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, TimeSpan value)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.Add(value));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("t", () => date + value);
         }
 
         public static IEnumerable<object[]> AddYears_TestData()
@@ -246,47 +376,67 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddYears_TestData))]
-        public static void AddYears(DateTime dateTime, int years, DateTime expected)
+        public void AddYears_Invoke_ReturnsExpected(DateTime dateTime, int years, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddYears(years));
         }
 
-        [Fact]
-        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddYears_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("years", () => DateTime.Now.AddYears(10001));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("years", () => DateTime.Now.AddYears(-10001));
+            yield return new object[] { DateTime.Now, 10001, "years" };
+            yield return new object[] { DateTime.Now, -10001, "years" };
+            yield return new object[] { DateTime.MaxValue, 1, "months" };
+            yield return new object[] { DateTime.MinValue, -1, "months" };
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MaxValue.AddYears(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MinValue.AddYears(-1));
+        [Theory]
+        [MemberData(nameof(AddYears_OutOfRange_TestData))]
+        public static void AddYears_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, int years, string paramName)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(paramName, () => date.AddYears(years));
         }
 
         public static IEnumerable<object[]> AddMonths_TestData()
         {
             yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 2, new DateTime(1986, 10, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 8, 31, 10, 20, 5, 70), 1, new DateTime(1986, 9, 30, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1986, 9, 30, 10, 20, 5, 70), 1, new DateTime(1986, 10, 30, 10, 20, 5, 70) };
             yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
             yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -2, new DateTime(1986, 6, 15, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1900, 2, 28, 10, 20, 5, 70), 1, new DateTime(1900, 3, 28, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(1900, 1, 31, 10, 20, 5, 70), 1, new DateTime(1900, 2, 28, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(2000, 1, 31, 10, 20, 5, 70), 1, new DateTime(2000, 2, 29, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(2000, 2, 29, 10, 20, 5, 70), 1, new DateTime(2000, 3, 29, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(2004, 1, 31, 10, 20, 5, 70), 1, new DateTime(2004, 2, 29, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(2004, 2, 29, 10, 20, 5, 70), 1, new DateTime(2004, 3, 29, 10, 20, 5, 70) };
+            yield return new object[] { new DateTime(2000, 12, 31), 1, new DateTime(2001, 1, 31) };
         }
 
         [Theory]
         [MemberData(nameof(AddMonths_TestData))]
-        public static void AddMonths(DateTime dateTime, int months, DateTime expected)
+        public void AddMonths_Invoke_ReturnsExpected(DateTime dateTime, int months, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddMonths(months));
         }
 
-        [Fact]
-        public static void AddMonths_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddMonths_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTime.Now.AddMonths(120001));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTime.Now.AddMonths(-120001));
+            yield return new object[] { DateTime.Now, 120001 };
+            yield return new object[] { DateTime.Now, -120001 };
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+        }
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MaxValue.AddMonths(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => DateTime.MinValue.AddMonths(-1));
+        [Theory]
+        [MemberData(nameof(AddMonths_OutOfRange_TestData))]
+        public void AddMonths_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, int months)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("months", () => date.AddMonths(months));
         }
 
         public static IEnumerable<object[]> AddDays_TestData()
         {
+            yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 2, new DateTime(1986, 8, 17, 10, 20, 5, 70) };
             yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 2, new DateTime(1986, 8, 17, 10, 20, 5, 70) };
             yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), 0, new DateTime(1986, 8, 15, 10, 20, 5, 70) };
             yield return new object[] { new DateTime(1986, 8, 15, 10, 20, 5, 70), -2, new DateTime(1986, 8, 13, 10, 20, 5, 70) };
@@ -294,16 +444,24 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddDays_TestData))]
-        public static void AddDays(DateTime dateTime, double days, DateTime expected)
+        public void AddDays_Invoke_ReturnsExpected(DateTime dateTime, double days, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddDays(days));
         }
 
-        [Fact]
-        public static void AddDays_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddDays_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddDays(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddDays(-1));
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+            yield return new object[] { DateTime.Now, double.MaxValue };
+            yield return new object[] { DateTime.Now, double.MinValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddDays_OutOfRange_TestData))]
+        public void AddDays_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, double days)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddDays(days));
         }
 
         public static IEnumerable<object[]> AddHours_TestData()
@@ -315,16 +473,24 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddHours_TestData))]
-        public static void AddHours(DateTime dateTime, double hours, DateTime expected)
+        public void AddHours_Invoke_RetunsExpected(DateTime dateTime, double hours, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddHours(hours));
         }
 
-        [Fact]
-        public static void AddHours_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddHours_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddHours(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddHours(-1));
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+            yield return new object[] { DateTime.Now, double.MaxValue };
+            yield return new object[] { DateTime.Now, double.MinValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddHours_OutOfRange_TestData))]
+        public void AddHours_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, double hours)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddHours(hours));
         }
 
         public static IEnumerable<object[]> AddMinutes_TestData()
@@ -336,16 +502,25 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddMinutes_TestData))]
-        public static void AddMinutes(DateTime dateTime, double minutes, DateTime expected)
+        public void AddMinutes_Invoke_ReturnsExpected(DateTime dateTime, double minutes, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddMinutes(minutes));
         }
 
-        [Fact]
-        public static void AddMinutes_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddMinutes_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddMinutes(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddMinutes(-1));
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+            yield return new object[] { DateTime.Now, double.MaxValue };
+            yield return new object[] { DateTime.Now, double.MinValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMinutes_OutOfRange_TestData))]
+
+        public void AddMinutes_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, double minutes)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddMinutes(minutes));
         }
 
         public static IEnumerable<object[]> AddSeconds_TestData()
@@ -357,16 +532,24 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddSeconds_TestData))]
-        public static void AddSeconds(DateTime dateTime, double seconds, DateTime expected)
+        public void AddSeconds_Invoke_ReturnsExpected(DateTime dateTime, double seconds, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddSeconds(seconds));
         }
 
-        [Fact]
-        public static void AddSeconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddSeconds_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddSeconds(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddSeconds(-1));
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+            yield return new object[] { DateTime.Now, double.MaxValue };
+            yield return new object[] { DateTime.Now, double.MinValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddSeconds_OutOfRange_TestData))]
+        public void AddSeconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, double seconds)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddSeconds(seconds));
         }
 
         public static IEnumerable<object[]> AddMilliseconds_TestData()
@@ -378,16 +561,24 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddMilliseconds_TestData))]
-        public static void AddMilliseconds(DateTime dateTime, double milliseconds, DateTime expected)
+        public void AddMilliseconds_Invoke_ReturnsExpected(DateTime dateTime, double milliseconds, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddMilliseconds(milliseconds));
         }
 
-        [Fact]
-        public static void AddMilliseconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddMillseconds_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddMilliseconds(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddMilliseconds(-1));
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+            yield return new object[] { DateTime.Now, double.MaxValue };
+            yield return new object[] { DateTime.Now, double.MinValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddMillseconds_OutOfRange_TestData))]
+        public void AddMilliseconds_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, double milliseconds)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddMilliseconds(milliseconds));
         }
 
         public static IEnumerable<object[]> AddTicks_TestData()
@@ -399,34 +590,101 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(AddTicks_TestData))]
-        public static void AddTicks(DateTime dateTime, long ticks, DateTime expected)
+        public void AddTicks_Invoke_ReturnsExpected(DateTime dateTime, long ticks, DateTime expected)
         {
             Assert.Equal(expected, dateTime.AddTicks(ticks));
         }
 
-        [Fact]
-        public static void AddTicks_NewDateOutOfRange_ThrowsArgumentOutOfRangeException()
+        public static IEnumerable<object[]> AddTicks_OutOfRange_TestData()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MaxValue.AddTicks(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.MinValue.AddTicks(-1));
+            yield return new object[] { DateTime.MaxValue, 1 };
+            yield return new object[] { DateTime.MinValue, -1 };
+            yield return new object[] { DateTime.Now, long.MaxValue };
+            yield return new object[] { DateTime.Now, long.MinValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(AddTicks_OutOfRange_TestData))]
+
+        public void AddTicks_NewDateOutOfRange_ThrowsArgumentOutOfRangeException(DateTime date, long ticks)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => date.AddTicks(ticks));
+        }
+
+        public static IEnumerable<object[]> CompareTo_TestData()
+        {
+            yield return new object[] { new DateTime(10), new DateTime(10), 0 };
+            yield return new object[] { new DateTime(10), new DateTime(11), -1 };
+            yield return new object[] { new DateTime(10), new DateTime(9), 1 };
+            yield return new object[] { new DateTime(10), null, 1 };
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareTo_TestData))]
+        public void CompareTo_Invoke_ReturnsExpected(DateTime date, object other, int expected)
+        {
+            if (other is DateTime otherDate)
+            {
+                Assert.Equal(expected, date.CompareTo(otherDate));
+                Assert.Equal(expected, DateTime.Compare(date, otherDate));
+
+                Assert.Equal(expected > 0, date > otherDate);
+                Assert.Equal(expected >= 0, date >= otherDate);
+                Assert.Equal(expected < 0, date < otherDate);
+                Assert.Equal(expected <= 0, date <= otherDate);
+            }
+
+            Assert.Equal(expected, date.CompareTo(other));
         }
 
         [Fact]
-        public static void DayOfWeekTest()
+        public void CompareTo_NotDateTime_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => DateTime.Now.CompareTo(new object()));
+        }
+
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { new DateTime(10), new DateTime(10), true };
+            yield return new object[] { new DateTime(10), new DateTime(11), false };
+            yield return new object[] { new DateTime(10), new DateTime(9), false };
+            yield return new object[] { new DateTime(10), new object(), false };
+            yield return new object[] { new DateTime(10), null, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Invoke_ReturnsExpected(DateTime date, object other, bool expected)
+        {
+            if (other is DateTime otherDate)
+            {
+                Assert.Equal(expected, date.Equals(otherDate));
+                Assert.Equal(expected, DateTime.Equals(date, otherDate));
+                Assert.Equal(expected, date.GetHashCode().Equals(otherDate.GetHashCode()));
+
+                Assert.Equal(expected, date == otherDate);
+                Assert.Equal(!expected, date != otherDate);
+            }
+
+            Assert.Equal(expected, date.Equals(other));
+        }
+
+        [Fact]
+        public void DayOfWeek_Get_ReturnsExpected()
         {
             var dateTime = new DateTime(2012, 6, 18);
             Assert.Equal(DayOfWeek.Monday, dateTime.DayOfWeek);
         }
 
         [Fact]
-        public static void DayOfYear()
+        public void DayOfYear_Get_ReturnsExpected()
         {
             var dateTime = new DateTime(2012, 6, 18);
             Assert.Equal(170, dateTime.DayOfYear);
         }
 
         [Fact]
-        public static void TimeOfDay()
+        public void TimeOfDay_Get_ReturnsExpected()
         {
             var dateTime = new DateTime(2012, 6, 18, 10, 5, 1, 0);
             TimeSpan ts = dateTime.TimeOfDay;
@@ -437,7 +695,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Today()
+        public void Today_Get_ReturnsExpected()
         {
             DateTime today = DateTime.Today;
             DateTime now = DateTime.Now;
@@ -446,23 +704,6 @@ namespace System.Tests
             today = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc);
             Assert.Equal(DateTimeKind.Utc, today.Kind);
             Assert.False(today.IsDaylightSavingTime());
-        }
-
-        [Fact]
-        public static void Conversion()
-        {
-            DateTime today = DateTime.Today;
-            long dateTimeRaw = today.ToBinary();
-            Assert.Equal(today, DateTime.FromBinary(dateTimeRaw));
-
-            dateTimeRaw = today.ToUniversalTime().ToBinary();
-            Assert.Equal(today.ToUniversalTime(), DateTime.FromBinary(dateTimeRaw));
-
-            dateTimeRaw = today.ToFileTime();
-            Assert.Equal(today, DateTime.FromFileTime(dateTimeRaw));
-
-            dateTimeRaw = today.ToFileTimeUtc();
-            Assert.Equal(today, DateTime.FromFileTimeUtc(dateTimeRaw).ToLocalTime());
         }
 
         public static IEnumerable<object[]> Subtract_TimeSpan_TestData()
@@ -475,10 +716,26 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Subtract_TimeSpan_TestData))]
-        public static void Subtract_TimeSpan(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
+        public void Subtract_TimeSpan_ReturnsExpected(DateTime dateTime, TimeSpan timeSpan, DateTime expected)
         {
-            Assert.Equal(expected, dateTime - timeSpan);
             Assert.Equal(expected, dateTime.Subtract(timeSpan));
+            Assert.Equal(expected, dateTime - timeSpan);
+        }
+        
+        public static IEnumerable<object[]> Subtract_OutOfRangeTimeSpan_TestData()
+        {
+            yield return new object[] { DateTime.Now, TimeSpan.MinValue };
+            yield return new object[] { DateTime.Now, TimeSpan.MaxValue };
+            yield return new object[] { DateTime.MaxValue, new TimeSpan(-1) };
+            yield return new object[] { DateTime.MinValue, new TimeSpan(1) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Subtract_OutOfRangeTimeSpan_TestData))]
+        public static void Subtract_OutOfRangeTimeSpan_ThrowsArgumentOutOfRangeException(DateTime date, TimeSpan value)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => date.Subtract(value));
+            Assert.Throws<ArgumentOutOfRangeException>(() => date - value);
         }
 
         public static IEnumerable<object[]> Subtract_DateTime_TestData()
@@ -494,20 +751,238 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Subtract_DateTime_TestData))]
-        public static void Subtract_DateTime(DateTime dateTime1, DateTime dateTime2, TimeSpan expected)
+        public void Subtract_DateTime_ReturnsExpected(DateTime dateTime1, DateTime dateTime2, TimeSpan expected)
         {
-            Assert.Equal(expected, dateTime1 - dateTime2);
             Assert.Equal(expected, dateTime1.Subtract(dateTime2));
+            Assert.Equal(expected, dateTime1 - dateTime2);
         }
 
-        [Fact]
-        public static void Subtract_DateTime_Invalid()
+        public static IEnumerable<object[]> ToOADate_TestData()
         {
-            DateTime date1 = DateTime.MinValue.ToLocalTime();
-            Assert.Throws<ArgumentOutOfRangeException>(() => date1.Subtract(new TimeSpan(365, 0, 0, 0)));
+            yield return new object[] { new DateTime(1), 0 };
+            yield return new object[] { new DateTime((long)10000 * 1000 * 60 * 60 * 24 - 1), 1 };
+            yield return new object[] { new DateTime(100, 1, 1), -657434 };
+            yield return new object[] { new DateTime(1889, 11, 24, 23, 59, 59, 999).AddTicks(1), -3687 };
+            yield return new object[] { new DateTime(1889, 11, 24, 17, 57, 30, 12), -3688.74826402778 };
+            yield return new object[] { new DateTime(1889, 11, 24).AddTicks(1), -3688 };
+            yield return new object[] { new DateTime(1899, 12, 30), 0 };
+            yield return new object[] { new DateTime(2018, 11, 24), 43428 };
+            yield return new object[] { new DateTime(2018, 11, 24, 17, 57, 30, 12), 43428.74826 };
+            yield return new object[] { new DateTime(2018, 11, 24, 23, 59, 59, 999).AddTicks(1), 43429 };
+            yield return new object[] { DateTime.MinValue, 0 };
+            yield return new object[] { DateTime.MaxValue, 2958466 };
+        }
 
-            DateTime date2 = DateTime.MaxValue.ToLocalTime();
-            Assert.Throws<ArgumentOutOfRangeException>(() => date2.Subtract(new TimeSpan(-365, 0, 0, 0)));
+        [Theory]
+        [MemberData(nameof(ToOADate_TestData))]
+        public void ToOADate_Invoke_ReturnsExpected(DateTime date, double expected)
+        {
+            Assert.Equal(expected, date.ToOADate(), 5);
+        }
+
+        public static IEnumerable<object[]> ToOADate_Overflow_TestData()
+        {
+            yield return new object[] { new DateTime((long)10000 * 1000 * 60 * 60 * 24) };
+            yield return new object[] { new DateTime(100, 1, 1).AddTicks(-1) };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToOADate_Overflow_TestData))]
+        public void ToOADate_SmallDate_ThrowsOverflowException(DateTime date)
+        {
+            Assert.Throws<OverflowException>(() => date.ToOADate());
+        }
+
+        public static IEnumerable<object[]> FromOADate_TestData()
+        {
+            yield return new object[] { -1.5, new DateTime(1899, 12, 29, 12, 0, 0) };
+            yield return new object[] { -1, new DateTime(1899, 12, 29) };
+            yield return new object[] { 0, new DateTime(1899, 12, 30) };
+            yield return new object[] { 1, new DateTime(1899, 12, 31) };
+            yield return new object[] { 1.5, new DateTime(1899, 12, 31, 12, 0, 0) };
+            yield return new object[] { -657434.99999999, new DateTime(100, 1, 1, 23, 59, 59, 999) };
+            yield return new object[] { -657434.9999999999, new DateTime(99, 12, 31) };
+            yield return new object[] { 2958465.999999994, new DateTime(9999, 12, 31, 23, 59, 59, 999) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromOADate_TestData))]
+        public void FromOADate_Invoke_ReturnsExpected(double value, DateTime expected)
+        {
+            DateTime actual = DateTime.FromOADate(value);
+            Assert.Equal(expected, actual);
+            Assert.Equal(DateTimeKind.Unspecified, actual.Kind);
+        }
+
+        [Theory]
+        [InlineData(-657435)]
+        [InlineData(2958466)]
+        [InlineData(-657434.99999999995)]
+        [InlineData(2958465.999999995)]
+        [InlineData(double.NaN)]
+        public void FromOADate_InvalidValue_ThrowsArgumentException(double value)
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => DateTime.FromOADate(value));
+        }
+
+        public static IEnumerable<object[]> ToBinary_TestData()
+        {
+            DateTime local = new DateTime(10, DateTimeKind.Local);
+            TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(new DateTime(10));
+            long localTicks = local.Ticks - offset.Ticks;
+            if (localTicks < 0)
+            {
+                localTicks |= 0x4000000000000000;
+            }
+
+            yield return new object[] { new DateTime(10, DateTimeKind.Utc), 10 | ((long)DateTimeKind.Utc << 62) };
+            yield return new object[] { new DateTime(10, DateTimeKind.Unspecified), 10 | (( long)DateTimeKind.Unspecified << 62) };
+            yield return new object[] { local, localTicks | ((long)DateTimeKind.Local << 62) };
+
+            yield return new object[] { DateTime.MaxValue, 3155378975999999999 };
+            yield return new object[] { DateTime.MinValue, 0 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToBinary_TestData))]
+        public void ToBinary_Invoke_ReturnsExpected(DateTime date, long expected)
+        {
+            Assert.Equal(expected, date.ToBinary());
+        }
+
+        public static IEnumerable<object[]> FromBinary_TestData()
+        {
+            yield return new object[] { new DateTime(2018, 12, 24, 17, 34, 30, 12) };
+            yield return new object[] { new DateTime(2018, 12, 24, 17, 34, 30, 12, DateTimeKind.Local) };
+            yield return new object[] { DateTime.Today };
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { DateTime.MaxValue };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromBinary_TestData))]
+        public void FromBinary_Invoke_ReturnsExpected(DateTime date)
+        {
+            Assert.Equal(date, DateTime.FromBinary(date.ToBinary()));
+        }
+
+        [Theory]
+        [InlineData(3155378976000000000)]
+        [InlineData(long.MaxValue)]
+        [InlineData(3155378976000000000 | ((long)DateTimeKind.Utc << 62))]
+        [InlineData(long.MaxValue | ((long)DateTimeKind.Utc << 62))]
+        public void FromBinary_OutOfRangeTicks_ThrowsArgumentException(long dateData)
+        {
+            AssertExtensions.Throws<ArgumentException>("dateData", () => DateTime.FromBinary(dateData));
+        }
+
+        public static IEnumerable<object[]> ToFileTime_TestData()
+        {
+            yield return new object[] { new DateTime(1601, 1, 1) };
+            yield return new object[] { new DateTime(1601, 1, 1).AddTicks(1) };
+            yield return new object[] { new DateTime(2018, 12, 24) };
+            yield return new object[] { new DateTime(2018, 11, 24, 17, 57, 30, 12) };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToFileTime_TestData))]
+        public void ToFileTime_Invoke_ReturnsExpected(DateTime date)
+        {
+            Assert.Equal(date, DateTime.FromFileTime(date.ToFileTime()));
+        }
+
+        public static IEnumerable<object[]> ToFileTime_Overflow_TestData()
+        {
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { new DateTime(1600, 12, 31) };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToFileTime_Overflow_TestData))]
+        public void ToFileTime_SmallDate_ThrowsArgumentOutOfRangeException(DateTime date)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => date.ToFileTime());
+        }
+
+        public static IEnumerable<object[]> FromFileTime_TestData()
+        {
+            yield return new object[] { 0, new DateTime(1601, 1, 1) };
+            yield return new object[] { 2650467743999999999, DateTime.MaxValue };
+            yield return new object[] { 131875558500120000, new DateTime(2018, 11, 24, 17, 57, 30, 12) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromFileTime_TestData))]
+        public void FromFileTime_Invoke_ReturnsExpected(long fileTime, DateTime expected)
+        {
+            DateTime actual = DateTime.FromFileTime(fileTime);
+            Assert.Equal(expected.ToLocalTime(), actual);
+            Assert.Equal(DateTimeKind.Local, actual.Kind);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2650467744000000000)]
+        public void FromFileTime_OutOfRange_ThrowsArgumentOutOfRangeException(long fileTime)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("fileTime", () => DateTime.FromFileTime(fileTime));
+        }
+
+        public static IEnumerable<object[]> ToFileTimeUtc_TestData()
+        {
+            DateTime local = new DateTime(2018, 12, 24, 0, 0, 0, DateTimeKind.Local);
+            DateTime localToUtc = TimeZoneInfo.ConvertTimeToUtc(local);
+
+            yield return new object[] { new DateTime(1601, 1, 1), 0 };
+            yield return new object[] { new DateTime(1601, 1, 1).AddTicks(1), 1 };
+            yield return new object[] { new DateTime(2018, 12, 24), 131900832000000000 };
+            yield return new object[] { local, localToUtc.ToFileTimeUtc() };
+            yield return new object[] { new DateTime(2018, 11, 24, 17, 57, 30, 12), 131875558500120000 };
+            yield return new object[] { DateTime.MaxValue, 2650467743999999999 };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToFileTimeUtc_TestData))]
+        public void ToFileTimeUtc_Invoke_ReturnsExpected(DateTime date, long expected)
+        {
+            Assert.Equal(expected, date.ToFileTimeUtc());
+        }
+
+        public static IEnumerable<object[]> ToFileTimeUtc_Overflow_TestData()
+        {
+            yield return new object[] { DateTime.MinValue };
+            yield return new object[] { new DateTime(1600, 12, 31) };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToFileTimeUtc_Overflow_TestData))]
+        public void ToFileTimeUtc_SmallDate_ThrowsArgumentOutOfRangeException(DateTime date)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => date.ToFileTimeUtc());
+        }
+
+        public static IEnumerable<object[]> FromFileTimeUtc_TestData()
+        {
+            yield return new object[] { 0, new DateTime(1601, 1, 1) };
+            yield return new object[] { 2650467743999999999, DateTime.MaxValue };
+            yield return new object[] { 131875558500120000, new DateTime(2018, 11, 24, 17, 57, 30, 12) };
+        }
+
+        [Theory]
+        [MemberData(nameof(FromFileTimeUtc_TestData))]
+        public void FromFileTimeUtc_Invoke_ReturnsExpected(long fileTime, DateTime expected)
+        {
+            DateTime actual = DateTime.FromFileTimeUtc(fileTime);
+            Assert.Equal(expected, actual);
+            Assert.Equal(DateTimeKind.Utc, actual.Kind);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2650467744000000000)]
+        public void FromFileTimeUtc_OutOfRange_ThrowsArgumentOutOfRangeException(long fileTime)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("fileTime", () => DateTime.FromFileTimeUtc(fileTime));
         }
 
         [Fact]
@@ -1554,9 +2029,190 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_MatchesExpected_MemberData))]
-        public static void ToString_MatchesExpected(DateTime dateTime, string format, string expected)
+        public void ToString_Invoke_ReturnsExpected(DateTime dateTime, string format, string expected)
         {
             Assert.Equal(expected, dateTime.ToString(format));
+        }
+
+        [Fact]
+        public void ToLongDateString_Invoke_ReturnsExpected()
+        {
+            DateTime date = DateTime.Now;
+            Assert.Equal(date.ToString("D"), date.ToLongDateString());
+        }
+
+        [Fact]
+        public void ToLongTimeString_Invoke_ReturnsExpected()
+        {
+            DateTime date = DateTime.Now;
+            Assert.Equal(date.ToString("T"), date.ToLongTimeString());
+        }
+
+        [Fact]
+        public void ToShortDateString_Invoke_ReturnsExpected()
+        {
+            DateTime date = DateTime.Now;
+            Assert.Equal(date.ToString("d"), date.ToShortDateString());
+        }
+
+        [Fact]
+        public void ToShortTimeString_Invoke_ReturnsExpected()
+        {
+            DateTime date = DateTime.Now;
+            Assert.Equal(date.ToString("t"), date.ToShortTimeString());
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsExpected()
+        {
+            Assert.Equal(TypeCode.DateTime, DateTime.Now.GetTypeCode());
+        }
+
+        [Fact]
+        public void ToBoolean_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToBoolean(null));
+        }
+
+        [Fact]
+        public void ToChar_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToChar(null));
+        }
+
+        [Fact]
+        public void ToSByte_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToSByte(null));
+        }
+
+        [Fact]
+        public void ToByte_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToByte(null));
+        }
+
+        [Fact]
+        public void ToInt16_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToInt16(null));
+        }
+
+        [Fact]
+        public void ToUInt16_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToUInt16(null));
+        }
+
+        [Fact]
+        public void ToInt32_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToInt32(null));
+        }
+
+        [Fact]
+        public void ToUInt32_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToUInt32(null));
+        }
+
+        [Fact]
+        public void ToInt64_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToInt64(null));
+        }
+
+        [Fact]
+        public void ToUInt64_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToUInt64(null));
+        }
+
+        [Fact]
+        public void ToSingle_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToSingle(null));
+        }
+
+        [Fact]
+        public void ToDouble_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToDouble(null));
+        }
+
+        [Fact]
+        public void ToDecimal_Invoke_ThrowsInvalidCastException()
+        {
+            Assert.Throws<InvalidCastException>(() => ((IConvertible)DateTime.Now).ToDecimal(null));
+        }
+
+        [Fact]
+        public void ToDateTime_Invoke_ReturnsExpected()
+        {
+            DateTime date = DateTime.Now;
+            Assert.Equal(date, ((IConvertible)date).ToDateTime(null));
+        }
+
+        [Fact]
+        public void ToType_DateTime_ReturnsExpected()
+        {
+            DateTime date = DateTime.Now;
+            Assert.Equal(date, ((IConvertible)date).ToType(typeof(DateTime), null));
+        }
+
+        [Fact]
+        public void GetObjectData_Invoke_ReturnsExpected()
+        {
+            ISerializable serializable = new DateTime(10, DateTimeKind.Utc);
+            SerializationInfo info = new SerializationInfo(typeof(DateTime), new FormatterConverter());
+
+            serializable.GetObjectData(info, new StreamingContext());
+            Assert.Equal(10, info.GetInt64("ticks"));
+            Assert.Equal(4611686018427387914, info.GetInt64("dateData"));
+        }
+
+        [Fact]
+        public void GetObjectData_NullInfo_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("info", () => ((ISerializable)DateTime.Now).GetObjectData(null, new StreamingContext()));
+        }
+
+        private class DateMaxCalendar : Calendar
+        {
+            public override int[] Eras => throw new NotImplementedException();
+
+            public override DateTime AddMonths(DateTime time, int months) => time;
+
+            public override DateTime AddYears(DateTime time, int years) => time;
+
+            public override int GetDayOfMonth(DateTime time) => 0;
+
+            public override DayOfWeek GetDayOfWeek(DateTime time) => DayOfWeek.Monday;
+
+            public override int GetDayOfYear(DateTime time) => 0;
+
+            public override int GetDaysInMonth(int year, int month, int era) => 0;
+
+            public override int GetDaysInYear(int year, int era) => 0;
+
+            public override int GetEra(DateTime time) => 0;
+
+            public override int GetMonth(DateTime time) => 0;
+
+            public override int GetMonthsInYear(int year, int era) => 0;
+
+            public override int GetYear(DateTime time) => 0;
+
+            public override bool IsLeapDay(int year, int month, int day, int era) => false;
+
+            public override bool IsLeapMonth(int year, int month, int era) => false;
+
+            public override bool IsLeapYear(int year, int era) => false;
+
+            public override DateTime ToDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int era)
+            {
+                return DateTime.MaxValue;
+            }
         }
     }
 }
