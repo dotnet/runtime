@@ -69,16 +69,16 @@ start_handler: len:16
 endfinally: len:12
 ceq: dest:i len:16
 cgt: dest:i len:16
-cgt.un: dest:i len:16
+cgt_un: dest:i len:16
 clt: dest:i len:16
-clt.un: dest:i len:16
+clt_un: dest:i len:16
 localloc: dest:i src1:i len:60
 compare: src1:i src2:i len:20
 compare_imm: src1:i len:20
 fcompare: src1:f src2:f len:12
-oparglist: src1:i len:12
+arglist: src1:i len:12
 setlret: src1:i src2:i len:12
-checkthis: src1:b len:4
+check_this: src1:b len:4
 
 voidcall: len:20 clob:c
 voidcall_reg: src1:i len:20 clob:c
@@ -386,7 +386,7 @@ float_clt_un: dest:i src1:f src2:f len:20
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:20 clob:c
 endfilter: src1:i len:16
-aot_const: dest:i len:8
+aotconst: dest:i len:8
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4

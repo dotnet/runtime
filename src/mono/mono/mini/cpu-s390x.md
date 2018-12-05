@@ -53,7 +53,7 @@ add_ovf_carry: dest:i src1:1 src2:i len:28
 add_ovf_un_carry: dest:i src1:1 src2:i len:12
 addcc: dest:i src1:i src2:i len:12
 and_imm: dest:i src1:i len:24
-aot_const: dest:i len:8
+aotconst: dest:i len:8
 atomic_add_i4: src1:b src2:i dest:i len:28
 atomic_add_i8: src1:b src2:i dest:i len:30
 atomic_exchange_i4: src1:b src2:i dest:i len:18
@@ -66,11 +66,11 @@ call_handler: len:12 clob:c
 call_membase: dest:o src1:b len:12 clob:c
 call_reg: dest:o src1:i len:8 clob:c
 ceq: dest:i len:12
-cgt.un: dest:i len:12
+cgt_un: dest:i len:12
 cgt: dest:i len:12
-checkthis: src1:b len:16
+check_this: src1:b len:16
 ckfinite: dest:f src1:f len:22
-clt.un: dest:i len:12
+clt_un: dest:i len:12
 clt: dest:i len:12
 compare: src1:i src2:i len:4
 compare_imm: src1:i len:20
@@ -193,7 +193,7 @@ move: dest:i src1:i len:4
 mul_imm: dest:i src1:i len:24
 nop: len:4
 relaxed_nop: len:4
-oparglist: src1:i len:28
+arglist: src1:i len:28
 bigmul: len:2 dest:i src1:a src2:i
 bigmul_un: len:2 dest:i src1:a src2:i
 endfilter: src1:i len:28

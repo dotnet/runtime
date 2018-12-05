@@ -70,17 +70,17 @@ get_ex_obj: dest:i len:16
 ckfinite: dest:f src1:f len:112
 ceq: dest:i len:12
 cgt: dest:i len:12
-cgt.un: dest:i len:12
+cgt_un: dest:i len:12
 clt: dest:i len:12
-clt.un: dest:i len:12
+clt_un: dest:i len:12
 localloc: dest:i src1:i len:60
 compare: src1:i src2:i len:4
 compare_imm: src1:i len:12
 fcompare: src1:f src2:f len:12
 rcompare: src1:f src2:f len:12
-oparglist: src1:i len:12
+arglist: src1:i len:12
 setlret: src1:i src2:i len:12
-checkthis: src1:b len:4
+check_this: src1:b len:4
 call: dest:a clob:c len:20
 call_reg: dest:a src1:i len:8 clob:c
 call_membase: dest:a src1:b len:30 clob:c
@@ -248,7 +248,7 @@ r4_cge: dest:y src1:f src2:f len:20
 r4_cle: dest:y src1:f src2:f len:20
 
 setfret: src1:f len:12
-aot_const: dest:i len:16
+aotconst: dest:i len:16
 objc_get_selector: dest:i len:32
 sqrt: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4

@@ -2171,7 +2171,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 #else
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, msw_reg, basereg, offset+4);
 #endif
-		MONO_EMIT_NEW_UNALU (cfg, OP_CHECK_FINITE, -1, msw_reg);
+		MONO_EMIT_NEW_UNALU (cfg, OP_PPC_CHECK_FINITE, -1, msw_reg);
 		MONO_EMIT_NEW_UNALU (cfg, OP_FMOVE, ins->dreg, ins->sreg1);
 		ins->opcode = OP_NOP;
 		break;
@@ -4312,7 +4312,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_CKFINITE:
 			g_assert_not_reached ();
-		case OP_CHECK_FINITE: {
+		case OP_PPC_CHECK_FINITE: {
 			ppc_rlwinm (code, ins->sreg1, ins->sreg1, 0, 1, 31);
 			ppc_addis (code, ins->sreg1, ins->sreg1, -32752);
 			ppc_rlwinmd (code, ins->sreg1, ins->sreg1, 1, 31, 31);
