@@ -6,11 +6,13 @@ using System;
 using System.Text;
 using System.Runtime.InteropServices;
 
+#pragma warning disable 0618 // disable the obsolete warning
+
 class VBByRefStrNative
 {
-    
     [DllImport(nameof(VBByRefStrNative), CharSet = CharSet.Ansi)]
     public static extern bool Marshal_Ansi(string expected, [MarshalAs(UnmanagedType.VBByRefStr)] ref string actual, string newValue);
+
     [DllImport(nameof(VBByRefStrNative), CharSet = CharSet.Unicode)]
     public static extern bool Marshal_Unicode(string expected, [MarshalAs(UnmanagedType.VBByRefStr)] ref string actual, string newValue);
 
@@ -20,3 +22,5 @@ class VBByRefStrNative
     [DllImport(nameof(VBByRefStrNative), EntryPoint = "Marshal_Invalid")]
     public static extern bool Marshal_ByVal([MarshalAs(UnmanagedType.VBByRefStr)]string str);
 }
+
+#pragma warning restore 0618
