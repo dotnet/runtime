@@ -139,7 +139,7 @@
         {
           "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
-            "PB_AdditionalMSBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr /p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
+            "PB_AdditionalMSBuildArguments": "/p:SkipTests=true /p:DotNetRestoreSources=$(PB_RestoreSource) /p:StabilizePackageVersion=$(PB_IsStable) /p:PackageVersionStamp=$(PB_VersionStamp)",
             "PB_TargetArchitecture": "arm64",
             "PB_PortableBuild": "true"
           },
