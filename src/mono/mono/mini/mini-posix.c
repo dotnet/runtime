@@ -226,9 +226,9 @@ MONO_SIG_HANDLER_FUNC (static, sigabrt_signal_handler)
 
 MONO_SIG_HANDLER_FUNC (static, sigterm_signal_handler)
 {
+#ifndef DISABLE_CRASH_REPORTING
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
-#ifndef DISABLE_CRASH_REPORTING
 	// Note: this is only run from the non-controlling thread
 	MonoContext mctx;
 	gchar *output = NULL;

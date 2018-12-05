@@ -2139,7 +2139,7 @@ ves_icall_mono_marshal_xdomain_copy_value (MonoObject *val)
 	return result;
 }
 
-void
+static void
 mono_context_set_icall (MonoAppContext *new_context_raw)
 {
 	HANDLE_FUNCTION_ENTER ();

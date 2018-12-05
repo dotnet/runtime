@@ -55,6 +55,13 @@
 #include "utils/strenc.h"
 #include "utils/refcount.h"
 
+#if 0 // FIXME icall-decl.h sometimes breaks things because of Boehm's handling of dlopen.
+#include "icall-decl.h"
+#else
+guint32
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error);
+#endif
+
 #define NANOSECONDS_PER_MICROSECOND 1000LL
 #define TICKS_PER_MICROSECOND 10L
 #define TICKS_PER_MILLISECOND 10000L
