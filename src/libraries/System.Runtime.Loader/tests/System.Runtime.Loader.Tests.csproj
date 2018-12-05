@@ -8,7 +8,6 @@
   <ItemGroup>
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
-    <Compile Include="CollectibleAssemblyLoadContextTest.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="CustomTPALoadContext.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
   </ItemGroup>
