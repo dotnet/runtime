@@ -343,7 +343,10 @@ for /l %%G in (1, 1, %__BuildLoopCount%) do (
         echo     %__BuildLog%
         echo     %__BuildWrn%
         echo     %__BuildErr%
-        exit /b 1
+        REM This is necessary because of a(n apparent) bug in the FOR /L command.  Under certain circumstances,
+        REM such as when this script is invoke with CMD /C "build-test.cmd", a non-zero exit directly from
+        REM within the loop body will not propagate to the caller.  For some reason, goto works around it.
+        goto     :Exit_Failure
     )
 
     set __SkipPackageRestore=true
@@ -633,3 +636,6 @@ ren "%CORE_ROOT%\temp.ni.dll" %2
     
 echo Successfully precompiled %2
 exit /b 0
+
+:Exit_Failure
+exit /b 1
