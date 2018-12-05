@@ -338,9 +338,7 @@ HRESULT CLRPrivBinderWinRT::BindWinRTAssemblyByName(
 
                 IfFailGo(GetAssemblyAndTryFindNativeImage(sAssemblyPath, wszFileNameStripped, &pBinderAssembly));
 
-                // We have set bInGac to TRUE here because the plan is full trust for WinRT.  If this changes, we may need to check with
-                // AppDomain to verify trust based on the WinMD's path
-                pBindResult->Init(pBinderAssembly, TRUE);
+                pBindResult->Init(pBinderAssembly);
                 NewHolder<CLRPrivAssemblyWinRT> pNewAssembly(
                     new CLRPrivAssemblyWinRT(this, pResource, pBindResult, fIsWindowsNamespace));
                 

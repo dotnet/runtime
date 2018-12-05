@@ -230,20 +230,6 @@ HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemb
     return hr;
 }
 
-bool CLRPrivBinderCoreCLR::IsInTpaList(const SString &sFileName)
-{
-    bool fIsFileOnTpaList = false;
-    
-    TpaFileNameHash * tpaFileNameMap = m_appContext.GetTpaFileNameList();
-    if (tpaFileNameMap != nullptr)
-    {
-        const FileNameMapEntry *pTpaEntry = tpaFileNameMap->LookupPtr(sFileName.GetUnicode());
-        fIsFileOnTpaList = (pTpaEntry != nullptr);
-    }
-    
-    return fIsFileOnTpaList;
-}
-
 // See code:BINDER_SPACE::AssemblyBinder::GetAssembly for info on fNgenExplicitBind
 // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
 // for an example of how they're used.
