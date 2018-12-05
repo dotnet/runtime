@@ -10,20 +10,15 @@
 
 #ifdef HOST_WIN32
 #include <windows.h>
+#else
+#define INVALID_HANDLE_VALUE ((gpointer)-1)
 #endif
 
 #include "mono/utils/mono-coop-mutex.h"
 #include "mono/utils/mono-error.h"
 
-#ifndef INVALID_HANDLE_VALUE
-#define INVALID_HANDLE_VALUE ((gpointer)-1)
-#endif
-
 #define MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS 64
-
-#ifndef MONO_INFINITE_WAIT
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
-#endif
 
 typedef enum {
 	MONO_W32TYPE_UNUSED = 0,

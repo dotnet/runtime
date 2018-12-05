@@ -1882,10 +1882,12 @@ cache_generic_delegate_wrapper (GHashTable *cache, MonoMethod *orig_method, Mono
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_delegate_begin_invoke_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_delegate_begin_invoke:
@@ -2059,10 +2061,12 @@ mono_delegate_end_invoke (MonoDelegate *delegate, gpointer *params)
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_delegate_end_invoke_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_delegate_end_invoke:
@@ -2167,6 +2171,7 @@ free_signature_pointer_pair (SignaturePointerPair *pair)
 	g_free (pair);
 }
 
+#ifndef ENABLE_ILGEN
 static void
 mb_skip_visibility_noilgen (MonoMethodBuilder *mb)
 {
@@ -2186,6 +2191,7 @@ static void
 emit_delegate_invoke_internal_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
 }
+#endif
 
 MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method)
@@ -2791,6 +2797,7 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 	return mono_marshal_get_runtime_invoke_full (method, virtual_, need_direct_wrapper);
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_runtime_invoke_body_noilgen (MonoMethodBuilder *mb, const char **param_names, MonoImage *image, MonoMethod *method,
 						  MonoMethodSignature *sig, MonoMethodSignature *callsig,
@@ -2802,6 +2809,7 @@ static void
 emit_runtime_invoke_dynamic_noilgen (MonoMethodBuilder *mb)
 {
 }
+#endif
 
 /*
  * mono_marshal_get_runtime_invoke_dynamic:
@@ -2958,10 +2966,12 @@ mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig)
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_icall_wrapper:
@@ -3007,6 +3017,7 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static int
 emit_marshal_custom_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					 MonoMarshalSpec *spec, 
@@ -3100,6 +3111,7 @@ emit_marshal_variant_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	g_assert_not_reached ();
 }
+#endif
 
 gboolean
 mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
@@ -3119,6 +3131,7 @@ mono_pinvoke_is_unicode (MonoMethodPInvoke *piinfo)
 	}
 }
 
+#ifndef ENABLE_ILGEN
 static int
 emit_marshal_array_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 					MonoMarshalSpec *spec, 
@@ -3137,6 +3150,7 @@ emit_marshal_array_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 	return conv_arg;
 }
+#endif
 
 MonoType*
 mono_marshal_boolean_conv_in_get_local_type (MonoMarshalSpec *spec, guint8 *ldc_op /*out*/)
@@ -3184,6 +3198,7 @@ mono_marshal_boolean_managed_conv_in_get_conv_arg_class (MonoMarshalSpec *spec, 
 	return conv_arg_class;
 }
 
+#ifndef ENABLE_ILGEN
 static int
 emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		      MonoMarshalSpec *spec, 
@@ -3235,6 +3250,7 @@ emit_marshal_scalar_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 {
 	return conv_arg;
 }
+#endif
 
 int
 mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t, 
@@ -3314,6 +3330,7 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_create_string_hack_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res)
 {
@@ -3323,6 +3340,7 @@ static void
 emit_native_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *pinfo)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_native_wrapper:
@@ -3654,6 +3672,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	get_marshal_cb ()->emit_managed_wrapper (mb, invoke_sig, mspecs, m, method, target_handle);
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, uint32_t target_handle)
 {
@@ -3690,6 +3709,7 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 		}
 	}
 }
+#endif
 
 static void 
 mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig)
@@ -3899,10 +3919,12 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_vtfixup_ftnptr_noilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type)
 {
 }
+#endif
 
 gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
@@ -3979,10 +4001,12 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 	return compiled_ptr;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_castclass_noilgen (MonoMethodBuilder *mb)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_castclass_with_cache:
@@ -4047,10 +4071,12 @@ mono_marshal_isinst_with_cache (MonoObject *obj, MonoClass *klass, uintptr_t *ca
 	return isinst;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_isinst_noilgen (MonoMethodBuilder *mb)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_isinst_with_cache:
@@ -4097,10 +4123,12 @@ mono_marshal_get_isinst_with_cache (void)
 	return cached;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_struct_to_ptr_noilgen (MonoMethodBuilder *mb, MonoClass *klass)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_struct_to_ptr:
@@ -4148,10 +4176,12 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_ptr_to_struct_noilgen (MonoMethodBuilder *mb, MonoClass *klass)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_ptr_to_struct:
@@ -4247,6 +4277,7 @@ mono_marshal_get_synchronized_inner_wrapper (MonoMethod *method)
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method)
 {
@@ -4257,6 +4288,7 @@ emit_synchronized_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 	}
 
 }
+#endif
 
 /**
  * mono_marshal_get_synchronized_wrapper:
@@ -4353,10 +4385,12 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	return res;	
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_unbox_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_unbox_wrapper:
@@ -4445,10 +4479,12 @@ record_slot_vstore (MonoObject *array, size_t index, MonoObject *value)
 }
 #endif
 
+#ifndef ENABLE_ILGEN
 static void
 emit_virtual_stelemref_noilgen (MonoMethodBuilder *mb, const char **param_names, MonoStelemrefKind kind)
 {
 }
+#endif
 
 static const char *strelemref_wrapper_name[] = {
 	"object", "sealed_class", "class", "class_small_idepth", "interface", "complex"
@@ -4546,10 +4582,12 @@ mono_marshal_get_virtual_stelemref_wrappers (int *nwrappers)
 	return res;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_stelemref_noilgen (MonoMethodBuilder *mb)
 {
 }
+#endif
 
 /**
  * mono_marshal_get_stelemref:
@@ -4590,10 +4628,12 @@ mono_marshal_get_stelemref (void)
 	return ret;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 mb_emit_byte_noilgen (MonoMethodBuilder *mb, guint8 op)
 {
 }
+#endif
 
 /*
  * mono_marshal_get_gsharedvt_in_wrapper:
@@ -4661,10 +4701,12 @@ mono_marshal_get_gsharedvt_out_wrapper (void)
 	return ret;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_array_address_noilgen (MonoMethodBuilder *mb, int rank, int elem_size)
 {
 }
+#endif
 
 typedef struct {
 	int rank;
@@ -4764,10 +4806,12 @@ mono_marshal_get_array_address (int rank, int elem_size)
 	return ret;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_array_accessor_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx)
 {
 }
+#endif
 
 /*
  * mono_marshal_get_array_accessor_wrapper:
@@ -4850,7 +4894,7 @@ mono_marshal_alloc (gsize size, MonoError *error)
 
 	res = mono_marshal_alloc_co_task_mem (size);
 	if (!res)
-		mono_error_set_out_of_memory (error, "Could not allocate %lu bytes", size);
+		mono_error_set_out_of_memory (error, "Could not allocate %" G_GSIZE_FORMAT " bytes", size);
 
 	return res;
 }
@@ -5981,10 +6025,12 @@ mono_marshal_free_asany (MonoObject *o, gpointer ptr, MonoMarshalNative string_e
 	}
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_generic_array_helper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
 }
+#endif
 
 /*
  * mono_marshal_get_generic_array_helper:
@@ -6084,10 +6130,12 @@ mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, gu
 	*bitmask = buf [i];
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_thunk_invoke_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig)
 {
 }
+#endif
 
 MonoMethod *
 mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
@@ -6199,10 +6247,12 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	get_marshal_cb ()->emit_native_wrapper (image, mb, sig, piinfo, mspecs, func, aot, check_exceptions, func_param);
 }
 
+#ifndef ENABLE_ILGEN
 static void
 emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
 {
 }
+#endif
 
 static MonoMarshalCallbacks marshal_cb;
 static gboolean cb_inited = FALSE;
@@ -6216,6 +6266,7 @@ mono_install_marshal_callbacks (MonoMarshalCallbacks *cb)
 	cb_inited = TRUE;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 install_noilgen (void)
 {
@@ -6263,6 +6314,7 @@ install_noilgen (void)
 	cb.mb_emit_byte = mb_emit_byte_noilgen;
 	mono_install_marshal_callbacks (&cb);
 }
+#endif
 
 static MonoMarshalCallbacks *
 get_marshal_cb (void)

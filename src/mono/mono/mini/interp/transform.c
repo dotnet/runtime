@@ -1663,9 +1663,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
 		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
 		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
-		MonoVTable *vt = mono_class_vtable_checked (domain, target_method->klass, error);
+		(void)mono_class_vtable_checked (domain, target_method->klass, error);
 		return_val_if_nok (error, FALSE);
-		int called_inited = vt->initialized;
 
 		if (method == target_method && *(td->ip + 5) == CEE_RET && !(csignature->hasthis && m_class_is_valuetype (target_method->klass))) {
 			int offset;

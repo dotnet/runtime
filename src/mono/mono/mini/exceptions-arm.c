@@ -238,7 +238,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 
 	cfa_offset = MONO_ARM_NUM_SAVED_REGS * sizeof (mgreg_t);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, start, ARMREG_SP, cfa_offset);
-	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, - sizeof (mgreg_t));
+	mono_add_unwind_op_offset (unwind_ops, code, start, ARMREG_LR, -(ptrdiff_t)sizeof (mgreg_t));
 
 	/* Save fp regs */
 	if (!mono_arch_is_soft_float ()) {

@@ -544,7 +544,7 @@ dump_counter (MonoCounter *counter, FILE *outfile) {
 			fprintf (outfile, ENTRY_FMT "%llu\n", counter->name, *(unsigned long long *)buffer);
 		break;
 	case MONO_COUNTER_WORD:
-		fprintf (outfile, ENTRY_FMT "%zd\n", counter->name, *(gssize*)buffer);
+		fprintf (outfile, ENTRY_FMT "%lld\n", counter->name, (long long)*(gssize*)buffer);
 		break;
 	case MONO_COUNTER_DOUBLE:
 		fprintf (outfile, ENTRY_FMT "%.4f\n", counter->name, *(double*)buffer);

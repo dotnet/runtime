@@ -129,7 +129,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	}
 
 	if (first_set < 0) {
-		SGEN_LOG (6, "Ptrfree descriptor %p, size: %zd", (void*)desc, stored_size);
+		SGEN_LOG (6, "Ptrfree descriptor %p, size: %ld", (void*)desc, (long)stored_size);
 		if (stored_size <= MAX_RUNLEN_OBJECT_SIZE && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE)
 			return DESC_TYPE_SMALL_PTRFREE | stored_size;
 		return DESC_TYPE_COMPLEX_PTRFREE;
@@ -142,7 +142,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 	/* we know the 2-word header is ptr-free */
 	if (last_set < BITMAP_NUM_BITS + OBJECT_HEADER_WORDS && stored_size <= SGEN_MAX_SMALL_OBJ_SIZE) {
 		desc = DESC_TYPE_BITMAP | ((*bitmap >> OBJECT_HEADER_WORDS) << LOW_TYPE_BITS);
-		SGEN_LOG (6, "Largebitmap descriptor %p, size: %zd, last set: %d", (void*)desc, stored_size, last_set);
+		SGEN_LOG (6, "Largebitmap descriptor %p, size: %ld, last set: %d", (void*)desc, (long)stored_size, last_set);
 		return desc;
 	}
 
@@ -153,7 +153,7 @@ mono_gc_make_descr_for_object (gsize *bitmap, int numbits, size_t obj_size)
 		 */
 		if (first_set < 256 && num_set < 256 && (first_set + num_set == last_set + 1)) {
 			desc = DESC_TYPE_RUN_LENGTH | stored_size | (first_set << 16) | (num_set << 24);
-			SGEN_LOG (6, "Runlen descriptor %p, size: %zd, first set: %d, num set: %d", (void*)desc, stored_size, first_set, num_set);
+			SGEN_LOG (6, "Runlen descriptor %p, size: %ld, first set: %d, num set: %d", (void*)desc, (long)stored_size, first_set, num_set);
 			return desc;
 		}
 	}

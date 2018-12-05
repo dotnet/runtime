@@ -601,6 +601,7 @@ get_type_name_as_mono_string (MonoErrorInternal *error, MonoDomain *domain, Mono
 	HANDLE_FUNCTION_RETURN_REF (MonoString, res);
 }
 
+#if 0
 static MonoExceptionHandle
 mono_error_prepare_exception_handle (MonoError *oerror, MonoError *error_out)
 // Can fail with out-of-memory
@@ -609,6 +610,7 @@ mono_error_prepare_exception_handle (MonoError *oerror, MonoError *error_out)
 	MonoExceptionHandle ex = MONO_HANDLE_NEW (MonoException, mono_error_prepare_exception (oerror, error_out));
 	HANDLE_FUNCTION_RETURN_REF (MonoException, ex);
 }
+#endif
 
 /*Can fail with out-of-memory*/
 MonoException*

@@ -114,6 +114,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 	return NULL;
 }
 
+#ifdef MONO_ARCH_HAVE_CMOV_OPS
 static const int int_cmov_opcodes [] = {
 	OP_CMOV_IEQ,
 	OP_CMOV_INE_UN,
@@ -140,7 +141,7 @@ static const int long_cmov_opcodes [] = {
 	OP_CMOV_LGT_UN
 };
 
-static G_GNUC_UNUSED int
+static int
 br_to_br_un (int opcode)
 {
 	switch (opcode) {
@@ -161,6 +162,7 @@ br_to_br_un (int opcode)
 		return -1;
 	}
 }
+#endif
 
 /**
  * mono_replace_ins:

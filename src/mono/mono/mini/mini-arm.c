@@ -7352,8 +7352,6 @@ mono_arch_skip_single_step (MonoContext *ctx)
 	MONO_CONTEXT_SET_IP (ctx, (guint8*)MONO_CONTEXT_GET_IP (ctx) + 4);
 }
 
-#endif /* MONO_ARCH_SOFT_DEBUG_SUPPORTED */
-
 /*
  * mono_arch_get_seq_point_info:
  *
@@ -7390,6 +7388,8 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 
 	return info;
 }
+
+#endif /* MONO_ARCH_SOFT_DEBUG_SUPPORTED */
 
 /*
  * mono_arch_set_target:

@@ -65,7 +65,7 @@ static const gint16 opidx [] = {
 /*This enables us to use the right tooling when building the cross compiler for iOS.*/
 #if defined (__APPLE__) && defined (TARGET_ARM) && (defined(__i386__) || defined(__x86_64__))
 
-#define ARCH_PREFIX "/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/"
+//#define ARCH_PREFIX "/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/"
 
 #endif
 

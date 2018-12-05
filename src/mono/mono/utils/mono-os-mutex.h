@@ -34,10 +34,7 @@
 
 G_BEGIN_DECLS
 
-#ifndef MONO_INFINITE_WAIT
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
-#endif
-
 
 #if !defined(HOST_WIN32)
 

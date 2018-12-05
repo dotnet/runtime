@@ -56,6 +56,7 @@ static MonoDisHelper marshal_dh = {
 static MonoMethodBuilderCallbacks mb_cb;
 static gboolean cb_inited = FALSE;
 
+#ifndef ENABLE_ILGEN
 static MonoMethodBuilder *
 new_base_noilgen (MonoClass *klass, MonoWrapperType type)
 {
@@ -139,7 +140,7 @@ create_method_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	return method;
 }
-
+#endif
 
 void
 mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb)
@@ -150,6 +151,7 @@ mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb)
 	cb_inited = TRUE;
 }
 
+#ifndef ENABLE_ILGEN
 static void
 install_noilgen (void)
 {
@@ -160,6 +162,7 @@ install_noilgen (void)
 	cb.create_method = create_method_noilgen;
 	mono_install_method_builder_callbacks (&cb);
 }
+#endif
 
 static MonoMethodBuilderCallbacks *
 get_mb_cb (void)
