@@ -2158,10 +2158,191 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
         offset += genTypeSize(type);
     }
 
-    varDsc->lvRegNum            = REG_STK;
+    varDsc->lvRegNum = REG_STK;
 #else  // !UNIX_AMD64_ABI && !_TARGET_X86_
     assert(!"Unreached");
 #endif // !UNIX_AMD64_ABI && !_TARGET_X86_
+}
+
+//------------------------------------------------------------------------
+// genAllocLclFrame: Probe the stack and allocate the local stack frame: subtract from SP.
+//
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
+{
+    assert(compiler->compGeneratingProlog);
+
+    if (frameSize == 0)
+    {
+        return;
+    }
+
+    const target_size_t pageSize = compiler->eeGetPageSize();
+
+    if (frameSize == REGSIZE_BYTES)
+    {
+        // Frame size is the same as register size.
+        inst_RV(INS_push, REG_EAX, TYP_I_IMPL);
+    }
+    else if (frameSize < pageSize)
+    {
+        // Frame size is (0x0008..0x1000)
+        inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
+    }
+    else if (frameSize < compiler->getVeryLargeFrameSize())
+    {
+        // Frame size is (0x1000..0x3000)
+
+        getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -(int)pageSize);
+
+        if (frameSize >= 0x2000)
+        {
+            getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -2 * (int)pageSize);
+        }
+
+        inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
+    }
+    else
+    {
+        // Frame size >= 0x3000
+        assert(frameSize >= compiler->getVeryLargeFrameSize());
+
+        // Emit the following sequence to 'tickle' the pages.
+        // Note it is important that stack pointer not change until this is
+        // complete since the tickles could cause a stack overflow, and we
+        // need to be able to crawl the stack afterward (which means the
+        // stack pointer needs to be known).
+
+        bool pushedStubParam = false;
+        if (compiler->info.compPublishStubParam && (REG_SECRET_STUB_PARAM == initReg))
+        {
+            // push register containing the StubParam
+            inst_RV(INS_push, REG_SECRET_STUB_PARAM, TYP_I_IMPL);
+            pushedStubParam = true;
+        }
+
+#ifndef _TARGET_UNIX_
+        instGen_Set_Reg_To_Zero(EA_PTRSIZE, initReg);
+#endif
+
+        //
+        // Can't have a label inside the ReJIT padding area
+        //
+        genPrologPadForReJit();
+
+#ifndef _TARGET_UNIX_
+        // Code size for each instruction. We need this because the
+        // backward branch is hard-coded with the number of bytes to branch.
+        // The encoding differs based on the architecture and what register is
+        // used (namely, using RAX has a smaller encoding).
+        //
+        // loop:
+        // For x86
+        //      test [esp + eax], eax       3
+        //      sub eax, 0x1000             5
+        //      cmp EAX, -frameSize         5
+        //      jge loop                    2
+        //
+        // For AMD64 using RAX
+        //      test [rsp + rax], rax       4
+        //      sub rax, 0x1000             6
+        //      cmp rax, -frameSize         6
+        //      jge loop                    2
+        //
+        // For AMD64 using RBP
+        //      test [rsp + rbp], rbp       4
+        //      sub rbp, 0x1000             7
+        //      cmp rbp, -frameSize         7
+        //      jge loop                    2
+
+        getEmitter()->emitIns_R_ARR(INS_test, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
+        inst_RV_IV(INS_sub, initReg, pageSize, EA_PTRSIZE);
+        inst_RV_IV(INS_cmp, initReg, -((ssize_t)frameSize), EA_PTRSIZE);
+
+        int bytesForBackwardJump;
+#ifdef _TARGET_AMD64_
+        assert((initReg == REG_EAX) || (initReg == REG_EBP)); // We use RBP as initReg for EH funclets.
+        bytesForBackwardJump = ((initReg == REG_EAX) ? -18 : -20);
+#else  // !_TARGET_AMD64_
+        assert(initReg == REG_EAX);
+        bytesForBackwardJump = -15;
+#endif // !_TARGET_AMD64_
+
+        // Branch backwards to start of loop
+        inst_IV(INS_jge, bytesForBackwardJump);
+#else // _TARGET_UNIX_
+        // Code size for each instruction. We need this because the
+        // backward branch is hard-coded with the number of bytes to branch.
+        // The encoding differs based on the architecture and what register is
+        // used (namely, using RAX has a smaller encoding).
+        //
+        // For x86
+        //      lea eax, [esp - frameSize]
+        // loop:
+        //      lea esp, [esp - pageSize]   7
+        //      test [esp], eax             3
+        //      cmp esp, eax                2
+        //      jge loop                    2
+        //      lea rsp, [rbp + frameSize]
+        //
+        // For AMD64 using RAX
+        //      lea rax, [rsp - frameSize]
+        // loop:
+        //      lea rsp, [rsp - pageSize]   8
+        //      test [rsp], rax             4
+        //      cmp rsp, rax                3
+        //      jge loop                    2
+        //      lea rsp, [rax + frameSize]
+        //
+        // For AMD64 using RBP
+        //      lea rbp, [rsp - frameSize]
+        // loop:
+        //      lea rsp, [rsp - pageSize]   8
+        //      test [rsp], rbp             4
+        //      cmp rsp, rbp                3
+        //      jge loop                    2
+        //      lea rsp, [rbp + frameSize]
+
+        int sPageSize = (int)pageSize;
+
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, initReg, REG_SPBASE, -((ssize_t)frameSize)); // get frame border
+
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -sPageSize);
+        getEmitter()->emitIns_R_AR(INS_test, EA_PTRSIZE, initReg, REG_SPBASE, 0);
+        inst_RV_RV(INS_cmp, REG_SPBASE, initReg);
+
+        int bytesForBackwardJump;
+#ifdef _TARGET_AMD64_
+        assert((initReg == REG_EAX) || (initReg == REG_EBP)); // We use RBP as initReg for EH funclets.
+        bytesForBackwardJump = -17;
+#else  // !_TARGET_AMD64_
+        assert(initReg == REG_EAX);
+        bytesForBackwardJump = -14;
+#endif // !_TARGET_AMD64_
+
+        inst_IV(INS_jge, bytesForBackwardJump); // Branch backwards to start of loop
+
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, initReg, frameSize); // restore stack pointer
+#endif // _TARGET_UNIX_
+
+        *pInitRegZeroed = false; // The initReg does not contain zero
+
+        if (pushedStubParam)
+        {
+            // pop eax
+            inst_RV(INS_pop, REG_SECRET_STUB_PARAM, TYP_I_IMPL);
+            regSet.verifyRegUsed(REG_SECRET_STUB_PARAM);
+        }
+
+        //      sub esp, frameSize   6
+        inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
+    }
+
+    compiler->unwindAllocStack(frameSize);
+
+    if (!doubleAlignOrFramePointerUsed())
+    {
+        psiAdjustStackLevel(frameSize);
+    }
 }
 
 //------------------------------------------------------------------------
