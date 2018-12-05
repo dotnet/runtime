@@ -1927,10 +1927,7 @@ PEAssembly::PEAssembly(
   : PEFile(pBindResultInfo ? (pBindResultInfo->GetPEImage() ? pBindResultInfo->GetPEImage() : 
                                                               (pBindResultInfo->HasNativeImage() ? pBindResultInfo->GetNativeImage() : NULL)
                               ): pPEImageIL? pPEImageIL:(pPEImageNI? pPEImageNI:NULL), FALSE),
-    m_creator(clr::SafeAddRef(creator)),
-    m_bIsFromGAC(FALSE),
-    m_bIsOnTpaList(FALSE)
-    ,m_fProfileAssembly(0)
+    m_creator(clr::SafeAddRef(creator))
 {
     CONTRACTL
     {
@@ -1961,14 +1958,6 @@ PEAssembly::PEAssembly(
     // If we have no native image, we require a mapping for the file.
     if (!HasNativeImage() || !IsILOnly())
         EnsureImageOpened();
-
-    // Initialize the status of the assembly being in the GAC, or being part of the TPA list, before
-    // we start to do work (like strong name verification) that relies on those states to be valid.
-    if(pBindResultInfo != nullptr)
-    {
-        m_bIsFromGAC = pBindResultInfo->IsFromGAC();
-        m_bIsOnTpaList = pBindResultInfo->IsOnTpaList();
-    }
 
     // Open metadata eagerly to minimize failure windows
     if (pEmit == NULL)
@@ -2130,7 +2119,7 @@ PEAssembly *PEAssembly::DoOpenSystem(IUnknown * pAppCtx)
     IfFailThrow(CCoreCLRBinderHelper::BindToSystem(&pPrivAsm, !IsCompilationProcess() || g_fAllowNativeImages));
     if(pPrivAsm != NULL)
     {
-        bindResult.Init(pPrivAsm, TRUE, TRUE);
+        bindResult.Init(pPrivAsm);
     }
 
     RETURN new PEAssembly(&bindResult, NULL, NULL, TRUE, FALSE);
@@ -2217,7 +2206,7 @@ PEAssembly *PEAssembly::DoOpenMemory(
     CoreBindResult bindResult;
     ReleaseHolder<ICLRPrivAssembly> assembly;
     IfFailThrow(CCoreCLRBinderHelper::GetAssemblyFromImage(image, NULL, &assembly));
-    bindResult.Init(assembly,FALSE,FALSE);
+    bindResult.Init(assembly);
 
     RETURN new PEAssembly(&bindResult, NULL, pParentAssembly, FALSE);
 }
@@ -2300,52 +2289,11 @@ void PEAssembly::SetNativeImage(PEImage * image)
 
 #endif  // FEATURE_PREJIT
 
-
-BOOL PEAssembly::IsSourceGAC()
-{
-    WRAPPER_NO_CONTRACT;
-    return m_bIsFromGAC;
-};
-
-
 #endif // #ifndef DACCESS_COMPILE
 
 
 
 #ifndef DACCESS_COMPILE
-
-BOOL PEAssembly::IsProfileAssembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    //
-    // For now, cache the result of the check below. This cache should be removed once/if the check below 
-    // becomes cheap (e.g. does not access metadata anymore).
-    //
-    if (VolatileLoadWithoutBarrier(&m_fProfileAssembly) != 0)
-    {
-        return m_fProfileAssembly > 0;
-    }
-
-    //
-    // In order to be a platform (profile) assembly, you must be from a trusted location (TPA list)
-    // If we are binding by TPA list and this assembly is on it, IsSourceGAC is true => Assembly is Profile
-    // If the assembly is a WinMD, it is automatically trusted since all WinMD scenarios are full trust scenarios.
-    //
-    // The check for Silverlight strongname platform assemblies is legacy backdoor. It was introduced by accidental abstraction leak
-    // from the old Silverlight binder, people took advantage of it and we cannot easily get rid of it now. See DevDiv #710462.
-    //
-    BOOL bProfileAssembly = IsSourceGAC() && (IsSystem() || m_bIsOnTpaList);
-
-    m_fProfileAssembly = bProfileAssembly ? 1 : -1;
-    return bProfileAssembly;
-}
 
 // ------------------------------------------------------------
 // Descriptive strings

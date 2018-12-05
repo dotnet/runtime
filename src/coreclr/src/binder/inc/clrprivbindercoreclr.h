@@ -52,8 +52,6 @@ public:
                               SString  &sAppPaths,
                               SString  &sAppNiPaths);
 
-    bool IsInTpaList(const SString  &sFileName);
-
     inline BINDER_SPACE::ApplicationContext *GetAppContext()
     {
         return &m_appContext;
