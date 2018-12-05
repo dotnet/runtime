@@ -244,7 +244,7 @@ create_domain_objects (MonoDomain *domain)
 	 * This class is used during exception handling, so initialize it here, to prevent
 	 * stack overflows while handling stack overflows.
 	 */
-	mono_class_init (mono_class_create_array (mono_defaults.int_class, 1));
+	mono_class_init_internal (mono_class_create_array (mono_defaults.int_class, 1));
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -361,7 +361,7 @@ mono_get_corlib_version (void)
 	MonoClassField *field;
 
 	klass = mono_class_load_from_name (mono_defaults.corlib, "System", "Environment");
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 	field = mono_class_get_field_from_name_full (klass, "mono_corlib_version", NULL);
 	if (!field)
 		return NULL;

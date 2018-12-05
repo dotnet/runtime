@@ -1099,7 +1099,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	MonoGCDescriptor gc_descr;
 
 	if (!m_class_is_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 
 	if (m_class_is_gc_descr_inited (klass))
 		return;
@@ -1962,7 +1962,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	gpointer iter;
 	gpointer *interface_offsets;
 
-	mono_loader_lock (); /*FIXME mono_class_init acquires it*/
+	mono_loader_lock (); /*FIXME mono_class_init_internal acquires it*/
 	mono_domain_lock (domain);
 
 	runtime_info = m_class_get_runtime_info (klass);
@@ -1973,7 +1973,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 		goto exit;
 	}
 	if (!m_class_is_inited (klass) || mono_class_has_failure (klass)) {
-		if (!mono_class_init (klass) || mono_class_has_failure (klass)) {
+		if (!mono_class_init_internal (klass) || mono_class_has_failure (klass)) {
 			mono_domain_unlock (domain);
 			mono_loader_unlock ();
 			mono_error_set_for_class_failure (error, klass);
@@ -1985,9 +1985,9 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	if (m_class_get_byval_arg (klass)->type == MONO_TYPE_ARRAY || m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY) {
 		MonoClass *element_class = m_class_get_element_class (klass);
 		if (!m_class_is_inited (element_class))
-			mono_class_init (element_class);
+			mono_class_init_internal (element_class);
 
-		/*mono_class_init can leave the vtable layout to be lazily done and we can't afford this here*/
+		/*mono_class_init_internal can leave the vtable layout to be lazily done and we can't afford this here*/
 		if (!mono_class_has_failure (element_class) && !m_class_get_vtable_size (element_class))
 			mono_class_setup_vtable (element_class);
 		
@@ -2003,7 +2003,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	}
 
 	/* 
-	 * For some classes, mono_class_init () already computed klass->vtable_size, and 
+	 * For some classes, mono_class_init_internal () already computed klass->vtable_size, and 
 	 * that is all that is needed because of the vtable trampolines.
 	 */
 	if (!m_class_get_vtable_size (klass))
@@ -4732,7 +4732,7 @@ create_unhandled_exception_eventargs (MonoObjectHandle exc, MonoError *error)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClass * const klass = mono_class_get_unhandled_exception_event_args_class ();
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	/* UnhandledExceptionEventArgs only has 1 public ctor with 2 args */
 	MonoMethod * const method = mono_class_get_method_from_name_checked (klass, ".ctor", 2, METHOD_ATTRIBUTE_PUBLIC, error);
@@ -5721,7 +5721,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 			MonoClass *klass = mono_class_get_activation_services_class ();
 
 			if (!m_class_is_inited (klass))
-				mono_class_init (klass);
+				mono_class_init_internal (klass);
 
 			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
 			return_val_if_nok (error, NULL);
@@ -5768,7 +5768,7 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 			MonoClass *klass = mono_class_get_activation_services_class ();
 
 			if (!m_class_is_inited (klass))
-				mono_class_init (klass);
+				mono_class_init_internal (klass);
 
 			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
 			return_val_if_nok (error, mono_new_null ());
@@ -6210,7 +6210,7 @@ mono_array_new_full_checked (MonoDomain *domain, MonoClass *array_class, uintptr
 	error_init (error);
 
 	if (!m_class_is_inited (array_class))
-		mono_class_init (array_class);
+		mono_class_init_internal (array_class);
 
 	len = 1;
 
@@ -7108,7 +7108,7 @@ mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *er
 	error_init (error);
 	
 	if (!m_class_is_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 
 	if (mono_class_is_marshalbyref (klass) || mono_class_is_interface (klass)) {
 		return mono_object_handle_isinst_mbyref (obj, klass, error);

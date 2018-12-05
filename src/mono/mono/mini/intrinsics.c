@@ -445,7 +445,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			/* Resolve the argument class as possible so we can handle common cases fast */
 			t = mini_get_underlying_type (arg_type);
 			klass = mono_class_from_mono_type_internal (t);
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 			if (MONO_TYPE_IS_REFERENCE (t))
 				EMIT_NEW_ICONST (cfg, ins, 1);
 			else if (MONO_TYPE_IS_PRIMITIVE (t))

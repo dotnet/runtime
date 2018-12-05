@@ -4896,7 +4896,7 @@ add_generic_class_with_depth (MonoAotCompile *acfg, MonoClass *klass, int depth,
 	if (!acfg->ginst_hash)
 		acfg->ginst_hash = g_hash_table_new (NULL, NULL);
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	if (mono_class_is_ginst (klass) && mono_class_get_generic_class (klass)->context.class_inst->is_open)
 		return;
@@ -6796,7 +6796,7 @@ emit_klass_info (MonoAotCompile *acfg, guint32 token)
 
 	g_assert (klass);
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	mono_class_get_nested_types (klass, &iter);
 	g_assert (m_class_is_nested_classes_inited (klass));

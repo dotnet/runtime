@@ -594,7 +594,7 @@ is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *co
 		if (mono_class_is_gtd (paramClass) && param_type->type != MONO_TYPE_GENERICINST && !ginst->is_open)
 			return FALSE;
 
-		/*it's not safe to call mono_class_init from here*/
+		/*it's not safe to call mono_class_init_internal from here*/
 		if (mono_class_is_ginst (paramClass) && !m_class_is_inited (paramClass)) {
 			if (!mono_class_is_valid_generic_instantiation (NULL, paramClass))
 				return FALSE;
@@ -879,7 +879,7 @@ mono_type_is_valid_in_context (VerifyContext *ctx, MonoType *type)
 	}
 
 	klass = mono_class_from_mono_type_internal (type);
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 	if (mono_class_has_failure (klass)) {
 		if (mono_class_is_ginst (klass) && !mono_class_is_valid_generic_instantiation (NULL, klass))
 			ADD_VERIFY_ERROR2 (ctx, g_strdup_printf ("Invalid generic instantiation of type %s.%s at 0x%04x", m_class_get_name_space (klass), m_class_get_name (klass), ctx->ip_offset), MONO_EXCEPTION_TYPE_LOAD);
@@ -6406,7 +6406,7 @@ fail:
  * Right now there are no conditions that make a class a valid but not verifiable. Both overlapping reference
  * field and invalid generic instantiation are fatal errors.
  * 
- * This method must be safe to be called from mono_class_init and all code must be carefull about that.
+ * This method must be safe to be called from mono_class_init_internal and all code must be carefull about that.
  * 
  */
 gboolean

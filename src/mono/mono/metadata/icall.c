@@ -2225,7 +2225,7 @@ ves_icall_MonoField_GetRawConstantValue (MonoReflectionField *rfield)
 	MonoType *t;
 	ERROR_DECL (error);
 
-	mono_class_init (field->parent);
+	mono_class_init_internal (field->parent);
 
 	t = mono_field_get_type_checked (field, error);
 	if (!is_ok (error)) {
@@ -2723,7 +2723,7 @@ ves_icall_RuntimeTypeHandle_HasReferences (MonoReflectionTypeHandle ref_type, Mo
 	MonoClass *klass;
 
 	klass = mono_class_from_mono_type_internal (type);
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 	return m_class_has_references (klass);
 }
 
@@ -7993,7 +7993,7 @@ ves_icall_property_info_get_default_value (MonoReflectionProperty *property)
 	const char *def_value;
 	MonoObject *o;
 
-	mono_class_init (prop->parent);
+	mono_class_init_internal (prop->parent);
 
 	if (!(prop->attrs & PROPERTY_ATTRIBUTE_HAS_DEFAULT)) {
 		mono_error_set_invalid_operation (error, NULL);

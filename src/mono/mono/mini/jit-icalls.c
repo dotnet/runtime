@@ -893,7 +893,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
-	mono_class_init (field->parent);
+	mono_class_init_internal (field->parent);
 
 	vtable = mono_class_vtable_checked (domain, field->parent, error);
 	if (!is_ok (error)) {
@@ -934,7 +934,7 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	mono_class_init (handle_class);
+	mono_class_init_internal (handle_class);
 
 	return res;
 }

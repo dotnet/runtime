@@ -183,7 +183,7 @@ mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
 		MonoVTable *vt = obj->vtable;
 
 		if (!m_class_is_inited (klass))
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 
 		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, m_class_get_interface_id (klass)))
 			return obj;
@@ -5528,7 +5528,7 @@ mono_marshal_load_type_info (MonoClass* klass)
 		return info;
 
 	if (!m_class_is_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 
 	info = mono_class_get_marshal_info (klass);
 	if (info)

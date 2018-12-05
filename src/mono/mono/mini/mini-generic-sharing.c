@@ -583,7 +583,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		mono_metadata_free_type (inflated_type);
 
-		mono_class_init (inflated_class);
+		mono_class_init_internal (inflated_class);
 
 		g_assert (!method->wrapper_type);
 
@@ -596,7 +596,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 		}
-		mono_class_init (inflated_method->klass);
+		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 		return inflated_method;
 	}
@@ -643,7 +643,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 
 		mono_metadata_free_type (inflated_type);
 
-		mono_class_init (inflated_class);
+		mono_class_init_internal (inflated_class);
 
 		if (method->wrapper_type) {
 			winfo = mono_marshal_get_wrapper_info (method);
@@ -662,7 +662,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 			inflated_method = mono_class_inflate_generic_method_checked (method, context, error);
 			g_assert (mono_error_ok (error)); /* FIXME don't swallow the error */
 		}
-		mono_class_init (inflated_method->klass);
+		mono_class_init_internal (inflated_method->klass);
 		g_assert (inflated_method->klass == inflated_class);
 
 		if (winfo) {
@@ -964,7 +964,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 		else
 			return GUINT_TO_POINTER (MONO_GSHAREDVT_BOX_TYPE_VTYPE);
 	case MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS:
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 		/* Can't return 0 */
 		if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (klass)) || m_class_has_references (klass))
 			return GUINT_TO_POINTER (2);

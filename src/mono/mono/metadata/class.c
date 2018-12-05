@@ -172,7 +172,7 @@ mono_class_from_typeref_checked (MonoImage *image, guint32 type_token, MonoError
 		} else {
 			MonoImage *enclosing_image = m_class_get_image (enclosing);
 			guint32 enclosing_type_token = m_class_get_type_token (enclosing);
-			/* Don't call mono_class_init as we might've been called by it recursively */
+			/* Don't call mono_class_init_internal as we might've been called by it recursively */
 			int i = mono_metadata_nesting_typedef (enclosing_image, enclosing_type_token, 1);
 			while (i) {
 				guint32 class_nested = mono_metadata_decode_row_col (&enclosing_image->tables [MONO_TABLE_NESTEDCLASS], i - 1, MONO_NESTED_CLASS_NESTED);
@@ -1557,7 +1557,7 @@ collect_implemented_interfaces_aux (MonoClass *klass, GPtrArray **res, GHashTabl
 			continue;
 		g_ptr_array_add (*res, ic);
 		g_hash_table_insert (*ifaces, ic, ic);
-		mono_class_init (ic);
+		mono_class_init_internal (ic);
 		if (mono_class_has_failure (ic)) {
 			mono_error_set_type_load_class (error, ic, "Error Loading class");
 			return;
@@ -2019,7 +2019,7 @@ gint32
 mono_class_instance_size (MonoClass *klass)
 {	
 	if (!m_class_is_size_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 
 	return m_class_get_instance_size (klass);
 }
@@ -2036,7 +2036,7 @@ gint32
 mono_class_min_align (MonoClass *klass)
 {	
 	if (!m_class_is_size_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 
 	return m_class_get_min_align (klass);
 }
@@ -2051,7 +2051,7 @@ gint32
 mono_class_data_size (MonoClass *klass)
 {	
 	if (!m_class_is_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 	/* This can happen with dynamically created types */
 	if (!m_class_is_fields_inited (klass))
 		mono_class_setup_fields (klass);
@@ -3249,8 +3249,8 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
 	/* FIXME test for interfaces with variant generic arguments */
-	mono_class_init (klass);
-	mono_class_init (klassc);
+	mono_class_init_internal (klass);
+	mono_class_init_internal (klassc);
 	
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE_INTERNAL (klassc) && !MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, m_class_get_interface_id (klassc)))
@@ -3534,10 +3534,10 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 	g_assert (result);
 	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
 	if (!m_class_is_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 
 	if (!m_class_is_inited (oklass))
-		mono_class_init (oklass);
+		mono_class_init_internal (oklass);
 
 	if (mono_class_has_failure (klass) || mono_class_has_failure  (oklass)) {
 		*result = FALSE;
@@ -3795,7 +3795,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 				}
 			}
 		} else {
-			/*setup_interfaces don't mono_class_init anything*/
+			/*setup_interfaces don't mono_class_init_internal anything*/
 			/*FIXME this doesn't handle primitive type arrays.
 			ICollection<sbyte> x byte [] won't work because candidate->interfaces, for byte[], won't have IList<sbyte>.
 			A possible way to fix this would be to move that to setup_interfaces from setup_interface_offsets.
@@ -3827,7 +3827,7 @@ mono_class_implement_interface_slow (MonoClass *target, MonoClass *candidate)
 
 /*
  * Check if @oklass can be assigned to @klass.
- * This function does the same as mono_class_is_assignable_from_internal but is safe to be used from mono_class_init context.
+ * This function does the same as mono_class_is_assignable_from_internal but is safe to be used from mono_class_init_internal context.
  */
 gboolean
 mono_class_is_assignable_from_slow (MonoClass *target, MonoClass *candidate)
@@ -3946,7 +3946,7 @@ mono_class_get_cctor (MonoClass *klass)
 
 	if (image_is_dynamic (m_class_get_image (klass))) {
 		/* 
-		 * has_cctor is not set for these classes because mono_class_init () is
+		 * has_cctor is not set for these classes because mono_class_init_internal () is
 		 * not run for them.
 		 */
 		result = mono_class_get_method_from_name_checked (klass, ".cctor", -1, METHOD_ATTRIBUTE_SPECIAL_NAME, error);
@@ -3954,7 +3954,7 @@ mono_class_get_cctor (MonoClass *klass)
 		return result;
 	}
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	if (!m_class_has_cctor (klass))
 		return result;
@@ -3988,7 +3988,7 @@ mono_class_get_finalizer (MonoClass *klass)
 	MonoCachedClassInfo cached_info;
 
 	if (!m_class_is_inited (klass))
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 	if (!mono_class_has_finalizer (klass))
 		return NULL;
 
@@ -4149,7 +4149,7 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 		if (!type)
 			return NULL;
 
-		mono_class_init (mono_class_from_mono_type_internal (type));
+		mono_class_init_internal (mono_class_from_mono_type_internal (type));
 		/* We return a MonoType* as handle */
 		return type;
 	}
@@ -4166,7 +4166,7 @@ mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class,
 		if (!klass)
 			return NULL;
 
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 		return mono_class_get_field (klass, token);
 	}
 	case MONO_TOKEN_METHOD_DEF:
@@ -4713,7 +4713,7 @@ mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
 		return NULL;
 	if (!*iter) {
 		if (!m_class_is_inited (klass))
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 		if (!m_class_is_interfaces_inited (klass)) {
 			mono_class_setup_interfaces (klass, error);
 			if (!mono_error_ok (error)) {
@@ -5208,7 +5208,7 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 	MonoMethod *res = NULL;
 	int i;
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	if (mono_class_is_ginst (klass) && !m_class_get_methods (klass)) {
 		res = mono_class_get_method_from_name_checked (mono_class_get_generic_class (klass)->container_class, name, param_count, flags, error);

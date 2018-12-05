@@ -31,7 +31,7 @@ struct _MonoClass {
 	/* A class contains static and non static data. Static data can be
 	 * of the same type as the class itselfs, but it does not influence
 	 * the instance size of the class. To avoid cyclic calls to 
-	 * mono_class_init (from mono_class_instance_size ()) we first 
+	 * mono_class_init_internal (from mono_class_instance_size ()) we first
 	 * initialise all non static fields. After that we set size_inited 
 	 * to 1, because we know the instance size now. After that we 
 	 * initialise all static fields.

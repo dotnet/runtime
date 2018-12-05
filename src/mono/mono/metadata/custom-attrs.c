@@ -844,7 +844,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 
 	error_init (error);
 
-	mono_class_init (method->klass);
+	mono_class_init_internal (method->klass);
 
 	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
 		goto fail;
@@ -1036,7 +1036,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
 		return;
 
-	mono_class_init (method->klass);
+	mono_class_init_internal (method->klass);
 	
 	domain = mono_domain_get ();
 
@@ -1197,7 +1197,7 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 	if (!mono_verifier_verify_cattr_content (image, method, data, len, error))
 		goto fail;
 
-	mono_class_init (method->klass);
+	mono_class_init_internal (method->klass);
 
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
 		goto fail;
@@ -1338,7 +1338,7 @@ reflection_resolve_custom_attribute_data (MonoReflectionMethod *ref_method, Mono
 	method = ref_method->method;
 	domain = mono_object_domain (ref_method);
 
-	if (!mono_class_init (method->klass)) {
+	if (!mono_class_init_internal (method->klass)) {
 		mono_error_set_for_class_failure (error, method->klass);
 		goto leave;
 	}
@@ -2063,7 +2063,7 @@ mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *
 		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST(MonoReflectionType, obj), error);
 		goto_if_nok (error, leave);
 		klass = mono_class_from_mono_type_internal (type);
-		/*We cannot mono_class_init the class from which we'll load the custom attributes since this must work with broken types.*/
+		/*We cannot mono_class_init_internal the class from which we'll load the custom attributes since this must work with broken types.*/
 		cinfo = mono_custom_attrs_from_class_checked (klass, error);
 		goto_if_nok (error, leave);
 	} else if (strcmp ("Assembly", klass_name) == 0 || strcmp ("MonoAssembly", klass_name) == 0) {

@@ -272,7 +272,7 @@ mono_class_setup_fields (MonoClass *klass)
 	instance_size = 0;
 	if (klass->parent) {
 		/* For generic instances, klass->parent might not have been initialized */
-		mono_class_init (klass->parent);
+		mono_class_init_internal (klass->parent);
 		mono_class_setup_fields (klass->parent);
 		if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Could not set up parent class"))
 			return;
@@ -960,7 +960,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	parent = mono_defaults.array_class;
 	if (!parent->inited)
-		mono_class_init (parent);
+		mono_class_init_internal (parent);
 
 	klass = image_set ? (MonoClass *)mono_image_set_alloc0 (image_set, sizeof (MonoClassArray)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassArray));
 
@@ -1011,7 +1011,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	mono_class_setup_supertypes (klass);
 
 	if (mono_class_is_ginst (eclass))
-		mono_class_init (eclass);
+		mono_class_init_internal (eclass);
 	if (!eclass->size_inited)
 		mono_class_setup_fields (eclass);
 	mono_class_set_type_load_failure_causedby_class (klass, eclass, "Could not load array element type");
@@ -1937,7 +1937,7 @@ publish:
 	klass->max_interface_id = max_iid;
 	/*
 	 * We might get called multiple times:
-	 * - mono_class_init ()
+	 * - mono_class_init_internal ()
 	 * - mono_class_setup_vtable ().
 	 * - mono_class_setup_interface_offsets ().
 	 * mono_class_setup_interface_offsets () passes 0 as CUR_SLOT, so the computed interface offsets will be invalid. This
@@ -2931,7 +2931,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	}
 	
 	if (klass->parent) {
-		mono_class_init (klass->parent);
+		mono_class_init_internal (klass->parent);
 		mono_class_setup_vtable_full (klass->parent, in_setup);
 
 		if (mono_class_set_type_load_failure_causedby_class (klass, klass->parent, "Parent class failed to load"))
@@ -3376,11 +3376,11 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
-		mono_class_init (gklass);
+		mono_class_init_internal (gklass);
 
 		klass->vtable_size = MAX (gklass->vtable_size, cur_slot);
 	} else {
-		/* Check that the vtable_size value computed in mono_class_init () is correct */
+		/* Check that the vtable_size value computed in mono_class_init_internal () is correct */
 		if (klass->vtable_size)
 			g_assert (cur_slot == klass->vtable_size);
 		klass->vtable_size = cur_slot;
@@ -4302,7 +4302,7 @@ mono_get_unique_iid (MonoClass *klass)
 }
 
 /**
- * mono_class_init:
+ * mono_class_init_internal:
  * \param klass the class to initialize
  *
  * Compute the \c instance_size, \c class_size and other infos that cannot be 
@@ -4319,7 +4319,7 @@ mono_get_unique_iid (MonoClass *klass)
  * the type (incorrect assemblies, missing assemblies, methods, etc).
  */
 gboolean
-mono_class_init (MonoClass *klass)
+mono_class_init_internal (MonoClass *klass)
 {
 	int i, vtable_size = 0, array_method_count = 0;
 	MonoCachedClassInfo cached_info;
@@ -4365,11 +4365,11 @@ mono_class_init (MonoClass *klass)
 		MonoClass *cast_class = klass->cast_class;
 
 		if (!element_class->inited) 
-			mono_class_init (element_class);
+			mono_class_init_internal (element_class);
 		if (mono_class_set_type_load_failure_causedby_class (klass, element_class, "Could not load array element class"))
 			goto leave;
 		if (!cast_class->inited)
-			mono_class_init (cast_class);
+			mono_class_init_internal (cast_class);
 		if (mono_class_set_type_load_failure_causedby_class (klass, cast_class, "Could not load array cast class"))
 			goto leave;
 	}
@@ -4379,7 +4379,7 @@ mono_class_init (MonoClass *klass)
 	if (mono_class_is_ginst (klass) && !mono_class_get_generic_class (klass)->is_dynamic) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
-		mono_class_init (gklass);
+		mono_class_init_internal (gklass);
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic Type Definition failed to init"))
 			goto leave;
 
@@ -4387,7 +4387,7 @@ mono_class_init (MonoClass *klass)
 	}
 
 	if (klass->parent && !klass->parent->inited)
-		mono_class_init (klass->parent);
+		mono_class_init_internal (klass->parent);
 
 	has_cached_info = mono_class_get_cached_class_info (klass, &cached_info);
 
@@ -4578,12 +4578,9 @@ gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error)
 {
 	error_init (error);
-
-	gboolean const success = mono_class_init (klass);
-
+	gboolean const success = mono_class_init_internal (klass);
 	if (!success)
 		mono_error_set_for_class_failure (error, klass);
-
 	return success;
 }
 
@@ -4900,7 +4897,7 @@ mono_class_setup_methods (MonoClass *klass)
 		ERROR_DECL (error);
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
-		mono_class_init (gklass);
+		mono_class_init_internal (gklass);
 		if (!mono_class_has_failure (gklass))
 			mono_class_setup_methods (gklass);
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic type definition failed to load"))
@@ -5081,7 +5078,7 @@ mono_class_setup_properties (MonoClass *klass)
 	if (mono_class_is_ginst (klass)) {
 		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
 
-		mono_class_init (gklass);
+		mono_class_init_internal (gklass);
 		mono_class_setup_properties (gklass);
 		if (mono_class_set_type_load_failure_causedby_class (klass, gklass, "Generic type definition failed to load"))
 			return;

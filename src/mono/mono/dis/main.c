@@ -34,6 +34,7 @@
 #include <mono/metadata/w32handle.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-counters.h>
+#include "mono/metadata/class-init.h"
 
 static void     setup_filter          (MonoImage *image);
 static gboolean should_include_type   (int idx);
@@ -1546,7 +1547,7 @@ dis_data (MonoImage *m)
 			mono_error_cleanup (error);
 			continue;
 		}
-		mono_class_init (mono_class_from_mono_type_internal (type));
+		mono_class_init_internal (mono_class_from_mono_type_internal (type));
 		size = mono_type_size (type, &align);
 
 		if (rva) {

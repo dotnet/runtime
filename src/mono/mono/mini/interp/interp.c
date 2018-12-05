@@ -1319,7 +1319,7 @@ static MONO_NEVER_INLINE void
 ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, stackval *sp, stackval *retval)
 {
 	const char *name = method->name;
-	mono_class_init (method->klass);
+	mono_class_init_internal (method->klass);
 
 	if (method->klass == mono_defaults.array_class) {
 		if (!strcmp (name, "UnsafeMov")) {

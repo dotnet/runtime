@@ -26,7 +26,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoClass *
 mono_class_get_full        (MonoImage *image, uint32_t type_token, MonoGenericContext *context);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_class_init            (MonoClass *klass);
 
 MONO_API MONO_RT_EXTERNAL_ONLY

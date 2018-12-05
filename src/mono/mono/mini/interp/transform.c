@@ -1643,7 +1643,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	if (target_method)
-		mono_class_init (target_method->klass);
+		mono_class_init_internal (target_method->klass);
 
 	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT))
 		/* MS.NET seems to silently convert this to a callvirt */
@@ -3590,7 +3590,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			csignature = mono_method_signature_internal (m);
 			klass = m->klass;
 
-			if (!mono_class_init (klass)) {
+			if (!mono_class_init_internal (klass)) {
 				mono_error_set_for_class_failure (error, klass);
 				goto_if_nok (error, exit);
 			}
@@ -3802,7 +3802,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			goto_if_nok (error, exit);
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 #ifndef DISABLE_REMOTING
 			if (m_class_get_marshalbyref (klass) || mono_class_is_contextbound (klass) || klass == mono_defaults.marshalbyrefobject_class) {
 				g_assert (!is_static);
@@ -3854,7 +3854,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			goto_if_nok (error, exit);
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mt = mint_type (m_class_get_byval_arg (field_klass));
@@ -3915,7 +3915,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			goto_if_nok (error, exit);
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 			mt = mint_type (ftype);
 
 			BARRIER_IF_VOLATILE (td);
@@ -4727,7 +4727,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				handle = mono_ldtoken_checked (image, token, &klass, generic_context, error);
 				goto_if_nok (error, exit);
 			}
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 			mt = mint_type (m_class_get_byval_arg (klass));
 			g_assert (mt == MINT_TYPE_VT);
 			size = mono_class_value_size (klass, NULL);

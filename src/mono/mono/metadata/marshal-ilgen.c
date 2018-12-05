@@ -1961,7 +1961,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
@@ -6025,7 +6025,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
 			/* This is used by get_marshal_cb ()->emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);

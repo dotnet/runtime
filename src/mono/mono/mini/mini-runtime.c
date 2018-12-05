@@ -1477,11 +1477,11 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = patch_info->data.target;
 		break;
 	case MONO_PATCH_INFO_IID:
-		mono_class_init (patch_info->data.klass);
+		mono_class_init_internal (patch_info->data.klass);
 		target = GUINT_TO_POINTER (m_class_get_interface_id (patch_info->data.klass));
 		break;
 	case MONO_PATCH_INFO_ADJUSTED_IID:
-		mono_class_init (patch_info->data.klass);
+		mono_class_init_internal (patch_info->data.klass);
 		target = GUINT_TO_POINTER ((guint32)(-((m_class_get_interface_id (patch_info->data.klass) + 1) * TARGET_SIZEOF_VOID_P)));
 		break;
 	case MONO_PATCH_INFO_VTABLE:
@@ -1553,8 +1553,8 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 							   patch_info->data.token->token, &handle_class, patch_info->data.token->has_context ? &patch_info->data.token->context : NULL, error);
 		if (!mono_error_ok (error))
 			return NULL;
-		mono_class_init (handle_class);
-		mono_class_init (mono_class_from_mono_type_internal ((MonoType *)handle));
+		mono_class_init_internal (handle_class);
+		mono_class_init_internal (mono_class_from_mono_type_internal ((MonoType *)handle));
 
 		target = mono_type_get_object_checked (domain, (MonoType *)handle, error);
 		if (!mono_error_ok (error))
@@ -1568,7 +1568,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		handle = mono_ldtoken_checked (patch_info->data.token->image,
 							   patch_info->data.token->token, &handle_class, patch_info->data.token->has_context ? &patch_info->data.token->context : NULL, error);
 		mono_error_assert_msg_ok (error, "Could not patch ldtoken");
-		mono_class_init (handle_class);
+		mono_class_init_internal (handle_class);
 
 		target = handle;
 		break;
@@ -1871,7 +1871,7 @@ mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 		mono_error_cleanup (error); /* FIXME don't swallow the error */
 	}
 	if (klass)
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 	return klass;
 }
 
@@ -2384,7 +2384,7 @@ lookup_start:
 		if (!domain)
 			domain = mono_domain_get ();
 
-		mono_class_init (method->klass);
+		mono_class_init_internal (method->klass);
 
 		if ((code = mono_aot_get_method (domain, method, error))) {
 			MonoVTable *vtable;
@@ -2629,7 +2629,7 @@ mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *metho
 		ERROR_DECL_VALUE (oerror);
 
 		/* Might be AOTed code */
-		mono_class_init (method->klass);
+		mono_class_init_internal (method->klass);
 		code = mono_aot_get_method (domain, method, &oerror);
 		if (code) {
 			mono_error_assert_ok (&oerror);

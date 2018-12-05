@@ -163,3 +163,26 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 {
 	MONO_EXTERNAL_ONLY_VOID (mono_gc_wbarrier_object_copy_internal (obj, src));
 }
+
+/**
+ * mono_class_init:
+ * \param klass the class to initialize
+ *
+ * Compute the \c instance_size, \c class_size and other infos that cannot be
+ * computed at \c mono_class_get time. Also compute vtable_size if possible.
+ * Initializes the following fields in \p klass:
+ * - all the fields initialized by \c mono_class_init_sizes
+ * - has_cctor
+ * - ghcimpl
+ * - inited
+ *
+ * LOCKING: Acquires the loader lock.
+ *
+ * \returns TRUE on success or FALSE if there was a problem in loading
+ * the type (incorrect assemblies, missing assemblies, methods, etc).
+ */
+mono_bool
+mono_class_init (MonoClass *klass)
+{
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (gboolean, mono_class_init_internal (klass));
+}

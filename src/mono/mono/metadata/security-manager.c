@@ -11,6 +11,7 @@
 
 #include <config.h>
 #include "security-manager.h"
+#include "class-init.h"
 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (security_manager, "System.Security", "SecurityManager")
@@ -44,7 +45,7 @@ mono_security_manager_get_methods (void)
 	/* Initialize */
 	secman.securitymanager = mono_class_get_security_manager_class ();
 	if (!m_class_is_inited (secman.securitymanager))
-		mono_class_init (secman.securitymanager);
+		mono_class_init_internal (secman.securitymanager);
 
 	return &secman;
 }
@@ -103,7 +104,7 @@ mono_get_context_capture_method (void)
 	MonoClass *execution_context = mono_class_try_get_execution_context_class ();
 	if (execution_context && !method) {
 		ERROR_DECL (error);
-		mono_class_init (execution_context);
+		mono_class_init_internal (execution_context);
 		method = mono_class_get_method_from_name_checked (execution_context, "Capture", 0, 0, error);
 		mono_error_assert_ok (error);
 	}
