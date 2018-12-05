@@ -38,10 +38,6 @@
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/sgen/sgen-thread-pool.h"
 
-// Expand non-portable strftime shorthands.
-#define MONO_STRFTIME_F "%Y-%m-%d" // %F in some systems, but this works on all.
-#define MONO_STRFTIME_T "%H:%M:%S" // %T in some systems, but this works on all.
-
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
  * Clearing at TLAB creation is much faster, but more complex and it might expose hard

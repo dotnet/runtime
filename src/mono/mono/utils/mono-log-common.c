@@ -28,10 +28,7 @@
 #endif
 #include "mono-logger-internals.h"
 #include "mono-proclib.h"
-
-// Expand non-portable strftime shorthands.
-#define MONO_STRFTIME_F "%Y-%m-%d" // %F in some systems, but this works on all.
-#define MONO_STRFTIME_T "%H:%M:%S" // %T in some systems, but this works on all.
+#include "mono-time.h"
 
 static FILE *logFile = NULL;
 static void *logUserData = NULL;

@@ -84,9 +84,6 @@ extern int tkill (pid_t tid, int signal);
 #endif
 #endif
 
-#define MONO_STRFTIME_F "%Y-%m-%d" // %F in some systems, but this works on all.
-#define MONO_STRFTIME_T "%H:%M:%S" // %T in some systems, but this works on all.
-
 /*#define THREAD_DEBUG(a) do { a; } while (0)*/
 #define THREAD_DEBUG(a)
 /*#define THREAD_WAIT_DEBUG(a) do { a; } while (0)*/
