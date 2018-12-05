@@ -10,10 +10,11 @@
 
 /*Keep in sync with MonoError*/
 typedef struct {
-	unsigned short error_code;
-    unsigned short flags;
+	guint16 error_code;
+	guint16 flags;
 
 	/*These name are suggestions of their content. MonoError internals might use them for something else.*/
+	// type_name must be right after error_code and flags, see mono_error_init_deferred.
 	const char *type_name;
 	const char *assembly_name;
 	const char *member_name;
