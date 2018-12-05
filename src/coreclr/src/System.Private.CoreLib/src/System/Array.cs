@@ -2665,16 +2665,15 @@ namespace System
             public bool MoveNext()
             {
                 int index = _index + 1;
-                bool result = index < _array.Length;
-                
-                if (result)
+                if ((uint)index >= (uint)_array.Length)
                 {
-                    _index = index;
+                    _index = _array.Length;
+                    return false;
                 }
-
-                return result;
+                _index = index;
+                return true;
             }
-    
+
             public T Current
             {
                 get
