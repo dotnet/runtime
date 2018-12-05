@@ -27,7 +27,6 @@
 #else
 #include "cpu-ppc.h"
 #endif
-#include "trace.h"
 #include "ir-emit.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
@@ -1383,9 +1382,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 	m->flags |= MONO_CFG_HAS_SPILLUP;
 
-	/* allow room for the vararg method args: void* and long/double */
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
-		m->param_area = MAX (m->param_area, sizeof (target_mgreg_t)*8);
 	/* this is bug #60332: remove when #59509 is fixed, so no weird vararg 
 	 * call convs needs to be handled this way.
 	 */
@@ -1453,10 +1449,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 	offset += m->param_area;
 	offset += 16 - 1;
 	offset &= ~(16 - 1);
-
-	/* allow room to save the return value */
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (m->method))
-		offset += 8;
 
 	/* the MonoLMF structure is stored just below the stack pointer */
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
@@ -1867,132 +1859,6 @@ mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 
 #endif /* DISABLE_JIT */
 
-/*
- * Allow tracing to work with this interface (with an optional argument)
- */
-
-void*
-mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = p;
-
-	ppc_load_ptr (code, ppc_r3, cfg->method);
-	ppc_li (code, ppc_r4, 0); /* NULL ebp for now */
-	ppc_load_func (code, PPC_CALL_REG, func);
-	ppc_mtlr (code, PPC_CALL_REG);
-	ppc_blrl (code);
-	return code;
-}
-
-enum {
-	SAVE_NONE,
-	SAVE_STRUCT,
-	SAVE_ONE,
-	SAVE_TWO,
-	SAVE_FP
-};
-
-void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar *code = p;
-	int save_mode = SAVE_NONE;
-	MonoMethod *method = cfg->method;
-	int rtype = mini_get_underlying_type (mono_method_signature_internal (method)->ret)->type;
-	int save_offset = PPC_STACK_PARAM_OFFSET + cfg->param_area;
-	save_offset += 15;
-	save_offset &= ~15;
-	
-	set_code_cursor (cfg, code);
-	/* we need about 16 instructions */
-	code = realloc_code (cfg, 16 * 4);
-
-	switch (rtype) {
-	case MONO_TYPE_VOID:
-		/* special case string .ctor icall */
-		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
-			save_mode = SAVE_ONE;
-		else
-			save_mode = SAVE_NONE;
-		break;
-#ifndef __mono_ppc64__
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		save_mode = SAVE_TWO;
-		break;
-#endif
-	case MONO_TYPE_R4:
-	case MONO_TYPE_R8:
-		save_mode = SAVE_FP;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		save_mode = SAVE_STRUCT;
-		break;
-	default:
-		save_mode = SAVE_ONE;
-		break;
-	}
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		ppc_stw (code, ppc_r3, save_offset, cfg->frame_reg);
-		ppc_stw (code, ppc_r4, save_offset + 4, cfg->frame_reg);
-		if (enable_arguments) {
-			ppc_mr (code, ppc_r5, ppc_r4);
-			ppc_mr (code, ppc_r4, ppc_r3);
-		}
-		break;
-	case SAVE_ONE:
-		ppc_stptr (code, ppc_r3, save_offset, cfg->frame_reg);
-		if (enable_arguments) {
-			ppc_mr (code, ppc_r4, ppc_r3);
-		}
-		break;
-	case SAVE_FP:
-		ppc_stfd (code, ppc_f1, save_offset, cfg->frame_reg);
-		if (enable_arguments) {
-			/* FIXME: what reg?  */
-			ppc_fmr (code, ppc_f3, ppc_f1);
-			/* FIXME: use 8 byte load on PPC64 */
-			ppc_lwz (code, ppc_r4, save_offset, cfg->frame_reg);
-			ppc_lwz (code, ppc_r5, save_offset + 4, cfg->frame_reg);
-		}
-		break;
-	case SAVE_STRUCT:
-		if (enable_arguments) {
-			/* FIXME: get the actual address  */
-			ppc_mr (code, ppc_r4, ppc_r3);
-			// FIXME: Support the new v2 ABI!
-		}
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	ppc_load_ptr (code, ppc_r3, cfg->method);
-	ppc_load_func (code, PPC_CALL_REG, func);
-	ppc_mtlr (code, PPC_CALL_REG);
-	ppc_blrl (code);
-
-	switch (save_mode) {
-	case SAVE_TWO:
-		ppc_lwz (code, ppc_r3, save_offset, cfg->frame_reg);
-		ppc_lwz (code, ppc_r4, save_offset + 4, cfg->frame_reg);
-		break;
-	case SAVE_ONE:
-		ppc_ldptr (code, ppc_r3, save_offset, cfg->frame_reg);
-		break;
-	case SAVE_FP:
-		ppc_lfd (code, ppc_f1, save_offset, cfg->frame_reg);
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	return code;
-}
 /*
  * Conditional branches have a small offset, so if it is likely overflowed,
  * we do a branch to the end of the method (uncond branches have much larger
@@ -4818,8 +4684,6 @@ save_registers (MonoCompile *cfg, guint8* code, int pos, int base_reg, gboolean 
  *   -------------------
  *   	locals
  *   -------------------
- *   	optional 8 bytes for tracing
- *   -------------------
  *   	param area             size is cfg->param_area
  *   -------------------
  *   	linkage area           size is PPC_STACK_PARAM_OFFSET
@@ -4837,12 +4701,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	int i;
 	guint8 *code;
 	CallInfo *cinfo;
-	int tracing = 0;
 	int lmf_offset = 0;
 	int tailcall_struct_index;
-
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
-		tracing = 1;
 
 	sig = mono_method_signature_internal (method);
 	cfg->code_size = 512 + sig->param_count * 32;
@@ -5294,9 +5154,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		ppc_stptr (code, ppc_r0, G_STRUCT_OFFSET(MonoLMF, eip), ppc_r12);
 	}
 
-	if (tracing)
-		code = (guint8*)mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
-
 	set_code_cursor (cfg, code);
 	g_free (cinfo);
 
@@ -5314,14 +5171,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
 	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 50;
-
 	code = realloc_code (cfg, max_epilog_size);
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = (guint8*)mono_arch_instrument_epilog (cfg, mono_trace_leave_method, code, TRUE);
-	}
 	pos = 0;
 
 	if (method->save_lmf) {
