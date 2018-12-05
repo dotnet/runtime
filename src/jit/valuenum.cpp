@@ -8244,20 +8244,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         // For XADD and XCHG other intrinsics add an arbitrary side effect on GcHeap/ByrefExposed.
                         fgMutateGcHeap(tree DEBUGARG("Interlocked intrinsic"));
 
+                        assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
+
                         GenTree* addr = tree->gtOp.gtOp1; // op1
                         GenTree* data = tree->gtOp.gtOp2; // op2
 
-                        ValueNumPair vnpNullchk;
-                        ValueNumPair vnpExcSet;
+                        ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
-                        assert(tree->OperIsImplicitIndir()); // special node with an implicit indirection
-
-                        // op1 'location' is implicitly dereferenced by CMPXCHG and can cause a NullPtrExc
-                        vnpNullchk =
-                            vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnStore->VNPNormalPair(data->gtVNPair));
-                        vnpExcSet = vnStore->VNPExcSetSingleton(vnpNullchk);
-
-                        // Collect the exception sets from our ops
                         vnpExcSet = vnStore->VNPCollectExc(data->gtVNPair, vnpExcSet);
                         vnpExcSet = vnStore->VNPCollectExc(addr->gtVNPair, vnpExcSet);
 
@@ -8267,6 +8260,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                         // Attach the combined exception set
                         tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+
+                        // add the null check exception for 'addr' to the tree's value number
+                        fgValueNumberAddExceptionSetForIndirection(tree, addr);
                         break;
                     }
 
@@ -8345,24 +8341,13 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 GenTreeCmpXchg* const cmpXchg = tree->AsCmpXchg();
 
+                assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
+
                 GenTree* location  = cmpXchg->gtOpLocation;  // arg1
                 GenTree* value     = cmpXchg->gtOpValue;     // arg2
                 GenTree* comparand = cmpXchg->gtOpComparand; // arg3
 
-                ValueNumPair vnpNullchk;
-                ValueNumPair vnpExcSet;
-
-                assert(tree->OperIsImplicitIndir()); // special node with an implicit indirections
-
-                // op1 'location' is implicitly dereferenced by CMPXCHG and can cause a NullPtrExc
-                vnpNullchk =
-                    vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnStore->VNPNormalPair(location->gtVNPair));
-                vnpExcSet = vnStore->VNPExcSetSingleton(vnpNullchk);
-
-                // op3 'comparand' is implicitly dereferenced by CMPXCHG and can cause a NullPtrExc
-                vnpNullchk =
-                    vnStore->VNPairForFunc(TYP_REF, VNF_NullPtrExc, vnStore->VNPNormalPair(comparand->gtVNPair));
-                vnpExcSet = vnStore->VNPExcSetUnion(vnStore->VNPExcSetSingleton(vnpNullchk), vnpExcSet);
+                ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
                 // Collect the exception sets from our operands
                 vnpExcSet = vnStore->VNPCollectExc(location->gtVNPair, vnpExcSet);
@@ -8375,6 +8360,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                 // Attach the combined exception set
                 tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
+
+                // add the null check exception for 'location' to the tree's value number
+                fgValueNumberAddExceptionSetForIndirection(tree, location);
+                // add the null check exception for 'comparand' to the tree's value number
+                fgValueNumberAddExceptionSetForIndirection(tree, comparand);
                 break;
             }
 
@@ -9208,6 +9198,8 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 // Arguments:
 //    tree       - The current GenTree node,
 //                 It must be some kind of an indirection node
+//                 or have an implicit indirection
+//    baseAddr   - The address that we are indirecting
 //
 // Return Value:
 //               - The tree's gtVNPair is updated to include the VNF_nullPtrExc
@@ -9220,11 +9212,10 @@ bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 //                 For arrays the base address currently includes the
 //                 index calculations.
 //
-void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree)
+void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree* baseAddr)
 {
-    // We should have an Unary operator
-    assert(tree->OperIsUnary());
-    GenTree* baseAddr = tree->gtGetOp1();
+    // We should have tree that a unary indirection or a tree node with an implicit indirection
+    assert(tree->OperIsUnary() || tree->OperIsImplicitIndir());
 
     // We evaluate the baseAddr ValueNumber further in order
     // to obtain a better value to use for the null check exeception.
@@ -9633,12 +9624,12 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 }
             // fall through
 
-            case GT_BLK: // All Block opcodes contain at least one indirection
+            case GT_BLK:
             case GT_OBJ:
             case GT_DYN_BLK:
             case GT_ARR_LENGTH: // Implicit null check.
             case GT_NULLCHECK:  // Explicit null check.
-                fgValueNumberAddExceptionSetForIndirection(tree);
+                fgValueNumberAddExceptionSetForIndirection(tree, tree->AsIndir()->Addr());
                 break;
 
             case GT_DIV:
