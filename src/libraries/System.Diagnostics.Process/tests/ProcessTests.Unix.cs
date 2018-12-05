@@ -155,6 +155,120 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // s_allowedProgramsToRun is Linux specific
+        public void ProcessStart_UseShellExecute_OnUnix_FallsBackWhenNotRealExecutable()
+        {
+            // Create a script that we'll use to 'open' the file by putting it on PATH
+            // with the appropriate name.
+            string path = Path.Combine(TestDirectory, "Path");
+            Directory.CreateDirectory(path);
+            WriteScriptFile(path, s_allowedProgramsToRun[0], returnValue: 42);
+
+            // Create a file that has the x-bit set, but which isn't a valid script.
+            string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 0);
+            File.WriteAllText(filename, $"not a script");
+            int mode = Convert.ToInt32("744", 8);
+            Assert.Equal(0, chmod(filename, mode));
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = path;
+            RemoteInvoke(fileToOpen =>
+            {
+                using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
+                {
+                    Assert.NotNull(px);
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(42, px.ExitCode);
+                }
+            }, filename, options).Dispose();
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)] // test relies on xdg-open
+        public void ProcessStart_UseShellExecute_OnUnix_DocumentFile_IgnoresArguments()
+        {
+            Assert.Equal(s_allowedProgramsToRun[0], "xdg-open");
+
+            if (!IsProgramInstalled("xdg-open"))
+            {
+                return;
+            }
+
+            // Open a file that doesn't exist with an argument that xdg-open considers invalid.
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = "/nosuchfile", Arguments = "invalid_arg" }))
+            {
+                Assert.NotNull(px);
+                px.WaitForExit();
+                // xdg-open returns different failure exit codes, 1 indicates an error in command line syntax.
+                Assert.NotEqual(0, px.ExitCode); // the command failed
+                Assert.NotEqual(1, px.ExitCode); // the failure is not due to the invalid argument
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void ProcessStart_UseShellExecute_OnUnix_Executable_PassesArguments()
+        {
+            string testFilePath = GetTestFilePath();
+            Assert.False(File.Exists(testFilePath));
+
+            // Start a process that will create a file pass the filename as Arguments.
+            using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true,
+                                                                 FileName = "touch",
+                                                                 Arguments = testFilePath }))
+            {
+                Assert.NotNull(px);
+                px.WaitForExit();
+                Assert.Equal(0, px.ExitCode);
+            }
+
+            Assert.True(File.Exists(testFilePath));
+        }
+
+        [Theory]
+        [InlineData((string)null, true)]
+        [InlineData("", true)]
+        [InlineData("open", true)]
+        [InlineData("Open", true)]
+        [InlineData("invalid", false)]
+        [PlatformSpecific(TestPlatforms.Linux)] // s_allowedProgramsToRun is Linux specific
+        public void ProcessStart_UseShellExecute_OnUnix_ValidVerbs(string verb, bool isValid)
+        {
+            // Create a script that we'll use to 'open' the file by putting it on PATH
+            // with the appropriate name.
+            string path = Path.Combine(TestDirectory, "Path");
+            Directory.CreateDirectory(path);
+            WriteScriptFile(path, s_allowedProgramsToRun[0], returnValue: 42);
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = path;
+            RemoteInvoke((argVerb, argValid) =>
+            {
+                if (argVerb == "<null>")
+                {
+                    argVerb = null;
+                }
+
+                var psi = new ProcessStartInfo { UseShellExecute = true, FileName = "/", Verb = argVerb };
+                if (bool.Parse(argValid))
+                {
+                    using (var px = Process.Start(psi))
+                    {
+                        Assert.NotNull(px);
+                        px.WaitForExit();
+                        Assert.True(px.HasExited);
+                        Assert.Equal(42, px.ExitCode);
+                    }
+                }
+                else
+                {
+                    Assert.Throws<Win32Exception>(() => Process.Start(psi));
+                }
+            }, verb ?? "<null>", isValid.ToString(), options).Dispose();
+        }
+
         [Theory, InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("Opens program")]
@@ -703,5 +817,15 @@ namespace System.Diagnostics.Tests
         private static extern int seteuid(uint euid);
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
+
+        private string WriteScriptFile(string directory, string name, int returnValue)
+        {
+            string filename = Path.Combine(directory, name);
+            File.WriteAllText(filename, $"#!/bin/sh\nexit {returnValue}\n");
+            // set x-bit
+            int mode = Convert.ToInt32("744", 8);
+            Assert.Equal(0, chmod(filename, mode));
+            return filename;
+        }
     }
 }
