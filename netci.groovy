@@ -10,7 +10,17 @@ def project = GithubProject
 def branch = GithubBranchName
 def isPR = true
 
-def platformList = ['Linux:x64:Release', 'Linux:arm:Release', 'Linux:arm64:Release', 'OSX:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Windows_NT:arm:Debug', 'Tizen:armel:Release']
+def platformList = [
+  'Linux:x64:Release',
+  'Linux:arm:Release',
+  'Linux:arm64:Release',
+  'OSX:x64:Release',
+  'Windows_NT:x64:Release',
+  'Windows_NT:x86:Debug',
+  'Windows_NT:arm64:Debug',
+  'Windows_NT:arm:Debug',
+  'Tizen:armel:Release'
+]
 
 def static getBuildJobName(def configuration, def os, def architecture) {
     return configuration.toLowerCase() + '_' + os.toLowerCase() + '_' + architecture.toLowerCase()
@@ -119,45 +129,6 @@ platformList.each { platform ->
 
     Utilities.addArchival(newJob, settings)
 }
-
-// **************************
-// Define ARM64 building.
-// **************************
-//['Windows_NT'].each { os ->
-//    ['Release'].each { configurationGroup ->
-//        def newJobName = "${configurationGroup.toLowerCase()}_${os.toLowerCase()}_arm64"
-//        def arm64Users = ['ianhays', 'kyulee1', 'gkhanna79', 'weshaggard', 'stephentoub', 'rahku', 'ramarag']
-//        def newJob = job(Utilities.getFullJobName(project, newJobName, /* isPR */ false)) {
-//            steps {
-//                // build the world, but don't run the tests
-//                batchFile("build.cmd -ConfigurationGroup ${configurationGroup} -Architecure x64 -TargetArch arm64 -ToolsetDir C:\\ats2 -Framework netcoreapp1.1")
-//            }
-//            label("arm64")
-//
-//            // Kick off the test run
-//            publishers {
-//                archiveArtifacts {
-//                    pattern("artifacts/win10-arm64/packages/*.zip")
-//                    pattern("artifacts/win10-arm64/corehost/*.nupkg")
-//                    onlyIfSuccessful(true)
-//                    allowEmpty(false)
-//                }
-//            }
-//        }
-//
-//        // Set up standard options.
-//        Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
-//
-//        // Set a daily trigger
-//        Utilities.addPeriodicTrigger(newJob, '@daily')
-//
-//        // Set up a PR trigger that is only triggerable by certain members
-//        Utilities.addPrivateGithubPRTriggerForBranch(newJob, branch, "Windows_NT ARM64 ${configurationGroup} Build", "(?i).*test\\W+ARM64\\W+${os}\\W+${configurationGroup}", null, arm64Users)
-//
-//        // Set up a per-push trigger
-//        Utilities.addGithubPushTrigger(newJob)
-//    }
-//}
 
 // Make the call to generate the help job
 Utilities.createHelperJob(this, project, branch,
