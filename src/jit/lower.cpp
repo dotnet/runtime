@@ -4567,13 +4567,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         const bool     requiresAdjustment       = add;
         const bool     requiresDividendMultiuse = requiresAdjustment || !isDiv;
         const unsigned curBBWeight              = m_block->getBBWeight(comp);
-        unsigned       dividendLclNum           = BAD_VAR_NUM;
 
         if (requiresDividendMultiuse)
         {
             LIR::Use dividendUse(BlockRange(), &divMod->gtOp1, divMod);
-            dividendLclNum = ReplaceWithLclVar(dividendUse);
-            dividend       = divMod->gtGetOp1();
+            dividend = ReplaceWithLclVar(dividendUse);
         }
 
         // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
@@ -4588,8 +4586,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         if (requiresAdjustment)
         {
-            GenTree* dividend = comp->gtNewLclvNode(dividendLclNum, type);
-            GenTree* sub      = comp->gtNewOperNode(GT_SUB, type, dividend, mulhi);
+            dividend     = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
+            GenTree* sub = comp->gtNewOperNode(GT_SUB, type, dividend, mulhi);
             BlockRange().InsertBefore(divMod, dividend, sub);
 
             GenTree* one = comp->gtNewIconNode(1, TYP_INT);
@@ -4597,11 +4595,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, one, rsz);
 
             LIR::Use mulhiUse(BlockRange(), &sub->gtOp.gtOp2, sub);
-            unsigned mulhiLclNum = ReplaceWithLclVar(mulhiUse);
+            mulhi = ReplaceWithLclVar(mulhiUse);
 
-            GenTree* mulhiCopy = comp->gtNewLclvNode(mulhiLclNum, type);
-            GenTree* add       = comp->gtNewOperNode(GT_ADD, type, rsz, mulhiCopy);
-            BlockRange().InsertBefore(divMod, mulhiCopy, add);
+            mulhi        = comp->gtNewLclvNode(mulhi->AsLclVar()->GetLclNum(), mulhi->TypeGet());
+            GenTree* add = comp->gtNewOperNode(GT_ADD, type, rsz, mulhi);
+            BlockRange().InsertBefore(divMod, mulhi, add);
 
             mulhi = add;
             shift -= 1;
@@ -4621,9 +4619,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             GenTree* div = comp->gtNewOperNode(GT_RSZ, type, mulhi, shiftBy);
 
             // divisor UMOD dividend = dividend SUB (div MUL divisor)
-            GenTree* divisor  = comp->gtNewIconNode(divisorValue, type);
-            GenTree* mul      = comp->gtNewOperNode(GT_MUL, type, div, divisor);
-            GenTree* dividend = comp->gtNewLclvNode(dividendLclNum, type);
+            GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
+            GenTree* mul     = comp->gtNewOperNode(GT_MUL, type, div, divisor);
+            dividend         = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
             divMod->SetOper(GT_SUB);
             divMod->gtOp1 = dividend;
@@ -4760,19 +4758,18 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         bool     requiresShiftAdjust      = shift != 0;
         bool     requiresDividendMultiuse = requiresAddSubAdjust || !isDiv;
         unsigned curBBWeight              = comp->compCurBB->getBBWeight(comp);
-        unsigned dividendLclNum           = BAD_VAR_NUM;
 
         if (requiresDividendMultiuse)
         {
             LIR::Use dividendUse(BlockRange(), &mulhi->gtOp.gtOp2, mulhi);
-            dividendLclNum = ReplaceWithLclVar(dividendUse);
+            dividend = ReplaceWithLclVar(dividendUse);
         }
 
         GenTree* adjusted;
 
         if (requiresAddSubAdjust)
         {
-            dividend = comp->gtNewLclvNode(dividendLclNum, type);
+            dividend = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
             adjusted = comp->gtNewOperNode(divisorValue > 0 ? GT_ADD : GT_SUB, type, mulhi, dividend);
             BlockRange().InsertBefore(divMod, dividend, adjusted);
         }
@@ -4786,8 +4783,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         BlockRange().InsertBefore(divMod, shiftBy, signBit);
 
         LIR::Use adjustedUse(BlockRange(), &signBit->gtOp.gtOp1, signBit);
-        unsigned adjustedLclNum = ReplaceWithLclVar(adjustedUse);
-        adjusted                = comp->gtNewLclvNode(adjustedLclNum, type);
+        adjusted = ReplaceWithLclVar(adjustedUse);
+        adjusted = comp->gtNewLclvNode(adjusted->AsLclVar()->GetLclNum(), adjusted->TypeGet());
         BlockRange().InsertBefore(divMod, adjusted);
 
         if (requiresShiftAdjust)
@@ -4807,7 +4804,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         {
             GenTree* div = comp->gtNewOperNode(GT_ADD, type, adjusted, signBit);
 
-            dividend = comp->gtNewLclvNode(dividendLclNum, type);
+            dividend = comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet());
 
             // divisor % dividend = dividend - divisor x div
             GenTree* divisor = comp->gtNewIconNode(divisorValue, type);
@@ -4841,12 +4838,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     unsigned curBBWeight = comp->compCurBB->getBBWeight(comp);
 
     LIR::Use opDividend(BlockRange(), &divMod->gtOp.gtOp1, divMod);
-    ReplaceWithLclVar(opDividend);
-
-    dividend = divMod->gtGetOp1();
-    assert(dividend->OperGet() == GT_LCL_VAR);
-
-    unsigned dividendLclNum = dividend->gtLclVar.gtLclNum;
+    dividend = ReplaceWithLclVar(opDividend);
 
     GenTree* adjustment = comp->gtNewOperNode(GT_RSH, type, dividend, comp->gtNewIconNode(type == TYP_INT ? 31 : 63));
 
@@ -4862,7 +4854,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     }
 
     GenTree* adjustedDividend =
-        comp->gtNewOperNode(GT_ADD, type, adjustment, comp->gtNewLclvNode(dividendLclNum, type));
+        comp->gtNewOperNode(GT_ADD, type, adjustment,
+                            comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet()));
 
     GenTree* newDivMod;
 
@@ -4888,7 +4881,8 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         // which simply discards the low log2(divisor) bits, that's just dividend & ~(divisor - 1)
         divisor->gtIntCon.SetIconValue(~(absDivisorValue - 1));
 
-        newDivMod = comp->gtNewOperNode(GT_SUB, type, comp->gtNewLclvNode(dividendLclNum, type),
+        newDivMod = comp->gtNewOperNode(GT_SUB, type,
+                                        comp->gtNewLclvNode(dividend->AsLclVar()->GetLclNum(), dividend->TypeGet()),
                                         comp->gtNewOperNode(GT_AND, type, adjustedDividend, divisor));
     }
 
