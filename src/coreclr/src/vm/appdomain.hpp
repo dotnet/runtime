@@ -3179,8 +3179,6 @@ public:
 
 public:
 
-    BOOL IsImageFromTrustedPath(PEImage* pImage);
-
 #ifdef FEATURE_TYPEEQUIVALENCE
 private:
     VolatilePtr<TypeEquivalenceHashTable> m_pTypeEquivalenceTable;

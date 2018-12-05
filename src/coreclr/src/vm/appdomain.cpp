@@ -8277,24 +8277,6 @@ AppDomain::AssemblyIterator::Next_UnsafeNoAddRef(
 } // AppDomain::AssemblyIterator::Next_UnsafeNoAddRef
 
 
-//---------------------------------------------------------------------------------------
-// 
-BOOL AppDomain::IsImageFromTrustedPath(PEImage* pPEImage)
-{
-    CONTRACTL
-    {
-        MODE_ANY;
-        GC_TRIGGERS;
-        THROWS;
-        PRECONDITION(CheckPointer(pPEImage));
-    }
-    CONTRACTL_END;
-
-    const SString &sImagePath = pPEImage->GetPath();
-
-    return !sImagePath.IsEmpty();
-}
-
 #endif //!DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

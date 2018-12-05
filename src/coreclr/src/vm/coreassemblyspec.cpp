@@ -181,38 +181,15 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
                           &pPrivAsm);
     }
 
-    bool fBoundUsingTPABinder = false;
-    if(SUCCEEDED(hr))
-    {
-        _ASSERTE(pPrivAsm != nullptr);
-
-        if (AreSameBinderInstance(pTPABinder, reinterpret_cast<ICLRPrivBinder *>(pPrivAsm.Extract())))
-        {
-            fBoundUsingTPABinder = true;
-        }
-
-        result = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pPrivAsm.Extract());
-        _ASSERTE(result != nullptr);
-    }
-    
     pResult->SetHRBindResult(hr);
     if (SUCCEEDED(hr))
     {
-        BOOL fIsInGAC = FALSE;
-        BOOL fIsOnTpaList = FALSE;
+        _ASSERTE(pPrivAsm != nullptr);
 
-        // Only initialize TPA/GAC status if we bound using DefaultContext
-        if (fBoundUsingTPABinder == true)
-        {
-            fIsInGAC = pAppDomain->IsImageFromTrustedPath(result->GetNativeOrILPEImage());
-            const SString &sImagePath = result->GetNativeOrILPEImage()->GetPath();
-            if (pTPABinder->IsInTpaList(sImagePath))
-            {
-                fIsOnTpaList = TRUE;
-            }
-        }
+        result = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pPrivAsm.Extract());
+        _ASSERTE(result != nullptr);
 
-        pResult->Init(result,fIsInGAC, fIsOnTpaList);
+        pResult->Init(result);
     }
     else if (FAILED(hr) && (fThrowOnFileNotFound || (!Assembly::FileNotFound(hr))))
     {

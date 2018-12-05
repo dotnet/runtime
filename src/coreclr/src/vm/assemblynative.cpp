@@ -1294,42 +1294,39 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     PTR_PEAssembly pPEAssembly = pPEFile->AsAssembly();
     _ASSERTE(pAssembly != NULL);
    
-    // Platform assemblies are semantically bound against the "Default" binder which could be the TPA Binder or
-    // the overridden binder. In either case, the reference to the same will be returned when this QCall returns.
-    if (!pPEAssembly->IsProfileAssembly())
+    // Platform assemblies are semantically bound against the "Default" binder. 
+    // The reference to the same will be returned when this QCall returns.
+
+    // Get the binding context for the assembly.
+    //
+    ICLRPrivBinder *pOpaqueBinder = nullptr;
+    AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
+    CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
+
+    // GetBindingContext returns a ICLRPrivAssembly which can be used to get access to the
+    // actual ICLRPrivBinder instance in which the assembly was loaded.
+    PTR_ICLRPrivBinder pBindingContext = pPEAssembly->GetBindingContext();
+    UINT_PTR assemblyBinderID = 0;
+    IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
+
+    // If the assembly was bound using the TPA binder,
+    // then we will return the reference to "Default" binder from the managed implementation when this QCall returns.
+    //
+    // See earlier comment about "Default" binder for additional context.
+    pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
+
+    // We should have a load context binder at this point.
+    _ASSERTE(pOpaqueBinder != nullptr);
+
+    if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder))
     {
-        // Get the binding context for the assembly.
-        //
-        ICLRPrivBinder *pOpaqueBinder = nullptr;
-        AppDomain *pCurDomain = AppDomain::GetCurrentDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pCurDomain->GetTPABinderContext();
+        // Only CLRPrivBinderAssemblyLoadContext instance contains the reference to its
+        // corresponding managed instance.
+        CLRPrivBinderAssemblyLoadContext *pBinder = (CLRPrivBinderAssemblyLoadContext *)(pOpaqueBinder);
 
-        
-        // GetBindingContext returns a ICLRPrivAssembly which can be used to get access to the
-        // actual ICLRPrivBinder instance in which the assembly was loaded.
-        PTR_ICLRPrivBinder pBindingContext = pPEAssembly->GetBindingContext();
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        // If the assembly was bound using the TPA binder,
-        // then we will return the reference to "Default" binder from the managed implementation when this QCall returns.
-        //
-        // See earlier comment about "Default" binder for additional context.
-        pOpaqueBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-        
-        // We should have a load context binder at this point.
-        _ASSERTE(pOpaqueBinder != nullptr);
-
-        if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder))
-        {
-            // Only CLRPrivBinderAssemblyLoadContext instance contains the reference to its
-            // corresponding managed instance.
-            CLRPrivBinderAssemblyLoadContext *pBinder = (CLRPrivBinderAssemblyLoadContext *)(pOpaqueBinder);
-            
-            // Fetch the managed binder reference from the native binder instance
-            ptrManagedAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContext();
-            _ASSERTE(ptrManagedAssemblyLoadContext != NULL);
-        }
+        // Fetch the managed binder reference from the native binder instance
+        ptrManagedAssemblyLoadContext = pBinder->GetManagedAssemblyLoadContext();
+        _ASSERTE(ptrManagedAssemblyLoadContext != NULL);
     }
     
     END_QCALL;
