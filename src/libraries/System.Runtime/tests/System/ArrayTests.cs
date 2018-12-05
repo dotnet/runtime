@@ -369,7 +369,7 @@ namespace System.Tests
                 // Basic: forward SZArray
                 BinarySearch_Array(array, index, length, value, (IComparer)comparer, expected);
 
-                if (s_NonZeroLowerBoundsAvailable)
+                if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
                 {
                     // Advanced: convert SZArray to an array with non-zero lower bound
                     const int lowerBound = 5;
@@ -395,7 +395,7 @@ namespace System.Tests
                 // Use BinarySearch<T>(T, int, int, T)
                 Assert.Equal(expected, Array.BinarySearch(array, index, length, value));
             }
-            // Use BinarySearch<T>(T[], int, int, T, IComparer)
+            // Use BinarySearch<T>(T[], int, int, T, IComparer<T>)
             Assert.Equal(expected, Array.BinarySearch(array, index, length, value, comparer));
         }
 
@@ -511,7 +511,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void GetValue_SetValue()
+        public static void GetValue_RankOneInt_SetValue()
         {
             var intArray = new int[] { 7, 8, 9 };
             Array array = intArray;
@@ -527,37 +527,262 @@ namespace System.Tests
             Assert.Equal(9, array.GetValue(2));
             array.SetValue(43, 2);
             Assert.Equal(43, intArray[2]);
+        }
 
-            array = new int[,] { { 1, 2, 3 }, { 4, 5, 6 } };
+        [Fact]
+        public static void GetValue_RankOneLong_SetValue()
+        {
+            int[] array = new int[] { 7, 8, 9 };
+
+            Assert.Equal(7, array.GetValue((long)0));
+            array.SetValue(41, (long)0);
+            Assert.Equal(41, array[0]);
+
+            Assert.Equal(8, array.GetValue((long)1));
+            array.SetValue(42, (long)1);
+            Assert.Equal(42, array[1]);
+
+            Assert.Equal(9, array.GetValue((long)2));
+            array.SetValue(43, (long)2);
+            Assert.Equal(43, array[2]);
+        }
+
+        [Fact]
+        public static void GetValue_RankTwoInt_SetValue()
+        {
+            int[,] array = new int[,] { { 1, 2, 3 }, { 4, 5, 6 } };
             Assert.Equal(1, array.GetValue(0, 0));
             Assert.Equal(6, array.GetValue(1, 2));
             array.SetValue(42, 1, 2);
             Assert.Equal(42, array.GetValue(1, 2));
+        }
 
-            array = Array.CreateInstance(typeof(int), 2, 3, 4);
+        [Fact]
+        public static void GetValue_RankTwoLong_SetValue()
+        {
+            int[,] array = new int[,] { { 1, 2, 3 }, { 4, 5, 6 } };
+            Assert.Equal(1, array.GetValue((long)0, 0));
+            Assert.Equal(6, array.GetValue((long)1, 2));
+            array.SetValue(42, (long)1, 2);
+            Assert.Equal(42, array.GetValue((long)1, 2));
+        }
+
+        [Fact]
+        public static void GetValue_RankThreeInt_SetValue()
+        {
+            Array array = Array.CreateInstance(typeof(int), 2, 3, 4);
             array.SetValue(42, 1, 2, 3);
             Assert.Equal(42, array.GetValue(1, 2, 3));
+        }
 
-            array = Array.CreateInstance(typeof(int), 2, 3, 4, 5);
+        [Fact]
+        public static void GetValue_RankThreeLong_SetValue()
+        {
+            Array array = Array.CreateInstance(typeof(int), 2, 3, 4);
+            array.SetValue(42, (long)1, 2, 3);
+            Assert.Equal(42, array.GetValue((long)1, 2, 3));
+        }
+
+        [Fact]
+        public static void GetValue_RankFourInt_SetValue()
+        {
+            Array array = Array.CreateInstance(typeof(int), 2, 3, 4, 5);
             array.SetValue(42, 1, 2, 3, 4);
             Assert.Equal(42, array.GetValue(1, 2, 3, 4));
         }
 
         [Fact]
-        public static void GetValue_Invalid()
+        public static void GetValue_RankFourLong_SetValue()
         {
-            Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue(-1)); // Index < 0
-            Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue(10)); // Index >= array.Length
-            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(0)); // Array is multidimensional
+            Array array = Array.CreateInstance(typeof(int), 2, 3, 4, 5);
+            array.SetValue(42, (long)1, 2, 3, 4);
+            Assert.Equal(42, array.GetValue((long)1, 2, 3, 4));
+        }
 
-            AssertExtensions.Throws<ArgumentNullException>("indices", () => new int[10].GetValue((int[])null)); // Indices is null
-            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(new int[] { 1, 2, 3 })); // Indices.Length > array.Rank
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public void GetValue_OutOfRangeIntIndex1_ThrowsIndexOutOfRangeException(int index)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue(index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].GetValue(index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(index, 0, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(new int[] { index, 0, 0 }));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10].GetValue((long)index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].GetValue((long)index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue((long)index, 0, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(new long[] { (long)index, 0, 0 }));
+        }
 
-            Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].GetValue(new int[] { -1, 2 })); // Indices[0] < 0
-            Assert.Throws<IndexOutOfRangeException>(() => new int[8, 10].GetValue(new int[] { 9, 2 })); // Indices[0] > array.GetLength(0)
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void GetValue_OutOfRangeLongIndex1_ThrowsArgumentOutOfRangeException(long index)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10].GetValue(index));
+            Assert.Throws<ArgumentOutOfRangeException>("index1", () => new int[10, 10].GetValue(index, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index1", () => new int[10, 10, 10].GetValue(index, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10, 10, 10].GetValue(new long[] { index, 0, 0 }));
+        }
 
-            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].GetValue(new int[] { 1, -1 })); // Indices[1] < 0
-            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 8].GetValue(new int[] { 1, 9 })); // Indices[1] > array.GetLength(1)
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public void GetValue_OutOfRangeIntIndex2_ThrowsIndexOutOfRangeException(int index)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].GetValue(0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(0, index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(new int[] { 0, index, 0 }));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].GetValue((long)0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue((long)0, index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(new long[] { 0, index, 0 }));
+        }
+
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void GetValue_OutOfRangeLongIndex2_ThrowsArgumentOutOfRangeException(long index)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index2", () => new int[10, 10].GetValue(0, index));
+            Assert.Throws<ArgumentOutOfRangeException>("index2", () => new int[10, 10, 10].GetValue(0, index, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10, 10, 10].GetValue(new long[] { 0, index, 0 }));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public void GetValue_OutOfRangeIntIndex3_ThrowsIndexOutOfRangeException(int index)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(0, 0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(new int[] { 0, 0, index }));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue((long)0, 0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].GetValue(new long[] { 0, 0, index }));
+        }
+
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void GetValue_OutOfRangeLongIndex3_ThrowsArgumentOutOfRangeException(long index)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index3", () => new int[10, 10, 10].GetValue(0, 0, index));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10, 10, 10].GetValue(new long[] { 0, 0, index }));
+        }
+
+        [Fact]
+        public void GetValue_InvalidRank_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].GetValue(0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].GetValue(0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].GetValue(new int[] { 0, 1, 2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].GetValue((long)0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].GetValue((long)0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].GetValue(new long[] { 0, 1, 2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(0));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(new int[] { 0, 1, 2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue((long)0));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue((long)0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].GetValue(new long[] { 0, 1, 2 }));
+        }
+
+        [Fact]
+        public static void GetValue_NullIndices_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("indices", () => new int[10].GetValue((int[])null));
+            AssertExtensions.Throws<ArgumentNullException>("indices", () => new int[10].GetValue((long[])null));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public void SetValue_OutOfRangeIntIndex1_ThrowsIndexOutOfRangeException(int index)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10].SetValue(1, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].SetValue(1, index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, index, 0, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, new int[] { index, 0, 0 }));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10].SetValue(1, (long)index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].SetValue(1, (long)index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, (long)index, 0, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, new long[] { (long)index, 0, 0 }));
+        }
+
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void SetValue_OutOfRangeLongIndex1_ThrowsArgumentOutOfRangeException(long index)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10].SetValue(1, index));
+            Assert.Throws<ArgumentOutOfRangeException>("index1", () => new int[10, 10].SetValue(1, index, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index1", () => new int[10, 10, 10].SetValue(1, index, 0, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10, 10, 10].SetValue(1, new long[] { index, 0, 0 }));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public void SetValue_OutOfRangeIntIndex2_ThrowsIndexOutOfRangeException(int index)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].SetValue(1, 0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, 0, index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, new int[] { 0, index, 0 }));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10].SetValue(1, (long)0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, (long)0, index, 0));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, new long[] { 0, index, 0 }));
+        }
+
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void SetValue_OutOfRangeLongIndex2_ThrowsArgumentOutOfRangeException(long index)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index2", () => new int[10, 10].SetValue(1, 0, index));
+            Assert.Throws<ArgumentOutOfRangeException>("index2", () => new int[10, 10, 10].SetValue(1, 0, index, 0));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10, 10, 10].SetValue(1, new long[] { 0, index, 0 }));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(10)]
+        public void SetValue_OutOfRangeIntIndex3_ThrowsIndexOutOfRangeException(int index)
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, 0, 0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, new int[] { 0, 0, index }));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, (long)0, 0, index));
+            Assert.Throws<IndexOutOfRangeException>(() => new int[10, 10, 10].SetValue(1, new long[] { 0, 0, index }));
+        }
+
+        [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void SetValue_OutOfRangeLongIndex3_ThrowsArgumentOutOfRangeException(long index)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("index3", () => new int[10, 10, 10].SetValue(1, 0, 0, index));
+            Assert.Throws<ArgumentOutOfRangeException>("index", () => new int[10, 10, 10].SetValue(1, new long[] { 0, 0, index }));
+        }
+
+        [Fact]
+        public void SetValue_InvalidRank_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].SetValue(1, 0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].SetValue(1, 0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].SetValue(1, new int[] { 0, 1, 2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].SetValue(1, (long)0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].SetValue(1, (long)0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10].SetValue(1, new long[] { 0, 1, 2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, 0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, new int[] { 0, 1, 2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, (long)0));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, (long)0, 1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[10, 10].SetValue(1, new long[] { 0, 1, 2 }));
+        }
+
+        [Fact]
+        public static void SetValue_NullIndices_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("indices", () => new int[10].SetValue(1, (int[])null));
+            AssertExtensions.Throws<ArgumentNullException>("indices", () => new int[10].SetValue(1, (long[])null));
         }
 
         [Theory]
@@ -736,7 +961,7 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Copy_Array_Reliable_TestData()
         {
-            if (s_NonZeroLowerBoundsAvailable)
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Array -> SZArray
                 Array lowerBoundArray1 = Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { 1 });
@@ -1017,7 +1242,7 @@ namespace System.Tests
             // Basic: forward SZArray
             Copy(sourceArray, sourceIndex, destinationArray, destinationIndex, length, expected);
 
-            if (s_NonZeroLowerBoundsAvailable)
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Advanced: convert SZArray to an array with non-zero lower bound
                 const int LowerBound = 5;
@@ -1669,6 +1894,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0]));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new long[0]));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0], new int[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0], new int[0]));
         }
 
         [Fact]
@@ -1880,7 +2106,7 @@ namespace System.Tests
 
             yield return new object[] { new char[] { '7', '8', '9' } };
 
-            if (s_NonZeroLowerBoundsAvailable)
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3 }, new int[] { 4 }) };
                 yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 3, 3 }, new int[] { 4, 5 }) };
@@ -2227,7 +2453,7 @@ namespace System.Tests
             // Basic: forward SZArray
             IndexOf_Array(array, value, startIndex, count, expected);
 
-            if (s_NonZeroLowerBoundsAvailable)
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Advanced: convert SZArray to an array with non-zero lower bound
                 const int LowerBound = 5;
@@ -2587,7 +2813,7 @@ namespace System.Tests
             // Basic: forward SZArray
             LastIndexOf_Array(array, value, startIndex, count, expected);
 
-            if (s_NonZeroLowerBoundsAvailable)
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Advanced: convert SZArray to an array with non-zero lower bound
                 const int LowerBound = 5;
@@ -2906,7 +3132,7 @@ namespace System.Tests
             // Basic: forward SZArray
             Reverse(array, index, length, expected);
 
-            if (s_NonZeroLowerBoundsAvailable)
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {
                 // Advanced: convert SZArray to an array with non-zero lower bound
                 const int LowerBound = 5;
@@ -2975,7 +3201,38 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Reverse((Array)new int[10], index, length));
         }
 
-        public static IEnumerable<object[]> Sort_Array_NonGeneric_TestData()
+        public static IEnumerable<object[]> Sort_Array_TestData()
+        {
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                Array actual = Array.CreateInstance(typeof(int), new int[] { 4 }, new int[] { 1 });
+                actual.SetValue(3, 1);
+                actual.SetValue(2, 2);
+                actual.SetValue(1, 3);
+                actual.SetValue(4, 4);
+
+                Array expectedFull = Array.CreateInstance(typeof(int), new int[] { 4 }, new int[] { 1 });
+                expectedFull.SetValue(1, 1);
+                expectedFull.SetValue(2, 2);
+                expectedFull.SetValue(3, 3);
+                expectedFull.SetValue(4, 4);
+
+                Array expectedPartial = Array.CreateInstance(typeof(int), new int[] { 4 }, new int[] { 1 });
+                expectedPartial.SetValue(3, 1);
+                expectedPartial.SetValue(1, 2);
+                expectedPartial.SetValue(2, 3);
+                expectedPartial.SetValue(4, 4);
+
+                yield return new object[] { actual,  1, 4, null, expectedFull };
+                yield return new object[] { actual,  1, 4, new IntegerComparer(), expectedFull };
+                yield return new object[] { actual,  2, 2, null, expectedPartial };
+                yield return new object[] { actual,  2, 2, new IntegerComparer(), expectedPartial };
+                yield return new object[] { actual,  1, 0, null, actual };
+                yield return new object[] { actual,  1, 0, new IntegerComparer(), actual };
+            }
+        }
+
+        public static IEnumerable<object[]> Sort_SZArray_TestData()
         {
             yield return new object[] { new int[0], 0, 0, new IntegerComparer(), new int[0] };
             yield return new object[] { new int[] { 5 }, 0, 1, new IntegerComparer(), new int[] { 5 } };
@@ -2989,21 +3246,142 @@ namespace System.Tests
 
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 0, 0, null, new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 } };
             yield return new object[] { new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 }, 9, 0, null, new int[] { 5, 2, 9, 8, 4, 3, 2, 4, 6 } };
-        }
 
-        public static IEnumerable<object[]> Sort_Array_Generic_TestData()
-        {
+            yield return new object[] { new string[0], 0, 0, null, new string[0] };
             yield return new object[] { new string[0], 0, 0, new StringComparer(), new string[0] };
+            yield return new object[] { new string[] { "5" }, 0, 1, null, new string[] { "5" } };
             yield return new object[] { new string[] { "5" }, 0, 1, new StringComparer(), new string[] { "5" } };
+            yield return new object[] { new string[] { "5", "2" }, 0, 2, null, new string[] { "2", "5" } };
             yield return new object[] { new string[] { "5", "2" }, 0, 2, new StringComparer(), new string[] { "2", "5" } };
             yield return new object[] { new string[] { "5", "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 9, new StringComparer(), new string[] { "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 0, 10, new StringComparer(), new string[] { null, "2", "2", "3", "4", "4", "5", "6", "8", "9" } };
             yield return new object[] { new string[] { "5", null, "2", "9", "8", "4", "3", "2", "4", "6" }, 3, 4, new StringComparer(), new string[] { "5", null, "2", "3", "4", "8", "9", "2", "4", "6" } };
+            yield return new object[] { new int[] { 1, 2, 3, 4 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
+            yield return new object[] { new int[] { 4, 3, 2, 1 }, 0, 4, null, new int[] { 1, 2, 3, 4 } };
+            yield return new object[] { new int[] { 4, 3, 2, 1 }, 1, 2, null, new int[] { 4, 2, 3, 1 } };
+            yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, new IntegerComparer(), new int[] { 2, 3, 4 } };
+            yield return new object[] { new int[] { 4, 3, 2 }, 0, 3, null, new int[] { 2, 3, 4 } };
+
+            // Byte
+            yield return new object[] { new byte[] { 3, 5, 6, 6 }, 0, 4, null, new byte[] { 3, 5, 6, 6 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, 0, 4, null, new byte[] { 3, 5, 6, 6 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, 0, 4, null, new byte[] { 3, 5, 6, 6 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, 1, 2, null, new byte[] { 5, 3, 6, 6 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, 0, 0, null, new byte[] { 5, 6, 3, 6 } };
+            yield return new object[] { new byte[1], 0, 1, null, new byte[1] };
+            yield return new object[] { new byte[0], 0, 0, null, new byte[0] };
+
+            // SByte
+            yield return new object[] { new sbyte[] { 3, 5, 6, 6 }, 0, 4, null, new sbyte[] { 3, 5, 6, 6 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, 0, 4, null, new sbyte[] { 3, 5, 6, 6 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, 0, 4, null, new sbyte[] { 3, 5, 6, 6 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, 1, 2, null, new sbyte[] { 5, 3, 6, 6 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, 0, 0, null, new sbyte[] { 5, 6, 3, 6 } };
+            yield return new object[] { new sbyte[1], 0, 1, null, new sbyte[1] };
+            yield return new object[] { new sbyte[0], 0, 0, null, new sbyte[0] };
+
+            // UInt16
+            yield return new object[] { new ushort[] { 3, 5, 6, 6 }, 0, 4, null, new ushort[] { 3, 5, 6, 6 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, 0, 4, null, new ushort[] { 3, 5, 6, 6 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, 0, 4, null, new ushort[] { 3, 5, 6, 6 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, 1, 2, null, new ushort[] { 5, 3, 6, 6 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, 0, 0, null, new ushort[] { 5, 6, 3, 6 } };
+            yield return new object[] { new ushort[1], 0, 1, null, new ushort[1] };
+            yield return new object[] { new ushort[0], 0, 0, null, new ushort[0] };
+
+            // Int16
+            yield return new object[] { new short[] { 3, 5, 6, 6 }, 0, 4, null, new short[] { 3, 5, 6, 6 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, 0, 4, null, new short[] { 3, 5, 6, 6 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, 0, 4, null, new short[] { 3, 5, 6, 6 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, 1, 2, null, new short[] { 5, 3, 6, 6 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, 0, 0, null, new short[] { 5, 6, 3, 6 } };
+            yield return new object[] { new short[1], 0, 1, null, new short[1] };
+            yield return new object[] { new short[0], 0, 0, null, new short[0] };
+
+            // UInt32
+            yield return new object[] { new uint[] { 3, 5, 6, 6 }, 0, 4, null, new uint[] { 3, 5, 6, 6 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, 0, 4, null, new uint[] { 3, 5, 6, 6 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, 0, 4, null, new uint[] { 3, 5, 6, 6 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, 1, 2, null, new uint[] { 5, 3, 6, 6 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, 0, 0, null, new uint[] { 5, 6, 3, 6 } };
+            yield return new object[] { new uint[1], 0, 1, null, new uint[1] };
+            yield return new object[] { new uint[0], 0, 0, null, new uint[0] };
+
+            // Int32
+            yield return new object[] { new int[] { 3, 5, 6, 6 }, 0, 4, null, new int[] { 3, 5, 6, 6 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, 0, 4, null, new int[] { 3, 5, 6, 6 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, 0, 4, null, new int[] { 3, 5, 6, 6 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, 1, 2, null, new int[] { 5, 3, 6, 6 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, 0, 0, null, new int[] { 5, 6, 3, 6 } };
+            yield return new object[] { new int[1], 0, 1, null, new int[1] };
+            yield return new object[] { new int[0], 0, 0, null, new int[0] };
+
+            // UInt64
+            yield return new object[] { new ulong[] { 3, 5, 6, 6 }, 0, 4, null, new ulong[] { 3, 5, 6, 6 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, 0, 4, null, new ulong[] { 3, 5, 6, 6 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, 0, 4, null, new ulong[] { 3, 5, 6, 6 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, 1, 2, null, new ulong[] { 5, 3, 6, 6 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, 0, 0, null, new ulong[] { 5, 6, 3, 6 } };
+            yield return new object[] { new ulong[1], 0, 1, null, new ulong[1] };
+            yield return new object[] { new ulong[0], 0, 0, null, new ulong[0] };
+
+            // Int64
+            yield return new object[] { new long[] { 3, 5, 6, 6 }, 0, 4, null, new long[] { 3, 5, 6, 6 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, 0, 4, null, new long[] { 3, 5, 6, 6 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, 0, 4, null, new long[] { 3, 5, 6, 6 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, 1, 2, null, new long[] { 5, 3, 6, 6 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, 0, 0, null, new long[] { 5, 6, 3, 6 } };
+            yield return new object[] { new long[1], 0, 1, null, new long[1] };
+            yield return new object[] { new long[0], 0, 0, null, new long[0] };
+
+            // Char
+            yield return new object[] { new char[] { (char)3, (char)5, (char)6, (char)6 }, 0, 4, null, new char[] { (char)3, (char)5, (char)6, (char)6 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, 0, 4, null, new char[] { (char)3, (char)5, (char)6, (char)6 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, 0, 4, null, new char[] { (char)3, (char)5, (char)6, (char)6 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, 1, 2, null, new char[] { (char)5, (char)3, (char)6, (char)6 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, 0, 0, null, new char[] { (char)5, (char)6, (char)3, (char)6 } };
+            yield return new object[] { new char[1], 0, 1, null, new char[1] };
+            yield return new object[] { new char[0], 0, 0, null, new char[0] };
+        
+            // Bool
+            yield return new object[] { new bool[] { false, false, true, true }, 0, 4, null, new bool[] { false, false, true, true } };
+            yield return new object[] { new bool[] { true, false, true, false }, 0, 4, null, new bool[] { false, false, true, true } };
+            yield return new object[] { new bool[] { true, false, true, false }, 0, 4, null, new bool[] { false, false, true, true } };
+            yield return new object[] { new bool[] { true, false, true, false }, 1, 2, null, new bool[] { true, false, true, false } };
+            yield return new object[] { new bool[] { true, false, true, false }, 0, 0, null, new bool[] { true, false, true, false } };
+            yield return new object[] { new bool[1], 0, 1, null, new bool[1] };
+            yield return new object[] { new bool[0], 0, 0, null, new bool[0] };
+
+            // Single
+            yield return new object[] { new float[] { 3, 5, 6, 6 }, 0, 4, null, new float[] { 3, 5, 6, 6 } };
+            yield return new object[] { new float[] { 5, 6, float.NaN, 6 }, 0, 4, null, new float[] { float.NaN, 5, 6, 6 } };
+            yield return new object[] { new float[] { 5, 6, 3, 6 }, 0, 4, null, new float[] { 3, 5, 6, 6 } };
+            yield return new object[] { new float[] { 5, 6, 3, 6 }, 1, 2, null, new float[] { 5, 3, 6, 6 } };
+            yield return new object[] { new float[] { 5, 6, 3, 6 }, 0, 0, null, new float[] { 5, 6, 3, 6 } };
+            yield return new object[] { new float[1], 0, 1, null, new float[1] };
+            yield return new object[] { new float[0], 0, 0, null, new float[0] };
+
+            // Double
+            yield return new object[] { new double[] { 3, 5, 6, 6 }, 0, 4, null, new double[] { 3, 5, 6, 6 } };
+            yield return new object[] { new double[] { 5, 6, double.NaN, 6 }, 0, 4, null, new double[] { double.NaN, 5, 6, 6 } };
+            yield return new object[] { new double[] { 5, 6, 3, 6 }, 0, 4, null, new double[] { 3, 5, 6, 6 } };
+            yield return new object[] { new double[] { 5, 6, 3, 6 }, 1, 2, null, new double[] { 5, 3, 6, 6 } };
+            yield return new object[] { new double[] { 5, 6, 3, 6 }, 0, 0, null, new double[] { 5, 6, 3, 6 } };
+            yield return new object[] { new double[1], 0, 1, null, new double[1] };
+            yield return new object[] { new double[0], 0, 0, null, new double[0] };
+
+            // IntPtr
+            yield return new object[] { new IntPtr[1], 0, 0, null, new IntPtr[1] };
+            yield return new object[] { new IntPtr[0], 0, 0, null, new IntPtr[0] };
+    
+            // UIntPtr
+            yield return new object[] { new UIntPtr[1], 0, 0, null, new UIntPtr[1] };
+            yield return new object[] { new UIntPtr[0], 0, 0, null, new UIntPtr[0] };
         }
 
         [Theory]
-        [MemberData(nameof(Sort_Array_NonGeneric_TestData))]
-        [MemberData(nameof(Sort_Array_Generic_TestData))]
+        [MemberData(nameof(Sort_Array_TestData))]
+        [MemberData(nameof(Sort_SZArray_TestData))]
         public static void Sort_Array_NonGeneric(Array array, int index, int length, IComparer comparer, Array expected)
         {
             Array sortedArray;
@@ -3036,129 +3414,179 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Sort_Array_Generic_TestData))]
-        public static void Sort_Array_Generic(string[] array, int index, int length, IComparer comparer, string[] expected)
+        [MemberData(nameof(Sort_SZArray_TestData))]
+        public static void Sort_Array_Generic<T>(T[] array, int index, int length, IComparer<T> comparer, T[] expected)
         {
-            string[] sortedArray;
+            T[] sortedArray;
             if (index == 0 && length == array.Length)
             {
                 // Use Sort<T>(T[]) or Sort<T>(T[], IComparer)
                 if (comparer == null)
                 {
                     // Use Sort(Array)
-                    sortedArray = (string[])array.Clone();
+                    sortedArray = (T[])array.Clone();
                     Array.Sort(sortedArray);
                     Assert.Equal(expected, sortedArray);
                 }
+                else
+                {
+                    // Use Sort<T>(T[], Comparison<T>)
+                    sortedArray = (T[])array.Clone();
+                    Array.Sort(sortedArray, (x, y) => comparer.Compare(x, y));
+                    Assert.Equal(expected, sortedArray);
+                }
                 // Use Sort<T>(T[], IComparer)
-                sortedArray = (string[])array.Clone();
+                sortedArray = (T[])array.Clone();
                 Array.Sort(sortedArray, comparer);
                 Assert.Equal(expected, sortedArray);
             }
             if (comparer == null)
             {
                 // Use Sort<T>(T[], int, int)
-                sortedArray = (string[])array.Clone();
+                sortedArray = (T[])array.Clone();
                 Array.Sort(sortedArray, index, length);
                 Assert.Equal(expected, sortedArray);
             }
             // Use Sort<T>(T[], int, int, IComparer)
-            sortedArray = (string[])array.Clone();
+            sortedArray = (T[])array.Clone();
             Array.Sort(sortedArray, index, length, comparer);
             Assert.Equal(expected, sortedArray);
         }
 
         [Fact]
-        public static void Sort_Array_Invalid()
+        public void Sort_NullArray_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort(null)); // Array is null
-            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null)); // Array is null
-
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10])); // Array is multidimensional
-
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() })); // One or more objects in array do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() })); // One or more objects in array do not implement IComparable
-        }
-
-        [Fact]
-        public static void Sort_Array_IComparer_Invalid()
-        {
-            // Array is null
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort(null));
             AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort(null, (IComparer)null));
-            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort(null, (IComparer<int>)null));
-
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], (IComparer)null)); // Array is multidimensional
-
-            // One or more objects in array do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, (IComparer)null));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, (IComparer<object>)null));
-        }
-
-        [Fact]
-        public static void Sort_Array_Comparison_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort(null, (Comparison<int>)null)); // Array is null
-            AssertExtensions.Throws<ArgumentNullException>("comparison", () => Array.Sort(new int[10], (Comparison<int>)null)); // Comparison is null
-        }
-
-        [Fact]
-        public static void Sort_Array_Int_Int_Invalid()
-        {
-            // Array is null
             AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, 0, 0, (IComparer)null));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null, (IComparer<int>)null));
             AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null, 0, 0, (IComparer<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null, (Comparison<int>)null));
 
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], 0, 0, null)); // Array is multidimensional
-
-            // One or more objects in keys do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, 0, 3));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, 0, 3));
-
-            // Index < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], -1, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], -1, 0));
-
-            // Length < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], 0, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], 0, -1));
-
-            // Index + length > list.Count
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 11, 0));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 11, 0));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 10, 1));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 10, 1));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 9, 2));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 9, 2));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10]));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], (IComparer)null));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], 0, 0, (IComparer)null));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10]));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], (IComparer<int>)null));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], 0, 0, (IComparer<int>)null));
         }
 
         [Fact]
-        public static void Sort_Array_Int_Int_IComparer_Invalid()
+        public void Sort_MultidimensionalArray_ThrowsRankException()
         {
-            // Array is null
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, 0, 0, null));
-            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Sort((int[])null, 0, 0, null));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10]));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], (IComparer)null));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], 0, 0));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], 0, 0, (IComparer)null));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10]));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], (IComparer)null));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0, (IComparer)null));
+        }
 
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], 0, 0, null)); // Array is multidimensional
+        public static IEnumerable<object[]> Sort_NotComparable_TestData()
+        {
+            yield return new object[] { new object[] { "1", 2, new object() } };
+            yield return new object[] { new IntPtr[2] };
+            yield return new object[] { new UIntPtr[2] };
+        }
 
-            // One or more objects in keys do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, 0, 3, null));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, 0, 3, null));
+        [Theory]
+        [MemberData(nameof(Sort_NotComparable_TestData))]
+        public void Sort_NotComparable_ThrowsInvalidOperationException<T>(T[] array)
+        {
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, (IComparer)null));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, 0, array.Length));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, 0, array.Length, (IComparer)null));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, (IComparer<T>)null));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, 0, array.Length));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, 0, array.Length, (IComparer<T>)null));
+            
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array, (IComparer)null));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array, 0, array.Length));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)array, array, 0, array.Length, (IComparer)null));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, array));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, array, (IComparer<T>)null));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, array, 0, array.Length));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(array, array, 0, array.Length, (IComparer<T>)null));
+        }
 
-            // Index < 0
+        [Fact]
+        public void Sort_NullComparison_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("comparison", () => Array.Sort(new int[10], (Comparison<int>)null));
+        }
+
+        [Fact]
+        public void Sort_ComparisonThrowsIndexOutOfRangeException_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[2], new IndexOutOfRangeComparer()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[2], new int[2], new IndexOutOfRangeComparer()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[2], (x, y) => throw new IndexOutOfRangeException()));
+        }
+
+        [Fact]
+        public void Sort_ComparisonThrowsException_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(new int[2], new DivideByZeroComparer()));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(new int[2], 0, 2, new DivideByZeroComparer()));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(new int[2], new int[2], new DivideByZeroComparer()));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(new int[2], new int[2], 0, 2, new DivideByZeroComparer()));
+            Assert.Throws<InvalidOperationException>(() => Array.Sort(new int[2], (x, y) => throw new DivideByZeroException()));
+        }
+
+        [Fact]
+        public void Store_NegativeIndex_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], -1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], -1, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], -1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], -1, 0, null));
 
-            // Length < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], new int[10], -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], new int[10], -1, 0, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], new int[10], -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], new int[10], -1, 0, null));
+        }
+
+        [Fact]
+        public void Store_NegativeLength_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], 0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], 0, -1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], 0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], 0, -1, null));
 
-            // Index + length > list.Count
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 11, 0, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 11, 0, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 10, 1, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 10, 1, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 9, 2, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 9, 2, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], new int[10], 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], new int[10], 0, -1, null));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], new int[10], 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], new int[10], 0, -1, null));
+        }
+
+        [Theory]
+        [InlineData(11, 0)]
+        [InlineData(10, 1)]
+        [InlineData(9, 2)]
+        [InlineData(0, 11)]
+        public void Store_NegativeLength_ThrowsArgumentOutOfRangeException(int index, int length)
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], index, length, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], index, length));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], index, length, null));
+
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], index, length));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], index, length, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], index, length));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], index, length, null));
         }
 
         public static IEnumerable<object[]> Sort_Array_Array_NonGeneric_TestData()
@@ -3207,6 +3635,124 @@ namespace System.Tests
         {
             yield return new object[] { new string[] { "bcd", "bc", "c", "ab" }, new string[] { "a", "b", "c", "d" }, 0, 4, new StringComparer(), new string[] { "ab", "bc", "bcd", "c" }, new string[] { "d", "b", "a", "c" } };
             yield return new object[] { new string[] { "bcd", "bc", "c", "ab" }, new string[] { "a", "b", "c", "d" }, 0, 4, null, new string[] { "ab", "bc", "bcd", "c" }, new string[] { "d", "b", "a", "c" } };
+            yield return new object[] { new string[] { "ab", "bc", "bcd", "c" }, new string[] { "d", "b", "a", "c" }, 0, 4, null, new string[] { "ab", "bc", "bcd", "c" }, new string[] { "d", "b", "a", "c" } };
+            yield return new object[] { new string[] { "ab", "bc", "bcd", "c" }, null, 0, 4, null, new string[] { "ab", "bc", "bcd", "c" }, null };
+
+            // Byte
+            yield return new object[] { new byte[] { 3, 5, 6, 6 }, new byte[] { 4, 7, 9, 3 }, 0, 4, null, new byte[] { 3, 5, 6, 6 }, new byte[] { 4, 7, 9, 3 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, null, 0, 4, null, new byte[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, new byte[] { 7, 9, 4, 3 }, 0, 4, null, new byte[] { 3, 5, 6, 6 }, new byte[] { 4, 7, 9, 3 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, new byte[] { 7, 9, 4, 3 }, 1, 2, null, new byte[] { 5, 3, 6, 6 }, new byte[] { 7, 4, 9, 3 } };
+            yield return new object[] { new byte[] { 5, 6, 3, 6 }, new byte[] { 7, 9, 4, 3 }, 0, 0, null, new byte[] { 5, 6, 3, 6 }, new byte[] { 7, 9, 4, 3 } };
+            yield return new object[] { new byte[1], new byte[1], 0, 1, null, new byte[1], new byte[1] };
+            yield return new object[] { new byte[0], new byte[0], 0, 0, null, new byte[0], new byte[0] };
+
+            // SByte
+            yield return new object[] { new sbyte[] { 3, 5, 6, 6 }, new sbyte[] { 4, 7, 9, 3 }, 0, 4, null, new sbyte[] { 3, 5, 6, 6 }, new sbyte[] { 4, 7, 9, 3 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, null, 0, 4, null, new sbyte[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, new sbyte[] { 7, 9, 4, 3 }, 0, 4, null, new sbyte[] { 3, 5, 6, 6 }, new sbyte[] { 4, 7, 9, 3 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, new sbyte[] { 7, 9, 4, 3 }, 1, 2, null, new sbyte[] { 5, 3, 6, 6 }, new sbyte[] { 7, 4, 9, 3 } };
+            yield return new object[] { new sbyte[] { 5, 6, 3, 6 }, new sbyte[] { 7, 9, 4, 3 }, 0, 0, null, new sbyte[] { 5, 6, 3, 6 }, new sbyte[] { 7, 9, 4, 3 } };
+            yield return new object[] { new sbyte[1], new sbyte[1], 0, 1, null, new sbyte[1], new sbyte[1] };
+            yield return new object[] { new sbyte[0], new sbyte[0], 0, 0, null, new sbyte[0], new sbyte[0] };
+
+            // UInt16
+            yield return new object[] { new ushort[] { 3, 5, 6, 6 }, new ushort[] { 4, 7, 9, 3 }, 0, 4, null, new ushort[] { 3, 5, 6, 6 }, new ushort[] { 4, 7, 9, 3 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, null, 0, 4, null, new ushort[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, new ushort[] { 7, 9, 4, 3 }, 0, 4, null, new ushort[] { 3, 5, 6, 6 }, new ushort[] { 4, 7, 9, 3 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, new ushort[] { 7, 9, 4, 3 }, 1, 2, null, new ushort[] { 5, 3, 6, 6 }, new ushort[] { 7, 4, 9, 3 } };
+            yield return new object[] { new ushort[] { 5, 6, 3, 6 }, new ushort[] { 7, 9, 4, 3 }, 0, 0, null, new ushort[] { 5, 6, 3, 6 }, new ushort[] { 7, 9, 4, 3 } };
+            yield return new object[] { new ushort[1], new ushort[1], 0, 1, null, new ushort[1], new ushort[1] };
+            yield return new object[] { new ushort[0], new ushort[0], 0, 0, null, new ushort[0], new ushort[0] };
+
+            // Int16
+            yield return new object[] { new short[] { 3, 5, 6, 6 }, new short[] { 4, 7, 9, 3 }, 0, 4, null, new short[] { 3, 5, 6, 6 }, new short[] { 4, 7, 9, 3 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, null, 0, 4, null, new short[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, new short[] { 7, 9, 4, 3 }, 0, 4, null, new short[] { 3, 5, 6, 6 }, new short[] { 4, 7, 9, 3 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, new short[] { 7, 9, 4, 3 }, 1, 2, null, new short[] { 5, 3, 6, 6 }, new short[] { 7, 4, 9, 3 } };
+            yield return new object[] { new short[] { 5, 6, 3, 6 }, new short[] { 7, 9, 4, 3 }, 0, 0, null, new short[] { 5, 6, 3, 6 }, new short[] { 7, 9, 4, 3 } };
+            yield return new object[] { new short[1], new short[1], 0, 1, null, new short[1], new short[1] };
+            yield return new object[] { new short[0], new short[0], 0, 0, null, new short[0], new short[0] };
+
+            // UInt32
+            yield return new object[] { new uint[] { 3, 5, 6, 6 }, new uint[] { 4, 7, 9, 3 }, 0, 4, null, new uint[] { 3, 5, 6, 6 }, new uint[] { 4, 7, 9, 3 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, null, 0, 4, null, new uint[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, new uint[] { 7, 9, 4, 3 }, 0, 4, null, new uint[] { 3, 5, 6, 6 }, new uint[] { 4, 7, 9, 3 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, new uint[] { 7, 9, 4, 3 }, 1, 2, null, new uint[] { 5, 3, 6, 6 }, new uint[] { 7, 4, 9, 3 } };
+            yield return new object[] { new uint[] { 5, 6, 3, 6 }, new uint[] { 7, 9, 4, 3 }, 0, 0, null, new uint[] { 5, 6, 3, 6 }, new uint[] { 7, 9, 4, 3 } };
+            yield return new object[] { new uint[1], new uint[1], 0, 1, null, new uint[1], new uint[1] };
+            yield return new object[] { new uint[0], new uint[0], 0, 0, null, new uint[0], new uint[0] };
+
+            // Int32
+            yield return new object[] { new int[] { 3, 5, 6, 6 }, new int[] { 4, 7, 9, 3 }, 0, 4, null, new int[] { 3, 5, 6, 6 }, new int[] { 4, 7, 9, 3 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, null, 0, 4, null, new int[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, new int[] { 7, 9, 4, 3 }, 0, 4, null, new int[] { 3, 5, 6, 6 }, new int[] { 4, 7, 9, 3 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, new int[] { 7, 9, 4, 3 }, 1, 2, null, new int[] { 5, 3, 6, 6 }, new int[] { 7, 4, 9, 3 } };
+            yield return new object[] { new int[] { 5, 6, 3, 6 }, new int[] { 7, 9, 4, 3 }, 0, 0, null, new int[] { 5, 6, 3, 6 }, new int[] { 7, 9, 4, 3 } };
+            yield return new object[] { new int[1], new int[1], 0, 1, null, new int[1], new int[1] };
+            yield return new object[] { new int[0], new int[0], 0, 0, null, new int[0], new int[0] };
+
+            // UInt64
+            yield return new object[] { new ulong[] { 3, 5, 6, 6 }, new ulong[] { 4, 7, 9, 3 }, 0, 4, null, new ulong[] { 3, 5, 6, 6 }, new ulong[] { 4, 7, 9, 3 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, null, 0, 4, null, new ulong[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, new ulong[] { 7, 9, 4, 3 }, 0, 4, null, new ulong[] { 3, 5, 6, 6 }, new ulong[] { 4, 7, 9, 3 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, new ulong[] { 7, 9, 4, 3 }, 1, 2, null, new ulong[] { 5, 3, 6, 6 }, new ulong[] { 7, 4, 9, 3 } };
+            yield return new object[] { new ulong[] { 5, 6, 3, 6 }, new ulong[] { 7, 9, 4, 3 }, 0, 0, null, new ulong[] { 5, 6, 3, 6 }, new ulong[] { 7, 9, 4, 3 } };
+            yield return new object[] { new ulong[1], new ulong[1], 0, 1, null, new ulong[1], new ulong[1] };
+            yield return new object[] { new ulong[0], new ulong[0], 0, 0, null, new ulong[0], new ulong[0] };
+
+            // Int64
+            yield return new object[] { new long[] { 3, 5, 6, 6 }, new long[] { 4, 7, 9, 3 }, 0, 4, null, new long[] { 3, 5, 6, 6 }, new long[] { 4, 7, 9, 3 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, null, 0, 4, null, new long[] { 3, 5, 6, 6 }, null };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, new long[] { 7, 9, 4, 3 }, 0, 4, null, new long[] { 3, 5, 6, 6 }, new long[] { 4, 7, 9, 3 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, new long[] { 7, 9, 4, 3 }, 1, 2, null, new long[] { 5, 3, 6, 6 }, new long[] { 7, 4, 9, 3 } };
+            yield return new object[] { new long[] { 5, 6, 3, 6 }, new long[] { 7, 9, 4, 3 }, 0, 0, null, new long[] { 5, 6, 3, 6 }, new long[] { 7, 9, 4, 3 } };
+            yield return new object[] { new long[1], new long[1], 0, 1, null, new long[1], new long[1] };
+            yield return new object[] { new long[0], new long[0], 0, 0, null, new long[0], new long[0] };
+
+            // Char
+            yield return new object[] { new char[] { (char)3, (char)5, (char)6, (char)6 }, new char[] { (char)4, (char)7, (char)9, (char)3 }, 0, 4, null, new char[] { (char)3, (char)5, (char)6, (char)6 }, new char[] { (char)4, (char)7, (char)9, (char)3 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, null, 0, 4, null, new char[] { (char)3, (char)5, (char)6, (char)6 }, null };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, new char[] { (char)7, (char)9, (char)4, (char)3 }, 0, 4, null, new char[] { (char)3, (char)5, (char)6, (char)6 }, new char[] { (char)4, (char)7, (char)9, (char)3 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, new char[] { (char)7, (char)9, (char)4, (char)3 }, 1, 2, null, new char[] { (char)5, (char)3, (char)6, (char)6 }, new char[] { (char)7, (char)4, (char)9, (char)3 } };
+            yield return new object[] { new char[] { (char)5, (char)6, (char)3, (char)6 }, new char[] { (char)7, (char)9, (char)4, (char)3 }, 0, 0, null, new char[] { (char)5, (char)6, (char)3, (char)6 }, new char[] { (char)7, (char)9, (char)4, (char)3 } };
+            yield return new object[] { new char[1], new char[1], 0, 1, null, new char[1], new char[1] };
+            yield return new object[] { new char[0], new char[0], 0, 0, null, new char[0], new char[0] };
+        
+            // Bool
+            yield return new object[] { new bool[] { false, false, true, true }, new bool[] { false, true, false, true }, 0, 4, null, new bool[] { false, false, true, true }, new bool[] { false, true, false, true } };
+            yield return new object[] { new bool[] { true, false, true, false }, null, 0, 4, null, new bool[] { false, false, true, true }, null };
+            yield return new object[] { new bool[] { true, false, true, false }, new bool[] { false, false, true, true }, 0, 4, null, new bool[] { false, false, true, true }, new bool[] { false, true, false, true } };
+            yield return new object[] { new bool[] { true, false, true, false }, new bool[] { false, false, true, true }, 1, 2, null, new bool[] { true, false, true, false }, new bool[] { false, false, true, true } };
+            yield return new object[] { new bool[] { true, false, true, false }, new bool[] { false, false, true, true }, 0, 0, null, new bool[] { true, false, true, false }, new bool[] { false, false, true, true } };
+            yield return new object[] { new bool[1], new bool[1], 0, 1, null, new bool[1], new bool[1] };
+            yield return new object[] { new bool[0], new bool[0], 0, 0, null, new bool[0], new bool[0] };
+
+            // Single
+            yield return new object[] { new float[] { 3, 5, 6, 6 }, new float[] { 4, 7, 9, 3 }, 0, 4, null, new float[] { 3, 5, 6, 6 }, new float[] { 4, 7, 9, 3 } };
+            yield return new object[] { new float[] { 5, 6, float.NaN, 6 }, null, 0, 4, null, new float[] { float.NaN, 5, 6, 6 }, null };
+            yield return new object[] { new float[] { 5, 6, 3, 6 }, new float[] { 7, 9, 4, 3 }, 0, 4, null, new float[] { 3, 5, 6, 6 }, new float[] { 4, 7, 9, 3 } };
+            yield return new object[] { new float[] { 5, 6, 3, 6 }, new float[] { 7, 9, 4, 3 }, 1, 2, null, new float[] { 5, 3, 6, 6 }, new float[] { 7, 4, 9, 3 } };
+            yield return new object[] { new float[] { 5, 6, 3, 6 }, new float[] { 7, 9, 4, 3 }, 0, 0, null, new float[] { 5, 6, 3, 6 }, new float[] { 7, 9, 4, 3 } };
+            yield return new object[] { new float[1], new float[1], 0, 1, null, new float[1], new float[1] };
+            yield return new object[] { new float[0], new float[0], 0, 0, null, new float[0], new float[0] };
+
+            // Double
+            yield return new object[] { new double[] { 3, 5, 6, 6 }, new double[] { 4, 7, 9, 3 }, 0, 4, null, new double[] { 3, 5, 6, 6 }, new double[] { 4, 7, 9, 3 } };
+            yield return new object[] { new double[] { 5, 6, double.NaN, 6 }, null, 0, 4, null, new double[] { double.NaN, 5, 6, 6 }, null };
+            yield return new object[] { new double[] { 5, 6, 3, 6 }, new double[] { 7, 9, 4, 3 }, 0, 4, null, new double[] { 3, 5, 6, 6 }, new double[] { 4, 7, 9, 3 } };
+            yield return new object[] { new double[] { 5, 6, 3, 6 }, new double[] { 7, 9, 4, 3 }, 1, 2, null, new double[] { 5, 3, 6, 6 }, new double[] { 7, 4, 9, 3 } };
+            yield return new object[] { new double[] { 5, 6, 3, 6 }, new double[] { 7, 9, 4, 3 }, 0, 0, null, new double[] { 5, 6, 3, 6 }, new double[] { 7, 9, 4, 3 } };
+            yield return new object[] { new double[1], new double[1], 0, 1, null, new double[1], new double[1] };
+            yield return new object[] { new double[0], new double[0], 0, 0, null, new double[0], new double[0] };
+
+            // IntPtr
+            yield return new object[] { new IntPtr[1], new IntPtr[1], 0, 0, null, new IntPtr[1], new IntPtr[1] };
+            yield return new object[] { new IntPtr[0], new IntPtr[0], 0, 0, null, new IntPtr[0], new IntPtr[0] };
+    
+            // UIntPtr
+            yield return new object[] { new UIntPtr[1], new UIntPtr[1], 0, 0, null, new UIntPtr[1], new UIntPtr[1] };
+            yield return new object[] { new UIntPtr[0], new UIntPtr[0], 0, 0, null, new UIntPtr[0], new UIntPtr[0] };
         }
 
         [Theory]
@@ -3266,30 +3812,30 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Sort_Array_Array_Generic_TestData))]
-        public static void Sort_Array_Array_Generic(string[] keys, string[] items, int index, int length, IComparer comparer, string[] expectedKeys, string[] expectedItems)
+        public static void Sort_Array_Array_Generic<T>(T[] keys, T[] items, int index, int length, IComparer<T> comparer, T[] expectedKeys, T[] expectedItems)
         {
-            string[] sortedKeysArray = null;
-            string[] sortedItemsArray = null;
+            T[] sortedKeysArray = null;
+            T[] sortedItemsArray = null;
             if (index == 0 && length == keys.Length)
             {
                 // Use Sort<T>(T[], T[]) or Sort<T>(T[], T[], IComparer)
                 if (comparer == null)
                 {
                     // Use Sort<T>(T[], T[])
-                    sortedKeysArray = (string[])keys.Clone();
+                    sortedKeysArray = (T[])keys.Clone();
                     if (items != null)
                     {
-                        sortedItemsArray = (string[])items.Clone();
+                        sortedItemsArray = (T[])items.Clone();
                     }
                     Array.Sort(sortedKeysArray, sortedItemsArray);
                     Assert.Equal(expectedKeys, sortedKeysArray);
                     Assert.Equal(expectedItems, sortedItemsArray);
                 }
                 // Use Sort<T>(T[], T[], IComparer)
-                sortedKeysArray = (string[])keys.Clone();
+                sortedKeysArray = (T[])keys.Clone();
                 if (items != null)
                 {
-                    sortedItemsArray = (string[])items.Clone();
+                    sortedItemsArray = (T[])items.Clone();
                 }
                 Array.Sort(sortedKeysArray, sortedItemsArray, comparer);
                 Assert.Equal(expectedKeys, sortedKeysArray);
@@ -3298,20 +3844,20 @@ namespace System.Tests
             if (comparer == null)
             {
                 // Use Sort<T>(T[], T[], int, int)
-                sortedKeysArray = (string[])keys.Clone();
+                sortedKeysArray = (T[])keys.Clone();
                 if (items != null)
                 {
-                    sortedItemsArray = (string[])items.Clone();
+                    sortedItemsArray = (T[])items.Clone();
                 }
                 Array.Sort(sortedKeysArray, sortedItemsArray, index, length);
                 Assert.Equal(expectedKeys, sortedKeysArray);
                 Assert.Equal(expectedItems, sortedItemsArray);
             }
             // Use Sort(Array, Array, int, int, IComparer)
-            sortedKeysArray = (string[])keys.Clone();
+            sortedKeysArray = (T[])keys.Clone();
             if (items != null)
             {
-                sortedItemsArray = (string[])items.Clone();
+                sortedItemsArray = (T[])items.Clone();
             }
             Array.Sort(sortedKeysArray, sortedItemsArray, index, length, comparer);
             Assert.Equal(expectedKeys, sortedKeysArray);
@@ -3319,139 +3865,36 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Sort_Array_Array_Invalid()
+        public void Sort_DifferentArrayLengths_ThrowsArgumentException()
         {
-            // Keys is null
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10]));
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10]));
-
-            // Keys.Length > items.Length
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9]));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9]));
-
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10])); // Keys is multidimensional
-            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10])); // Items is multidimensional
-
-            if (s_NonZeroLowerBoundsAvailable)
-            {
-                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-                AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items)); // Keys and items have different lower bounds
-            }
-
-            // One or more objects in keys do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3]));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, new object[3]));
-        }
-
-        [Fact]
-        public static void Sort_Array_Array_IComparer_Invalid()
-        {
-            // Keys is null
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], null));
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], null));
-
-            // Keys.Length > items.Length
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], null));
-
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], null)); // Keys is multidimensional
-            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], null)); // Items is multidimensional
-
-            if (s_NonZeroLowerBoundsAvailable)
-            {
-                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-                AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items, null)); // Keys and items have different lower bounds
-            }
-
-            // One or more objects in keys do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], null));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, new object[3], null));
-        }
-
-        [Fact]
-        public static void Sort_Array_Array_Int_Int_Invalid()
-        {
-            // Keys is null
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], 0, 0));
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], 0, 0));
-
-            // Keys.Length > items.Length
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], 0, 10));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], 0, 10, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], null));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], 0, 10));
-
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0)); // Keys is multidimensional
-            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0)); // Items is multidimensional
-
-            if (s_NonZeroLowerBoundsAvailable)
-            {
-                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-                AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1)); // Keys and items have different lower bounds
-            }
-
-            // One or more objects in keys do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], 0, 3));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, new object[3], 0, 3));
-
-            // Index < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], new int[10], -1, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], new int[10], -1, 0));
-
-            // Length < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], new int[10], 0, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], new int[10], 0, -1));
-
-            // Index + length > list.Count
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 11, 0));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 11, 0));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 10, 1));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 10, 1));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 9, 2));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 9, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], 0, 10, null));
         }
 
         [Fact]
-        public static void Sort_Array_Array_Int_Int_IComparer_Invalid()
+        public void Sort_MultidimensionalKeys_ThrowsRankException()
         {
-            // Keys is null
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort(null, new int[10], 0, 0, null));
-            AssertExtensions.Throws<ArgumentNullException>("keys", () => Array.Sort((int[])null, new int[10], 0, 0, null));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10]));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], null));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0));
+            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0, null));
+        }
 
-            // Keys.Length > items.Length
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[9], 0, 10, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[9], 0, 10, null));
-
-            Assert.Throws<RankException>(() => Array.Sort(new int[10, 10], new int[10], 0, 0, null)); // Keys is multidimensional
-            Assert.Throws<RankException>(() => Array.Sort(new int[10], new int[10, 10], 0, 0, null)); // Items is multidimensional
-
-            if (s_NonZeroLowerBoundsAvailable)
-            {
-                Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
-                Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
-                AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 1, null)); // Keys and items have different lower bounds
-            }
-
-            // One or more objects in keys do not implement IComparable
-            Assert.Throws<InvalidOperationException>(() => Array.Sort((Array)new object[] { "1", 2, new object() }, new object[3], 0, 3, null));
-            Assert.Throws<InvalidOperationException>(() => Array.Sort(new object[] { "1", 2, new object() }, new object[3], 0, 3, null));
-
-            // Index < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort((Array)new int[10], new int[10], -1, 0, null));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Sort(new int[10], new int[10], -1, 0, null));
-
-            // Length < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort((Array)new int[10], new int[10], 0, -1, null));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], new int[10], 0, -1, null));
-
-            // Index + length > list.Count
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 11, 0, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 11, 0, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 10, 1, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 10, 1, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], new int[10], 9, 2, null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], new int[10], 9, 2, null));
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        public void Sort_DifferentLowerBounds_ThrowsArgumentException()
+        {
+            Array keys = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 1 });
+            Array items = Array.CreateInstance(typeof(object), new int[] { 1 }, new int[] { 2 });
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(keys, items, 0, 0, null));
         }
 
         [Fact]
@@ -3860,6 +4303,20 @@ namespace System.Tests
             public int Compare(object x, object y) => Compare((ComparableRefType)x, (ComparableRefType)y);
         }
 
+        private class IndexOutOfRangeComparer : IComparer<int>
+        {
+            public int Compare(int x, int y) => throw new IndexOutOfRangeException();
+
+            public int Compare(object x, object y) => Compare((int)x, (int)y);
+        }
+
+        private class DivideByZeroComparer : IComparer<int>
+        {
+            public int Compare(int x, int y) => throw new DivideByZeroException();
+
+            public int Compare(object x, object y) => Compare((int)x, (int)y);
+        }
+
         private class NotInt32 : IEquatable<int>
         {
             public bool Equals(int other)
@@ -3923,13 +4380,6 @@ namespace System.Tests
         }
 
         public enum Int64Enum : long { }
-
-        private static readonly bool s_NonZeroLowerBoundsAvailable =
-#if uapaot
-            false;
-#else
-            true;
-#endif
     }
 }
 
