@@ -12,7 +12,7 @@
 #include <config.h>
 #include <glib.h>
 
-#ifdef TARGET_OSX
+#if defined(TARGET_OSX) && !defined(DISABLE_CRASH_REPORTING)
 #include "mono-merp.h"
 
 #include <unistd.h>
@@ -37,6 +37,7 @@
 #include <sys/sysctl.h>
 
 #include <mono/utils/json.h>
+#include <mono/utils/mono-state.h>
 
 static const char *
 os_version_string (void)
@@ -521,13 +522,19 @@ mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *no
 	MERPStruct merp;
 	memset (&merp, 0, sizeof (merp));
 
+	mono_summarize_timeline_phase_log (MonoSummaryMerpWriter);
+
 	mono_init_merp (crashed_pid, signal, hashes, &merp);
 	gchar *merpCfg = mono_encode_merp_params (&merp);
 	gchar *fullData = mono_merp_fingerprint_payload (non_param_data, &merp);
 	gchar *werXmlCfg = mono_wer_template (&merp);
 
+	mono_summarize_timeline_phase_log (MonoSummaryMerpInvoke);
+
 	// Write out to disk, start program
 	mono_merp_send (merpCfg, fullData, werXmlCfg);
+
+	mono_summarize_timeline_phase_log (MonoSummaryCleanup);
 
 	mono_merp_free (&merp);
 	g_free (fullData);

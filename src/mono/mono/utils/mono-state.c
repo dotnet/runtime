@@ -20,11 +20,182 @@ extern GCStats mono_gc_stats;
 
 // For AOT mode
 #include <mono/mini/mini-runtime.h>
+#include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-merp.h>
 
 #ifdef TARGET_OSX
 #include <mach/mach.h>
 #include <mach/task_info.h>
 #endif
+
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <fcntl.h>
+
+typedef struct {
+	const char *directory;
+	MonoSummaryStage level;
+} MonoSummaryTimeline;
+
+static const char *configured_timeline_dir;
+static MonoSummaryTimeline log;
+
+static void
+file_for_summary_stage (const char *directory, MonoSummaryStage stage, gchar *buff, size_t sizeof_buff)
+{
+	g_snprintf (buff, sizeof_buff, "%s%scrash_stage_%d", directory, G_DIR_SEPARATOR_S, stage);
+}
+
+gboolean
+mono_summarize_set_timeline_dir (const char *directory)
+{
+	if (directory) {
+		configured_timeline_dir = strdup (directory);
+		return g_ensure_directory_exists (directory);
+	} else {
+		configured_timeline_dir = NULL;
+		return TRUE;
+	}
+}
+
+void
+mono_summarize_timeline_start (void)
+{
+	memset (&log, 0, sizeof (log));
+
+	if (!configured_timeline_dir)
+		return;
+
+	log.level = MonoSummarySetup;
+	log.directory = configured_timeline_dir;
+}
+
+void
+mono_summarize_double_fault_log (void)
+{
+	char out_file [200];
+	file_for_summary_stage (log.directory, MonoSummaryDoubleFault, out_file, sizeof(out_file));
+	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	close(handle);
+}
+
+void
+mono_summarize_timeline_phase_log (MonoSummaryStage next)
+{
+	if (log.level == MonoSummaryNone)
+		return;
+
+	if (!log.directory)
+		return;
+
+	MonoSummaryStage out_level;
+	switch (log.level) {
+		case MonoSummarySetup:
+			out_level = MonoSummarySuspendHandshake;
+			break;
+		case MonoSummarySuspendHandshake:
+			out_level = MonoSummaryDumpTraversal;
+			break;
+		case MonoSummaryDumpTraversal:
+			out_level = MonoSummaryStateWriter;
+			break;
+		case MonoSummaryStateWriter:
+#ifdef TARGET_OSX
+			if (mono_merp_enabled ()) {
+				out_level = MonoSummaryMerpWriter;
+			} else
+#endif
+			{
+				out_level = MonoSummaryCleanup;
+			}
+			break;
+		case MonoSummaryMerpWriter:
+			out_level = MonoSummaryMerpInvoke;
+			break;
+		case MonoSummaryMerpInvoke:
+			out_level = MonoSummaryCleanup;
+			break;
+		case MonoSummaryCleanup:
+			out_level = MonoSummaryDone;
+			break;
+
+		case MonoSummaryDone:
+			MOSTLY_ASYNC_SAFE_PRINTF ("Trying to log crash reporter timeline, already at done %d\n", log.level);
+			return;
+		default:
+			MOSTLY_ASYNC_SAFE_PRINTF ("Trying to log crash reporter timeline, illegal state %d\n", log.level);
+			return;
+	}
+
+	g_assertf(out_level == next, "Log Error: Log transition to %d, actual expected next step is %d\n", next, out_level);
+
+	char out_file [200];
+	memset (out_file, 0, sizeof(out_file));
+	file_for_summary_stage (log.directory, out_level, out_file, sizeof(out_file));
+
+	int handle = g_open (out_file, O_WRONLY | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	close(handle);
+
+	// To check, comment out normally
+	// DO NOT MERGE UNCOMMENTED
+	// As this does a lot of FILE io
+	//
+	// g_assert (out_level == mono_summarize_timeline_read_level (log.directory,  FALSE));
+
+	log.level = out_level;
+
+	if (out_level == MonoSummaryDone)
+		memset (&log, 0, sizeof (log));
+
+	return;
+}
+
+static gboolean 
+timeline_has_level (const char *directory, char *log_file, size_t log_file_size, gboolean clear, MonoSummaryStage stage)
+{
+	memset (log_file, 0, log_file_size);
+	file_for_summary_stage (directory, stage, log_file, log_file_size);
+	gboolean exists = g_file_test (log_file, G_FILE_TEST_EXISTS);
+	if (clear && exists) 
+		remove (log_file);
+
+	return exists;
+}
+
+MonoSummaryStage
+mono_summarize_timeline_read_level (const char *directory, gboolean clear)
+{
+	char out_file [200];
+
+	// Make sure that clear gets to erase all of these files if they exist
+	gboolean has_level_done = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryDone);
+	gboolean has_level_cleanup = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryCleanup);
+	gboolean has_level_merp_invoke = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryMerpInvoke);
+	gboolean has_level_merp_writer = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryMerpWriter);
+	gboolean has_level_state_writer = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryStateWriter);
+	gboolean has_level_dump_traversal = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummaryDumpTraversal);
+	gboolean has_level_suspend_handshake = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummarySuspendHandshake);
+	gboolean has_level_setup = timeline_has_level (directory, out_file, sizeof(out_file), clear, MonoSummarySetup);
+
+	if (has_level_done)
+		return MonoSummaryDone;
+	else if (has_level_cleanup)
+		return MonoSummaryCleanup;
+	else if (has_level_merp_invoke)
+		return MonoSummaryMerpInvoke;
+	else if (has_level_merp_writer)
+		return MonoSummaryMerpWriter;
+	else if (has_level_state_writer)
+		return MonoSummaryStateWriter;
+	else if (has_level_dump_traversal)
+		return MonoSummaryDumpTraversal;
+	else if (has_level_suspend_handshake)
+		return MonoSummarySuspendHandshake;
+	else if (has_level_setup)
+		return MonoSummarySetup;
+	else
+		return MonoSummaryNone;
+}
 
 #define MONO_MAX_SUMMARY_LEN 500000
 static gchar output_dump_str [MONO_MAX_SUMMARY_LEN];

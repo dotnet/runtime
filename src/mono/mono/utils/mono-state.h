@@ -20,7 +20,39 @@
 
 #define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.2"
 
+typedef enum {
+	MonoSummaryNone = 0,
+	MonoSummarySetup = 1,
+	MonoSummarySuspendHandshake = 2,
+	MonoSummaryDumpTraversal = 3,
+	MonoSummaryStateWriter = 4,
+	MonoSummaryMerpWriter = 5,
+	MonoSummaryMerpInvoke = 6,
+	MonoSummaryCleanup = 7,
+	MonoSummaryDone = 8,
+
+	MonoSummaryDoubleFault = 9
+} MonoSummaryStage;
+
 MONO_BEGIN_DECLS
+
+// Logging
+gboolean
+mono_summarize_set_timeline_dir (const char *directory);
+
+void
+mono_summarize_timeline_start (void);
+
+void
+mono_summarize_timeline_phase_log (MonoSummaryStage stage);
+
+void
+mono_summarize_double_fault_log (void);
+
+MonoSummaryStage
+mono_summarize_timeline_read_level (const char *directory, gboolean clear);
+
+// Json State Writer
 
 /*
  * These use static memory, can only be called once
