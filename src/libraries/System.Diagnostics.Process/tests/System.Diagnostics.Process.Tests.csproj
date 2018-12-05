@@ -30,6 +30,7 @@
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="ProcessTestBase.Uap.cs" />
     <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessTests.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="ProcessTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
