@@ -33,9 +33,18 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
             ///   MULX r64a, r64b, reg/m64
+            /// The above native signature does not directly correspond to the managed signature. 
             /// This intrinisc is only available on 64-bit processes
             /// </summary>
-            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) => MultiplyNoFlags(left, right, high);
+            public static ulong MultiplyNoFlags(ulong left, ulong right) => MultiplyNoFlags(left, right);
+
+            /// <summary>
+            /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
+            ///   MULX r64a, r64b, reg/m64
+            /// The above native signature does not directly correspond to the managed signature. 
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) => MultiplyNoFlags(left, right, low);
 
             /// <summary>
             /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
@@ -61,8 +70,16 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
         ///   MULX r32a, r32b, reg/m32
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
-        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* high) => MultiplyNoFlags(left, right, high);
+        public static uint MultiplyNoFlags(uint left, uint right) => MultiplyNoFlags(left, right);
+
+        /// <summary>
+        /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
+        ///   MULX r32a, r32b, reg/m32
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) => MultiplyNoFlags(left, right, low);
 
         /// <summary>
         /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)
