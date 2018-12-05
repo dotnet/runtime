@@ -33,9 +33,18 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
             ///   MULX r64a, r64b, reg/m64
+            /// The above native signature does not directly correspond to the managed signature. 
             /// This intrinisc is only available on 64-bit processes
             /// </summary>
-            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) { throw new PlatformNotSupportedException(); }
+            public static ulong MultiplyNoFlags(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
+            ///   MULX r64a, r64b, reg/m64
+            /// The above native signature does not directly correspond to the managed signature. 
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
@@ -61,8 +70,16 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
         ///   MULX r32a, r32b, reg/m32
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
-        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* high) { throw new PlatformNotSupportedException(); }
+        public static uint MultiplyNoFlags(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
+        ///   MULX r32a, r32b, reg/m32
+        /// The above native signature does not directly correspond to the managed signature. 
+        /// </summary>
+        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)
