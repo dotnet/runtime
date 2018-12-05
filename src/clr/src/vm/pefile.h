@@ -678,9 +678,6 @@ class PEAssembly : public PEFile
     // binding & source
     // ------------------------------------------------------------
 
-    BOOL IsSourceGAC();
-    BOOL IsProfileAssembly();
-
     ULONG HashIdentity();
 
 #ifndef  DACCESS_COMPILE
@@ -770,13 +767,10 @@ class PEAssembly : public PEFile
     // ------------------------------------------------------------
 
     PTR_PEFile               m_creator;
-    BOOL m_bIsFromGAC;
-    BOOL m_bIsOnTpaList;
     // Using a separate entry and not m_pHostAssembly because otherwise
     // HasHostAssembly becomes true that trips various other code paths resulting in bad
     // things
     SString                  m_sTextualIdentity;
-    int                      m_fProfileAssembly; // Tri-state cache
 
   public:
     PTR_PEFile GetCreator()
