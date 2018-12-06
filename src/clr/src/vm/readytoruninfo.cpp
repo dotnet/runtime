@@ -463,6 +463,12 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
+    if (pModule->IsCollectible())
+    {
+        DoLog("Ready to Run disabled - collectible module");
+        return NULL;
+    }
+
     if (!pFile->HasLoadedIL())
     {
         DoLog("Ready to Run disabled - no loaded IL image");

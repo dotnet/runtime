@@ -2594,14 +2594,12 @@ public:
     LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_file->GetDebugName(); }
 #endif
 
-    BOOL IsILOnly() { WRAPPER_NO_CONTRACT; return m_file->IsILOnly(); }
-
 #ifdef FEATURE_PREJIT
     BOOL HasNativeImage() 
     { 
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return m_file->HasNativeImage(); 
+        return m_file->HasNativeImage();
     }
     
     PEImageLayout *GetNativeImage()
@@ -2618,6 +2616,7 @@ public:
         }
         CONTRACT_END;
 
+        _ASSERTE(!IsCollectible());
         RETURN m_file->GetLoadedNative();
     }
 #else
