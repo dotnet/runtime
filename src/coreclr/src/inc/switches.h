@@ -193,17 +193,6 @@
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 #endif // defined(FEATURE_CORESYSTEM)
 
-#if defined(FEATURE_PREJIT) && defined(FEATURE_CORESYSTEM)
-// Desktop CLR allows profilers and debuggers to opt out of loading NGENd images, and to
-// JIT everything instead. "FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS" is roughly the
-// equivalent for Apollo, where MSIL images may not be available at all.
-// FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS allows profilers or debuggers to state
-// they don't want to use pregenerated code, and to instead load the NGENd image but
-// treat it as if it were MSIL by ignoring the prejitted code and prebaked structures,
-// and instead to JIT and load types at run-time.
-#define FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
-#endif
-
 // If defined, support interpretation.
 #if !defined(CROSSGEN_COMPILE)
 
