@@ -42,7 +42,7 @@ simpleNode('windows.10.amd64.clientrs4.devex.open') {
             additionalArgs += ' -SkipTests'
         }
         if (params.TGroup != 'all') {
-            bat ".\\build.cmd -test ${commonprops} /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=true${additionalArgs}"
+            bat ".\\build.cmd -test ${commonprops} /p:RuntimeOS=win10 /p:ArchiveTests=${archiveTests} /p:EnableDumpling=false${additionalArgs}"
         }
         else {
             bat ".\\build.cmd -test -ci /p:TargetGroup=netstandard /p:ArchGroup=${params.AGroup} /p:ConfigurationGroup=${params.CGroup} /p:SkipTests=true"
