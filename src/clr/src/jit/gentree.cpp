@@ -7343,8 +7343,9 @@ GenTree* Compiler::gtCloneExpr(
             copy->gtCall.setEntryPoint(tree->gtCall.gtEntryPoint);
 #endif
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(INLINE_DATA)
             copy->gtCall.gtInlineObservation = tree->gtCall.gtInlineObservation;
+            copy->gtCall.gtRawILOffset       = tree->gtCall.gtRawILOffset;
 #endif
 
             copy->AsCall()->CopyOtherRegFlags(tree->AsCall());
@@ -9334,9 +9335,22 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 goto DASH;
 
             case GT_CALL:
-                if (tree->gtFlags & GTF_CALL_INLINE_CANDIDATE)
+                if (tree->gtCall.IsInlineCandidate())
                 {
-                    printf("I");
+                    if (tree->gtCall.IsGuardedDevirtualizationCandidate())
+                    {
+                        printf("&");
+                    }
+                    else
+                    {
+                        printf("I");
+                    }
+                    --msgLength;
+                    break;
+                }
+                else if (tree->gtCall.IsGuardedDevirtualizationCandidate())
+                {
+                    printf("G");
                     --msgLength;
                     break;
                 }

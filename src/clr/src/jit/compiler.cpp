@@ -4561,10 +4561,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fgRemovePreds();
     }
 
-    if (IsTargetAbi(CORINFO_CORERT_ABI) && doesMethodHaveFatPointer())
-    {
-        fgTransformFatCalli();
-    }
+    // Transform indirect calls that require control flow expansion.
+    fgTransformIndirectCalls();
 
     EndPhase(PHASE_IMPORTATION);
 

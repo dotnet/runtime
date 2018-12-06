@@ -6614,42 +6614,59 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
 void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 {
-    // The call must be a candiate for inlining.
-    assert((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0);
+    bool inliningFailed = false;
 
-    // Attempt the inline
-    fgMorphCallInlineHelper(call, inlineResult);
-
-    // We should have made up our minds one way or another....
-    assert(inlineResult->IsDecided());
-
-    // If we failed to inline, we have a bit of work to do to cleanup
-    if (inlineResult->IsFailure())
+    // Is this call an inline candidate?
+    if (call->IsInlineCandidate())
     {
+        // Attempt the inline
+        fgMorphCallInlineHelper(call, inlineResult);
+
+        // We should have made up our minds one way or another....
+        assert(inlineResult->IsDecided());
+
+        // If we failed to inline, we have a bit of work to do to cleanup
+        if (inlineResult->IsFailure())
+        {
 
 #ifdef DEBUG
 
-        // Before we do any cleanup, create a failing InlineContext to
-        // capture details of the inlining attempt.
-        m_inlineStrategy->NewFailure(fgMorphStmt, inlineResult);
+            // Before we do any cleanup, create a failing InlineContext to
+            // capture details of the inlining attempt.
+            m_inlineStrategy->NewFailure(fgMorphStmt, inlineResult);
 
 #endif
 
-        // It was an inline candidate, but we haven't expanded it.
-        if (call->gtCall.gtReturnType != TYP_VOID)
+            inliningFailed = true;
+
+            // Clear the Inline Candidate flag so we can ensure later we tried
+            // inlining all candidates.
+            //
+            call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+        }
+    }
+    else
+    {
+        // This wasn't an inline candidate. So it must be a GDV candidate.
+        assert(call->IsGuardedDevirtualizationCandidate());
+
+        // We already know we can't inline this call, so don't even bother to try.
+        inliningFailed = true;
+    }
+
+    // If we failed to inline (or didn't even try), do some cleanup.
+    if (inliningFailed)
+    {
+        if (call->gtReturnType != TYP_VOID)
         {
+            JITDUMP("Inlining [%06u] failed, so bashing [%06u] to NOP\n", dspTreeID(call), dspTreeID(fgMorphStmt));
+
             // Detach the GT_CALL tree from the original statement by
             // hanging a "nothing" node to it. Later the "nothing" node will be removed
             // and the original GT_CALL tree will be picked up by the GT_RET_EXPR node.
-
             noway_assert(fgMorphStmt->gtStmtExpr == call);
             fgMorphStmt->gtStmtExpr = gtNewNothingNode();
         }
-
-        // Clear the Inline Candidate flag so we can ensure later we tried
-        // inlining all candidates.
-        //
-        call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
     }
 }
 
@@ -6679,6 +6696,13 @@ void Compiler::fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result)
     if (call->IsVirtual())
     {
         result->NoteFatal(InlineObservation::CALLSITE_IS_VIRTUAL);
+        return;
+    }
+
+    // Re-check this because guarded devirtualization may allow these through.
+    if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
+    {
+        result->NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
         return;
     }
 
