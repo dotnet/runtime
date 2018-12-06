@@ -54,22 +54,6 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetIDispatchForObject(null));
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
-        [ConditionalFact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Marshal.GetIDispatchForObject is not implemented in .NET Core.")]
-        public void GetIDispatchForObject_ObjectNotCollectible_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type type = typeBuilder.CreateType();
-
-            object o = Activator.CreateInstance(type);
-            Assert.Throws<NotSupportedException>(() => Marshal.GetIDispatchForObject(o));
-        }
-#endif
-
         [Theory]
         [MemberData(nameof(GetIDispatchForObject_Invalid_TestData))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Marshal.GetIDispatchForObject is not implemented in .NET Core.")]
