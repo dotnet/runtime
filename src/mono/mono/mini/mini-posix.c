@@ -1032,6 +1032,9 @@ dump_native_stacktrace (const char *signal, void *ctx)
 					mono_runtime_printf_err ("\nMust always pass non-null context when using merp.\n");
 				} else if (output) {
 					mono_merp_invoke (crashed_pid, signal, output, &hashes);
+					gboolean merp_upload_success = mono_merp_invoke (crashed_pid, signal, output, &hashes);
+
+					g_assert (merp_upload_success);
 					mono_summarize_timeline_phase_log (MonoSummaryDone);
 				} else {
 					mono_runtime_printf_err ("\nMerp dump step not run, no dump created.\n");

@@ -34,6 +34,13 @@ typedef enum {
 	MonoSummaryDoubleFault = 9
 } MonoSummaryStage;
 
+typedef struct {
+	char *output_str;
+	int len;
+	int allocated_len;
+	int indent;
+} MonoStateWriter;
+
 MONO_BEGIN_DECLS
 
 // Logging
@@ -70,18 +77,20 @@ mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *
 /*
  * These use memory from the caller
  */
+void
+mono_state_writer_init (MonoStateWriter *writer, gchar *output_str, int len);
 
 void
-mono_native_state_init (JsonWriter *writer);
+mono_native_state_init (MonoStateWriter *writer);
 
 char *
-mono_native_state_emit (JsonWriter *writer);
+mono_native_state_emit (MonoStateWriter *writer);
 
 char *
-mono_native_state_free (JsonWriter *writer, gboolean free_data);
+mono_native_state_free (MonoStateWriter *writer, gboolean free_data);
 
 void
-mono_native_state_add_thread (JsonWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread, gboolean crashing_thread);
+mono_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread, gboolean crashing_thread);
 
 void
 mono_crash_dump (const char *jsonFile, MonoStackHash *hashes);

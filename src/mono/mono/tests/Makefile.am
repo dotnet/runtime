@@ -316,6 +316,7 @@ TESTS_CS_SRC=		\
 	exception17.cs		\
 	exception18.cs		\
 	exception-invokes.cs		\
+	merp-json-valid.cs		\
 	exception19.cs		\
 	exception20.cs		\
 	typeload-unaligned.cs	\
@@ -1068,10 +1069,14 @@ PLATFORM_DISABLED_TESTS += bug-58782-plain-throw.exe bug-58782-capture-and-throw
 PLATFORM_DISABLED_TESTS += verbose.exe
 endif
 
+
+
 if HOST_DARWIN
 
 # see https://github.com/mono/mono/issues/10845
 PLATFORM_DISABLED_TESTS += monitor-wait-abort.exe
+else
+PLATFORM_DISABLED_TESTS += merp-json-valid.exe
 endif
 
 if AMD64
@@ -2055,6 +2060,9 @@ test-runner.exe: test-runner.cs $(TEST_DRIVER_DEPEND)
 
 reference-loader.exe: reference-loader.cs TestingReferenceAssembly.dll TestingReferenceReferenceAssembly.dll $(TEST_DRIVER_DEPEND)
 	$(MCS) -r:$(CLASS)/System.dll -r:TestDriver.dll -r:TestingReferenceAssembly.dll -r:TestingReferenceReferenceAssembly.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $(srcdir)/reference-loader.cs
+
+merp-json-valid.exe: merp-json-valid.cs
+	$(MCS) -r:$(CLASS)/System.Web.Extensions.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Xml.dll -r:$(CLASS)/System.Core.dll -out:$@ $<
 
 TestingReferenceAssembly.dll: TestingReferenceAssembly.cs
 	$(MCS) -target:library -out:$@ $<
