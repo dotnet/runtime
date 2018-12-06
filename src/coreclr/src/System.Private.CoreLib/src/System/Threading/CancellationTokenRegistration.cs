@@ -58,7 +58,16 @@ namespace System.Threading
         /// registration isn't associated with a token (such as after the registration has been disposed),
         /// this will return a default token.
         /// </summary>
-        public CancellationToken Token => _node?.Partition.Source.Token ?? default;
+        public CancellationToken Token
+        {
+            get
+            {
+                CancellationTokenSource.CallbackNode node = _node;
+                return node != null ?
+                    new CancellationToken(node.Partition.Source) : // avoid CTS.Token, which throws after disposal
+                    default;
+            }
+        }
 
         /// <summary>
         /// Disposes of the registration and unregisters the target callback from the associated 
