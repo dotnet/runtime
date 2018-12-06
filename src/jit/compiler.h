@@ -3041,7 +3041,7 @@ public:
 #endif
 
 #ifdef _TARGET_ARM_
-    int lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset);
+    int lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage);
 #else
     int lvaFrameAddress(int varNum, bool* pFPbased);
 #endif
