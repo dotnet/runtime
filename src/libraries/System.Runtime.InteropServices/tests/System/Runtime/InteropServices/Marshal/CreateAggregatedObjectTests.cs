@@ -114,30 +114,5 @@ namespace System.Runtime.InteropServices.Tests
                 Marshal.Release(ptr1);
             }
         }
-
-#if !netstandard // TODO: Enable for netstandard2.1
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void CreateAggregatedObject_ObjectNotCollectible_ReturnsExpected()
-        {
-            var original = new object();
-            IntPtr ptr = Marshal.GetIUnknownForObject(original);
-            try
-            {
-                AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-                ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-                TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-                Type type = typeBuilder.CreateType();
-
-                object o = Activator.CreateInstance(type);
-                Assert.Throws<NotSupportedException>(() => Marshal.CreateAggregatedObject(ptr, o));
-                Assert.Throws<NotSupportedException>(() => Marshal.CreateAggregatedObject<object>(ptr, o));
-            }
-            finally
-            {
-                Marshal.Release(ptr);
-            }
-        }
-#endif
     }
 }
