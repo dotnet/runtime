@@ -5616,20 +5616,24 @@ mono_test_marshal_return_lpwstr (void)
 	return res;
 }
 
-typedef struct {
+typedef
+#if defined (HOST_WIN32) && defined (HOST_X86) && defined (__GNUC__)
+// Workaround gcc ABI bug. It returns the struct in ST0 instead of edx:eax.
+// Mono and Visual C++ agree.
+union
+#else
+struct
+#endif
+{
 	double d;
 } SingleDoubleStruct;
 
 LIBTEST_API SingleDoubleStruct STDCALL
 mono_test_marshal_return_single_double_struct (void)
 {
-	SingleDoubleStruct res;
-
-	res.d = 3.0;
-
+	SingleDoubleStruct res = {3.0};
 	return res;
 }
-
 
 #ifndef TARGET_X86
 
