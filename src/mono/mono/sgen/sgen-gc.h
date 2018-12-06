@@ -1154,7 +1154,7 @@ gboolean sgen_nursery_canaries_enabled (void);
 					fprintf (stderr, "\nOriginal canary string:\n"); \
 					fwrite (CANARY_STRING, sizeof (char), 8, stderr); \
 					for (int x = -8; x <= 8; x++) { \
-						if (canary_ptr + x < (char*) addr); \
+						if (canary_ptr + x < (char*) addr) \
 							continue; \
 						if (CANARY_VALID(canary_ptr +x)) \
 							fprintf (stderr, "\nCANARY ERROR - canary found at offset %d\n", x); \
