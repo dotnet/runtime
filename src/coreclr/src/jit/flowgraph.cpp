@@ -5892,6 +5892,21 @@ void Compiler::fgFindBasicBlocks()
             {
                 // This temp should already have the type of the return value.
                 JITDUMP("\nInliner: re-using pre-existing spill temp V%02u\n", lvaInlineeReturnSpillTemp);
+
+                if (info.compRetType == TYP_REF)
+                {
+                    // We may have co-opted an existing temp for the return spill.
+                    // We likely assumed it was single-def at the time, but now
+                    // we can see it has multiple definitions.
+                    if ((retBlocks > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
+                    {
+                        // Make sure it is no longer marked single def. This is only safe
+                        // to do if we haven't ever updated the type.
+                        assert(!lvaTable[lvaInlineeReturnSpillTemp].lvClassInfoUpdated);
+                        JITDUMP("Marked return spill temp V%02u as NOT single def temp\n", lvaInlineeReturnSpillTemp);
+                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 0;
+                    }
+                }
             }
             else
             {
@@ -21859,43 +21874,58 @@ void Compiler::fgInline()
 
     do
     {
-        /* Make the current basic block address available globally */
-
+        // Make the current basic block address available globally
         compCurBB = block;
 
-        GenTreeStmt* stmt;
-        GenTree*     expr;
-
-        for (stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
+        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
         {
-            expr = stmt->gtStmtExpr;
 
-            // See if we can expand the inline candidate
-            if ((expr->gtOper == GT_CALL) && ((expr->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
+#ifdef DEBUG
+            // In debug builds we want the inline tree to show all failed
+            // inlines. Some inlines may fail very early and never make it to
+            // candidate stage. So scan the tree looking for those early failures.
+            fgWalkTreePre(&stmt->gtStmtExpr, fgFindNonInlineCandidate, stmt);
+#endif
+
+            GenTree* expr = stmt->gtStmtExpr;
+
+            // The importer ensures that all inline candidates are
+            // statement expressions.  So see if we have a call.
+            if (expr->IsCall())
             {
                 GenTreeCall* call = expr->AsCall();
-                InlineResult inlineResult(this, call, stmt, "fgInline");
 
-                fgMorphStmt = stmt;
-
-                fgMorphCallInline(call, &inlineResult);
-
-                if (stmt->gtStmtExpr->IsNothingNode())
+                // We do. Is it an inline candidate?
+                //
+                // Note we also process GuardeDevirtualizationCandidates here as we've
+                // split off GT_RET_EXPRs for them even when they are not inline candidates
+                // as we need similar processing to ensure they get patched back to where
+                // they belong.
+                if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
                 {
-                    fgRemoveStmt(block, stmt);
-                    continue;
+                    InlineResult inlineResult(this, call, stmt, "fgInline");
+
+                    fgMorphStmt = stmt;
+
+                    fgMorphCallInline(call, &inlineResult);
+
+                    // fgMorphCallInline may have updated the
+                    // statement expression to a GT_NOP if the
+                    // call returned a value, regardless of
+                    // whether the inline succeeded or failed.
+                    //
+                    // If so, remove the GT_NOP and continue
+                    // on with the next statement.
+                    if (stmt->gtStmtExpr->IsNothingNode())
+                    {
+                        fgRemoveStmt(block, stmt);
+                        continue;
+                    }
                 }
             }
-            else
-            {
-#ifdef DEBUG
-                // Look for non-candidates.
-                fgWalkTreePre(&stmt->gtStmtExpr, fgFindNonInlineCandidate, stmt);
-#endif
-            }
 
-            // See if we need to replace the return value place holder.
-            // Also, see if this update enables further devirtualization.
+            // See if we need to replace some return value place holders.
+            // Also, see if this replacement enables further devirtualization.
             //
             // Note we have both preorder and postorder callbacks here.
             //
@@ -22008,6 +22038,11 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
 
 void Compiler::fgNoteNonInlineCandidate(GenTreeStmt* stmt, GenTreeCall* call)
 {
+    if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
+    {
+        return;
+    }
+
     InlineResult      inlineResult(this, call, nullptr, "fgNotInlineCandidate");
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
@@ -22471,10 +22506,11 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             }
 #endif // DEBUG
 
-            CORINFO_METHOD_HANDLE  method      = call->gtCallMethHnd;
-            unsigned               methodFlags = 0;
-            CORINFO_CONTEXT_HANDLE context     = nullptr;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr);
+            CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
+            unsigned               methodFlags            = 0;
+            CORINFO_CONTEXT_HANDLE context                = nullptr;
+            const bool             isLateDevirtualization = true;
+            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization);
         }
     }
     else if (tree->OperGet() == GT_ASG)
@@ -25507,8 +25543,10 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     return true;
 }
 
-// FatCalliTransformer transforms calli that can use fat function pointer.
-// Fat function pointer is pointer with the second least significant bit set,
+// IndirectCallTransformer transforms indirect calls that involve fat pointers
+// or guarded devirtualization.
+//
+// A fat function pointer is pointer with the second least significant bit set,
 // if the bit is set, the pointer (after clearing the bit) actually points to
 // a tuple <method pointer, instantiation argument pointer> where
 // instantiationArgument is a hidden first argument required by method pointer.
@@ -25557,38 +25595,60 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
 //     subsequent statements
 //   }
 //
-class FatCalliTransformer
+class IndirectCallTransformer
 {
 public:
-    FatCalliTransformer(Compiler* compiler) : compiler(compiler)
+    IndirectCallTransformer(Compiler* compiler) : compiler(compiler)
     {
     }
 
     //------------------------------------------------------------------------
     // Run: run transformation for each block.
     //
-    void Run()
+    // Returns:
+    //   Count of calls transformed.
+    int Run()
     {
+        int count = 0;
+
         for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
         {
-            TransformBlock(block);
+            count += TransformBlock(block);
         }
+
+        return count;
     }
 
 private:
     //------------------------------------------------------------------------
-    // TransformBlock: look through statements and transform statements with fat pointer calls.
+    // TransformBlock: look through statements and transform statements with
+    //   particular indirect calls
     //
-    void TransformBlock(BasicBlock* block)
+    // Returns:
+    //   Count of calls transformed.
+    //
+    int TransformBlock(BasicBlock* block)
     {
+        int count = 0;
+
         for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
         {
             if (ContainsFatCalli(stmt))
             {
-                StatementTransformer stmtTransformer(compiler, block, stmt);
-                stmtTransformer.Run();
+                FatPointerCallTransformer transformer(compiler, block, stmt);
+                transformer.Run();
+                count++;
+            }
+
+            if (ContainsGuardedDevirtualizationCandidate(stmt))
+            {
+                GuardedDevirtualizationTransformer transformer(compiler, block, stmt);
+                transformer.Run();
+                count++;
             }
         }
+
+        return count;
     }
 
     //------------------------------------------------------------------------
@@ -25609,73 +25669,65 @@ private:
         return fatPointerCandidate->IsCall() && fatPointerCandidate->AsCall()->IsFatPointerCandidate();
     }
 
-    class StatementTransformer
+    //------------------------------------------------------------------------
+    // ContainsGuardedDevirtualizationCandidate: check does this statement contain a virtual
+    // call that we'd like to guardedly devirtualize?
+    //
+    // Return Value:
+    //    true if contains, false otherwise.
+    //
+    // Notes:
+    //    calls are hoisted to top level ... (we hope)
+    bool ContainsGuardedDevirtualizationCandidate(GenTreeStmt* stmt)
+    {
+        GenTree* candidate = stmt->gtStmtExpr;
+        return candidate->IsCall() && candidate->AsCall()->IsGuardedDevirtualizationCandidate();
+    }
+
+    class Transformer
     {
     public:
-        StatementTransformer(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt)
+        Transformer(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt)
             : compiler(compiler), currBlock(block), stmt(stmt)
         {
-            remainderBlock  = nullptr;
-            checkBlock      = nullptr;
-            thenBlock       = nullptr;
-            elseBlock       = nullptr;
-            doesReturnValue = stmt->gtStmtExpr->OperIs(GT_ASG);
-            origCall        = GetCall(stmt);
-            fptrAddress     = origCall->gtCallAddr;
-            pointerType     = fptrAddress->TypeGet();
+            remainderBlock = nullptr;
+            checkBlock     = nullptr;
+            thenBlock      = nullptr;
+            elseBlock      = nullptr;
+            origCall       = nullptr;
         }
 
         //------------------------------------------------------------------------
         // Run: transform the statement as described above.
         //
-        void Run()
+        virtual void Run()
         {
-            ClearFatFlag();
+            origCall = GetCall(stmt);
+            Transform();
+        }
+
+        void Transform()
+        {
+            JITDUMP("*** %s: transforming [%06u]\n", Name(), compiler->dspTreeID(stmt));
+            FixupRetExpr();
+            ClearFlag();
             CreateRemainder();
             CreateCheck();
             CreateThen();
             CreateElse();
-
             RemoveOldStatement();
             SetWeights();
             ChainFlow();
         }
 
-    private:
-        //------------------------------------------------------------------------
-        // GetCall: find a call in a statement.
-        //
-        // Arguments:
-        //    callStmt - the statement with the call inside.
-        //
-        // Return Value:
-        //    call tree node pointer.
-        GenTreeCall* GetCall(GenTreeStmt* callStmt)
-        {
-            GenTree*     tree = callStmt->gtStmtExpr;
-            GenTreeCall* call = nullptr;
-            if (doesReturnValue)
-            {
-                assert(tree->OperIs(GT_ASG));
-                call = tree->gtGetOp2()->AsCall();
-            }
-            else
-            {
-                call = tree->AsCall(); // call with void return type.
-            }
-            return call;
-        }
+    protected:
+        virtual const char*  Name()                         = 0;
+        virtual void         ClearFlag()                    = 0;
+        virtual GenTreeCall* GetCall(GenTreeStmt* callStmt) = 0;
+        virtual void FixupRetExpr()                         = 0;
 
         //------------------------------------------------------------------------
-        // ClearFatFlag: clear fat pointer candidate flag from the original call.
-        //
-        void ClearFatFlag()
-        {
-            origCall->ClearFatPointerCandidate();
-        }
-
-        //------------------------------------------------------------------------
-        // CreateRemainder: split current block at the fat call stmt and
+        // CreateRemainder: split current block at the call stmt and
         // insert statements after the call into remainderBlock.
         //
         void CreateRemainder()
@@ -25685,46 +25737,7 @@ private:
             remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
         }
 
-        //------------------------------------------------------------------------
-        // CreateCheck: create check block, that checks fat pointer bit set.
-        //
-        void CreateCheck()
-        {
-            checkBlock               = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
-            GenTree* fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
-            GenTree* fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
-            GenTree* fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
-            GenTree* zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
-            GenTree* fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
-            GenTree* jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
-            GenTree* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->gtStmt.gtStmtILoffsx);
-            compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create then block, that is executed if call address is not fat pointer.
-        //
-        void CreateThen()
-        {
-            thenBlock               = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
-            GenTree* nonFatCallStmt = compiler->gtCloneExpr(stmt)->AsStmt();
-            compiler->fgInsertStmtAtEnd(thenBlock, nonFatCallStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create else block, that is executed if call address is fat pointer.
-        //
-        void CreateElse()
-        {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
-
-            GenTree* fixedFptrAddress  = GetFixedFptrAddress();
-            GenTree* actualCallAddress = compiler->gtNewOperNode(GT_IND, pointerType, fixedFptrAddress);
-            GenTree* hiddenArgument    = GetHiddenArgument(fixedFptrAddress);
-
-            GenTreeStmt* fatStmt = CreateFatCallStmt(actualCallAddress, hiddenArgument);
-            compiler->fgInsertStmtAtEnd(elseBlock, fatStmt);
-        }
+        virtual void CreateCheck() = 0;
 
         //------------------------------------------------------------------------
         // CreateAndInsertBasicBlock: ask compiler to create new basic block.
@@ -25745,6 +25758,146 @@ private:
                 block->bbFlags |= BBF_IMPORTED;
             }
             return block;
+        }
+
+        virtual void CreateThen() = 0;
+        virtual void CreateElse() = 0;
+
+        //------------------------------------------------------------------------
+        // RemoveOldStatement: remove original stmt from current block.
+        //
+        void RemoveOldStatement()
+        {
+            compiler->fgRemoveStmt(currBlock, stmt);
+        }
+
+        //------------------------------------------------------------------------
+        // SetWeights: set weights for new blocks.
+        //
+        void SetWeights()
+        {
+            remainderBlock->inheritWeight(currBlock);
+            checkBlock->inheritWeight(currBlock);
+            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
+            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
+        }
+
+        //------------------------------------------------------------------------
+        // ChainFlow: link new blocks into correct cfg.
+        //
+        void ChainFlow()
+        {
+            assert(!compiler->fgComputePredsDone);
+            checkBlock->bbJumpDest = elseBlock;
+            thenBlock->bbJumpDest  = remainderBlock;
+        }
+
+        Compiler*    compiler;
+        BasicBlock*  currBlock;
+        BasicBlock*  remainderBlock;
+        BasicBlock*  checkBlock;
+        BasicBlock*  thenBlock;
+        BasicBlock*  elseBlock;
+        GenTreeStmt* stmt;
+        GenTreeCall* origCall;
+
+        const int HIGH_PROBABILITY = 80;
+    };
+
+    class FatPointerCallTransformer final : public Transformer
+    {
+    public:
+        FatPointerCallTransformer(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt)
+            : Transformer(compiler, block, stmt)
+        {
+            doesReturnValue = stmt->gtStmtExpr->OperIs(GT_ASG);
+            fptrAddress     = origCall->gtCallAddr;
+            pointerType     = fptrAddress->TypeGet();
+        }
+
+    protected:
+        virtual const char* Name()
+        {
+            return "FatPointerCall";
+        }
+
+        //------------------------------------------------------------------------
+        // GetCall: find a call in a statement.
+        //
+        // Arguments:
+        //    callStmt - the statement with the call inside.
+        //
+        // Return Value:
+        //    call tree node pointer.
+        virtual GenTreeCall* GetCall(GenTreeStmt* callStmt)
+        {
+            GenTree*     tree = callStmt->gtStmtExpr;
+            GenTreeCall* call = nullptr;
+            if (doesReturnValue)
+            {
+                assert(tree->OperIs(GT_ASG));
+                call = tree->gtGetOp2()->AsCall();
+            }
+            else
+            {
+                call = tree->AsCall(); // call with void return type.
+            }
+            return call;
+        }
+
+        //------------------------------------------------------------------------
+        // ClearFlag: clear fat pointer candidate flag from the original call.
+        //
+        virtual void ClearFlag()
+        {
+            origCall->ClearFatPointerCandidate();
+        }
+
+        // FixupRetExpr: no action needed as we handle this in the importer.
+        virtual void FixupRetExpr()
+        {
+        }
+
+        //------------------------------------------------------------------------
+        // CreateCheck: create check block, that checks fat pointer bit set.
+        //
+        virtual void CreateCheck()
+        {
+            checkBlock               = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+            GenTree* fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
+            GenTree* fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
+            GenTree* fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
+            GenTree* zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
+            GenTree* fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
+            GenTree* jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
+            GenTree* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->gtStmt.gtStmtILoffsx);
+            compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // CreateThen: create then block, that is executed if the check succeeds.
+        // This simply executes the original call.
+        //
+        virtual void CreateThen()
+        {
+            thenBlock                   = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
+            GenTree* copyOfOriginalStmt = compiler->gtCloneExpr(stmt)->AsStmt();
+            compiler->fgInsertStmtAtEnd(thenBlock, copyOfOriginalStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // CreateElse: create else block, that is executed if call address is fat pointer.
+        //
+        virtual void CreateElse()
+        {
+            elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+
+            GenTree* fixedFptrAddress  = GetFixedFptrAddress();
+            GenTree* actualCallAddress = compiler->gtNewOperNode(GT_IND, pointerType, fixedFptrAddress);
+            GenTree* hiddenArgument    = GetHiddenArgument(fixedFptrAddress);
+
+            GenTreeStmt* fatStmt = CreateFatCallStmt(actualCallAddress, hiddenArgument);
+            compiler->fgInsertStmtAtEnd(elseBlock, fatStmt);
         }
 
         //------------------------------------------------------------------------
@@ -25843,49 +25996,306 @@ private:
             iterator->Rest() = compiler->gtNewArgList(hiddenArgument);
         }
 
-        //------------------------------------------------------------------------
-        // RemoveOldStatement: remove original stmt from current block.
-        //
-        void RemoveOldStatement()
-        {
-            compiler->fgRemoveStmt(currBlock, stmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SetWeights: set weights for new blocks.
-        //
-        void SetWeights()
-        {
-            remainderBlock->inheritWeight(currBlock);
-            checkBlock->inheritWeight(currBlock);
-            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
-            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
-        }
-
-        //------------------------------------------------------------------------
-        // ChainFlow: link new blocks into correct cfg.
-        //
-        void ChainFlow()
-        {
-            assert(!compiler->fgComputePredsDone);
-            checkBlock->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest  = remainderBlock;
-        }
-
-        Compiler*    compiler;
-        BasicBlock*  currBlock;
-        BasicBlock*  remainderBlock;
-        BasicBlock*  checkBlock;
-        BasicBlock*  thenBlock;
-        BasicBlock*  elseBlock;
-        GenTreeStmt* stmt;
-        GenTreeCall* origCall;
-        GenTree*     fptrAddress;
-        var_types    pointerType;
-        bool         doesReturnValue;
-
+    private:
         const int FAT_POINTER_MASK = 0x2;
-        const int HIGH_PROBABILITY = 80;
+
+        GenTree*  fptrAddress;
+        var_types pointerType;
+        bool      doesReturnValue;
+    };
+
+    class GuardedDevirtualizationTransformer final : public Transformer
+    {
+    public:
+        GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt)
+            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
+        {
+        }
+
+        //------------------------------------------------------------------------
+        // Run: transform the statement as described above.
+        //
+        virtual void Run()
+        {
+            origCall = GetCall(stmt);
+
+            JITDUMP("*** %s contemplating [%06u]\n", Name(), compiler->dspTreeID(origCall));
+
+            // We currently need inline candidate info to guarded devirt.
+            if (!origCall->IsInlineCandidate())
+            {
+                JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
+                ClearFlag();
+                return;
+            }
+
+            // For now, bail on transforming calls that still appear
+            // to return structs by value as there is deferred work
+            // needed to fix up the return type.
+            //
+            // See for instance fgUpdateInlineReturnExpressionPlaceHolder.
+            if (origCall->TypeGet() == TYP_STRUCT)
+            {
+                JITDUMP("*** %s Bailing on [%06u] -- can't handle by-value struct returns yet\n", Name(),
+                        compiler->dspTreeID(origCall));
+                ClearFlag();
+
+                // For stub calls restore the stub address
+                if (origCall->IsVirtualStub())
+                {
+                    origCall->gtStubCallStubAddr = origCall->gtInlineCandidateInfo->stubAddr;
+                }
+                return;
+            }
+
+            Transform();
+        }
+
+    protected:
+        virtual const char* Name()
+        {
+            return "GuardedDevirtualization";
+        }
+
+        //------------------------------------------------------------------------
+        // GetCall: find a call in a statement.
+        //
+        // Arguments:
+        //    callStmt - the statement with the call inside.
+        //
+        // Return Value:
+        //    call tree node pointer.
+        virtual GenTreeCall* GetCall(GenTreeStmt* callStmt)
+        {
+            GenTree* tree = callStmt->gtStmtExpr;
+            assert(tree->IsCall());
+            GenTreeCall* call = tree->AsCall();
+            return call;
+        }
+
+        //------------------------------------------------------------------------
+        // ClearFlag: clear guarded devirtualization candidate flag from the original call.
+        //
+        virtual void ClearFlag()
+        {
+            origCall->ClearGuardedDevirtualizationCandidate();
+        }
+
+        //------------------------------------------------------------------------
+        // CreateCheck: create check block and check method table
+        //
+        virtual void CreateCheck()
+        {
+            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
+
+            // Fetch method table from object arg to call.
+            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallObjp);
+
+            // Create temp for this if the tree is costly.
+            if (!thisTree->IsLocal())
+            {
+                const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
+                // lvaSetClass(thisTempNum, ...);
+                GenTree* asgTree = compiler->gtNewTempAssign(thisTempNum, thisTree);
+                GenTree* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->gtStmt.gtStmtILoffsx);
+                compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+
+                thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
+
+                // Propagate the new this to the call. Must be a new expr as the call
+                // will live on in the else block and thisTree is used below.
+                origCall->gtCallObjp = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
+            }
+
+            GenTree* methodTable = compiler->gtNewIndir(TYP_I_IMPL, thisTree);
+            methodTable->gtFlags |= GTF_IND_INVARIANT;
+
+            // Find target method table
+            GuardedDevirtualizationCandidateInfo* guardedInfo       = origCall->gtGuardedDevirtualizationCandidateInfo;
+            CORINFO_CLASS_HANDLE                  clsHnd            = guardedInfo->guardedClassHandle;
+            GenTree*                              targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
+
+            // Compare and jump to else (which does the indirect call) if NOT equal
+            GenTree* methodTableCompare = compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
+            GenTree* jmpTree            = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, methodTableCompare);
+            GenTree* jmpStmt            = compiler->fgNewStmtFromTree(jmpTree, stmt->gtStmt.gtStmtILoffsx);
+            compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // FixupRetExpr: set up to repair return value placeholder from call
+        //
+        virtual void FixupRetExpr()
+        {
+            // If call returns a value, we need to copy it to a temp, and
+            // update the associated GT_RET_EXPR to refer to the temp instead
+            // of the call.
+            //
+            // Note implicit by-ref returns should have already been converted
+            // so any struct copy we induce here should be cheap.
+            //
+            // Todo: make sure we understand how this interacts with return type
+            // munging for small structs.
+            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
+            GenTree*             retExpr    = inlineInfo->retExpr;
+
+            // Sanity check the ret expr if non-null: it should refer to the original call.
+            if (retExpr != nullptr)
+            {
+                assert(retExpr->gtRetExpr.gtInlineCandidate == origCall);
+            }
+
+            if (origCall->TypeGet() != TYP_VOID)
+            {
+                returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
+                JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
+
+                if (varTypeIsStruct(origCall))
+                {
+                    compiler->lvaSetStruct(returnTemp, origCall->gtRetClsHnd, false);
+                }
+
+                GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
+
+                JITDUMP("Updating GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                        returnTemp);
+                retExpr->gtRetExpr.gtInlineCandidate = tempTree;
+            }
+            else if (retExpr != nullptr)
+            {
+                // We still oddly produce GT_RET_EXPRs for some void
+                // returning calls. Just patch the ret expr to a NOP.
+                //
+                // Todo: consider bagging creation of these RET_EXPRs. The only possible
+                // benefit they provide is stitching back larger trees for failed inlines
+                // of void-returning methods. But then the calls likely sit in commas and
+                // the benefit of a larger tree is unclear.
+                JITDUMP("Updating GT_RET_EXPR [%06u] for VOID return to refer to a NOP\n",
+                        compiler->dspTreeID(retExpr));
+                GenTree* nopTree                     = compiler->gtNewNothingNode();
+                retExpr->gtRetExpr.gtInlineCandidate = nopTree;
+            }
+            else
+            {
+                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+            }
+        }
+
+        //------------------------------------------------------------------------
+        // CreateThen: create else block with direct call to method
+        //
+        virtual void CreateThen()
+        {
+            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
+
+            InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
+            CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->clsHandle;
+
+            // copy 'this' to temp with exact type.
+            const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
+            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtCallObjp);
+            GenTree*       assign    = compiler->gtNewTempAssign(thisTemp, clonedObj);
+            compiler->lvaSetClass(thisTemp, clsHnd, true);
+            GenTreeStmt* assignStmt = compiler->gtNewStmt(assign);
+            compiler->fgInsertStmtAtEnd(thenBlock, assignStmt);
+
+            // Clone call
+            GenTreeCall* call = compiler->gtCloneExpr(origCall)->AsCall();
+            call->gtCallObjp  = compiler->gtNewLclvNode(thisTemp, TYP_REF);
+            call->SetIsGuarded();
+
+            JITDUMP("Direct call [%06u] in block BB%02u\n", compiler->dspTreeID(call), thenBlock->bbNum);
+
+            // Then invoke impDevirtualizeCall do actually
+            // transform the call for us. It should succeed.... as we have
+            // now provided an exact typed this.
+            CORINFO_METHOD_HANDLE  methodHnd              = inlineInfo->methInfo.ftn;
+            unsigned               methodFlags            = inlineInfo->methAttr;
+            CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
+            const bool             isLateDevirtualization = true;
+            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization);
+
+            // Presumably devirt might fail? If so we should try and avoid
+            // making this a guarded devirt candidate instead of ending
+            // up here.
+            assert(!call->IsVirtual());
+
+            // Re-establish this call as an inline candidate.
+            GenTree* oldRetExpr         = inlineInfo->retExpr;
+            inlineInfo->clsHandle       = clsHnd;
+            inlineInfo->exactContextHnd = context;
+            call->gtInlineCandidateInfo = inlineInfo;
+
+            // Add the call
+            GenTreeStmt* callStmt = compiler->gtNewStmt(call);
+            compiler->fgInsertStmtAtEnd(thenBlock, callStmt);
+
+            // If there was a ret expr for this call, we need to create a new one
+            // and append it just after the call.
+            //
+            // Note the original GT_RET_EXPR is sitting at the join point of the
+            // guarded expansion and for non-void calls, and now refers to a temp local;
+            // we set all this up in FixupRetExpr().
+            if (oldRetExpr != nullptr)
+            {
+                GenTree* retExpr    = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
+                inlineInfo->retExpr = retExpr;
+
+                if (returnTemp != BAD_VAR_NUM)
+                {
+                    retExpr = compiler->gtNewTempAssign(returnTemp, retExpr);
+                }
+                else
+                {
+                    // We should always have a return temp if we return results by value
+                    assert(origCall->TypeGet() == TYP_VOID);
+                }
+
+                GenTreeStmt* resultStmt = compiler->gtNewStmt(retExpr);
+                compiler->fgInsertStmtAtEnd(thenBlock, resultStmt);
+            }
+        }
+
+        //------------------------------------------------------------------------
+        // CreateElse: create else block. This executes the unaltered indirect call.
+        //
+        virtual void CreateElse()
+        {
+            elseBlock            = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
+            GenTreeCall* call    = origCall;
+            GenTreeStmt* newStmt = compiler->gtNewStmt(call);
+
+            call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
+            call->SetIsGuarded();
+
+            JITDUMP("Residual call [%06u] moved to block BB%02u\n", compiler->dspTreeID(call), elseBlock->bbNum);
+
+            if (returnTemp != BAD_VAR_NUM)
+            {
+                GenTree* assign     = compiler->gtNewTempAssign(returnTemp, call);
+                newStmt->gtStmtExpr = assign;
+            }
+
+            // For stub calls, restore the stub address. For everything else,
+            // null out the candidate info field.
+            if (call->IsVirtualStub())
+            {
+                JITDUMP("Restoring stub addr %p from candidate info\n", call->gtInlineCandidateInfo->stubAddr);
+                call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
+            }
+            else
+            {
+                call->gtInlineCandidateInfo = nullptr;
+            }
+
+            compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
+
+            // Set the original statement to a nop.
+            stmt->gtStmtExpr = compiler->gtNewNothingNode();
+        }
+
+    private:
+        unsigned returnTemp;
     };
 
     Compiler* compiler;
@@ -25894,46 +26304,74 @@ private:
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgDebugCheckFatPointerCandidates: callback to make sure there are no more GTF_CALL_M_FAT_POINTER_CHECK calls.
+// fgDebugCheckForTransformableIndirectCalls: callback to make sure there
+//  are no more GTF_CALL_M_FAT_POINTER_CHECK or GTF_CALL_M_GUARDED_DEVIRT
+//  calls remaining
 //
-Compiler::fgWalkResult Compiler::fgDebugCheckFatPointerCandidates(GenTree** pTree, fgWalkData* data)
+Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTree** pTree, fgWalkData* data)
 {
     GenTree* tree = *pTree;
     if (tree->IsCall())
     {
         assert(!tree->AsCall()->IsFatPointerCandidate());
+        assert(!tree->AsCall()->IsGuardedDevirtualizationCandidate());
     }
     return WALK_CONTINUE;
 }
 
 //------------------------------------------------------------------------
-// CheckNoFatPointerCandidatesLeft: walk through blocks and check that there are no fat pointer candidates left.
+// CheckNoTransformableIndirectCallsRemain: walk through blocks and check
+//    that there are no indirect call candidates left to transform.
 //
-void Compiler::CheckNoFatPointerCandidatesLeft()
+void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
+    assert(!doesMethodHaveGuardedDevirtualization());
+
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         for (GenTreeStmt* stmt = fgFirstBB->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
         {
-            fgWalkTreePre(&stmt->gtStmtExpr, fgDebugCheckFatPointerCandidates);
+            fgWalkTreePre(&stmt->gtStmtExpr, fgDebugCheckForTransformableIndirectCalls);
         }
     }
 }
 #endif
 
 //------------------------------------------------------------------------
-// fgTransformFatCalli: find and transform fat calls.
+// fgTransformIndirectCalls: find and transform various indirect calls
 //
-void Compiler::fgTransformFatCalli()
+// These transformations happen post-import because they may introduce
+// control flow.
+//
+void Compiler::fgTransformIndirectCalls()
 {
-    assert(IsTargetAbi(CORINFO_CORERT_ABI));
-    FatCalliTransformer fatCalliTransformer(this);
-    fatCalliTransformer.Run();
-    clearMethodHasFatPointer();
-#ifdef DEBUG
-    CheckNoFatPointerCandidatesLeft();
-#endif
+    JITDUMP("\n*************** in fgTransformIndirectCalls(%s)\n", compIsForInlining() ? "inlinee" : "root");
+
+    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization())
+    {
+        IndirectCallTransformer indirectCallTransformer(this);
+        int                     count = indirectCallTransformer.Run();
+
+        if (count > 0)
+        {
+            JITDUMP("\n*************** After fgTransformIndirectCalls() [%d calls transformed]\n", count);
+            INDEBUG(if (verbose) { fgDispBasicBlocks(true); });
+        }
+        else
+        {
+            JITDUMP(" -- no transforms done (?)\n");
+        }
+
+        clearMethodHasFatPointer();
+        clearMethodHasGuardedDevirtualization();
+    }
+    else
+    {
+        JITDUMP(" -- no candidates to transform\n");
+    }
+
+    INDEBUG(CheckNoTransformableIndirectCallsRemain(););
 }
 
 //------------------------------------------------------------------------
