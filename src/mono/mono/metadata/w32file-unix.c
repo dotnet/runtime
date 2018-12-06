@@ -43,7 +43,6 @@
 
 #include "w32file.h"
 #include "w32file-internals.h"
-
 #include "w32file-unix-glob.h"
 #include "w32error.h"
 #include "fdhandle.h"
@@ -54,13 +53,7 @@
 #include "utils/mono-threads-api.h"
 #include "utils/strenc.h"
 #include "utils/refcount.h"
-
-#if 0 // FIXME icall-decl.h sometimes breaks things because of Boehm's handling of dlopen.
 #include "icall-decl.h"
-#else
-guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error);
-#endif
 
 #define NANOSECONDS_PER_MICROSECOND 1000LL
 #define TICKS_PER_MICROSECOND 10L
@@ -118,7 +111,7 @@ static MonoCoopMutex finds_mutex;
 
 #if HOST_DARWIN
 typedef int (*clonefile_fn) (const char *from, const char *to, int flags);
-static void *libc_handle;
+static MonoDl *libc_handle;
 static clonefile_fn clonefile_ptr;
 #endif
 
@@ -4905,9 +4898,9 @@ mono_w32file_init (void)
 	mono_coop_mutex_init (&finds_mutex);
 
 #if HOST_DARWIN
-	libc_handle = dlopen ("/usr/lib/libc.dylib", 0);
+	libc_handle = mono_dl_open ("/usr/lib/libc.dylib", 0, NULL);
 	g_assert (libc_handle);
-	clonefile_ptr = (clonefile_fn)dlsym (libc_handle, "clonefile");
+	g_free (mono_dl_symbol (libc_handle, "clonefile", (void**)&clonefile_ptr));
 #endif
 
 	if (g_hasenv ("MONO_STRICT_IO_EMULATION"))
@@ -4926,7 +4919,7 @@ mono_w32file_cleanup (void)
 	mono_coop_mutex_destroy (&finds_mutex);
 
 #if HOST_DARWIN
-	dlclose (libc_handle);
+	mono_dl_close (libc_handle);
 #endif
 }
 
