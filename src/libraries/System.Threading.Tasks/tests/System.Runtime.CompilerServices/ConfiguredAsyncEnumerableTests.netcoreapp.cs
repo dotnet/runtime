@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 using Xunit;
@@ -29,6 +30,15 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<NullReferenceException>(() => e.MoveNextAsync());
             Assert.Throws<NullReferenceException>(() => e.Current);
             Assert.Throws<NullReferenceException>(() => e.DisposeAsync());
+        }
+
+        [Fact]
+        public void ConfigureAwait_GetAsyncEnumerator_CancellationTokenPassedthrough()
+        {
+            var enumerable = new TrackFlagsAsyncEnumerable() { Flags = 0 };
+            var cts = new CancellationTokenSource();
+            ConfiguredAsyncEnumerable<int>.Enumerator enumerator = enumerable.ConfigureAwait(false).GetAsyncEnumerator(cts.Token);
+            Assert.Equal(cts.Token, enumerable.CancellationToken);
         }
 
         [Theory]
@@ -84,8 +94,14 @@ namespace System.Runtime.CompilerServices.Tests
         private sealed class TrackFlagsAsyncEnumerable : IAsyncEnumerable<int>, IAsyncEnumerator<int>, IValueTaskSource<bool>, IValueTaskSource
         {
             public ValueTaskSourceOnCompletedFlags Flags;
+            public CancellationToken CancellationToken;
 
-            public IAsyncEnumerator<int> GetAsyncEnumerator() => this;
+            public IAsyncEnumerator<int> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            {
+                CancellationToken = cancellationToken;
+                return this;
+            }
+
             public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(this, 0);
             public int Current => throw new NotImplementedException();
             public ValueTask DisposeAsync() => new ValueTask(this, 0);
@@ -108,7 +124,7 @@ namespace System.Runtime.CompilerServices.Tests
                 _delayMs = delayMs;
             }
 
-            public IAsyncEnumerator<T> GetAsyncEnumerator()
+            public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
             {
                 _enumerator = _enumerable.GetEnumerator();
                 return this;
