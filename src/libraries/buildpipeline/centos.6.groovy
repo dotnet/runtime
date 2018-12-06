@@ -24,7 +24,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-201743110
         if (params.TestOuter) {
             additionalArgs = ' /p:OuterLoop=true'
         }
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false${additionalArgs}"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=false /p:PortableBuild=false${additionalArgs}"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials

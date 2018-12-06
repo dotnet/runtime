@@ -24,7 +24,7 @@ simpleNode('OSX10.12','latest') {
         if (params.TestOuter) {
             additionalArgs = ' /p:Outerloop=true'
         }
-        sh "HOME=\$WORKSPACE/tempHome ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true${additionalArgs}"
+        sh "HOME=\$WORKSPACE/tempHome ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=false${additionalArgs}"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials
