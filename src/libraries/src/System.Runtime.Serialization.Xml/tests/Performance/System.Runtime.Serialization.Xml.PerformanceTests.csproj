@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{122A5432-C5B7-4293-AFDA-B24F4D54FDEF}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
+    <Compile Include="..\SerializationTypes.cs" />
+    <Compile Include="..\SerializationTypes.RuntimeOnly.cs" />
+    <Compile Include="..\SerializationTypes.CoreCLR.cs" />
+    <Compile Include="XmlUTF8TextReaderTests.cs" />
+    <Compile Include="PerformanceTestsCommon.cs" />
+    <Compile Include="DcsPerformanceTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

@@ -32,7 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <TargetingPackExclusions Include="System.Numerics.Tensors" />
+    <DefaultReferenceExclusions Include="System.Numerics.Tensors" />
     <ReferenceFromRuntime Include="System.Numerics.Tensors" />
   </ItemGroup>
   <ItemGroup>

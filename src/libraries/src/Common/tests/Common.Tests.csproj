@@ -4,7 +4,7 @@
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
-    <CodeCoverageEnabled>false</CodeCoverageEnabled>
+    <CoverageSupported>false</CoverageSupported>
   </PropertyGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

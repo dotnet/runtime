@@ -54,11 +54,10 @@
   <PropertyGroup>
     <!-- Properties to remove with buildtools removal -->
     <ProjectDir>$(RepoRoot)</ProjectDir>
-    <SourceDir>$(ProjectDir)src\</SourceDir>
     <BinDir>$(ProjectDir)artifacts\bin\</BinDir>
 
-    <!-- CoreFx sepcific paths -->
-    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(BinDir)tests/</TestWorkingDir>
+    <!-- Use msbuild path functions as that property is used in bash scripts. -->
+    <SourceDir>$([MSBuild]::NormalizeDirectory('$(ProjectDir)', 'src'))</SourceDir>
 
     <!-- Input Directories -->
     <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
@@ -73,6 +72,8 @@
     <DotNetRoot Condition="!HasTrailingSlash('$(DotNetRoot)')">$(DotNetRoot)\</DotNetRoot>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(DotNetRoot)</DotnetCliPath>
     <ToolHostCmd Condition="'$(ToolHostCmd)'==''">"$(DotNetRoot)dotnet"</ToolHostCmd>
+    <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
+    <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
   </PropertyGroup>
 
   <!-- Choose .targets files that come from Arcade rather than from buildtools -->
@@ -91,6 +92,7 @@
     <ExcludeDepProjImport>true</ExcludeDepProjImport>
     <ExcludeResolveContractImport>true</ExcludeResolveContractImport>
     <ExcludePackageResolveImport>true</ExcludePackageResolveImport>
+    <ExcludeTestsImport>true</ExcludeTestsImport>
   </PropertyGroup>
 
   <!-- workaround https://github.com/dotnet/sdk/issues/2288
@@ -104,7 +106,7 @@
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
-    <EnableAnalyzers Condition="'$(EnableAnalyzers)'=='' AND '$(IsSourceProject)' == 'true'">true</EnableAnalyzers>
+    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' AND '$(IsSourceProject)' == 'true'">true</EnableAnalyzers>
   </PropertyGroup>
 
   <!-- Default properties for CI builds -->
@@ -115,8 +117,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">
     <!-- Disable F5 and test explorer support for CI builds. -->
-    <GenerateLaunchSettings>false</GenerateLaunchSettings>
-    <IncludeVSTestReferences>false</IncludeVSTestReferences>
+    <EnableLaunchSettings>false</EnableLaunchSettings>
+    <EnableVSTestReferences>false</EnableVSTestReferences>
   </PropertyGroup>
 
   <!-- list of nuget package sources passed to nuget restore -->
@@ -129,6 +131,8 @@
       https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
       https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
+      <!-- Temporary until the Microsoft.Net.Test.Sdk 16.0.0-preview is published on nuget. -->
+      https://dotnet.myget.org/F/vstest/api/v3/index.json;
       $(OverridePackageSource);
       $(RestoreSources)
     </RestoreSources>
@@ -154,7 +158,6 @@
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
     <!-- Build as portable by default -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
-    <Performance Condition="'$(Performance)' == ''">false</Performance>
     <!-- Used for launchSettings.json and runtime config files. -->
     <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
@@ -255,19 +258,10 @@
   -->
   <PropertyGroup>
     <ImportNetSdkFromRepoToolset>false</ImportNetSdkFromRepoToolset>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <_IsTestProjectBefore>$(IsTestProject)</_IsTestProjectBefore>
-    <IsPerformanceTestProject Condition="'$(IsPerformanceTestProject)' == '' AND '$(IsTestProject)' == 'true' AND $(MSBuildProjectName.EndsWith('Performance.Tests'))">true</IsPerformanceTestProject>
+    <DisableArcadeTestFramework>true</DisableArcadeTestFramework>
   </PropertyGroup>
 
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
-
-    <!-- Need to reset our definition of IsTestProject after arcade sdk import -->
-  <PropertyGroup>
-    <IsTestProject>$(_IsTestProjectBefore)</IsTestProject>
-  </PropertyGroup>
 
   <!-- Set the kind of PDB to Portable and turn on SourceLink (fetching source from GitHub) -->
   <PropertyGroup>
@@ -342,17 +336,11 @@
     -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 
-    <!--
-      OSPlatformConfig and TargetOutputRelPath are used by the test archiving targets in
-      corefx and in our publish test targets (https://github.com/dotnet/buildtools/blob/17f28536524248603108c56a16b5b16dcb5a87ff/src/Microsoft.DotNet.Build.Tasks/PackageFiles/publishtest.targets#L54)
-      Once we refactor our test targets we should try to break this tight coupling so it is only
-      on the corefx side as these are specific to corefx.
-    -->
-    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <ShimsTargetRuntimeRoot>$(BinDir)shimsTargetRuntime/</ShimsTargetRuntimeRoot>
+    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(ArtifactsBinDir)tests/</TestWorkingDir>
     <TestPath Condition="'$(TestPath)' == ''">$(TestWorkingDir)$(MSBuildProjectName)/$(BuildConfiguration)/</TestPath>
     <RefRootPath>$(BinDir)ref/</RefRootPath>
     <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
@@ -361,6 +349,16 @@
     <RefPath Condition="$(TargetGroup.EndsWith('aot'))">$(RefRootPath)$(TargetGroup.TrimEnd('t').TrimEnd('o').TrimEnd('a'))/</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
+    <GlobalToolsDir>$(ArtifactsDir)tools/</GlobalToolsDir>
+
+    <!-- Helix properties -->
+    <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
+    <AnyOSPlatformConfig>AnyOS.AnyCPU.$(ConfigurationGroup)</AnyOSPlatformConfig>
+    <UnixPlatformConfig>Unix.$(Platform).$(ConfigurationGroup)</UnixPlatformConfig>
+    <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
+    <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+    <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
     <!-- project file to use when resolving ReferenceFromRuntime items -->
     <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(ProjectDir)\external\runtime\runtime.depproj</RuntimeProjectFile>
@@ -387,6 +385,7 @@
     <NETCoreAppTestHostFxrPath>$(TestHostRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
     <NETCoreAppTestSharedFrameworkPath>$(TestHostRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
     <ILCFXInputFolder>$(TestHostRootPath)ILCInputFolder</ILCFXInputFolder>
+    <InternalTestILCFolder>$(TestHostRootPath)TestILC</InternalTestILCFolder>
 
     <!-- For UAP, we'll produce the layout and hard-link this into each test's directory -->
     <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>
@@ -425,21 +424,24 @@
 
   <PropertyGroup>
     <!-- Don't run tests if we're building another platform's binaries on Windows -->
-    <SkipTests Condition="'$(SkipTests)'=='' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
-
-    <!--
-      Set these properties early as they are consumed by some test projects.
-      TODO: Remove when https://github.com/dotnet/corefx/issues/32421 is fixed.
-    -->
-    <CodeCoverageEnabled Condition="'$(IsTestProject)' == 'true' AND '$(IsPerformanceTestProject)' != 'true' AND '$(SkipTests)' != 'true' AND '$(Coverage)' == 'true'">true</CodeCoverageEnabled>
-    <UseCoverageDedicatedRuntime Condition="'$(UseCoverageDedicatedRuntime)' == '' AND '$(CodeCoverageEnabled)' == 'true'">true</UseCoverageDedicatedRuntime>
+    <SkipTests Condition="'$(SkipTests)' == '' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
 
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
-    <GenerateLaunchSettings Condition="'$(GenerateLaunchSettings)' == ''">true</GenerateLaunchSettings>
+    <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == ''">true</EnableLaunchSettings>
 
     <!-- Disable VS Test SDK references if the .NET Native toolchain is used. -->
-    <IncludeVSTestReferences Condition="'$(UseDotNetNativeToolchain)' == 'true'">false</IncludeVSTestReferences>
+    <EnableVSTestReferences Condition="'$(UseDotNetNativeToolchain)' == 'true'">false</EnableVSTestReferences>
+    <EnableVSTestReferences Condition="'$(EnableVSTestReferences)' == ''">true</EnableVSTestReferences>
   </PropertyGroup>
+
+  <!-- Test properties for full build. -->
+  <PropertyGroup Condition="'$(BuildAllProjects)' == 'true'">
+    <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
+    <Performance Condition="'$(Performance)' == ''">false</Performance>
+  </PropertyGroup>
+
+  <!-- TODO: Fix VB test project reference to Test SDK. -->
+  <Import Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true' AND '$(EnableVSTestReferences)' == 'true' AND '$(Language)' != 'VB'" Project="$(RuntimePath)Microsoft.Net.Test.Sdk.props" />
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(MSBuildThisFileDirectory)eng\ReferenceAssemblies.props" />

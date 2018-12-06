@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory.Tests", "test
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {4BBC8F69-D03E-4432-AA8A-D458FA5B235A}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory.Performance.Tests", "tests\Performance\System.Memory.Performance.Tests.csproj", "{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory.PerformanceTests", "tests\Performance\System.Memory.PerformanceTests.csproj", "{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4BBC8F69-D03E-4432-AA8A-D458FA5B235A} = {4BBC8F69-D03E-4432-AA8A-D458FA5B235A}
 	EndProjectSection

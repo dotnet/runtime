@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressi
 		{2C58640B-5BED-4E83-9554-CD2B9762643F} = {2C58640B-5BED-4E83-9554-CD2B9762643F}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Performance.Tests", "tests\Performance\System.Text.RegularExpressions.Performance.Tests.csproj", "{7F4B8C48-8692-4885-BF84-FEB7EA82E34B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.PerformanceTests", "tests\Performance\System.Text.RegularExpressions.PerformanceTests.csproj", "{7F4B8C48-8692-4885-BF84-FEB7EA82E34B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2C58640B-5BED-4E83-9554-CD2B9762643F} = {2C58640B-5BED-4E83-9554-CD2B9762643F}
 	EndProjectSection

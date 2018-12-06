@@ -47,11 +47,15 @@
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
 
     <!-- xunit test dependency version  -->
-    <MicrosoftDotNetTestSdkVersion>15.8.0</MicrosoftDotNetTestSdkVersion>
+    <MicrosoftNetTestSdkPackageVersion>16.0.0-preview-20181204-03</MicrosoftNetTestSdkPackageVersion>
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
     <UAPToolsPackageVersion>1.0.23</UAPToolsPackageVersion>
+
+    <!-- Code coverage package version -->
+    <CoverletConsolePackageVersion>1.3.0</CoverletConsolePackageVersion>
+    <DotNetReportGeneratorGlobalToolPackageVersion>4.0.4</DotNetReportGeneratorGlobalToolPackageVersion>
 
     <!-- Roslyn optimization data package version -->
     <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
@@ -241,7 +245,7 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.NET.Test.Sdk">
-      <Version>$(MicrosoftDotNetTestSdkVersion)</Version>
+      <Version>$(MicrosoftNetTestSdkPackageVersion)</Version>
     </StaticDependency>
 
     <PerformancePackDependency Include="xunit.performance.core" />

@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Concurre
 		{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89} = {EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Concurrent.Performance.Tests", "tests\Performance\System.Collections.Concurrent.Performance.Tests.csproj", "{16568C86-E97E-42C6-B683-65A1B5AF2EC8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Concurrent.PerformanceTests", "tests\Performance\System.Collections.Concurrent.PerformanceTests.csproj", "{16568C86-E97E-42C6-B683-65A1B5AF2EC8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EA610394-CBA3-4E5C-B3DB-AAEA7F640E89} = {EA610394-CBA3-4E5C-B3DB-AAEA7F640E89}
 	EndProjectSection

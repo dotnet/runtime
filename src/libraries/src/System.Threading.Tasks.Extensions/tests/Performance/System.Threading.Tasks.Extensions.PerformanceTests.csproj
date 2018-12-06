@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{77E38A48-61ED-4D79-9136-D88617EE3558}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Perf.ValueTask.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
+      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs">
+      <Link>Common\System\Threading\Tasks\Sources\ManualResetValueTaskSourceFactory.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

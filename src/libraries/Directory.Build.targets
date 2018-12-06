@@ -160,15 +160,6 @@
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
   </ItemGroup>
 
-  <!--
-    Import Test SDK props and targets.
-    This needs to happen here as the IsInvokableTestProject prop is required
-    which isn't available before Directory.Build.targets.
-    TODO: Fix VB test project reference to Test SDK.
-  -->
-  <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND Exists('$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\buildMultiTargeting\Microsoft.Net.Test.Sdk.props') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\buildMultiTargeting\Microsoft.Net.Test.Sdk.props" />
-  <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND Exists('$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets') AND ('$(BuildingNETCoreAppVertical)' == 'true' OR '$(BuildingNETFxVertical)' == 'true') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets" />
-
   <Target Name="ProducesPackageId"
           Returns="@(PackageIds)">
     <ItemGroup>

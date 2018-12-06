@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{1C397868-9644-48CB-94BF-35805C4AE024}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
-    <CodeCoverageEnabled>false</CodeCoverageEnabled>
+    <CoverageSupported>false</CoverageSupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NonMsdtcPromoterTests.cs" />

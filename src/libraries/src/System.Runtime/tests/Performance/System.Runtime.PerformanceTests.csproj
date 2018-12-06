@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1718</NoWarn>
+    <ProjectGuid>{E9560F70-79F5-453A-B518-0292CFE4A6AD}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Perf.Array.cs" />
+    <Compile Include="Perf.Boolean.cs" />
+    <Compile Include="Perf.Char.cs" />
+    <Compile Include="Perf.DateTime.cs" />
+    <Compile Include="Perf.Decimal.cs" />
+    <Compile Include="Perf.Double.cs" />
+    <Compile Include="Perf.Enum.cs" />
+    <Compile Include="Perf.Guid.cs" />
+    <Compile Include="Perf.Int32.cs" />
+    <Compile Include="Perf.Int64.cs" />
+    <Compile Include="Perf.IntPtr.cs" />
+    <Compile Include="Perf.Object.cs" />
+    <Compile Include="Perf.Single.cs" />
+    <Compile Include="Perf.String.cs" />
+    <Compile Include="Perf.StringBuilder.cs" />
+    <Compile Include="Perf.TimeSpan.cs" />
+    <Compile Include="Perf.Type.cs" />
+    <Compile Include="Perf.UInt32.cs" />
+    <Compile Include="Perf.UInt64.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="Perf.HashCode.netcoreapp.cs" />
+    <Compile Include="Perf.String.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

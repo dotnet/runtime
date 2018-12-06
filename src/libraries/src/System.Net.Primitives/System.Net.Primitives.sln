@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives.Pal.T
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55} = {8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives.Performance.Tests", "tests\PerformanceTests\System.Net.Primitives.Performance.Tests.csproj", "{86256B36-4C78-4A71-A80A-CCA35C4AE758}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives.PerformanceTests", "tests\PerformanceTests\System.Net.Primitives.PerformanceTests.csproj", "{86256B36-4C78-4A71-A80A-CCA35C4AE758}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8772BC91-7B55-49B9-94FA-4B1BE5BEAB55} = {8772BC91-7B55-49B9-94FA-4B1BE5BEAB55}
 	EndProjectSection

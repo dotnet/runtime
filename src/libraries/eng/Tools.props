@@ -11,6 +11,11 @@
 
     <!-- Need to keep in sync with CodeAnalysis.targets file. -->
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
+
+    <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
+    <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
+    <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
+    <GlobalToolsDir>$(ArtifactsDir)tools/</GlobalToolsDir>
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
@@ -22,6 +27,7 @@
     <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.CoreFxTesting" Version="$(MicrosoftDotNetCoreFxTestingPackageVersion)" />
 
     <!-- Include the SourceLink packages -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -37,6 +43,11 @@
     <PackageReference Include="System.Security.Cryptography.Hashing.Algorithms.Analyzers" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <RepoTool Include="coverlet.console" Version="$(CoverletConsolePackageVersion)" />
+    <RepoTool Include="dotnet-reportgenerator-globaltool" Version="$(DotNetReportGeneratorGlobalToolPackageVersion)" />
+  </ItemGroup>
+
   <Target Name="InitTools" AfterTargets="Restore">
 
     <PropertyGroup>
@@ -46,10 +57,6 @@
       <BuildToolsPackageDir>$(PackagesDir)$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
       <CmdExt>cmd</CmdExt>
       <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
-      <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
-      <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
-      <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
-
       <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(PackagesDir)</InitToolsCmdLine>
     </PropertyGroup>
 
@@ -59,6 +66,31 @@
 
     <Touch Files="$(BuildToolsSemaphore)" AlwaysCreate="true" />
     <OnError ExecuteTargets="DumpInitToolsLog" />
+  </Target>
+
+  <Target Name="InitGlobalTools" AfterTargets="Restore">
+
+    <!-- List all global tools and save the output. -->
+    <Exec Condition="Exists($(GlobalToolsDir))"
+          Command="$(DotNetCmd) tool list --tool-path $(GlobalToolsDir)"
+          ConsoleToMsBuild="true"
+          ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="ConsoleOutput" PropertyName="DotNetListToolsOutput" />
+    </Exec>
+
+    <!-- Uninstall the global tool if it exists with a different version. -->
+    <Exec Condition="Exists($(GlobalToolsDir)) AND $(DotNetListToolsOutput.Contains('%(RepoTool.Identity)')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
+          Command="$(DotNetCmd) tool uninstall --tool-path $(GlobalToolsDir) %(RepoTool.Identity)"
+          ContinueOnError="WarnAndContinue" />
+
+    <!--
+      Installs the global tool if it doesn't exist with the right version.
+      Creates the global tools folder automatically if it doesn't exist.
+    -->
+    <Exec Condition="!Exists($(GlobalToolsDir)) OR !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
+          Command="$(DotNetCmd) tool install --tool-path $(GlobalToolsDir) %(RepoTool.Identity) --version %(RepoTool.Version)"
+          ContinueOnError="WarnAndContinue" />
+    
   </Target>
 
   <Target Name="DumpInitToolsLog">
