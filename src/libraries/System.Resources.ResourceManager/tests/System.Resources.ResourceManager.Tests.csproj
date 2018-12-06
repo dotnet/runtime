@@ -4,6 +4,7 @@
     <RootNamespace>System.Resources.Tests</RootNamespace>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
     <TestRuntime>true</TestRuntime>
+    <BinPlaceSatelliteAssemblies>true</BinPlaceSatelliteAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
@@ -60,23 +61,5 @@
     </PropertyGroup>
 
     <Exec Command="resgen.exe %(_WorkaroundCoreMSBuildResource.Identity) $(_ResourceOutputName)" />
-  </Target>
-  <!--
-    Workaround lack of BuildTools support for copying satellite assemblies
-    https://github.com/dotnet/buildtools/issues/246
-  -->
-  <PropertyGroup>
-    <TestDependsOn>
-      $(TestDependsOn);
-      CopyMissingSatelliteAssemblies
-    </TestDependsOn>
-  </PropertyGroup>
-  <Target Name="CopyMissingSatelliteAssemblies" AfterTargets="BinPlace" BeforeTargets="RunTestsForProject">
-    <ItemGroup>
-      <SatelliteAssemblies Include="$(OutputPath)/**/*.resources.dll" />
-    </ItemGroup>
-    <Copy SourceFiles="@(SatelliteAssemblies)"
-          DestinationFolder="$(TestPath)/%(SatelliteAssemblies.RecursiveDir)">
-    </Copy>
   </Target>
 </Project>
