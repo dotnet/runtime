@@ -818,7 +818,7 @@ mono_string_builder_new (int starting_string_length)
 {
 	static MonoClass *string_builder_class;
 	static MonoMethod *sb_ctor;
-	static void *args [1];
+	void *args [1];
 
 	ERROR_DECL (error);
 	int initial_len = starting_string_length;
