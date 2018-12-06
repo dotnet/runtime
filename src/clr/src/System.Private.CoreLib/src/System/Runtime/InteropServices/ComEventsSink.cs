@@ -127,9 +127,9 @@ namespace System.Runtime.InteropServices
         CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
         {
             ppv = IntPtr.Zero;
-            if (iid == _iidSourceItf || iid == typeof(NativeMethods.IDispatch).GUID)
+            if (iid == _iidSourceItf || iid == typeof(IDispatch).GUID)
             {
-                ppv = Marshal.GetComInterfaceForObject(this, typeof(NativeMethods.IDispatch), CustomQueryInterfaceMode.Ignore);
+                ppv = Marshal.GetComInterfaceForObject(this, typeof(IDispatch), CustomQueryInterfaceMode.Ignore);
                 return CustomQueryInterfaceResult.Handled;
             }
             else if (iid == IID_IManagedObject)

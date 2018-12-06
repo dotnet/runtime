@@ -39,5 +39,8 @@
     <type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
     <!-- Accessed via reflection in TraceLogging-style EventSource events. -->
     <type fullname="*f__AnonymousType*" />
+    <!-- Accessed via native code. -->
+    <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
+    <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
   </assembly>
 </linker>
