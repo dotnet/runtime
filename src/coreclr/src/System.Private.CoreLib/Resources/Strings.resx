@@ -3652,4 +3652,10 @@
   <data name="Argument_PrecisionTooLarge" xml:space="preserve">
     <value>Precision cannot be larger than {0}.</value>
   </data>
+  <data name="Arg_EnumNotCloneable" xml:space="preserve">
+    <value>The supplied object does not implement ICloneable.</value>
+  </data>
+  <data name="InvalidOp_InvalidNewEnumVariant" xml:space="preserve">
+    <value>The returned enumerator does not implement IEnumVARIANT.</value>
+  </data>
 </root>
