@@ -7667,12 +7667,33 @@ private:
         return NO_CLASS_HANDLE;
     }
 
+    // Returns true if this is a SIMD type that should be considered an opaque
+    // vector type (i.e. do not analyze or promote its fields).
+    // Note that all but the fixed vector types are opaque, even though they may
+    // actually be declared as having fields.
+    bool isOpaqueSIMDType(CORINFO_CLASS_HANDLE structHandle)
+    {
+        return ((m_simdHandleCache != nullptr) && (structHandle != m_simdHandleCache->SIMDVector2Handle) &&
+                (structHandle != m_simdHandleCache->SIMDVector3Handle) &&
+                (structHandle != m_simdHandleCache->SIMDVector4Handle));
+    }
+
     // Returns true if the tree corresponds to a TYP_SIMD lcl var.
     // Note that both SIMD vector args and locals are mared as lvSIMDType = true, but
     // type of an arg node is TYP_BYREF and a local node is TYP_SIMD or TYP_STRUCT.
     bool isSIMDTypeLocal(GenTree* tree)
     {
         return tree->OperIsLocal() && lvaTable[tree->AsLclVarCommon()->gtLclNum].lvSIMDType;
+    }
+
+    // Returns true if the lclVar is an opaque SIMD type.
+    bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
+    {
+        if (!varDsc->lvSIMDType)
+        {
+            return false;
+        }
+        return isOpaqueSIMDType(varDsc->lvVerTypeInfo.GetClassHandle());
     }
 
     // Returns true if the type of the tree is a byref of TYP_SIMD
@@ -8014,6 +8035,11 @@ private:
         return lvaSIMDInitTempVarNum;
     }
 
+#else  // !FEATURE_SIMD
+    bool isOpaqueSIMDLclVar(LclVarDsc* varDsc)
+    {
+        return false;
+    }
 #endif // FEATURE_SIMD
 
 public:
