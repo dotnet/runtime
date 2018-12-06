@@ -13,8 +13,6 @@
 gboolean
 mono_class_init_internal (MonoClass *klass);
 
-MONO_BEGIN_DECLS
-
 void
 mono_classes_init (void);
 
@@ -89,7 +87,5 @@ mono_class_setup_runtime_info (MonoClass *klass, MonoDomain *domain, MonoVTable 
 
 MonoClass *
 mono_class_create_array_fill_type (void);
-
-MONO_END_DECLS
 
 #endif
