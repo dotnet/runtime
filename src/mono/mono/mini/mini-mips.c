@@ -211,9 +211,8 @@ mips_emit_exc_by_name(guint8 *code, const char *name)
 	return code;
 }
 
-
 guint8 *
-mips_emit_load_const(guint8 *code, int dreg, mgreg_t v)
+mips_emit_load_const (guint8 *code, int dreg, target_mgreg_t v)
 {
 	if (mips_is_imm16 (v))
 		mips_addiu (code, dreg, mips_zero, ((guint32)v) & 0xffff);

@@ -68,7 +68,7 @@ typedef struct MonoCompileArch {
  * To support this, code needs to follow the following conventions:
  * - for the size of a pointer use sizeof (gpointer)
  * - for the size of a register/stack slot use SIZEOF_REGISTER.
- * - for variables which contain values of registers, use mgreg_t.
+ * - for variables which contain values of registers, use host_mgreg_t or target_mgreg_t.
  * - for loading/saving pointers/ints, use the normal ppc_load_reg/ppc_save_reg ()
  *   macros.
  * - for loading/saving register sized quantities, use the ppc_ldr/ppc_str 
@@ -287,7 +287,7 @@ typedef struct {
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) g_assert_not_reached ()
 
-#elif defined(__APPLE__)
+#elif defined (__APPLE__)
 
 typedef struct {
 	unsigned long sp;
@@ -305,11 +305,11 @@ typedef struct {
 #else
 
 typedef struct {
-	mgreg_t sp;
+	host_mgreg_t sp;
 #ifdef __mono_ppc64__
-	mgreg_t cr;
+	host_mgreg_t cr;
 #endif
-	mgreg_t lr;
+	host_mgreg_t lr;
 } MonoPPCStackFrame;
 
 #ifdef G_COMPILER_CODEWARRIOR
@@ -394,9 +394,6 @@ extern void mono_ppc_emitted (guint8 *code, gint64 length, const char *format, .
 #endif
 
 gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
-
-void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr);
-
 
 // Debugging macros for ELF ABI v2
 #ifdef DEBUG_ELFABIV2

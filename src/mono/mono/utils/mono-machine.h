@@ -38,9 +38,9 @@ typedef gsize host_umgreg_t;
 // When dealing with register context, use host_mgreg_t.
 // Or ifndef MONO_CROSS_COMPILE out runtime code.
 #if SIZEOF_REGISTER == 4
-typedef gint32 mgreg_t;
+//typedef gint32 mgreg_t;
 #elif SIZEOF_REGISTER == 8
-typedef gint64 mgreg_t;
+//typedef gint64 mgreg_t;
 #endif
 
 #if TARGET_SIZEOF_VOID_P == 4

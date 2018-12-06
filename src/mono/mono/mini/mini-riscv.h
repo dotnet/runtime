@@ -162,7 +162,7 @@ typedef struct {
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) \
 	do { \
-		(ctx)->gregs [RISCV_A0] = (mgreg_t) exc; \
+		(ctx)->gregs [RISCV_A0] = (host_mgreg_t) exc; \
 	} while (0)
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx, func) \
@@ -176,10 +176,10 @@ struct MonoLMF {
 	// If the second-lowest bit of this field is set, this is a MonoLMFExt.
 	gpointer previous_lmf;
 	gpointer lmf_addr;
-	mgreg_t pc;
-	mgreg_t sp;
-	mgreg_t ra;
-	mgreg_t gregs [RISCV_N_GSREGS]; // s0..s11
+	host_mgreg_t pc;
+	host_mgreg_t sp;
+	host_mgreg_t ra;
+	host_mgreg_t gregs [RISCV_N_GSREGS]; // s0..s11
 	double fregs [RISCV_N_FSREGS]; // fs0..fs11
 };
 

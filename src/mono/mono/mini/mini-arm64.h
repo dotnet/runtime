@@ -89,13 +89,13 @@ struct SeqPointInfo {
 #define FP_PARAM_REGS 8
 
 typedef struct {
-	mgreg_t res, res2;
+	host_mgreg_t res, res2;
 	guint8 *ret;
 	double fpregs [FP_PARAM_REGS];
 	int n_fpargs, n_fpret, n_stackargs;
 	/* This should come last as the structure is dynamically extended */
 	/* The +1 is for r8 */
-	mgreg_t regs [PARAM_REGS + 1];
+	host_mgreg_t regs [PARAM_REGS + 1];
 } DynCallArgs;
 
 typedef struct {

@@ -1325,7 +1325,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			ret_type = LLVMIntType (size * 8);
 		} else {
 			g_assert (cinfo->ret.nslots == 1 || cinfo->ret.nslots == 2);
-			ret_type = LLVMIntType (cinfo->ret.nslots * sizeof (mgreg_t) * 8);
+			ret_type = LLVMIntType (cinfo->ret.nslots * sizeof (target_mgreg_t) * 8);
 		}
 		break;
 	}
@@ -6175,7 +6175,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMSetLinkage (info_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (info_var, TRUE);
 				LLVMSetSection (info_var, "__DATA, __objc_imageinfo,regular,no_dead_strip");
-				LLVMSetAlignment (info_var, sizeof (mgreg_t));
+				LLVMSetAlignment (info_var, sizeof (target_mgreg_t));
 				mark_as_used (ctx->module, info_var);
 			}
 
@@ -6197,7 +6197,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMSetLinkage (ref_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (ref_var, TRUE);
 				LLVMSetSection (ref_var, "__DATA, __objc_selrefs, literal_pointers, no_dead_strip");
-				LLVMSetAlignment (ref_var, sizeof (mgreg_t));
+				LLVMSetAlignment (ref_var, sizeof (target_mgreg_t));
 				mark_as_used (ctx->module, ref_var);
 
 				g_hash_table_insert (ctx->module->objc_selector_to_var, g_strdup (name), ref_var);

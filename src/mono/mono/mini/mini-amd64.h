@@ -580,7 +580,7 @@ mono_arch_unwindinfo_get_size (guchar code_count)
 	// of unwind codes. Adding extra bytes to the total size will make sure we can properly align the RUNTIME_FUNCTION
 	// struct. Since our UNWIND_INFO follows RUNTIME_FUNCTION struct in memory, it will automatically be DWORD aligned
 	// as well. Also make sure to allocate room for a padding UNWIND_CODE, if needed.
-	return (sizeof (mgreg_t) + sizeof (UNWIND_INFO)) -
+	return (sizeof (target_mgreg_t) + sizeof (UNWIND_INFO)) -
 		(sizeof (UNWIND_CODE) * ((MONO_MAX_UNWIND_CODES - ((code_count + 1) & ~1))));
 /* FIXME Something simpler should work:
 	return sizeof (UNWIND_INFO) + sizeof (UNWIND_CODE) * (code_count + (code_count & 1));

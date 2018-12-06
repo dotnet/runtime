@@ -1461,7 +1461,7 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		ainfo = &cinfo->args [i];
 
 		if (ainfo->storage == ArgVtypeByRef) {
-			ccontext->gregs [ainfo->reg] = (mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
+			ccontext->gregs [ainfo->reg] = (host_mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
 			continue;
 		}
 
@@ -1746,13 +1746,13 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 	pindex = 0;
 
 	/* Stored after the stack arguments */
-	nullable_buffer = (guint8*)&(p->regs [PARAM_REGS + 1 + (cinfo->stack_usage / sizeof (mgreg_t))]);
+	nullable_buffer = (guint8*)&(p->regs [PARAM_REGS + 1 + (cinfo->stack_usage / sizeof (host_mgreg_t))]);
 
 	if (sig->hasthis)
-		p->regs [greg ++] = (mgreg_t)*(args [arg_index ++]);
+		p->regs [greg ++] = (host_mgreg_t)*(args [arg_index ++]);
 
 	if (cinfo->ret.storage == ArgVtypeByRef)
-		p->regs [ARMREG_R8] = (mgreg_t)ret;
+		p->regs [ARMREG_R8] = (host_mgreg_t)ret;
 
 	for (aindex = pindex; aindex < sig->param_count; aindex++) {
 		MonoType *t = dinfo->param_types [aindex];
@@ -1761,13 +1761,13 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		int slot = -1;
 
 		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgVtypeOnStack || ainfo->storage == ArgVtypeByRefOnStack) {
-			slot = PARAM_REGS + 1 + (ainfo->offset / sizeof (mgreg_t));
+			slot = PARAM_REGS + 1 + (ainfo->offset / sizeof (host_mgreg_t));
 		} else {
 			slot = ainfo->reg;
 		}
 
 		if (t->byref) {
-			p->regs [slot] = (mgreg_t)*arg;
+			p->regs [slot] = (host_mgreg_t)*arg;
 			continue;
 		}
 
@@ -1810,7 +1810,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 		case MONO_TYPE_U:
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
-			p->regs [slot] = (mgreg_t)*arg;
+			p->regs [slot] = (host_mgreg_t)*arg;
 			break;
 		case MONO_TYPE_U1:
 			p->regs [slot] = *(guint8*)arg;
@@ -1840,7 +1840,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			break;
 		case MONO_TYPE_GENERICINST:
 			if (MONO_TYPE_IS_REFERENCE (t)) {
-				p->regs [slot] = (mgreg_t)*arg;
+				p->regs [slot] = (host_mgreg_t)*arg;
 				break;
 			} else {
 				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
@@ -1870,7 +1870,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			switch (ainfo->storage) {
 			case ArgVtypeInIRegs:
 				for (i = 0; i < ainfo->nregs; ++i)
-					p->regs [slot ++] = ((mgreg_t*)arg) [i];
+					p->regs [slot ++] = ((host_mgreg_t*)arg) [i];
 				break;
 			case ArgHFA:
 				if (ainfo->esize == 4) {
@@ -1884,11 +1884,11 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 				break;
 			case ArgVtypeByRef:
 			case ArgVtypeByRefOnStack:
-				p->regs [slot] = (mgreg_t)arg;
+				p->regs [slot] = (host_mgreg_t)arg;
 				break;
 			case ArgVtypeOnStack:
 				for (i = 0; i < ainfo->size / 8; ++i)
-					p->regs [slot ++] = ((mgreg_t*)arg) [i];
+					p->regs [slot ++] = ((host_mgreg_t*)arg) [i];
 				break;
 			default:
 				g_assert_not_reached ();
@@ -1909,8 +1909,8 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	DynCallArgs *args = (DynCallArgs*)buf;
 	MonoType *ptype = ainfo->rtype;
 	guint8 *ret = args->ret;
-	mgreg_t res = args->res;
-	mgreg_t res2 = args->res2;
+	host_mgreg_t res = args->res;
+	host_mgreg_t res2 = args->res2;
 	int i;
 
 	if (cinfo->ret.storage == ArgVtypeByRef)
@@ -1964,9 +1964,9 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 	case MONO_TYPE_VALUETYPE:
 		switch (ainfo->cinfo->ret.storage) {
 		case ArgVtypeInIRegs:
-			*(mgreg_t*)ret = res;
+			*(host_mgreg_t*)ret = res;
 			if (ainfo->cinfo->ret.nregs > 1)
-				((mgreg_t*)ret) [1] = res2;
+				((host_mgreg_t*)ret) [1] = res2;
 			break;
 		case ArgHFA:
 			/* Use the same area for returning fp values */

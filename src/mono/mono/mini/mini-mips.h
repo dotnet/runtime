@@ -249,11 +249,11 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
 #endif
 
-#define MIPS_RET_ADDR_OFFSET	(-sizeof(gpointer))
+#define MIPS_RET_ADDR_OFFSET	(-sizeof (target_mgreg_t))
 #define MIPS_FP_ADDR_OFFSET	(-8)
 #define MIPS_STACK_ALIGNMENT	16
 #define MIPS_STACK_PARAM_OFFSET 16		/* from sp to first parameter */
-#define MIPS_MINIMAL_STACK_SIZE (4*sizeof(mgreg_t) + 4*sizeof(mgreg_t))
+#define MIPS_MINIMAL_STACK_SIZE (8 * sizeof (target_mgreg_t))
 #define MIPS_EXTRA_STACK_SIZE	16		/* from last parameter to top of frame */
 
 #if _MIPS_SIM == _ABIO32
@@ -420,6 +420,6 @@ typedef struct {
 	int offset;
 } MonoMIPSArgInfo;
 
-extern guint8 *mips_emit_load_const(guint8 *code, int dreg, mgreg_t v);
+guint8 *mips_emit_load_const (guint8 *code, int dreg, target_mgreg_t v);
 
 #endif /* __MONO_MINI_MIPS_H__ */  

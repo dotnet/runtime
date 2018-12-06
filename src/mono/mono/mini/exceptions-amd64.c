@@ -489,7 +489,7 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 	arg_offsets [1] = dummy_stack_space + sizeof (target_mgreg_t);
 	arg_offsets [2] = dummy_stack_space + sizeof (target_mgreg_t) * 2;
 	arg_offsets [3] = dummy_stack_space + sizeof (target_mgreg_t) * 3;
-	ctx_offset = dummy_stack_space + sizeof(mgreg_t) * 4;
+	ctx_offset = dummy_stack_space + sizeof (target_mgreg_t) * 4;
 	regs_offset = ctx_offset + MONO_STRUCT_OFFSET (MonoContext, gregs);
 
 	/* Save registers */

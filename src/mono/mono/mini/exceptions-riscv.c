@@ -124,7 +124,7 @@ mono_arch_exceptions_init (void)
 gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *ji,
                         MonoContext *ctx, MonoContext *new_ctx, MonoLMF **lmf,
-                        mgreg_t **save_locations, StackFrameInfo *frame)
+                        host_mgreg_t **save_locations, StackFrameInfo *frame)
 {
 	NOT_IMPLEMENTED;
 	return FALSE;
@@ -164,7 +164,7 @@ void
 mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
 {
 	// Allocate a stack frame and redirect PC.
-	MONO_CONTEXT_SET_SP (ctx, (mgreg_t) MONO_CONTEXT_GET_SP (ctx) - 32);
+	MONO_CONTEXT_SET_SP (ctx, (host_mgreg_t) MONO_CONTEXT_GET_SP (ctx) - 32);
 
 	mono_arch_setup_resume_sighandler_ctx (ctx, async_cb);
 }

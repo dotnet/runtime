@@ -146,7 +146,7 @@ typedef struct {
 	MonoThreadUnwindState unwind_state;
 	MonoThreadInfo *info;
 	/* For debugging */
-	mgreg_t tid;
+	host_mgreg_t tid;
 	gpointer ref_to_track;
 	/* Number of frames collected during the !precise pass */
 	int nframes;
@@ -1869,7 +1869,7 @@ process_variables (MonoCompile *cfg)
 			set_slot_everywhere (gcfg, pos, SLOT_NOREF);
 			if (cfg->verbose_level > 1)
 				printf ("\tnoref%s at %s0x%x(fp) (R%d, slot = %d): %s\n", (is_arg ? " arg" : ""), ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)ins->inst_offset : (int)ins->inst_offset, vmv->vreg, pos, mono_type_full_name (ins->inst_vtype));
-			if (!t->byref && sizeof (mgreg_t) == 4 && (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_R8)) {
+			if (!t->byref && sizeof (host_mgreg_t) == 4 && (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_R8)) {
 				set_slot_everywhere (gcfg, pos + 1, SLOT_NOREF);
 				if (cfg->verbose_level > 1)
 					printf ("\tnoref at %s0x%x(fp) (R%d, slot = %d): %s\n", ins->inst_offset < 0 ? "-" : "", (ins->inst_offset < 0) ? -(int)(ins->inst_offset + 4) : (int)ins->inst_offset + 4, vmv->vreg, pos + 1, mono_type_full_name (ins->inst_vtype));
@@ -1971,10 +1971,10 @@ process_param_area_slots (MonoCompile *cfg)
 			if (MONO_TYPE_ISSTRUCT (t)) {
 				size = mini_type_stack_size_full (t, &align, FALSE);
 			} else {
-				size = sizeof (mgreg_t);
+				size = sizeof (target_mgreg_t);
 			}
 
-			for (i = 0; i < size / sizeof (mgreg_t); ++i) {
+			for (i = 0; i < size / sizeof (target_mgreg_t); ++i) {
 				g_assert (slot + i >= 0 && slot + i < gcfg->nslots);
 				is_param [slot + i] = TRUE;
 			}
