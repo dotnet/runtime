@@ -101,12 +101,6 @@ delegate_hash_table_add (MonoDelegateHandle d);
 static void
 delegate_hash_table_remove (MonoDelegate *d);
 
-static void
-mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *eltype, guint32 elnum);
-
-static void
-mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *eltype, guint32 elnum);
-
 gpointer
 mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error);
 
@@ -253,9 +247,7 @@ mono_marshal_init (void)
 		register_icall (mono_array_to_savearray, "mono_array_to_savearray", "ptr object", FALSE);
 		register_icall (mono_array_to_lparray, "mono_array_to_lparray", "ptr object", FALSE);
 		register_icall (mono_free_lparray, "mono_free_lparray", "void object ptr", FALSE);
-		register_icall (mono_byvalarray_to_array, "mono_byvalarray_to_array", "void object ptr ptr int32", FALSE);
 		register_icall (mono_byvalarray_to_byte_array, "mono_byvalarray_to_byte_array", "void object ptr int32", FALSE);
-		register_icall (mono_array_to_byvalarray, "mono_array_to_byvalarray", "void ptr object ptr int32", FALSE);
 		register_icall (mono_array_to_byte_byvalarray, "mono_array_to_byte_byvalarray", "void ptr object int32", FALSE);
 		register_icall (mono_delegate_to_ftnptr, "mono_delegate_to_ftnptr", "ptr object", FALSE);
 		register_icall (mono_ftnptr_to_delegate, "mono_ftnptr_to_delegate", "object ptr ptr", FALSE);
@@ -753,64 +745,42 @@ mono_free_lparray (MonoArray *array, gpointer* nativeArray)
 }
 
 void
-mono_byvalarray_to_array (MonoArray *arr, gpointer native_arr, MonoClass *elclass, guint32 elnum)
+mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum)
 {
 	g_assert (m_class_get_element_class (mono_object_class (&arr->obj)) == mono_defaults.char_class);
 
-	if (elclass == mono_defaults.byte_class) {
-		GError *gerror = NULL;
-		gunichar2 *ut;
-		glong items_written;
+	GError *gerror = NULL;
+	gunichar2 *ut;
+	glong items_written;
 
-		ut = g_utf8_to_utf16 ((const gchar *)native_arr, elnum, NULL, &items_written, &gerror);
+	ut = g_utf8_to_utf16 ((const gchar *)native_arr, elnum, NULL, &items_written, &gerror);
 
-		if (!gerror) {
-			memcpy (mono_array_addr_internal (arr, gunichar2, 0), ut, items_written * sizeof (gunichar2));
-			g_free (ut);
-		}
-		else
-			g_error_free (gerror);
+	if (!gerror) {
+		memcpy (mono_array_addr_internal (arr, gunichar2, 0), ut, items_written * sizeof (gunichar2));
+		g_free (ut);
 	}
 	else
-		g_assert_not_reached ();
-}
-
-void
-mono_byvalarray_to_byte_array (MonoArray *arr, gpointer native_arr, guint32 elnum)
-{
-	mono_byvalarray_to_array (arr, native_arr, mono_defaults.byte_class, elnum);
+		g_error_free (gerror);
 }
 
 /* This is a JIT icall, it sets the pending exception and returns on error */
-static void
-mono_array_to_byvalarray (gpointer native_arr, MonoArray *arr, MonoClass *elclass, guint32 elnum)
-{
-	g_assert (m_class_get_element_class (mono_object_class (&arr->obj)) == mono_defaults.char_class);
-
-	if (elclass == mono_defaults.byte_class) {
-		char *as;
-		GError *gerror = NULL;
-
-		as = g_utf16_to_utf8 (mono_array_addr_internal (arr, gunichar2, 0), mono_array_length_internal (arr), NULL, NULL, &gerror);
-		if (gerror) {
-			ERROR_DECL (error);
-			mono_error_set_argument (error, "string", gerror->message);
-			mono_error_set_pending_exception (error);
-			g_error_free (gerror);
-			return;
-		}
-
-		memcpy (native_arr, as, MIN (strlen (as), elnum));
-		g_free (as);
-	} else {
-		g_assert_not_reached ();
-	}
-}
-
 void
 mono_array_to_byte_byvalarray (gpointer native_arr, MonoArray *arr, guint32 elnum)
 {
-	mono_array_to_byvalarray (native_arr, arr, mono_defaults.byte_class, elnum);
+	char *as;
+	GError *gerror = NULL;
+
+	as = g_utf16_to_utf8 (mono_array_addr_internal (arr, gunichar2, 0), mono_array_length_internal (arr), NULL, NULL, &gerror);
+	if (gerror) {
+		ERROR_DECL (error);
+		mono_error_set_argument (error, "string", gerror->message);
+		mono_error_set_pending_exception (error);
+		g_error_free (gerror);
+		return;
+	}
+
+	memcpy (native_arr, as, MIN (strlen (as), elnum));
+	g_free (as);
 }
 
 static MonoStringBuilder *
