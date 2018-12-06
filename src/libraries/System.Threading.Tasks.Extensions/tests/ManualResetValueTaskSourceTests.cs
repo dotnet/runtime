@@ -467,16 +467,21 @@ namespace System.Threading.Tasks.Sources.Tests
             private int _local_items;
             private int _local_i;
             private TaskAwaiter _awaiter0;
+            private CancellationToken _cancellationToken;
 
             public CountAsyncEnumerable(int items)
             {
                 _local_items = _param_items = items;
             }
 
-            public IAsyncEnumerator<int> GetAsyncEnumerator() =>
-                Interlocked.CompareExchange(ref _state, StateStart, StateCtor) == StateCtor ?
+            public IAsyncEnumerator<int> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            {
+                CountAsyncEnumerable cae = Interlocked.CompareExchange(ref _state, StateStart, StateCtor) == StateCtor ?
                     this :
                     new CountAsyncEnumerable(_param_items) { _state = StateStart };
+                cae._cancellationToken = cancellationToken;
+                return cae;
+            }
 
             public ValueTask<bool> MoveNextAsync()
             {
@@ -516,7 +521,7 @@ namespace System.Threading.Tasks.Sources.Tests
                         case 0:
                             if (_local_i < _local_items)
                             {
-                                _awaiter0 = Task.Delay(_local_i).GetAwaiter();
+                                _awaiter0 = Task.Delay(_local_i, _cancellationToken).GetAwaiter();
                                 if (!_awaiter0.IsCompleted)
                                 {
                                     _state = 1;
