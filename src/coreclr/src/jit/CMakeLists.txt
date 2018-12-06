@@ -40,6 +40,7 @@ set( JIT_SOURCES
   hashbv.cpp
   hwintrinsic.cpp
   hostallocator.cpp
+  indirectcalltransformer.cpp
   importer.cpp
   inline.cpp
   inlinepolicy.cpp

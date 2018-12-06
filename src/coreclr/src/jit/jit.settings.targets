@@ -80,6 +80,7 @@
         <CppCompile Include="..\AssertionProp.cpp" />
         <CppCompile Include="..\RangeCheck.cpp" />
         <CppCompile Include="..\LoopCloning.cpp" />
+        <CppCompile Include="..\indirectcalltransformer.cpp" />
         <CppCompile Include="..\inline.cpp" />
         <CppCompile Include="..\inlinepolicy.cpp" />
         <CppCompile Include="..\jitconfig.cpp" />
