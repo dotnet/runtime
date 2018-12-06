@@ -19,7 +19,7 @@
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netcoreapp'">xunit.runner.visualstudio.dotnetcore.testadapter</XUnitAdapter>
     <XUnitAdapter Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">xunit.runner.visualstudio.uwp.testadapter</XUnitAdapter>
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.visualstudio.testadapter</XUnitAdapter>
-    <MicrosoftNetTestSdkPackageName>Microsoft.NET.Test.Sdk</MicrosoftNetTestSdkPackageName>
+    <MicrosoftNetTestSdkPackageName>microsoft.net.test.sdk</MicrosoftNetTestSdkPackageName>
     <TestPlatformHostPackageId>microsoft.testplatform.testhost</TestPlatformHostPackageId>
     <MicrosoftDiagnosticsTracingTraceEventPackageName>Microsoft.Diagnostics.Tracing.TraceEvent</MicrosoftDiagnosticsTracingTraceEventPackageName>
     <TestPlatformHost>testhost</TestPlatformHost>
