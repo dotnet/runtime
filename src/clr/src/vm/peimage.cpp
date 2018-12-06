@@ -127,7 +127,6 @@ CHECK PEImage::CheckILFormat()
         pLayoutToCheck = pLayoutHolder;
     }
 
-#ifdef FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
     if (PEFile::ShouldTreatNIAsMSIL())
     {
         // This PEImage may intentionally be an NI image, being used as if it were an
@@ -137,7 +136,6 @@ CHECK PEImage::CheckILFormat()
         CHECK(pLayoutToCheck->CheckCORFormat());
     }
     else
-#endif // FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
     {
         CHECK(pLayoutToCheck->CheckILFormat());
     }
