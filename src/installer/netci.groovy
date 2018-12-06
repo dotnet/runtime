@@ -26,6 +26,21 @@ def static getBuildJobName(def configuration, def os, def architecture) {
     return configuration.toLowerCase() + '_' + os.toLowerCase() + '_' + architecture.toLowerCase()
 }
 
+def static setMachineAffinity(def job, def os, def architecture) {
+    assert os instanceof String
+    assert architecture instanceof String
+
+    if ((os != 'Windows_NT') || (architecture != 'arm64')) {
+        Utilities.setMachineAffinity(job, os, 'latest-or-auto')
+
+        return
+    }
+
+    job.with {
+        label('Windows.10.Amd64.ClientRS4.DevEx.Open')
+    }
+}
+
 platformList.each { platform ->
     // Calculate names
     def (os, architecture, configuration) = platform.tokenize(':')
@@ -34,7 +49,6 @@ platformList.each { platform ->
     def jobName = getBuildJobName(configuration, os, architecture)
     def buildCommand = '';
     def osForGHTrigger = os
-    def version = "latest-or-auto"
     def dockerRepository = "microsoft/dotnet-buildtools-prereqs"
     def dockerContainer = ''
     def dockerWorkingDirectory = "/src/core-setup"
@@ -112,7 +126,7 @@ platformList.each { platform ->
         }
     }
 
-    Utilities.setMachineAffinity(newJob, os, version)
+    setMachineAffinity(newJob, os, architecture)
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
     if (!(architecture == 'arm' || architecture == 'armel' || architecture == 'arm64')) {
