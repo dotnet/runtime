@@ -36,8 +36,8 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	 */
 	buf = code = mono_global_codeman_reserve (buf_len);
 
-	code = mono_arm_emit_imm64 (code, ARMREG_IP1, arg);
-	code = mono_arm_emit_imm64 (code, ARMREG_IP0, addr);
+	code = mono_arm_emit_imm64 (code, ARMREG_IP1, (guint64)arg);
+	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
 
 	arm_brx (code, ARMREG_IP0);
 

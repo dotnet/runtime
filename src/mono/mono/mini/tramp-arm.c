@@ -1171,7 +1171,7 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 {
 	guint8 *code, *buf;
 	int buf_len;
-	target_mgreg_t *constants;
+	gpointer *constants;
 
 	buf_len = 24;
 
@@ -1183,10 +1183,10 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	/* arg is passed in LR */
 	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_PC, 0);
 	code = emit_bx (code, ARMREG_IP);
-	constants = (target_mgreg_t*)code;
+	constants = (gpointer*)code;
 	constants [0] = arg;
 	constants [1] = addr;
-	code += 2 * sizeof (target_mgreg_t);
+	code += 2 * sizeof (gpointer);
 
 	g_assert ((code - buf) <= buf_len);
 
