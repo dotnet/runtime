@@ -1096,19 +1096,12 @@ namespace System.Runtime.Intrinsics.X86
         internal Bmi1() { }
         public static bool IsSupported { get { throw null; } }
         public static uint AndNot(uint left, uint right) { throw null; }
-        public static ulong AndNot(ulong left, ulong right) { throw null; }
         public static uint BitFieldExtract(uint value, byte start, byte length) { throw null; }
-        public static ulong BitFieldExtract(ulong value, byte start, byte length) { throw null; }
         public static uint BitFieldExtract(uint value, ushort control) { throw null; }
-        public static ulong BitFieldExtract(ulong value, ushort control) { throw null; }
         public static uint ExtractLowestSetBit(uint value) { throw null; }
-        public static ulong ExtractLowestSetBit(ulong value) { throw null; }
         public static uint GetMaskUpToLowestSetBit(uint value) { throw null; }
-        public static ulong GetMaskUpToLowestSetBit(ulong value) { throw null; }
         public static uint ResetLowestSetBit(uint value) { throw null; }
-        public static ulong ResetLowestSetBit(ulong value) { throw null; }
         public static uint TrailingZeroCount(uint value) { throw null; }
-        public static ulong TrailingZeroCount(ulong value) { throw null; }
         public abstract class X64
         {
             internal X64() { }
@@ -1127,19 +1120,17 @@ namespace System.Runtime.Intrinsics.X86
         internal Bmi2() { }
         public static bool IsSupported { get { throw null; } }
         public static uint ZeroHighBits(uint value, uint index) { throw null; }
-        public static ulong ZeroHighBits(ulong value, ulong index) { throw null; }
-        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* high) { throw null; }
-        public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) { throw null; }
+        public static uint MultiplyNoFlags(uint left, uint right) { throw null; }
+        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) { throw null; }
         public static uint ParallelBitDeposit(uint value, uint mask) { throw null; }
-        public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw null; }
         public static uint ParallelBitExtract(uint value, uint mask) { throw null; }
-        public static ulong ParallelBitExtract(ulong value, ulong mask) { throw null; } 
         public abstract class X64
         {
             internal X64() { }
             public static bool IsSupported { get { throw null; } }
             public static ulong ZeroHighBits(ulong value, ulong index) { throw null; }
-            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) { throw null; }
+            public static ulong MultiplyNoFlags(ulong left, ulong right) { throw null; }
+            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw null; }
             public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw null; }
             public static ulong ParallelBitExtract(ulong value, ulong mask) { throw null; } 
         }
@@ -1221,7 +1212,6 @@ namespace System.Runtime.Intrinsics.X86
         internal Lzcnt() { }
         public static bool IsSupported { get { throw null; } }
         public static uint LeadingZeroCount(uint value) { throw null; }
-        public static ulong LeadingZeroCount(ulong value) { throw null; }
         public abstract class X64
         {
             internal X64() { }
@@ -1241,7 +1231,6 @@ namespace System.Runtime.Intrinsics.X86
         internal Popcnt() { }
         public new static bool IsSupported { get { throw null; } }
         public static uint PopCount(uint value) { throw null; }
-        public static ulong PopCount(ulong value) { throw null; }
         public new abstract class X64 : Sse41.X64
         {
             internal X64() { }
@@ -1295,11 +1284,8 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<float> CompareUnorderedScalar(Vector128<float> left, Vector128<float> right) { throw null; }
         public static int ConvertToInt32(Vector128<float> value) { throw null; }
         public static int ConvertToInt32WithTruncation(Vector128<float> value) { throw null; }
-        public static long ConvertToInt64WithTruncation(Vector128<float> value) { throw null; }
-        public static long ConvertToInt64(Vector128<float> value) { throw null; }
         public static float ConvertToSingle(Vector128<float> value) { throw null; }
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value) { throw null; }
-        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) { throw null; }
         public static Vector128<float> Divide(Vector128<float> left, Vector128<float> right) { throw null; }
         public static Vector128<float> DivideScalar(Vector128<float> left, Vector128<float> right) { throw null; }
         public static unsafe Vector128<float> LoadVector128(float* address) { throw null; }
@@ -1448,18 +1434,12 @@ namespace System.Runtime.Intrinsics.X86
         public static int ConvertToInt32(Vector128<double> value) { throw null; }
         public static int ConvertToInt32(Vector128<int> value) { throw null; }
         public static int ConvertToInt32WithTruncation(Vector128<double> value) { throw null; }
-        public static long ConvertToInt64(Vector128<double> value) { throw null; }
-        public static long ConvertToInt64(Vector128<long> value) { throw null; }
-        public static long ConvertToInt64WithTruncation(Vector128<double> value) { throw null; }
         public static uint ConvertToUInt32(Vector128<uint> value) { throw null; }
-        public static ulong ConvertToUInt64(Vector128<ulong> value) { throw null; }
         public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, int value) { throw null; }
-        public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, long value) { throw null; }
         public static Vector128<double> ConvertScalarToVector128Double(Vector128<double> upper, Vector128<float> value) { throw null; }
         public static Vector128<int> ConvertToVector128Int32(Vector128<float> value) { throw null; }
         public static Vector128<int> ConvertToVector128Int32(Vector128<double> value) { throw null; }
         public static Vector128<int> ConvertScalarToVector128Int32(int value) { throw null; }
-        public static Vector128<long> ConvertScalarToVector128Int64(long value) { throw null; }
         public static Vector128<float> ConvertToVector128Single(Vector128<int> value) { throw null; }
         public static Vector128<float> ConvertToVector128Single(Vector128<double> value) { throw null; }
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, Vector128<double> value) { throw null; }
@@ -1468,7 +1448,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<int> ConvertToVector128Int32WithTruncation(Vector128<float> value) { throw null; }
         public static Vector128<int> ConvertToVector128Int32WithTruncation(Vector128<double> value) { throw null; }
         public static Vector128<uint> ConvertScalarToVector128UInt32(uint value) { throw null; }
-        public static Vector128<ulong> ConvertScalarToVector128UInt64(ulong value) { throw null; }
         public static Vector128<double> Divide(Vector128<double> left, Vector128<double> right) { throw null; }
         public static Vector128<double> DivideScalar(Vector128<double> left, Vector128<double> right) { throw null; }
         public static ushort Extract(Vector128<ushort> value, byte index) { throw null; }
@@ -1642,8 +1621,6 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe void Store(double* address, Vector128<double> source) { throw null; }
         public static unsafe void StoreNonTemporal(int* address, int value) { throw null; }
         public static unsafe void StoreNonTemporal(uint* address, uint value) { throw null; }
-        public static unsafe void StoreNonTemporal(long* address, long value) { throw null; }
-        public static unsafe void StoreNonTemporal(ulong* address, ulong value) { throw null; }
         public static unsafe void StoreHigh(double* address, Vector128<double> source) { throw null; }
         public static unsafe void StoreLow(long* address, Vector128<long> source) { throw null; }
         public static unsafe void StoreLow(ulong* address, Vector128<ulong> source) { throw null; }
@@ -1770,8 +1747,6 @@ namespace System.Runtime.Intrinsics.X86
         public static byte Extract(Vector128<byte> value, byte index) { throw null; }
         public static int Extract(Vector128<int> value, byte index) { throw null; }
         public static uint Extract(Vector128<uint> value, byte index) { throw null; }
-        public static long Extract(Vector128<long> value, byte index) { throw null; }
-        public static ulong Extract(Vector128<ulong> value, byte index) { throw null; }
         public static float Extract(Vector128<float> value, byte index) { throw null; }
         public static Vector128<float> Floor(Vector128<float> value) { throw null; }
         public static Vector128<double> Floor(Vector128<double> value) { throw null; }
@@ -1783,8 +1758,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector128<byte> Insert(Vector128<byte> value, byte data, byte index) { throw null; }
         public static Vector128<int> Insert(Vector128<int> value, int data, byte index) { throw null; }
         public static Vector128<uint> Insert(Vector128<uint> value, uint data, byte index) { throw null; }
-        public static Vector128<long> Insert(Vector128<long> value, long data, byte index) { throw null; }
-        public static Vector128<ulong> Insert(Vector128<ulong> value, ulong data, byte index) { throw null; }
         public static Vector128<float> Insert(Vector128<float> value, Vector128<float> data, byte index) { throw null; }
         public static Vector128<sbyte> Max(Vector128<sbyte> left, Vector128<sbyte> right) { throw null; }
         public static Vector128<ushort> Max(Vector128<ushort> left, Vector128<ushort> right) { throw null; }
@@ -1904,7 +1877,6 @@ namespace System.Runtime.Intrinsics.X86
         public static uint Crc32(uint crc, byte data) { throw null; }
         public static uint Crc32(uint crc, ushort data) { throw null; }
         public static uint Crc32(uint crc, uint data) { throw null; }
-        public static ulong Crc32(ulong crc, ulong data) { throw null; }
         public new abstract class X64 : Sse41.X64
         {
             internal X64() { }
