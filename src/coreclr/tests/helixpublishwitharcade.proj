@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="SubmitTestsToHelix">
 
   <!-- This project uses the helix SDK ,documented at
        https://github.com/dotnet/arcade/tree/master/src/Microsoft.DotNet.Helix/Sdk,
@@ -51,20 +51,17 @@
   <Target Name="SubmitTestsToHelix">
     <ItemGroup>
       <Scenarios Include="$(Scenarios)" />
+      <ProjectsToBuild Include="$(MSBuildProjectFile)">
+        <Properties>Scenario=%(Scenarios.Identity)</Properties>
+      </ProjectsToBuild>
     </ItemGroup>
 
-    <!-- If no scenario was specified, just run the normal test
-         scenario -->
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test"
-             Condition=" '@(Scenarios->Count())' == '0' " />
+    <PropertyGroup>
+      <BuildInParallel>false</BuildInParallel>
+      <BuildInParallel Condition=" '@(ProjectsToBuild->Count())' > '1' ">true</BuildInParallel>
+    </PropertyGroup>
 
-    <!-- If scenarios were specified, submit jobs for each
-         scenario. -->
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="Test"
-             Properties="Scenario=%(Scenarios.Identity)"
-             BuildInParallel="true"
-             Condition=" '@(Scenarios->Count())' != '0' " />
-
+    <MSBuild Projects="@(ProjectsToBuild)" Targets="Test" BuildInParallel="$(BuildInParallel)" StopOnFirstFailure="false" UnloadProjectsOnCompletion="true" />
   </Target>
 
   <Target Name="BuildHelixWorkItem"
