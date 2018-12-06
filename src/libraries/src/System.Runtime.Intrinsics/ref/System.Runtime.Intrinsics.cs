@@ -44,9 +44,11 @@ namespace System.Runtime.Intrinsics
         public static Vector64<uint> CreateScalarUnsafe(uint value) { throw null; }
     }
     [StructLayout(LayoutKind.Sequential, Size = 8)]
-    public readonly struct Vector64<T> where T : struct
+    public readonly struct Vector64<T> : IEquatable<Vector64<T>>, IFormattable
+        where T : struct
     {
         private readonly int _dummy;
+        public static int Count { get { throw null; } }
         public static Vector64<T> Zero { get { throw null; } }
         public Vector64<U> As<U>() where U : struct { throw null; }
         public Vector64<byte> AsByte() { throw null; }
@@ -59,9 +61,15 @@ namespace System.Runtime.Intrinsics
         public Vector64<ushort> AsUInt16() { throw null; }
         public Vector64<uint> AsUInt32() { throw null; }
         public Vector64<ulong> AsUInt64() { throw null; }
+        public bool Equals(Vector64<T> other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
         public T GetElement(int index) { throw null; }
         public Vector64<T> WithElement(int index, T value) { throw null; }
+        public override int GetHashCode() { throw null; }
         public T ToScalar() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string format) { throw null; }
+        public string ToString(string format, IFormatProvider formatProvider) { throw null; }
         public Vector128<T> ToVector128() { throw null; }
         public unsafe Vector128<T> ToVector128Unsafe() { throw null; }
     }
@@ -119,9 +127,11 @@ namespace System.Runtime.Intrinsics
         public static Vector128<ulong> CreateScalarUnsafe(ulong value) { throw null; }
     }
     [StructLayout(LayoutKind.Sequential, Size = 16)]
-    public readonly struct Vector128<T> where T : struct
+    public readonly struct Vector128<T> : IEquatable<Vector128<T>>, IFormattable
+        where T : struct
     {
         private readonly int _dummy;
+        public static int Count { get { throw null; } }
         public static Vector128<T> Zero { get { throw null; } }
         public Vector128<U> As<U>() where U : struct { throw null; }
         public Vector128<byte> AsByte() { throw null; }
@@ -134,13 +144,19 @@ namespace System.Runtime.Intrinsics
         public Vector128<ushort> AsUInt16() { throw null; }
         public Vector128<uint> AsUInt32() { throw null; }
         public Vector128<ulong> AsUInt64() { throw null; }
+        public bool Equals(Vector128<T> other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
         public T GetElement(int index) { throw null; }
         public Vector128<T> WithElement(int index, T value) { throw null; }
+        public override int GetHashCode() { throw null; }
         public Vector64<T> GetLower() { throw null; }
         public Vector128<T> WithLower(Vector64<T> value) { throw null; }
         public Vector64<T> GetUpper() { throw null; }
         public Vector128<T> WithUpper(Vector64<T> value) { throw null; }
         public T ToScalar() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string format) { throw null; }
+        public string ToString(string format, IFormatProvider formatProvider) { throw null; }
         public Vector256<T> ToVector256() { throw null; }
         public unsafe Vector256<T> ToVector256Unsafe() { throw null; }
     }
@@ -198,9 +214,11 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ulong> CreateScalarUnsafe(ulong value) { throw null; }
     }
     [StructLayout(LayoutKind.Sequential, Size = 32)]
-    public readonly struct Vector256<T> where T : struct
+    public readonly struct Vector256<T> : IEquatable<Vector256<T>>, IFormattable
+        where T : struct
     {
         private readonly int _dummy;
+        public static int Count { get { throw null; } }
         public static Vector256<T> Zero { get { throw null; } }
         public Vector256<U> As<U>() where U : struct { throw null; }
         public Vector256<byte> AsByte() { throw null; }
@@ -213,13 +231,19 @@ namespace System.Runtime.Intrinsics
         public Vector256<ushort> AsUInt16() { throw null; }
         public Vector256<uint> AsUInt32() { throw null; }
         public Vector256<ulong> AsUInt64() { throw null; }
+        public bool Equals(Vector256<T> other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
         public T GetElement(int index) { throw null; }
         public Vector256<T> WithElement(int index, T value) { throw null; }
+        public override int GetHashCode() { throw null; }
         public Vector128<T> GetLower() { throw null; }
         public Vector256<T> WithLower(Vector128<T> value) { throw null; }
         public Vector128<T> GetUpper() { throw null; }
         public Vector256<T> WithUpper(Vector128<T> value) { throw null; }
         public T ToScalar() { throw null; }
+        public override string ToString() { throw null; }
+        public string ToString(string format) { throw null; }
+        public string ToString(string format, IFormatProvider formatProvider) { throw null; }
     }
 }
 namespace System.Runtime.Intrinsics.Arm.Arm64
