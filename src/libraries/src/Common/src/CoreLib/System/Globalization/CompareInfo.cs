@@ -977,7 +977,7 @@ namespace System.Globalization
             if ((options & ValidIndexMaskOffFlags) != 0 && (options != CompareOptions.Ordinal && options != CompareOptions.OrdinalIgnoreCase))
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
 
-            return IndexOf(source, new string(value, 1), startIndex, count, options, null);
+            return IndexOf(source, char.ToString(value), startIndex, count, options, null);
         }
 
         public unsafe virtual int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
@@ -1268,7 +1268,7 @@ namespace System.Globalization
             }
 
             if (GlobalizationMode.Invariant)
-                return InvariantLastIndexOf(source, new string(value, 1), startIndex, count, (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0);
+                return InvariantLastIndexOf(source, char.ToString(value), startIndex, count, (options & (CompareOptions.IgnoreCase | CompareOptions.OrdinalIgnoreCase)) != 0);
 
             return LastIndexOfCore(source, value.ToString(), startIndex, count, options);
         }
