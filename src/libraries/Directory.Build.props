@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="ExcludeRestorePackageImports">
   <!-- Base repo layout properties -->
   <PropertyGroup>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
@@ -26,7 +26,44 @@
     <UAPvNextTFM>uap$(UAPvNextVersion)</UAPvNextTFM>
   </PropertyGroup>
 
-  <Import Condition="Exists('$(MSBuildProjectDirectory)/Configurations.props')" Project="$(MSBuildProjectDirectory)/Configurations.props" />
+  <!-- Import configuration data model -->
+  <Import Project="$(RepositoryEngineeringDir)configurations/properties.props" />
+  
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
+    <!-- When building in VS setup the ConfigurationGroup based on the given Configuration -->
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
+    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
+  </PropertyGroup>
+  
+  <!-- Platform detection -->
+  <PropertyGroup>
+    <DefaultOSGroup Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix' AND $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix' AND $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix'">Linux</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'==''">$(OS)</DefaultOSGroup>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      These *Group properties are only intended to enable passing them individually at the command line to initialize
+      BuildConfiguration. They will be overwritten by our configurations/configuration.props file and defaulted
+      based on Configuration for the individual projects which is selected based on BuildConfiguration.
+
+      See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
+    -->
+    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
+    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
+    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
+
+    <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
+    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
+
+    <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
+    <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>
+  </PropertyGroup>
+
 
   <!-- Informs build tools to apply .NET Framework metadata if not a test project -->
   <PropertyGroup>
@@ -41,13 +78,20 @@
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(RepositoryEngineeringDir)dependencies.props" />
 
-  <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
   <PropertyGroup>
+    <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
+    <!-- Nuget will normally disable all generated imports as part of a restore to avoid 
+         non-determinism where first restore changes a subsequent restore,
+         but we need these since they define properties (like TargetFramework) needed by restore.
+         In this case we garuntee this is ok since these specific props are not restored by this project's restore. -->
+    <_excludeRestorePackageImports>$(ExcludeRestorePackageImports)</_excludeRestorePackageImports>
+    <ExcludeRestorePackageImports>false</ExcludeRestorePackageImports>
   </PropertyGroup>
   <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.props" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.props')" />
   <PropertyGroup>
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'unused'"></ProjectAssetsFile>
+    <ExcludeRestorePackageImports>$(_excludeRestorePackageImports)</ExcludeRestorePackageImports>
   </PropertyGroup>
 
   <!-- Common repo directories -->
@@ -55,6 +99,8 @@
     <!-- Properties to remove with buildtools removal -->
     <ProjectDir>$(RepoRoot)</ProjectDir>
     <BinDir>$(ProjectDir)artifacts\bin\</BinDir>
+    <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
+    <NativeBinDir>$(BinDir)native/$(BuildConfiguration)</NativeBinDir>
 
     <!-- Use msbuild path functions as that property is used in bash scripts. -->
     <SourceDir>$([MSBuild]::NormalizeDirectory('$(ProjectDir)', 'src'))</SourceDir>
@@ -93,6 +139,7 @@
     <ExcludeResolveContractImport>true</ExcludeResolveContractImport>
     <ExcludePackageResolveImport>true</ExcludePackageResolveImport>
     <ExcludeTestsImport>true</ExcludeTestsImport>
+    <ExcludeBinPlaceImport>true</ExcludeBinPlaceImport>
   </PropertyGroup>
 
   <!-- workaround https://github.com/dotnet/sdk/issues/2288
@@ -162,39 +209,6 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
-    <!-- When building in VS setup the ConfigurationGroup based on the given Configuration -->
-    <ConfigurationGroup Condition="$(Configuration.EndsWith('Debug'))">Debug</ConfigurationGroup>
-    <ConfigurationGroup Condition="$(Configuration.EndsWith('Release'))">Release</ConfigurationGroup>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <!--
-      These *Group properties are only intended to enable passing them individually at the command line to initialize
-      BuildConfiguration. They will be overwritten by our configurations/configuration.props file and defaulted
-      based on Configuration for the individual projects which is selected based on BuildConfiguration.
-
-      See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
-    -->
-    <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
-    <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
-    <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
-
-    <!-- Initialize BuildConfiguration from the individual properties if it wasn't already explicitly set -->
-    <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
-
-    <BuildConfigurationFolder>$(ToolsDir)configuration</BuildConfigurationFolder>
-    <BuildConfigurationImportFile>$(BuildConfigurationFolder)/configuration.props</BuildConfigurationImportFile>
-
-    <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
-    <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>
-
-    <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$(BinDir)native/$(BuildConfiguration)</NativeBinDir>
-  </PropertyGroup>
-
-  <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
   <PropertyGroup>
     <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
     <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
@@ -442,6 +456,13 @@
 
   <!-- TODO: Fix VB test project reference to Test SDK. -->
   <Import Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true' AND '$(EnableVSTestReferences)' == 'true' AND '$(Language)' != 'VB'" Project="$(RuntimePath)Microsoft.Net.Test.Sdk.props" />
+
+  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true'"> 
+    <!-- Project references for non-test assemblies should never be copied to the output. -->
+    <ProjectReference>
+      <Private>false</Private>
+    </ProjectReference>
+  </ItemDefinitionGroup>
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(MSBuildThisFileDirectory)eng\ReferenceAssemblies.props" />

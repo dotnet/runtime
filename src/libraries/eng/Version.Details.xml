@@ -30,6 +30,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>04ee3b77a39302513ece3a950554d6c0ee6d0951</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Configuration" Version="1.0.0-beta.18605.15">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>52e1e2b87d2ea0c7a30b2d34eb98c5a441888fd3</Sha>
     <Dependency Name="Microsoft.DotNet.CoreFxTesting" Version="1.0.0-beta.18605.7">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>04ee3b77a39302513ece3a950554d6c0ee6d0951</Sha>

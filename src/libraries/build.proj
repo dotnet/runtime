@@ -23,15 +23,10 @@
 
   <Import Project="Directory.Build.targets" />
 
-  <UsingTask TaskName="GenerateConfigurationProps" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-
-  <Target Name="Restore" DependsOnTargets="RestoreOptionalToolingPackages;RestoreOptimizationDataPackage">
+  <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps;RestoreOptionalToolingPackages;RestoreOptimizationDataPackage">
     <ItemGroup>
       <_RestoreProjects Include="external\dir.proj" />
     </ItemGroup>
-
-    <!-- Generate the configurations for this repo -->
-    <GenerateConfigurationProps Properties="@(Property)" PropertyValues="@(PropertyValue)" PropsFolder="$(BuildConfigurationFolder)" />
 
     <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties)" />
   </Target>
