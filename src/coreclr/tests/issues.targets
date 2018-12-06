@@ -196,12 +196,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/*">
             <Issue>times out</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Matrix4x4_r/*">
-            <Issue>19537</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/Matrix4x4_ro/*">
-            <Issue>19537</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm64 All OS -->

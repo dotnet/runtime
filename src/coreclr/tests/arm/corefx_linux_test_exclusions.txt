@@ -11,7 +11,6 @@ System.Memory.Tests                  # https://github.com/dotnet/coreclr/issues/
 System.Net.Http.Functional.Tests     # https://github.com/dotnet/coreclr/issues/17739
 System.Net.NameResolution.Functional.Tests # https://github.com/dotnet/coreclr/issues/21224 -- JitStressRegs=1
 System.Net.NameResolution.Pal.Tests  # https://github.com/dotnet/coreclr/issues/17740
-System.Numerics.Vectors.Tests        # https://github.com/dotnet/coreclr/issues/19537
 System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/21223 -- JitStress=2
 System.Text.Encodings.Web.Tests      # https://github.com/dotnet/coreclr/issues/21113 -- minopts
 System.Text.Json.Tests               # https://github.com/dotnet/coreclr/issues/21112
