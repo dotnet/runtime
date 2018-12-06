@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <ProjectGuid>{E66FFA55-0975-4F0D-8A18-24B2687FEDEA}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CustomAssemblyAttributes.cs" />
+    <Compile Include="Perf_Image_Load.cs" />
+    <Compile Include="Perf_Graphics_DrawBeziers.cs" />
+    <Compile Include="Perf_Graphics_Transforms.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\Performance\BenchmarkFilter.cs">
+      <Link>Common\Performance\BenchmarkFilter.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Drawing\Helpers.cs">
+      <Link>Common\System\Drawing\Helpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

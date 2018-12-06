@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{28FB26C9-E425-4E50-9D1D-08F34560E86E}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Perf.Linq.cs" />
+    <Compile Include="Perf.LinqTestBase.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

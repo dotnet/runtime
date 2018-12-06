@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.TypeC
 		{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F} = {AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.TypeConverter.Performance.Tests", "tests\Performance\System.ComponentModel.TypeConverter.Performance.Tests.csproj", "{89C76728-ECAF-4905-A33F-BD6BFED5E91D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.ComponentModel.TypeConverter.PerformanceTests", "tests\Performance\System.ComponentModel.TypeConverter.PerformanceTests.csproj", "{89C76728-ECAF-4905-A33F-BD6BFED5E91D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F} = {AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}
 	EndProjectSection

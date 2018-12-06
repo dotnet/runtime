@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.NonGener
 		{585E3764-534B-4A12-8BD5-8578CB826A45} = {585E3764-534B-4A12-8BD5-8578CB826A45}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.NonGeneric.Performance.Tests", "tests\Performance\System.Collections.NonGeneric.Performance.Tests.csproj", "{93AB3799-BC91-4B27-B526-28FFFF0DB1B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.NonGeneric.PerformanceTests", "tests\Performance\System.Collections.NonGeneric.PerformanceTests.csproj", "{93AB3799-BC91-4B27-B526-28FFFF0DB1B1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{585E3764-534B-4A12-8BD5-8578CB826A45} = {585E3764-534B-4A12-8BD5-8578CB826A45}
 	EndProjectSection

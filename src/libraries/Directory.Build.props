@@ -18,4 +18,22 @@
     -->
     <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
   </PropertyGroup>
+
+  <!-- Use msbuild path functions as that property is used in bash scripts. -->
+  <ItemGroup>
+    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'SR.*'))" />
+    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'NotImplemented.cs'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use IL version of System.Private.CoreLib and link to the testhost folder to probe additional assemblies. -->
+    <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9\il" />
+    <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9" />
+  </ItemGroup>
+
+  <!-- Transform CI paths in System.Private.CoreLib.pdb with local path for shared CoreLib files. -->
+  <PropertyGroup>
+    <CoverageTransformSource>fullPath=&quot;&quot;.*System\.Private\.CoreLib\\shared</CoverageTransformSource>
+    <CoverageTransformDestination>fullPath=&quot;&quot;&quot;&quot;$(CommonPath)\CoreLib</CoverageTransformDestination>
+  </PropertyGroup>
 </Project>

@@ -1,0 +1,81 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectGuid>{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}</ProjectGuid>
+    <DisableTests Condition="'$(TargetGroup)' == 'uap' AND ('$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64')">true</DisableTests>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(DisableTests)' != 'true'">
+    <Compile Include="Vector2\Distance.cs" />
+    <Compile Include="Vector2\GetHashCode.cs" />
+    <Compile Include="Vector2\Length.cs" />
+    <Compile Include="Vector3\Cross.cs" />
+    <Compile Include="Vector3\Distance.cs" />
+    <Compile Include="Vector3\GetHashCode.cs" />
+    <Compile Include="Vector3\Length.cs" />
+    <Compile Include="Vector4\AddFunction.cs" />
+    <Compile Include="Vector4\AddOperator.cs" />
+    <Compile Include="Vector4\Distance.cs" />
+    <Compile Include="Vector4\DistanceSquared.cs" />
+    <Compile Include="Vector4\Dot.cs" />
+    <Compile Include="Vector4\GetHashCode.cs" />
+    <Compile Include="Vector4\Length.cs" />
+    <Compile Include="Vector4\LengthSquared.cs" />
+    <Compile Include="Vector4\MultiplyFunction.cs" />
+    <Compile Include="Vector4\MultiplyOperator.cs" />
+    <Compile Include="Vector4\Normalize.cs" />
+    <Compile Include="Vector4\SquareRoot.cs" />
+    <Compile Include="Vector4\SubtractFunction.cs" />
+    <Compile Include="Vector4\SubtractOperator.cs" />
+    <Compile Include="Vector3\AddFunction.cs" />
+    <Compile Include="Vector3\AddOperator.cs" />
+    <Compile Include="Vector3\DistanceSquared.cs" />
+    <Compile Include="Vector3\Dot.cs" />
+    <Compile Include="Vector3\LengthSquared.cs" />
+    <Compile Include="Vector3\MultiplyFunction.cs" />
+    <Compile Include="Vector3\MultiplyOperator.cs" />
+    <Compile Include="Vector3\Normalize.cs" />
+    <Compile Include="Vector3\SquareRoot.cs" />
+    <Compile Include="Vector3\SubtractFunction.cs" />
+    <Compile Include="Vector3\SubtractOperator.cs" />
+    <Compile Include="Vector2\DistanceSquared.cs" />
+    <Compile Include="Vector2\Normalize.cs" />
+    <Compile Include="Vector2\LengthSquared.cs" />
+    <Compile Include="Vector2\SquareRoot.cs" />
+    <Compile Include="Vector2\Dot.cs" />
+    <Compile Include="Vector2\MultiplyFunction.cs" />
+    <Compile Include="Vector2\SubtractFunction.cs" />
+    <Compile Include="Vector2\AddFunction.cs" />
+    <Compile Include="Vector2\MultiplyOperator.cs" />
+    <Compile Include="Vector2\SubtractOperator.cs" />
+    <Compile Include="Vector2\AddOperator.cs" />
+    <Compile Include="VectorTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DisableTests)' != 'true'">
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Constructor\GenericVectorConstructorTests.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>GenericVectorConstructorTests.cs</LastGenOutput>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\Util.cs">
+      <Link>Util.cs</Link>
+    </Compile>
+    <Compile Include="Constructor\GenericVectorConstructorTests.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GenericVectorConstructorTests.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\Common\src\CoreLib\System\Numerics\GenerationConfig.ttinclude">
+      <Link>GenerationConfig.ttinclude</Link>
+    </None>
+  </ItemGroup>
+</Project>

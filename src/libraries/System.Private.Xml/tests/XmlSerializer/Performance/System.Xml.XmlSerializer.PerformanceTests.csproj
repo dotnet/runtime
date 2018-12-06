@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{9891F9AC-9A0A-47DF-8D96-92B21AFC3B93}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="$(TestSourceFolder)XsPerformanceTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

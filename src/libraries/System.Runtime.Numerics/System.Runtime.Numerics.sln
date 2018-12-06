@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics.Tes
 		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B} = {D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics.Performance.Tests", "tests\Performance\System.Runtime.Numerics.Performance.Tests.csproj", "{3842BE38-1A99-41B2-81B5-186E64077B95}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Numerics.PerformanceTests", "tests\Performance\System.Runtime.Numerics.PerformanceTests.csproj", "{3842BE38-1A99-41B2-81B5-186E64077B95}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B} = {D2C99D27-0BEF-4319-ADB3-05CBEBA8F69B}
 	EndProjectSection

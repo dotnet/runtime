@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectGuid>{18482C55-6B57-41E8-BBC4-383B9E2C7AA2}</ProjectGuid>
+    <IncludePartialFacadeTests Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">true</IncludePartialFacadeTests>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IncludePartialFacadeTests)' == 'true'">
+    <!-- Tests specific to the fast span -->
+    <Compile Include="Perf.Span.Contains.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Perf.Base64EncodeDecode.cs" />
+    <Compile Include="Perf.Memory.Slice.cs" />
+    <Compile Include="Perf.Memory.Span.cs" />
+    <Compile Include="Perf.ReadOnlySequence.Enumerator.cs" />
+    <Compile Include="Perf.ReadOnlySequence.First.cs" />
+    <Compile Include="Perf.ReadOnlySequence.GetPosition.cs" />
+    <Compile Include="Perf.ReadOnlySequence.Slice.cs" />
+    <Compile Include="Perf.ReadOnlySequence.TryGet.cs" />
+    <Compile Include="Perf.Span.BinaryReadAndWrite.cs" />
+    <Compile Include="Perf.Span.BinarySearch.cs" />
+    <Compile Include="Perf.Span.Clear.cs" />
+    <Compile Include="Perf.Span.Fill.cs" />
+    <Compile Include="Perf.Span.IndexOf.cs" />
+    <Compile Include="Perf.Span.IndexOfAny.cs" />
+    <Compile Include="Perf.Span.SequenceCompareTo.cs" />
+    <Compile Include="Perf.Span.StartsWith.cs" />
+    <Compile Include="Perf.Utf8Formatter.cs" />
+    <Compile Include="Perf.Utf8Parser.cs" />
+    <Compile Include="..\Base64\Base64TestHelper.cs" />
+    <Compile Include="..\TestHelpers.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\Memory\CustomMemoryForTest.cs">
+      <Link>Common\System\MemoryTests\CustomMemoryForTest.cs</Link>
+    </Compile>
+    <Compile Include="..\ReadOnlyBuffer\BufferSegment.cs">
+      <Link>Common\System\Memory\Tests\BufferSegment.cs</Link>
+    </Compile>
+    <Compile Include="..\ReadOnlyBuffer\ReadOnlySequenceFactory.byte.cs">
+      <Link>Common\System\Memory\Tests\ReadOnlySequenceFactory.byte.cs</Link>
+    </Compile>
+    <Compile Include="..\ReadOnlyBuffer\ReadOnlySequenceFactory.char.cs">
+      <Link>Common\System\Memory\Tests\ReadOnlySequenceFactory.char.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

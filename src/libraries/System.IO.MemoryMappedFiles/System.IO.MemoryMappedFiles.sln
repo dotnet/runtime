@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.MemoryMappedFiles
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {16EE5522-F387-4C9E-9EF2-B5134B043F37}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.MemoryMappedFiles.Performance.Tests", "tests\Performance\System.IO.MemoryMappedFiles.Performance.Tests.csproj", "{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.MemoryMappedFiles.PerformanceTests", "tests\Performance\System.IO.MemoryMappedFiles.PerformanceTests.csproj", "{41CAE9F4-0FFB-4FD1-9413-039C3C561DEE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{16EE5522-F387-4C9E-9EF2-B5134B043F37} = {16EE5522-F387-4C9E-9EF2-B5134B043F37}
 	EndProjectSection

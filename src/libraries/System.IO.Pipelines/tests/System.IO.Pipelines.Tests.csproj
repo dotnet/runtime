@@ -6,7 +6,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <TargetingPackExclusions Include="System.IO.Pipelines" />
+    <DefaultReferenceExclusions Include="System.IO.Pipelines" />
     <ReferenceFromRuntime Include="System.IO.Pipelines" />
   </ItemGroup>
   <ItemGroup>

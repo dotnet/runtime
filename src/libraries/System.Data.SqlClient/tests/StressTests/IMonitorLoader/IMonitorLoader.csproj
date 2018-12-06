@@ -9,5 +9,4 @@
     <Compile Include="IMonitorLoader.cs" />
     <Compile Include="MonitorMetrics.cs" />
   </ItemGroup>
-  <!--Import the targets-->
 </Project>

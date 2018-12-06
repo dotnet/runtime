@@ -74,14 +74,14 @@ namespace System.Tests
         public static TheoryData<string, string, string, string, Type> TestingCreateInstanceFromObjectHandleData => new TheoryData<string, string, string, string, Type>
         {
             // string physicalFileName, string assemblyFile, string typeName, returnedFullNameType, expectedException
-            { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PublicClassSample", "AssemblyResolveTests.PublicClassSample", null },
-            { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.publicclasssample", "AssemblyResolveTests.PublicClassSample", typeof(TypeLoadException) },
+            { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", "AssemblyResolveTestApp.PublicClassSample", null },
+            { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", "AssemblyResolveTestApp.PublicClassSample", typeof(TypeLoadException) },
 
-            { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PrivateClassSample", "AssemblyResolveTests.PrivateClassSample", null },
-            { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.privateclasssample", "AssemblyResolveTests.PrivateClassSample", typeof(TypeLoadException) },
+            { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", "AssemblyResolveTestApp.PrivateClassSample", null },
+            { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", "AssemblyResolveTestApp.PrivateClassSample", typeof(TypeLoadException) },
 
-            { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PublicClassNoDefaultConstructorSample", "AssemblyResolveTests.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
-            { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.publicclassnodefaultconstructorsample", "AssemblyResolveTests.PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
+            { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
+            { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
         };
 
         [Theory]
@@ -123,14 +123,14 @@ namespace System.Tests
         public static TheoryData<string, string, string, Type> TestingCreateInstanceObjectHandleData => new TheoryData<string, string, string, Type>()
         {
             // string assemblyName, string typeName, returnedFullNameType, expectedException
-            { "AssemblyResolveTests", "AssemblyResolveTests.PublicClassSample", "AssemblyResolveTests.PublicClassSample", null },
-            { "assemblyresolvetests", "assemblyresolvetests.publicclasssample", "AssemblyResolveTests.PublicClassSample", typeof(TypeLoadException) },
+            { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PublicClassSample", "AssemblyResolveTestApp.PublicClassSample", null },
+            { "assemblyresolvetestapp", "assemblyresolvetestapp.publicclasssample", "AssemblyResolveTestApp.PublicClassSample", typeof(TypeLoadException) },
 
-            { "AssemblyResolveTests", "AssemblyResolveTests.PrivateClassSample", "AssemblyResolveTests.PrivateClassSample", null },
-            { "assemblyresolvetests", "assemblyresolvetests.privateclasssample", "AssemblyResolveTests.PrivateClassSample", typeof(TypeLoadException) },
+            { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PrivateClassSample", "AssemblyResolveTestApp.PrivateClassSample", null },
+            { "assemblyresolvetestapp", "assemblyresolvetestapp.privateclasssample", "AssemblyResolveTestApp.PrivateClassSample", typeof(TypeLoadException) },
 
-            { "AssemblyResolveTests", "AssemblyResolveTests.PublicClassNoDefaultConstructorSample", "AssemblyResolveTests.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
-            { "assemblyresolvetests", "assemblyresolvetests.publicclassnodefaultconstructorsample", "AssemblyResolveTests.PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
+            { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(MissingMethodException) },
+            { "assemblyresolvetestapp", "assemblyresolvetestapp.publicclassnodefaultconstructorsample", "AssemblyResolveTestApp.PublicClassNoDefaultConstructorSample", typeof(TypeLoadException) }
         };
 
         [Theory]
@@ -149,15 +149,15 @@ namespace System.Tests
         public static IEnumerable<object[]> TestingCreateInstanceFromObjectHandleFullSignatureData()
         {
             // string physicalFileName, string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, returnedFullNameType
-            yield return new object[] { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
-            yield return new object[] { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
-            yield return new object[] { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
-            yield return new object[] { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
 
-            yield return new object[] { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
-            yield return new object[] { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
-            yield return new object[] { "AssemblyResolveTests.dll", "AssemblyResolveTests.dll", "AssemblyResolveTests.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
-            yield return new object[] { "AssemblyResolveTests.dll", "assemblyresolvetests.dll", "assemblyresolvetests.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.dll", "AssemblyResolveTestApp.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp.dll", "assemblyresolvetestapp.dll", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
         }
 
         [Theory]
@@ -186,15 +186,15 @@ namespace System.Tests
         public static IEnumerable<object[]> TestingCreateInstanceObjectHandleFullSignatureData()
         {
             // string assemblyName, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder binder, object[] args, CultureInfo culture, object[] activationAttributes, returnedFullNameType
-            yield return new object[] { "AssemblyResolveTests", "AssemblyResolveTests.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
-            yield return new object[] { "assemblyresolvetests", "assemblyresolvetests.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
-            yield return new object[] { "AssemblyResolveTests", "AssemblyResolveTests.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
-            yield return new object[] { "assemblyresolvetests", "assemblyresolvetests.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PublicClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+            yield return new object[] { "assemblyresolvetestapp", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PublicClassSample", false, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
+            yield return new object[] { "assemblyresolvetestapp", "assemblyresolvetestapp.publicclasssample", true, BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PublicClassSample" };
 
-            yield return new object[] { "AssemblyResolveTests", "AssemblyResolveTests.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
-            yield return new object[] { "assemblyresolvetests", "assemblyresolvetests.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
-            yield return new object[] { "AssemblyResolveTests", "AssemblyResolveTests.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
-            yield return new object[] { "assemblyresolvetests", "assemblyresolvetests.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTests.PrivateClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            yield return new object[] { "assemblyresolvetestapp", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[0], CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            yield return new object[] { "AssemblyResolveTestApp", "AssemblyResolveTestApp.PrivateClassSample", false, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
+            yield return new object[] { "assemblyresolvetestapp", "assemblyresolvetestapp.privateclasssample", true, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, Type.DefaultBinder, new object[1] { 1 }, CultureInfo.InvariantCulture, null, "AssemblyResolveTestApp.PrivateClassSample" };
         }
     }
 }

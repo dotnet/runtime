@@ -108,9 +108,9 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-    <ProjectReference Include="AssemblyResolveTests\AssemblyResolveTests.csproj">
+    <ProjectReference Include="AssemblyResolveTestApp\AssemblyResolveTestApp.csproj">
       <Project>{ad83807c-8be5-4f27-85df-9793613233e1}</Project>
-      <Name>AssemblyResolveTests</Name>
+      <Name>AssemblyResolveTestApp</Name>
     </ProjectReference>
     <ProjectReference Include="TestAppOutsideOfTPA\TestAppOutsideOfTPA.csproj">
       <Project>{c44b33e3-f89f-40b9-b353-d380c1524988}</Project>
