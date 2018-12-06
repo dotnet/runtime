@@ -2359,7 +2359,7 @@ namespace System.Globalization
                 nfi.nativeDigits = new string[10];
                 for (int i = 0; i < nfi.nativeDigits.Length; i++)
                 {
-                    nfi.nativeDigits[i] = new string(digits[i], 1);
+                    nfi.nativeDigits[i] = char.ToString(digits[i]);
                 }
 
                 nfi.digitSubstitution = GetDigitSubstitution(_sRealName);
