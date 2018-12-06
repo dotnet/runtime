@@ -153,8 +153,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	code = buf = mono_global_codeman_reserve (256);
 
 	/* Note that there is a single argument to the trampoline
-	 * and it is stored at: esp + pushed_args * sizeof (gpointer)
-	 * the ret address is at: esp + (pushed_args + 1) * sizeof (gpointer)
+	 * and it is stored at: esp + pushed_args * sizeof (target_mgreg_t)
+	 * the ret address is at: esp + (pushed_args + 1) * sizeof (target_mgreg_t)
 	 */
 
 	/* Compute frame offsets relative to the frame pointer %ebp */
@@ -347,7 +347,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	} else {
 		x86_mov_reg_imm (code, X86_ECX, (guint8*)mono_get_rethrow_preserve_exception_addr ());
 	}
-	x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof(target_mgreg_t));
+	x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof (target_mgreg_t));
 	x86_jump_reg (code, X86_ECX);
 
 	/* Normal case */
@@ -432,7 +432,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
 	if (mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (target_mgreg_t);
 	for (depth = 0; ; ++depth) {
 		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
 
@@ -473,7 +473,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	}
 
 	/* fetch slot */
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (gpointer) * (index + 1), 4);
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, sizeof (target_mgreg_t) * (index + 1), 4);
 	/* is the slot null? */
 	x86_test_reg_reg (code, X86_EAX, X86_EAX);
 	/* if yes, jump to actual trampoline */
@@ -593,7 +593,6 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	int buf_len;
 	GSList *unwind_ops;
 
-
 	buf_len = 10;
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
@@ -648,7 +647,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_NREG, -cfa_offset);
 
 	x86_push_reg (code, X86_EBP);
-	cfa_offset += sizeof(host_mgreg_t);
+	cfa_offset += sizeof (target_mgreg_t);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, - cfa_offset);
 

@@ -407,7 +407,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	is_mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
 	if (is_mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (target_mgreg_t);
 	for (depth = 0; ; ++depth) {
 		int size = mono_class_rgctx_get_array_size (depth, is_mrgctx);
 
@@ -451,7 +451,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	}
 
 	/* fetch slot */
-	code = mono_arm_emit_ldrx (code, ARMREG_IP1, ARMREG_IP1, sizeof (gpointer) * (index + 1));
+	code = mono_arm_emit_ldrx (code, ARMREG_IP1, ARMREG_IP1, sizeof (target_mgreg_t) * (index + 1));
 	/* is the slot null? */
 	/* if yes, jump to actual trampoline */
 	rgctx_null_jumps [njumps ++] = code;

@@ -1050,9 +1050,9 @@ mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 
 	UnlockedIncrement (&trampoline_calls);
 
-	image = (MonoImage *)*(gpointer*)(gpointer)token_info;
+	image = (MonoImage *)*(gpointer*)token_info;
 	token_info += sizeof (gpointer);
-	token = *(guint32*)(gpointer)token_info;
+	token = *(guint32*)token_info;
 
 	addr = mono_aot_get_method_from_token (mono_domain_get (), image, token, error);
 	if (!is_ok (error))
@@ -1566,9 +1566,9 @@ mono_create_jit_trampoline_from_token (MonoImage *image, guint32 token)
 
 	buf = start = (guint8 *)mono_domain_alloc0 (domain, 2 * sizeof (gpointer));
 
-	*(gpointer*)(gpointer)buf = image;
+	*(gpointer*)buf = image;
 	buf += sizeof (gpointer);
-	*(guint32*)(gpointer)buf = token;
+	*(guint32*)buf = token;
 
 	tramp = mono_create_specific_trampoline (start, MONO_TRAMPOLINE_AOT, domain, NULL);
 

@@ -212,7 +212,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
  * PPC_MINIMAL_STACK_SIZE + 16 (args + alignment to ppc_magic_trampoline)
  * + MonoLMF + 14 fp regs + 13 gregs + alignment
  */
-#define STACK (((PPC_MINIMAL_STACK_SIZE + 4 * sizeof (mgreg_t) + sizeof (MonoLMF) + 14 * sizeof (double) + 31 * sizeof (mgreg_t)) + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1))
+#define STACK (((PPC_MINIMAL_STACK_SIZE + 4 * sizeof (target_mgreg_t) + sizeof (MonoLMF) + 14 * sizeof (double) + 31 * sizeof (target_mgreg_t)) + (MONO_ARCH_FRAME_ALIGNMENT - 1)) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1))
 
 /* Method-specific trampoline code fragment size */
 #define METHOD_TRAMPOLINE_SIZE 64
@@ -279,14 +279,14 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_stfd (code, i, offset, ppc_r1);
 		offset += sizeof (double);
 	}
-#define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (31 * sizeof (mgreg_t)))
+#define GREGS_OFFSET (STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (31 * sizeof (target_mgreg_t)))
 	offset = GREGS_OFFSET;
 	for (i = 0; i < 31; i++) {
 		ppc_str (code, i, offset, ppc_r1);
 		if (i == ppc_r14) {
 			offset_r14 = offset;
 		}
-		offset += sizeof (mgreg_t);
+		offset += sizeof (target_mgreg_t);
 	}
 
 	/* we got here through a jump to the ctr reg, we must save the lr
@@ -302,7 +302,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r12);
+		ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r12);
 		ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
 		ppc_mtlr (code, ppc_r12);
@@ -360,7 +360,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("trampoline_func_%d", tramp_type));
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r12);
+		ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r12);
 		ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
 		ppc_mtlr (code, ppc_r12);
@@ -375,7 +375,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* OK, code address is now on r3, move it to r14 for now.  */
 	if (!MONO_TRAMPOLINE_TYPE_MUST_RETURN (tramp_type)) {
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r3);
+		ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r3);
 		ppc_ldptr (code, ppc_r3, 0, ppc_r3);
 #endif
 		ppc_mr (code, ppc_r14, ppc_r3);
@@ -455,13 +455,13 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		ppc_lfd (code, i, offset, ppc_r1);
 		offset += sizeof (double);
 	}
-	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (31 * sizeof (mgreg_t));
+	offset = STACK - sizeof (MonoLMF) - (14 * sizeof (double)) - (31 * sizeof (target_mgreg_t));
 	ppc_ldr (code, ppc_r0, offset, ppc_r1);
-	offset += 2 * sizeof (mgreg_t);
+	offset += 2 * sizeof (target_mgreg_t);
 	for (i = 2; i < 13; i++) {
 		if (i != PPC_TOC_REG && (i != 3 || tramp_type != MONO_TRAMPOLINE_RGCTX_LAZY_FETCH))
 			ppc_ldr (code, i, offset, ppc_r1);
-		offset += sizeof (mgreg_t);
+		offset += sizeof (target_mgreg_t);
 	}
 
 	/* Non-standard function epilogue. Instead of doing a proper
@@ -512,7 +512,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 	mono_domain_unlock (domain);
 
 	if (short_branch) {
-		ppc_load_sequence (code, ppc_r0, (mgreg_t)(gsize) arg1);
+		ppc_load_sequence (code, ppc_r0, (target_mgreg_t)(gsize) arg1);
 		ppc_emit32 (code, short_branch);
 	} else {
 		/* Prepare the jump to the generic trampoline code.*/
@@ -570,7 +570,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
 	if (mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (target_mgreg_t);
 	for (depth = 0; ; ++depth) {
 		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
 
@@ -618,7 +618,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	}
 
 	/* fetch slot */
-	ppc_ldptr (code, ppc_r4, sizeof (gpointer) * (index  + 1), ppc_r4);
+	ppc_ldptr (code, ppc_r4, sizeof (target_mgreg_t) * (index  + 1), ppc_r4);
 	/* is the slot null? */
 	ppc_compare_reg_imm (code, 0, ppc_r4, 0);
 	/* if yes, jump to actual trampoline */
@@ -669,7 +669,7 @@ guint8*
 mono_arch_get_call_target (guint8 *code)
 {
 	/* Should be a bl */
-	guint32 ins = ((guint32*)(gpointer)code) [-1];
+	guint32 ins = ((guint32*)code) [-1];
 
 	if ((ins >> 26 == 18) && ((ins & 1) == 1) && ((ins & 2) == 0)) {
 		gint32 disp = (((gint32)ins) >> 2) & 0xffffff;

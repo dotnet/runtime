@@ -3677,9 +3677,9 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 				if (mini_is_gsharedvt_type (fsig->params [i]) || MONO_TYPE_IS_PRIMITIVE (fsig->params [i])) {
 					EMIT_NEW_VARLOADA_VREG (cfg, ins, sp [i + 1]->dreg, fsig->params [i]);
 					addr_reg = ins->dreg;
-					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (mgreg_t), addr_reg);
+					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), addr_reg);
 				} else {
-					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (mgreg_t), sp [i + 1]->dreg);
+					EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, args [4]->dreg, i * sizeof (target_mgreg_t), sp [i + 1]->dreg);
 				}
 			}
 		} else {
@@ -10718,13 +10718,12 @@ mono_ldptr:
 			 * Optimize the common case of ldvirtftn+delegate creation
 			 */
 			if (previous_il_op == MONO_CEE_DUP && (sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
-
 				MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context);
 				if (ctor_method && (m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class)) {
 					MonoInst *target_ins, *handle_ins;
 					MonoMethod *invoke;
 					int invoke_context_used;
-					gboolean is_virtual = cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL;
+					const gboolean is_virtual = (cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) != 0;
 
 					invoke = mono_get_delegate_invoke_internal (ctor_method->klass);
 					if (!invoke || !mono_method_signature_internal (invoke))
@@ -10737,7 +10736,7 @@ mono_ldptr:
 					if (mono_security_core_clr_enabled ())
 						ensure_method_is_allowed_to_call_method (cfg, method, ctor_method);
 
-					if ((invoke_context_used == 0 || !cfg->gsharedvt) || cfg->llvm_only) {
+					if (invoke_context_used == 0 || !cfg->gsharedvt || cfg->llvm_only) {
 						if (cfg->verbose_level > 3)
 							g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip + 6, NULL));
 						if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used, invoke_context_used, is_virtual))) {

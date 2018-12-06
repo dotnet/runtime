@@ -36,8 +36,8 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 	 */
 	buf = code = mono_global_codeman_reserve (buf_len);
 
-	code = mono_arm_emit_imm64 (code, ARMREG_IP1, (guint64)arg);
-	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
+	code = mono_arm_emit_imm64 (code, ARMREG_IP1, arg);
+	code = mono_arm_emit_imm64 (code, ARMREG_IP0, addr);
 
 	arm_brx (code, ARMREG_IP0);
 
@@ -277,8 +277,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Allocate callee register area just below the callee area so it can be accessed from start_gsharedvt_call using negative offsets */
 	/* The + 8 is for alignment */
 	callee_reg_area_offset = 8;
-	callee_stack_area_offset = callee_reg_area_offset + (n_arg_regs * sizeof (gpointer));
-	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, ((n_arg_regs + n_arg_fregs) * sizeof (gpointer)) + 8);
+	callee_stack_area_offset = callee_reg_area_offset + (n_arg_regs * sizeof (target_mgreg_t));
+	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, ((n_arg_regs + n_arg_fregs) * sizeof (target_mgreg_t)) + 8);
 
 	/*
 	 * The stack now looks like this:
@@ -318,7 +318,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	for (i = 0; i < n_arg_fregs; ++i)
 		arm_ldrfpx (code, i, ARMREG_SP, callee_reg_area_offset + ((n_arg_regs + i) * 8));
 	/* Clear callee reg area */
-	arm_addx_imm (code, ARMREG_SP, ARMREG_SP, ((n_arg_regs + n_arg_fregs) * sizeof (gpointer)) + 8);
+	arm_addx_imm (code, ARMREG_SP, ARMREG_SP, ((n_arg_regs + n_arg_fregs) * sizeof (target_mgreg_t)) + 8);
 	/* Make the call */
 	arm_blrx (code, ARMREG_IP1);
 

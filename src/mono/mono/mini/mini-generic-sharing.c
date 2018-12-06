@@ -1951,7 +1951,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 
 	/* Cache it */
 	tramp_info = (GSharedVtTrampInfo *)mono_domain_alloc0 (domain, sizeof (GSharedVtTrampInfo));
-	memcpy (tramp_info, &tinfo, sizeof (GSharedVtTrampInfo));
+	*tramp_info = tinfo;
 
 	mono_domain_lock (domain);
 	/* Duplicates are not a problem */

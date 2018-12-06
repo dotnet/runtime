@@ -214,12 +214,12 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			if (ainfo->storage == RegTypeGSharedVtInReg)
 				src_slot = map_reg (ainfo->reg);
 			else
-				src_slot = map_stack_slot (ainfo->offset / 4);
+				src_slot = map_stack_slot (ainfo->offset / sizeof (target_mgreg_t));
 			g_assert (ndst < 256);
 			g_assert (src_slot < 256);
 			src [0] = (ndst << 8) | src_slot;
 
-			if (ainfo2->storage == RegTypeGeneral && ainfo2->size != 0 && ainfo2->size != 4) {
+			if (ainfo2->storage == RegTypeGeneral && ainfo2->size != 0 && ainfo2->size != sizeof (target_mgreg_t)) {
 				/* Have to load less than 4 bytes */
 				// FIXME: Signed types
 				switch (ainfo2->size) {
@@ -250,7 +250,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			arg_marshal = GSHAREDVT_ARG_BYVAL_TO_BYREF;
 			ndst = 1;
 			dst = g_new0 (int, 1);
-			dst [0] = map_stack_slot (ainfo2->offset / 4);
+			dst [0] = map_stack_slot (ainfo2->offset / sizeof (target_mgreg_t));
 		} else {
 			ndst = get_arg_slots (ainfo2, &dst);
 		}
@@ -309,7 +309,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 				else
 					info->ret_marshal = GSHAREDVT_RET_VFP_R8;
 			} else {
-				if (cinfo->ret.size == 4)
+				if (cinfo->ret.size == sizeof (target_mgreg_t))
 					info->ret_marshal = GSHAREDVT_RET_IREG;
 				else
 					info->ret_marshal = GSHAREDVT_RET_IREGS;
@@ -325,8 +325,8 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 	if (gsharedvt_in && var_ret && caller_cinfo->ret.storage != RegTypeStructByAddr) {
 		/* Allocate stack space for the return value */
-		info->vret_slot = map_stack_slot (info->stack_usage / sizeof (gpointer));
-		info->stack_usage += mono_type_stack_size_internal (normal_sig->ret, NULL, FALSE) + sizeof (gpointer);
+		info->vret_slot = map_stack_slot (info->stack_usage / sizeof (target_mgreg_t));
+		info->stack_usage += mono_type_stack_size_internal (normal_sig->ret, NULL, FALSE) + sizeof (target_mgreg_t);
 	}
 
 	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);

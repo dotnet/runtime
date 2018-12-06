@@ -1384,8 +1384,8 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 		LSCAN_DEBUG (printf ("R%d %s -> 0x%x\n", inst->dreg, mono_type_full_name (t), slot));
 
 		if (inst->flags & MONO_INST_LMF) {
-			size = sizeof (MonoLMF);
-			align = sizeof (mgreg_t);
+			size = MONO_ABI_SIZEOF (MonoLMF);
+			align = sizeof (target_mgreg_t);
 			reuse_slot = FALSE;
 		}
 
@@ -1394,12 +1394,12 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 
 		if (slot == 0xffffff) {
 			/*
-			 * Allways allocate valuetypes to sizeof (gpointer) to allow more
+			 * Allways allocate valuetypes to sizeof (target_mgreg_t) to allow more
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
 			if (MONO_TYPE_ISSTRUCT (t)) {
-				align = MAX (align, sizeof (gpointer));
+				align = MAX (align, sizeof (target_mgreg_t));
 				align = MAX (align, mono_class_min_align (mono_class_from_mono_type_internal (t)));
 			}
 
@@ -1484,7 +1484,7 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 	vars = mono_varlist_sort (cfg, vars, 0);
 	offset = 0;
-	*stack_align = sizeof(mgreg_t);
+	*stack_align = sizeof (target_mgreg_t);
 	for (l = vars; l; l = l->next) {
 		vmv = (MonoMethodVar *)l->data;
 		inst = cfg->varinfo [vmv->idx];
@@ -1628,8 +1628,8 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			 * This variable represents a MonoLMF structure, which has no corresponding
 			 * CLR type, so hard-code its size/alignment.
 			 */
-			size = sizeof (MonoLMF);
-			align = sizeof (mgreg_t);
+			size = MONO_ABI_SIZEOF (MonoLMF);
+			align = sizeof (target_mgreg_t);
 			reuse_slot = FALSE;
 		}
 
@@ -1638,12 +1638,12 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 
 		if (slot == 0xffffff) {
 			/*
-			 * Allways allocate valuetypes to sizeof (gpointer) to allow more
+			 * Allways allocate valuetypes to sizeof (target_mgreg_t) to allow more
 			 * efficient copying (and to work around the fact that OP_MEMCPY
 			 * and OP_MEMSET ignores alignment).
 			 */
 			if (MONO_TYPE_ISSTRUCT (t)) {
-				align = MAX (align, sizeof (gpointer));
+				align = MAX (align, sizeof (target_mgreg_t));
 				align = MAX (align, mono_class_min_align (mono_class_from_mono_type_internal (t)));
 				/* 
 				 * Align the size too so the code generated for passing vtypes in

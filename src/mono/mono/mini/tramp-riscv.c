@@ -147,7 +147,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	int index = MONO_RGCTX_SLOT_INDEX (slot);
 
 	if (is_mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (target_mgreg_t);
 
 	int depth;
 
@@ -191,7 +191,7 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	 * Load the trampoline address and branch to it. a0 holds the actual
 	 * (M)RGCTX or VTable.
 	 */
-	code = mono_riscv_emit_load (code, RISCV_T0, MONO_ARCH_RGCTX_REG, sizeof (gpointer));
+	code = mono_riscv_emit_load (code, RISCV_T0, MONO_ARCH_RGCTX_REG, sizeof (target_mgreg_t));
 	riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
 
 	mono_arch_flush_icache (buf, code - buf);

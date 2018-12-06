@@ -211,7 +211,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	g_assert (reg_area_size % MONO_ARCH_FRAME_ALIGNMENT == 0);
 
 	/* unwind markers 1/3 */
-	cfa_offset = sizeof (gpointer);
+	cfa_offset = sizeof (target_mgreg_t);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, AMD64_RSP, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, AMD64_RIP, -cfa_offset);
 
@@ -219,12 +219,12 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	amd64_push_reg (code, AMD64_RBP);
 
 	/* unwind markers 2/3 */
-	cfa_offset += sizeof (gpointer);
+	cfa_offset += sizeof (target_mgreg_t);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, AMD64_RBP, - cfa_offset);
 
 	/* set it as the new frame pointer */
-	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof(mgreg_t));
+	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (target_mgreg_t));
 
 	/* unwind markers 3/3 */
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, AMD64_RBP);
@@ -236,12 +236,12 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* save stuff */
 
 	/* save info */
-	amd64_mov_membase_reg (code, AMD64_RSP, info_offset, AMD64_RAX, sizeof (mgreg_t));
+	amd64_mov_membase_reg (code, AMD64_RSP, info_offset, AMD64_RAX, sizeof (target_mgreg_t));
 	/* save rgctx */
-	amd64_mov_membase_reg (code, AMD64_RSP, rgctx_arg_reg_offset, MONO_ARCH_RGCTX_REG, sizeof (mgreg_t));
+	amd64_mov_membase_reg (code, AMD64_RSP, rgctx_arg_reg_offset, MONO_ARCH_RGCTX_REG, sizeof (target_mgreg_t));
 
 	for (i = 0; i < n_arg_regs; ++i)
-		amd64_mov_membase_reg (code, AMD64_RSP, caller_reg_area_offset + i * 8, param_regs [i], sizeof (mgreg_t));
+		amd64_mov_membase_reg (code, AMD64_RSP, caller_reg_area_offset + i * 8, param_regs [i], sizeof (target_mgreg_t));
 
 	for (i = 0; i < n_arg_fregs; ++i)
 		amd64_sse_movsd_membase_reg (code, AMD64_RSP, caller_reg_area_offset + (i + n_arg_regs) * 8, i);
@@ -272,7 +272,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/* Call start_gsharedvt_call () */
 	/* arg1 == info */
-	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RAX, sizeof(mgreg_t));
+	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG1, AMD64_RAX, sizeof (target_mgreg_t));
 	/* arg2 = caller stack area */
 	amd64_lea_membase (code, MONO_AMD64_ARG_REG2, AMD64_RBP, -(framesize - caller_reg_area_offset)); 
 
@@ -280,7 +280,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	amd64_lea_membase (code, MONO_AMD64_ARG_REG3, AMD64_RSP, callee_reg_area_offset);
 
 	/* arg4 = mrgctx reg */
-	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG4, MONO_ARCH_RGCTX_REG, sizeof(mgreg_t));
+	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG4, MONO_ARCH_RGCTX_REG, sizeof (target_mgreg_t));
 
 	if (aot) {
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_start_gsharedvt_call");
@@ -294,7 +294,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 			*/
 			int shadow_reg_size = 0;
 
-			shadow_reg_size = ALIGN_TO (PARAM_REGS * sizeof(gpointer), MONO_ARCH_FRAME_ALIGNMENT);
+			shadow_reg_size = ALIGN_TO (PARAM_REGS * sizeof (target_mgreg_t), MONO_ARCH_FRAME_ALIGNMENT);
 			amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, shadow_reg_size);
 			amd64_call_reg (code, AMD64_R11);
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, shadow_reg_size);
@@ -306,16 +306,16 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	}
 
 	/* Method to call is now on RAX. Restore regs and jump */
-	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, sizeof(mgreg_t));
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, sizeof (target_mgreg_t));
 
 	for (i = 0; i < n_arg_regs; ++i)
-		amd64_mov_reg_membase (code, param_regs [i], AMD64_RSP, callee_reg_area_offset + i * 8, sizeof (mgreg_t));
+		amd64_mov_reg_membase (code, param_regs [i], AMD64_RSP, callee_reg_area_offset + i * 8, sizeof (target_mgreg_t));
 
 	for (i = 0; i < n_arg_fregs; ++i)
 		amd64_sse_movsd_reg_membase (code, i, AMD64_RSP, callee_reg_area_offset + (i + n_arg_regs) * 8);
 
 	//load rgctx
-	amd64_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, AMD64_RBP, -(framesize - rgctx_arg_reg_offset), sizeof (mgreg_t));
+	amd64_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, AMD64_RBP, -(framesize - rgctx_arg_reg_offset), sizeof (target_mgreg_t));
 
 	/* Clear callee reg area */
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, reg_area_size);
@@ -325,7 +325,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/* Marshal return value. Available registers: R10 and R11 */
 	/* Load info struct */
-	amd64_mov_reg_membase (code, AMD64_R10, AMD64_RBP, -(framesize - info_offset), sizeof (mgreg_t));
+	amd64_mov_reg_membase (code, AMD64_R10, AMD64_RBP, -(framesize - info_offset), sizeof (target_mgreg_t));
 
 	/* Branch to the in/out handling code */
 	amd64_alu_membase_imm_size (code, X86_CMP, AMD64_R10, MONO_STRUCT_OFFSET (GSharedVtCallInfo, gsharedvt_in), 1, 4);
@@ -345,7 +345,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	amd64_shift_reg_imm (code, X86_SHL, MONO_AMD64_ARG_REG1, 3);
 
 	/* vret address is RBP - (framesize - caller_reg_area_offset) */
-	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, sizeof(mgreg_t));
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RSP, sizeof (target_mgreg_t));
 	amd64_alu_reg_reg (code, X86_ADD, AMD64_R11, MONO_AMD64_ARG_REG1);
 
 	/* Load ret marshal type */
@@ -427,7 +427,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	amd64_shift_reg_imm (code, X86_SHL, AMD64_R11, 3);
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, caller_vret_offset);
 	amd64_alu_reg_reg (code, X86_ADD, AMD64_R11, AMD64_RBP);
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, sizeof (gpointer));
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0, sizeof (target_mgreg_t));
 
 	/* Load ret marshal type in R10 */
 	amd64_mov_reg_membase (code, AMD64_R10, AMD64_R10, MONO_STRUCT_OFFSET (GSharedVtCallInfo, ret_marshal), 4);

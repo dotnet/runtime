@@ -749,7 +749,7 @@ mono_arch_init (void)
 
 	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
 	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);
-#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
+#if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 	mono_aot_register_jit_icall ("mono_x86_start_gsharedvt_call", mono_x86_start_gsharedvt_call);
 #endif
 }
@@ -980,7 +980,7 @@ needs_stack_frame (MonoCompile *cfg)
 	MonoMethodHeader *header;
 	gboolean result = FALSE;
 
-#if defined(__APPLE__)
+#if defined (__APPLE__)
 	/*OSX requires stack frame code to have the correct alignment. */
 	return TRUE;
 #endif
@@ -1438,7 +1438,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			 * result there.
 			 */
 			call->vret_in_reg = TRUE;
-#if defined(__APPLE__)
+#if defined (__APPLE__)
 			if (cinfo->ret.pair_storage [0] == ArgOnDoubleFpStack || cinfo->ret.pair_storage [0] == ArgOnFloatFpStack)
 				call->vret_in_reg_fp = TRUE;
 #endif
@@ -2040,7 +2040,7 @@ mono_emit_stack_alloc (MonoCompile *cfg, guchar *code, MonoInst* tree)
 	int sreg = tree->sreg1;
 	int need_touch = FALSE;
 
-#if defined(TARGET_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined (TARGET_WIN32) || defined (MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 	need_touch = TRUE;
 #endif
 
@@ -2205,10 +2205,10 @@ mono_arch_have_fast_tls (void)
 static guint8*
 mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 {
-#if defined(TARGET_MACH)
+#if defined (TARGET_MACH)
 	x86_prefix (code, X86_GS_PREFIX);
 	x86_mov_reg_mem (code, dreg, tls_gs_offset + (tls_offset * 4), 4);
-#elif defined(TARGET_WIN32)
+#elif defined (TARGET_WIN32)
 	/*
 	 * See the Under the Hood article in the May 1996 issue of Microsoft Systems
 	 * Journal and/or a disassembly of the TlsGet () function.
@@ -2245,10 +2245,10 @@ mono_x86_emit_tls_get (guint8* code, int dreg, int tls_offset)
 static guint8*
 mono_x86_emit_tls_set (guint8* code, int sreg, int tls_offset)
 {
-#if defined(TARGET_MACH)
+#if defined (TARGET_MACH)
 	x86_prefix (code, X86_GS_PREFIX);
 	x86_mov_mem_reg (code, tls_gs_offset + (tls_offset * 4), sreg, 4);
-#elif defined(TARGET_WIN32)
+#elif defined (TARGET_WIN32)
 	g_assert_not_reached ();
 #else
 	x86_prefix (code, X86_GS_PREFIX);
@@ -2266,13 +2266,13 @@ static guint8*
 emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offset)
 {
 	/* save all caller saved regs */
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx), X86_EBX, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx), X86_EBX, sizeof (target_mgreg_t));
 	mono_emit_unwind_op_offset (cfg, code, X86_EBX, - cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebx));
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi), X86_EDI, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi), X86_EDI, sizeof (target_mgreg_t));
 	mono_emit_unwind_op_offset (cfg, code, X86_EDI, - cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, edi));
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi), X86_ESI, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi), X86_ESI, sizeof (target_mgreg_t));
 	mono_emit_unwind_op_offset (cfg, code, X86_ESI, - cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, esi));
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebp), X86_EBP, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebp), X86_EBP, sizeof (target_mgreg_t));
 
 	/* save the current IP */
 	if (cfg->compile_aot) {
@@ -2283,7 +2283,7 @@ emit_setup_lmf (MonoCompile *cfg, guint8 *code, gint32 lmf_offset, int cfa_offse
 		mono_add_patch_info (cfg, code + 1 - cfg->native_code, MONO_PATCH_INFO_IP, NULL);
 		x86_mov_reg_imm (code, X86_EAX, 0);
 	}
-	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, eip), X86_EAX, sizeof (mgreg_t));
+	x86_mov_membase_reg (code, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, eip), X86_EAX, sizeof (target_mgreg_t));
 
 	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, eip), SLOT_NOREF);
 	mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset + lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, ebp), SLOT_NOREF);
@@ -2550,8 +2550,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				g_assert (var->opcode == OP_REGOFFSET);
 				/* Load ss_tramp_var */
 				/* This is equal to &ss_trampoline */
-				x86_mov_reg_membase (code, X86_ECX, var->inst_basereg, var->inst_offset, sizeof (mgreg_t));
-				x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof (mgreg_t));
+				x86_mov_reg_membase (code, X86_ECX, var->inst_basereg, var->inst_offset, sizeof (target_mgreg_t));
+				x86_mov_reg_membase (code, X86_ECX, X86_ECX, 0, sizeof (target_mgreg_t));
 				x86_alu_reg_imm (code, X86_CMP, X86_ECX, 0);
 				br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
 				x86_call_reg (code, X86_ECX);
@@ -2974,7 +2974,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			gboolean const tailcall_membase_ecx = tailcall_membase && sreg1_ecx;
 			gboolean const tailcall_membase_not_ecx = tailcall_membase && !sreg1_ecx;
 
-			max_len += (call->stack_usage - call->stack_align_amount) / sizeof (mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
+			max_len += (call->stack_usage - call->stack_align_amount) / sizeof (target_mgreg_t) * ins_get_size (OP_TAILCALL_PARAMETER);
 			code = realloc_code (cfg, max_len);
 
 			ins->flags |= MONO_INST_GC_CALLSITE;
@@ -4858,11 +4858,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_mov_reg_reg (code, X86_ESP, ins->sreg1);
 			break;
 		case OP_FILL_PROF_CALL_CTX:
-			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, esp), X86_ESP, sizeof (mgreg_t));
-			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, ebp), X86_EBP, sizeof (mgreg_t));
-			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, ebx), X86_EBX, sizeof (mgreg_t));
-			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, esi), X86_ESI, sizeof (mgreg_t));
-			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, edi), X86_EDI, sizeof (mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, esp), X86_ESP, sizeof (target_mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, ebp), X86_EBP, sizeof (target_mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, ebx), X86_EBX, sizeof (target_mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, esi), X86_ESI, sizeof (target_mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, edi), X86_EDI, sizeof (target_mgreg_t));
 			break;
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
@@ -5043,7 +5043,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
-#if defined(TARGET_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined (TARGET_WIN32) || defined (MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
 		/*FIXME handle unbounded code expansion, we should use a loop in case of more than X interactions*/
 		guint32 required_code_size = ((remaining_size / 0x1000) + 1) * 8; /*8 is the max size of x86_alu_reg_imm + x86_test_membase_reg*/

@@ -168,7 +168,7 @@ typedef elf_fpreg_t elf_fpregset_t[ELF_NFPREG];
 		int reg;	\
 		ppc_ldptr (code, ip_reg, G_STRUCT_OFFSET (MonoContext, sc_ir), ctx_reg);	\
 		ppc_load_multiple_regs (code, MONO_PPC_FIRST_SAVED_GREG,	\
-			G_STRUCT_OFFSET (MonoContext, regs) + MONO_PPC_FIRST_SAVED_GREG * sizeof (gpointer), ctx_reg);	\
+			G_STRUCT_OFFSET (MonoContext, regs) + MONO_PPC_FIRST_SAVED_GREG * sizeof (target_mgreg_t), ctx_reg);	\
 		for (reg = MONO_PPC_FIRST_SAVED_FREG; reg < MONO_MAX_FREGS; ++reg) {	\
 			ppc_lfd (code, reg,	\
 				G_STRUCT_OFFSET(MonoContext, fregs) + reg * sizeof (gdouble), ctx_reg);	\
@@ -230,7 +230,7 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 	return start;
 }
 
-#define SAVED_REGS_LENGTH		(sizeof (gdouble) * MONO_MAX_FREGS + sizeof (gpointer) * MONO_MAX_IREGS)
+#define SAVED_REGS_LENGTH		(sizeof (gdouble) * MONO_MAX_FREGS + sizeof (target_mgreg_t) * MONO_MAX_IREGS)
 #define ALIGN_STACK_FRAME_SIZE(s)	(((s) + MONO_ARCH_FRAME_ALIGNMENT - 1) & ~(MONO_ARCH_FRAME_ALIGNMENT - 1))
 /* The 64 bytes here are for outgoing arguments and a bit of spare.
    We don't use it all, but it doesn't hurt. */
@@ -246,7 +246,7 @@ emit_save_saved_regs (guint8 *code, int pos)
 		ppc_stfd (code, i, pos, ppc_sp);
 	}
 	pos -= (MONO_MAX_FREGS - MONO_SAVED_FREGS) * sizeof (gdouble);
-	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
+	pos -= sizeof (target_mgreg_t) * MONO_SAVED_GREGS;
 	ppc_store_multiple_regs (code, MONO_PPC_FIRST_SAVED_GREG, pos, ppc_sp);
 
 	return code;
@@ -305,7 +305,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 		ppc_lfd (code, i, pos, ppc_sp);
 	}
 	pos -= (MONO_MAX_FREGS - MONO_SAVED_FREGS) * sizeof (gdouble);
-	pos -= sizeof (gpointer) * MONO_SAVED_GREGS;
+	pos -= sizeof (target_mgreg_t) * MONO_SAVED_GREGS;
 	ppc_load_multiple_regs (code, MONO_PPC_FIRST_SAVED_GREG, pos, ppc_sp);
 
 	ppc_addic (code, ppc_sp, ppc_sp, alloc_size);
@@ -398,7 +398,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 			ppc_mr (code, ppc_r3, ppc_r12);
 			code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_exception_from_token");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-			ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r12);
+			ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r12);
 			ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
 			ppc_mtctr (code, ppc_r12);
@@ -423,7 +423,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 	pos = alloc_size - sizeof (gdouble) * MONO_MAX_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);
 	/* pointer to the saved int regs */
-	pos -= sizeof (gpointer) * MONO_MAX_IREGS;
+	pos -= sizeof (target_mgreg_t) * MONO_MAX_IREGS;
 	ppc_addi (code, ppc_r6, ppc_sp, pos);
 	ppc_li (code, ppc_r8, rethrow);
 	ppc_li (code, ppc_r9, preserve_ips);
@@ -435,7 +435,7 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 		code = mono_arch_emit_load_got_addr (start, code, NULL, &ji);
 		code = mono_arch_emit_load_aotconst (start, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_ppc_throw_exception");
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-		ppc_ldptr (code, ppc_r2, sizeof (gpointer), ppc_r12);
+		ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r12);
 		ppc_ldptr (code, ppc_r12, 0, ppc_r12);
 #endif
 		ppc_mtctr (code, ppc_r12);

@@ -1089,7 +1089,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 guint8*
 mono_arch_get_call_target (guint8 *code)
 {
-	guint32 ins = ((guint32*)(gpointer)code) [-1];
+	guint32 ins = ((guint32*)code) [-1];
 
 	/* Should be a 'bl' or a 'b' */
 	if (((ins >> 25) & 0x7) == 0x5) {
@@ -1171,7 +1171,7 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 {
 	guint8 *code, *buf;
 	int buf_len;
-	gpointer *constants;
+	target_mgreg_t *constants;
 
 	buf_len = 24;
 
@@ -1179,14 +1179,14 @@ mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpoint
 
 	/* Similar to the specialized trampoline code */
 	ARM_PUSH (code, (1 << ARMREG_R0) | (1 << ARMREG_R1) | (1 << ARMREG_R2) | (1 << ARMREG_R3) | (1 << ARMREG_LR));
-	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 8);
+	ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 2 * sizeof (target_mgreg_t));
 	/* arg is passed in LR */
 	ARM_LDR_IMM (code, ARMREG_LR, ARMREG_PC, 0);
 	code = emit_bx (code, ARMREG_IP);
-	constants = (gpointer*)code;
+	constants = (target_mgreg_t*)code;
 	constants [0] = arg;
 	constants [1] = addr;
-	code += 8;
+	code += 2 * sizeof (target_mgreg_t);
 
 	g_assert ((code - buf) <= buf_len);
 

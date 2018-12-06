@@ -132,17 +132,17 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	 * method containing the filter.
 	 */
 	for (i = 0; i < 16; ++i)
-		sparc_ldi_imm (code, sparc_o1, MONO_SPARC_STACK_BIAS + i * sizeof (gpointer), sparc_l0 + i);
+		sparc_ldi_imm (code, sparc_o1, MONO_SPARC_STACK_BIAS + i * sizeof (target_mgreg_t), sparc_l0 + i);
 
 	/* Save %fp to a location reserved in mono_arch_allocate_vars */
-	sparc_sti_imm (code, sparc_o7, sparc_fp, MONO_SPARC_STACK_BIAS - sizeof (gpointer));
+	sparc_sti_imm (code, sparc_o7, sparc_fp, MONO_SPARC_STACK_BIAS - sizeof (target_mgreg_t));
 
 	/* Call the filter code, after this returns, %o0 will hold the result */
 	sparc_call_imm (code, sparc_o0, 0);
 	sparc_nop (code);
 
 	/* Restore original %fp */
-	sparc_ldi_imm (code, sparc_fp, MONO_SPARC_STACK_BIAS - sizeof (gpointer), sparc_fp);
+	sparc_ldi_imm (code, sparc_fp, MONO_SPARC_STACK_BIAS - sizeof (target_mgreg_t), sparc_fp);
 
 	sparc_mov_reg_reg (code, sparc_o0, sparc_i0);
 

@@ -624,6 +624,7 @@ typedef struct {
 	gboolean     has_locals;
 } MonoMethodHeaderSummary;
 
+// FIXME? offsetof (MonoMethodHeader, locals)?
 #define MONO_SIZEOF_METHOD_HEADER (sizeof (struct _MonoMethodHeader) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
 
 struct _MonoMethodSignature {
