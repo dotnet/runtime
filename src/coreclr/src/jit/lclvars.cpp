@@ -2746,6 +2746,11 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     {
         varDsc->lvClassHnd     = clsHnd;
         varDsc->lvClassIsExact = isExact;
+
+#if DEBUG
+        // Note we've modified the type...
+        varDsc->lvClassInfoUpdated = true;
+#endif // DEBUG
     }
 
     return;
