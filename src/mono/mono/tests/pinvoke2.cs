@@ -1854,8 +1854,11 @@ public unsafe class Tests {
 		return 1;
 	}
 
-	[DllImport ("libtest", EntryPoint="mono_test_has_thiscall")]
-	public static extern int mono_test_has_thiscall ();
+	[DllImport ("libtest", EntryPoint="mono_test_has_thiscall_globals")]
+	public static extern int mono_test_has_thiscall_globals ();
+
+	[DllImport ("libtest", EntryPoint="mono_test_has_thiscall_pointers")]
+	public static extern int mono_test_has_thiscall_pointers ();
 
 	[DllImport ("libtest", EntryPoint = "_mono_test_native_thiscall1", CallingConvention=CallingConvention.ThisCall)]
 	public static extern int mono_test_native_thiscall (int a);
@@ -1877,7 +1880,7 @@ public unsafe class Tests {
 
 	public static int test_0_native_thiscall ()
 	{
-		if (mono_test_has_thiscall () == 0)
+		if (mono_test_has_thiscall_globals () == 0)
 			return 0;
 
 		if (mono_test_native_thiscall (1968329802) != 1968329802)
@@ -1992,7 +1995,7 @@ public unsafe class Tests {
 
 	public static int test_0_managed_thiscall ()
 	{
-		if (mono_test_has_thiscall () == 0)
+		if (mono_test_has_thiscall_pointers () == 0)
 			return 0;
 
 		if (mono_test_managed_thiscall (new ThisCallDelegate1 (thiscall_test_fn1), 517457506) != 263895844)
