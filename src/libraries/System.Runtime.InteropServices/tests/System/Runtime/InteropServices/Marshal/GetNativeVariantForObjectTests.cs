@@ -449,31 +449,6 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetNativeVariantForObject_ObjectNotCollectible_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type type = typeBuilder.CreateType();
-
-            object o = Activator.CreateInstance(type);
-
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-            try
-            {
-                Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject(o, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
-        }
-#endif
-
         public struct StructWithValue
         {
             public int Value;

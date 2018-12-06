@@ -206,23 +206,6 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("o", () => Marshal.GetComInterfaceForObject<object, NonGenericInterface>(o));
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetComInterfaceForObject_ObjectNotCollectible_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type type = typeBuilder.CreateType();
-
-            object o = Activator.CreateInstance(type);
-            Assert.Throws<NotSupportedException>(() => Marshal.GetComInterfaceForObject(o, typeof(NonGenericInterface)));
-            Assert.Throws<NotSupportedException>(() => Marshal.GetComInterfaceForObject(o, typeof(NonGenericInterface), CustomQueryInterfaceMode.Allow));
-            Assert.Throws<NotSupportedException>(() => Marshal.GetComInterfaceForObject<object, NonGenericInterface>(o));
-        }
-#endif
-
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetTypedObjectForIUnknown_UncastableType_ThrowsInvalidCastException()
