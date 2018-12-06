@@ -139,7 +139,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <TargetingPackExclusions Include="System.Reflection.Metadata" />
+    <DefaultReferenceExclusions Include="System.Reflection.Metadata" />
     <ReferenceFromRuntime Include="System.Reflection.Metadata" />
   </ItemGroup>
 </Project>

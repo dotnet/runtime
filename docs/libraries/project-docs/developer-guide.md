@@ -425,11 +425,14 @@ Code coverage is built into the corefx build system.  It utilizes OpenCover for 
 :: Run full coverage
 build -test -Coverage
 
+If coverage succeeds, the full report can be found at `artifacts\coverage\index.htm`.
+
 :: To run a single project with code coverage enabled pass the /p:Coverage=true property
 cd src\System.Collections.Immutable\tests
 dotnet msbuild /t:BuildAndTest /p:Coverage=true
 ```
-If coverage succeeds, the code coverage report will be generated automatically and placed in the bin\tests\coverage directory.  You can view the full report by opening index.htm
+
+If coverage succeeds, the individual report can be found at `$(TestPath)\report\index.htm`.
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
@@ -479,6 +482,4 @@ If you prefer, you can use a Debug build of System.Private.CoreLib, but if you d
 
 If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
 
-`dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
-
-In order to facilitate coverage tools that perform IL rewrite a dedicated shared framework directory is created by default for coverage runs. This shared runtime is copied from the default shared test runtime (the one with version 9.9.9, e.g.: `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9`). This behavior can be overridden by adding `/p:UseCoverageDedicatedRuntime=false` to the build command used to capture code coverage, which will cause the coverage run to use the same shared runtime as a test run using the native image of System.Private.CoreLib.dll, causing loss of source coverage information for it.
+`dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:TestRuntime=true`

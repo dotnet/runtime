@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ForwardedTypesAssembly", "t
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Performance.Tests", "tests\Performance\System.Runtime.Performance.Tests.csproj", "{E9560F70-79F5-453A-B518-0292CFE4A6AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.PerformanceTests", "tests\Performance\System.Runtime.PerformanceTests.csproj", "{E9560F70-79F5-453A-B518-0292CFE4A6AD}"
 	ProjectSection(ProjectDependencies) = postProject
 		{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2} = {56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}
 	EndProjectSection

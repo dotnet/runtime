@@ -1,12 +1,11 @@
-<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <!-- CoreFX-Specific Helix test submission project.
        TODOS:
          - Add support for storing test-project-specific timeouts, use this instead of default if available
   -->
 
-  <UsingTask TaskName="SimulateHelixExecution"     AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
-  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="SimulateHelixExecution" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
 
   <PropertyGroup>
     <!-- Workaround for dealing with building on Linux/OSX.  
@@ -29,24 +28,18 @@
     <UseContinuationRunner Condition="'$(ArchGroup)'=='arm' AND '$(TargetGroup)'=='uapaot'">true</UseContinuationRunner>
     <SecondaryPayloadDir   Condition="'$(ArchGroup)'=='arm' AND '$(TargetGroup)'=='uapaot'">%HELIX_WORKITEM_PAYLOAD%\native</SecondaryPayloadDir>
 
-    <!-- Test builds consist of the tests that are platform specific in one root, plus others in AnyOS. -->
-    <AnyOSPlatformConfig>AnyOS.AnyCPU.$(ConfigurationGroup)</AnyOSPlatformConfig>
-    <AnyOsArchivesRoot>$(TestWorkingDir)$(AnyOSPlatformConfig)/archive/</AnyOsArchivesRoot>
-    <AnyOSTestArchivesRoot>$(AnyOsArchivesRoot)tests/</AnyOSTestArchivesRoot>
-
-    <!-- Additionally, *NIX variations may need to include their own root folders -->
-    <UnixPlatformConfig>Unix.$(Platform).$(ConfigurationGroup)</UnixPlatformConfig>
-    <UnixArchivesRoot>$(TestWorkingDir)$(UnixPlatformConfig)/archive/</UnixArchivesRoot>
-    <UnixTestArchivesRoot>$(UnixArchivesRoot)tests/</UnixTestArchivesRoot>
-
+    <TestArchiveTestsAnyOSDir>$(TestArchiveTestsRoot)$(AnyOSPlatformConfig)/</TestArchiveTestsAnyOSDir>
+    <TestArchiveTestsUnixDir>$(TestArchiveTestsRoot)$(UnixPlatformConfig)/</TestArchiveTestsUnixDir>
     <!-- Finally, these archives represent the zips of tests that are OSPlatform specific 
          This is used by CloudTest.Helix.Targets to generate relative blob paths for archives. -->
-    <ArchivesRoot>$(TestWorkingDir)$(OSPlatformConfig)/archive/</ArchivesRoot>
-    <TestArchivesRoot>$(ArchivesRoot)tests/</TestArchivesRoot>
+    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
+
+    <!-- Obsolete: Remove with new Helix SDK. -->
+    <ArchivesRoot>$(TestArchiveRoot)</ArchivesRoot>
 
     <!-- test-runtime-*.zip is the new-for-.NET-Core-2.0 way to pass along the runtime  -->
     <TestRuntimeArchiveFilename>test-runtime-$(BuildConfiguration).zip</TestRuntimeArchiveFilename>
-    <TestRuntimeArchiveFile>$(ArchivesRoot)$(TestRuntimeArchiveFilename)</TestRuntimeArchiveFile>
+    <TestRuntimeArchiveFile>$(TestArchiveRuntimeRoot)$(TestRuntimeArchiveFilename)</TestRuntimeArchiveFile>
 
     <RunnerScript Condition="'$(RunnerScript)' == ''">$(TestRunnerScript)</RunnerScript>
     <SupplementalPayloadDir Condition="'$(SupplementalPayloadDir)' == ''">$(TestWorkingDir)SupplementalPayload/</SupplementalPayloadDir>
@@ -68,7 +61,7 @@
     <HelixSource Condition="'$(HelixSource)'==''">pr/unknown/</HelixSource>
 
     <!-- Local path for storing submission-related files -->
-    <HelixLogFolder>$(ArchivesRoot)</HelixLogFolder>
+    <HelixLogFolder>$(TestArchiveRoot)</HelixLogFolder>
 
     <!-- Properties used for submission by CloudTest.Helix.Targets-->
     <BuildMoniker>$(CurrentDate)</BuildMoniker>
@@ -86,21 +79,21 @@
     <IsDropPublic Condition="'$(IsOfficial)' == 'true'">true</IsDropPublic>
   </PropertyGroup>
 
-  <Target Name="CoreFXPreCloudBuild" >
+  <Target Name="CoreFXPreCloudBuild">
     <!-- Put anything you want to do before submitting the general purpose helix job here.
          Helix requires properly formatted work items and accessible zip files / others to upload, which we'll construct here. -->
 
     <!-- Gather the test archives for this build 
          If you change binplacing behavior and official runs break, 
          this is a good place to check.-->
-    <Message Text="Using OS-Specific test archives from: $(TestArchivesRoot)" />
-    <Message Text="Using AnyOS test archives from: $(AnyOSTestArchivesRoot)" />
-    <Message Condition="'$(TargetsUnix)' == 'true'"  Text="Using Unix test archives from: $(UnixTestArchivesRoot)" />
+    <Message Text="Using OS-Specific test archives from: $(TestArchiveTestsDir)" />
+    <Message Text="Using AnyOS test archives from: $(TestArchiveTestsAnyOSDir)" />
+    <Message Condition="'$(TargetsUnix)' == 'true'"  Text="Using Unix test archives from: $(TestArchiveTestsUnixDir)" />
     <ItemGroup>
-      <HelixWorkItem Include="$(TestArchivesRoot)**/*.zip" />
-      <HelixWorkItem Include="$(AnyOSTestArchivesRoot)**/*.zip" />
+      <HelixWorkItem Include="$(TestArchiveTestsDir)*.zip" />
+      <HelixWorkItem Include="$(TestArchiveTestsAnyOSDir)*.zip" />
       <!-- Only include Unix folders if supported by the target OS -->
-      <HelixWorkItem Condition="'$(TargetsUnix)' == 'true'" Include="$(UnixTestArchivesRoot)**/*.zip" />
+      <HelixWorkItem Condition="'$(TargetsUnix)' == 'true'" Include="$(TestArchiveTestsUnixDir)*.zip" />
     </ItemGroup>
     <Message Text="Full test archive collection : @(HelixWorkItem)" Importance="Low" />
 
@@ -122,15 +115,19 @@
 
   <!-- Zips up the runtime directory;  unzip location of this file will be used as the first argument to RunTests.cmd/sh. -->
   <Target Name="CompressRuntimeDir" Condition="'$(SkipArchive)' != 'true'">
-    <ZipFileCreateFromDirectory
+    
+    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
+    <ZipDirectory
         SourceDirectory="$(TestHostRootPath)"
-        DestinationArchive="$(TestRuntimeArchiveFile)"
-        OverwriteDestination="true" />
+        DestinationFile="$(TestRuntimeArchiveFile)"
+        Overwrite="true" />
+        
     <ItemGroup>
       <HelixCorrelationPayloadFile Include="$(TestRuntimeArchiveFile)">
         <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/$(TestRuntimeArchiveFilename)</RelativeBlobPath>
       </HelixCorrelationPayloadFile>
     </ItemGroup>
+
   </Target>
 
   <!-- Import this at the end so that it can compose properties as needed -->

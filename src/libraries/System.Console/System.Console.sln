@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console.Manual.Tests
 		{F9DF2357-81B4-4317-908E-512DA9395583} = {F9DF2357-81B4-4317-908E-512DA9395583}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console.Performance.Tests", "tests\Performance\System.Console.Performance.Tests.csproj", "{14BE0BA2-28BC-467A-AA76-C6B86D21FDAE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Console.PerformanceTests", "tests\Performance\System.Console.PerformanceTests.csproj", "{14BE0BA2-28BC-467A-AA76-C6B86D21FDAE}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F9DF2357-81B4-4317-908E-512DA9395583} = {F9DF2357-81B4-4317-908E-512DA9395583}
 	EndProjectSection

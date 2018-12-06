@@ -7,12 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Extensions.T
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A} = {845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssemblyResolveTests", "tests\AssemblyResolveTests\AssemblyResolveTests.csproj", "{E60AFAE8-2EA7-471C-9E24-52A99453B26B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssemblyResolveTestApp", "tests\AssemblyResolveTestApp\AssemblyResolveTestApp.csproj", "{E60AFAE8-2EA7-471C-9E24-52A99453B26B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A} = {845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Extensions.Performance.Tests", "tests\Performance\System.Runtime.Extensions.Performance.Tests.csproj", "{978FA427-F87B-46E2-B276-F5B727C50A01}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Extensions.PerformanceTests", "tests\Performance\System.Runtime.Extensions.PerformanceTests.csproj", "{978FA427-F87B-46E2-B276-F5B727C50A01}"
 	ProjectSection(ProjectDependencies) = postProject
 		{845D2B72-D8A4-42E5-9BE9-17639EC4FC1A} = {845D2B72-D8A4-42E5-9BE9-17639EC4FC1A}
 	EndProjectSection

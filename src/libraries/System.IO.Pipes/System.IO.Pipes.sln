@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Pipes.Tests", "te
 		{D293A0E4-AE6C-4DF7-99AE-CC1A37BF4918} = {D293A0E4-AE6C-4DF7-99AE-CC1A37BF4918}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Pipes.Performance.Tests", "tests\Performance\System.IO.Pipes.Performance.Tests.csproj", "{7A8B72D7-FACD-4E96-8390-F2D2FE269687}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Pipes.PerformanceTests", "tests\Performance\System.IO.Pipes.PerformanceTests.csproj", "{7A8B72D7-FACD-4E96-8390-F2D2FE269687}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D293A0E4-AE6C-4DF7-99AE-CC1A37BF4918} = {D293A0E4-AE6C-4DF7-99AE-CC1A37BF4918}
 	EndProjectSection

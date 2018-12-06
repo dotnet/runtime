@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Invariant.Tests", "tests\In
 		{2395E8CA-73CB-40DF-BE40-A60BC189B737} = {2395E8CA-73CB-40DF-BE40-A60BC189B737}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.Performance.Tests", "tests\Performance\System.Globalization.Performance.Tests.csproj", "{0BA6851E-0E75-453D-9D2A-CEB94E4DE975}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Globalization.PerformanceTests", "tests\Performance\System.Globalization.PerformanceTests.csproj", "{0BA6851E-0E75-453D-9D2A-CEB94E4DE975}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2395E8CA-73CB-40DF-BE40-A60BC189B737} = {2395E8CA-73CB-40DF-BE40-A60BC189B737}
 	EndProjectSection

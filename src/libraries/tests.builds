@@ -7,7 +7,11 @@
     Since IsTestProject is set to false in this case, when TargetGroup = netfx it will add net462 and net47 build configurations if they exist on the test project.
     We only want to build tests against current TargetGroup -->
     <AdditionalBuildConfigurations Condition="'$(TargetGroup)' == 'netfx'"></AdditionalBuildConfigurations>
-    <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
+    <EnableBenchviewTarget>true</EnableBenchviewTarget>
+    <EnableFullCoverageReportTarget>true</EnableFullCoverageReportTarget>
+    <GenerateFullCoverageReport>true</GenerateFullCoverageReport>
+    <CoverageReportInputPath>$(TestWorkingDir)**/coverage.xml</CoverageReportInputPath>
+    <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(RunningSharedFrameworkValidation)'=='true'">
@@ -18,11 +22,10 @@
   </ItemGroup>
 
   <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
-  <PropertyGroup Condition="'$(BuildingUAPVertical)'=='true' and '$(SkipTests)' != 'true'">
+  <PropertyGroup Condition="('$(BuildingUAPVertical)'=='true' OR '$(Coverage)' == 'true') AND '$(SkipTests)' != 'true'">
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <Target Name="BinPlaceXUnitRuntimeForNetstandardSuite" Condition="'$(TargetGroup)' == 'netstandard'" BeforeTargets="BuildAllProjects">
@@ -34,8 +37,8 @@
   </Target>
 
   <PropertyGroup>
-    <_ProjectPattern Condition="'$(Performance)' != 'true'">.Tests</_ProjectPattern>
-    <_ProjectPattern Condition="'$(Performance)' == 'true'">.Performance.Tests</_ProjectPattern>
+    <_ProjectPattern Condition="'$(Performance)' != 'true'">Tests</_ProjectPattern>
+    <_ProjectPattern Condition="'$(Performance)' == 'true'">PerformanceTests</_ProjectPattern>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
@@ -54,7 +57,7 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(BuildingUAPVertical)' == 'true'">
     <TraversalBuildDependsOn>
       MakeCommonResourcesPriFile;
       $(TraversalBuildDependsOn)

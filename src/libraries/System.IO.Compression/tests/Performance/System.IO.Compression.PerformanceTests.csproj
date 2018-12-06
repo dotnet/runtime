@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{13C0F956-FB7B-4882-A411-39B8E22463D2}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CompressionStreamPerfTests.Deflate.cs" />
+    <Compile Include="CompressionStreamPerfTests.Gzip.cs" />
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\LocalMemoryStream.cs">
+      <Link>Common\System\IO\Compression\LocalMemoryStream.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\StreamHelpers.cs">
+      <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\CompressionStreamTestBase.cs">
+      <Link>Common\System\IO\Compression\CompressionStreamTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\Compression\CompressionStreamPerfTestBase.cs">
+      <Link>Common\System\IO\Compression\CompressionStreamPerfTestBase.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.6-prerelease\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

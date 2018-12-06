@@ -17,9 +17,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AssemblyResolveTests\AssemblyResolveTests.csproj">
+    <ProjectReference Include="..\AssemblyResolveTestApp\AssemblyResolveTestApp.csproj">
       <Project>{ad83807c-8be5-4f27-85df-9793613233e1}</Project>
-      <Name>AssemblyResolveTests</Name>
+      <Name>AssemblyResolveTestApp</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>
