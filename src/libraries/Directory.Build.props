@@ -112,7 +112,7 @@
   <!-- Default properties for CI builds -->
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">
     <WithoutCategories>IgnoreForCI</WithoutCategories>
-    <EnableDumpling>true</EnableDumpling>
+    <EnableDumpling>false</EnableDumpling>
     <CrashDumpFolder Condition="'$(RunningOnUnix)' != 'true'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
   <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">

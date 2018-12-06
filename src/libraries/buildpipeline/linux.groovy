@@ -24,7 +24,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
         if (params.TestOuter) {
             additionalArgs = '/p:Outerloop=true'
         }
-        sh "./build.sh -test ${commonprops} /p:SkipTests=true ${additionalArgs} /p:ArchiveTests=true /p:EnableDumpling=true"
+        sh "./build.sh -test ${commonprops} /p:SkipTests=true ${additionalArgs} /p:ArchiveTests=true /p:EnableDumpling=false"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials
