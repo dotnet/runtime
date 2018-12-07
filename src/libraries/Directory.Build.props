@@ -180,8 +180,6 @@
       https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
       https://dotnet.myget.org/F/dotnet-core/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
-      <!-- Temporary until the Microsoft.Net.Test.Sdk 16.0.0-preview is published on nuget. -->
-      https://dotnet.myget.org/F/vstest/api/v3/index.json;
       $(OverridePackageSource);
       $(RestoreSources)
     </RestoreSources>
