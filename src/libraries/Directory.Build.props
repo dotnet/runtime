@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="ExcludeRestorePackageImports">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="ExcludeRestorePackageImports;Configuration">
   <!-- Base repo layout properties -->
   <PropertyGroup>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
@@ -92,6 +92,8 @@
   <PropertyGroup>
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'unused'"></ProjectAssetsFile>
     <ExcludeRestorePackageImports>$(_excludeRestorePackageImports)</ExcludeRestorePackageImports>
+    <!-- always set $(ConfigurationGroup) even if it wasn't passed in, Configuration is treated as local so this will update even if specified globally -->
+    <Configuration Condition="!$(_parse_Configuration.Contains('-$(ConfigurationGroup)-'))">$(Configuration)-$(ConfigurationGroup)</Configuration>
   </PropertyGroup>
 
   <!-- Common repo directories -->
