@@ -1247,6 +1247,9 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
 // Arguments:
 //    node - The hardware intrinsic node
 //
+// Note:
+//    We currently assume that all base intrinsics only have a single operand.
+//
 void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
