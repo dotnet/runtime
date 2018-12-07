@@ -4157,6 +4157,29 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+#if defined(_TARGET_XARCH_)
+        case NI_Base_Vector256_As:
+        case NI_Base_Vector256_AsByte:
+        case NI_Base_Vector256_AsDouble:
+        case NI_Base_Vector256_AsInt16:
+        case NI_Base_Vector256_AsInt32:
+        case NI_Base_Vector256_AsInt64:
+        case NI_Base_Vector256_AsSByte:
+        case NI_Base_Vector256_AsSingle:
+        case NI_Base_Vector256_AsUInt16:
+        case NI_Base_Vector256_AsUInt32:
+        case NI_Base_Vector256_AsUInt64:
+        {
+            if (!compSupports(InstructionSet_AVX))
+            {
+                // We don't want to deal with TYP_SIMD32 if the compiler doesn't otherwise support the type.
+                break;
+            }
+
+            __fallthrough;
+        }
+#endif // _TARGET_XARCH_
+
 #if defined(_TARGET_ARM64_)
         case NI_Base_Vector64_AsByte:
         case NI_Base_Vector64_AsInt16:
@@ -4177,19 +4200,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Base_Vector128_AsUInt16:
         case NI_Base_Vector128_AsUInt32:
         case NI_Base_Vector128_AsUInt64:
-#if defined(_TARGET_XARCH_)
-        case NI_Base_Vector256_As:
-        case NI_Base_Vector256_AsByte:
-        case NI_Base_Vector256_AsDouble:
-        case NI_Base_Vector256_AsInt16:
-        case NI_Base_Vector256_AsInt32:
-        case NI_Base_Vector256_AsInt64:
-        case NI_Base_Vector256_AsSByte:
-        case NI_Base_Vector256_AsSingle:
-        case NI_Base_Vector256_AsUInt16:
-        case NI_Base_Vector256_AsUInt32:
-        case NI_Base_Vector256_AsUInt64:
-#endif // _TARGET_XARCH_
         {
             // We fold away the cast here, as it only exists to satisfy
             // the type system. It is safe to do this here since the retNode type
