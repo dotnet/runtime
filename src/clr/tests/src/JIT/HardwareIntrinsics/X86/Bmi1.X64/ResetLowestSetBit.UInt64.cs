@@ -103,7 +103,7 @@ namespace JIT.HardwareIntrinsics.X86
             _data = TestLibrary.Generator.GetUInt64();
         }
 
-        public bool IsSupported => Bmi1.X64.IsSupported && (Environment.Is64BitProcess || ((typeof(UInt64) != typeof(long)) && (typeof(UInt64) != typeof(ulong))));
+        public bool IsSupported => Bmi1.X64.IsSupported;
 
         public bool Succeeded { get; set; }
 

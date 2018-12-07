@@ -19,22 +19,22 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ResetLowestSetBitUInt32()
+        private static void ConvertScalarToVector128UInt32UInt32()
         {
-            var test = new ScalarUnaryOpTest__ResetLowestSetBitUInt32();
+            var test = new ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt32UInt32();
 
             if (test.IsSupported)
             {
-                // Validates basic functionality works, using Unsafe.ReadUnaligned
+                // Validates basic functionality works
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Unsafe.ReadUnaligned
+                // Validates calling via reflection works
                 test.RunReflectionScenario_UnsafeRead();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                // Validates passing a local works, using Unsafe.ReadUnaligned
+                // Validates passing a local works
                 test.RunLclVarScenario_UnsafeRead();
 
                 // Validates passing the field of a local class works
@@ -62,7 +62,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarUnaryOpTest__ResetLowestSetBitUInt32
+    public sealed unsafe class ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt32UInt32
     {
         private struct TestStruct
         {
@@ -76,12 +76,18 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarUnaryOpTest__ResetLowestSetBitUInt32 testClass)
+            public void RunStructFldScenario(ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt32UInt32 testClass)
             {
-                var result = Bmi1.ResetLowestSetBit(_fld);
-                testClass.ValidateResult(_fld, result);
+                var result = Sse2.ConvertScalarToVector128UInt32(_fld);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
             }
         }
+
+        private static readonly int LargestVectorSize = 16;
+
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<UInt32>>() / sizeof(UInt32);
 
         private static UInt32 _data;
 
@@ -89,21 +95,23 @@ namespace JIT.HardwareIntrinsics.X86
 
         private UInt32 _fld;
 
-        static ScalarUnaryOpTest__ResetLowestSetBitUInt32()
+        private ScalarSimdUnaryOpTest__DataTable<UInt32> _dataTable;
+
+        static ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt32UInt32()
         {
             _clsVar = TestLibrary.Generator.GetUInt32();
         }
 
-        public ScalarUnaryOpTest__ResetLowestSetBitUInt32()
+        public ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt32UInt32()
         {
             Succeeded = true;
 
-            
             _fld = TestLibrary.Generator.GetUInt32();
             _data = TestLibrary.Generator.GetUInt32();
+            _dataTable = new ScalarSimdUnaryOpTest__DataTable<UInt32>(new UInt32[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Bmi1.IsSupported;
+        public bool IsSupported => Sse2.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -111,34 +119,37 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Bmi1.ResetLowestSetBit(
+            var result = Sse2.ConvertScalarToVector128UInt32(
                 Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data))
             );
 
-            ValidateResult(_data, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1).GetMethod(nameof(Bmi1.ResetLowestSetBit), new Type[] { typeof(UInt32) })
+            var result = typeof(Sse2).GetMethod(nameof(Sse2.ConvertScalarToVector128UInt32), new Type[] { typeof(UInt32) })
                                      .Invoke(null, new object[] {
                                         Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data))
                                      });
 
-            ValidateResult(_data, (UInt32)result);
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt32>)(result));
+            ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Bmi1.ResetLowestSetBit(
+            var result = Sse2.ConvertScalarToVector128UInt32(
                 _clsVar
             );
 
-            ValidateResult(_clsVar, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()
@@ -146,27 +157,31 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
             var data = Unsafe.ReadUnaligned<UInt32>(ref Unsafe.As<UInt32, byte>(ref _data));
-            var result = Bmi1.ResetLowestSetBit(data);
+            var result = Sse2.ConvertScalarToVector128UInt32(data);
 
-            ValidateResult(data, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(data, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarUnaryOpTest__ResetLowestSetBitUInt32();
-            var result = Bmi1.ResetLowestSetBit(test._fld);
+            var test = new ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt32UInt32();
+            var result = Sse2.ConvertScalarToVector128UInt32(test._fld);
 
-            ValidateResult(test._fld, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Bmi1.ResetLowestSetBit(_fld);
-            ValidateResult(_fld, result);
+            var result = Sse2.ConvertScalarToVector128UInt32(_fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -174,9 +189,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Bmi1.ResetLowestSetBit(test._fld);
+            var result = Sse2.ConvertScalarToVector128UInt32(test._fld);
 
-            ValidateResult(test._fld, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -208,17 +224,40 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UInt32 data, UInt32 result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt32 firstOp, void* result, [CallerMemberName] string method = "")
         {
-            var isUnexpectedResult = false;
+            UInt32[] outArray = new UInt32[RetElementCount];
 
-            isUnexpectedResult = (((data - 1) & data) != result);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt32>>());
 
-            if (isUnexpectedResult)
+            ValidateResult(firstOp, outArray, method);
+        }
+
+        private void ValidateResult(UInt32 firstOp, UInt32[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            if (firstOp != result[0])
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1)}.{nameof(Bmi1.ResetLowestSetBit)}<UInt32>(UInt32): ResetLowestSetBit failed:");
-                TestLibrary.TestFramework.LogInformation($"    data: {data}");
-                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                succeeded = false;
+            }
+            else
+            {
+                for (var i = 1; i < RetElementCount; i++)
+                {
+                    if (false)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse2)}.{nameof(Sse2.ConvertScalarToVector128UInt32)}<UInt32>(UInt32): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
