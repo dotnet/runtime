@@ -58,6 +58,7 @@
     <Compile Include="System\ArgumentOutOfRangeExceptionTests.cs" />
     <Compile Include="System\ArithmeticExceptionTests.cs" />
     <Compile Include="System\ArrayTests.cs" />
+    <Compile Include="System\ArrayEnumeratorTests.cs" />
     <Compile Include="System\ArraySegmentTests.cs" />
     <Compile Include="System\ArrayTypeMismatchExceptionTests.cs" />
     <Compile Include="System\ApplicationExceptionTests.cs" />
