@@ -2567,6 +2567,9 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_BMI1))
                 {
                     opts.setSupportedISA(InstructionSet_BMI1);
+#ifdef _TARGET_AMD64_
+                    opts.setSupportedISA(InstructionSet_BMI1_X64);
+#endif
                 }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
@@ -2574,6 +2577,9 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_BMI2))
                 {
                     opts.setSupportedISA(InstructionSet_BMI2);
+#ifdef _TARGET_AMD64_
+                    opts.setSupportedISA(InstructionSet_BMI2_X64);
+#endif
                 }
             }
         }
