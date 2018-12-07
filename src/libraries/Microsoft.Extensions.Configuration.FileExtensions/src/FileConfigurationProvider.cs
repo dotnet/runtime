@@ -42,6 +42,13 @@ namespace Microsoft.Extensions.Configuration
         /// The source settings for this provider.
         /// </summary>
         public FileConfigurationSource Source { get; }
+        
+        /// <summary>
+        /// Generates a string representing this provider name and relevant details.
+        /// </summary>
+        /// <returns> The configuration name. </returns>
+        public override string ToString()
+            => $"{GetType().Name} for '{Source.Path}' ({(Source.Optional ? "Optional" : "Required")})";
 
         private void Load(bool reload)
         {

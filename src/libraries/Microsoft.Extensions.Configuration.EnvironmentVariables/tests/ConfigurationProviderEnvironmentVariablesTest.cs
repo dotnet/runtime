@@ -26,5 +26,10 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         {
             AssertConfig(BuildConfigRoot(LoadThroughProvider(TestSection.DuplicatesDifferentCaseTestConfig)));
         }
+
+        public override void Null_values_are_included_in_the_config()
+        {
+            AssertConfig(BuildConfigRoot(LoadThroughProvider(TestSection.NullsTestConfig)), expectNulls: true);
+        }
     }
 }

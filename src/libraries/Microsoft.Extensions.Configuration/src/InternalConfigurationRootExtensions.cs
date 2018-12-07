@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Extensions method for <see cref="IConfigurationRoot"/>
     /// </summary>
-    internal static class ConfigurationRootExtension
+    internal static class InternalConfigurationRootExtensions
     {
         /// <summary>
         /// Gets the immediate children sub-sections of configuration root based on key.

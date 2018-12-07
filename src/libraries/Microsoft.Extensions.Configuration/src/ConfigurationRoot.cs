@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationRoot : IConfigurationRoot
     {
-        private IList<IConfigurationProvider> _providers;
+        private readonly IList<IConfigurationProvider> _providers;
         private ConfigurationReloadToken _changeToken = new ConfigurationReloadToken();
 
         /// <summary>
@@ -52,9 +52,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 foreach (var provider in _providers.Reverse())
                 {
-                    string value;
-
-                    if (provider.TryGet(key, out value))
+                    if (provider.TryGet(key, out var value))
                     {
                         return value;
                     }
@@ -62,7 +60,6 @@ namespace Microsoft.Extensions.Configuration
 
                 return null;
             }
-
             set
             {
                 if (!_providers.Any())
