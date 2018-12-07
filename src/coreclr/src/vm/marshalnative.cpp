@@ -1056,7 +1056,7 @@ FCIMPL1(ITypeInfo*, MarshalNative::GetITypeInfoForType, ReflectClassBaseObject* 
     _ASSERTE(pMT);
 
     // Retrieve the ITypeInfo for the class.
-    IfFailThrow(GetITypeInfoForEEClass(pMT, &pTI, true));
+    IfFailThrow(GetITypeInfoForEEClass(pMT, &pTI, true /* bClassInfo */));
     _ASSERTE(pTI != NULL);
 
     HELPER_METHOD_FRAME_END();

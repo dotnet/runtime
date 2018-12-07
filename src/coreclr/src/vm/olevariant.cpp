@@ -4675,11 +4675,11 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
     V_RECORDINFO(pRecHolder) = NULL;
     V_RECORD(pRecHolder) = NULL;
 
-        // Retrieve the ITypeInfo for the value class.
-        MethodTable *pValueClassMT = (*pBoxedValueClass)->GetMethodTable();   
-        IfFailThrow(GetITypeInfoForEEClass(pValueClassMT, &pTypeInfo, TRUE, TRUE, 0));
+    // Retrieve the ITypeInfo for the value class.
+    MethodTable *pValueClassMT = (*pBoxedValueClass)->GetMethodTable();
+    IfFailThrow(GetITypeInfoForEEClass(pValueClassMT, &pTypeInfo, true /* bClassInfo */));
 
-        // Convert the ITypeInfo to an IRecordInfo.
+    // Convert the ITypeInfo to an IRecordInfo.
     hr = GetRecordInfoFromTypeInfo(pTypeInfo, &V_RECORDINFO(pRecHolder));
     if (FAILED(hr))
     {
