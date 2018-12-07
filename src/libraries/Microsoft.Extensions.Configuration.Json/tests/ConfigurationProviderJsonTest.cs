@@ -35,13 +35,15 @@ namespace Microsoft.Extensions.Configuration
 
         private void SectionToJson(StringBuilder jsonBuilder, TestSection section)
         {
+            string ValueToJson(object value) => value == null ? "null" : $"'{value}'";
+
             jsonBuilder.AppendLine("{");
 
             foreach (var tuple in section.Values)
             {
                 jsonBuilder.AppendLine(tuple.Value.AsArray != null
-                    ? $"'{tuple.Key}': [{string.Join(", ", tuple.Value.AsArray.Select(v => $"'{v}'"))}],"
-                    : $"'{tuple.Key}': '{tuple.Value.AsString}',");
+                    ? $"'{tuple.Key}': [{string.Join(", ", tuple.Value.AsArray.Select(ValueToJson))}],"
+                    : $"'{tuple.Key}': {ValueToJson(tuple.Value.AsString)},");
             }
 
             foreach (var tuple in section.Sections)

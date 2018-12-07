@@ -10,9 +10,40 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
 {
     public class ConfigurationProviderXmlTest : ConfigurationProviderTestBase
     {
+        public override void Combine_before_other_provider()
+        {
+            // Disabled test due to XML handling of empty section.
+        }
+
         public override void Combine_after_other_provider()
         {
             // Disabled test due to XML handling of empty section.
+        }
+
+        public override void Has_debug_view()
+        {
+            var configRoot = BuildConfigRoot(LoadThroughProvider(TestSection.TestConfig));
+            var providerTag = configRoot.Providers.Single().ToString();
+
+            var expected =
+                $@"Key1=Value1 ({providerTag})
+Section1:
+  Key2=Value12 ({providerTag})
+  Section2:
+    Key3=Value123 ({providerTag})
+    Key3a:
+      0=ArrayValue0 ({providerTag})
+        Name=0 ({providerTag})
+      1=ArrayValue1 ({providerTag})
+        Name=1 ({providerTag})
+      2=ArrayValue2 ({providerTag})
+        Name=2 ({providerTag})
+Section3:
+  Section4:
+    Key4=Value344 ({providerTag})
+";
+
+            AssertDebugView(configRoot, expected);
         }
 
         protected override (IConfigurationProvider Provider, Action Initializer) LoadThroughProvider(TestSection testConfig)
@@ -36,7 +67,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
 
             foreach (var tuple in section.Values)
             {
-                if (tuple.Value.AsString != null)
+                if (tuple.Value.AsArray == null)
                 {
                     xmlBuilder.AppendLine($"<{tuple.Key}>{tuple.Value.AsString}</{tuple.Key}>");
                 }
