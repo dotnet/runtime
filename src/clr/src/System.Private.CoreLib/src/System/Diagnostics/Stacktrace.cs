@@ -514,7 +514,7 @@ namespace System.Diagnostics
                     if (asma.StateMachineType == declaringType)
                     {
                         foundAttribute = true;
-                        foundIteratorAttribute |= asma is IteratorStateMachineAttribute;
+                        foundIteratorAttribute |= asma is IteratorStateMachineAttribute || asma is AsyncIteratorStateMachineAttribute;
                     }
                 }
 
