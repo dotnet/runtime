@@ -19,22 +19,22 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void ExtractLowestSetBitUInt64()
+        private static void ConvertScalarToVector128UInt64UInt64()
         {
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUInt64();
+            var test = new ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt64UInt64();
 
             if (test.IsSupported)
             {
-                // Validates basic functionality works, using Unsafe.ReadUnaligned
+                // Validates basic functionality works
                 test.RunBasicScenario_UnsafeRead();
 
-                // Validates calling via reflection works, using Unsafe.ReadUnaligned
+                // Validates calling via reflection works
                 test.RunReflectionScenario_UnsafeRead();
 
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
-                // Validates passing a local works, using Unsafe.ReadUnaligned
+                // Validates passing a local works
                 test.RunLclVarScenario_UnsafeRead();
 
                 // Validates passing the field of a local class works
@@ -62,7 +62,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarUnaryOpTest__ExtractLowestSetBitUInt64
+    public sealed unsafe class ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt64UInt64
     {
         private struct TestStruct
         {
@@ -76,12 +76,18 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarUnaryOpTest__ExtractLowestSetBitUInt64 testClass)
+            public void RunStructFldScenario(ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt64UInt64 testClass)
             {
-                var result = Bmi1.X64.ExtractLowestSetBit(_fld);
-                testClass.ValidateResult(_fld, result);
+                var result = Sse2.X64.ConvertScalarToVector128UInt64(_fld);
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
             }
         }
+
+        private static readonly int LargestVectorSize = 16;
+
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<UInt64>>() / sizeof(UInt64);
 
         private static UInt64 _data;
 
@@ -89,21 +95,23 @@ namespace JIT.HardwareIntrinsics.X86
 
         private UInt64 _fld;
 
-        static ScalarUnaryOpTest__ExtractLowestSetBitUInt64()
+        private ScalarSimdUnaryOpTest__DataTable<UInt64> _dataTable;
+
+        static ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt64UInt64()
         {
             _clsVar = TestLibrary.Generator.GetUInt64();
         }
 
-        public ScalarUnaryOpTest__ExtractLowestSetBitUInt64()
+        public ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt64UInt64()
         {
             Succeeded = true;
 
-            
             _fld = TestLibrary.Generator.GetUInt64();
             _data = TestLibrary.Generator.GetUInt64();
+            _dataTable = new ScalarSimdUnaryOpTest__DataTable<UInt64>(new UInt64[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => Bmi1.X64.IsSupported;
+        public bool IsSupported => Sse2.X64.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -111,34 +119,37 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = Bmi1.X64.ExtractLowestSetBit(
+            var result = Sse2.X64.ConvertScalarToVector128UInt64(
                 Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data))
             );
 
-            ValidateResult(_data, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof(Bmi1.X64).GetMethod(nameof(Bmi1.X64.ExtractLowestSetBit), new Type[] { typeof(UInt64) })
+            var result = typeof(Sse2.X64).GetMethod(nameof(Sse2.X64.ConvertScalarToVector128UInt64), new Type[] { typeof(UInt64) })
                                      .Invoke(null, new object[] {
                                         Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data))
                                      });
 
-            ValidateResult(_data, (UInt64)result);
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<UInt64>)(result));
+            ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = Bmi1.X64.ExtractLowestSetBit(
+            var result = Sse2.X64.ConvertScalarToVector128UInt64(
                 _clsVar
             );
 
-            ValidateResult(_clsVar, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_clsVar, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_UnsafeRead()
@@ -146,27 +157,31 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
             var data = Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data));
-            var result = Bmi1.X64.ExtractLowestSetBit(data);
+            var result = Sse2.X64.ConvertScalarToVector128UInt64(data);
 
-            ValidateResult(data, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(data, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarUnaryOpTest__ExtractLowestSetBitUInt64();
-            var result = Bmi1.X64.ExtractLowestSetBit(test._fld);
+            var test = new ScalarSimdUnaryOpTest__ConvertScalarToVector128UInt64UInt64();
+            var result = Sse2.X64.ConvertScalarToVector128UInt64(test._fld);
 
-            ValidateResult(test._fld, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Bmi1.X64.ExtractLowestSetBit(_fld);
-            ValidateResult(_fld, result);
+            var result = Sse2.X64.ConvertScalarToVector128UInt64(_fld);
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructLclFldScenario()
@@ -174,9 +189,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Bmi1.X64.ExtractLowestSetBit(test._fld);
+            var result = Sse2.X64.ConvertScalarToVector128UInt64(test._fld);
 
-            ValidateResult(test._fld, result);
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunStructFldScenario()
@@ -208,17 +224,40 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(UInt64 data, UInt64 result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt64 firstOp, void* result, [CallerMemberName] string method = "")
         {
-            var isUnexpectedResult = false;
+            UInt64[] outArray = new UInt64[RetElementCount];
 
-            isUnexpectedResult = ((unchecked((ulong)(-(long)data)) & data) != result);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt64>>());
 
-            if (isUnexpectedResult)
+            ValidateResult(firstOp, outArray, method);
+        }
+
+        private void ValidateResult(UInt64 firstOp, UInt64[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            if (firstOp != result[0])
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1.X64)}.{nameof(Bmi1.X64.ExtractLowestSetBit)}<UInt64>(UInt64): ExtractLowestSetBit failed:");
-                TestLibrary.TestFramework.LogInformation($"    data: {data}");
-                TestLibrary.TestFramework.LogInformation($"  result: {result}");
+                succeeded = false;
+            }
+            else
+            {
+                for (var i = 1; i < RetElementCount; i++)
+                {
+                    if (false)
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse2.X64)}.{nameof(Sse2.X64.ConvertScalarToVector128UInt64)}<UInt64>(UInt64): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

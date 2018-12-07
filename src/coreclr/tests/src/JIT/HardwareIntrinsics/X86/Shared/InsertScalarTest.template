@@ -144,7 +144,7 @@ namespace JIT.HardwareIntrinsics.X86
             _dataTable = new SimpleUnaryOpTest__DataTable<{RetBaseType}, {Op1BaseType}>(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => {Isa}.IsSupported && (Environment.Is64BitProcess || ((typeof({RetBaseType}) != typeof(long)) && (typeof({RetBaseType}) != typeof(ulong))));
+        public bool IsSupported => {Isa}.IsSupported;
 
         public bool Succeeded { get; set; }
 
