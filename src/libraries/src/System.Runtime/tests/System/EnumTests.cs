@@ -1279,6 +1279,7 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "D", ((char)0).ToString() };
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "D", ((char)1).ToString() };
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "D", ((char)2).ToString() };
+            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString() };
 
             // "D:" Bool
             yield return new object[] { Enum.ToObject(s_boolEnumType, true), "D", bool.TrueString };
@@ -1360,6 +1361,8 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "X", "0000" };
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "X", "0001" };
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "X", "0002" };
+            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF" };
+
 
             // "X": Bool
             yield return new object[] { Enum.ToObject(s_boolEnumType, false), "X", "00" };
@@ -1423,6 +1426,7 @@ namespace System.Tests
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "F", "Value1" };
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)(1 | 2)), "F", "Value1, Value2" };
             yield return new object[] { Enum.ToObject(s_charEnumType, (char)5), "F", ((char)5).ToString() };
+            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString() };
 
             // "F": Bool
             yield return new object[] { Enum.ToObject(s_boolEnumType, true), "F", "Value1" };
@@ -1443,6 +1447,11 @@ namespace System.Tests
 
             // "F": Flags Attribute
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate" };
+
+#if netcoreapp
+            // "G": Char
+            yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString() };
+#endif
 
             // "G": SByte
             yield return new object[] { SByteEnum.Min, "G", "Min" };

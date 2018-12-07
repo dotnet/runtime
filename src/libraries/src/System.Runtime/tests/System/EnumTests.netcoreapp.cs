@@ -101,18 +101,6 @@ namespace System.Tests
             Assert.True(exName == nameof(InvalidOperationException) || exName == "ContractException");
         }
 
-#if netcoreapp
-        [Fact]
-        public static void ToString_InvalidUnicodeChars()
-        {
-            // TODO: move into ToString_Format_TestData when dotnet/buildtools#1091 is fixed
-            ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString());
-            ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF");
-            ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString());
-            ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString());
-        }
-#endif //netcoreapp
-
         public static IEnumerable<object[]> UnsupportedEnum_TestData()
         {
 #if netcoreapp
