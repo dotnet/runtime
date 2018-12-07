@@ -3448,6 +3448,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 case NI_Base_Vector128_AsUInt32:
                 case NI_Base_Vector128_AsUInt64:
 #if defined(_TARGET_XARCH_)
+                case NI_Base_Vector128_CreateScalarUnsafe:
+                case NI_Base_Vector128_ToScalar:
+                case NI_Base_Vector128_ToVector256:
+                case NI_Base_Vector128_ToVector256Unsafe:
                 case NI_Base_Vector128_Zero:
                 case NI_Base_Vector256_As:
                 case NI_Base_Vector256_AsByte:
@@ -3460,10 +3464,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 case NI_Base_Vector256_AsUInt16:
                 case NI_Base_Vector256_AsUInt32:
                 case NI_Base_Vector256_AsUInt64:
+                case NI_Base_Vector256_CreateScalarUnsafe:
+                case NI_Base_Vector256_GetLower:
+                case NI_Base_Vector256_ToScalar:
                 case NI_Base_Vector256_Zero:
 #endif // _TARGET_XARCH_
                 {
-                    return impBaseIntrinsic(ni, method, sig);
+                    return impBaseIntrinsic(ni, clsHnd, method, sig);
                 }
 
                 default:
@@ -4101,15 +4108,20 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 //
 // Arguments:
 //    intrinsic  -- id of the intrinsic function.
+//    clsHnd     -- handle for the intrinsic method's class
 //    method     -- method handle of the intrinsic function.
 //    sig        -- signature of the intrinsic call
 //
 // Return Value:
 //    the expanded intrinsic.
 //
-GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_CLASS_HANDLE  clsHnd,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig)
 {
     GenTree* retNode = nullptr;
+    GenTree* op1     = nullptr;
 
     if (!featureSIMD)
     {
@@ -4117,18 +4129,25 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
     }
 
     unsigned  simdSize = 0;
-    var_types baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
-    var_types retType  = getSIMDTypeForSize(simdSize);
+    var_types baseType = TYP_UNKNOWN;
+    var_types retType  = JITtype2varType(sig->retType);
 
     if (sig->hasThis())
     {
-        CORINFO_CLASS_HANDLE thisClass = info.compCompHnd->getArgClass(sig, sig->args);
-        var_types            thisType  = getBaseTypeOfSIMDType(thisClass);
+        baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
 
-        if (!varTypeIsArithmetic(thisType))
+        if (retType == TYP_STRUCT)
         {
-            return nullptr;
+            unsigned retSimdSize = 0;
+            getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &retSimdSize);
+            retType = getSIMDTypeForSize(retSimdSize);
         }
+    }
+    else
+    {
+        assert(retType == TYP_STRUCT);
+        baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
+        retType  = getSIMDTypeForSize(simdSize);
     }
 
     if (!varTypeIsArithmetic(baseType))
@@ -4186,6 +4205,56 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
         }
 
 #ifdef _TARGET_XARCH_
+        case NI_Base_Vector128_CreateScalarUnsafe:
+        {
+            assert(sig->numArgs == 1);
+
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                break;
+            }
+#endif // _TARGET_X86_
+
+            if (compSupports(InstructionSet_SSE2) || (compSupports(InstructionSet_SSE) && (baseType == TYP_FLOAT)))
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Base_Vector128_ToScalar:
+        {
+            assert(sig->numArgs == 0);
+            assert(sig->hasThis());
+
+            if (compSupports(InstructionSet_SSE) && varTypeIsFloating(baseType))
+            {
+                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize), true, clsHnd);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 16);
+            }
+            break;
+        }
+
+        case NI_Base_Vector128_ToVector256:
+        case NI_Base_Vector128_ToVector256Unsafe:
+        case NI_Base_Vector256_GetLower:
+        {
+            assert(sig->numArgs == 0);
+            assert(sig->hasThis());
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize), true, clsHnd);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
         case NI_Base_Vector128_Zero:
         {
             assert(sig->numArgs == 0);
@@ -4193,6 +4262,41 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             if (compSupports(InstructionSet_SSE))
             {
                 retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Base_Vector256_CreateScalarUnsafe:
+        {
+            assert(sig->numArgs == 1);
+
+#ifdef _TARGET_X86_
+            if (varTypeIsLong(baseType))
+            {
+                // TODO-XARCH-CQ: It may be beneficial to emit the movq
+                // instruction, which takes a 64-bit memory address and
+                // works on 32-bit x86 systems.
+                break;
+            }
+#endif // _TARGET_X86_
+
+            if (compSupports(InstructionSet_AVX))
+            {
+                op1     = impPopStack().val;
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Base_Vector256_ToScalar:
+        {
+            assert(sig->numArgs == 0);
+            assert(sig->hasThis());
+
+            if (compSupports(InstructionSet_AVX) && varTypeIsFloating(baseType))
+            {
+                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize), true, clsHnd);
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, 32);
             }
             break;
         }
@@ -4419,7 +4523,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     className += 3;
 
-                    if (strcmp(className, "`1") == 0)
+#if defined(_TARGET_XARCH_)
+                    if (className[0] == '\0')
+                    {
+                        if (strcmp(methodName, "CreateScalarUnsafe") == 0)
+                        {
+                            result = NI_Base_Vector128_CreateScalarUnsafe;
+                        }
+                    }
+                    else
+#endif // _TARGET_XARCH_
+                        if (strcmp(className, "`1") == 0)
                     {
                         if (strncmp(methodName, "As", 2) == 0)
                         {
@@ -4475,6 +4589,28 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         {
                             result = NI_Base_Vector128_Zero;
                         }
+                        else if (strncmp(methodName, "To", 2) == 0)
+                        {
+                            methodName += 2;
+
+                            if (strcmp(methodName, "Scalar") == 0)
+                            {
+                                result = NI_Base_Vector128_ToScalar;
+                            }
+                            else if (strncmp(methodName, "Vector256", 9) == 0)
+                            {
+                                methodName += 9;
+
+                                if (methodName[0] == '\0')
+                                {
+                                    result = NI_Base_Vector128_ToVector256;
+                                }
+                                else if (strcmp(methodName, "Unsafe") == 0)
+                                {
+                                    result = NI_Base_Vector128_ToVector256Unsafe;
+                                }
+                            }
+                        }
 #endif // _TARGET_XARCH_
                     }
                 }
@@ -4483,7 +4619,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     className += 3;
 
-                    if (strcmp(className, "`1") == 0)
+                    if (className[0] == '\0')
+                    {
+                        if (strcmp(methodName, "CreateScalarUnsafe") == 0)
+                        {
+                            result = NI_Base_Vector256_CreateScalarUnsafe;
+                        }
+                    }
+                    else if (strcmp(className, "`1") == 0)
                     {
                         if (strncmp(methodName, "As", 2) == 0)
                         {
@@ -4537,6 +4680,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_Zero") == 0)
                         {
                             result = NI_Base_Vector256_Zero;
+                        }
+                        else if (strcmp(methodName, "GetLower") == 0)
+                        {
+                            result = NI_Base_Vector256_GetLower;
+                        }
+                        else if (strcmp(methodName, "ToScalar") == 0)
+                        {
+                            result = NI_Base_Vector256_ToScalar;
                         }
                     }
                 }
