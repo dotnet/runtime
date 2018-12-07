@@ -1327,18 +1327,6 @@ void DisplayThreadStatic(DacpModuleData* pModule, DacpMethodTableData* pMT, Dacp
         {   
             CLRDATA_ADDRESS appDomainAddr = vThread.domain;
 
-            // Get the DLM (we need this to check the ClassInit flags).
-            // It's annoying that we have to issue one request for
-            // domain-neutral modules and domain-specific modules.
-            DacpDomainLocalModuleData vDomainLocalModule;                
-            if (g_sos->GetDomainLocalModuleDataFromModule(pMT->Module, &vDomainLocalModule) != S_OK)
-            {
-                // Not initialized, go to next thread
-                // and continue looping
-                CurThread = vThread.nextThread;
-                continue;
-            }
-
             // Get the TLM
             DacpThreadLocalModuleData vThreadLocalModule;
             if (g_sos->GetThreadLocalModuleData(CurThread, (int)dwModuleIndex, &vThreadLocalModule) != S_OK)
@@ -1361,17 +1349,6 @@ void DisplayThreadStatic(DacpModuleData* pModule, DacpMethodTableData* pMT, Dacp
                 continue;
             }
 
-            Flags = 0;
-            GetDLMFlags(&vDomainLocalModule, pMT, &Flags);
-
-            if ((Flags&1) == 0) 
-            {
-                // Not initialized, go to next thread
-                // and continue looping
-                CurThread = vThread.nextThread;
-                continue;
-            }
-            
             ExtOut(" %x:", vThread.osThreadId);
             DisplayDataMember(pFD, dwTmp, FALSE);               
         }
