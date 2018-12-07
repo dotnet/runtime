@@ -2372,6 +2372,60 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         // must be handled within the case.
         switch (intrinsicId)
         {
+            case NI_Base_Vector128_CreateScalarUnsafe:
+            case NI_Base_Vector128_ToScalar:
+            case NI_Base_Vector256_CreateScalarUnsafe:
+            case NI_Base_Vector256_ToScalar:
+            {
+                assert(numArgs == 1);
+
+                if (varTypeIsFloating(baseType))
+                {
+                    if (op1->isContained())
+                    {
+                        srcCount += BuildOperandUses(op1);
+                    }
+                    else
+                    {
+                        // We will either be in memory and need to be moved
+                        // into a register of the appropriate size or we
+                        // are already in an XMM/YMM register and can stay
+                        // where we are.
+
+                        tgtPrefUse = BuildUse(op1);
+                        srcCount += 1;
+                    }
+
+                    buildUses = false;
+                }
+                break;
+            }
+
+            case NI_Base_Vector128_ToVector256:
+            case NI_Base_Vector128_ToVector256Unsafe:
+            case NI_Base_Vector256_GetLower:
+            {
+                assert(numArgs == 1);
+
+                if (op1->isContained())
+                {
+                    srcCount += BuildOperandUses(op1);
+                }
+                else
+                {
+                    // We will either be in memory and need to be moved
+                    // into a register of the appropriate size or we
+                    // are already in an XMM/YMM register and can stay
+                    // where we are.
+
+                    tgtPrefUse = BuildUse(op1);
+                    srcCount += 1;
+                }
+
+                buildUses = false;
+                break;
+            }
+
             case NI_SSE_CompareEqualOrderedScalar:
             case NI_SSE_CompareEqualUnorderedScalar:
             case NI_SSE_CompareNotEqualOrderedScalar:

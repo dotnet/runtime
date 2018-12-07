@@ -303,6 +303,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a scalar containing the value of the first element.</summary>
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public T ToScalar()
         {
             ThrowIfUnsupportedType();
@@ -356,6 +357,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits initialized to zero.</summary>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<T> ToVector256()
         {
             ThrowIfUnsupportedType();
@@ -369,6 +371,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits left uninitialized.</summary>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public unsafe Vector256<T> ToVector256Unsafe()
         {
             ThrowIfUnsupportedType();
