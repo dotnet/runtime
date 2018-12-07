@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void {Method}{RetBaseType}()
+        private static void ConvertScalarToVector128Int64Int64()
         {
-            var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
+            var test = new ScalarSimdUnaryOpTest__ConvertScalarToVector128Int64Int64();
 
             if (test.IsSupported)
             {
@@ -62,56 +62,56 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarSimdUnaryOpTest__{Method}{RetBaseType}
+    public sealed unsafe class ScalarSimdUnaryOpTest__ConvertScalarToVector128Int64Int64
     {
         private struct TestStruct
         {
-            public {Op1BaseType} _fld;
+            public Int64 _fld;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                testStruct._fld = {NextValueOp1};
+                testStruct._fld = TestLibrary.Generator.GetInt64();
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarSimdUnaryOpTest__{Method}{RetBaseType} testClass)
+            public void RunStructFldScenario(ScalarSimdUnaryOpTest__ConvertScalarToVector128Int64Int64 testClass)
             {
-                var result = {Isa}.{Method}(_fld);
+                var result = Sse2.X64.ConvertScalarToVector128Int64(_fld);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
             }
         }
 
-        private static readonly int LargestVectorSize = {LargestVectorSize};
+        private static readonly int LargestVectorSize = 16;
 
-        private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
+        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
 
-        private static {Op1BaseType} _data;
+        private static Int64 _data;
 
-        private static {Op1BaseType} _clsVar;
+        private static Int64 _clsVar;
 
-        private {Op1BaseType} _fld;
+        private Int64 _fld;
 
-        private ScalarSimdUnaryOpTest__DataTable<{RetBaseType}> _dataTable;
+        private ScalarSimdUnaryOpTest__DataTable<Int64> _dataTable;
 
-        static ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
+        static ScalarSimdUnaryOpTest__ConvertScalarToVector128Int64Int64()
         {
-            _clsVar = {NextValueOp1};
+            _clsVar = TestLibrary.Generator.GetInt64();
         }
 
-        public ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
+        public ScalarSimdUnaryOpTest__ConvertScalarToVector128Int64Int64()
         {
             Succeeded = true;
 
-            _fld = {NextValueOp1};
-            _data = {NextValueOp1};
-            _dataTable = new ScalarSimdUnaryOpTest__DataTable<{RetBaseType}>(new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _fld = TestLibrary.Generator.GetInt64();
+            _data = TestLibrary.Generator.GetInt64();
+            _dataTable = new ScalarSimdUnaryOpTest__DataTable<Int64>(new Int64[RetElementCount], LargestVectorSize);
         }
 
-        public bool IsSupported => {Isa}.IsSupported;
+        public bool IsSupported => Sse2.X64.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -119,8 +119,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = {Isa}.{Method}(
-                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data))
+            var result = Sse2.X64.ConvertScalarToVector128Int64(
+                Unsafe.ReadUnaligned<Int64>(ref Unsafe.As<Int64, byte>(ref _data))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
@@ -131,12 +131,12 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}) })
+            var result = typeof(Sse2.X64).GetMethod(nameof(Sse2.X64.ConvertScalarToVector128Int64), new Type[] { typeof(Int64) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data))
+                                        Unsafe.ReadUnaligned<Int64>(ref Unsafe.As<Int64, byte>(ref _data))
                                      });
 
-            Unsafe.Write(_dataTable.outArrayPtr, ({RetVectorType}<{RetBaseType}>)(result));
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector128<Int64>)(result));
             ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
@@ -144,7 +144,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = {Isa}.{Method}(
+            var result = Sse2.X64.ConvertScalarToVector128Int64(
                 _clsVar
             );
 
@@ -156,8 +156,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data));
-            var result = {Isa}.{Method}(data);
+            var data = Unsafe.ReadUnaligned<Int64>(ref Unsafe.As<Int64, byte>(ref _data));
+            var result = Sse2.X64.ConvertScalarToVector128Int64(data);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(data, _dataTable.outArrayPtr);
@@ -167,8 +167,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld);
+            var test = new ScalarSimdUnaryOpTest__ConvertScalarToVector128Int64Int64();
+            var result = Sse2.X64.ConvertScalarToVector128Int64(test._fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
@@ -178,7 +178,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld);
+            var result = Sse2.X64.ConvertScalarToVector128Int64(_fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld, _dataTable.outArrayPtr);
@@ -189,7 +189,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld);
+            var result = Sse2.X64.ConvertScalarToVector128Int64(test._fld);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld, _dataTable.outArrayPtr);
@@ -224,20 +224,20 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult({Op1BaseType} firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Int64 firstOp, void* result, [CallerMemberName] string method = "")
         {
-            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+            Int64[] outArray = new Int64[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
 
             ValidateResult(firstOp, outArray, method);
         }
 
-        private void ValidateResult({Op1BaseType} firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateResult(Int64 firstOp, Int64[] result, [CallerMemberName] string method = "")
         {
             bool succeeded = true;
 
-            if ({ValidateFirstResult})
+            if (firstOp != result[0])
             {
                 succeeded = false;
             }
@@ -245,7 +245,7 @@ namespace JIT.HardwareIntrinsics.X86
             {
                 for (var i = 1; i < RetElementCount; i++)
                 {
-                    if ({ValidateRemainingResults})
+                    if (false)
                     {
                         succeeded = false;
                         break;
@@ -255,7 +255,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             if (!succeeded)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Sse2.X64)}.{nameof(Sse2.X64.ConvertScalarToVector128Int64)}<Int64>(Int64): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
