@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
@@ -21,8 +22,8 @@ namespace System.Runtime.CompilerServices
             _continueOnCapturedContext = continueOnCapturedContext;
         }
 
-        public Enumerator GetAsyncEnumerator() =>
-            new Enumerator(_enumerable.GetAsyncEnumerator(), _continueOnCapturedContext);
+        public Enumerator GetAsyncEnumerator(CancellationToken cancellationToken = default) =>
+            new Enumerator(_enumerable.GetAsyncEnumerator(cancellationToken), _continueOnCapturedContext);
 
         public readonly struct Enumerator
         {
