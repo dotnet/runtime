@@ -7,20 +7,26 @@
 #pragma hdrstop
 #endif
 
-// The IndirectCallTransformer transforms indirect calls that involve fat pointers
-// or guarded devirtualization candidates.
+// The IndirectCallTransformer transforms indirect calls that involve fat function
+// pointers or guarded devirtualization candidates. These transformations introduce
+// control flow and so can't easily be done in the importer.
 //
-// A fat function pointer is pointer with the second least significant bit set,
-// if the bit is set, the pointer (after clearing the bit) actually points to
-// a tuple <method pointer, instantiation argument pointer> where
+// A fat function pointer is a pointer with the second least significant bit
+// (aka FAT_POINTER_MASK) set. If the bit is set, the pointer (after clearing the bit)
+// actually points to a tuple <method pointer, instantiation argument pointer> where
 // instantiationArgument is a hidden first argument required by method pointer.
 //
 // Fat pointers are used in CoreRT as a replacement for instantiating stubs,
 // because CoreRT can't generate stubs in runtime.
 //
-// Jit is responsible for the checking the bit, do the regular call if it is not set
-// or load hidden argument, fix the pointer and make a call with the fixed pointer and
-// the instantiation argument.
+// The JIT is responsible for emitting code to check the bit at runtime, branching
+// to one of two call sites.
+//
+// When the bit is not set, the code should execute the original indirect call.
+//
+// When the bit is set, the code should mask off the bit, use the resulting pointer
+// to load the real target address and the extra argument, and then call indirect
+// via the target, passing the extra argument.
 //
 // before:
 //   current block
@@ -40,7 +46,7 @@
 //   } BBJ_NONE check block
 //   check block
 //   {
-//     jump to else if function ptr has GTF_CALL_M_FAT_POINTER_CHECK set.
+//     jump to else if function ptr has the FAT_POINTER_MASK bit set.
 //   } BBJ_COND then block, else block
 //   then block
 //   {
@@ -48,7 +54,7 @@
 //   } BBJ_ALWAYS remainder block
 //   else block
 //   {
-//     unset GTF_CALL_M_FAT_POINTER_CHECK
+//     clear FAT_POINTER_MASK bit
 //     load actual function pointer
 //     load instantiation argument
 //     create newArgList = (instantiation argument, original argList)
@@ -663,8 +669,8 @@ private:
             GenTreeStmt* assignStmt = compiler->gtNewStmt(assign);
             compiler->fgInsertStmtAtEnd(thenBlock, assignStmt);
 
-            // Clone call
-            GenTreeCall* call = compiler->gtCloneExpr(origCall)->AsCall();
+            // Clone call. Note we must use the special candidate helper.
+            GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtCallObjp  = compiler->gtNewLclvNode(thisTemp, TYP_REF);
             call->SetIsGuarded();
 

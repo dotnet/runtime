@@ -2482,10 +2482,19 @@ public:
 
     // Create a copy of `tree`, optionally adding specifed flags, and optionally mapping uses of local
     // `varNum` to int constants with value `varVal`.
-    GenTree* gtCloneExpr(GenTree* tree, unsigned addFlags = 0, unsigned varNum = (unsigned)-1, int varVal = 0)
+    GenTree* gtCloneExpr(GenTree* tree, unsigned addFlags = 0, unsigned varNum = BAD_VAR_NUM, int varVal = 0)
     {
         return gtCloneExpr(tree, addFlags, varNum, varVal, varNum, varVal);
     }
+
+    // Internal helper for cloning a call
+    GenTreeCall* gtCloneExprCallHelper(GenTreeCall* call,
+                                       unsigned     addFlags   = 0,
+                                       unsigned     deepVarNum = BAD_VAR_NUM,
+                                       int          deepVarVal = 0);
+
+    // Create copy of an inline or guarded devirtualization candidate tree.
+    GenTreeCall* gtCloneCandidateCall(GenTreeCall* call);
 
     GenTree* gtReplaceTree(GenTree* stmt, GenTree* tree, GenTree* replacementTree);
 
