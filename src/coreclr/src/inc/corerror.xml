@@ -388,6 +388,12 @@
 	<Comment> A token of the wrong type passed to a metadata function. </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131165">
+	<SymbolicName>TLBX_E_LIBNOTREGISTERED</SymbolicName>
+	<Message>"Typelib export: Type library is not registered."</Message>
+	<Comment> Typelib export: type library is not registered. </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x8013118a">
 	<SymbolicName>META_E_BADMETADATA</SymbolicName>
 	<Message>"Merge: Inconsistency in meta data import scope."</Message>

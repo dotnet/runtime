@@ -523,7 +523,7 @@ HRESULT TryGetGuid(MethodTable* pClass, GUID* pGUID, BOOL b);
 
 //------------------------------------------------------------------------------------------
 // Helpers to get the ITypeInfo* for a type.
-HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, int bClassInfo=false, int bAutoCreate=true, int flags=0);
+HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, bool bClassInfo = false);
 HRESULT GetDefaultInterfaceForCoclass(ITypeInfo *pTI, ITypeInfo **ppTIDef);
 
 //-------------------------------------------------------------------------------------
