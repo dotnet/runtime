@@ -3386,7 +3386,10 @@ DECLARE_API(EEHeap)
         // The first one is the system domain.
         ExtOut("Loader Heap:\n");
         IfFailRet(PrintDomainHeapInfo("System Domain", adsData.systemDomain, &allHeapSize, &wasted));
-        IfFailRet(PrintDomainHeapInfo("Shared Domain", adsData.sharedDomain, &allHeapSize, &wasted));
+        if (adsData.sharedDomain != NULL)
+        {
+            IfFailRet(PrintDomainHeapInfo("Shared Domain", adsData.sharedDomain, &allHeapSize, &wasted));
+        }
         
         ArrayHolder<CLRDATA_ADDRESS> pArray = new NOTHROW CLRDATA_ADDRESS[adsData.DomainCount];
 
@@ -6086,14 +6089,17 @@ DECLARE_API(DumpDomain)
     }
     DomainInfo(&appDomain);
     
-    ExtOut("--------------------------------------\n");
-    DMLOut("Shared Domain:      %s\n", DMLDomain(adsData.sharedDomain));
-    if ((Status=appDomain.Request(g_sos, adsData.sharedDomain))!=S_OK)
+    if (adsData.sharedDomain != NULL)
     {
-        ExtOut("Unable to get shared domain info\n");
-        return Status;
+        ExtOut("--------------------------------------\n");
+        DMLOut("Shared Domain:      %s\n", DMLDomain(adsData.sharedDomain));
+        if ((Status=appDomain.Request(g_sos, adsData.sharedDomain))!=S_OK)
+        {
+            ExtOut("Unable to get shared domain info\n");
+            return Status;
+        }
+        DomainInfo(&appDomain);
     }
-    DomainInfo(&appDomain);
 
     ArrayHolder<CLRDATA_ADDRESS> pArray = new NOTHROW CLRDATA_ADDRESS[adsData.DomainCount];
     if (pArray==NULL)
@@ -10734,11 +10740,8 @@ DECLARE_API(FindRoots)
 class GCHandleStatsForDomains
 {
 public:
-    const static int SHARED_DOMAIN_INDEX = 0;
-    const static int SYSTEM_DOMAIN_INDEX = 1;
-    
     GCHandleStatsForDomains() 
-        : m_singleDomainMode(FALSE), m_numDomains(0), m_pStatistics(NULL), m_pDomainPointers(NULL)
+        : m_singleDomainMode(FALSE), m_numDomains(0), m_pStatistics(NULL), m_pDomainPointers(NULL), m_sharedDomainIndex(-1), m_systemDomainIndex(-1)
     {
     }
 
@@ -10772,19 +10775,28 @@ public:
             if (adsData.Request(g_sos) != S_OK)
                 return FALSE;
 
-            m_numDomains = adsData.DomainCount + 2;
-            ArrayHolder<CLRDATA_ADDRESS> pArray = new NOTHROW CLRDATA_ADDRESS[adsData.DomainCount + 2];
+            LONG numSpecialDomains = (adsData.sharedDomain != NULL) ? 2 : 1;
+            m_numDomains = adsData.DomainCount + numSpecialDomains;
+            ArrayHolder<CLRDATA_ADDRESS> pArray = new NOTHROW CLRDATA_ADDRESS[m_numDomains];
             if (pArray == NULL)
                 return FALSE;
 
-            pArray[SHARED_DOMAIN_INDEX] = adsData.sharedDomain;
-            pArray[SYSTEM_DOMAIN_INDEX] = adsData.systemDomain;
+            int i = 0;
+            if (adsData.sharedDomain != NULL)
+            {
+                pArray[i++] = adsData.sharedDomain;
+            }
+
+            pArray[i] = adsData.systemDomain;
+
+            m_sharedDomainIndex = i - 1; // The m_sharedDomainIndex is set to -1 if there is no shared domain
+            m_systemDomainIndex = i;
             
-            if (g_sos->GetAppDomainList(adsData.DomainCount, pArray+2, NULL) != S_OK)
+            if (g_sos->GetAppDomainList(adsData.DomainCount, pArray+numSpecialDomains, NULL) != S_OK)
                 return FALSE;
             
             m_pDomainPointers = pArray.Detach();
-            m_pStatistics = new NOTHROW GCHandleStatistics[adsData.DomainCount + 2];
+            m_pStatistics = new NOTHROW GCHandleStatistics[m_numDomains];
             if (m_pStatistics == NULL)
                 return FALSE;
         }
@@ -10829,12 +10841,24 @@ public:
         SOS_Assert(index < m_numDomains);
         return m_pDomainPointers[index];
     }
-    
+
+    int GetSharedDomainIndex()
+    {
+        return m_sharedDomainIndex;
+    }
+
+    int GetSystemDomainIndex()
+    {
+        return m_systemDomainIndex;
+    }
+
 private:
     BOOL m_singleDomainMode;
     int m_numDomains;
     GCHandleStatistics *m_pStatistics;
     CLRDATA_ADDRESS *m_pDomainPointers;
+    int m_sharedDomainIndex;
+    int m_systemDomainIndex;
 };
 
 class GCHandlesImpl
@@ -10905,9 +10929,9 @@ public:
                 Print( "------------------------------------------------------------------------------\n");           
                 Print("GC Handle Statistics for AppDomain ", AppDomainPtr(mHandleStat.GetDomain(i)));
             
-                if (i == GCHandleStatsForDomains::SHARED_DOMAIN_INDEX)
+                if (i == mHandleStat.GetSharedDomainIndex())
                     Print(" (Shared Domain)\n");
-                else if (i == GCHandleStatsForDomains::SYSTEM_DOMAIN_INDEX)
+                else if (i == mHandleStat.GetSystemDomainIndex())
                     Print(" (System Domain)\n");
                 else
                     Print("\n");
