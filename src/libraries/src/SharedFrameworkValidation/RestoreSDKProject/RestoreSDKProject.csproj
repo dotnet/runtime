@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
     <RuntimeFrameworkVersion>$(_RuntimeFrameworkVersion)</RuntimeFrameworkVersion>
     <CoreFxPackageVersion>4.4.0-$(CoreFxExpectedPrerelease)</CoreFxPackageVersion>
     <RuntimeIdentifier>$(_PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-  </PropertyGroup>
-  <PropertyGroup>
     <ProjectGuid>{8371FF08-5374-4584-970C-6DC5B25E8BF1}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
@@ -59,5 +58,4 @@
   <Target Name="BinPlaceMetaPackageRef" BeforeTargets="CoreCompile">
     <Copy SourceFiles="%(ReferencePath.Identity)" DestinationFolder="$(_MetaPackageDestinationFolder)" />
   </Target>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
 </Project>
