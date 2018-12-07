@@ -51,6 +51,7 @@ BEGIN
 	MSG_FOR_URT_HR(CLDB_E_RECORD_OUTOFORDER) "Record is emitted out of order."
 	MSG_FOR_URT_HR(CLDB_E_TOO_BIG) "A blob or string was too big."
 	MSG_FOR_URT_HR(META_E_INVALID_TOKEN_TYPE) "A token of the wrong type passed to a metadata function."
+	MSG_FOR_URT_HR(TLBX_E_LIBNOTREGISTERED) "Typelib export: Type library is not registered."
 	MSG_FOR_URT_HR(META_E_BADMETADATA) "Merge: Inconsistency in meta data import scope."
 	MSG_FOR_URT_HR(META_E_BAD_SIGNATURE) "Bad binary signature."
 	MSG_FOR_URT_HR(META_E_BAD_INPUT_PARAMETER) "Bad input parameters."

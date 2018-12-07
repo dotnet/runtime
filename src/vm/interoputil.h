@@ -188,16 +188,10 @@ ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization = T
 
 // A version of LoadRegTypeLib that loads based on bitness and platform support
 //  and loads with LCID == LOCALE_USER_DEFAULT
-HRESULT LoadRegTypeLibWithFlags(REFGUID rguid, 
-                                unsigned short wVerMajor,
-                                unsigned short wVerMinor,
-                                int flags,
-                                ITypeLib FAR* FAR*  pptlib);
-
-// A version of LoadTypeLibEx that loads based on bitness and platform support.
-HRESULT LoadTypeLibExWithFlags(LPCOLESTR  szFile, 
-                               int  flags,
-                               ITypeLib**  pptlib);
+HRESULT LoadRegTypeLib(_In_ REFGUID guid,
+                       _In_ unsigned short wVerMajor,
+                       _In_ unsigned short wVerMinor,
+                       _Outptr_ ITypeLib **pptlib);
 
 //-------------------------------------------------------------------------------
 // Given an IErrorInfo pointer created on a com exception obect
