@@ -185,7 +185,9 @@
 
   </Target>
 
-  <Target Name="AddTestPlatformDependencies" BeforeTargets="ResolveReferences">
+  <Target Name="AddTestPlatformDependencies"
+          Condition="'$(EnableVSTestReferences)' == 'true'"
+          BeforeTargets="ResolveReferences">
 
     <PropertyGroup>
       <TestSdkTFM Condition="'$(TargetsNetFx)' == 'true'">net45</TestSdkTFM>

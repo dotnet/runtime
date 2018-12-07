@@ -88,7 +88,7 @@ def osShortName = ['Windows 10': 'win10',
                     def benchViewName = isPR ? 'corefx private %BenchviewCommitName%' : 'corefx rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
                     steps {
                         //We need to specify the max cpu count to be one as we do not want to be executing performance tests in parallel
-                        batchFile("build.cmd -release")
+                        batchFile("build.cmd -ci -release")
                         batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\\Tools\" -Prerelease -ExcludeVersion")
                         //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
                         //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
@@ -97,15 +97,15 @@ def osShortName = ['Windows 10': 'win10',
                         "${python} \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
                         batchFile("${python} \"%WORKSPACE%\\Tools\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
 
-                        batchFile("build.cmd -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
-                        batchFile("build.cmd -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic")
+                        batchFile("build.cmd -ci -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
+                        batchFile("build.cmd -ci -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic")
                     }
                 }
                 else {
                     def benchViewName = isPR ? 'corefx private \$BenchviewCommitName' : 'corefx rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
                     steps {
                         //We need to specify the max cpu count to be one as we do not want to be executing performance tests in parallel
-                        shell("./build.sh -release")
+                        shell("./build.sh --ci -release")
                         shell("find . -type f -name dotnet | xargs chmod u+x")
                         shell("curl \"http://benchviewtestfeed.azurewebsites.net/nuget/FindPackagesById()?id='Microsoft.BenchView.JSONFormat'\" | grep \"content type\" | sed \"\$ s/.*src=\\\"\\([^\\\"]*\\)\\\".*/\\1/;tx;d;:x\" | xargs curl -o benchview.zip")
                         shell("unzip -q -o benchview.zip -d \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat\"")
@@ -117,7 +117,7 @@ def osShortName = ['Windows 10': 'win10',
                         "python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type " + runType)
                         shell("python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/machinedata.py\"")
 
-                        shell("bash ./build.sh -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
+                        shell("bash ./build.sh --ci -release -includetests /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
                     }
                 }
             }
