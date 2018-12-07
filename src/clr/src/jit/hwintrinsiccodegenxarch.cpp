@@ -1254,29 +1254,111 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
 
-    assert(node->gtGetOp1() == nullptr);
-    assert(node->gtGetOp2() == nullptr);
-    assert(baseType >= TYP_BYTE && baseType <= TYP_DOUBLE);
+    assert(compiler->compSupports(InstructionSet_SSE));
+    assert((baseType >= TYP_BYTE) && (baseType <= TYP_DOUBLE));
 
-    emitter* emit = getEmitter();
-    emitAttr attr = EA_ATTR(node->gtSIMDSize);
+    GenTree*  op1    = node->gtGetOp1();
+    regNumber op1Reg = REG_NA;
+
+    if (op1 != nullptr)
+    {
+        assert(!op1->OperIsList());
+        op1Reg = op1->gtRegNum;
+        genConsumeOperands(node);
+    }
+
+    assert(node->gtGetOp2() == nullptr);
+
+    emitter*    emit = getEmitter();
+    emitAttr    attr = EA_ATTR(node->gtSIMDSize);
+    instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 
     switch (intrinsicId)
     {
-        case NI_Base_Vector128_Zero:
+        case NI_Base_Vector128_CreateScalarUnsafe:
+        case NI_Base_Vector256_CreateScalarUnsafe:
         {
-            // When SSE2 is supported, we generate pxor for integral types otherwise just use xorps
-            instruction ins =
-                (compiler->compSupports(InstructionSet_SSE2) && varTypeIsIntegral(baseType)) ? INS_pxor : INS_xorps;
-            emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
+            if (varTypeIsIntegral(baseType))
+            {
+                genHWIntrinsic_R_RM(node, ins, emitActualTypeSize(baseType));
+            }
+            else
+            {
+                assert(varTypeIsFloating(baseType));
+
+                attr = emitTypeSize(baseType);
+
+                if (op1->isContained() || op1->isUsedFromSpillTemp())
+                {
+                    genHWIntrinsic_R_RM(node, ins, attr);
+                }
+                else if (targetReg != op1Reg)
+                {
+                    // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
+                    emit->emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
+                }
+            }
             break;
         }
 
+        case NI_Base_Vector128_ToScalar:
+        case NI_Base_Vector256_ToScalar:
+        {
+            assert(varTypeIsFloating(baseType));
+
+            attr = emitTypeSize(TYP_SIMD16);
+
+            if (op1->isContained() || op1->isUsedFromSpillTemp())
+            {
+                genHWIntrinsic_R_RM(node, ins, attr);
+            }
+            else if (targetReg != op1Reg)
+            {
+                // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
+                emit->emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
+            }
+            break;
+        }
+
+        case NI_Base_Vector128_ToVector256:
+        {
+            // ToVector256 has zero-extend semantics in order to ensure it is deterministic
+            // We always emit a move to the target register, even when op1Reg == targetReg,
+            // in order to ensure that Bits MAXVL-1:128 are zeroed.
+
+            attr = emitTypeSize(TYP_SIMD16);
+
+            if (op1->isContained() || op1->isUsedFromSpillTemp())
+            {
+                genHWIntrinsic_R_RM(node, ins, attr);
+            }
+            else
+            {
+                // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
+                emit->emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
+            }
+            break;
+        }
+
+        case NI_Base_Vector128_ToVector256Unsafe:
+        case NI_Base_Vector256_GetLower:
+        {
+            if (op1->isContained() || op1->isUsedFromSpillTemp())
+            {
+                genHWIntrinsic_R_RM(node, ins, attr);
+            }
+            else if (targetReg != op1Reg)
+            {
+                // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
+                emit->emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
+            }
+            break;
+        }
+
+        case NI_Base_Vector128_Zero:
         case NI_Base_Vector256_Zero:
         {
-            // When AVX2 is supported, we generate pxor for integral types otherwise just use xorps
-            instruction ins =
-                (compiler->compSupports(InstructionSet_AVX2) && varTypeIsIntegral(baseType)) ? INS_pxor : INS_xorps;
+            assert(op1 == nullptr);
             emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
             break;
         }
