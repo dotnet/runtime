@@ -234,8 +234,14 @@ namespace System.IO
         {
             byte* pKey = stackalloc byte[KeyLength];
             Interop.GetRandomBytes(pKey, KeyLength);
-            return string.Create(12, (IntPtr)pKey, (span, key) => // 12 == 8 + 1 (for period) + 3
-                Populate83FileNameFromRandomBytes((byte*)key, KeyLength, span));
+
+#if MS_IO_REDIST
+                return StringExtensions.Create(
+#else
+                return string.Create(
+#endif
+                    12, (IntPtr)pKey, (span, key) => // 12 == 8 + 1 (for period) + 3
+                         Populate83FileNameFromRandomBytes((byte*)key, KeyLength, span));
         }
 
         /// <summary>
