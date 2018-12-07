@@ -254,6 +254,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Gets the value of the lower 128-bits as a new <see cref="Vector128{T}" />.</summary>
         /// <returns>The value of the lower 128-bits as a new <see cref="Vector128{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector128<T> GetLower()
         {
             ThrowIfUnsupportedType();
@@ -305,6 +306,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a scalar containing the value of the first element.</summary>
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public T ToScalar()
         {
             ThrowIfUnsupportedType();

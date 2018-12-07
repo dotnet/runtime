@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
@@ -905,6 +906,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Byte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector256<byte> CreateScalarUnsafe(byte value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -918,6 +920,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Double}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Double}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector256<double> CreateScalarUnsafe(double value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -931,6 +934,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Int16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector256<short> CreateScalarUnsafe(short value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -944,6 +948,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Int32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Int32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector256<int> CreateScalarUnsafe(int value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -957,6 +962,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Int64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Int64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector256<long> CreateScalarUnsafe(long value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -970,6 +976,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{SByte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{SByte}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<sbyte> CreateScalarUnsafe(sbyte value)
         {
@@ -984,6 +991,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{Single}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         public static unsafe Vector256<float> CreateScalarUnsafe(float value)
         {
             // This relies on us stripping the "init" flag from the ".locals"
@@ -997,6 +1005,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UInt16}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<ushort> CreateScalarUnsafe(ushort value)
         {
@@ -1011,6 +1020,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UInt32}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<uint> CreateScalarUnsafe(uint value)
         {
@@ -1025,6 +1035,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Creates a new <see cref="Vector256{UInt64}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector256{UInt64}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector256<ulong> CreateScalarUnsafe(ulong value)
         {
