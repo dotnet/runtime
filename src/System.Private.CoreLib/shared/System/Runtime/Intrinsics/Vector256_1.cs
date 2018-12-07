@@ -6,11 +6,23 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
+    // We mark certain methods with AggressiveInlining to ensure that the JIT will
+    // inline them. The JIT would otherwise not inline the method since it, at the
+    // point it tries to determine inline profability, currently cannot determine
+    // that most of the code-paths will be optimized away as "dead code".
+    //
+    // We then manually inline cases (such as certain intrinsic code-paths) that
+    // will generate code small enough to make the AgressiveInlining profitable. The
+    // other cases (such as the software fallback) are placed in their own method.
+    // This ensures we get good codegen for the "fast-path" and allows the JIT to
+    // determine inline profitability of the other paths as it would normally.
+
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector256DebugView<>))]
@@ -173,17 +185,46 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public bool Equals(Vector256<T> other)
         {
-            ThrowIfUnsupportedType();
-
-            for (int i = 0; i < Count; i++)
+            if (Avx.IsSupported)
             {
-                if (!((IEquatable<T>)(GetElement(i))).Equals(other.GetElement(i)))
+                if (typeof(T) == typeof(float))
                 {
-                    return false;
+                    Vector256<float> result = Avx.Compare(AsSingle(), other.AsSingle(), FloatComparisonMode.EqualOrderedNonSignaling);
+                    return Avx.MoveMask(result) == 0b1111_1111; // We have one bit per element
+                }
+
+                if (typeof(T) == typeof(double))
+                {
+                    Vector256<double> result = Avx.Compare(AsDouble(), other.AsDouble(), FloatComparisonMode.EqualOrderedNonSignaling);
+                    return Avx.MoveMask(result) == 0b1111; // We have one bit per element
                 }
             }
 
-            return true;
+            if (Avx2.IsSupported)
+            {
+                // Unlike float/double, there are no special values to consider
+                // for integral types and we can just do a comparison that all
+                // bytes are exactly the same.
+
+                Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
+                Vector256<byte> result = Avx2.CompareEqual(AsByte(), other.AsByte());
+                return Avx2.MoveMask(result) == unchecked((int)(0b1111_1111_1111_1111_1111_1111_1111_1111)); // We have one bit per element
+            }
+
+            return SoftwareFallback(in this, other);
+
+            bool SoftwareFallback(in Vector256<T> x, Vector256<T> y)
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    if (!((IEquatable<T>)(x.GetElement(i))).Equals(y.GetElement(i)))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
@@ -266,41 +307,89 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the lower 128-bits as a <see cref="Vector128{T}" />.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the specified value and the lower 128-bits set to the same value as that in the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector256<T> WithLower(Vector128<T> value)
         {
             ThrowIfUnsupportedType();
             Vector128<T>.ThrowIfUnsupportedType();
 
-            Vector256<T> result = this;
-            Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = value;
-            return result;
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                return Avx2.InsertVector128(AsByte(), value.AsByte(), 0).As<T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                return Avx.InsertVector128(AsSingle(), value.AsSingle(), 0).As<T>();
+            }
+
+            return SoftwareFallback(in this, value);
+
+            Vector256<T> SoftwareFallback(in Vector256<T> t, Vector128<T> x)
+            {
+                Vector256<T> result = t;
+                Unsafe.As<Vector256<T>, Vector128<T>>(ref result) = x;
+                return result;
+            }
         }
 
         /// <summary>Gets the value of the upper 128-bits as a new <see cref="Vector128{T}" />.</summary>
         /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector128<T> GetUpper()
         {
             ThrowIfUnsupportedType();
             Vector128<T>.ThrowIfUnsupportedType();
 
-            ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in this));
-            return Unsafe.Add(ref lower, 1);
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                return Avx2.ExtractVector128(AsByte(), 1).As<T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                return Avx.ExtractVector128(AsSingle(), 1).As<T>();
+            }
+
+            return SoftwareFallback(in this);
+
+            Vector128<T> SoftwareFallback(in Vector256<T> t)
+            {
+                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in t));
+                return Unsafe.Add(ref lower, 1);
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the current instance.</summary>
         /// <param name="value">The value of the upper 128-bits as a <see cref="Vector128{T}" />.</param>
         /// <returns>A new <see cref="Vector256{T}" /> with the upper 128-bits set to the specified value and the upper 128-bits set to the same value as that in the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector256<T> WithUpper(Vector128<T> value)
         {
             ThrowIfUnsupportedType();
             Vector128<T>.ThrowIfUnsupportedType();
 
-            Vector256<T> result = this;
-            ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref result);
-            Unsafe.Add(ref lower, 1) = value;
-            return result;
+            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
+            {
+                return Avx2.InsertVector128(AsByte(), value.AsByte(), 1).As<T>();
+            }
+
+            if (Avx.IsSupported)
+            {
+                return Avx.InsertVector128(AsSingle(), value.AsSingle(), 1).As<T>();
+            }
+
+            return SoftwareFallback(in this, value);
+
+            Vector256<T> SoftwareFallback(in Vector256<T> t, Vector128<T> x)
+            {
+                Vector256<T> result = t;
+                ref Vector128<T> lower = ref Unsafe.As<Vector256<T>, Vector128<T>>(ref result);
+                Unsafe.Add(ref lower, 1) = x;
+                return result;
+            }
         }
 
         /// <summary>Converts the current instance to a scalar containing the value of the first element.</summary>
