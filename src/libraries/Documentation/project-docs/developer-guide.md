@@ -281,7 +281,7 @@ Use this attribute on test methods to specify that this test may only be run on 
 - `nonlinuxtests` for tests that don't run on Linux
 - `nonosxtests` for tests that don't run on OS X
 
-**[Available Test Platforms](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.XUnitExtensions/TestPlatforms.cs#L10)**
+**[Available Test Platforms](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TestPlatforms.cs)**
 
 When running tests by building a test project, tests that don't apply to the `OSGroup` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
