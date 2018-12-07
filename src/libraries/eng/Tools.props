@@ -52,10 +52,10 @@
   <Target Name="InitTools" AfterTargets="Restore">
 
     <PropertyGroup>
-      <ToolsDir>$(RepoRoot)Tools</ToolsDir>
+      <ToolsDir Condition="'$(ToolsDir)' == ''">$(RepoRoot)Tools</ToolsDir>
       <BuildToolsSemaphore>$(ToolsDir)/$(BuildToolsPackageVersion).init-tools.completed</BuildToolsSemaphore>
       <PackagesDir>$(NuGetPackageRoot)/</PackagesDir>
-      <BuildToolsPackageDir>$(PackagesDir)$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
+      <BuildToolsPackageDir Condition="'$(BuildToolsPackageDir)' == ''">$(PackagesDir)$(BuildToolsPackage)/$(BuildToolsPackageVersion)/lib/</BuildToolsPackageDir>
       <CmdExt>cmd</CmdExt>
       <CmdExt Condition="'$(OS)' != 'Windows_NT'">sh</CmdExt>
       <InitToolsCmdLine>$(BuildToolsPackageDir)init-tools.$(CmdExt) $(RepoRoot) $(DotNETCmd) $(ToolsDir) $(PackagesDir)</InitToolsCmdLine>
