@@ -3163,6 +3163,12 @@
   <data name="PlatformNotSupported_OverlappedIO" xml:space="preserve">
     <value>This API is specific to the way in which Windows handles asynchronous I/O, and is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_ITypeInfo" xml:space="preserve">
+    <value>Marshalling a System.Type to an unmanaged ITypeInfo or marshalling an ITypeInfo to a System.Type is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_IExpando" xml:space="preserve">
+    <value>Marshalling an IDispatchEx to an IReflect or IExpando is not supported on this platform.</value>
+  </data>
   <data name="Policy_CannotLoadSemiTrustAssembliesDuringInit" xml:space="preserve">
     <value>All assemblies loaded as part of AppDomain initialization must be fully trusted.</value>
   </data>
