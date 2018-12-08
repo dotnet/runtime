@@ -73,6 +73,7 @@ if(WIN32)
     # This test doesn't necessarily need to be Windows-only, but the implementation is very tied to Windows APIs
     add_subdirectory(PInvoke/DateTime)
     add_subdirectory(PInvoke/IEnumerator)
+    add_subdirectory(PInvoke/CustomMarshalers)
     add_subdirectory(ArrayMarshalling/SafeArray)
     add_subdirectory(COM/NativeServer)
     add_subdirectory(COM/NativeClients/Primitives)
