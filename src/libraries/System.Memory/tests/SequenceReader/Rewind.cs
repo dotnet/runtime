@@ -67,5 +67,18 @@ namespace System.Memory.Tests.SequenceReader
                 Assert.True(copy.CurrentSpan.SequenceEqual(reader.CurrentSpan));
             }
         }
+
+        [Fact]
+        public void Rewind_Exception()
+        {
+            ReadOnlySequence<byte> bytes = SequenceFactory.Create(new byte[][] {
+                new byte[] { 0          },
+                new byte[] { 1, 2       },
+                new byte[] { 3, 4       },
+                new byte[] { 5, 6, 7, 8 }
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SequenceReader<byte>(bytes).Rewind(-1));
+        }
     }
 }
