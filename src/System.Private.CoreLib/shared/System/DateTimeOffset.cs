@@ -9,14 +9,14 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    // DateTimeOffset is a value type that consists of a DateTime and a time zone offset, 
+    // DateTimeOffset is a value type that consists of a DateTime and a time zone offset,
     // ie. how far away the time is from GMT. The DateTime is stored whole, and the offset
-    // is stored as an Int16 internally to save space, but presented as a TimeSpan. 
+    // is stored as an Int16 internally to save space, but presented as a TimeSpan.
     //
     // The range is constrained so that both the represented clock time and the represented
     // UTC time fit within the boundaries of MaxValue. This gives it the same range as DateTime
     // for actual UTC times, and a slightly constrained range on one end when an offset is
-    // present. 
+    // present.
     //
     // This class should be substitutable for date time in most cases; so most operations
     // effectively work on the clock time. However, the underlying UTC time is what counts
@@ -30,7 +30,7 @@ namespace System
 
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct DateTimeOffset : IComparable, IFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback, ISpanFormattable
     {
         // Constants
@@ -109,7 +109,21 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
+
+            int originalSecond = second;
+            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            {
+                // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
+                second = 59;
+            }
+
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second), offset);
+
+            if (originalSecond == 60 &&
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+            {
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
+            }
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -117,7 +131,21 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
+
+            int originalSecond = second;
+            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            {
+                // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
+                second = 59;
+            }
+
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond), offset);
+
+            if (originalSecond == 60 &&
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+            {
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
+            }
         }
 
         // Constructs a DateTimeOffset from a given year, month, day, hour,
@@ -125,7 +153,21 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, TimeSpan offset)
         {
             _offsetMinutes = ValidateOffset(offset);
+
+            int originalSecond = second;
+            if (second == 60 && DateTime.s_systemSupportsLeapSeconds)
+            {
+                // Reset the leap second to 59 for now and then we'll validate it after getting the final UTC time.
+                second = 59;
+            }
+
             _dateTime = ValidateDate(new DateTime(year, month, day, hour, minute, second, millisecond, calendar), offset);
+
+            if (originalSecond == 60 &&
+               !DateTime.IsValidTimeWithLeapSeconds(_dateTime.Year, _dateTime.Month, _dateTime.Day, _dateTime.Hour, _dateTime.Minute, 60, DateTimeKind.Utc))
+            {
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
+            }
         }
 
         // Returns a DateTimeOffset representing the current date and time. The
@@ -596,7 +638,7 @@ namespace System
         // Constructs a DateTimeOffset from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTimeOffset Parse(string input)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -612,7 +654,7 @@ namespace System
         // Constructs a DateTimeOffset from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTimeOffset Parse(string input, IFormatProvider formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -642,7 +684,7 @@ namespace System
         // Constructs a DateTimeOffset from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTimeOffset ParseExact(string input, string format, IFormatProvider formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
@@ -653,7 +695,7 @@ namespace System
         // Constructs a DateTimeOffset from a string. The string must specify a
         // date and optionally a time in a culture-specific or universal format.
         // Leading and trailing whitespace characters are allowed.
-        // 
+        //
         public static DateTimeOffset ParseExact(string input, string format, IFormatProvider formatProvider, DateTimeStyles styles)
         {
             styles = ValidateStyles(styles, nameof(styles));
@@ -943,7 +985,7 @@ namespace System
             // RoundtripKind does not make sense for DateTimeOffset; ignore this flag for backward compatibility with DateTime
             style &= ~DateTimeStyles.RoundtripKind;
 
-            // AssumeLocal is also ignored as that is what we do by default with DateTimeOffset.Parse             
+            // AssumeLocal is also ignored as that is what we do by default with DateTimeOffset.Parse
             style &= ~DateTimeStyles.AssumeLocal;
 
             return style;
