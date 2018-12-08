@@ -135,44 +135,6 @@ static HRESULT InitUnmarshalSecret()
     return hr;
 }
 
-
-HRESULT TryGetGuid(MethodTable* pClass, GUID* pGUID, BOOL b)
-{
-    CONTRACTL
-    {
-        DISABLED(NOTHROW);
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-        PRECONDITION(CheckPointer(pGUID));
-    }
-    CONTRACTL_END;
-
-    GCX_COOP();
-    
-    HRESULT hr = S_OK;
-    OBJECTREF pThrowable = NULL;
-    GCPROTECT_BEGIN(pThrowable);
-    {
-        EX_TRY
-        {
-            pClass->GetGuid(pGUID, b);
-        }
-        EX_CATCH
-        {
-            pThrowable = GET_THROWABLE();
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
-        if (pThrowable != NULL)
-            hr = SetupErrorInfo(pThrowable);
-    }
-    GCPROTECT_END();
-    
-    return hr;
-}
-
-
 //------------------------------------------------------------------------------------------
 //      IUnknown methods for CLR objects
 
@@ -583,6 +545,47 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
 }
 
 //------------------------------------------------------------------------------------------
+HRESULT GetDefaultInterfaceForCoclass(ITypeInfo *pTI, ITypeInfo **ppTIDef)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(CheckPointer(pTI));
+        PRECONDITION(CheckPointer(ppTIDef));
+    }
+    CONTRACTL_END;
+
+    HRESULT     hr;
+    TYPEATTRHolder pAttr(pTI); // Attributes on the first TypeInfo.
+
+    IfFailRet(pTI->GetTypeAttr(&pAttr));
+    if (pAttr->typekind != TKIND_COCLASS)
+        return TYPE_E_ELEMENTNOTFOUND;
+
+    int flags;
+
+    // If no impltype has the default flag, use 0.
+    int defaultInterface = 0;
+    for (int i = 0; i < pAttr->cImplTypes; ++i)
+    {
+        IfFailRet(pTI->GetImplTypeFlags(i, &flags));
+        if (flags & IMPLTYPEFLAG_FDEFAULT)
+        {
+            defaultInterface = i;
+            break;
+        }
+    }
+
+    HREFTYPE href;
+    IfFailRet(pTI->GetRefTypeOfImplType(defaultInterface, &href));
+    IfFailRet(pTI->GetRefTypeInfo(href, ppTIDef));
+
+    return S_OK;
+} // HRESULT GetDefaultInterfaceForCoclass()
+
+//------------------------------------------------------------------------------------------
 // Helper to get the ITypeLib* for a Assembly.
 HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppTlb)
 {
@@ -662,7 +665,6 @@ HRESULT GetITypeLibForAssembly(_In_ Assembly *pAssembly, _Outptr_ ITypeLib **ppT
     return S_OK;
 } // HRESULT GetITypeLibForAssembly()
 
-
 HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClassInfo)
 {
     CONTRACTL
@@ -676,7 +678,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
 
     GUID clsid;
     GUID ciid;
-    ComMethodTable *pComMT = NULL;             
+    ComMethodTable *pComMT              = NULL;
     HRESULT                 hr          = S_OK;
     SafeComHolder<ITypeLib> pITLB       = NULL;
     SafeComHolder<ITypeInfo> pTI        = NULL;
@@ -710,7 +712,9 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                         {
                             // Find the first COM visible IClassX starting at ComMethodTable passed in and
                             // walking up the hierarchy.
-                            for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());                
+                            pComMT = pTemplate->GetClassComMT();
+                            while (pComMT && !pComMT->IsComVisible())
+                                pComMT = pComMT->GetParentClassComMT();
                         }
                     } 
                     EX_CATCH
@@ -749,7 +753,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         IfFailGo(GetITypeLibForAssembly(pClass->GetAssembly(), &pITLB));
 
         // Get the GUID of the desired TypeRef.
-        IfFailGo(TryGetGuid(pClass, &clsid, TRUE));
+        IfFailGo(pClass->GetGuidNoThrow(&clsid, TRUE));
 
         // Retrieve the ITypeInfo from the ITypeLib.
         IfFailGo(pITLB->GetTypeInfoOfGuid(clsid, ppTI));
@@ -758,17 +762,12 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
     {   
         // This is a COM imported class, with no IClassX.  Get default interface.
         IfFailGo(GetITypeLibForAssembly(pClass->GetAssembly(), &pITLB));
-        IfFailGo(TryGetGuid(pClass, &clsid, TRUE));
+        IfFailGo(pClass->GetGuidNoThrow(&clsid, TRUE));
         IfFailGo(pITLB->GetTypeInfoOfGuid(clsid, &pTI));
         IfFailGo(GetDefaultInterfaceForCoclass(pTI, &pTIDef));
 
-        if (pTIDef)
-        {
-            *ppTI = pTIDef;
-            pTIDef.SuppressRelease();
-        }
-        else
-            hr = TYPE_E_ELEMENTNOTFOUND;
+        *ppTI = pTIDef;
+        pTIDef.SuppressRelease();
     }
     else
     {
@@ -792,11 +791,13 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                 _ASSERTE(!hndDefItfClass.IsNull());
                 _ASSERTE(!hndDefItfClass.IsInterface());
 
+                PTR_MethodTable itfClassMT = hndDefItfClass.GetMethodTable();
+
                 // Retrieve the ITypeLib for the assembly containing the type.
-                IfFailGo(GetITypeLibForAssembly(hndDefItfClass.GetMethodTable()->GetAssembly(), &pITLB));
+                IfFailGo(GetITypeLibForAssembly(itfClassMT->GetAssembly(), &pITLB));
 
                 // Get the GUID of the desired TypeRef.
-                IfFailGo(TryGetGuid(hndDefItfClass.GetMethodTable(), &clsid, TRUE));
+                IfFailGo(itfClassMT->GetGuidNoThrow(&clsid, TRUE));
         
                 // Generate the IClassX IID from the class.
                 TryGenerateClassItfGuid(hndDefItfClass, &ciid);
@@ -834,52 +835,6 @@ ErrExit:
 ReturnHR:
     return hr;
 } // HRESULT GetITypeInfoForEEClass()
-
-//------------------------------------------------------------------------------------------
-HRESULT GetDefaultInterfaceForCoclass(ITypeInfo *pTI, ITypeInfo **ppTIDef)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pTI));
-        PRECONDITION(CheckPointer(ppTIDef));
-    }
-    CONTRACTL_END;
-
-    int         flags;
-    HRESULT     hr;
-    HREFTYPE    href;                   // href for the default typeinfo.
-    TYPEATTRHolder pAttr(pTI);          // Attributes on the first TypeInfo.
-
-    IfFailGo(pTI->GetTypeAttr(&pAttr));
-    if (pAttr->typekind == TKIND_COCLASS)
-    {
-        int i;
-        for (i=0; i<pAttr->cImplTypes; ++i)
-        {
-            IfFailGo(pTI->GetImplTypeFlags(i, &flags));
-            if (flags & IMPLTYPEFLAG_FDEFAULT)
-                break;
-        }
-        // If no impltype had the default flag, use 0.
-        if (i == pAttr->cImplTypes)
-            i = 0;
-        
-        IfFailGo(pTI->GetRefTypeOfImplType(i, &href));
-        IfFailGo(pTI->GetRefTypeInfo(href, ppTIDef));
-    }
-    else
-    {
-        *ppTIDef = 0;
-        hr = S_FALSE;
-    }
-
-ErrExit:
-    return hr;
-} // HRESULT GetDefaultInterfaceForCoclass()
-
 
 // Returns a NON-ADDREF'd ITypeInfo.
 HRESULT GetITypeInfoForMT(ComMethodTable *pMT, ITypeInfo **ppTI)
