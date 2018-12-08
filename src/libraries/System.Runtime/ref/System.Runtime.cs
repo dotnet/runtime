@@ -128,7 +128,6 @@ namespace System
         [System.CLSCompliantAttribute(false)]
         public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth) { throw null; }
         public System.RuntimeTypeHandle GetNextArgType() { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]
         public int GetRemainingCount() { throw null; }
     }
     public partial class ArgumentException : System.SystemException
@@ -6756,6 +6755,8 @@ namespace System.Runtime.CompilerServices
         public const string DefaultImplementationsOfInterfaces = "DefaultImplementationsOfInterfaces";
 #endif
         public const string PortablePdb = "PortablePdb";
+        public static bool IsDynamicCodeCompiled { get { throw null; } }
+        public static bool IsDynamicCodeSupported { get { throw null; } }
         public static bool IsSupported(string feature) { throw null; }
     }
     public static partial class RuntimeHelpers
