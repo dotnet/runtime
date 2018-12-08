@@ -152,7 +152,7 @@ namespace System.Diagnostics
                 if (!IsOpenForRead)
                     OpenForRead(this.machineName);
                 int count;
-                bool success = UnsafeNativeMethods.GetNumberOfEventLogRecords(readHandle, out count);
+                bool success = Interop.Advapi32.GetNumberOfEventLogRecords(readHandle, out count);
                 if (!success)
                     throw SharedUtils.CreateSafeWin32Exception();
                 return count;
@@ -364,7 +364,7 @@ namespace System.Diagnostics
                 if (!IsOpenForRead)
                     OpenForRead(this.machineName);
                 int num;
-                bool success = UnsafeNativeMethods.GetOldestEventLogRecord(readHandle, out num);
+                bool success = Interop.Advapi32.GetOldestEventLogRecord(readHandle, out num);
                 if (!success)
                     throw SharedUtils.CreateSafeWin32Exception();
 
@@ -439,7 +439,7 @@ namespace System.Diagnostics
                 info.handleOwner = new EventLogInternal(compLogName, compMachineName);
                 // tell the event log system about it
                 info.waitHandle = new AutoResetEvent(false);
-                bool success = UnsafeNativeMethods.NotifyChangeEventLog(info.handleOwner.ReadHandle, info.waitHandle.SafeWaitHandle);
+                bool success = Interop.Advapi32.NotifyChangeEventLog(info.handleOwner.ReadHandle, info.waitHandle.SafeWaitHandle);
                 if (!success)
                     throw new InvalidOperationException(SR.CantMonitorEventLog, SharedUtils.CreateSafeWin32Exception());
 
@@ -479,7 +479,7 @@ namespace System.Diagnostics
 
             if (!IsOpenForRead)
                 OpenForRead(currentMachineName);
-            bool success = UnsafeNativeMethods.ClearEventLog(readHandle, NativeMethods.NullHandleRef);
+            bool success = Interop.Advapi32.ClearEventLog(readHandle, null);
             if (!success)
             {
                 // Ignore file not found errors.  ClearEventLog seems to try to delete the file where the event log is
@@ -748,7 +748,7 @@ namespace System.Diagnostics
             while (idx < entries.Length)
             {
                 byte[] buf = new byte[BUF_SIZE];
-                bool success = UnsafeNativeMethods.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ,
+                bool success = Interop.Advapi32.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ,
                                                       oldestEntry + idx, buf, buf.Length, out bytesRead, out minBytesNeeded);
                 if (!success)
                 {
@@ -767,7 +767,7 @@ namespace System.Diagnostics
                             Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "Increasing buffer size from " + buf.Length.ToString(CultureInfo.InvariantCulture) + " to " + minBytesNeeded.ToString(CultureInfo.InvariantCulture) + " bytes");
                             buf = new byte[minBytesNeeded];
                         }
-                        success = UnsafeNativeMethods.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ,
+                        success = Interop.Advapi32.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ,
                                                          oldestEntry + idx, buf, buf.Length, out bytesRead, out minBytesNeeded);
                         if (!success)
                             break;
@@ -925,7 +925,7 @@ namespace System.Diagnostics
             cache = new byte[BUF_SIZE];
             int bytesRead;
             int minBytesNeeded;
-            bool success = UnsafeNativeMethods.ReadEventLog(readHandle, flags, index,
+            bool success = Interop.Advapi32.ReadEventLog(readHandle, flags, index,
                                                   cache, cache.Length, out bytesRead, out minBytesNeeded);
             if (!success)
             {
@@ -947,7 +947,7 @@ namespace System.Diagnostics
                             cache = new byte[minBytesNeeded];
                         }
                     }
-                    success = UnsafeNativeMethods.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ, index,
+                    success = Interop.Advapi32.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ, index,
                                                      cache, cache.Length, out bytesRead, out minBytesNeeded);
                 }
 
@@ -1101,7 +1101,7 @@ namespace System.Diagnostics
             bytesCached = 0;
             firstCachedEntry = -1;
 
-            SafeEventLogReadHandle handle = SafeEventLogReadHandle.OpenEventLog(currentMachineName, logname);
+            SafeEventLogReadHandle handle = Interop.Advapi32.OpenEventLog(currentMachineName, logname);
             if (handle.IsInvalid)
             {
                 Win32Exception e = null;
@@ -1125,7 +1125,7 @@ namespace System.Diagnostics
             if (sourceName == null || sourceName.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToOpen);
 
-            SafeEventLogWriteHandle handle = SafeEventLogWriteHandle.RegisterEventSource(currentMachineName, sourceName);
+            SafeEventLogWriteHandle handle = Interop.Advapi32.RegisterEventSource(currentMachineName, sourceName);
             if (handle.IsInvalid)
             {
                 Win32Exception e = null;
@@ -1435,8 +1435,8 @@ namespace System.Diagnostics
 
                 byte[] sid = null;
                 // actually report the event
-                bool success = UnsafeNativeMethods.ReportEvent(writeHandle, (short)type, category, eventID,
-                                                     sid, (short)strings.Length, rawData.Length, new HandleRef(this, stringsRootHandle.AddrOfPinnedObject()), rawData);
+                bool success = Interop.Advapi32.ReportEvent(writeHandle, (short)type, category, eventID,
+                                                     sid, (short)strings.Length, rawData.Length, stringsRootHandle.AddrOfPinnedObject(), rawData);
                 if (!success)
                 {
                     // Trace("WriteEvent", "Throwing Win32Exception");
