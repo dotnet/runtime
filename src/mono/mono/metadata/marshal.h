@@ -566,10 +566,10 @@ void
 mono_string_utf16_to_builder (MonoStringBuilder *sb, const gunichar2 *text);
 
 void
-mono_string_to_byvalstr (gpointer dst, MonoString *src, int size);
+mono_string_to_byvalstr (char *dst, MonoString *src, int size);
 
 void
-mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
+mono_string_to_byvalwstr (gunichar2 *dst, MonoString *src, int size);
 
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate);

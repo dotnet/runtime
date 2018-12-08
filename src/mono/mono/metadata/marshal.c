@@ -107,6 +107,9 @@ mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error);
 MonoDelegateHandle
 mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error);
 
+static void
+mono_string_utf16len_to_builder (MonoStringBuilder *sb, const gunichar2 *text, guint32 len);
+
 /* Lazy class loading functions */
 //used by marshal-ilgen.c
 GENERATE_TRY_GET_CLASS_WITH_CACHE (stringbuilder, "System.Text", "StringBuilder");
@@ -616,17 +619,16 @@ mono_delegate_free_ftnptr (MonoDelegate *delegate)
 MonoString *
 mono_string_from_byvalstr (const char *data, int max_len)
 {
-	ERROR_DECL (error);
-	MonoDomain *domain = mono_domain_get ();
-	int len = 0;
-
 	if (!data)
 		return NULL;
+
+	ERROR_DECL (error);
+	int len = 0;
 
 	while (len < max_len - 1 && data [len])
 		len++;
 
-	MonoString *result = mono_string_new_len_checked (domain, data, len, error);
+	MonoString *result = mono_string_new_len_checked (mono_domain_get (), data, len, error);
 	mono_error_set_pending_exception (error);
 	return result;
 }
@@ -635,17 +637,14 @@ mono_string_from_byvalstr (const char *data, int max_len)
 MonoString *
 mono_string_from_byvalwstr (gunichar2 *data, int max_len)
 {
-	ERROR_DECL (error);
-	MonoString *res = NULL;
-	MonoDomain *domain = mono_domain_get ();
-	int len = 0;
-
 	if (!data)
 		return NULL;
 
-	while (data [len]) len++;
+	ERROR_DECL (error);
+	MonoString *res = NULL;
+	int len = g_utf16_len (data);
 
-	res = mono_string_new_utf16_checked (domain, data, MIN (len, max_len), error);
+	res = mono_string_new_utf16_checked (mono_domain_get (), data, MIN (len, max_len), error);
 	if (!mono_error_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return NULL;
@@ -842,24 +841,23 @@ mono_string_utf16_to_builder2 (const gunichar2 *text)
 	if (!text)
 		return NULL;
 
-	int len;
-	for (len = 0; text [len] != 0; ++len);
+	int len = g_utf16_len (text);
 
 	MonoStringBuilder *sb = mono_string_builder_new (len);
-	mono_string_utf16_to_builder (sb, text);
+	mono_string_utf16len_to_builder (sb, text, len);
 
 	return sb;
 }
 
-void
-mono_string_utf8_to_builder (MonoStringBuilder *sb, const char *text)
+static void
+mono_string_utf8len_to_builder (MonoStringBuilder *sb, const char *text, gsize len)
 {
 	if (!sb || !text)
 		return;
 
 	GError *gerror = NULL;
 	glong copied;
-	gunichar2* ut = g_utf8_to_utf16 (text, strlen (text), NULL, &copied, &gerror);
+	gunichar2* ut = g_utf8_to_utf16 (text, len, NULL, &copied, &gerror);
 	int capacity = mono_string_builder_capacity (sb);
 
 	if (copied > capacity)
@@ -874,6 +872,12 @@ mono_string_utf8_to_builder (MonoStringBuilder *sb, const char *text)
 	g_free (ut);
 }
 
+void
+mono_string_utf8_to_builder (MonoStringBuilder *sb, const char *text)
+{
+	return mono_string_utf8len_to_builder (sb, text, text ? strlen (text) : 0);
+}
+
 MonoStringBuilder *
 mono_string_utf8_to_builder2 (const char *text)
 {
@@ -882,24 +886,27 @@ mono_string_utf8_to_builder2 (const char *text)
 
 	int len = strlen (text);
 	MonoStringBuilder *sb = mono_string_builder_new (len);
-	mono_string_utf8_to_builder (sb, text);
+	mono_string_utf8len_to_builder (sb, text, len);
 
 	return sb;
 }
 
 void
-mono_string_utf16_to_builder (MonoStringBuilder *sb, const gunichar2 *text)
+mono_string_utf16len_to_builder (MonoStringBuilder *sb, const gunichar2 *text, guint32 len)
 {
 	if (!sb || !text)
 		return;
-
-	guint32 len;
-	for (len = 0; text [len] != 0; ++len);
 	
 	if (len > mono_string_builder_capacity (sb))
 		len = mono_string_builder_capacity (sb);
 
 	mono_string_utf16_to_builder_copy (sb, text, len);
+}
+
+void
+mono_string_utf16_to_builder (MonoStringBuilder *sb, const gunichar2 *text)
+{
+	mono_string_utf16len_to_builder (sb, text, text ? g_utf16_len (text) : 0);
 }
 
 /**
@@ -917,41 +924,40 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, const gunichar2 *text)
 gchar*
 mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 {
-	ERROR_DECL (error);
-	GError *gerror = NULL;
-	glong byte_count;
 	if (!sb)
 		return NULL;
 
+	ERROR_DECL (error);
+	char *res = NULL;
+	guint len = 0;
+
 	gunichar2 *str_utf16 = mono_string_builder_to_utf16 (sb);
 
-	guint str_len = mono_string_builder_string_length (sb);
-
-	gchar *tmp = g_utf16_to_utf8 (str_utf16, str_len, NULL, &byte_count, &gerror);
-
+	GError *gerror = NULL;
+	glong byte_count;
+	char *tmp = g_utf16_to_utf8 (str_utf16, mono_string_builder_string_length (sb), NULL, &byte_count, &gerror);
 	if (gerror) {
-		g_error_free (gerror);
-		mono_marshal_free (str_utf16);
 		mono_error_set_execution_engine (error, "Failed to convert StringBuilder from utf16 to utf8");
 		mono_error_set_pending_exception (error);
-		return NULL;
-	} else {
-		guint len = mono_string_builder_capacity (sb) + 1;
-		gchar *res = (gchar *)mono_marshal_alloc (MAX (byte_count+1, len * sizeof (gchar)), error);
-		if (!mono_error_ok (error)) {
-			mono_marshal_free (str_utf16);
-			g_free (tmp);
-			mono_error_set_pending_exception (error);
-			return NULL;
-		}
-
-		memcpy (res, tmp, byte_count);
-		res[byte_count] = '\0';
-
-		mono_marshal_free (str_utf16);
-		g_free (tmp);
-		return res;
+		goto exit;
 	}
+
+	len = mono_string_builder_capacity (sb) + 1;
+	res = (char *)mono_marshal_alloc (MAX (byte_count + 1, len), error);
+	if (!mono_error_ok (error)) {
+		mono_error_set_pending_exception (error);
+		res = NULL;
+		goto exit;
+	}
+
+	memcpy (res, tmp, byte_count);
+	res [byte_count] = 0;
+exit:
+	if (gerror)
+		g_error_free (gerror);
+	mono_marshal_free (str_utf16);
+	g_free (tmp);
+	return res;
 }
 
 /**
@@ -969,17 +975,17 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 gunichar2*
 mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 {
-	ERROR_DECL (error);
-
 	if (!sb)
 		return NULL;
+
+	ERROR_DECL (error);
 
 	g_assert (sb->chunkChars);
 
 	guint len = mono_string_builder_capacity (sb);
 
 	if (len == 0)
-		len = 1;
+		len = 1; // Why?
 
 	gunichar2 *str = (gunichar2 *)mono_marshal_alloc ((len + 1) * sizeof (gunichar2), error);
 	if (!mono_error_ok (error)) {
@@ -987,21 +993,19 @@ mono_string_builder_to_utf16 (MonoStringBuilder *sb)
 		return NULL;
 	}
 
-	str[len] = '\0';
-
-	if (len == 0)
-		return str;
+	str [len] = 0;
+	str [0] = 0; // Cover the case when original len == 0.
 
 	MonoStringBuilder* chunk = sb;
 	do {
+		g_assert (chunk->chunkLength >= 0);
 		if (chunk->chunkLength > 0) {
 			// Check that we will not overrun our boundaries.
 			gunichar2 *source = (gunichar2 *)chunk->chunkChars->vector;
 
-			g_assertf (chunk->chunkLength <= len, "A chunk in the StringBuilder had a length longer than expected from the offset.");
-			memcpy (str + chunk->chunkOffset, source, chunk->chunkLength * sizeof(gunichar2));
-
-			len -= chunk->chunkLength;
+			g_assert (chunk->chunkOffset >= 0);
+			g_assertf (chunk->chunkLength + chunk->chunkOffset <= len, "A chunk in the StringBuilder had a length longer than expected from the offset.");
+			memcpy (str + chunk->chunkOffset, source, chunk->chunkLength * sizeof (gunichar2));
 		}
 		chunk = chunk->chunkPrevious;
 	} while (chunk != NULL);
@@ -1038,7 +1042,7 @@ mono_string_to_ansibstr (MonoString *string_obj)
  * into \p dst, it copies at most \p size bytes into the destination.
  */
 void
-mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
+mono_string_to_byvalstr (char *dst, MonoString *src, int size)
 {
 	ERROR_DECL (error);
 	char *s;
@@ -1054,7 +1058,8 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 	s = mono_string_to_utf8_checked_internal (src, error);
 	if (mono_error_set_pending_exception (error))
 		return;
-	len = MIN (size, strlen (s));
+	const gsize len2 = strlen (s);
+	len = MIN (size, len2);
 	if (len >= size)
 		len--;
 	memcpy (dst, s, len);
@@ -1072,7 +1077,7 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
  * a terminating 16-bit zero terminator).
  */
 void
-mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
+mono_string_to_byvalwstr (gunichar2 *dst, MonoString *src, int size)
 {
 	int len;
 
@@ -1086,9 +1091,8 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size)
 
 	len = MIN (size, (mono_string_length_internal (src)));
 	memcpy (dst, mono_string_chars_internal (src), len * 2);
-	if (size <= mono_string_length_internal (src))
-		len--;
-	*((gunichar2 *) dst + len) = 0;
+	len -= (size <= mono_string_length_internal (src));
+	dst [len] = 0;
 }
 
 /* this is an icall, it sets the pending exception and returns NULL on error */
