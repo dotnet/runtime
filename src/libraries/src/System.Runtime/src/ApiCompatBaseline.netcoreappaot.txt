@@ -1,14 +1,4 @@
-Compat issues with assembly System.Runtime:
 MembersMustExist : Member 'System.String System.Runtime.CompilerServices.RuntimeFeature.DefaultImplementationsOfInterfaces' does not exist in the implementation but it does exist in the contract.
-TypeCannotChangeClassification : Type 'System.DateTimeOffset' is marked as readonly in the contract so it must also be marked readonly in the implementation.
-TypeCannotChangeClassification : Type 'System.TimeSpan' is marked as readonly in the contract so it must also be marked readonly in the implementation.
-TypeCannotChangeClassification : Type 'System.Runtime.Serialization.SerializationEntry' is marked as readonly in the contract so it must also be marked readonly in the implementation.
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Index' does not exist in the implementation but it does exist in the contract. 
-TypesMustExist : Type 'System.Range' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Rune' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.StringRuneEnumerator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract. 
-MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeCompiled.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported.get()' does not exist in the implementation but it does exist in the contract.
