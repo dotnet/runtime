@@ -27,6 +27,7 @@
 #endif
 
 #include "utils/mono-logger-internals.h"
+#include "icall-decl.h"
 
 gchar*
 mono_w32process_get_name (pid_t pid)

@@ -32,8 +32,6 @@
 #include <sys/time.h>
 #endif
 
-G_BEGIN_DECLS
-
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 
 #if !defined(HOST_WIN32)
@@ -355,7 +353,5 @@ mono_os_cond_broadcast (mono_cond_t *cond)
 }
 
 #endif
-
-G_END_DECLS
 
 #endif /* __MONO_OS_MUTEX_H__ */

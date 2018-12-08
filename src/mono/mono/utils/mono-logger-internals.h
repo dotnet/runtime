@@ -9,8 +9,6 @@
 #include <mono/utils/mono-compiler.h>
 #include "mono-logger.h"
 
-G_BEGIN_DECLS
-
 typedef enum {
 	MONO_TRACE_ASSEMBLY           = 1 << 0,
 	MONO_TRACE_TYPE               = 1 << 1,
@@ -162,7 +160,5 @@ void mono_log_close_recorder (void);
 void mono_log_dump_recorder (void);
 
 void mono_dump_mem (gpointer d, int len);
-
-G_END_DECLS
 
 #endif /* __MONO_LOGGER_INTERNAL_H__ */

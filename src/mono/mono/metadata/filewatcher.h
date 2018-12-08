@@ -20,8 +20,6 @@
 #include <unistd.h>
 #endif
 
-G_BEGIN_DECLS
-
 ICALL_EXPORT
 gint ves_icall_System_IO_FSW_SupportsFSW (void);
 
@@ -38,7 +36,4 @@ MONO_API char* SystemNative_RealPath(const char* path);
 MONO_API void SystemNative_Sync (void);
 #endif
 
-G_END_DECLS
-
 #endif
-

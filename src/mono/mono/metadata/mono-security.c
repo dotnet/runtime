@@ -20,6 +20,7 @@
 #include <mono/metadata/security.h>
 #include <mono/utils/strenc.h>
 #include "reflection-internals.h"
+#include "icall-decl.h"
 
 #ifndef HOST_WIN32
 #ifdef HAVE_GRP_H

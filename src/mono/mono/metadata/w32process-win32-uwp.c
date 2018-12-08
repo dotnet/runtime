@@ -15,6 +15,7 @@
 #include "mono/metadata/w32process.h"
 #include "mono/metadata/w32process-internals.h"
 #include "mono/metadata/w32process-win32-internals.h"
+#include "icall-decl.h"
 
 gboolean
 mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)

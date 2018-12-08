@@ -15,6 +15,7 @@
 #include "image.h"
 #include "utils/mono-proclib.h"
 #include "utils/w32api.h"
+#include "icall-decl.h"
 
 #define LOGDEBUG(...)
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */

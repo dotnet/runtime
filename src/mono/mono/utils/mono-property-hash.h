@@ -21,8 +21,6 @@
 #include <glib.h>
 #include <mono/utils/mono-publib.h>
 
-G_BEGIN_DECLS
-
 typedef struct _MonoPropertyHash MonoPropertyHash;
 
 MONO_API MonoPropertyHash* mono_property_hash_new (void);
@@ -36,7 +34,5 @@ MONO_API void mono_property_hash_insert (MonoPropertyHash *hash, gpointer object
 MONO_API void mono_property_hash_remove_object (MonoPropertyHash *hash, gpointer object);
 
 MONO_API gpointer mono_property_hash_lookup (MonoPropertyHash *hash, gpointer object, guint32 property);
-
-G_END_DECLS
 
 #endif

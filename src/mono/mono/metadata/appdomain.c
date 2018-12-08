@@ -77,6 +77,7 @@
 #include <direct.h>
 #endif
 #include "object-internals.h"
+#include "icall-decl.h"
 
 typedef struct
 {

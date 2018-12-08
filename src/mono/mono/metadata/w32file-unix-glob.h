@@ -61,14 +61,10 @@ typedef struct {
 #define W32FILE_UNIX_GLOB_IGNORECASE 0x4000	/* Ignore case when matching */
 #define W32FILE_UNIX_GLOB_ABEND	W32FILE_UNIX_GLOB_ABORTED /* backward compatibility */
 
-G_BEGIN_DECLS
-
 int
 mono_w32file_unix_glob (GDir *dir, const char *, int, mono_w32file_unix_glob_t *);
 
 void
 mono_w32file_unix_globfree (mono_w32file_unix_glob_t *);
-
-G_END_DECLS
 
 #endif /* !__MONO_METADATA_W32FILE_UNIX_GLOB_H__ */

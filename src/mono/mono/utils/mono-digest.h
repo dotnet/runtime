@@ -31,8 +31,6 @@
 #include <glib.h>
 #include <mono/utils/mono-publib.h>
 
-G_BEGIN_DECLS
-
 #if HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
 #include <CommonCrypto/CommonDigest.h>
@@ -81,5 +79,4 @@ MONO_API void mono_sha1_final  (MonoSHA1Context* context, unsigned char digest[2
 
 MONO_API void mono_digest_get_public_token (guchar* token, const guchar *pubkey, guint32 len);
 
-G_END_DECLS
 #endif	/* __MONO_DIGEST_H__ */

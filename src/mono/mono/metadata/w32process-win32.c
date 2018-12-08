@@ -33,10 +33,10 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/utils/w32api.h>
-
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #include <shellapi.h>
 #endif
+#include "icall-decl.h"
 
 void
 mono_w32process_init (void)

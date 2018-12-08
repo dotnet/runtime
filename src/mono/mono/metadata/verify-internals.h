@@ -10,8 +10,6 @@
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
 
-G_BEGIN_DECLS
-
 typedef enum {
 	MONO_VERIFIER_MODE_OFF,
 	MONO_VERIFIER_MODE_VALID,
@@ -71,7 +69,4 @@ gboolean mono_verifier_is_signature_compatible (MonoMethodSignature *target, Mon
 #define IS_TYPE_DEF_OR_REF_OR_SPEC(token) (IS_TYPE_DEF (token) || IS_TYPE_REF (token) || IS_TYPE_SPEC (token))
 #define IS_FIELD_DEF_OR_REF(token) (IS_FIELD_DEF (token) || IS_MEMBER_REF (token))
 
-G_END_DECLS
-
 #endif  /* __MONO_METADATA_VERIFY_INTERNAL_H__ */
-

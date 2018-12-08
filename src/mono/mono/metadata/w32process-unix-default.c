@@ -36,6 +36,7 @@
 #endif
 
 #include "utils/mono-logger-internals.h"
+#include "icall-decl.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 242

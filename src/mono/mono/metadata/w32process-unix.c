@@ -84,6 +84,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/w32api.h>
 #include "object-internals.h"
+#include "icall-decl.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 242

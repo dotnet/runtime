@@ -11,8 +11,6 @@
 #include "mono-os-semaphore.h"
 #include "mono-threads-api.h"
 
-G_BEGIN_DECLS
-
 /* We put the OS sync primitives in struct, so the compiler will warn us if
  * we use mono_os_(mutex|cond|sem)_... on MonoCoop(Mutex|Cond|Sem) structures */
 
@@ -66,7 +64,5 @@ mono_coop_sem_post (MonoCoopSem *sem)
 {
 	mono_os_sem_post (&sem->s);
 }
-
-G_END_DECLS
 
 #endif /* __MONO_COOP_SEMAPHORE_H__ */

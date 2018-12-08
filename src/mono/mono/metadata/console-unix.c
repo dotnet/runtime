@@ -57,6 +57,7 @@
 
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>
+#include "icall-decl.h"
 
 static gboolean setup_finished;
 static gboolean atexit_called;
