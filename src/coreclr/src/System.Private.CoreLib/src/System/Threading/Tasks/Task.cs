@@ -721,31 +721,31 @@ namespace System.Threading.Tasks
 
         private bool AtomicStateUpdateSlow(int newBits, int illegalBits)
         {
-            var sw = new SpinWait();
+            int flags = m_stateFlags;
             do
             {
-                int oldFlags = m_stateFlags;
-                if ((oldFlags & illegalBits) != 0) return false;
-                if (Interlocked.CompareExchange(ref m_stateFlags, oldFlags | newBits, oldFlags) == oldFlags)
+                if ((flags & illegalBits) != 0) return false;
+                int oldFlags = Interlocked.CompareExchange(ref m_stateFlags, flags | newBits, flags);
+                if (oldFlags == flags)
                 {
                     return true;
                 }
-                sw.SpinOnce();
+                flags = oldFlags;
             } while (true);
         }
 
         internal bool AtomicStateUpdate(int newBits, int illegalBits, ref int oldFlags)
         {
-            SpinWait sw = new SpinWait();
+            int flags = oldFlags = m_stateFlags;
             do
             {
-                oldFlags = m_stateFlags;
-                if ((oldFlags & illegalBits) != 0) return false;
-                if (Interlocked.CompareExchange(ref m_stateFlags, oldFlags | newBits, oldFlags) == oldFlags)
+                if ((flags & illegalBits) != 0) return false;
+                oldFlags = Interlocked.CompareExchange(ref m_stateFlags, flags | newBits, flags);
+                if (oldFlags == flags)
                 {
                     return true;
                 }
-                sw.SpinOnce();
+                flags = oldFlags;
             } while (true);
         }
 
@@ -772,13 +772,12 @@ namespace System.Threading.Tasks
             else
             {
                 // Atomically clear the END_AWAIT_NOTIFICATION bit
-                SpinWait sw = new SpinWait();
+                int flags = m_stateFlags;
                 while (true)
                 {
-                    int oldFlags = m_stateFlags;
-                    int newFlags = oldFlags & (~TASK_STATE_WAIT_COMPLETION_NOTIFICATION);
-                    if (Interlocked.CompareExchange(ref m_stateFlags, newFlags, oldFlags) == oldFlags) break;
-                    sw.SpinOnce();
+                    int oldFlags = Interlocked.CompareExchange(ref m_stateFlags, flags & (~TASK_STATE_WAIT_COMPLETION_NOTIFICATION), flags);
+                    if (oldFlags == flags) break;
+                    flags = oldFlags;
                 }
             }
         }
