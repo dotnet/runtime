@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         error.Append($" The physical path is '{file.PhysicalPath}'.");
                     }
-                    throw new FileNotFoundException(error.ToString());
+                    HandleException(new FileNotFoundException(error.ToString()));
                 }
             }
             else
@@ -77,21 +77,7 @@ namespace Microsoft.Extensions.Configuration
                     }
                     catch (Exception e)
                     {
-                        bool ignoreException = false;
-                        if (Source.OnLoadException != null)
-                        {
-                            var exceptionContext = new FileLoadExceptionContext
-                            {
-                                Provider = this,
-                                Exception = e
-                            };
-                            Source.OnLoadException.Invoke(exceptionContext);
-                            ignoreException = exceptionContext.Ignore;
-                        }
-                        if (!ignoreException)
-                        {
-                            throw e;
-                        }
+                        HandleException(e);
                     }
                 }
             }
@@ -114,5 +100,24 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="stream">The stream to read.</param>
         public abstract void Load(Stream stream);
+
+        private void HandleException(Exception e)
+        {
+            bool ignoreException = false;
+            if (Source.OnLoadException != null)
+            {
+                var exceptionContext = new FileLoadExceptionContext
+                {
+                    Provider = this,
+                    Exception = e
+                };
+                Source.OnLoadException.Invoke(exceptionContext);
+                ignoreException = exceptionContext.Ignore;
+            }
+            if (!ignoreException)
+            {
+                throw e;
+            }
+        }
     }
 }
