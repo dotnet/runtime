@@ -1875,8 +1875,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				indir->opcode = OP_REGOFFSET;
 				if (ainfo->pair_storage [0] == ArgInIReg) {
 					indir->inst_basereg = cfg->frame_reg;
-					offset = ALIGN_TO (offset, sizeof (gpointer));
-					offset += (sizeof (gpointer));
+					offset = ALIGN_TO (offset, sizeof (target_mgreg_t));
+					offset += sizeof (target_mgreg_t);
 					indir->inst_offset = - offset;
 				}
 				else {
@@ -5174,7 +5174,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_GET_EX_OBJ:
 			if (ins->dreg != AMD64_RAX)
-				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, sizeof (gpointer));
+				amd64_mov_reg_reg (code, ins->dreg, AMD64_RAX, sizeof (target_mgreg_t));
 			break;
 		case OP_LABEL:
 			ins->inst_c0 = code - cfg->native_code;
@@ -7255,7 +7255,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				break;
 			case ArgValuetypeAddrInIReg:
 				if (ainfo->pair_storage [0] == ArgInIReg)
-					amd64_mov_membase_reg (code, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, ainfo->pair_regs [0],  sizeof (gpointer));
+					amd64_mov_membase_reg (code, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, ainfo->pair_regs [0], sizeof (target_mgreg_t));
 				break;
 			case ArgValuetypeAddrOnStack:
 				break;
@@ -7845,7 +7845,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 	char *tramp_name;
 	GSList *unwind_ops;
 
-	if (offset / (int)sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
+	if (offset / (int)sizeof (target_mgreg_t) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
 
 	start = code = (guint8 *)mono_global_codeman_reserve (size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
@@ -8136,9 +8136,9 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 			}
 		} else {
 			if (amd64_use_imm32 ((gint64)item->key))
-				amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof (gpointer));
+				amd64_alu_reg_imm_size (code, X86_CMP, MONO_ARCH_IMT_REG, (guint32)(gssize)item->key, sizeof (target_mgreg_t));
 			else {
-				amd64_mov_reg_imm_size (code, MONO_ARCH_IMT_SCRATCH_REG, item->key, sizeof (gpointer));
+				amd64_mov_reg_imm_size (code, MONO_ARCH_IMT_SCRATCH_REG, item->key, sizeof (target_mgreg_t));
 				amd64_alu_reg_reg (code, X86_CMP, MONO_ARCH_IMT_REG, MONO_ARCH_IMT_SCRATCH_REG);
 			}
 			item->jmp_code = code;
