@@ -173,6 +173,26 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void GetUintEnumDictionary()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"EnumDictionary:abc", "val_1"},
+                {"EnumDictionary:def", "val_2"},
+                {"EnumDictionary:ghi", "val_3"}
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+            var options = new Dictionary<KeyUintEnum, string>();
+            config.GetSection("EnumDictionary").Bind(options);
+            Assert.Equal(3, options.Count);
+            Assert.Equal("val_1", options[KeyUintEnum.abc]);
+            Assert.Equal("val_2", options[KeyUintEnum.def]);
+            Assert.Equal("val_3", options[KeyUintEnum.ghi]);
+        }
+
+        [Fact]
         public void GetStringList()
         {
             var input = new Dictionary<string, string>
@@ -1015,6 +1035,13 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         private enum KeyEnum
+        {
+            abc,
+            def,
+            ghi
+        }
+
+        private enum KeyUintEnum : uint
         {
             abc,
             def,
