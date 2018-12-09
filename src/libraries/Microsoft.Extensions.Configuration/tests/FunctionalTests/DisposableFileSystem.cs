@@ -2,16 +2,20 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Threading;
 using System.IO;
 
 namespace Microsoft.Extensions.Configuration.Test
 {
     public class DisposableFileSystem : IDisposable
     {
+        private const int _retries = 100;
+        private const int _msDelay = 100;
+
         public DisposableFileSystem()
         {
             RootPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(RootPath);
+            CreateFolder("");
             DirectoryInfo = new DirectoryInfo(RootPath);
         }
 
@@ -19,21 +23,47 @@ namespace Microsoft.Extensions.Configuration.Test
 
         public DirectoryInfo DirectoryInfo { get; }
 
-        public DisposableFileSystem CreateFolder(string path)
+        public DisposableFileSystem CreateFolder(string path, bool absolute = false)
         {
-            Directory.CreateDirectory(Path.Combine(RootPath, path));
+            var fullPath = absolute
+                ? path
+                : Path.Combine(RootPath, path);
+
+            Directory.CreateDirectory(fullPath);
+
+            WaitForFileSystem(
+                () => Directory.Exists(fullPath),
+                $"Directory.CreateDirectory(\"{fullPath}\") failed");
+
             return this;
         }
 
-        public DisposableFileSystem WriteFile(string path, string text = "temp")
+        public DisposableFileSystem WriteFile(string path, string text = "temp", bool absolute = false)
         {
-            File.WriteAllText(Path.Combine(RootPath, path), text);
+            var fullPath = absolute
+                ? path
+                : Path.Combine(RootPath, path);
+
+            File.WriteAllText(fullPath, text);
+
+            WaitForFileSystem(
+                () => File.ReadAllText(fullPath).Length == text.Length,
+                $"File.WriteAllText(\"{fullPath}\", \"{text}\") failed");
+
             return this;
         }
 
-        public DisposableFileSystem DeleteFile(string path)
+        public DisposableFileSystem DeleteFile(string path, bool absolute = false)
         {
-            File.Delete(Path.Combine(RootPath, path));
+            var fullPath = absolute
+                ? path
+                : Path.Combine(RootPath, path);
+
+            WaitForFileSystem(
+                () => !File.Exists(fullPath),
+                $"File.Delete(\"{fullPath}\") failed",
+                () => File.Delete(fullPath));
+
             return this;
         }
 
@@ -42,9 +72,14 @@ namespace Microsoft.Extensions.Configuration.Test
             foreach (var path in fileRelativePaths)
             {
                 var fullPath = Path.Combine(RootPath, path);
-                Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                var dirName = Path.GetDirectoryName(fullPath);
+                Directory.CreateDirectory(dirName);
 
-                File.WriteAllText(
+                WaitForFileSystem(
+                    () => Directory.Exists(dirName),
+                    $"Directory.CreateDirectory(\"{dirName}\") failed");
+
+                WriteFile(
                     fullPath,
                     string.Format("Automatically generated for testing on {0:yyyy}/{0:MM}/{0:dd} {0:hh}:{0:mm}:{0:ss}", DateTime.UtcNow));
             }
@@ -61,6 +96,44 @@ namespace Microsoft.Extensions.Configuration.Test
             catch
             {
                 // Don't throw if this fails.
+            }
+        }
+
+        private void WaitForFileSystem(
+            Func<bool> test,
+            string failureMessage,
+            Action retry = null)
+        {
+            Exception failure = null;
+
+            Func<bool> nonThrowingTest = () =>
+            {
+                try
+                {
+                    failure = null;
+                    retry?.Invoke();
+                    return test();
+                }
+                catch (Exception exception)
+                {
+                    failure = exception;
+                    return false;
+                }
+            };
+
+            var i = 0;
+            while (!nonThrowingTest())
+            {
+                if (++i >= _retries)
+                {
+                    if (failure != null)
+                    {
+                        failureMessage += $" (Exception: {failure.Message})";
+                    }
+                    throw new Exception(failureMessage);
+                }
+
+                Thread.Sleep(_msDelay);
             }
         }
     }
