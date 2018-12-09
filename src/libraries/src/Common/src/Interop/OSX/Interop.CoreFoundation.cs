@@ -119,7 +119,7 @@ internal static partial class Interop
         /// retain a Core Foundation object you are responsible for releasing it
         /// </summary>
         /// <param name="ptr">The CFType object to retain. This value must not be NULL</param>
-        /// <returns>The input value</param>
+        /// <returns>The input value</returns>
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
         internal extern static IntPtr CFRetain(IntPtr ptr);
 

@@ -14,7 +14,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
     ''' WARNING: Do not rename this attribute or move it out of this 
     ''' module.  Otherwise there are compiler changes that will
     ''' need to be made!
-    ''' </remarsk>
+    ''' </remarks>
     <AttributeUsage(AttributeTargets.Class, Inherited:=False, AllowMultiple:=False)>
     <EditorBrowsable(ComponentModel.EditorBrowsableState.Never)>
     Public NotInheritable Class OptionTextAttribute

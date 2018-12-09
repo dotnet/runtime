@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{a32671b6-5470-4f9c-9cd8-4094b9ab0799}</ProjectGuid>
     <NoVbRuntimeReference>true</NoVbRuntimeReference>
@@ -14,6 +14,8 @@
     <NoStdLib>true</NoStdLib>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
+    <!-- Disable this as it seems to break windows builds for now. -->
+    <DocumentationFile />
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

@@ -6,6 +6,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true' AND '$(TargetsLinux)' != 'true'">SR.PlatformNotSupported_IOPorts</GeneratePlatformNotSupportedAssemblyMessage>
     <DefineConstants>$(DefineConstants);NOSPAN</DefineConstants>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
+    <NoWarn>$(NoWarn);CS1572</NoWarn>
     <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netstandard-Linux-Debug;netstandard-Linux-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
