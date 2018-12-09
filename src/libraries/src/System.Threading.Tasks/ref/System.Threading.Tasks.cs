@@ -90,7 +90,7 @@ namespace System.Runtime.CompilerServices
     public readonly struct ConfiguredAsyncEnumerable<T>
     {
         private readonly object _dummy;
-        public Enumerator GetAsyncEnumerator() { throw null; }
+        public Enumerator GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public readonly struct Enumerator
         {
             private readonly object _dummy;
