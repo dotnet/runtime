@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -25,7 +25,7 @@ namespace System.Reflection
         private readonly Dictionary<string, List<string>> _fileToPaths = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Initializes a new instance of the <cref="System.Reflection.PathAssemblyResolver"/> class.
+        /// Initializes a new instance of the <see cref="System.Reflection.PathAssemblyResolver"/> class.
         /// </summary>
         /// <exception cref="System.ArgumentNullException">Thrown when assemblyPaths is null.</exception>
         /// <exception cref="System.ArgumentException">Thrown when a path is invalid.</exception>

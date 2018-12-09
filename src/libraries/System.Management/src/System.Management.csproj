@@ -3,7 +3,7 @@
     <ProjectGuid>{950923D8-EC99-4F90-9BA6-8EB64582C555}</ProjectGuid>
     <AssemblyName>System.Management</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);0618</NoWarn>
+    <NoWarn>$(NoWarn);CS1572;CS1587;CS1734;CS0419;0618</NoWarn>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
