@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -24,6 +25,41 @@ namespace System.IO.Tests
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
             }
+        }
+
+        [OuterLoop]
+        [Fact]
+        public void FileSystemWatcher_File_Create_MultipleWatchers_ExecutionContextFlowed()
+        {
+            ExecuteWithRetry(() =>
+            {
+                using (var watcher1 = new FileSystemWatcher(TestDirectory))
+                using (var watcher2 = new FileSystemWatcher(TestDirectory))
+                {
+                    string fileName = Path.Combine(TestDirectory, "file");
+                    watcher1.Filter = Path.GetFileName(fileName);
+                    watcher2.Filter = Path.GetFileName(fileName);
+
+                    var local = new AsyncLocal<int>();
+
+                    var tcs1 = new TaskCompletionSource<int>();
+                    var tcs2 = new TaskCompletionSource<int>();
+                    watcher1.Created += (s, e) => tcs1.SetResult(local.Value);
+                    watcher2.Created += (s, e) => tcs2.SetResult(local.Value);
+
+                    local.Value = 42;
+                    watcher1.EnableRaisingEvents = true;
+                    local.Value = 84;
+                    watcher2.EnableRaisingEvents = true;
+                    local.Value = 0;
+
+                    File.Create(fileName).Dispose();
+                    Task.WaitAll(new[] { tcs1.Task, tcs2.Task }, WaitForExpectedEventTimeout);
+
+                    Assert.Equal(42, tcs1.Task.Result);
+                    Assert.Equal(84, tcs2.Task.Result);
+                }
+            });
         }
 
         [Fact]
