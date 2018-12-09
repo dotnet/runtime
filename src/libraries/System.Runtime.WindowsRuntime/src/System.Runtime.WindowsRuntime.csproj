@@ -5,7 +5,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uapaot'">true</IsPartialFacadeAssembly>
     <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
     <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
-    <NoWarn>$(NoWarn);1698;0436</NoWarn>
+    <NoWarn>$(NoWarn);1698;0436;CS1572;CS1574;CS1711</NoWarn>
     <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.2-Debug;netstandard1.2-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>

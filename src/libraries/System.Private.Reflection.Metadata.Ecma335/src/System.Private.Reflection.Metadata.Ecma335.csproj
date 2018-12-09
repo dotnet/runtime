@@ -6,9 +6,8 @@
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
-    <NoWarn>$(NoWarn);3021</NoWarn>
+    <NoWarn>$(NoWarn);3021;CS1571;CS1574</NoWarn>
     <DefineConstants>$(DefineConstants);CORERT</DefineConstants>
     <SystemReflectionMetadataPath>..\..\System.Reflection.Metadata\src\</SystemReflectionMetadataPath>
     <Configurations>netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
