@@ -1,0 +1,77 @@
+parameters:
+  HelixSource: 'pr/default'          # required
+  HelixType: 'tests/default/'        # required
+  HelixBuild: $(Build.BuildNumber)   # required
+  HelixTargetQueues: ''              # required
+  HelixAccessToken: ''               # required
+  HelixPreCommands: ''
+  HelixPostCommands: ''
+  WorkItemDirectory: ''
+  WorkItemCommand: ''
+  CorrelationPayloadDirectory: ''
+  XUnitProjects: ''
+  XUnitTargetFramework: ''
+  XUnitRunnerVersion: ''
+  IncludeDotNetCli: false
+  DotNetCliPackageType: ''
+  DotNetCliVersion: ''
+  EnableXUnitReporter: false
+  WaitForWorkItemCompletion: true
+  IsExternal: false
+  Creator: ''
+  condition: succeeded()
+  continueOnError: false
+
+steps:
+  - script: '%BUILD_SOURCESDIRECTORY%\eng\common\msbuild.ps1 %BUILD_SOURCESDIRECTORY%\eng\common\helixpublish.proj /bl:%BUILD_SOURCESDIRECTORY%\artifacts\log\%BuildConfig%\SendToHelix.binlog'
+    displayName: Send job to Helix (Windows)
+    env:
+      BuildConfig: $(_BuildConfig)
+      HelixSource: ${{ parameters.HelixSource }}
+      HelixType: ${{ parameters.HelixType }}
+      HelixBuild: ${{ parameters.HelixBuild }}
+      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      HelixPreCommands: ${{ parameters.HelixPreCommands }}
+      HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+      WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
+      XUnitProjects: ${{ parameters.XUnitProjects }}
+      XUnitTargetFramework: ${{ parameters.XUnitTargetFramework }}
+      XUnitRunnerVersion: ${{ parameters.XUnitRunnerVersion }}
+      IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
+      DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
+      DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+      IsExternal: ${{ parameters.IsExternal }}
+      Creator: ${{ parameters.Creator }}
+    condition: and(${{ parameters.condition }}, eq(variables['Agent.Os'], 'Windows_NT'))
+    continueOnError: ${{ parameters.continueOnError }}
+  - script: $BUILD_SOURCESDIRECTORY/eng/common/msbuild.sh $BUILD_SOURCESDIRECTORY/eng/common/helixpublish.proj /bl:$BUILD_SOURCESDIRECTORY/artifacts/log/$BuildConfig/SendToHelix.binlog
+    displayName: Send job to Helix (Unix)
+    env:
+      BuildConfig: $(_BuildConfig)
+      HelixSource: ${{ parameters.HelixSource }}
+      HelixType: ${{ parameters.HelixType }}
+      HelixBuild: ${{ parameters.HelixBuild }}
+      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      HelixPreCommands: ${{ parameters.HelixPreCommands }}
+      HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+      WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
+      XUnitProjects: ${{ parameters.XUnitProjects }}
+      XUnitTargetFramework: ${{ parameters.XUnitTargetFramework }}
+      XUnitRunnerVersion: ${{ parameters.XUnitRunnerVersion }}
+      IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
+      DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
+      DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+      IsExternal: ${{ parameters.IsExternal }}
+      Creator: ${{ parameters.Creator }}
+    condition: and(${{ parameters.condition }}, ne(variables['Agent.Os'], 'Windows_NT'))
+    continueOnError: ${{ parameters.continueOnError }}
