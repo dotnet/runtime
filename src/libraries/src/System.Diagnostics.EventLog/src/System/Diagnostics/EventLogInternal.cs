@@ -154,7 +154,7 @@ namespace System.Diagnostics
                 int count;
                 bool success = Interop.Advapi32.GetNumberOfEventLogRecords(readHandle, out count);
                 if (!success)
-                    throw SharedUtils.CreateSafeWin32Exception();
+                    throw new Win32Exception();
                 return count;
             }
         }
@@ -366,7 +366,7 @@ namespace System.Diagnostics
                 int num;
                 bool success = Interop.Advapi32.GetOldestEventLogRecord(readHandle, out num);
                 if (!success)
-                    throw SharedUtils.CreateSafeWin32Exception();
+                    throw new Win32Exception();
 
                 if (num == 0)
                     num = 1;
@@ -441,7 +441,7 @@ namespace System.Diagnostics
                 info.waitHandle = new AutoResetEvent(false);
                 bool success = Interop.Advapi32.NotifyChangeEventLog(info.handleOwner.ReadHandle, info.waitHandle.SafeWaitHandle);
                 if (!success)
-                    throw new InvalidOperationException(SR.CantMonitorEventLog, SharedUtils.CreateSafeWin32Exception());
+                    throw new InvalidOperationException(SR.CantMonitorEventLog, new Win32Exception());
 
                 info.registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(info.waitHandle, new WaitOrTimerCallback(StaticCompletionCallback), info, -1, false);
                 listenerInfos[compLogName] = info;
@@ -485,8 +485,8 @@ namespace System.Diagnostics
                 // Ignore file not found errors.  ClearEventLog seems to try to delete the file where the event log is
                 // stored.  If it can't find it, it gives an error. 
                 int error = Marshal.GetLastWin32Error();
-                if (error != NativeMethods.ERROR_FILE_NOT_FOUND)
-                    throw SharedUtils.CreateSafeWin32Exception();
+                if (error != Interop.Errors.ERROR_FILE_NOT_FOUND)
+                    throw new Win32Exception();
             }
             // now that we've cleared the event log, we need to re-open our handles, because
             // the internal state of the event log has changed.
@@ -510,7 +510,7 @@ namespace System.Diagnostics
                 }
                 catch (IOException)
                 {
-                    throw SharedUtils.CreateSafeWin32Exception();
+                    throw new Win32Exception();
                 }
                 readHandle = null;
                 //Trace("Close", "Closed read handle");
@@ -525,7 +525,7 @@ namespace System.Diagnostics
                 }
                 catch (IOException)
                 {
-                    throw SharedUtils.CreateSafeWin32Exception();
+                    throw new Win32Exception();
                 }
                 writeHandle = null;
                 //Trace("Close", "Closed write handle");
@@ -748,16 +748,16 @@ namespace System.Diagnostics
             while (idx < entries.Length)
             {
                 byte[] buf = new byte[BUF_SIZE];
-                bool success = Interop.Advapi32.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ,
+                bool success = Interop.Advapi32.ReadEventLog(readHandle, Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ,
                                                       oldestEntry + idx, buf, buf.Length, out bytesRead, out minBytesNeeded);
                 if (!success)
                 {
                     error = Marshal.GetLastWin32Error();
                     Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "Error from ReadEventLog is " + error.ToString(CultureInfo.InvariantCulture));
 
-                    if (error == Interop.Kernel32.ERROR_INSUFFICIENT_BUFFER || error == NativeMethods.ERROR_EVENTLOG_FILE_CHANGED)
+                    if (error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER || error == Interop.Errors.ERROR_EVENTLOG_FILE_CHANGED)
                     {
-                        if (error == NativeMethods.ERROR_EVENTLOG_FILE_CHANGED)
+                        if (error == Interop.Errors.ERROR_EVENTLOG_FILE_CHANGED)
                         {
                             Reset(currentMachineName);
                         }
@@ -767,7 +767,7 @@ namespace System.Diagnostics
                             Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "Increasing buffer size from " + buf.Length.ToString(CultureInfo.InvariantCulture) + " to " + minBytesNeeded.ToString(CultureInfo.InvariantCulture) + " bytes");
                             buf = new byte[minBytesNeeded];
                         }
-                        success = Interop.Advapi32.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ,
+                        success = Interop.Advapi32.ReadEventLog(readHandle, Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ,
                                                          oldestEntry + idx, buf, buf.Length, out bytesRead, out minBytesNeeded);
                         if (!success)
                             break;
@@ -792,7 +792,7 @@ namespace System.Diagnostics
             if (idx != entries.Length)
             {
                 if (error != 0)
-                    throw new InvalidOperationException(SR.CantRetrieveEntries, SharedUtils.CreateSafeWin32Exception(error));
+                    throw new InvalidOperationException(SR.CantRetrieveEntries, new Win32Exception(error));
                 else
                     throw new InvalidOperationException(SR.CantRetrieveEntries);
             }
@@ -913,12 +913,12 @@ namespace System.Diagnostics
             int flags = 0;
             if (GetCachedEntryPos(index + 1) < 0)
             {
-                flags = NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ;
+                flags = Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ;
                 boolFlags[Flag_forwards] = true;
             }
             else
             {
-                flags = NativeMethods.BACKWARDS_READ | NativeMethods.SEEK_READ;
+                flags = Interop.Advapi32.BACKWARDS_READ | Interop.Advapi32.SEEK_READ;
                 boolFlags[Flag_forwards] = false;
             }
 
@@ -931,9 +931,9 @@ namespace System.Diagnostics
             {
                 int error = Marshal.GetLastWin32Error();
                 Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "Error from ReadEventLog is " + error.ToString(CultureInfo.InvariantCulture));
-                if (error == Interop.Kernel32.ERROR_INSUFFICIENT_BUFFER || error == NativeMethods.ERROR_EVENTLOG_FILE_CHANGED)
+                if (error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER || error == Interop.Errors.ERROR_EVENTLOG_FILE_CHANGED)
                 {
-                    if (error == NativeMethods.ERROR_EVENTLOG_FILE_CHANGED)
+                    if (error == Interop.Errors.ERROR_EVENTLOG_FILE_CHANGED)
                     {
                         byte[] tempcache = cache;
                         Reset(currentMachineName);
@@ -947,13 +947,13 @@ namespace System.Diagnostics
                             cache = new byte[minBytesNeeded];
                         }
                     }
-                    success = Interop.Advapi32.ReadEventLog(readHandle, NativeMethods.FORWARDS_READ | NativeMethods.SEEK_READ, index,
+                    success = Interop.Advapi32.ReadEventLog(readHandle, Interop.Advapi32.FORWARDS_READ | Interop.Advapi32.SEEK_READ, index,
                                                      cache, cache.Length, out bytesRead, out minBytesNeeded);
                 }
 
                 if (!success)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.CantReadLogEntryAt, index.ToString(CultureInfo.CurrentCulture)), SharedUtils.CreateSafeWin32Exception());
+                    throw new InvalidOperationException(SR.Format(SR.CantReadLogEntryAt, index.ToString(CultureInfo.CurrentCulture)), new Win32Exception());
                 }
             }
 
@@ -1047,7 +1047,7 @@ namespace System.Diagnostics
 
         internal static string GetDllPath(string machineName)
         {
-            return Path.Combine(SharedUtils.GetLatestBuildDllDirectory(machineName), DllName);
+            return Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
         }
 
         private static int IntFrom(byte[] buf, int offset)
@@ -1107,7 +1107,7 @@ namespace System.Diagnostics
                 Win32Exception e = null;
                 if (Marshal.GetLastWin32Error() != 0)
                 {
-                    e = SharedUtils.CreateSafeWin32Exception();
+                    e = new Win32Exception();
                 }
                 throw new InvalidOperationException(SR.Format(SR.CantOpenLog, logname.ToString(), currentMachineName, e?.Message ?? ""));
             }
@@ -1131,7 +1131,7 @@ namespace System.Diagnostics
                 Win32Exception e = null;
                 if (Marshal.GetLastWin32Error() != 0)
                 {
-                    e = SharedUtils.CreateSafeWin32Exception();
+                    e = new Win32Exception();
                 }
                 throw new InvalidOperationException(SR.Format(SR.CantOpenLogAccess, sourceName), e);
             }
@@ -1293,7 +1293,7 @@ namespace System.Diagnostics
                 RuntimeHelpers.PrepareConstrainedRegions();
                 try
                 {
-                    SharedUtils.EnterMutex(eventLogMutexName, ref mutex);
+                    NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
                     if (!EventLog.SourceExists(sourceName, currentMachineName, true))
                     {
                         if (GetLogName(currentMachineName) == null)
@@ -1440,7 +1440,7 @@ namespace System.Diagnostics
                 if (!success)
                 {
                     // Trace("WriteEvent", "Throwing Win32Exception");
-                    throw SharedUtils.CreateSafeWin32Exception();
+                    throw new Win32Exception();
                 }
             }
             finally

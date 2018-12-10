@@ -757,7 +757,7 @@ namespace System.Diagnostics
             InstanceEntry* instancePointer = null;
             try
             {
-                SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
+                NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
                 CategoryEntry* categoryPointer;
                 bool counterFound = false;
                 while (!FindCategory(&categoryPointer))
@@ -1064,7 +1064,7 @@ namespace System.Diagnostics
                                 Mutex mutex = null;
                                 try
                                 {
-                                    SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
+                                    NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
                                     ClearCounterValues(currentInstancePointer);
                                     if (lifetimeEntry != null)
                                         PopulateLifetimeEntry(lifetimeEntry, lifetime);
@@ -1206,7 +1206,7 @@ namespace System.Diagnostics
             Mutex mutex = null;
             try
             {
-                SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
+                NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
                 VerifyCategory(currentCategoryPointer);
             }
             finally
@@ -1403,7 +1403,7 @@ namespace System.Diagnostics
             Mutex mutex = null;
             try
             {
-                SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
+                NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
                 for (; ; )
                 {
                     RemoveOneInstance(instancePointer, true);
@@ -1444,7 +1444,7 @@ namespace System.Diagnostics
             Mutex mutex = null;
             try
             {
-                SharedUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
+                NetFrameworkUtils.EnterMutexWithoutGlobal(_categoryData.MutexName, ref mutex);
 
                 if (_thisInstanceOffset != -1)
                 {
