@@ -6119,8 +6119,8 @@ void ExceptionTracker::StackRange::CombineWith(StackFrame sfCurrent, StackRange*
         // the frame where the nesting first occurs and that will ensure that the stack range of the new
         // nested exception is extended to contain the scan range of the previous tracker's scan.  However,
         // if the exception dispatch calls a C++ handler (e.g. a finally) and then that handler tries to 
-        // reverse-pinvoke into the runtime, AND we trigger an exception (e.g. ThreadAboard, 
-        // AppDomainUnloaded) before we reach another managed frame (which would have the CLR personality
+        // reverse-pinvoke into the runtime, AND we trigger an exception (e.g. ThreadAbort) 
+        // before we reach another managed frame (which would have the CLR personality
         // routine associated with it), the first callback to ProcessCLRException for this new exception
         // will occur on a frame that has never been seen before by the current tracker.
         //
