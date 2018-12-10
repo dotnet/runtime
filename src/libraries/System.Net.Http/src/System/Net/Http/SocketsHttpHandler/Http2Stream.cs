@@ -543,7 +543,8 @@ namespace System.Net.Http
                         return;
                     }
 
-                    _http2Stream._connection.SendEndStream(_http2Stream.StreamId);
+                    // Don't wait for completion, which could happen asynchronously.
+                    ValueTask ignored = _http2Stream._connection.SendEndStreamAsync(_http2Stream.StreamId);
 
                     base.Dispose(disposing);
                 }
