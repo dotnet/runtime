@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private static EventHandler<DesignerNamespaceResolveEventArgs> DesignerNamespaceResolve;
 
-        internal static string[] OnDesignerNamespaceResolveEvent(AppDomain appDomain, string namespaceName)
+        internal static string[] OnDesignerNamespaceResolve(string namespaceName)
         {
             EventHandler<DesignerNamespaceResolveEventArgs> eventHandler = DesignerNamespaceResolve;
             if (eventHandler != null)
@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 {
                     DesignerNamespaceResolveEventArgs eventArgs = new DesignerNamespaceResolveEventArgs(namespaceName);
 
-                    handler(appDomain, eventArgs);
+                    handler(null /* AppDomain */, eventArgs);
 
                     Collection<string> assemblyFilesCollection = eventArgs.ResolvedAssemblyFiles;
                     if (assemblyFilesCollection.Count > 0)

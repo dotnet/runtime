@@ -466,33 +466,12 @@ namespace System.Threading
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void nativeInitCultureAccessors();
 
-        /*======================================================================
-        ** Returns the current domain in which current thread is running.
-        ======================================================================*/
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern AppDomain GetDomainInternal();
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern AppDomain GetFastDomainInternal();
-
-        internal static AppDomain GetDomain()
-        {
-
-            AppDomain ad;
-            ad = GetFastDomainInternal();
-            if (ad == null)
-                ad = GetDomainInternal();
-
-            return ad;
-        }
-
-
         /*
          *  This returns a unique id to identify an appdomain.
          */
         internal static int GetDomainID()
         {
-            return GetDomain().GetId();
+            return 1;
         }
 
 

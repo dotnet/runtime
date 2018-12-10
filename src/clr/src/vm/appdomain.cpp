@@ -3003,8 +3003,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__LAZY_INITIALIZER,
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
-        CLASS__MULTICAST_DELEGATE,
-        CLASS__APP_DOMAIN
+        CLASS__MULTICAST_DELEGATE
     };
 
     static const BinderClassID genericReflectionInvocationTypes[] = {
@@ -3028,8 +3027,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         {
             genericReflectionInvocationTypeDefs[i] = MscorlibBinder::GetClass(genericReflectionInvocationTypes[i])->GetCl();
         }
-
-        MscorlibBinder::GetClass(CLASS__APP_DOMAIN);
 
         VolatileStore(&fInited, true);
     }
@@ -3596,8 +3593,6 @@ AppDomain::AppDomain()
 
     m_handleStore = NULL;
 
-    m_ExposedObject = NULL;
-
  #ifdef _DEBUG
     m_pThreadTrackInfoList = NULL;
     m_TrackSpinLock = 0;
@@ -3823,8 +3818,6 @@ void AppDomain::Init()
     SetStage(STAGE_READYFORMANAGEDCODE);
 
 #ifndef CROSSGEN_COMPILE
-    m_ExposedObject = CreateHandle(NULL);
-
     COUNTER_ONLY(GetPerfCounters().m_Loading.cAppDomains++);
 
 #ifdef FEATURE_TIERED_COMPILATION
@@ -4011,48 +4004,6 @@ void AppDomain::CloseDomain()
 
     if(bADRemoved)
         Stop();
-}
-
-/*********************************************************************/
-
-struct GetExposedObject_Args
-{
-    AppDomain *pDomain;
-    OBJECTREF *ref;
-};
-
-OBJECTREF AppDomain::GetExposedObject()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    OBJECTREF ref = GetRawExposedObject();
-    if (ref == NULL)
-    {
-        APPDOMAINREF obj = NULL;
-
-        MethodTable *pMT = MscorlibBinder::GetClass(CLASS__APP_DOMAIN);
-
-        // Create the module object
-        obj = (APPDOMAINREF) AllocateObject(pMT);
-        obj->SetDomain(this);
-
-        if (!StoreFirstObjectInHandle(m_ExposedObject, (OBJECTREF) obj))
-        {
-            obj = (APPDOMAINREF) GetRawExposedObject();
-            _ASSERTE(obj);
-        }
-
-        return (OBJECTREF) obj;
-    }
-
-    return ref;
 }
 
 #endif // !CROSSGEN_COMPILE
@@ -5038,10 +4989,6 @@ DomainFile *AppDomain::LoadDomainFile(FileLoadLock *pLock, FileLoadLevel targetL
         POSTCONDITION(RETVAL->CheckNoError(targetLevel));
     }
     CONTRACT_END;
-
-
-    if(!CanLoadCode())
-        COMPlusThrow(kAppDomainUnloadedException);
 
     // Thread stress
     APIThreadStress::SyncThreadStress();
@@ -6522,36 +6469,37 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     }
     CONTRACTL_END;
 
+    if (pAssembly->GetFile()->IsSystem())
+    {
+        return;
+    }
+
     GCX_COOP();
     FAULT_NOT_FATAL();
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     EX_TRY
     {
-        struct _gc {
-            APPDOMAINREF AppDomainRef;
-            OBJECTREF    orThis;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        if (MscorlibBinder::GetField(FIELD__ASSEMBLYLOADCONTEXT__ASSEMBLY_LOAD)->GetStaticOBJECTREF() != NULL)
+        {
+            struct _gc {
+                OBJECTREF    orThis;
+            } gc;
+            ZeroMemory(&gc, sizeof(gc));
 
-        if ((gc.AppDomainRef = (APPDOMAINREF) GetRawExposedObject()) != NULL) {
-            if (gc.AppDomainRef->m_pAssemblyEventHandler != NULL)
-            {
-                ARG_SLOT args[2];
-                GCPROTECT_BEGIN(gc);
+            ARG_SLOT args[1];
+            GCPROTECT_BEGIN(gc);
 
-                gc.orThis = pAssembly->GetExposedAssemblyObject();
+            gc.orThis = pAssembly->GetExposedAssemblyObject();
 
-                MethodDescCallSite  onAssemblyLoad(METHOD__APP_DOMAIN__ON_ASSEMBLY_LOAD, &gc.orThis);
+            MethodDescCallSite onAssemblyLoad(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_LOAD);
 
-                // GetExposedAssemblyObject may cause a gc, so call this before filling args[0]
-                args[1] = ObjToArgSlot(gc.orThis);
-                args[0] = ObjToArgSlot(gc.AppDomainRef);
+            // GetExposedAssemblyObject may cause a gc, so call this before filling args[0]
+            args[0] = ObjToArgSlot(gc.orThis);
 
-                onAssemblyLoad.Call(args);
+            onAssemblyLoad.Call(args);
 
-                GCPROTECT_END();
-            }
+            GCPROTECT_END();
         }
     }
     EX_CATCH
@@ -6560,97 +6508,26 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     EX_END_CATCH(SwallowAllExceptions);
 }
 
-
 BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*=TRUE*/) 
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
-    BOOL retVal= FALSE;
+    BOOL retVal = FALSE;
 
     GCX_COOP();
 
-    // The Everett behavior was to send the unhandled exception event only to the Default
-    // AppDomain (since that's the only place that exceptions actually went unhandled).
-    //
-    // During Whidbey development, we broadcast the event to all AppDomains in the process.
-    //
-    // But the official shipping Whidbey behavior is that the unhandled exception event is
-    // sent to the Default AppDomain and to whatever AppDomain the exception went unhandled
-    // in.  To achieve this, we declare the exception to be unhandled *BEFORE* we marshal
-    // it back to the Default AppDomain at the base of the Finalizer, threadpool and managed
-    // threads.
-    //
-    // The rationale for sending the event to the Default AppDomain as well as the one the
-    // exception went unhandled in is:
-    //
-    // 1)  This is compatible with the pre-Whidbey behavior, where only the Default AppDomain
-    //     received the notification.
-    //
-    // 2)  This is convenient for hosts, which don't want to bother injecting listeners into
-    //     every single AppDomain.
-
-    AppDomain *pAppDomain = GetAppDomain();
-    OBJECTREF orSender = 0;
-
-    GCPROTECT_BEGIN(orSender);
-
-    orSender = pAppDomain->GetRawExposedObject();
-
-    retVal = pAppDomain->RaiseUnhandledExceptionEventNoThrow(&orSender, pThrowable, isTerminating);
-
-    GCPROTECT_END();
+    EX_TRY
+    {
+        retVal = GetAppDomain()->RaiseUnhandledExceptionEvent(pThrowable, isTerminating);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
 
     return retVal;
-}
-
-
-// Move outside of the AppDomain iteration, to avoid issues with the GC Frames being outside
-// the domain transition.  This is a chronic issue that causes us to report roots for an AppDomain
-// after we have left it.  This causes problems with AppDomain unloading that we only find
-// with stress coverage..
-void AppDomain::RaiseOneExitProcessEvent()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    struct _gc
-    {
-        APPDOMAINREF Domain;
-        OBJECTREF    Delegate;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-    gc.Domain = (APPDOMAINREF) SystemDomain::GetCurrentDomain()->GetRawExposedObject();
-    if (gc.Domain != NULL)
-    {
-        gc.Delegate = gc.Domain->m_pProcessExitEventHandler;
-        if (gc.Delegate != NULL)
-            DistributeEvent(&gc.Delegate, (OBJECTREF *) &gc.Domain);
-    }
-    GCPROTECT_END();
-}
-
-// Local wrapper used in AppDomain::RaiseExitProcessEvent,
-// introduced solely to avoid stack overflow because of _alloca in the loop.
-// It's just factored out body of the loop, but it has to be a member method of AppDomain,
-// because it calls private RaiseOneExitProcessEvent
-/*static*/ void AppDomain::RaiseOneExitProcessEvent_Wrapper(AppDomainIterator* pi)
-{
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-
-    ENTER_DOMAIN_PTR(pi->GetDomain(), ADV_ITERATOR)
-    AppDomain::RaiseOneExitProcessEvent();
-    END_DOMAIN_TRANSITION;
 }
 
 static LONG s_ProcessedExitProcessEventCount = 0;
@@ -6675,58 +6552,12 @@ void AppDomain::RaiseExitProcessEvent()
 
     _ASSERTE (GetThread()->PreemptiveGCDisabled());
 
-    _ASSERTE (GetThread()->GetDomain()->IsDefaultDomain());
-
-    AppDomainIterator i(TRUE);
-    while (i.Next())
-    {
-        RaiseOneExitProcessEvent_Wrapper(&i);
-        FastInterlockIncrement(&s_ProcessedExitProcessEventCount);
-    }
-}
-
-
-BOOL
-AppDomain::RaiseUnhandledExceptionEventNoThrow(OBJECTREF *pSender, OBJECTREF *pThrowable, BOOL isTerminating)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    BOOL bRetVal=FALSE;
-
-    EX_TRY
-    {
-        bRetVal = RaiseUnhandledExceptionEvent(pSender, pThrowable, isTerminating);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)  // Swallow any errors.
-    return bRetVal;
-
+    MethodDescCallSite onProcessExit(METHOD__APPCONTEXT__ON_PROCESS_EXIT);
+    onProcessExit.Call(NULL);
 }
 
 BOOL
-AppDomain::HasUnhandledExceptionEventHandler()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_NOTRIGGER; //essential
-        NOTHROW;
-    }
-    CONTRACTL_END;
-    if (GetRawExposedObject()==NULL)
-        return FALSE;
-    return (((APPDOMAINREF)GetRawExposedObject())->m_pUnhandledExceptionEventHandler!=NULL);
-}
-
-BOOL
-AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pSender, OBJECTREF *pThrowable, BOOL isTerminating)
+AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminating)
 {
     CONTRACTL
     {
@@ -6737,34 +6568,28 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pSender, OBJECTREF *pThrowabl
     }
     CONTRACTL_END;
 
-    if (!HasUnhandledExceptionEventHandler())
-        return FALSE;
-
-    BOOL result = FALSE;
-
     _ASSERTE(pThrowable != NULL && IsProtectedByGCFrame(pThrowable));
-    _ASSERTE(pSender    != NULL && IsProtectedByGCFrame(pSender));
 
     _ASSERTE(this == GetThread()->GetDomain());
 
+    OBJECTREF orDelegate = MscorlibBinder::GetField(FIELD__APPCONTEXT__UNHANDLED_EXCEPTION)->GetStaticOBJECTREF();
+    if (orDelegate == NULL)
+        return FALSE;
 
-    OBJECTREF orDelegate = NULL;
+    struct _gc {
+        OBJECTREF Delegate;
+        OBJECTREF Sender;
+    } gc;
+    ZeroMemory(&gc, sizeof(gc));
 
-    GCPROTECT_BEGIN(orDelegate);
-
-    APPDOMAINREF orAD = (APPDOMAINREF) GetAppDomain()->GetRawExposedObject();
-
-    if (orAD != NULL)
+    GCPROTECT_BEGIN(gc);
+    gc.Delegate = orDelegate;
+    if (orDelegate != NULL)
     {
-        orDelegate = orAD->m_pUnhandledExceptionEventHandler;
-        if (orDelegate != NULL)
-        {
-            result = TRUE;
-            DistributeUnhandledExceptionReliably(&orDelegate, pSender, pThrowable, isTerminating);
-        }
+        DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
     }
     GCPROTECT_END();
-    return result;
+    return TRUE;
 }
 
 #endif // CROSSGEN_COMPILE
@@ -7686,48 +7511,43 @@ DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssemb
 
     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-
     DomainAssembly* pResolvedAssembly = NULL;
     _ASSERTE(strcmp(szName, g_AppDomainClassName));
 
     GCX_COOP();
 
     struct _gc {
-        OBJECTREF AppDomainRef;
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
     GCPROTECT_BEGIN(gc);
-    if ((gc.AppDomainRef = GetRawExposedObject()) != NULL)
+
+    if (pAssembly != NULL)
+        gc.AssemblyRef = pAssembly->GetExposedAssemblyObject();
+
+    MethodDescCallSite onTypeResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_TYPE_RESOLVE);
+
+    gc.str = StringObject::NewString(szName);
+    ARG_SLOT args[2] =
     {
-        if (pAssembly != NULL)
-            gc.AssemblyRef = pAssembly->GetExposedAssemblyObject();
+        ObjToArgSlot(gc.AssemblyRef),
+        ObjToArgSlot(gc.str)
+    };
+    ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onTypeResolve.Call_RetOBJECTREF(args);
 
-        MethodDescCallSite onTypeResolve(METHOD__APP_DOMAIN__ON_TYPE_RESOLVE, &gc.AppDomainRef);
+    if (ResultingAssemblyRef != NULL)
+    {
+        pResolvedAssembly = ResultingAssemblyRef->GetDomainAssembly();
 
-        gc.str = StringObject::NewString(szName);
-        ARG_SLOT args[3] =
+        if (pResultingAssemblyRef)
+            *pResultingAssemblyRef = ResultingAssemblyRef;
+        else
         {
-            ObjToArgSlot(gc.AppDomainRef),
-            ObjToArgSlot(gc.AssemblyRef),
-            ObjToArgSlot(gc.str)
-        };
-        ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onTypeResolve.Call_RetOBJECTREF(args);
-
-        if (ResultingAssemblyRef != NULL)
-        {
-            pResolvedAssembly = ResultingAssemblyRef->GetDomainAssembly();
-
-            if (pResultingAssemblyRef)
-                *pResultingAssemblyRef = ResultingAssemblyRef;
-            else
+            if (pResolvedAssembly->IsCollectible())
             {
-                if (pResolvedAssembly->IsCollectible())
-                {
-                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
-                }
+                COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
             }
         }
     }
@@ -7754,34 +7574,30 @@ Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR
     GCX_COOP();
 
     struct _gc {
-        OBJECTREF AppDomainRef;
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
     GCPROTECT_BEGIN(gc);
-    if ((gc.AppDomainRef = GetRawExposedObject()) != NULL)
-    {
-        if (pAssembly != NULL)
-            gc.AssemblyRef=pAssembly->GetExposedAssemblyObject();
 
-        MethodDescCallSite onResourceResolve(METHOD__APP_DOMAIN__ON_RESOURCE_RESOLVE, &gc.AppDomainRef);
-        gc.str = StringObject::NewString(szName);
-        ARG_SLOT args[3] =
+    if (pAssembly != NULL)
+        gc.AssemblyRef=pAssembly->GetExposedAssemblyObject();
+
+    MethodDescCallSite onResourceResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_RESOURCE_RESOLVE);
+    gc.str = StringObject::NewString(szName);
+    ARG_SLOT args[2] =
+    {
+        ObjToArgSlot(gc.AssemblyRef),
+        ObjToArgSlot(gc.str)
+    };
+    ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onResourceResolve.Call_RetOBJECTREF(args);
+    if (ResultingAssemblyRef != NULL)
+    {
+        pResolvedAssembly = ResultingAssemblyRef->GetAssembly();
+        if (pResolvedAssembly->IsCollectible())
         {
-            ObjToArgSlot(gc.AppDomainRef),
-            ObjToArgSlot(gc.AssemblyRef),
-            ObjToArgSlot(gc.str)
-        };
-        ASSEMBLYREF ResultingAssemblyRef = (ASSEMBLYREF) onResourceResolve.Call_RetOBJECTREF(args);
-        if (ResultingAssemblyRef != NULL)
-        {
-            pResolvedAssembly = ResultingAssemblyRef->GetAssembly();
-            if (pResolvedAssembly->IsCollectible())
-            {
-                COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
-            }
+            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleAssemblyResolve"));
         }
     }
     GCPROTECT_END();
@@ -7819,25 +7635,22 @@ AppDomain::RaiseAssemblyResolveEvent(
     Assembly* pAssembly = NULL;
 
     struct _gc {
-        OBJECTREF AppDomainRef;
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
     GCPROTECT_BEGIN(gc);
-    if ((gc.AppDomainRef = GetRawExposedObject()) != NULL)
     {
         if (pSpec->GetParentAssembly() != NULL)
         {
             gc.AssemblyRef=pSpec->GetParentAssembly()->GetExposedAssemblyObject();
         }
 
-        MethodDescCallSite onAssemblyResolve(METHOD__APP_DOMAIN__ON_ASSEMBLY_RESOLVE, &gc.AppDomainRef);
+        MethodDescCallSite onAssemblyResolve(METHOD__ASSEMBLYLOADCONTEXT__ON_ASSEMBLY_RESOLVE);
 
         gc.str = StringObject::NewString(ssName);
-        ARG_SLOT args[3] = {
-            ObjToArgSlot(gc.AppDomainRef),
+        ARG_SLOT args[2] = {
             ObjToArgSlot(gc.AssemblyRef),
             ObjToArgSlot(gc.str)
         };
