@@ -998,12 +998,6 @@ private:
 public:
     ADID GetDomainID();
 
-    // The first overload respects the is-agile flag and context, the other two respect the flag but
-    // ignore the context (this is mostly for back compat reasons, new code should call the first overload).
-    BOOL NeedToSwitchDomains(Thread *pThread, ADID *pTargetADID, Context **ppTargetContext);
-    BOOL NeedToSwitchDomains(Thread *pThread);
-    BOOL NeedToSwitchDomains(ADID appdomainID);
-
     VOID ResetHandleStrength();
     VOID MarkHandleWeak();
 
@@ -1383,7 +1377,6 @@ class WeakReferenceImpl : public IUnknownCommon<IWeakReference>
 {
 private:
     ADID                m_adid;                 // AppDomain ID of where this weak reference is created
-    Context             *m_pContext;            // Saved context
     OBJECTHANDLE        m_ppObject;             // Short weak global handle points back to the object, 
                                                 // created in domain ID = m_adid
     
@@ -1521,7 +1514,7 @@ public:
     // Init pointer to the vtable of the interface
     // and the main ComCallWrapper if the interface needs it
     void InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapperCache, ComCallWrapper* pWrap,
-                 ComCallWrapper *pClassWrap, Context* pContext, SyncBlock* pSyncBlock,
+                 ComCallWrapper *pClassWrap, SyncBlock* pSyncBlock,
                  ComCallWrapperTemplate* pTemplate);
     
     // used by reconnect wrapper to new object
@@ -1601,17 +1594,6 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_dwDomainId;
-    }
-
-    inline BOOL NeedToSwitchDomains(Thread *pThread, ADID *pTargetADID, Context **ppTargetContext)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return FALSE;
-    }
-    inline BOOL NeedToSwitchDomains(ADID appdomainID)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return FALSE;
     }
 
     // is the object aggregated by a COM component
@@ -2099,7 +2081,6 @@ private:
     PTR_ComCallWrapper              m_pWrap;      // the first ComCallWrapper associated with this SimpleComCallWrapper
     PTR_ComCallWrapper              m_pClassWrap; // the first ComCallWrapper associated with the class (only if m_pMT is an interface)
     MethodTable*                    m_pMT;
-    Context*                        m_pContext;
     ComCallWrapperCache*            m_pWrapperCache;    
     PTR_ComCallWrapperTemplate      m_pTemplate;
     
@@ -2172,39 +2153,6 @@ inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppO
     
     RETURN pWrap;
 }
-
-#ifndef CROSSGEN_COMPILE
-
-inline BOOL ComCallWrapper::NeedToSwitchDomains(Thread *pThread, ADID *pTargetADID, Context **ppTargetContext)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    return GetSimpleWrapper()->NeedToSwitchDomains(pThread, pTargetADID, ppTargetContext);
-}
-
-inline BOOL ComCallWrapper::NeedToSwitchDomains(Thread *pThread)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-    
-    return NeedToSwitchDomains(pThread->GetDomain()->GetId());
-}
-
-
-inline BOOL ComCallWrapper::NeedToSwitchDomains(ADID appdomainID)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    return GetSimpleWrapper()->NeedToSwitchDomains(appdomainID);
-}
-
-#endif // CROSSGEN_COMPILE
 
 inline ADID ComCallWrapper::GetDomainID()
 {

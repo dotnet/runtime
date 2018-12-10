@@ -2825,7 +2825,6 @@ HRESULT __stdcall ICustomPropertyProvider_GetProperty(IUnknown *pPropertyProvide
         PRECONDITION(CheckPointer(pPropertyProvider));
         PRECONDITION(IsSimpleTearOff(pPropertyProvider));
         PRECONDITION(CheckPointer(ppProperty, NULL_OK));
-        PRECONDITION(!MapIUnknownToWrapper(pPropertyProvider)->NeedToSwitchDomains(GetThread()));
     }
     CONTRACTL_END;
 
@@ -2906,7 +2905,6 @@ HRESULT __stdcall ICustomPropertyProvider_GetIndexedProperty(IUnknown *pProperty
         PRECONDITION(CheckPointer(pPropertyProvider));
         PRECONDITION(IsSimpleTearOff(pPropertyProvider));
         PRECONDITION(CheckPointer(ppProperty, NULL_OK));
-        PRECONDITION(!MapIUnknownToWrapper(pPropertyProvider)->NeedToSwitchDomains(GetThread()));
     }
     CONTRACTL_END;
 
@@ -2986,7 +2984,6 @@ HRESULT __stdcall ICustomPropertyProvider_GetStringRepresentation(IUnknown *pPro
         PRECONDITION(CheckPointer(pPropertyProvider));
         PRECONDITION(IsSimpleTearOff(pPropertyProvider));
         PRECONDITION(CheckPointer(phstrStringRepresentation, NULL_OK));
-        PRECONDITION(!MapIUnknownToWrapper(pPropertyProvider)->NeedToSwitchDomains(GetThread()));
     }
     CONTRACTL_END;
 
@@ -3051,7 +3048,6 @@ HRESULT __stdcall ICustomPropertyProvider_GetType(IUnknown *pPropertyProvider,
         PRECONDITION(CheckPointer(pPropertyProvider));
         PRECONDITION(IsSimpleTearOff(pPropertyProvider));
         PRECONDITION(CheckPointer(pTypeIdentifier));
-        PRECONDITION(!MapIUnknownToWrapper(pPropertyProvider)->NeedToSwitchDomains(GetThread()));
     }
     CONTRACTL_END;
 
@@ -3104,7 +3100,6 @@ HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
         PRECONDITION(CheckPointer(pStringable));
         PRECONDITION(IsSimpleTearOff(pStringable));
         PRECONDITION(CheckPointer(pResult, NULL_OK));
-		PRECONDITION(!MapIUnknownToWrapper(pStringable)->NeedToSwitchDomains(GetThread()));
     }
     CONTRACTL_END;
 
