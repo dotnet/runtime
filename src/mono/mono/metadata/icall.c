@@ -4405,7 +4405,7 @@ handle_parent:
 
 		g_hash_table_insert (events, event, event);
 	}
-	if (klass = m_class_get_parent (klass))
+	if ((klass = m_class_get_parent (klass)))
 		goto handle_parent;
 
 	g_hash_table_destroy (events);
