@@ -1665,8 +1665,21 @@ mono_string_from_blob (const char *str, MonoError *error);
 void
 mono_release_type_locks (MonoInternalThread *thread);
 
+/**
+ * mono_string_handle_length:
+ * \param s \c MonoString
+ * \returns the length in characters of the string
+ */
+#ifdef ENABLE_CHECKED_BUILD_GC
+
 int
 mono_string_handle_length (MonoStringHandle s);
+
+#else
+
+#define mono_string_handle_length(s) (MONO_HANDLE_GETVAL ((s), length))
+
+#endif
 
 char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);

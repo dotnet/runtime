@@ -9001,6 +9001,8 @@ mono_array_length (MonoArray *array)
 	MONO_EXTERNAL_ONLY (uintptr_t, mono_array_length_internal (array));
 }
 
+#ifdef ENABLE_CHECKED_BUILD_GC
+
 /**
  * mono_string_handle_length:
  * \param s \c MonoString
@@ -9013,6 +9015,8 @@ mono_string_handle_length (MonoStringHandle s)
 
 	return MONO_HANDLE_GETVAL (s, length);
 }
+
+#endif
 
 /**
  * mono_array_addr_with_size:
