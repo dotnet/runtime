@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
@@ -14,7 +13,6 @@ internal partial class Interop
         public const int FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200;
         public const int FORMAT_MESSAGE_FROM_HMODULE = 0x00000800;
         public const int FORMAT_MESSAGE_ARGUMENT_ARRAY = 0x00002000;
-        public const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = true)]
         public static unsafe extern int FormatMessage(

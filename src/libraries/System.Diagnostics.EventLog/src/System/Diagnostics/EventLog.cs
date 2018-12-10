@@ -271,7 +271,7 @@ namespace System.Diagnostics
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                SharedUtils.EnterMutex(eventLogMutexName, ref mutex);
+                NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
                 Debug.WriteLineIf(CompModSwitches.EventLog.TraceVerbose, "CreateEventSource: Calling SourceExists");
                 if (SourceExists(source, machineName, true))
                 {
@@ -386,7 +386,7 @@ namespace System.Diagnostics
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                SharedUtils.EnterMutex(eventLogMutexName, ref mutex);
+                NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
                 try
                 {
                     eventlogkey = GetEventLogRegKey(machineName, true);
@@ -457,7 +457,7 @@ namespace System.Diagnostics
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
-                SharedUtils.EnterMutex(eventLogMutexName, ref mutex);
+                NetFrameworkUtils.EnterMutex(eventLogMutexName, ref mutex);
                 RegistryKey key = null;
                 // First open the key read only so we can do some checks.  This is important so we get the same 
                 // exceptions even if we don't have write access to the reg key. 
@@ -712,7 +712,7 @@ namespace System.Diagnostics
 
         internal static string GetDllPath(string machineName)
         {
-            return Path.Combine(SharedUtils.GetLatestBuildDllDirectory(machineName), DllName);
+            return Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
         }
 
         public static bool SourceExists(string source)
@@ -890,8 +890,8 @@ namespace System.Diagnostics
                     handles[i] = GCHandle.Alloc(insertionStrings[i], GCHandleType.Pinned);
                     addresses[i] = handles[i].AddrOfPinnedObject();
                 }
-                int lastError = Interop.Kernel32.ERROR_INSUFFICIENT_BUFFER;
-                while (msgLen == 0 && lastError == Interop.Kernel32.ERROR_INSUFFICIENT_BUFFER)
+                int lastError = Interop.Errors.ERROR_INSUFFICIENT_BUFFER;
+                while (msgLen == 0 && lastError == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                 {
                     msgLen = Interop.Kernel32.FormatMessage(
                         flags,
@@ -905,7 +905,7 @@ namespace System.Diagnostics
                     if (msgLen == 0)
                     {
                         lastError = Marshal.GetLastWin32Error();
-                        if (lastError == Interop.Kernel32.ERROR_INSUFFICIENT_BUFFER)
+                        if (lastError == Interop.Errors.ERROR_INSUFFICIENT_BUFFER)
                             buf = new char[buf.Length * 2];
                     }
                 }
