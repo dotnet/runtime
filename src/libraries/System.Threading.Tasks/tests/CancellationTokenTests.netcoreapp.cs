@@ -23,6 +23,21 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        public static void CancellationTokenRegistration_Token_AccessibleAfterCtsDispose()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationToken ct = cts.Token;
+            CancellationTokenRegistration ctr = ct.Register(() => { });
+
+            cts.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => cts.Token);
+
+            Assert.Equal(ct, ctr.Token);
+            ctr.Dispose();
+            Assert.Equal(ct, ctr.Token);
+        }
+
+        [Fact]
         public static void CancellationTokenRegistration_UnregisterOnDefaultIsNop()
         {
             Assert.False(default(CancellationTokenRegistration).Unregister());
