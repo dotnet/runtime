@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{F55047F8-E47B-46E3-B221-C23595AFE168}</ProjectGuid>
@@ -223,6 +223,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TOKEN_PRIVILEGE.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.TOKEN_PRIVILEGE.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreatePipe_SafeFileHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.CreatePipe.cs</Link>

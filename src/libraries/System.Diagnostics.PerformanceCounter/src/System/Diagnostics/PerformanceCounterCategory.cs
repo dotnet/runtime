@@ -231,7 +231,7 @@ namespace System.Diagnostics
             Mutex mutex = null;
             try
             {
-                SharedUtils.EnterMutex(PerfMutexName, ref mutex);
+                NetFrameworkUtils.EnterMutex(PerfMutexName, ref mutex);
                 if (PerformanceCounterLib.IsCustomCategory(machineName, categoryName) || PerformanceCounterLib.CategoryExists(machineName, categoryName))
                     throw new InvalidOperationException(SR.Format(SR.PerformanceCategoryExists, categoryName));
 
@@ -387,7 +387,7 @@ namespace System.Diagnostics
             Mutex mutex = null;
             try
             {
-                SharedUtils.EnterMutex(PerfMutexName, ref mutex);
+                NetFrameworkUtils.EnterMutex(PerfMutexName, ref mutex);
                 if (!PerformanceCounterLib.IsCustomCategory(machineName, categoryName))
                     throw new InvalidOperationException(SR.Format(SR.CantDeleteCategory));
 

@@ -38,11 +38,6 @@ internal partial class Interop
             internal const int RPC_S_CALL_FAILED = 1726;
         }
 
-        internal partial class WaitOptions
-        {
-            internal const int WAIT_TIMEOUT = 0x00000102;
-        }
-
         internal partial class StartupInfoOptions
         {
             internal const int STARTF_USESTDHANDLES = 0x00000100;

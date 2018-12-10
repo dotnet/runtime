@@ -24,11 +24,9 @@
     <Compile Include="System\Diagnostics\EventLogInternal.cs" />
     <Compile Include="System\Diagnostics\EventSourceCreationData.cs" />
     <Compile Include="System\Diagnostics\EventLogTraceListener.cs" />
-    <Compile Include="System\Diagnostics\NativeMethods.cs" />
     <Compile Include="System\Diagnostics\OverflowAction.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogReadHandle.cs" />
     <Compile Include="System\Diagnostics\SafeEventLogWriteHandle.cs" />
-    <Compile Include="System\Diagnostics\SharedUtils.cs" />
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
@@ -68,6 +66,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ReportEvent.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.ReportEvent.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Constants.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FormatMessage_SafeLibraryHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FormatMessage_SafeLibraryHandle.cs</Link>
     </Compile>
@@ -80,8 +81,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitForSingleObject.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.WaitForSingleObject.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Diagnostics\NetFrameworkUtils.cs">
+      <Link>Common\System\Diagnostics\NetFrameworkUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

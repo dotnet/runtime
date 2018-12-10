@@ -234,7 +234,7 @@ namespace System.Diagnostics
             if (s_perfCounterDllLoaded)
                 return;
 
-            string installPath = SharedUtils.GetLatestBuildDllDirectory(".");
+            string installPath = NetFrameworkUtils.GetLatestBuildDllDirectory(".");
 
             string perfcounterPath = Path.Combine(installPath, "perfcounter.dll");
             if (Interop.Kernel32.LoadLibrary(perfcounterPath) == IntPtr.Zero)
