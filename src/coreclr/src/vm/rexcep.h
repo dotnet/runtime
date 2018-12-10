@@ -110,7 +110,6 @@
 
 DEFINE_EXCEPTION(g_ReflectionNS,       AmbiguousMatchException,        false,  COR_E_AMBIGUOUSMATCH)
 DEFINE_EXCEPTION(g_SystemNS,           ApplicationException,           false,  COR_E_APPLICATION)
-DEFINE_EXCEPTION(g_SystemNS,           AppDomainUnloadedException,     false,  COR_E_APPDOMAINUNLOADED)
 DEFINE_EXCEPTION(g_SystemNS,           ArithmeticException,            false,  COR_E_ARITHMETIC)
 
 DEFINE_EXCEPTION(g_SystemNS,           ArgumentException,              false,

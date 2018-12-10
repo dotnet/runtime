@@ -276,11 +276,6 @@ void CrawlFrame::GetExactGenericInstantiations(Instantiation *pClassInst, Instan
     UNREACHABLE();
 }
 
-OBJECTREF AppDomain::GetExposedObject()
-{
-    UNREACHABLE();
-}
-
 BOOL Object::SupportsInterface(OBJECTREF pObj, MethodTable* pInterfaceMT)
 {
     UNREACHABLE();

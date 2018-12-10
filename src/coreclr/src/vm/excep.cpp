@@ -4486,8 +4486,7 @@ bool ExceptionIsAlwaysSwallowed(EXCEPTION_POINTERS *pExceptionInfo)
                 throwable = pThread->LastThrownObject();
             }
             //@todo: could throwable be NULL here?
-            isSwallowed = IsExceptionOfType(kThreadAbortException, &throwable) ||
-                          IsExceptionOfType(kAppDomainUnloadedException, &throwable);
+            isSwallowed = IsExceptionOfType(kThreadAbortException, &throwable);
         }
     }
 
@@ -5621,12 +5620,6 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                 else if (SentEvent || IsAsyncThreadException(&throwable))
                 {
                     // We don't print anything on async exceptions, like ThreadAbort.
-                    dump = FALSE;
-                    INDEBUG(suppressSelectiveBreak=TRUE);
-                }
-                else if (isThreadBaseFilter && IsExceptionOfType(kAppDomainUnloadedException, &throwable))
-                {
-                    // AppdomainUnloadedException is also a special case.
                     dump = FALSE;
                     INDEBUG(suppressSelectiveBreak=TRUE);
                 }
@@ -12234,30 +12227,18 @@ BOOL ExceptionNotifications::CanDeliverNotificationToCurrentAppDomain(ExceptionN
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
-        SO_TOLERANT;
         PRECONDITION(GetThread() != NULL);
         PRECONDITION(notificationType  != UnhandledExceptionHandler);
     }
     CONTRACTL_END;
 
-    Thread *pCurThread = GetThread();
-
-    // Get the current AppDomain
-    OBJECTREF oCurAppDomain = pCurThread->GetDomain()->GetRawExposedObject();
-    if (oCurAppDomain == NULL)
-    {
-        // Managed object for the current domain does not exist. Hence, no one
-        // can wireup to exception notifications, let alone receive them.
-        return FALSE;
-    }
-
     // Do we have handler(s) of the specific type wired up?
     if (notificationType == FirstChanceExceptionHandler)
     {
-        return (((APPDOMAINREF)oCurAppDomain)->GetFirstChanceExceptionNotificationHandler() != NULL);
+        return MscorlibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF() != NULL;
     }
     else
     {
@@ -12372,12 +12353,11 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
     // Save the reference to the current AppDomain. If the user code has
     // wired upto this event, then the managed AppDomain object will exist.
     gc.oCurAppDomain = pCurDomain->GetRawExposedObject();
-    _ASSERTE(gc.oCurAppDomain);
 
     // Get the reference to the delegate based upon the type of notification
     if (notificationType == FirstChanceExceptionHandler)
     {
-        gc.oNotificationDelegate = ((APPDOMAINREF)gc.oCurAppDomain)->GetFirstChanceExceptionNotificationHandler();
+        gc.oNotificationDelegate = MscorlibBinder::GetField(FIELD__APPCONTEXT__FIRST_CHANCE_EXCEPTION)->GetStaticOBJECTREF();
     }
     else
     {
