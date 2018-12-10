@@ -25,19 +25,22 @@ public sealed class MySafeEventHandle : AllMySafeHandles
 {
     private MySafeEventHandle() : base(true) { }
 
-    [DllImport("api-ms-win-core-synch-l1-2-0", SetLastError = true, EntryPoint = "CreateEventW")]
-    internal static extern MySafeEventHandle CreateEvent(IntPtr mustBeZero, bool isManualReset, bool initialState, String name);
-
-    [DllImport("api-ms-win-core-synch-l1-2-0", SetLastError = true)]
-    internal static extern bool SetEvent(MySafeEventHandle handle);
-
-    [DllImport("api-ms-win-core-handle-l1-1-0")]
-    private static extern bool CloseHandle(IntPtr handle);
-
     override protected bool ReleaseHandle()
     {
-        return CloseHandle(handle);
+        return Kernel32.CloseHandle(handle);
     }
+}
+
+internal sealed class Kernel32
+{
+    [DllImport(nameof(Kernel32), SetLastError = true, EntryPoint = "CreateEventW")]
+    public static extern MySafeEventHandle CreateEvent(IntPtr mustBeZero, bool isManualReset, bool initialState, string name);
+
+    [DllImport(nameof(Kernel32), SetLastError = true)]
+    public static extern bool SetEvent(MySafeEventHandle handle);
+
+    [DllImport(nameof(Kernel32))]
+    public static extern bool CloseHandle(IntPtr handle);
 }
 
 public class AbstractDerivedSHTester
@@ -48,9 +51,9 @@ public class AbstractDerivedSHTester
 
         //create an event
         Console.WriteLine("\tCreate new event");
-        MySafeEventHandle sh = MySafeEventHandle.CreateEvent(IntPtr.Zero, true, false, null);
+        MySafeEventHandle sh = Kernel32.CreateEvent(IntPtr.Zero, true, false, null);
         Assert.IsFalse(sh.IsInvalid, "CreateEvent returned an invalid SafeHandle!");
-        Assert.IsTrue(MySafeEventHandle.SetEvent(sh), "SetEvent failed on a SafeHandle!");
+        Assert.IsTrue(Kernel32.SetEvent(sh), "SetEvent failed on a SafeHandle!");
 
         Console.WriteLine("\tFirst test: Call dispose on sh");
         sh.Dispose();
@@ -58,7 +61,7 @@ public class AbstractDerivedSHTester
 
         // Now create another event and force the critical finalizer to run.
         Console.WriteLine("\tCreate new event");
-        sh = MySafeEventHandle.CreateEvent(IntPtr.Zero, false, true, null);
+        sh = Kernel32.CreateEvent(IntPtr.Zero, false, true, null);
         Assert.IsFalse(sh.IsInvalid, "CreateEvent returned an invalid SafeHandle!");
 
         Console.WriteLine("\tSecond test: Force critical finalizer to run");
