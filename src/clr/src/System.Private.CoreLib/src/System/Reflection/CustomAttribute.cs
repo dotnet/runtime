@@ -1616,7 +1616,15 @@ namespace System.Reflection
             if (ctorHasParameters)
             {
                 // Resolve method ctor token found in decorated decoratedModule scope
-                ctor = decoratedModule.ResolveMethod(caRecord.tkCtor, attributeType.GenericTypeArguments, null).MethodHandle.GetMethodInfo();
+                // See https://github.com/dotnet/coreclr/issues/21456 for why we fast-path non-generics here (fewer allocations)
+                if (attributeType.IsGenericType)
+                {
+                    ctor = decoratedModule.ResolveMethod(caRecord.tkCtor, attributeType.GenericTypeArguments, null).MethodHandle.GetMethodInfo();
+                }
+                else
+                {
+                    ctor = ModuleHandle.ResolveMethodHandleInternal(decoratedModule.GetNativeHandle(), caRecord.tkCtor);
+                }
             }
             else
             {
