@@ -193,13 +193,13 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: creating %s handle, initial %d max %d name \"%s\"",
 		    __func__, mono_w32handle_get_typename (MONO_W32TYPE_NAMEDSEM), initial, max, (const char*)name);
 
-	/* w32 seems to guarantee that opening named objects can't race each other */
-	mono_w32handle_namespace_lock ();
-
 	glong utf8_len = 0;
 	utf8_name = g_utf16_to_utf8 (name, -1, NULL, &utf8_len, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
+
+	/* w32 seems to guarantee that opening named objects can't race each other */
+	mono_w32handle_namespace_lock ();
 
 	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDSEM, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
@@ -222,10 +222,8 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 		handle = sem_handle_create ((MonoW32HandleSemaphore*) &namedsem_handle, MONO_W32TYPE_NAMEDSEM, initial, max);
 	}
 
-	g_free (utf8_name);
-
 	mono_w32handle_namespace_unlock ();
-
+	g_free (utf8_name);
 	return handle;
 }
 
@@ -326,14 +324,17 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, g
 
 	*error = ERROR_SUCCESS;
 
-	/* w32 seems to guarantee that opening named objects can't race each other */
-	mono_w32handle_namespace_lock ();
-
 	utf8_name = g_utf16_to_utf8 (mono_string_chars_internal (name), -1, NULL, NULL, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Opening named sem [%s]", __func__, utf8_name);
 
+	/* w32 seems to guarantee that opening named objects can't race each other */
+	mono_w32handle_namespace_lock ();
+
 	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDSEM, utf8_name);
+
+	mono_w32handle_namespace_unlock ();
+
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		*error = ERROR_INVALID_HANDLE;
@@ -348,9 +349,6 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, g
 
 cleanup:
 	g_free (utf8_name);
-
-	mono_w32handle_namespace_unlock ();
-
 	return handle;
 }
 
