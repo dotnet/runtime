@@ -1125,7 +1125,7 @@ ValueNum ValueNumStore::VNExcSetUnion(ValueNum xs0, ValueNum xs1)
 //                   (see VNExcSetUnion for more details)
 //
 // Notes:   - This method is used to form a Value Number Pair when we
-//            want both the Liberal and Conservative Value NUmbers
+//            want both the Liberal and Conservative Value Numbers
 //
 ValueNumPair ValueNumStore::VNPExcSetUnion(ValueNumPair xs0vnp, ValueNumPair xs1vnp)
 {
@@ -1195,7 +1195,7 @@ ValueNum ValueNumStore::VNExcSetIntersection(ValueNum xs0, ValueNum xs1)
 //                 (see VNExcSetIntersection for more details)
 //
 // Notes:   - This method is used to form a Value Number Pair when we
-//            want both the Liberal and Conservative Value NUmbers
+//            want both the Liberal and Conservative Value Numbers
 //
 ValueNumPair ValueNumStore::VNPExcSetIntersection(ValueNumPair xs0vnp, ValueNumPair xs1vnp)
 {
@@ -1337,7 +1337,7 @@ void ValueNumStore::VNUnpackExc(ValueNum vnWx, ValueNum* pvn, ValueNum* pvnx)
 //                 (see VNUnpackExc for more details)
 //
 // Notes:   - This method is used to form a Value Number Pair when we
-//            want both the Liberal and Conservative Value NUmbers
+//            want both the Liberal and Conservative Value Numbers
 //
 void ValueNumStore::VNPUnpackExc(ValueNumPair vnpWx, ValueNumPair* pvnp, ValueNumPair* pvnpx)
 {
@@ -1346,18 +1346,19 @@ void ValueNumStore::VNPUnpackExc(ValueNumPair vnpWx, ValueNumPair* pvnp, ValueNu
 }
 
 //-------------------------------------------------------------------------------------
-// VNCollectExc: - Given a ValueNum 'vnWx' and a current 'vnExcSet', return an
-//                 exception set of the Union of both exception sets.
+// VNUnionExcSet: - Given a ValueNum 'vnWx' and a current 'vnExcSet', return an
+//                  exception set of the Union of both exception sets.
 //
 // Arguments:
 //    vnWx        - A value number, it may have an exception set
 //    vnExcSet    - The value number for the current exception set
 //
-// Return Values: - The value number of the Union of both exception sets.
+// Return Values: - The value number of the Union of the exception set of 'vnWx'
+//                  with the current 'vnExcSet'.
 //
 // Note: When 'vnWx' does not have an exception set, 'vnExcSet' is returned.
 //
-ValueNum ValueNumStore::VNCollectExc(ValueNum vnWx, ValueNum vnExcSet)
+ValueNum ValueNumStore::VNUnionExcSet(ValueNum vnWx, ValueNum vnExcSet)
 {
     assert(vnWx != NoVN);
     VNFuncApp funcApp;
@@ -1369,17 +1370,17 @@ ValueNum ValueNumStore::VNCollectExc(ValueNum vnWx, ValueNum vnExcSet)
 }
 
 //-------------------------------------------------------------------------------------
-// VNPCollectExc: - Given a ValueNum 'vnWx' and a current 'excSet', return an
-//                  exception set of the Union of both exception sets.
-//                 (see VNCollectExc for more details)
+// VNPUnionExcSet: - Given a ValueNum 'vnWx' and a current 'excSet', return an
+//                   exception set of the Union of both exception sets.
+//                   (see VNUnionExcSet for more details)
 //
 // Notes:   - This method is used to form a Value Number Pair when we
-//            want both the Liberal and Conservative Value NUmbers
+//            want both the Liberal and Conservative Value Numbers
 //
-ValueNumPair ValueNumStore::VNPCollectExc(ValueNumPair vnpWx, ValueNumPair vnpExcSet)
+ValueNumPair ValueNumStore::VNPUnionExcSet(ValueNumPair vnpWx, ValueNumPair vnpExcSet)
 {
-    return ValueNumPair(VNCollectExc(vnpWx.GetLiberal(), vnpExcSet.GetLiberal()),
-                        VNCollectExc(vnpWx.GetConservative(), vnpExcSet.GetConservative()));
+    return ValueNumPair(VNUnionExcSet(vnpWx.GetLiberal(), vnpExcSet.GetLiberal()),
+                        VNUnionExcSet(vnpWx.GetConservative(), vnpExcSet.GetConservative()));
 }
 
 //--------------------------------------------------------------------------------
@@ -1484,7 +1485,7 @@ ValueNum ValueNumStore::VNNormalValue(ValueNumPair vnp, ValueNumKind vnk)
 //    vnp         - The Value Number Pair for the expression, including any excSet.
 //
 // Notes:         - This method is used to form a Value Number Pair using both
-//                  the Liberal and Conservative Value NUmbers normal (non-exceptional)
+//                  the Liberal and Conservative Value Numbers normal (non-exceptional)
 //
 ValueNumPair ValueNumStore::VNPNormalPair(ValueNumPair vnp)
 {
@@ -1528,7 +1529,7 @@ ValueNum ValueNumStore::VNExceptionSet(ValueNum vn)
 //                 (see VNExceptionSet for more details)
 //
 // Notes:        - This method is used to form a Value Number Pair when we
-//                 want both the Liberal and Conservative Value NUmbers
+//                 want both the Liberal and Conservative Value Numbers
 //
 ValueNumPair ValueNumStore::VNPExceptionSet(ValueNumPair vnp)
 {
@@ -1574,7 +1575,7 @@ ValueNum ValueNumStore::VNWithExc(ValueNum vn, ValueNum excSet)
 //                 (see VNWithExc for more details)
 //
 // Notes:        = This method is used to form a Value Number Pair when we
-//                 want both the Liberal and Conservative Value NUmbers
+//                 want both the Liberal and Conservative Value Numbers
 //
 ValueNumPair ValueNumStore::VNPWithExc(ValueNumPair vnp, ValueNumPair excSetVNP)
 {
@@ -8251,8 +8252,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                         ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
-                        vnpExcSet = vnStore->VNPCollectExc(data->gtVNPair, vnpExcSet);
-                        vnpExcSet = vnStore->VNPCollectExc(addr->gtVNPair, vnpExcSet);
+                        vnpExcSet = vnStore->VNPUnionExcSet(data->gtVNPair, vnpExcSet);
+                        vnpExcSet = vnStore->VNPUnionExcSet(addr->gtVNPair, vnpExcSet);
 
                         // The normal value is a new unique VN.
                         ValueNumPair normalPair;
@@ -8318,8 +8319,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                            vnStore->VNPNormalPair(vnpArrLen)));
 
                 // And collect the exceptions  from Index and ArrLen
-                vnpExcSet = vnStore->VNPCollectExc(vnpIndex, vnpExcSet);
-                vnpExcSet = vnStore->VNPCollectExc(vnpArrLen, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
 
                 // A bounds check node has no value, but may throw exceptions.
                 tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
@@ -8350,9 +8351,9 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
 
                 // Collect the exception sets from our operands
-                vnpExcSet = vnStore->VNPCollectExc(location->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPCollectExc(value->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPCollectExc(comparand->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(location->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(value->gtVNPair, vnpExcSet);
+                vnpExcSet = vnStore->VNPUnionExcSet(comparand->gtVNPair, vnpExcSet);
 
                 // The normal value is a new unique VN.
                 ValueNumPair normalPair;
