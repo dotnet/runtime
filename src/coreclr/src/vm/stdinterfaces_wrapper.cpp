@@ -270,7 +270,7 @@ inline BOOL IsCurrentDomainValid(ComCallWrapper* pWrap, Thread* pThread)
     if ((g_fEEShutDown & ShutDown_Finalize2) || g_fForbidEnterEE)
         return FALSE;
 
-    return (!pWrap->NeedToSwitchDomains(pThread));        
+    return TRUE;
 }
 
 BOOL IsCurrentDomainValid(ComCallWrapper* pWrap)
@@ -282,7 +282,7 @@ BOOL IsCurrentDomainValid(ComCallWrapper* pWrap)
 
 struct AppDomainSwitchToPreemptiveHelperArgs
 {
-    Context::ADCallBackFcnType pRealCallback;
+    ADCallBackFcnType pRealCallback;
     void* pRealArgs;
 };
 
@@ -305,7 +305,7 @@ VOID __stdcall AppDomainSwitchToPreemptiveHelper(LPVOID pv)
     pArgs->pRealCallback(pArgs->pRealArgs);
 }
 
-VOID AppDomainDoCallBack(ComCallWrapper* pWrap, Context::ADCallBackFcnType pTarget, LPVOID pArgs, HRESULT* phr)
+VOID AppDomainDoCallBack(ComCallWrapper* pWrap, ADCallBackFcnType pTarget, LPVOID pArgs, HRESULT* phr)
 { 
     CONTRACTL
     {
@@ -330,25 +330,9 @@ VOID AppDomainDoCallBack(ComCallWrapper* pWrap, Context::ADCallBackFcnType pTarg
 
     BEGIN_EXTERNAL_ENTRYPOINT(phr)
     {
-        GCX_COOP_THREAD_EXISTS(GET_THREAD());
-        Thread *pThread = GET_THREAD();
-
-        ADID targetADID;
-        Context *pTargetContext;
-        if (pWrap->NeedToSwitchDomains(pThread, &targetADID, &pTargetContext))
-        {
-            // call ourselves again through DoCallBack with a domain transition.
-            // We need to switch back to preemptive GC mode before we call the 
-            // real target method.
-            AppDomainSwitchToPreemptiveHelperArgs args = {(Context::ADCallBackFcnType)pTarget, pArgs};
-            pThread->DoContextCallBack(targetADID, pTargetContext, AppDomainSwitchToPreemptiveHelper, &args);
-        }
-        else
-        {
-            // make the call directly not forgetting to switch to preemptive GC mode
-            GCX_PREEMP();
-            ((Context::ADCallBackFcnType)pTarget)(pArgs);
-        }
+        // make the call directly not forgetting to switch to preemptive GC mode
+        GCX_PREEMP();
+        ((ADCallBackFcnType)pTarget)(pArgs);
     }
     END_EXTERNAL_ENTRYPOINT;
 }

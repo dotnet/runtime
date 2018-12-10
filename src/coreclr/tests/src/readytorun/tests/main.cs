@@ -415,6 +415,13 @@ class Program
         }
     }
 
+    static void RVAFieldTest()
+    {
+        ReadOnlySpan<byte> value = new byte[] { 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 };
+        for (byte i = 0; i < value.Length; i++)
+            Assert.AreEqual(value[i], (byte)(9 - i));
+    }
+
     static void RunAllTests()
     {
         TestVirtualMethodCalls();
@@ -467,6 +474,8 @@ class Program
         TestOpenClosedDelegate();
         
         GenericLdtokenFieldsTest();
+
+        RVAFieldTest();
     }
 
     static int Main()

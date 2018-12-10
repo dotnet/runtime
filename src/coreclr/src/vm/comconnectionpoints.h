@@ -169,11 +169,6 @@ private:
     void UnadviseWorker( DWORD dwCookie );
     IConnectionPointContainer *GetConnectionPointContainerWorker();
 
-    // AD callback wrappers.
-    static void GetConnectionPointContainer_Wrapper(LPVOID ptr);
-    static void Advise_Wrapper(LPVOID ptr);
-    static void Unadvise_Wrapper(LPVOID ptr);
-
     // Helper methods.
     void SetupEventMethods();
     MethodDesc *FindProviderMethodDesc( MethodDesc *pEventMethodDesc, EnumEventMethods MethodType );

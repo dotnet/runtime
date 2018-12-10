@@ -86,6 +86,7 @@ jobs:
           - name: rootfsDir
             value: /crossrootfs/arm64
 
-      - ${{insert}}: ${{ parameters.variables }}
+      - ${{ each variable in parameters.variables }}:
+        - ${{insert}}: ${{ variable }}
 
     steps: ${{ parameters.steps }}

@@ -84,7 +84,6 @@ class MethodTable;
 class Thread;
 class BaseDomain;
 class Assembly;
-class Context;
 class DomainAssembly;
 class AssemblyNative;
 class WaitHandleNative;

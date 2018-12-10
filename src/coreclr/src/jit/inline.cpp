@@ -337,6 +337,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_CodeSizeEstimate(0)
     , m_Success(true)
     , m_Devirtualized(false)
+    , m_Guarded(false)
     , m_Unboxed(false)
 #if defined(DEBUG) || defined(INLINE_DATA)
     , m_Policy(nullptr)
@@ -397,18 +398,19 @@ void InlineContext::Dump(unsigned indent)
         const char* inlineReason  = InlGetObservationString(m_Observation);
         const char* inlineResult  = m_Success ? "" : "FAILED: ";
         const char* devirtualized = m_Devirtualized ? " devirt" : "";
+        const char* guarded       = m_Guarded ? " guarded" : "";
         const char* unboxed       = m_Unboxed ? " unboxed" : "";
 
         if (m_Offset == BAD_IL_OFFSET)
         {
-            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
-                   inlineResult, inlineReason, devirtualized, unboxed, calleeName);
+            printf("%*s[%u IL=???? TR=%06u %08X] [%s%s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
+                   inlineResult, inlineReason, guarded, devirtualized, unboxed, calleeName);
         }
         else
         {
             IL_OFFSET offset = jitGetILoffs(m_Offset);
-            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID, calleeToken,
-                   inlineResult, inlineReason, devirtualized, unboxed, calleeName);
+            printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID,
+                   calleeToken, inlineResult, inlineReason, guarded, devirtualized, unboxed, calleeName);
         }
     }
 
@@ -1205,6 +1207,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Observation   = inlineInfo->inlineResult->GetObservation();
     calleeContext->m_Success       = true;
     calleeContext->m_Devirtualized = originalCall->IsDevirtualized();
+    calleeContext->m_Guarded       = originalCall->IsGuarded();
     calleeContext->m_Unboxed       = originalCall->IsUnboxed();
 
 #if defined(DEBUG) || defined(INLINE_DATA)
@@ -1266,6 +1269,7 @@ InlineContext* InlineStrategy::NewFailure(GenTreeStmt* stmt, InlineResult* inlin
     failedContext->m_Callee        = inlineResult->GetCallee();
     failedContext->m_Success       = false;
     failedContext->m_Devirtualized = originalCall->IsDevirtualized();
+    failedContext->m_Guarded       = originalCall->IsGuarded();
     failedContext->m_Unboxed       = originalCall->IsUnboxed();
 
     assert(InlIsValidObservation(failedContext->m_Observation));

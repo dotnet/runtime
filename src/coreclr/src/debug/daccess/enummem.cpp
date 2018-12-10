@@ -1187,9 +1187,6 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
                 // Write out the Thread instance
                 DacEnumHostDPtrMem(pThread);
 
-                // Write out the context pointed by the thread
-                DacEnumHostDPtrMem(pThread->GetContext());
-
                 // @TODO
                 // write TEB pointed by the thread
                 // DacEnumHostDPtrMem(pThread->GetTEB());

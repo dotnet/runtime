@@ -235,10 +235,13 @@ namespace System.IO
             byte* pKey = stackalloc byte[KeyLength];
             Interop.GetRandomBytes(pKey, KeyLength);
 
-            const int RandomFileNameLength = 12;
-            char* pRandomFileName = stackalloc char[RandomFileNameLength];
-            Populate83FileNameFromRandomBytes(pKey, KeyLength, pRandomFileName, RandomFileNameLength);
-            return new string(pRandomFileName, 0, RandomFileNameLength);
+#if MS_IO_REDIST
+                return StringExtensions.Create(
+#else
+                return string.Create(
+#endif
+                    12, (IntPtr)pKey, (span, key) => // 12 == 8 + 1 (for period) + 3
+                         Populate83FileNameFromRandomBytes((byte*)key, KeyLength, span));
         }
 
         /// <summary>
@@ -643,20 +646,18 @@ namespace System.IO
             }
         }
 
-        private static readonly char[] s_base32Char = {
-                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
-                'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-                'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-                'y', 'z', '0', '1', '2', '3', '4', '5'};
+        private static ReadOnlySpan<byte> Base32Char => new byte[32] { // uses C# compiler's optimization for static byte[] data
+                (byte)'a', (byte)'b', (byte)'c', (byte)'d', (byte)'e', (byte)'f', (byte)'g', (byte)'h',
+                (byte)'i', (byte)'j', (byte)'k', (byte)'l', (byte)'m', (byte)'n', (byte)'o', (byte)'p',
+                (byte)'q', (byte)'r', (byte)'s', (byte)'t', (byte)'u', (byte)'v', (byte)'w', (byte)'x',
+                (byte)'y', (byte)'z', (byte)'0', (byte)'1', (byte)'2', (byte)'3', (byte)'4', (byte)'5'};
 
-        private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, char* chars, int charCount)
+        private static unsafe void Populate83FileNameFromRandomBytes(byte* bytes, int byteCount, Span<char> chars)
         {
-            Debug.Assert(bytes != null);
-            Debug.Assert(chars != null);
-
             // This method requires bytes of length 8 and chars of length 12.
+            Debug.Assert(bytes != null);
             Debug.Assert(byteCount == 8, $"Unexpected {nameof(byteCount)}");
-            Debug.Assert(charCount == 12, $"Unexpected {nameof(charCount)}");
+            Debug.Assert(chars.Length == 12, $"Unexpected {nameof(chars)}.Length");
 
             byte b0 = bytes[0];
             byte b1 = bytes[1];
@@ -665,20 +666,20 @@ namespace System.IO
             byte b4 = bytes[4];
 
             // Consume the 5 Least significant bits of the first 5 bytes
-            chars[0] = s_base32Char[b0 & 0x1F];
-            chars[1] = s_base32Char[b1 & 0x1F];
-            chars[2] = s_base32Char[b2 & 0x1F];
-            chars[3] = s_base32Char[b3 & 0x1F];
-            chars[4] = s_base32Char[b4 & 0x1F];
+            chars[0] = (char)Base32Char[b0 & 0x1F];
+            chars[1] = (char)Base32Char[b1 & 0x1F];
+            chars[2] = (char)Base32Char[b2 & 0x1F];
+            chars[3] = (char)Base32Char[b3 & 0x1F];
+            chars[4] = (char)Base32Char[b4 & 0x1F];
 
             // Consume 3 MSB of b0, b1, MSB bits 6, 7 of b3, b4
-            chars[5] = s_base32Char[(
+            chars[5] = (char)Base32Char[
                     ((b0 & 0xE0) >> 5) |
-                    ((b3 & 0x60) >> 2))];
+                    ((b3 & 0x60) >> 2)];
 
-            chars[6] = s_base32Char[(
+            chars[6] = (char)Base32Char[
                     ((b1 & 0xE0) >> 5) |
-                    ((b4 & 0x60) >> 2))];
+                    ((b4 & 0x60) >> 2)];
 
             // Consume 3 MSB bits of b2, 1 MSB bit of b3, b4
             b2 >>= 5;
@@ -690,15 +691,15 @@ namespace System.IO
             if ((b4 & 0x80) != 0)
                 b2 |= 0x10;
 
-            chars[7] = s_base32Char[b2];
+            chars[7] = (char)Base32Char[b2];
 
             // Set the file extension separator
             chars[8] = '.';
 
             // Consume the 5 Least significant bits of the remaining 3 bytes
-            chars[9] = s_base32Char[(bytes[5] & 0x1F)];
-            chars[10] = s_base32Char[(bytes[6] & 0x1F)];
-            chars[11] = s_base32Char[(bytes[7] & 0x1F)];
+            chars[9] = (char)Base32Char[bytes[5] & 0x1F];
+            chars[10] = (char)Base32Char[bytes[6] & 0x1F];
+            chars[11] = (char)Base32Char[bytes[7] & 0x1F];
         }
 
         /// <summary>

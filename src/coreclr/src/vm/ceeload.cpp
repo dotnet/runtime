@@ -526,6 +526,13 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
 
+#ifdef FEATURE_COLLECTIBLE_TYPES
+    if (GetAssembly()->IsCollectible())
+    {
+        FastInterlockOr(&m_dwPersistedFlags, COLLECTIBLE_MODULE);
+    }
+#endif // FEATURE_COLLECTIBLE_TYPES
+
 #ifdef FEATURE_READYTORUN
     if (!HasNativeImage() && !IsResource())
         m_pReadyToRunInfo = ReadyToRunInfo::Initialize(this, pamTracker);
@@ -578,13 +585,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // this will be initialized a bit later.
     m_ModuleID = NULL;
     m_ModuleIndex.m_dwIndex = (SIZE_T)-1;
-
-#ifdef FEATURE_COLLECTIBLE_TYPES
-    if (GetAssembly()->IsCollectible())
-    {
-        FastInterlockOr(&m_dwPersistedFlags, COLLECTIBLE_MODULE);
-    }
-#endif // FEATURE_COLLECTIBLE_TYPES
 
     // Prepare statics that are known at module load time
     AllocateStatics(pamTracker);
