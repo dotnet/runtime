@@ -503,6 +503,7 @@ namespace System.Net.Http
             {
                 WriteFrameHeader(new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId));
 
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.RstStreamLength);
                 _outgoingBuffer.AvailableSpan[0] = (byte)(((int)errorCode & 0xFF000000) >> 24);
                 _outgoingBuffer.AvailableSpan[1] = (byte)(((int)errorCode & 0x00FF0000) >> 16);
                 _outgoingBuffer.AvailableSpan[2] = (byte)(((int)errorCode & 0x0000FF00) >> 8);
