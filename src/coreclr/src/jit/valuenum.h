@@ -404,10 +404,10 @@ public:
     void VNPUnpackExc(ValueNumPair vnWx, ValueNumPair* pvn, ValueNumPair* pvnx);
 
     // This returns the Union of exceptions from vnWx and vnExcSet
-    ValueNum VNCollectExc(ValueNum vnWx, ValueNum vnExcSet);
+    ValueNum VNUnionExcSet(ValueNum vnWx, ValueNum vnExcSet);
 
     // This returns the Union of exceptions from vnpWx and vnpExcSet
-    ValueNumPair VNPCollectExc(ValueNumPair vnpWx, ValueNumPair vnpExcSet);
+    ValueNumPair VNPUnionExcSet(ValueNumPair vnpWx, ValueNumPair vnpExcSet);
 
     // Sets the normal value to a new unique ValueNum
     // Keeps any Exception set values
