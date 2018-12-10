@@ -1371,7 +1371,7 @@ namespace System
                 case 'O':
                 case 's':
                 case 'u':
-                    results = new string[] { Format(dateTime, new string(format, 1), dtfi) };
+                    results = new string[] { Format(dateTime, char.ToString(format), dtfi) };
                     break;
                 default:
                     throw new FormatException(SR.Format_InvalidString);

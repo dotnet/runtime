@@ -6,11 +6,23 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics
 {
+    // We mark certain methods with AggressiveInlining to ensure that the JIT will
+    // inline them. The JIT would otherwise not inline the method since it, at the
+    // point it tries to determine inline profability, currently cannot determine
+    // that most of the code-paths will be optimized away as "dead code".
+    //
+    // We then manually inline cases (such as certain intrinsic code-paths) that
+    // will generate code small enough to make the AgressiveInlining profitable. The
+    // other cases (such as the software fallback) are placed in their own method.
+    // This ensures we get good codegen for the "fast-path" and allows the JIT to
+    // determine inline profitability of the other paths as it would normally.
+
     [Intrinsic]
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector128DebugView<>))]
@@ -169,19 +181,50 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector128{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector128<T> other)
         {
             ThrowIfUnsupportedType();
 
-            for (int i = 0; i < Count; i++)
+            if (Sse.IsSupported && (typeof(T) == typeof(float)))
             {
-                if (!((IEquatable<T>)(GetElement(i))).Equals(other.GetElement(i)))
+                Vector128<float> result = Sse.CompareEqual(AsSingle(), other.AsSingle());
+                return Sse.MoveMask(result) == 0b1111; // We have one bit per element
+            }
+
+            if (Sse2.IsSupported)
+            {
+                if (typeof(T) == typeof(double))
                 {
-                    return false;
+                    Vector128<double> result = Sse2.CompareEqual(AsDouble(), other.AsDouble());
+                    return Sse2.MoveMask(result) == 0b11; // We have one bit per element
+                }
+                else
+                {
+                    // Unlike float/double, there are no special values to consider
+                    // for integral types and we can just do a comparison that all
+                    // bytes are exactly the same.
+
+                    Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
+                    Vector128<byte> result = Sse2.CompareEqual(AsByte(), other.AsByte());
+                    return Sse2.MoveMask(result) == 0b1111_1111_1111_1111; // We have one bit per element
                 }
             }
 
-            return true;
+            return SoftwareFallback(in this, other);
+
+            bool SoftwareFallback(in Vector128<T> x, Vector128<T> y)
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    if (!((IEquatable<T>)(x.GetElement(i))).Equals(y.GetElement(i)))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         /// <summary>Determines whether the specified object is equal to the current instance.</summary>
@@ -303,6 +346,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a scalar containing the value of the first element.</summary>
         /// <returns>A scalar <typeparamref name="T" /> containing the value of the first element.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public T ToScalar()
         {
             ThrowIfUnsupportedType();
@@ -356,6 +400,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits initialized to zero.</summary>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits initialized to zero.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public Vector256<T> ToVector256()
         {
             ThrowIfUnsupportedType();
@@ -369,6 +414,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to a new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits left uninitialized.</summary>
         /// <returns>A new <see cref="Vector256{T}" /> with the lower 128-bits set to the value of the current instance and the upper 128-bits left uninitialized.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         public unsafe Vector256<T> ToVector256Unsafe()
         {
             ThrowIfUnsupportedType();

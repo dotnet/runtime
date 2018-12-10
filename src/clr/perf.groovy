@@ -41,7 +41,7 @@ def static getOSGroup(def os) {
                         def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                             // Set the label.
                             if (isSmoketest) {
-                                label('Windows.10.Amd64.ClientRS4.DevEx.15.8.Open')
+                                label('Windows.Amd64.ClientRS4.DevEx.15.8.Perf')
                                 python = "C:\\python3.7.0\\python.exe"
                             }
                             else {
@@ -767,7 +767,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
     ['x64', 'x86'].each { arch ->
         def architecture = arch
         def newJob = job(Utilities.getFullJobName(project, "sizeondisk_${arch}", false)) {
-            label('Windows.10.Amd64.ClientRS4.DevEx.15.8.Open')
+            label('Windows.Amd64.ClientRS4.DevEx.15.8.Perf')
 
             wrappers {
                 credentialsBinding {
@@ -853,7 +853,7 @@ def static getFullThroughputJobName(def project, def os, def arch, def isPR) {
                 ['full_opt'].each { opt_level ->
                     def architecture = arch
                     def newJob = job(Utilities.getFullJobName(project, "perf_illink_${os}_${arch}_${opt_level}_${jit}", isPR)) {
-                        label('Windows.10.Amd64.ClientRS4.DevEx.15.8.Open')
+                        label('Windows.Amd64.ClientRS4.DevEx.15.8.Perf')
 
                         def testEnv = ""
                         def python = "C:\\python3.7.0\\python.exe"

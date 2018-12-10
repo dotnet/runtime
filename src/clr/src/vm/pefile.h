@@ -376,9 +376,7 @@ public:
     static void GetNGENDebugFlags(BOOL *fAllowOpt);
 #endif
 
-#ifdef FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
     static BOOL ShouldTreatNIAsMSIL();
-#endif // FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
             
 #endif  // FEATURE_PREJIT
 

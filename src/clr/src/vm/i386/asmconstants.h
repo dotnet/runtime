@@ -174,10 +174,6 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException
 
 #ifndef CROSSGEN_COMPILE
 
-// from clr/src/vm/threads.h
-#define Thread_m_Context    0x34
-ASMCONSTANTS_C_ASSERT(Thread_m_Context == offsetof(Thread, m_Context))
-
 #define Thread_m_State      0x04
 ASMCONSTANTS_C_ASSERT(Thread_m_State == offsetof(Thread, m_State))
 #endif // CROSSGEN_COMPILE

@@ -3356,16 +3356,7 @@ BOOL SyncBlock::Wait(INT32 timeOut, BOOL exitContext)
         syncState.m_EnterCount = LeaveMonitorCompletely();
         _ASSERTE(syncState.m_EnterCount > 0);
 
-        Context* targetContext;
-        targetContext = pCurThread->GetContext();
-        _ASSERTE(targetContext);
-        Context* defaultContext;
-        defaultContext = pCurThread->GetDomain()->GetDefaultContext();
-        _ASSERTE(defaultContext);
-        _ASSERTE( exitContext==NULL || targetContext == defaultContext);
-        {
-            isTimedOut = pCurThread->Block(timeOut, &syncState);
-        }
+        isTimedOut = pCurThread->Block(timeOut, &syncState);
     }
     GCPROTECT_END();
     m_Monitor.DecrementTransientPrecious();
