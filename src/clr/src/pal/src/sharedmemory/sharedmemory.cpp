@@ -197,6 +197,8 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 int SharedMemoryHelpers::Open(LPCSTR path, int flags, mode_t mode)
 {
     int openErrorCode;
+
+    flags |= O_CLOEXEC;
     do
     {
         int fileDescriptor = InternalOpen(path, flags, mode);
