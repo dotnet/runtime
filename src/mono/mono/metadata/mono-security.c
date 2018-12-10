@@ -596,48 +596,40 @@ ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionA
 
 static MonoImage *system_security_assembly;
 
-void
-ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope)
+static void
+mono_invoke_protected_memory_method (MonoArrayHandle data, MonoObjectHandle scope, gboolean encrypt, MonoError *error)
 {
-	ERROR_DECL (error);
-	mono_invoke_protected_memory_method (data, scope, FALSE, error);
-	mono_error_set_pending_exception (error);
-}
-void
-ves_icall_System_Security_SecureString_EncryptInternal (MonoArray* data, MonoObject *scope)
-{
-	ERROR_DECL (error);
-	mono_invoke_protected_memory_method (data, scope, TRUE, error);
-	mono_error_set_pending_exception (error);
-}
-
-void mono_invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error)
-{
-	MonoClass *klass;
-	MonoMethod *method;
-	void *params [2];
-
-	error_init (error);
-	
 	if (system_security_assembly == NULL) {
 		system_security_assembly = mono_image_loaded ("System.Security");
 		if (!system_security_assembly) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
 			MonoAssembly *sa = mono_assembly_request_open ("System.Security.dll", &req, NULL);
-			if (!sa)
-				g_assert_not_reached ();
+			g_assert (sa);
 			system_security_assembly = mono_assembly_get_image_internal (sa);
 		}
 	}
 
-	klass = mono_class_load_from_name (system_security_assembly,
+	MonoClass *klass = mono_class_load_from_name (system_security_assembly,
 								  "System.Security.Cryptography", "ProtectedMemory");
-	method = mono_class_get_method_from_name_checked (klass, encrypt ? "Protect" : "Unprotect", 2, 0, error);
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, encrypt ? "Protect" : "Unprotect", 2, 0, error);
 	mono_error_assert_ok (error);
 	g_assert (method);
-	params [0] = data;
-	params [1] = scope; /* MemoryProtectionScope.SameProcess */
+	void *params [ ] = {
+		MONO_HANDLE_RAW (data),
+		MONO_HANDLE_RAW (scope) // MemoryProtectionScope.SameProcess
+	};
+	mono_runtime_invoke_handle_void (method, NULL_HANDLE, params, error);
+}
 
-	mono_runtime_invoke_checked (method, NULL, params, error);
+
+void
+ves_icall_System_Security_SecureString_DecryptInternal (MonoArrayHandle data, MonoObjectHandle scope, MonoError *error)
+{
+	mono_invoke_protected_memory_method (data, scope, FALSE, error);
+}
+void
+ves_icall_System_Security_SecureString_EncryptInternal (MonoArrayHandle data, MonoObjectHandle scope, MonoError *error)
+{
+	mono_invoke_protected_memory_method (data, scope, TRUE, error);
 }

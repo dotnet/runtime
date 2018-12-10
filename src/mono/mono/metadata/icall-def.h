@@ -952,8 +952,8 @@ HANDLES(WINPRIN_1, "IsMemberOfGroupId", ves_icall_System_Security_Principal_Wind
 HANDLES(WINPRIN_2, "IsMemberOfGroupName", ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName, MonoBoolean, 2, (gpointer, const_char_ptr))
 
 ICALL_TYPE(SECSTRING, "System.Security.SecureString", SECSTRING_1)
-ICALL(SECSTRING_1, "DecryptInternal", ves_icall_System_Security_SecureString_DecryptInternal)
-ICALL(SECSTRING_2, "EncryptInternal", ves_icall_System_Security_SecureString_EncryptInternal)
+HANDLES(SECSTRING_1, "DecryptInternal", ves_icall_System_Security_SecureString_DecryptInternal, void, 2, (MonoArray, MonoObject))
+HANDLES(SECSTRING_2, "EncryptInternal", ves_icall_System_Security_SecureString_EncryptInternal, void, 2, (MonoArray, MonoObject))
 
 ICALL_TYPE(SECMAN, "System.Security.SecurityManager", SECMAN_1)
 NOHANDLES(ICALL(SECMAN_1, "get_RequiresElevatedPermissions", mono_security_core_clr_require_elevated_permissions))

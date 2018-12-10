@@ -2052,6 +2052,9 @@ mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoE
 MonoObjectHandle
 mono_runtime_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
 
+void
+mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error);
+
 MonoObject*
 mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			       MonoObject **exc, MonoError *error);

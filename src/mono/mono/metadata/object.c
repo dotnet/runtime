@@ -3152,6 +3152,12 @@ mono_runtime_invoke_handle (MonoMethod *method, MonoObjectHandle obj, void **par
 	return MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (method, MONO_HANDLE_RAW (obj), params, error));
 }
 
+void
+mono_runtime_invoke_handle_void (MonoMethod *method, MonoObjectHandle obj, void **params, MonoError* error)
+{
+	mono_runtime_invoke_checked (method, MONO_HANDLE_RAW (obj), params, error);
+}
+
 /**
  * mono_method_get_unmanaged_thunk:
  * \param method method to generate a thunk for.

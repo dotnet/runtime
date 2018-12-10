@@ -116,18 +116,6 @@ ICALL_EXPORT
 MonoBoolean
 ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent (MonoReflectionAssemblyHandle refass, MonoError *error);
 
-/* System.Security.SecureString */
-ICALL_EXPORT
-void
-ves_icall_System_Security_SecureString_DecryptInternal (MonoArray *data, MonoObject *scope);
-
-ICALL_EXPORT
-void
-ves_icall_System_Security_SecureString_EncryptInternal (MonoArray *data, MonoObject *scope);
-
-void
-mono_invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolean encrypt, MonoError *error);
-
 G_END_DECLS
 
 #endif /* _MONO_METADATA_SECURITY_H_ */
