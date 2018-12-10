@@ -4809,7 +4809,7 @@ HRESULT ProfToEEInterfaceImpl::GetThreadContext(ThreadID threadId,
     Thread *pThread = reinterpret_cast<Thread *>(threadId);
 
     // Get the context for the Thread* provided
-    Context *pContext = pThread->GetContext();
+    AppDomain *pContext = pThread->GetDomain(); // Context is same as AppDomain in CoreCLR
     _ASSERTE(pContext);
 
     // If there's no current context, return incomplete info

@@ -505,12 +505,9 @@ void DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thread                  
                         PTR_IUnknown pUnk          = dac_cast<PTR_IUnknown>(*dac_cast<PTR_TADDR>(pUnkStackSlot));
                         ComCallWrapper * pCCW      = ComCallWrapper::GetWrapperFromIP(pUnk);
 
-                        if (!pCCW->NeedToSwitchDomains(pAppDomain->GetId()))
-                        {
-                            ComCallMethodDesc * pCMD = NULL;
-                            pCMD = dac_cast<PTR_ComCallMethodDesc>(pCOMFrame->ComMethodFrame::GetDatum());
-                            pMD  = pCMD->GetInterfaceMethodDesc();
-                        }
+                        ComCallMethodDesc * pCMD = NULL;
+                        pCMD = dac_cast<PTR_ComCallMethodDesc>(pCOMFrame->ComMethodFrame::GetDatum());
+                        pMD  = pCMD->GetInterfaceMethodDesc();
                     }
                 }
                 EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY

@@ -265,7 +265,6 @@ endif(FEATURE_JIT_PITCHING)
 
 set(VM_SOURCES_DAC
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
-    contexts.cpp
     threaddebugblockinginfo.cpp
 )
 

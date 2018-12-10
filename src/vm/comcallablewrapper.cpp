@@ -490,7 +490,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                         pComMT->CheckParentComVisibility(FALSE);
                     }
                         
-                    ENTER_DOMAIN_ID_PREDICATED(pWrap->GetDomainID(), !!pWrap->NeedToSwitchDomains(pThread))
                     {
                         OBJECTREF pADThrowable = NULL;
 
@@ -571,7 +570,6 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
                             GCPROTECT_END();
                         }
                     }
-                    END_DOMAIN_TRANSITION;
                 }
                 EX_CATCH
                 {
@@ -710,7 +708,6 @@ WeakReferenceImpl::WeakReferenceImpl(SimpleComCallWrapper *pSimpleWrapper, Threa
     AppDomain *pDomain = pCurrentThread->GetDomain();
 
     m_adid = pDomain->GetId();
-    m_pContext = pCurrentThread->GetContext();
 
     {
         GCX_COOP_THREAD_EXISTS(pCurrentThread);
@@ -794,27 +791,7 @@ HRESULT STDMETHODCALLTYPE WeakReferenceImpl::Resolve(REFIID riid, IInspectable *
         
         WeakReferenceResolveCallbackArgs args = { this, pThread, riid, ppvObject, &hr };
 
-        //
-        // Transition to the right domain
-        // WeakReference is bound to the domain where this WeakReference is created, so we must
-        // transition to the domain of WeakReference, not the domain of the CCW, as they might be different
-        // if the CCW is agile.
-        //
-        if (pThread->GetDomain()->GetId() == m_adid)
-        {
-            Resolve_Callback(&args);
-        }
-        else
-        {
-            GCX_COOP_THREAD_EXISTS(pThread);
-
-            pThread->DoContextCallBack(
-                m_adid,
-                m_pContext,
-                (Context::ADCallBackFcnType)Resolve_Callback_SwitchToPreemp,
-                (LPVOID)&args);
-        }
-
+        Resolve_Callback(&args);
     }
     END_EXTERNAL_ENTRYPOINT;
      
@@ -1145,9 +1122,6 @@ VOID SimpleComCallWrapper::Neuter(bool fSkipHandleCleanup)
         //   do this for each of the CCWs
         m_pWrap->Neuter();
     }
-
-    // NULL the context, we shall only use m_dwDomainId from this point on
-    m_pContext = NULL;
     
     StackSString ssMessage;
     ComCallWrapper *pWrap = m_pWrap;
@@ -1220,7 +1194,7 @@ SimpleComCallWrapper* SimpleComCallWrapper::CreateSimpleWrapper()
 // and the main ComCallWrapper if the interface needs it
 //--------------------------------------------------------------------------
 void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapperCache, ComCallWrapper* pWrap, 
-                                ComCallWrapper *pClassWrap, Context *pContext, SyncBlock *pSyncBlock,
+                                ComCallWrapper *pClassWrap, SyncBlock *pSyncBlock,
                                 ComCallWrapperTemplate* pTemplate)
 {
     CONTRACTL
@@ -1231,7 +1205,6 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
         PRECONDITION(oref != NULL);
         PRECONDITION(CheckPointer(pWrap));
         PRECONDITION(CheckPointer(pWrapperCache, NULL_OK));
-        PRECONDITION(CheckPointer(pContext));
         PRECONDITION(CheckPointer(pSyncBlock, NULL_OK));
         PRECONDITION(CheckPointer(pTemplate));
         PRECONDITION(m_pSyncBlock == NULL);
@@ -1253,12 +1226,7 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     m_pOuter = NULL;
 
     m_pSyncBlock = pSyncBlock;
-    m_pContext = pContext;
-    m_dwDomainId = pContext->GetDomain()->GetId();
-
-    //@TODO: CTS, when we transition into the correct context before creating a wrapper
-    // then uncomment the next line
-    //_ASSERTE(pContext == GetCurrentContext());
+    m_dwDomainId = GetAppDomain()->GetId();
     
     if (pMT->IsComObjectType())
         m_flags |= enum_IsExtendsCom;
@@ -2562,8 +2530,6 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
 
     pServer = *ppObj;
 
-    Context *pContext = GetAppDomain()->GetDefaultContext();
-
     // Force Refine the object if it is a transparent proxy
     RefineProxy(pServer);
      
@@ -2613,7 +2579,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
                         // if the object is agile in non-checked, so we trust that our checking works and when we 
                         // attempt to hand this out to another domain then we will assume that the object is truly
                         // agile and will convert the handle to a global handle.
-                        oh = pContext->GetDomain()->CreateRefcountedHandle(NULL);
+                        oh = GetAppDomain()->CreateRefcountedHandle(NULL);
                         _ASSERTE(oh);
                     }
                     else
@@ -2628,7 +2594,7 @@ ComCallWrapper* ComCallWrapper::CreateWrapper(OBJECTREF* ppObj, ComCallWrapperTe
 
                     NewHolder<SimpleComCallWrapper> pSimpleWrap = SimpleComCallWrapper::CreateSimpleWrapper();
                     
-                    pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pClassCCW, pContext, pSyncBlock, pTemplate);
+                    pSimpleWrap->InitNew(pServer, pWrapperCache, pNewCCW, pClassCCW, pSyncBlock, pTemplate);
 
                     InitSimpleWrapper(pNewCCW, pSimpleWrap);
 
@@ -2890,25 +2856,6 @@ VOID __stdcall InvokeICustomQueryInterfaceGetInterface_CallBack(LPVOID ptr)
         *(pArgs->pRetVal) = (CustomQueryInterfaceResult)GetInterface.Call_RetArgSlot(Args);
         GCPROTECT_END();
     }
-}
-
-VOID InvokeICustomQueryInterfaceGetInterface_AppDomainTransition(LPVOID ptr, ADID targetADID, Context *pTargetContext)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(ptr));
-    }
-    CONTRACTL_END;
-    Thread *pThread = GetThread();
-    GCX_COOP_THREAD_EXISTS(pThread);
-    pThread->DoContextCallBack(
-        targetADID,
-        pTargetContext,
-        (Context::ADCallBackFcnType)InvokeICustomQueryInterfaceGetInterface_CallBack,
-        ptr);
 }
 
 // Returns a covariant supertype of pMT with the given IID or NULL if not found.
@@ -3236,12 +3183,8 @@ bool ComCallWrapper::GetComIPFromCCW_HandleCustomQI(
 
     InvokeICustomQueryInterfaceGetInterfaceArgs args = {pWrap, &guid, ppUnkOut, &retVal};
 
-    ADID targetADID;
-    Context *pTargetContext;
-    if (pWrap->NeedToSwitchDomains(GetThread(), &targetADID, &pTargetContext))
-        InvokeICustomQueryInterfaceGetInterface_AppDomainTransition(&args, targetADID, pTargetContext);
-    else
-        InvokeICustomQueryInterfaceGetInterface_CallBack(&args);
+    InvokeICustomQueryInterfaceGetInterface_CallBack(&args);
+
     // return if user already handle the QI
     if (retVal == Handled)
         return true;

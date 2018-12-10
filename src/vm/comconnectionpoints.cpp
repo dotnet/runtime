@@ -19,30 +19,6 @@
 //      Implementation of helper class used to expose connection points
 //------------------------------------------------------------------------------------------
 
-void ConnectionPoint::Advise_Wrapper(LPVOID ptr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    Advise_Args *pArgs = (Advise_Args *)ptr;
-    pArgs->pThis->AdviseWorker(pArgs->pUnk, pArgs->pdwCookie);
-}
-
-void ConnectionPoint::Unadvise_Wrapper(LPVOID ptr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    Unadvise_Args *pArgs = (Unadvise_Args *)ptr;
-    pArgs->pThis->UnadviseWorker(pArgs->dwCookie);
-}
-
-void ConnectionPoint::GetConnectionPointContainer_Wrapper(LPVOID ptr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GetConnectionPointContainer_Args *pArgs = (GetConnectionPointContainer_Args *)ptr;
-    *pArgs->ppCPC = pArgs->pThis->GetConnectionPointContainerWorker();
-}
-
 ConnectionPoint::ConnectionPoint(ComCallWrapper *pWrap, MethodTable *pEventMT)
 : m_pOwnerWrap(pWrap)
 , m_pTCEProviderMT(pWrap->GetSimpleWrapper()->GetMethodTable())
@@ -212,19 +188,8 @@ HRESULT __stdcall ConnectionPoint::GetConnectionPointContainer(IConnectionPointC
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
-        Thread *pThread = GET_THREAD();
 
-        ADID targetADID;
-        Context *pTargetContext;
-        if (m_pOwnerWrap->NeedToSwitchDomains(pThread, &targetADID, &pTargetContext))
-        {
-            GetConnectionPointContainer_Args args = {this, ppCPC};
-            pThread->DoContextCallBack(targetADID, pTargetContext, GetConnectionPointContainer_Wrapper, &args);
-        }
-        else
-        {
-            *ppCPC = GetConnectionPointContainerWorker();
-        }
+        *ppCPC = GetConnectionPointContainerWorker();
     }
     END_EXTERNAL_ENTRYPOINT;
 
@@ -258,19 +223,8 @@ HRESULT __stdcall ConnectionPoint::Advise(IUnknown *pUnk, DWORD *pdwCookie)
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
-        Thread *pThread = GET_THREAD();
 
-        ADID targetADID;
-        Context *pTargetContext;
-        if (m_pOwnerWrap->NeedToSwitchDomains(pThread, &targetADID, &pTargetContext))
-        {
-            Advise_Args args = {this, pUnk, pdwCookie};
-            pThread->DoContextCallBack(targetADID, pTargetContext, Advise_Wrapper, &args); 
-        }
-        else
-        {
-            AdviseWorker(pUnk, pdwCookie);
-        }
+        AdviseWorker(pUnk, pdwCookie);
     }
     END_EXTERNAL_ENTRYPOINT;
     
@@ -299,19 +253,8 @@ HRESULT __stdcall ConnectionPoint::Unadvise(DWORD dwCookie)
     BEGIN_EXTERNAL_ENTRYPOINT(&hr)
     {
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
-        Thread *pThread = GET_THREAD();
 
-        ADID targetADID;
-        Context *pTargetContext;
-        if (m_pOwnerWrap->NeedToSwitchDomains(pThread, &targetADID, &pTargetContext))
-        {
-            Unadvise_Args args = {this, dwCookie};
-            pThread->DoContextCallBack(targetADID, pTargetContext, Unadvise_Wrapper, &args);
-        }
-        else
-        {
-            UnadviseWorker(dwCookie);
-        }
+        UnadviseWorker(dwCookie);
     }
     END_EXTERNAL_ENTRYPOINT;
 

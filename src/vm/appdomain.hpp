@@ -57,7 +57,6 @@ class CompilationDomain;
 class AppDomainEnum;
 class AssemblySink;
 class EEMarshalingData;
-class Context;
 class GlobalStringLiteralMap;
 class StringLiteralMap;
 class MngStdInterfacesInfo;
@@ -1811,7 +1810,6 @@ public:
 #endif
 
     DomainAssembly* FindDomainAssembly(Assembly*);
-    void EnterContext(Thread* pThread, Context* pCtx,ContextTransitionFrame *pFrame);
 
     //-----------------------------------------------------------------------------------------------------------------
     // Convenience wrapper for ::GetAppDomain to provide better encapsulation.
@@ -2612,12 +2610,6 @@ public:
         return m_dwThreadEnterCount==1 || m_dwThreadsStillInAppDomain ==1;
     }
 
-    Context *GetDefaultContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDefaultContext;
-    }
-
     BOOL CanLoadCode()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3100,9 +3092,6 @@ private:
     ULONG m_dwThreadsStillInAppDomain;
 
     Volatile<Stage> m_Stage;
-
-    // The default context for this domain
-    Context *m_pDefaultContext;
 
     ArrayList        m_failedAssemblies;
 

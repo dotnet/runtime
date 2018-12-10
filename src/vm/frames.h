@@ -281,8 +281,6 @@ FRAME_TYPE_NAME(AssumeByrefFromJITStack)
 #include "object.h"
 #include <stddef.h>
 #include "siginfo.hpp"
-// context headers
-#include "context.h"
 #include "method.hpp"
 #include "stackwalk.h"
 #include "stubmgr.h"
@@ -508,30 +506,10 @@ public:
         return (ptr != NULL) ? *PTR_PCODE(ptr) : NULL;
     }
 
-    virtual PTR_Context* GetReturnContextAddr()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return NULL;
-    }
-
-    Context *GetReturnContext()
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        PTR_Context* ppReturnContext = GetReturnContextAddr();
-        if (! ppReturnContext)
-            return NULL;
-        return *ppReturnContext;
-    }
-
     AppDomain *GetReturnDomain()
     {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        if (! GetReturnContext())
-            return NULL;
-        return GetReturnContext()->GetDomain();
+        LIMITED_METHOD_CONTRACT;
+        return NULL;
     }
 
 #ifndef DACCESS_COMPILE
@@ -547,34 +525,6 @@ public:
         TADDR ptr = GetReturnAddressPtr();
         _ASSERTE(ptr != NULL);
         *(TADDR*)ptr = val;
-    }
-
-#ifndef DACCESS_COMPILE
-    void SetReturnContext(Context *pReturnContext)
-    {
-        WRAPPER_NO_CONTRACT;
-        PTR_Context* ppReturnContext = GetReturnContextAddr();
-        _ASSERTE(ppReturnContext);
-        *ppReturnContext = pReturnContext;
-    }
-#endif
-
-    void SetReturnExecutionContext(OBJECTREF ref)
-    {
-        WRAPPER_NO_CONTRACT;
-        Object **pRef = GetReturnExecutionContextAddr();
-        if (pRef != NULL)
-            *pRef = OBJECTREFToObject(ref);
-    }
-
-    OBJECTREF GetReturnExecutionContext()
-    {
-        WRAPPER_NO_CONTRACT;
-        Object **pRef = GetReturnExecutionContextAddr();
-        if (pRef == NULL)
-            return NULL;
-        else
-            return ObjectToOBJECTREF(*pRef);
     }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -829,9 +779,6 @@ private:
 #if defined(DACCESS_COMPILE)
     friend class DacDbiInterfaceImpl;
 #endif // DACCESS_COMPILE
-#ifdef FEATURE_COMINTEROP
-    friend void COMToCLRWorkerBodyWithADTransition(Thread *pThread, ComMethodFrame *pFrame, ComCallWrapper *pWrap, UINT64 *pRetValOut);
-#endif // FEATURE_COMINTEROP
 
     PTR_Frame  Next()
     {
@@ -3113,8 +3060,6 @@ public:
 class ContextTransitionFrame : public Frame
 {
 private:
-    PTR_Context m_pReturnContext;
-    PTR_Object  m_ReturnExecutionContext;
     PTR_Object  m_LastThrownObjectInParentContext;                                        
     ULONG_PTR   m_LockCount;            // Number of locks the thread takes
                                         // before the transition.
@@ -3122,18 +3067,6 @@ private:
 
 public:
     virtual void GcScanRoots(promote_func *fn, ScanContext* sc);
-
-    virtual PTR_Context* GetReturnContextAddr()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return &m_pReturnContext;
-    }
-
-    virtual Object **GetReturnExecutionContextAddr()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (Object **) &m_ReturnExecutionContext;
-    }
 
     OBJECTREF GetLastThrownObjectInParentContext()
     {
@@ -3166,9 +3099,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     ContextTransitionFrame()
-    : m_pReturnContext(NULL)
-    , m_ReturnExecutionContext(NULL)
-    , m_LastThrownObjectInParentContext(NULL)
+    : m_LastThrownObjectInParentContext(NULL)
     , m_LockCount(0)
     {
         LIMITED_METHOD_CONTRACT;
