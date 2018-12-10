@@ -19,21 +19,6 @@
 
 #include "appdomain.hpp"
 
-inline  void AppDomain::EnterContext(Thread* pThread, Context* pCtx,ContextTransitionFrame *pFrame)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pThread));
-        PRECONDITION(CheckPointer(pCtx));
-        PRECONDITION(CheckPointer(pFrame));
-        PRECONDITION(pCtx->GetDomain()==this);
-    }
-    CONTRACTL_END;
-    pThread->EnterContextRestricted(pCtx,pFrame);
-};
-
 inline DomainAssembly* AppDomain::FindDomainAssembly(Assembly* assembly)
 {
     CONTRACTL

@@ -1967,10 +1967,6 @@ void ContextTransitionFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
-    // Don't check app domains here - m_ReturnExecutionContext is in the parent frame's app domain
-    (*fn)(dac_cast<PTR_PTR_Object>(PTR_HOST_MEMBER_TADDR(ContextTransitionFrame, this, m_ReturnExecutionContext)), sc, 0);
-    LOG((LF_GC, INFO3, "    " FMT_ADDR "\n", DBG_ADDR(m_ReturnExecutionContext) ));
-
     // Don't check app domains here - m_LastThrownObjectInParentContext is in the parent frame's app domain
     (*fn)(dac_cast<PTR_PTR_Object>(PTR_HOST_MEMBER_TADDR(ContextTransitionFrame, this, m_LastThrownObjectInParentContext)), sc, 0);
     LOG((LF_GC, INFO3, "    " FMT_ADDR "\n", DBG_ADDR(m_LastThrownObjectInParentContext) ));

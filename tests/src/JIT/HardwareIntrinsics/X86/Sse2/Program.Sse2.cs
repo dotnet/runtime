@@ -107,6 +107,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["ConvertToVector128Single.Vector128Double"] = ConvertToVector128SingleVector128Double,
                 ["ConvertToVector128Single.Vector128Int32"] = ConvertToVector128SingleVector128Int32,
                 ["ConvertScalarToVector128Double.Double"] = ConvertScalarToVector128DoubleDouble,
+                ["ConvertScalarToVector128Int32.Int32"] = ConvertScalarToVector128Int32Int32,
+                ["ConvertScalarToVector128UInt32.UInt32"] = ConvertScalarToVector128UInt32UInt32,
                 ["Divide.Double"] = DivideDouble,
                 ["DivideScalar.Double"] = DivideScalarDouble,
                 ["Extract.UInt16.1"] = ExtractUInt161,

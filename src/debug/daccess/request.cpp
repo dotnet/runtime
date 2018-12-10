@@ -768,7 +768,7 @@ ClrDataAccess::GetThreadData(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *
     threadData->fiberData = NULL;
 
     threadData->pFrame = PTR_CDADDR(thread->m_pFrame);
-    threadData->context = PTR_CDADDR(thread->m_Context);
+    threadData->context = PTR_CDADDR(thread->m_pDomain);
     threadData->domain = PTR_CDADDR(thread->m_pDomain);
     threadData->lockCount = thread->m_dwLockCount;
 #ifndef FEATURE_PAL
@@ -1417,8 +1417,7 @@ ClrDataAccess::GetDomainFromContext(CLRDATA_ADDRESS contextAddr, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
-    Context* context = PTR_Context(TO_TADDR(contextAddr));
-    *domain = HOST_CDADDR(context->GetDomain());
+    *domain = contextAddr; // Context is same as the AppDomain in CoreCLR
 
     SOSDacLeave();
     return hr;

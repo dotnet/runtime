@@ -101,7 +101,11 @@ static const char *dbg_channel_names[]=
 #ifdef FEATURE_PAL_SXS
   , "SXS"
 #endif // FEATURE_PAL_SXS
+  , "DCI_NUMA"
 };
+
+// Verify the number of elements in dbg_channel_names
+static_assert_no_msg(_countof(dbg_channel_names) == DCI_LAST);
 
 static const char *dbg_level_names[]=
 {

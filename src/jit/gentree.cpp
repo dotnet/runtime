@@ -7273,81 +7273,14 @@ GenTree* Compiler::gtCloneExpr(
 
         case GT_CALL:
 
-            copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
-
-            copy->gtCall.gtCallObjp = tree->gtCall.gtCallObjp
-                                          ? gtCloneExpr(tree->gtCall.gtCallObjp, addFlags, deepVarNum, deepVarVal)
-                                          : nullptr;
-            copy->gtCall.gtCallArgs =
-                tree->gtCall.gtCallArgs
-                    ? gtCloneExpr(tree->gtCall.gtCallArgs, addFlags, deepVarNum, deepVarVal)->AsArgList()
-                    : nullptr;
-            copy->gtCall.gtCallMoreFlags = tree->gtCall.gtCallMoreFlags;
-            copy->gtCall.gtCallLateArgs =
-                tree->gtCall.gtCallLateArgs
-                    ? gtCloneExpr(tree->gtCall.gtCallLateArgs, addFlags, deepVarNum, deepVarVal)->AsArgList()
-                    : nullptr;
-
-#if !FEATURE_FIXED_OUT_ARGS
-            copy->gtCall.regArgList      = tree->gtCall.regArgList;
-            copy->gtCall.regArgListCount = tree->gtCall.regArgListCount;
-#endif
-
-            // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
-            // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
-            // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
-            // because the inlinee still uses the inliner's memory allocator anyway.)
-            copy->gtCall.callSig = tree->gtCall.callSig;
-
-            copy->gtCall.gtCallType    = tree->gtCall.gtCallType;
-            copy->gtCall.gtReturnType  = tree->gtCall.gtReturnType;
-            copy->gtCall.gtControlExpr = tree->gtCall.gtControlExpr;
-
-            /* Copy the union */
-            if (tree->gtCall.gtCallType == CT_INDIRECT)
+            // We can't safely clone calls that have GT_RET_EXPRs via gtCloneExpr.
+            // You must use gtCloneCandidateCall for these calls (and then do appropriate other fixup)
+            if (tree->gtCall.IsInlineCandidate() || tree->gtCall.IsGuardedDevirtualizationCandidate())
             {
-                copy->gtCall.gtCallCookie =
-                    tree->gtCall.gtCallCookie ? gtCloneExpr(tree->gtCall.gtCallCookie, addFlags, deepVarNum, deepVarVal)
-                                              : nullptr;
-                copy->gtCall.gtCallAddr = tree->gtCall.gtCallAddr
-                                              ? gtCloneExpr(tree->gtCall.gtCallAddr, addFlags, deepVarNum, deepVarVal)
-                                              : nullptr;
-            }
-            else if (tree->gtCall.IsVirtualStub())
-            {
-                copy->gtCall.gtCallMethHnd      = tree->gtCall.gtCallMethHnd;
-                copy->gtCall.gtStubCallStubAddr = tree->gtCall.gtStubCallStubAddr;
-            }
-            else
-            {
-                copy->gtCall.gtCallMethHnd         = tree->gtCall.gtCallMethHnd;
-                copy->gtCall.gtInlineCandidateInfo = tree->gtCall.gtInlineCandidateInfo;
+                NO_WAY("Cloning of calls with associated GT_RET_EXPR nodes is not supported");
             }
 
-            if (tree->gtCall.fgArgInfo)
-            {
-                // Create and initialize the fgArgInfo for our copy of the call tree
-                copy->gtCall.fgArgInfo = new (this, CMK_Unknown) fgArgInfo(copy->AsCall(), tree->AsCall());
-            }
-            else
-            {
-                copy->gtCall.fgArgInfo = nullptr;
-            }
-            copy->gtCall.gtRetClsHnd = tree->gtCall.gtRetClsHnd;
-
-#if FEATURE_MULTIREG_RET
-            copy->gtCall.gtReturnTypeDesc = tree->gtCall.gtReturnTypeDesc;
-#endif
-
-#ifdef FEATURE_READYTORUN_COMPILER
-            copy->gtCall.setEntryPoint(tree->gtCall.gtEntryPoint);
-#endif
-
-#ifdef DEBUG
-            copy->gtCall.gtInlineObservation = tree->gtCall.gtInlineObservation;
-#endif
-
-            copy->AsCall()->CopyOtherRegFlags(tree->AsCall());
+            copy = gtCloneExprCallHelper(tree->AsCall(), addFlags, deepVarNum, deepVarVal);
             break;
 
         case GT_FIELD:
@@ -7483,6 +7416,131 @@ DONE:
     copy->gtRsvdRegs = tree->gtRsvdRegs;
     copy->CopyReg(tree);
     return copy;
+}
+
+//------------------------------------------------------------------------
+// gtCloneExprCallHelper: clone a call tree
+//
+// Notes:
+//    Do not invoke this method directly, instead call either gtCloneExpr
+//    or gtCloneCandidateCall, as appropriate.
+//
+// Arguments:
+//    tree - the call to clone
+//    addFlags - GTF_* flags to add to the copied tree nodes
+//    deepVarNum - lclNum to replace uses of beyond the root, or BAD_VAR_NUM for no replacement
+//    deepVarVal - If replacing beyond root, replace `deepVarNum` with IntCns `deepVarVal`
+//
+// Returns:
+//    Cloned copy of call and all subtrees.
+
+GenTreeCall* Compiler::gtCloneExprCallHelper(GenTreeCall* tree, unsigned addFlags, unsigned deepVarNum, int deepVarVal)
+{
+    GenTreeCall* copy = new (this, GT_CALL) GenTreeCall(tree->TypeGet());
+
+    copy->gtCallObjp = tree->gtCallObjp ? gtCloneExpr(tree->gtCallObjp, addFlags, deepVarNum, deepVarVal) : nullptr;
+    copy->gtCallArgs =
+        tree->gtCallArgs ? gtCloneExpr(tree->gtCallArgs, addFlags, deepVarNum, deepVarVal)->AsArgList() : nullptr;
+    copy->gtCallMoreFlags = tree->gtCallMoreFlags;
+    copy->gtCallLateArgs  = tree->gtCallLateArgs
+                               ? gtCloneExpr(tree->gtCallLateArgs, addFlags, deepVarNum, deepVarVal)->AsArgList()
+                               : nullptr;
+
+#if !FEATURE_FIXED_OUT_ARGS
+    copy->regArgList      = tree->regArgList;
+    copy->regArgListCount = tree->regArgListCount;
+#endif
+
+    // The call sig comes from the EE and doesn't change throughout the compilation process, meaning
+    // we only really need one physical copy of it. Therefore a shallow pointer copy will suffice.
+    // (Note that this still holds even if the tree we are cloning was created by an inlinee compiler,
+    // because the inlinee still uses the inliner's memory allocator anyway.)
+    copy->callSig = tree->callSig;
+
+    copy->gtCallType    = tree->gtCallType;
+    copy->gtReturnType  = tree->gtReturnType;
+    copy->gtControlExpr = tree->gtControlExpr;
+
+    /* Copy the union */
+    if (tree->gtCallType == CT_INDIRECT)
+    {
+        copy->gtCallCookie =
+            tree->gtCallCookie ? gtCloneExpr(tree->gtCallCookie, addFlags, deepVarNum, deepVarVal) : nullptr;
+        copy->gtCallAddr = tree->gtCallAddr ? gtCloneExpr(tree->gtCallAddr, addFlags, deepVarNum, deepVarVal) : nullptr;
+    }
+    else if (tree->IsVirtualStub())
+    {
+        copy->gtCallMethHnd      = tree->gtCallMethHnd;
+        copy->gtStubCallStubAddr = tree->gtStubCallStubAddr;
+    }
+    else
+    {
+        copy->gtCallMethHnd         = tree->gtCallMethHnd;
+        copy->gtInlineCandidateInfo = nullptr;
+    }
+
+    if (tree->fgArgInfo)
+    {
+        // Create and initialize the fgArgInfo for our copy of the call tree
+        copy->fgArgInfo = new (this, CMK_Unknown) fgArgInfo(copy, tree);
+    }
+    else
+    {
+        copy->fgArgInfo = nullptr;
+    }
+
+    copy->gtRetClsHnd = tree->gtRetClsHnd;
+
+#if FEATURE_MULTIREG_RET
+    copy->gtReturnTypeDesc = tree->gtReturnTypeDesc;
+#endif
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    copy->setEntryPoint(tree->gtEntryPoint);
+#endif
+
+#if defined(DEBUG) || defined(INLINE_DATA)
+    copy->gtInlineObservation = tree->gtInlineObservation;
+    copy->gtRawILOffset       = tree->gtCall.gtRawILOffset;
+#endif
+
+    copy->CopyOtherRegFlags(tree);
+
+    return copy;
+}
+
+//------------------------------------------------------------------------
+// gtCloneCandidateCall: clone a call that is an inline or guarded
+//    devirtualization candidate (~ any call that can have a GT_RET_EXPR)
+//
+// Notes:
+//    If the call really is a candidate, the caller must take additional steps
+//    after cloning to re-establish candidate info and the relationship between
+//    the candidate and any associated GT_RET_EXPR.
+//
+// Arguments:
+//    call - the call to clone
+//
+// Returns:
+//    Cloned copy of call and all subtrees.
+
+GenTreeCall* Compiler::gtCloneCandidateCall(GenTreeCall* call)
+{
+    assert(call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate());
+
+    GenTreeCall* result = gtCloneExprCallHelper(call);
+
+    // There is some common post-processing in gtCloneExpr that we reproduce
+    // here, for the fields that make sense for candidate calls.
+    result->gtFlags |= call->gtFlags;
+
+#if defined(DEBUG)
+    result->gtDebugFlags |= (call->gtDebugFlags & ~GTF_DEBUG_NODE_MASK);
+#endif
+
+    result->CopyReg(call);
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -9334,9 +9392,22 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 goto DASH;
 
             case GT_CALL:
-                if (tree->gtFlags & GTF_CALL_INLINE_CANDIDATE)
+                if (tree->gtCall.IsInlineCandidate())
                 {
-                    printf("I");
+                    if (tree->gtCall.IsGuardedDevirtualizationCandidate())
+                    {
+                        printf("&");
+                    }
+                    else
+                    {
+                        printf("I");
+                    }
+                    --msgLength;
+                    break;
+                }
+                else if (tree->gtCall.IsGuardedDevirtualizationCandidate())
+                {
+                    printf("G");
                     --msgLength;
                     break;
                 }
@@ -12065,7 +12136,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     // Compare the two method tables
     GenTree* const compare = gtCreateHandleCompare(oper, objMT, knownMT, typeCheckInliningResult);
 
-    // Drop any any now irrelevant flags
+    // Drop any now irrelevant flags
     compare->gtFlags |= tree->gtFlags & (GTF_RELOP_JMP_USED | GTF_RELOP_QMARK | GTF_DONT_CSE);
 
     // And we're done

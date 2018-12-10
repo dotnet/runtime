@@ -2182,12 +2182,10 @@ ComCallWrapper* GetCCWFromIUnknown(IUnknown* pUnk, BOOL bEnableCustomization)
     RETURN pWrap;
 }
 
-
-HRESULT LoadRegTypeLibWithFlags(REFGUID guid, 
-                                unsigned short wVerMajor,
-                                unsigned short wVerMinor,
-                                int flags,
-                                ITypeLib**  pptlib)
+HRESULT LoadRegTypeLib(_In_ REFGUID guid,
+                       _In_ unsigned short wVerMajor,
+                       _In_ unsigned short wVerMinor,
+                       _Outptr_ ITypeLib **pptlib)
 {
     CONTRACTL
     {
@@ -2207,6 +2205,15 @@ HRESULT LoadRegTypeLibWithFlags(REFGUID guid,
     EX_TRY
     {
         hr = QueryPathOfRegTypeLib(guid, wVerMajor, wVerMinor, LOCALE_USER_DEFAULT, &wzPath);
+        if (SUCCEEDED(hr))
+        {
+#ifdef _WIN64
+            REGKIND rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_64BIT);
+#else
+            REGKIND rk = (REGKIND)(REGKIND_NONE | LOAD_TLB_AS_32BIT);
+#endif // _WIN64
+            hr = LoadTypeLibEx(wzPath, rk, pptlib);
+        }
     }
     EX_CATCH
     {
@@ -2214,31 +2221,8 @@ HRESULT LoadRegTypeLibWithFlags(REFGUID guid,
     }
     EX_END_CATCH(SwallowAllExceptions);
 
-    if (FAILED(hr))
-        return hr;
-
-    hr = LoadTypeLibExWithFlags(wzPath, flags, pptlib);
-    
     return hr;
 }
-
-
-HRESULT LoadTypeLibExWithFlags(LPCOLESTR  szFile, 
-                               int  flags,
-                               ITypeLib**  pptlib)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return E_FAIL;
-}
-
-
 
 // HRESULT for CLR created IErrorInfo pointers are accessible
 // from the enclosing simple wrapper
