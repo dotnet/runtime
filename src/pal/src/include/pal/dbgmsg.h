@@ -195,6 +195,9 @@ typedef enum
     DCI_SXS,
 #endif // FEATURE_PAL_SXS
     DCI_NUMA,
+    // Please make sure to update dbg_channel_names when adding entries here.
+
+    // Do not remove this line, as it indicates the end of the list
     DCI_LAST
 } DBG_CHANNEL_ID;
 
