@@ -30,17 +30,23 @@ namespace System.Net.Http.Functional.Tests
 
         protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler)
         {
+            HttpClientHandler handler;
+
             if (PlatformDetection.IsUap || PlatformDetection.IsFullFramework || useSocketsHttpHandler)
             {
-                return new HttpClientHandler();
+                handler = new HttpClientHandler();
+            }
+            else
+            {
+                // Create platform specific handler.
+                ConstructorInfo ctor = typeof(HttpClientHandler).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(bool) }, null);
+                Debug.Assert(ctor != null, "Couldn't find test constructor on HttpClientHandler");
+
+                handler = (HttpClientHandler)ctor.Invoke(new object[] { useSocketsHttpHandler });
+                Debug.Assert(useSocketsHttpHandler == IsSocketsHttpHandler(handler), "Unexpected handler.");
             }
 
-            // Create platform specific handler.
-            ConstructorInfo ctor = typeof(HttpClientHandler).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(bool) }, null);
-            Debug.Assert(ctor != null, "Couldn't find test constructor on HttpClientHandler");
-
-            HttpClientHandler handler = (HttpClientHandler)ctor.Invoke(new object[] { useSocketsHttpHandler });
-            Debug.Assert(useSocketsHttpHandler == IsSocketsHttpHandler(handler), "Unexpected handler.");
+            TestHelper.EnsureHttp2Feature(handler);
 
             return handler;
         }
