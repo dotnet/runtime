@@ -7456,43 +7456,16 @@ mono_ldstr_metadata_sig (MonoDomain *domain, const char* sig, MonoError *error)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
-	const char *str = sig;
-	MonoString *o, *interned;
-	size_t len2;
 
-	len2 = mono_metadata_decode_blob_size (str, &str);
-	len2 >>= 1;
-
-	o = mono_string_new_utf16_checked (domain, (gunichar2*)str, len2, error);
+	const gsize len = mono_metadata_decode_blob_size (sig, &sig) / sizeof (gunichar2);
+	MonoString *o = mono_string_new_utf16_checked (domain, (gunichar2*)sig, len, error);
 	return_val_if_nok (error, NULL);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
-	{
-		int i;
-		gunichar2 *p2 = (gunichar2*)mono_string_chars_internal (o);
-		for (i = 0; i < len2; ++i) {
-			*p2 = GUINT16_FROM_LE (*p2);
-			++p2;
-		}
-	}
+	gunichar2 *p = mono_string_chars_internal (o);
+	for (gsize i = 0; i < len; ++i)
+		p [i] = GUINT16_FROM_LE (p [i]);
 #endif
-	ldstr_lock ();
-	interned = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, o);
-	ldstr_unlock ();
-	if (interned)
-		return interned; /* o will get garbage collected */
-
-	o = mono_string_get_pinned (o, error);
-	if (o) {
-		ldstr_lock ();
-		interned = (MonoString *)mono_g_hash_table_lookup (domain->ldstr_table, o);
-		if (!interned) {
-			mono_g_hash_table_insert (domain->ldstr_table, o, o);
-			interned = o;
-		}
-		ldstr_unlock ();
-	}
-
-	return interned;
+	return mono_string_intern_checked (o, error);
 }
 
 /*
