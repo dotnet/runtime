@@ -195,10 +195,10 @@ HANDLES(APPDOM_21, "getRootDomain", ves_icall_System_AppDomain_getRootDomain, Mo
 HANDLES(APPDOM_22, "getSetup", ves_icall_System_AppDomain_getSetup, MonoAppDomainSetup, 1, (MonoAppDomain))
 
 ICALL_TYPE(ARGI, "System.ArgIterator", ARGI_1)
-ICALL(ARGI_1, "IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg)
-ICALL(ARGI_2, "IntGetNextArg(intptr)", mono_ArgIterator_IntGetNextArgT)
-ICALL(ARGI_3, "IntGetNextArgType",                mono_ArgIterator_IntGetNextArgType)
-ICALL(ARGI_4, "Setup",                            mono_ArgIterator_Setup)
+NOHANDLES(ICALL(ARGI_1, "IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg))
+NOHANDLES(ICALL(ARGI_2, "IntGetNextArg(intptr)", mono_ArgIterator_IntGetNextArgT))
+NOHANDLES(ICALL(ARGI_3, "IntGetNextArgType",                mono_ArgIterator_IntGetNextArgType))
+NOHANDLES(ICALL(ARGI_4, "Setup",                            mono_ArgIterator_Setup))
 
 ICALL_TYPE(ARRAY, "System.Array", ARRAY_1)
 HANDLES(ARRAY_1, "ClearInternal", ves_icall_System_Array_ClearInternal, void, 3, (MonoArray, int, int))
