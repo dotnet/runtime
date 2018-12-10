@@ -484,7 +484,7 @@ namespace System.Net.Http
                 }
             }
 
-            sealed class Http2ReadStream : BaseAsyncStream
+            private sealed class Http2ReadStream : BaseAsyncStream
             {
                 private readonly Http2Stream _http2Stream;
                 private int _disposed; // 0==no, 1==yes
@@ -525,7 +525,7 @@ namespace System.Net.Http
             }
 
 
-            sealed class Http2WriteStream : BaseAsyncStream
+            private sealed class Http2WriteStream : BaseAsyncStream
             {
                 private readonly Http2Stream _http2Stream;
                 private int _disposed; // 0==no, 1==yes
