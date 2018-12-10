@@ -114,14 +114,8 @@ namespace System.Diagnostics.Tracing
                 else if (parameterType == typeof(string))
                 {
                     ReadOnlySpan<char> charPayload = MemoryMarshal.Cast<byte, char>(payload);
-                    int charCount = 0;
-                    foreach(char c in charPayload)
-                    {
-                        if (c == '\0')
-                            break;
-                        charCount++;
-                    }
-                    string val = new string(charPayload.ToArray(), 0, charCount);
+                    int charCount = charPayload.IndexOf('\0');
+                    string val = new string(charCount >= 0 ? charPayload.Slice(0, charCount) : charPayload);
                     payload = payload.Slice((val.Length + 1) * sizeof(char));
                     decodedFields[i] = val;
                 }

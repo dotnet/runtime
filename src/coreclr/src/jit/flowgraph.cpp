@@ -5892,6 +5892,21 @@ void Compiler::fgFindBasicBlocks()
             {
                 // This temp should already have the type of the return value.
                 JITDUMP("\nInliner: re-using pre-existing spill temp V%02u\n", lvaInlineeReturnSpillTemp);
+
+                if (info.compRetType == TYP_REF)
+                {
+                    // We may have co-opted an existing temp for the return spill.
+                    // We likely assumed it was single-def at the time, but now
+                    // we can see it has multiple definitions.
+                    if ((retBlocks > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
+                    {
+                        // Make sure it is no longer marked single def. This is only safe
+                        // to do if we haven't ever updated the type.
+                        assert(!lvaTable[lvaInlineeReturnSpillTemp].lvClassInfoUpdated);
+                        JITDUMP("Marked return spill temp V%02u as NOT single def temp\n", lvaInlineeReturnSpillTemp);
+                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 0;
+                    }
+                }
             }
             else
             {
@@ -21859,43 +21874,58 @@ void Compiler::fgInline()
 
     do
     {
-        /* Make the current basic block address available globally */
-
+        // Make the current basic block address available globally
         compCurBB = block;
 
-        GenTreeStmt* stmt;
-        GenTree*     expr;
-
-        for (stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
+        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
         {
-            expr = stmt->gtStmtExpr;
 
-            // See if we can expand the inline candidate
-            if ((expr->gtOper == GT_CALL) && ((expr->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0))
+#ifdef DEBUG
+            // In debug builds we want the inline tree to show all failed
+            // inlines. Some inlines may fail very early and never make it to
+            // candidate stage. So scan the tree looking for those early failures.
+            fgWalkTreePre(&stmt->gtStmtExpr, fgFindNonInlineCandidate, stmt);
+#endif
+
+            GenTree* expr = stmt->gtStmtExpr;
+
+            // The importer ensures that all inline candidates are
+            // statement expressions.  So see if we have a call.
+            if (expr->IsCall())
             {
                 GenTreeCall* call = expr->AsCall();
-                InlineResult inlineResult(this, call, stmt, "fgInline");
 
-                fgMorphStmt = stmt;
-
-                fgMorphCallInline(call, &inlineResult);
-
-                if (stmt->gtStmtExpr->IsNothingNode())
+                // We do. Is it an inline candidate?
+                //
+                // Note we also process GuardeDevirtualizationCandidates here as we've
+                // split off GT_RET_EXPRs for them even when they are not inline candidates
+                // as we need similar processing to ensure they get patched back to where
+                // they belong.
+                if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
                 {
-                    fgRemoveStmt(block, stmt);
-                    continue;
+                    InlineResult inlineResult(this, call, stmt, "fgInline");
+
+                    fgMorphStmt = stmt;
+
+                    fgMorphCallInline(call, &inlineResult);
+
+                    // fgMorphCallInline may have updated the
+                    // statement expression to a GT_NOP if the
+                    // call returned a value, regardless of
+                    // whether the inline succeeded or failed.
+                    //
+                    // If so, remove the GT_NOP and continue
+                    // on with the next statement.
+                    if (stmt->gtStmtExpr->IsNothingNode())
+                    {
+                        fgRemoveStmt(block, stmt);
+                        continue;
+                    }
                 }
             }
-            else
-            {
-#ifdef DEBUG
-                // Look for non-candidates.
-                fgWalkTreePre(&stmt->gtStmtExpr, fgFindNonInlineCandidate, stmt);
-#endif
-            }
 
-            // See if we need to replace the return value place holder.
-            // Also, see if this update enables further devirtualization.
+            // See if we need to replace some return value place holders.
+            // Also, see if this replacement enables further devirtualization.
             //
             // Note we have both preorder and postorder callbacks here.
             //
@@ -22008,6 +22038,11 @@ Compiler::fgWalkResult Compiler::fgFindNonInlineCandidate(GenTree** pTree, fgWal
 
 void Compiler::fgNoteNonInlineCandidate(GenTreeStmt* stmt, GenTreeCall* call)
 {
+    if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
+    {
+        return;
+    }
+
     InlineResult      inlineResult(this, call, nullptr, "fgNotInlineCandidate");
     InlineObservation currentObservation = InlineObservation::CALLSITE_NOT_CANDIDATE;
 
@@ -22471,10 +22506,11 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             }
 #endif // DEBUG
 
-            CORINFO_METHOD_HANDLE  method      = call->gtCallMethHnd;
-            unsigned               methodFlags = 0;
-            CORINFO_CONTEXT_HANDLE context     = nullptr;
-            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr);
+            CORINFO_METHOD_HANDLE  method                 = call->gtCallMethHnd;
+            unsigned               methodFlags            = 0;
+            CORINFO_CONTEXT_HANDLE context                = nullptr;
+            const bool             isLateDevirtualization = true;
+            comp->impDevirtualizeCall(call, &method, &methodFlags, &context, nullptr, isLateDevirtualization);
         }
     }
     else if (tree->OperGet() == GT_ASG)
@@ -25505,435 +25541,6 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     fgRemoveRefPred(callFinally, block);
 
     return true;
-}
-
-// FatCalliTransformer transforms calli that can use fat function pointer.
-// Fat function pointer is pointer with the second least significant bit set,
-// if the bit is set, the pointer (after clearing the bit) actually points to
-// a tuple <method pointer, instantiation argument pointer> where
-// instantiationArgument is a hidden first argument required by method pointer.
-//
-// Fat pointers are used in CoreRT as a replacement for instantiating stubs,
-// because CoreRT can't generate stubs in runtime.
-//
-// Jit is responsible for the checking the bit, do the regular call if it is not set
-// or load hidden argument, fix the pointer and make a call with the fixed pointer and
-// the instantiation argument.
-//
-// before:
-//   current block
-//   {
-//     previous statements
-//     transforming statement
-//     {
-//       call with GTF_CALL_M_FAT_POINTER_CHECK flag set in function ptr
-//     }
-//     subsequent statements
-//   }
-//
-// after:
-//   current block
-//   {
-//     previous statements
-//   } BBJ_NONE check block
-//   check block
-//   {
-//     jump to else if function ptr has GTF_CALL_M_FAT_POINTER_CHECK set.
-//   } BBJ_COND then block, else block
-//   then block
-//   {
-//     original statement
-//   } BBJ_ALWAYS remainder block
-//   else block
-//   {
-//     unset GTF_CALL_M_FAT_POINTER_CHECK
-//     load actual function pointer
-//     load instantiation argument
-//     create newArgList = (instantiation argument, original argList)
-//     call (actual function pointer, newArgList)
-//   } BBJ_NONE remainder block
-//   remainder block
-//   {
-//     subsequent statements
-//   }
-//
-class FatCalliTransformer
-{
-public:
-    FatCalliTransformer(Compiler* compiler) : compiler(compiler)
-    {
-    }
-
-    //------------------------------------------------------------------------
-    // Run: run transformation for each block.
-    //
-    void Run()
-    {
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
-        {
-            TransformBlock(block);
-        }
-    }
-
-private:
-    //------------------------------------------------------------------------
-    // TransformBlock: look through statements and transform statements with fat pointer calls.
-    //
-    void TransformBlock(BasicBlock* block)
-    {
-        for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
-        {
-            if (ContainsFatCalli(stmt))
-            {
-                StatementTransformer stmtTransformer(compiler, block, stmt);
-                stmtTransformer.Run();
-            }
-        }
-    }
-
-    //------------------------------------------------------------------------
-    // ContainsFatCalli: check does this statement contain fat pointer call.
-    //
-    // Checks fatPointerCandidate in form of call() or lclVar = call().
-    //
-    // Return Value:
-    //    true if contains, false otherwise.
-    //
-    bool ContainsFatCalli(GenTreeStmt* stmt)
-    {
-        GenTree* fatPointerCandidate = stmt->gtStmtExpr;
-        if (fatPointerCandidate->OperIs(GT_ASG))
-        {
-            fatPointerCandidate = fatPointerCandidate->gtGetOp2();
-        }
-        return fatPointerCandidate->IsCall() && fatPointerCandidate->AsCall()->IsFatPointerCandidate();
-    }
-
-    class StatementTransformer
-    {
-    public:
-        StatementTransformer(Compiler* compiler, BasicBlock* block, GenTreeStmt* stmt)
-            : compiler(compiler), currBlock(block), stmt(stmt)
-        {
-            remainderBlock  = nullptr;
-            checkBlock      = nullptr;
-            thenBlock       = nullptr;
-            elseBlock       = nullptr;
-            doesReturnValue = stmt->gtStmtExpr->OperIs(GT_ASG);
-            origCall        = GetCall(stmt);
-            fptrAddress     = origCall->gtCallAddr;
-            pointerType     = fptrAddress->TypeGet();
-        }
-
-        //------------------------------------------------------------------------
-        // Run: transform the statement as described above.
-        //
-        void Run()
-        {
-            ClearFatFlag();
-            CreateRemainder();
-            CreateCheck();
-            CreateThen();
-            CreateElse();
-
-            RemoveOldStatement();
-            SetWeights();
-            ChainFlow();
-        }
-
-    private:
-        //------------------------------------------------------------------------
-        // GetCall: find a call in a statement.
-        //
-        // Arguments:
-        //    callStmt - the statement with the call inside.
-        //
-        // Return Value:
-        //    call tree node pointer.
-        GenTreeCall* GetCall(GenTreeStmt* callStmt)
-        {
-            GenTree*     tree = callStmt->gtStmtExpr;
-            GenTreeCall* call = nullptr;
-            if (doesReturnValue)
-            {
-                assert(tree->OperIs(GT_ASG));
-                call = tree->gtGetOp2()->AsCall();
-            }
-            else
-            {
-                call = tree->AsCall(); // call with void return type.
-            }
-            return call;
-        }
-
-        //------------------------------------------------------------------------
-        // ClearFatFlag: clear fat pointer candidate flag from the original call.
-        //
-        void ClearFatFlag()
-        {
-            origCall->ClearFatPointerCandidate();
-        }
-
-        //------------------------------------------------------------------------
-        // CreateRemainder: split current block at the fat call stmt and
-        // insert statements after the call into remainderBlock.
-        //
-        void CreateRemainder()
-        {
-            remainderBlock          = compiler->fgSplitBlockAfterStatement(currBlock, stmt);
-            unsigned propagateFlags = currBlock->bbFlags & BBF_GC_SAFE_POINT;
-            remainderBlock->bbFlags |= BBF_JMP_TARGET | BBF_HAS_LABEL | propagateFlags;
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create check block, that checks fat pointer bit set.
-        //
-        void CreateCheck()
-        {
-            checkBlock               = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
-            GenTree* fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
-            GenTree* fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
-            GenTree* fatPointerAnd   = compiler->gtNewOperNode(GT_AND, TYP_I_IMPL, fptrAddressCopy, fatPointerMask);
-            GenTree* zero            = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
-            GenTree* fatPointerCmp   = compiler->gtNewOperNode(GT_NE, TYP_INT, fatPointerAnd, zero);
-            GenTree* jmpTree         = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, fatPointerCmp);
-            GenTree* jmpStmt         = compiler->fgNewStmtFromTree(jmpTree, stmt->gtStmt.gtStmtILoffsx);
-            compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create then block, that is executed if call address is not fat pointer.
-        //
-        void CreateThen()
-        {
-            thenBlock               = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
-            GenTree* nonFatCallStmt = compiler->gtCloneExpr(stmt)->AsStmt();
-            compiler->fgInsertStmtAtEnd(thenBlock, nonFatCallStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create else block, that is executed if call address is fat pointer.
-        //
-        void CreateElse()
-        {
-            elseBlock = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
-
-            GenTree* fixedFptrAddress  = GetFixedFptrAddress();
-            GenTree* actualCallAddress = compiler->gtNewOperNode(GT_IND, pointerType, fixedFptrAddress);
-            GenTree* hiddenArgument    = GetHiddenArgument(fixedFptrAddress);
-
-            GenTreeStmt* fatStmt = CreateFatCallStmt(actualCallAddress, hiddenArgument);
-            compiler->fgInsertStmtAtEnd(elseBlock, fatStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateAndInsertBasicBlock: ask compiler to create new basic block.
-        // and insert in into the basic block list.
-        //
-        // Arguments:
-        //    jumpKind - jump kind for the new basic block
-        //    insertAfter - basic block, after which compiler has to insert the new one.
-        //
-        // Return Value:
-        //    new basic block.
-        BasicBlock* CreateAndInsertBasicBlock(BBjumpKinds jumpKind, BasicBlock* insertAfter)
-        {
-            BasicBlock* block = compiler->fgNewBBafter(jumpKind, insertAfter, true);
-            if ((insertAfter->bbFlags & BBF_INTERNAL) == 0)
-            {
-                block->bbFlags &= ~BBF_INTERNAL;
-                block->bbFlags |= BBF_IMPORTED;
-            }
-            return block;
-        }
-
-        //------------------------------------------------------------------------
-        // GetFixedFptrAddress: clear fat pointer bit from fat pointer address.
-        //
-        // Return Value:
-        //    address without fat pointer bit set.
-        GenTree* GetFixedFptrAddress()
-        {
-            GenTree* fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
-            GenTree* fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
-            return compiler->gtNewOperNode(GT_SUB, pointerType, fptrAddressCopy, fatPointerMask);
-        }
-
-        //------------------------------------------------------------------------
-        // GetHiddenArgument: load hidden argument.
-        //
-        // Arguments:
-        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgumentPointer>
-        //
-        // Return Value:
-        //    generic context hidden argument.
-        GenTree* GetHiddenArgument(GenTree* fixedFptrAddress)
-        {
-            GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
-            GenTree* wordSize = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
-            GenTree* hiddenArgumentPtrPtr =
-                compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
-            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_IND, pointerType, hiddenArgumentPtrPtr);
-            return compiler->gtNewOperNode(GT_IND, fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateFatCallStmt: create call with fixed call address and hidden argument in the args list.
-        //
-        // Arguments:
-        //    actualCallAddress - fixed call address
-        //    hiddenArgument - generic context hidden argument
-        //
-        // Return Value:
-        //    created call node.
-        GenTreeStmt* CreateFatCallStmt(GenTree* actualCallAddress, GenTree* hiddenArgument)
-        {
-            GenTreeStmt* fatStmt = compiler->gtCloneExpr(stmt)->AsStmt();
-            GenTree*     fatTree = fatStmt->gtStmtExpr;
-            GenTreeCall* fatCall = GetCall(fatStmt);
-            fatCall->gtCallAddr  = actualCallAddress;
-            AddHiddenArgument(fatCall, hiddenArgument);
-            return fatStmt;
-        }
-
-        //------------------------------------------------------------------------
-        // AddHiddenArgument: add hidden argument to the call argument list.
-        //
-        // Arguments:
-        //    fatCall - fat call node
-        //    hiddenArgument - generic context hidden argument
-        //
-        void AddHiddenArgument(GenTreeCall* fatCall, GenTree* hiddenArgument)
-        {
-            GenTreeArgList* oldArgs = fatCall->gtCallArgs;
-            GenTreeArgList* newArgs;
-#if USER_ARGS_COME_LAST
-            if (fatCall->HasRetBufArg())
-            {
-                GenTree*        retBuffer = oldArgs->Current();
-                GenTreeArgList* rest      = oldArgs->Rest();
-                newArgs                   = compiler->gtNewListNode(hiddenArgument, rest);
-                newArgs                   = compiler->gtNewListNode(retBuffer, newArgs);
-            }
-            else
-            {
-                newArgs = compiler->gtNewListNode(hiddenArgument, oldArgs);
-            }
-#else
-            newArgs = oldArgs;
-            AddArgumentToTail(newArgs, hiddenArgument);
-#endif
-            fatCall->gtCallArgs = newArgs;
-        }
-
-        //------------------------------------------------------------------------
-        // AddArgumentToTail: add hidden argument to the tail of the call argument list.
-        //
-        // Arguments:
-        //    argList - fat call node
-        //    hiddenArgument - generic context hidden argument
-        //
-        void AddArgumentToTail(GenTreeArgList* argList, GenTree* hiddenArgument)
-        {
-            GenTreeArgList* iterator = argList;
-            while (iterator->Rest() != nullptr)
-            {
-                iterator = iterator->Rest();
-            }
-            iterator->Rest() = compiler->gtNewArgList(hiddenArgument);
-        }
-
-        //------------------------------------------------------------------------
-        // RemoveOldStatement: remove original stmt from current block.
-        //
-        void RemoveOldStatement()
-        {
-            compiler->fgRemoveStmt(currBlock, stmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SetWeights: set weights for new blocks.
-        //
-        void SetWeights()
-        {
-            remainderBlock->inheritWeight(currBlock);
-            checkBlock->inheritWeight(currBlock);
-            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
-            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
-        }
-
-        //------------------------------------------------------------------------
-        // ChainFlow: link new blocks into correct cfg.
-        //
-        void ChainFlow()
-        {
-            assert(!compiler->fgComputePredsDone);
-            checkBlock->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest  = remainderBlock;
-        }
-
-        Compiler*    compiler;
-        BasicBlock*  currBlock;
-        BasicBlock*  remainderBlock;
-        BasicBlock*  checkBlock;
-        BasicBlock*  thenBlock;
-        BasicBlock*  elseBlock;
-        GenTreeStmt* stmt;
-        GenTreeCall* origCall;
-        GenTree*     fptrAddress;
-        var_types    pointerType;
-        bool         doesReturnValue;
-
-        const int FAT_POINTER_MASK = 0x2;
-        const int HIGH_PROBABILITY = 80;
-    };
-
-    Compiler* compiler;
-};
-
-#ifdef DEBUG
-
-//------------------------------------------------------------------------
-// fgDebugCheckFatPointerCandidates: callback to make sure there are no more GTF_CALL_M_FAT_POINTER_CHECK calls.
-//
-Compiler::fgWalkResult Compiler::fgDebugCheckFatPointerCandidates(GenTree** pTree, fgWalkData* data)
-{
-    GenTree* tree = *pTree;
-    if (tree->IsCall())
-    {
-        assert(!tree->AsCall()->IsFatPointerCandidate());
-    }
-    return WALK_CONTINUE;
-}
-
-//------------------------------------------------------------------------
-// CheckNoFatPointerCandidatesLeft: walk through blocks and check that there are no fat pointer candidates left.
-//
-void Compiler::CheckNoFatPointerCandidatesLeft()
-{
-    assert(!doesMethodHaveFatPointer());
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
-    {
-        for (GenTreeStmt* stmt = fgFirstBB->firstStmt(); stmt != nullptr; stmt = stmt->gtNextStmt)
-        {
-            fgWalkTreePre(&stmt->gtStmtExpr, fgDebugCheckFatPointerCandidates);
-        }
-    }
-}
-#endif
-
-//------------------------------------------------------------------------
-// fgTransformFatCalli: find and transform fat calls.
-//
-void Compiler::fgTransformFatCalli()
-{
-    assert(IsTargetAbi(CORINFO_CORERT_ABI));
-    FatCalliTransformer fatCalliTransformer(this);
-    fatCalliTransformer.Run();
-    clearMethodHasFatPointer();
-#ifdef DEBUG
-    CheckNoFatPointerCandidatesLeft();
-#endif
 }
 
 //------------------------------------------------------------------------

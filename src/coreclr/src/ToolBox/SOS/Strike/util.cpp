@@ -1327,18 +1327,6 @@ void DisplayThreadStatic(DacpModuleData* pModule, DacpMethodTableData* pMT, Dacp
         {   
             CLRDATA_ADDRESS appDomainAddr = vThread.domain;
 
-            // Get the DLM (we need this to check the ClassInit flags).
-            // It's annoying that we have to issue one request for
-            // domain-neutral modules and domain-specific modules.
-            DacpDomainLocalModuleData vDomainLocalModule;                
-            if (g_sos->GetDomainLocalModuleDataFromModule(pMT->Module, &vDomainLocalModule) != S_OK)
-            {
-                // Not initialized, go to next thread
-                // and continue looping
-                CurThread = vThread.nextThread;
-                continue;
-            }
-
             // Get the TLM
             DacpThreadLocalModuleData vThreadLocalModule;
             if (g_sos->GetThreadLocalModuleData(CurThread, (int)dwModuleIndex, &vThreadLocalModule) != S_OK)
@@ -1361,17 +1349,6 @@ void DisplayThreadStatic(DacpModuleData* pModule, DacpMethodTableData* pMT, Dacp
                 continue;
             }
 
-            Flags = 0;
-            GetDLMFlags(&vDomainLocalModule, pMT, &Flags);
-
-            if ((Flags&1) == 0) 
-            {
-                // Not initialized, go to next thread
-                // and continue looping
-                CurThread = vThread.nextThread;
-                continue;
-            }
-            
             ExtOut(" %x:", vThread.osThreadId);
             DisplayDataMember(pFD, dwTmp, FALSE);               
         }
@@ -2702,7 +2679,8 @@ DWORD_PTR *ModuleFromName(__in_opt LPSTR mName, int *numModule)
     ArrayHolder<CLRDATA_ADDRESS> pAssemblyArray = NULL;
     ArrayHolder<CLRDATA_ADDRESS> pModules = NULL;
     int arrayLength = 0;
-    if (!ClrSafeInt<int>::addition(adsData.DomainCount, 2, arrayLength))
+    int numSpecialDomains = (adsData.sharedDomain != NULL) ? 2 : 1;
+    if (!ClrSafeInt<int>::addition(adsData.DomainCount, numSpecialDomains, arrayLength))
     {
         ExtOut("<integer overflow>\n");
         return NULL;
@@ -2716,8 +2694,11 @@ DWORD_PTR *ModuleFromName(__in_opt LPSTR mName, int *numModule)
     }
 
     pArray[0] = adsData.systemDomain;
-    pArray[1] = adsData.sharedDomain;
-    if (g_sos->GetAppDomainList(adsData.DomainCount, pArray.GetPtr()+2, NULL)!=S_OK)
+    if (adsData.sharedDomain != NULL)
+    {
+        pArray[1] = adsData.sharedDomain;
+    }
+    if (g_sos->GetAppDomainList(adsData.DomainCount, pArray.GetPtr()+numSpecialDomains, NULL)!=S_OK)
     {
         ExtOut("Unable to get array of AppDomains\n");
         return NULL;
@@ -2743,7 +2724,7 @@ DWORD_PTR *ModuleFromName(__in_opt LPSTR mName, int *numModule)
     char fileName[sizeof(StringData)/2];
     
     // Search all domains to find a module
-    for (int n = 0; n < adsData.DomainCount+2; n++)
+    for (int n = 0; n < adsData.DomainCount+numSpecialDomains; n++)
     {
         if (IsInterrupt())
         {
@@ -3481,7 +3462,8 @@ void GetDomainList (DWORD_PTR *&domainList, int &numDomain)
     // Do prefast integer checks before the malloc.
     size_t AllocSize;
     LONG DomainAllocCount;
-    if (!ClrSafeInt<LONG>::addition(adsData.DomainCount, 2, DomainAllocCount) ||
+    LONG NumExtraDomains = (adsData.sharedDomain != NULL) ? 2 : 1;
+    if (!ClrSafeInt<LONG>::addition(adsData.DomainCount, NumExtraDomains, DomainAllocCount) ||
         !ClrSafeInt<size_t>::multiply(DomainAllocCount, sizeof(PVOID), AllocSize) ||
         (domainList = new DWORD_PTR[DomainAllocCount]) == NULL)
     {
@@ -3489,7 +3471,10 @@ void GetDomainList (DWORD_PTR *&domainList, int &numDomain)
     }
 
     domainList[numDomain++] = (DWORD_PTR) adsData.systemDomain;
-    domainList[numDomain++] = (DWORD_PTR) adsData.sharedDomain;
+    if (adsData.sharedDomain != NULL)
+    {
+        domainList[numDomain++] = (DWORD_PTR) adsData.sharedDomain;
+    }
     
     CLRDATA_ADDRESS *pArray = new CLRDATA_ADDRESS[adsData.DomainCount];
     if (pArray==NULL)

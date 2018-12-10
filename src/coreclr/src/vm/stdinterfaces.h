@@ -518,20 +518,7 @@ InternalDispatchImpl_Invoke (
 IErrorInfo *GetSupportedErrorInfo(IUnknown *iface, REFIID riid, BOOL checkForIRestrictedErrInfo = TRUE);
 
 //------------------------------------------------------------------------------------------
-// Helper functions that return HRESULT's instead of throwing exceptions.
-HRESULT TryGetGuid(MethodTable* pClass, GUID* pGUID, BOOL b);
-
-//------------------------------------------------------------------------------------------
 // Helpers to get the ITypeInfo* for a type.
-HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, int bClassInfo=false, int bAutoCreate=true, int flags=0);
-HRESULT GetDefaultInterfaceForCoclass(ITypeInfo *pTI, ITypeInfo **ppTIDef);
-
-//-------------------------------------------------------------------------------------
-// Helper to get the GUID of the typelib that is created from an assembly.
-HRESULT GetTypeLibGuidForAssembly(Assembly *pAssembly, GUID *pGuid);
-
-//-------------------------------------------------------------------------------------
-// Helper for IInspectable's GetRuntimeClassName on an IReference<T> or IReferenceArray<T>.
-void GetRuntimeClassNameForIReferenceOrIReferenceArray(MethodTable* pInstantiatedType, BOOL fIsIReferenceArray, SString& className);
+HRESULT GetITypeInfoForEEClass(MethodTable *pMT, ITypeInfo **ppTI, bool bClassInfo = false);
 
 #endif

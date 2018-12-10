@@ -13964,11 +13964,35 @@ InfoAccessType CEEInfo::emptyStringLiteral(void ** ppValue)
 void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
                                   void **ppIndirection)
 {
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(isVerifyOnly());
+    CONTRACTL{
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void *result = NULL;
+
     if (ppIndirection != NULL)
         *ppIndirection = NULL;
-    return (void *)0x10;
+
+    // Do not bother with initialization if we are only verifying the method.
+    if (isVerifyOnly())
+    {
+        return (void *)0x10;
+    }
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* field = (FieldDesc*)fieldHnd;
+
+    _ASSERTE(field->IsRVA());
+
+    result = field->GetStaticAddressHandle(NULL);
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,

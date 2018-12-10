@@ -2567,6 +2567,9 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_BMI1))
                 {
                     opts.setSupportedISA(InstructionSet_BMI1);
+#ifdef _TARGET_AMD64_
+                    opts.setSupportedISA(InstructionSet_BMI1_X64);
+#endif
                 }
             }
             if (jitFlags.IsSet(JitFlags::JIT_FLAG_USE_BMI2))
@@ -2574,6 +2577,9 @@ void Compiler::compSetProcessor()
                 if (configEnableISA(InstructionSet_BMI2))
                 {
                     opts.setSupportedISA(InstructionSet_BMI2);
+#ifdef _TARGET_AMD64_
+                    opts.setSupportedISA(InstructionSet_BMI2_X64);
+#endif
                 }
             }
         }
@@ -4561,10 +4567,8 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         fgRemovePreds();
     }
 
-    if (IsTargetAbi(CORINFO_CORERT_ABI) && doesMethodHaveFatPointer())
-    {
-        fgTransformFatCalli();
-    }
+    // Transform indirect calls that require control flow expansion.
+    fgTransformIndirectCalls();
 
     EndPhase(PHASE_IMPORTATION);
 

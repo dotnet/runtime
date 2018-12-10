@@ -761,7 +761,7 @@ BOOL DomainFile::IsZapRequired()
     if (!m_pFile->HasMetadata() || !g_pConfig->RequireZap(GetSimpleName()))
         return FALSE;
 
-#if defined(_DEBUG) && defined(FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS)
+#if defined(_DEBUG)
     // If we're intentionally treating NIs as if they were MSIL assemblies, and the test
     // is flexible enough to accept that (e.g., complus_zaprequired=2), then zaps are not
     // required (i.e., it's ok for m_pFile->m_nativeImage to be NULL), but only if we
@@ -781,7 +781,7 @@ BOOL DomainFile::IsZapRequired()
             return FALSE;
         }
     }
-#endif // defined(_DEBUG) && defined(FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS)
+#endif // defined(_DEBUG)
 
     // Does this look like a resource-only assembly?  We assume an assembly is resource-only
     // if it contains no TypeDef (other than the <Module> TypeDef) and no MethodDef.
@@ -1492,27 +1492,6 @@ void DomainAssembly::FindNativeImage()
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
-
-    // For non-Apollo builds (i.e., when FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS is
-    // NOT defined), this is how we avoid use of NGEN when diagnostics requests it: By
-    // clearing it out and forcing a load of the MSIL assembly. For Apollo builds
-    // (FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS), though, this doesn't work, as we
-    // don't have MSIL assemblies handy (particularly for Fx Assemblies), so we need to
-    // keep the NGENd image loaded, but to treat it as if it were an MSIL assembly. See
-    // code:PEFile::SetNativeImage.
-#ifndef FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
-    if (!NGENImagesAllowed())
-    {
-        GetFile()->SetCannotUseNativeImage();
-
-        if (GetFile()->HasNativeImage())
-            GetFile()->ClearNativeImage();
-
-        return;
-    }
-#endif // FEATURE_TREAT_NI_AS_MSIL_DURING_DIAGNOSTICS
-
-
 
     ClearNativeImageStress();
 

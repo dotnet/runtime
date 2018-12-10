@@ -335,8 +335,15 @@ namespace System.Text
         /// </summary>
         public override string ToString()
         {
-            Span<char> chars = stackalloc char[2]; // worst case
-            return new string(chars.Slice(0, EncodeToUtf16(chars)));
+            if (IsBmp)
+            {
+                return string.CreateFromChar((char)_value);
+            }
+            else
+            {
+                UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(_value, out char high, out char low);
+                return string.CreateFromChar(high, low);
+            }
         }
 
         /// <summary>
