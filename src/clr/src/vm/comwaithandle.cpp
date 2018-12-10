@@ -173,12 +173,6 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitOneNative, SafeHandle* safeWaitHandleUNS
 
     DWORD res = (DWORD) -1;
 
-    Context* targetContext;
-    targetContext = pThread->GetContext();
-    _ASSERTE(targetContext);
-    Context* defaultContext;
-    defaultContext = pThread->GetDomain()->GetDefaultContext();
-    _ASSERTE(defaultContext);
     SafeHandleHolder shh(&sh);
     // Note that SafeHandle is a GC object, and RequestCallback and 
     // DoAppropriateWait work on an array of handles.  Don't pass the address
@@ -186,7 +180,6 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitOneNative, SafeHandle* safeWaitHandleUNS
     // array.
     HANDLE handles[1];
     handles[0] = sh->GetHandle();
-    _ASSERTE(exitContext == NULL || targetContext == defaultContext);
     {
         // Support for pause/resume (FXFREEZE)
         while(true)
@@ -252,13 +245,6 @@ FCIMPL4(INT32, WaitHandleNative::CorWaitMultipleNative, Object* waitObjectsUNSAF
     }
 
     DWORD res = (DWORD) -1;
-    Context* targetContext;
-    targetContext = pThread->GetContext();
-    _ASSERTE(targetContext);
-    Context* defaultContext;
-    defaultContext = pThread->GetDomain()->GetDefaultContext();
-    _ASSERTE(defaultContext);
-    _ASSERTE(exitContext == NULL || targetContext == defaultContext);
     {
         // Support for pause/resume (FXFREEZE)
         while(true)
@@ -309,12 +295,6 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
 
     DWORD res = (DWORD) -1;
 
-    Context* targetContext = pThread->GetContext();
-    _ASSERTE(targetContext);
-    Context* defaultContext = pThread->GetDomain()->GetDefaultContext();
-    _ASSERTE(defaultContext);
-
-
     SafeHandleHolder shhSignal(&shSignal);
     SafeHandleHolder shhWait(&shWait);
     // Don't pass the address of the handle field 
@@ -322,7 +302,6 @@ FCIMPL5(INT32, WaitHandleNative::CorSignalAndWaitOneNative, SafeHandle* safeWait
     HANDLE handles[2];
     handles[0] = shSignal->GetHandle();
     handles[1] = shWait->GetHandle();
-    _ASSERTE(exitContext == NULL || targetContext == defaultContext);
     {
         res = pThread->DoSignalAndWait(handles,timeout,TRUE /*alertable*/);
     }
