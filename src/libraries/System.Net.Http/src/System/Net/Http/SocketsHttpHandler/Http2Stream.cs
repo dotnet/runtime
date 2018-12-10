@@ -140,7 +140,10 @@ namespace System.Net.Http
 
             private void WriteHeaders(HttpRequestMessage request)
             {
-                // TODO: ISSUE 31305: Disallow sending Connection: and Transfer-Encoding: chunked
+                // HTTP2 does not support Transfer-Encoding: chunked or Connection: headers.
+                // Simply clear these out so they won't be sent.
+                request.Headers.TransferEncodingChunked = false;
+                request.Headers.Connection.Clear();
 
                 HeaderEncodingState state = new HeaderEncodingState() { IsFirstFrame = true, IsEmptyResponse = (request.Content == null), CurrentFrameOffset = 0 };
 
@@ -215,16 +218,6 @@ namespace System.Net.Http
             {
                 // TODO: ISSUE 31310: Cancellation support
 
-                WriteHeaders(request);
-
-                // Send request body, if any
-                if (request.Content != null)
-                {
-                    throw new NotImplementedException("Request body not supported yet");
-                }
-
-                // Construct response
-
                 HttpConnectionResponseContent responseContent = new HttpConnectionResponseContent();
                 _response = new HttpResponseMessage() { Version = HttpVersion.Version20, RequestMessage = request, Content = responseContent };
 
@@ -239,8 +232,20 @@ namespace System.Net.Http
                 _responseDataAvailable = new TaskCompletionSource<bool>();
                 Task readDataAvailableTask = _responseDataAvailable.Task;
 
+                // Send headers
+                WriteHeaders(request);
+
                 await _connection.SendFramesAsync(_requestBuffer.ActiveMemory).ConfigureAwait(false);
                 _requestBuffer.Discard(_requestBuffer.ActiveSpan.Length);
+
+                // Send request body, if any
+                if (request.Content != null)
+                {
+                    using (Http2WriteStream writeStream = new Http2WriteStream(this))
+                    {
+                        await request.Content.CopyToAsync(writeStream).ConfigureAwait(false);
+                    }
+                }
 
                 // Wait for response headers to be read.
                 await readDataAvailableTask.ConfigureAwait(false);
@@ -517,6 +522,43 @@ namespace System.Net.Http
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
 
                 public override Task FlushAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+            }
+
+
+            sealed class Http2WriteStream : BaseAsyncStream
+            {
+                private readonly Http2Stream _http2Stream;
+                private int _disposed; // 0==no, 1==yes
+
+                public Http2WriteStream(Http2Stream http2Stream)
+                {
+                    Debug.Assert(http2Stream != null);
+                    _http2Stream = http2Stream;
+                }
+
+                protected override void Dispose(bool disposing)
+                {
+                    if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                    {
+                        return;
+                    }
+
+                    _http2Stream._connection.SendEndStream(_http2Stream.StreamId);
+
+                    base.Dispose(disposing);
+                }
+
+                public override bool CanRead => false;
+                public override bool CanWrite => true;
+
+                public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+                {
+                    return _http2Stream._connection.SendStreamDataAsync(_http2Stream._streamId, buffer);
+                }
+
+                public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             }
         }
     }
