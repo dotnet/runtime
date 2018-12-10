@@ -809,10 +809,12 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(fileTime), SR.ArgumentOutOfRange_FileTimeInvalid);
             }
 
+#pragma warning disable 162 // Unrechable code on Unix
             if (s_systemSupportsLeapSeconds)
             {
                 return FromFileTimeLeapSecondsAware(fileTime);
             }
+#pragma warning restore 162
 
             // This is the ticks in Universal time for this fileTime.
             long universalTicks = fileTime + FileTimeOffset;
@@ -1316,10 +1318,12 @@ namespace System
             // Treats the input as universal if it is not specified
             long ticks = ((InternalKind & LocalMask) != 0) ? ToUniversalTime().InternalTicks : this.InternalTicks;
 
+#pragma warning disable 162 // Unrechable code on Unix
             if (s_systemSupportsLeapSeconds)
             {
                 return ToFileTimeLeapSecondsAware(ticks);
             }
+#pragma warning restore 162
 
             ticks -= FileTimeOffset;
             if (ticks < 0)
