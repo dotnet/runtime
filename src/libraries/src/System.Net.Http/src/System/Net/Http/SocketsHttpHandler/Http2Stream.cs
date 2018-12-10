@@ -182,6 +182,12 @@ namespace System.Net.Http
 
                     Debug.Assert(!_responseComplete);
 
+                    if (_responseBuffer.ActiveSpan.Length + buffer.Length > InitialWindowSize)
+                    {
+                        // Window size exceeded.
+                        throw new Http2ProtocolException(Http2ProtocolErrorCode.FlowControlError);
+                    }
+
                     _responseBuffer.EnsureAvailableSpace(buffer.Length);
                     buffer.CopyTo(_responseBuffer.AvailableSpan);
                     _responseBuffer.Commit(buffer.Length);
@@ -238,10 +244,15 @@ namespace System.Net.Http
                 Debug.Assert(_responseBuffer.ActiveSpan.Length > 0);
                 Debug.Assert(buffer.Length > 0);
 
-                int bytesToCopy = Math.Min(buffer.Length, _responseBuffer.ActiveSpan.Length);
-                _responseBuffer.ActiveSpan.Slice(0, bytesToCopy).CopyTo(buffer);
-                _responseBuffer.Discard(bytesToCopy);
-                return bytesToCopy;
+                int bytesToRead = Math.Min(buffer.Length, _responseBuffer.ActiveSpan.Length);
+                _responseBuffer.ActiveSpan.Slice(0, bytesToRead).CopyTo(buffer);
+                _responseBuffer.Discard(bytesToRead);
+
+                // Send a window update to the peer.
+                // Don't wait for completion, which could happen asynchronously.
+                ValueTask ignored = _connection.SendWindowUpdateAsync(_streamId, bytesToRead);
+
+                return bytesToRead;
             }
 
             public async ValueTask<int> ReadDataAsyncCore(Task onDataAvailable, Memory<byte> buffer)
@@ -261,7 +272,6 @@ namespace System.Net.Http
                 }
             }
 
-            // TODO: ISSUE 31298: Window manangement
             // TODO: ISSUE 31310: Cancellation support
 
             public ValueTask<int> ReadDataAsync(Memory<byte> buffer, CancellationToken cancellationToken)

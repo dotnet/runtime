@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -41,6 +42,8 @@ namespace System.Net.Http
         private static readonly byte[] s_http2ConnectionPreface = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
 
         private const int InitialBufferSize = 4096;
+
+        private const int InitialWindowSize = 65535;
 
         public Http2Connection(HttpConnectionPool pool, SslStream stream)
         {
@@ -753,6 +756,32 @@ namespace System.Net.Http
             finally
             {
                 ReleaseWriteLock();
+            }
+        }
+
+        private async ValueTask SendWindowUpdateAsync(int streamId, int amount)
+        {
+            Debug.Assert(amount > 0);
+
+            await _writerLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                // We update both the connection-level and stream-level windows at the same time
+                _outgoingBuffer.EnsureAvailableSpace((FrameHeader.Size + FrameHeader.WindowUpdateLength) * 2);
+
+                WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0));
+                BinaryPrimitives.WriteInt32BigEndian(_outgoingBuffer.AvailableSpan, amount);
+                _outgoingBuffer.Commit(FrameHeader.WindowUpdateLength);
+
+                WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId));
+                BinaryPrimitives.WriteInt32BigEndian(_outgoingBuffer.AvailableSpan, amount);
+                _outgoingBuffer.Commit(FrameHeader.WindowUpdateLength);
+
+                await FlushOutgoingBytesAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                _writerLock.Release();
             }
         }
 
