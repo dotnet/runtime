@@ -175,9 +175,6 @@
   <data name="Arg_AmbiguousMatchException" xml:space="preserve">
     <value>Ambiguous match found.</value>
   </data>
-  <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
-    <value>Attempted to access an unloaded AppDomain.</value>
-  </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
   </data>
@@ -3198,9 +3195,6 @@
   </data>
   <data name="ReflectionTypeLoad_LoadFailed" xml:space="preserve">
     <value>Unable to load one or more of the requested types.</value>
-  </data>
-  <data name="Remoting_AppDomainUnloaded_ThreadUnwound" xml:space="preserve">
-    <value>The application domain in which the thread was running has been unloaded.</value>
   </data>
   <data name="ResourceReaderIsClosed" xml:space="preserve">
     <value>ResourceReader is closed.</value>

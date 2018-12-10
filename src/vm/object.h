@@ -51,8 +51,6 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  |       |
  *  |       +-  PtrArray   - Array of OBJECTREFs, different than base arrays because of pObjectClass
  *  |              
- *  +-- code:AppDomainBaseObject - The base object for the class AppDomain
- *  |              
  *  +-- code:AssemblyBaseObject - The base object for the class Assembly
  *
  *
@@ -1562,56 +1560,6 @@ class MarshalByRefObjectBaseObject : public Object
 {
 };
 
-// AppDomainBaseObject 
-// This class is the base class for application domains
-//  
-class AppDomainBaseObject : public MarshalByRefObjectBaseObject
-{
-    friend class AppDomain;
-    friend class MscorlibBinder;
-
-  protected:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-    OBJECTREF    m_pAssemblyEventHandler; // Delegate for 'loading assembly' event
-    OBJECTREF    m_pTypeEventHandler;     // Delegate for 'resolve type' event
-    OBJECTREF    m_pResourceEventHandler; // Delegate for 'resolve resource' event
-    OBJECTREF    m_pAsmResolveEventHandler; // Delegate for 'resolve assembly' event
-    OBJECTREF    m_pProcessExitEventHandler; // Delegate for 'process exit' event.  Only used in Default appdomain.
-    OBJECTREF    m_pDomainUnloadEventHandler; // Delegate for 'about to unload domain' event
-    OBJECTREF    m_pUnhandledExceptionEventHandler; // Delegate for 'unhandled exception' event
-
-    OBJECTREF    m_pFirstChanceExceptionHandler; // Delegate for 'FirstChance Exception' event
-
-    AppDomain*   m_pDomain;            // Pointer to the BaseDomain Structure
-
-  protected:
-    AppDomainBaseObject() { LIMITED_METHOD_CONTRACT; }
-   ~AppDomainBaseObject() { LIMITED_METHOD_CONTRACT; }
-   
-  public:
-
-    void SetDomain(AppDomain* p) 
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pDomain = p;
-    }
-    AppDomain* GetDomain() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pDomain;
-    }
-
-    // Returns the reference to the delegate of the first chance exception notification handler
-    OBJECTREF GetFirstChanceExceptionNotificationHandler()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pFirstChanceExceptionHandler;
-    }
-};
-
 // AssemblyBaseObject 
 // This class is the base class for assemblies
 //  
@@ -1800,7 +1748,6 @@ typedef PTR_ReflectClassBaseObject REFLECTCLASSBASEREF;
 typedef PTR_ReflectMethodObject REFLECTMETHODREF;
 typedef PTR_ReflectFieldObject REFLECTFIELDREF;
 typedef PTR_ThreadBaseObject THREADBASEREF;
-typedef PTR_AppDomainBaseObject APPDOMAINREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 
