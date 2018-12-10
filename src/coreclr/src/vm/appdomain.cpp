@@ -2242,14 +2242,6 @@ void SystemDomain::Init()
     // to allow stub caches to use the memory pool. Do not
     // initialze it here!
 
-#ifndef CROSSGEN_COMPILE
-#ifdef _DEBUG
-    Context     *curCtx = GetCurrentContext();
-#endif
-    _ASSERTE(curCtx);
-    _ASSERTE(curCtx->GetDomain() != NULL);
-#endif
-
 #ifdef FEATURE_PREJIT
     if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapDisable) != 0)
         g_fAllowNativeImages = false;
@@ -3595,7 +3587,6 @@ AppDomain::AppDomain()
     m_pRootAssembly = NULL;
 
     m_dwFlags = 0;
-    m_pDefaultContext = NULL;
 #ifdef FEATURE_COMINTEROP
     m_pRCWCache = NULL;
     m_pRCWRefCache = NULL;
@@ -3832,8 +3823,6 @@ void AppDomain::Init()
     SetStage(STAGE_READYFORMANAGEDCODE);
 
 #ifndef CROSSGEN_COMPILE
-    m_pDefaultContext = new Context(this);
-
     m_ExposedObject = CreateHandle(NULL);
 
     COUNTER_ONLY(GetPerfCounters().m_Loading.cAppDomains++);
@@ -3907,9 +3896,6 @@ void AppDomain::Terminate()
     GCX_PREEMP();
 
     _ASSERTE(m_dwThreadEnterCount == 0 || IsDefaultDomain());
-
-    delete m_pDefaultContext;
-    m_pDefaultContext = NULL;
 
 #ifdef FEATURE_COMINTEROP
     if (m_pRCWCache)
