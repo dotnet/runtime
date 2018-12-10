@@ -22,9 +22,6 @@ namespace System.Net.Http
             private readonly int _streamId;
             private readonly object _syncObject;
 
-            // TODO: In debug build, make initial size small (10)
-            private ArrayBuffer _requestBuffer;
-
             private ArrayBuffer _responseBuffer;
             private TaskCompletionSource<bool> _responseDataAvailable;
             private bool _responseComplete;
@@ -42,177 +39,10 @@ namespace System.Net.Http
                 _syncObject = new object();
                 _disposed = false;
 
-                _requestBuffer = new ArrayBuffer(InitialBufferSize);
                 _responseBuffer = new ArrayBuffer(InitialBufferSize);
             }
 
             public int StreamId => _streamId;
-
-            private void GrowWriteBuffer()
-            {
-                _requestBuffer.EnsureAvailableSpace(_requestBuffer.AvailableSpan.Length + 1);
-            }
-
-            struct HeaderEncodingState
-            {
-                public bool IsFirstFrame;
-                public bool IsEmptyResponse;
-                public int CurrentFrameOffset;
-            }
-
-            private void WriteCurrentFrameHeader(ref HeaderEncodingState state, int frameLength, bool isLastFrame)
-            {
-                Debug.Assert(frameLength > 0);
-
-                FrameHeader frameHeader = new FrameHeader();
-                frameHeader.Length = frameLength;
-                frameHeader.StreamId = _streamId;
-
-                if (state.IsFirstFrame)
-                {
-                    frameHeader.Type = FrameType.Headers;
-                    frameHeader.Flags = (state.IsEmptyResponse ? FrameFlags.EndStream : FrameFlags.None);
-                }
-                else
-                {
-                    frameHeader.Type = FrameType.Continuation;
-                    frameHeader.Flags = FrameFlags.None;
-                }
-
-                if (isLastFrame)
-                {
-                    frameHeader.Flags |= FrameFlags.EndHeaders;
-                }
-
-                // Update the curent HEADERS or CONTINUATION frame with length, and write it to the buffer.
-                frameHeader.WriteTo(_requestBuffer.ActiveSpan.Slice(state.CurrentFrameOffset));
-            }
-
-            private void WriteHeader(ref HeaderEncodingState state, string name, string value)
-            {
-                // TODO: ISSUE 31307: Use static table for known headers
-
-                int bytesWritten;
-                while (!HPackEncoder.EncodeHeader(name, value, _requestBuffer.AvailableSpan, out bytesWritten))
-                {
-                    GrowWriteBuffer();
-                }
-
-                _requestBuffer.Commit(bytesWritten);
-
-                while (_requestBuffer.ActiveSpan.Slice(state.CurrentFrameOffset).Length > FrameHeader.Size + FrameHeader.MaxLength)
-                {
-                    // We've exceeded the frame size limit.
-
-                    // Fill in the current frame header.
-                    WriteCurrentFrameHeader(ref state, FrameHeader.MaxLength, false);
-
-                    state.IsFirstFrame = false;
-                    state.CurrentFrameOffset += FrameHeader.Size + FrameHeader.MaxLength;
-
-                    // Reserve space for new frame header
-                    _requestBuffer.Commit(FrameHeader.Size);
-
-                    Span<byte> currentFrameSpan = _requestBuffer.ActiveSpan.Slice(state.CurrentFrameOffset);
-
-                    // Shift the remainder down to make room for the new frame header.
-                    // We'll fill this in when the frame is complete.
-                    currentFrameSpan.Slice(0, currentFrameSpan.Length - FrameHeader.Size).CopyTo(currentFrameSpan.Slice(FrameHeader.Size));
-                }
-            }
-
-            private void WriteHeaders(ref HeaderEncodingState state, HttpHeaders headers)
-            {
-                foreach (KeyValuePair<HeaderDescriptor, string[]> header in headers.GetHeaderDescriptorsAndValues())
-                {
-                    if (header.Key.KnownHeader == KnownHeaders.Host)
-                    {
-                        continue;
-                    }
-
-                    Debug.Assert(header.Value.Length > 0, "No values for header??");
-                    for (int i = 0; i < header.Value.Length; i++)
-                    {
-                        WriteHeader(ref state, header.Key.Name, header.Value[i]);
-                    }
-                }
-            }
-
-            private void WriteHeaders(HttpRequestMessage request)
-            {
-                // HTTP2 does not support Transfer-Encoding: chunked or Connection: headers.
-                // Simply clear these out so they won't be sent.
-                request.Headers.TransferEncodingChunked = false;
-                request.Headers.Connection.Clear();
-
-                HeaderEncodingState state = new HeaderEncodingState() { IsFirstFrame = true, IsEmptyResponse = (request.Content == null), CurrentFrameOffset = 0 };
-
-                // Initialize the HEADERS frame header.
-                // We will write it to the buffer later, when the frame is complete.
-                FrameHeader currentFrameHeader = new FrameHeader(0, FrameType.Headers, (request.Content == null ? FrameFlags.EndStream : FrameFlags.None), _streamId);
-
-                // Reserve space for the frame header.
-                // We will fill it in later, when the frame is complete.
-                _requestBuffer.EnsureAvailableSpace(FrameHeader.Size);
-                _requestBuffer.Commit(FrameHeader.Size);
-
-                HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-
-                // TODO: ISSUE 31307: Use static table for pseudo-headers
-                WriteHeader(ref state, ":method", normalizedMethod.Method);
-                WriteHeader(ref state, ":scheme", "https");
-
-                string authority;
-                if (request.HasHeaders && request.Headers.Host != null)
-                {
-                    authority = request.Headers.Host;
-                }
-                else
-                {
-                    authority = request.RequestUri.IdnHost;
-                    if (!request.RequestUri.IsDefaultPort)
-                    {
-                        // TODO: Avoid allocation here by caching this on the connection or pool
-                        authority += ":" + request.RequestUri.Port;
-                    }
-                }
-
-                WriteHeader(ref state, ":authority", authority);
-                WriteHeader(ref state, ":path", request.RequestUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped));
-
-                if (request.HasHeaders)
-                {
-                    WriteHeaders(ref state, request.Headers);
-                }
-
-                // Determine cookies to send.
-                if (_connection._pool.Settings._useCookies)
-                {
-                    string cookiesFromContainer = _connection._pool.Settings._cookieContainer.GetCookieHeader(request.RequestUri);
-                    if (cookiesFromContainer != string.Empty)
-                    {
-                        WriteHeader(ref state, HttpKnownHeaderNames.Cookie, cookiesFromContainer);
-                    }
-                }
-
-                if (request.Content == null)
-                {
-                    // Write out Content-Length: 0 header to indicate no body,
-                    // unless this is a method that never has a body.
-                    if (normalizedMethod.MustHaveRequestBody)
-                    {
-                        // TODO: ISSUE 31307: Use static table for Content-Length
-                        WriteHeader(ref state, "Content-Length", "0");
-                    }
-                }
-                else
-                {
-                    WriteHeaders(ref state, request.Content.Headers);
-                }
-
-                // Update the last frame header and write it to the buffer.
-                WriteCurrentFrameHeader(ref state, _requestBuffer.ActiveSpan.Slice(state.CurrentFrameOffset).Length - FrameHeader.Size, true);
-            }
 
             public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
@@ -233,10 +63,7 @@ namespace System.Net.Http
                 Task readDataAvailableTask = _responseDataAvailable.Task;
 
                 // Send headers
-                WriteHeaders(request);
-
-                await _connection.SendFramesAsync(_requestBuffer.ActiveMemory).ConfigureAwait(false);
-                _requestBuffer.Discard(_requestBuffer.ActiveSpan.Length);
+                await _connection.SendHeadersAsync(_streamId, request).ConfigureAwait(false);
 
                 // Send request body, if any
                 if (request.Content != null)
