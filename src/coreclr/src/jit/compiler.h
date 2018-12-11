@@ -4470,8 +4470,8 @@ public:
     // Returns the corresponding VNFunc to use for value numbering
     VNFunc fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc);
 
-    // Adds the exception set for the current tree node which is performing a memory indirection operation
-    void fgValueNumberAddExceptionSetForIndirection(GenTree* tree);
+    // Adds the exception set for the current tree node which has a memory indirection operation
+    void fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree* baseAddr);
 
     // Adds the exception sets for the current tree node which is performing a division or modulus operation
     void fgValueNumberAddExceptionSetForDivision(GenTree* tree);
