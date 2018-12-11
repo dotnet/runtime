@@ -44,12 +44,12 @@ goto :Arg_Loop
 :: and VS140COMNTOOLS is set as a global environment variable by the installer. This
 :: allows users to locate where the instance of VS2015 is installed.
 ::
-:: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
+:: For VS2017 and later, multiple instances can be installed on the same box SxS and VSxxxCOMNTOOLS
 :: is no longer set as a global environment variable and is instead only set if the user
-:: has launched the VS2017 Developer Command Prompt.
+:: has launched the VS2017 or VS2019 Developer Command Prompt.
 ::
-:: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
-:: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
+:: Following this logic, we will default to the VS2017 or VS2019 toolset if VS150COMNTOOLS or VS160COMMONTOOLS tools is
+:: set, as this indicates the user is running from the VS2017 or VS2019 Developer Command Prompt and
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
@@ -66,17 +66,28 @@ if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
 call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 
 :RunVCVars
-if "%VisualStudioVersion%"=="15.0" (
+if "%VisualStudioVersion%"=="16.0" (
+    goto :VS2019
+)
+else if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
 ) else if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
 )
 
 :MissingVersion
-:: Can't find VS 2015 or 2017
-echo Error: Visual Studio 2015 or 2017 required
+:: Can't find VS 2015, 2017, 2019
+echo Error: Visual Studio 2015, 2017 or 2019 required
 echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
+
+:VS2019
+:: Setup vars for VS2019
+set __VSVersion=vs2019
+set __PlatformToolset=v141
+:: Set the environment for the native build
+call "%VS160COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+goto :SetupDirs
 
 :VS2017
 :: Setup vars for VS2017
