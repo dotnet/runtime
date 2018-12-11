@@ -276,8 +276,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTree* tgt, GenTree
         case GT_CLS_VAR:
             return WBF_BarrierUnchecked;
 
-        case GT_REG_VAR: /* Definitely not in the managed heap  */
-        case GT_LCL_VAR:
+        case GT_LCL_VAR: /* Definitely not in the managed heap  */
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -704,18 +703,9 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
         // No need for a GC barrier when writing to a local variable.
         return GCInfo::WBF_NoBarrier;
     }
-    if (tgtAddr->OperGet() == GT_LCL_VAR || tgtAddr->OperGet() == GT_REG_VAR)
+    if (tgtAddr->OperGet() == GT_LCL_VAR)
     {
-        unsigned lclNum = 0;
-        if (tgtAddr->gtOper == GT_LCL_VAR)
-        {
-            lclNum = tgtAddr->gtLclVar.gtLclNum;
-        }
-        else
-        {
-            assert(tgtAddr->gtOper == GT_REG_VAR);
-            lclNum = tgtAddr->gtRegVar.gtLclNum;
-        }
+        unsigned lclNum = tgtAddr->AsLclVar()->GetLclNum();
 
         LclVarDsc* varDsc = &compiler->lvaTable[lclNum];
 
