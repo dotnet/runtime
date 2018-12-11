@@ -68,6 +68,7 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
             // Send empty settings frame
+            _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
             WriteFrameHeader(new FrameHeader(0, FrameType.Settings, FrameFlags.None, 0));
 
             // TODO: ISSUE 31295: We should disable PUSH_PROMISE here.
@@ -506,6 +507,7 @@ namespace System.Net.Http
             await AcquireWriteLockAsync().ConfigureAwait(false);
             try
             {
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
                 WriteFrameHeader(new FrameHeader(0, FrameType.Settings, FrameFlags.Ack, 0));
 
                 await FlushOutgoingBytesAsync().ConfigureAwait(false);
@@ -523,8 +525,8 @@ namespace System.Net.Http
             await AcquireWriteLockAsync().ConfigureAwait(false);
             try
             {
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size + FrameHeader.PingLength);
                 WriteFrameHeader(new FrameHeader(FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0));
-                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.PingLength);
                 pingContent.CopyTo(_outgoingBuffer.AvailableMemory);
                 _outgoingBuffer.Commit(FrameHeader.PingLength);
 
@@ -541,9 +543,8 @@ namespace System.Net.Http
             await AcquireWriteLockAsync().ConfigureAwait(false);
             try
             {
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size + FrameHeader.RstStreamLength);
                 WriteFrameHeader(new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId));
-
-                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.RstStreamLength);
                 _outgoingBuffer.AvailableSpan[0] = (byte)(((int)errorCode & 0xFF000000) >> 24);
                 _outgoingBuffer.AvailableSpan[1] = (byte)(((int)errorCode & 0x00FF0000) >> 16);
                 _outgoingBuffer.AvailableSpan[2] = (byte)(((int)errorCode & 0x0000FF00) >> 8);
@@ -576,11 +577,19 @@ namespace System.Net.Http
             _headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteHeaders(HttpHeaders headers)
+        private void WriteHeaderCollection(HttpHeaders headers)
         {
             foreach (KeyValuePair<HeaderDescriptor, string[]> header in headers.GetHeaderDescriptorsAndValues())
             {
+                // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
+                // (see pseudo-header handling below in WriteHeaders)
                 if (header.Key.KnownHeader == KnownHeaders.Host)
+                {
+                    continue;
+                }
+
+                // The Connection header is not supported in HTTP2. Don't send it.
+                if (header.Key.KnownHeader == KnownHeaders.Connection)
                 {
                     continue;
                 }
@@ -597,10 +606,8 @@ namespace System.Net.Http
         {
             Debug.Assert(_headerBuffer.ActiveMemory.Length == 0);
 
-            // HTTP2 does not support Transfer-Encoding: chunked or Connection: headers.
-            // Simply clear these out so they won't be sent.
+            // HTTP2 does not support Transfer-Encoding: chunked, so disable this on the request.
             request.Headers.TransferEncodingChunked = false;
-            request.Headers.Connection.Clear();
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
@@ -628,7 +635,7 @@ namespace System.Net.Http
 
             if (request.HasHeaders)
             {
-                WriteHeaders(request.Headers);
+                WriteHeaderCollection(request.Headers);
             }
 
             // Determine cookies to send.
@@ -653,7 +660,7 @@ namespace System.Net.Http
             }
             else
             {
-                WriteHeaders(request.Content.Headers);
+                WriteHeaderCollection(request.Content.Headers);
             }
         }
 
@@ -740,6 +747,7 @@ namespace System.Net.Http
             {
                 _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
                 WriteFrameHeader(new FrameHeader(0, FrameType.Data, FrameFlags.EndStream, streamId));
+
                 await FlushOutgoingBytesAsync().ConfigureAwait(false);
             }
             finally
@@ -750,7 +758,8 @@ namespace System.Net.Http
 
         private void WriteFrameHeader(FrameHeader frameHeader)
         {
-            _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
+            Debug.Assert(_outgoingBuffer.AvailableMemory.Length >= FrameHeader.Size);
+
             frameHeader.WriteTo(_outgoingBuffer.AvailableSpan);
             _outgoingBuffer.Commit(FrameHeader.Size);
         }
