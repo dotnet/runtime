@@ -6645,8 +6645,10 @@ mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint len
 
 	if (!eg_error)
 		o = mono_string_new_utf16_handle (domain, ut, items_written, error);
-	else 
+	else {
+		mono_error_set_argument (error, "string", eg_error->message);
 		g_error_free (eg_error);
+	}
 
 	g_free (ut);
 
