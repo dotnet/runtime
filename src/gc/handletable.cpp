@@ -594,8 +594,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, SetGCHandle) ||
-        ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, SetGCHandle))
+    if (EVENT_ENABLED(SetGCHandle) || EVENT_ENABLED(PrvSetGCHandle))
     {
         uint32_t hndType = HandleFetchType(handle);
         ADIndex appDomainIndex = HndGetHandleADIndex(handle);   
