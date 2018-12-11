@@ -2839,8 +2839,8 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	 * candidate. */
 
 	if (asmctx != MONO_ASMCTX_REFONLY) {
-		ERROR_DECL_VALUE (refasm_error);
-		if (mono_assembly_has_reference_assembly_attribute (ass, &refasm_error)) {
+		ERROR_DECL (refasm_error);
+		if (mono_assembly_has_reference_assembly_attribute (ass, refasm_error)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
 			g_free (ass);
 			g_free (base_dir);
@@ -2848,7 +2848,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 			*status = MONO_IMAGE_IMAGE_INVALID;
 			return NULL;
 		}
-		mono_error_cleanup (&refasm_error);
+		mono_error_cleanup (refasm_error);
 	}
 
 	if (predicate && !predicate (ass, user_data)) {
@@ -4153,15 +4153,14 @@ return_corlib_and_facades:
 static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly)
 {
-	ERROR_DECL_VALUE (refasm_error);
-	error_init (&refasm_error);
+	ERROR_DECL (refasm_error);
 	if (candidate && !refonly) {
 		/* .NET Framework seems to not check for ReferenceAssemblyAttribute on dynamic assemblies */
 		if (!image_is_dynamic (candidate->image) &&
-		    mono_assembly_has_reference_assembly_attribute (candidate, &refasm_error))
+		    mono_assembly_has_reference_assembly_attribute (candidate, refasm_error))
 			candidate = NULL;
 	}
-	mono_error_cleanup (&refasm_error);
+	mono_error_cleanup (refasm_error);
 	return candidate;
 }
 

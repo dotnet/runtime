@@ -54,10 +54,6 @@ ERROR_DECL (error)
 	pointing to an initialized MonoError (named "error_value",
 	using token pasting).
 
-ERROR_DECL_VALUE (foo)
-	Declare and initialize a local variable, named "foo";
-	no pointer is produced for it.
-
 MONO_API_ERROR_INIT
 	This is used for MonoError in/out parameter on a public interface,
 	which must be presumed uninitialized. These are often
@@ -65,6 +61,7 @@ MONO_API_ERROR_INIT
 	Tnis includes functions called from dis, profiler, pedump, and driver.
 	dis, profiler, and pedump make sense, these are actually external and
 	uninitialized. Driver less so.
+	Presently this is unused and error_init is used instead.
 
 error_init
 	Initialize a MonoError. These are historical and usually
@@ -89,8 +86,7 @@ new0, calloc, static
 All initialization is actually bottlenecked to error_init_internal.
 Different names indicate different scenarios, but the same code.
 */
-#define ERROR_DECL_VALUE(x) 		MonoError x; error_init_internal (&x)
-#define ERROR_DECL(x) 			ERROR_DECL_VALUE (x##_value); MonoError * const x = &x##_value
+#define ERROR_DECL(x) 			MonoError x ## _value; error_init_internal (& x ## _value); MonoError * const x = &x ## _value
 #define error_init_internal(error) 	((void)((error)->init = 0))
 #define MONO_API_ERROR_INIT(error) 	error_init_internal (error)
 #define error_init_reuse(error) 	error_init_internal (error)

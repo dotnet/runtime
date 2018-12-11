@@ -2626,17 +2626,17 @@ mono_jit_search_all_backends_for_jit_info (MonoDomain *domain, MonoMethod *metho
 
 	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
 	if (!code) {
-		ERROR_DECL_VALUE (oerror);
+		ERROR_DECL (oerror);
 
 		/* Might be AOTed code */
 		mono_class_init_internal (method->klass);
-		code = mono_aot_get_method (domain, method, &oerror);
+		code = mono_aot_get_method (domain, method, oerror);
 		if (code) {
-			mono_error_assert_ok (&oerror);
+			mono_error_assert_ok (oerror);
 			ji = mono_jit_info_table_find (domain, code);
 		} else {
-			if (!is_ok (&oerror))
-				mono_error_cleanup (&oerror);
+			if (!is_ok (oerror))
+				mono_error_cleanup (oerror);
 
 			/* Might be interpreted */
 			ji = mini_get_interp_callbacks ()->find_jit_info (domain, method);

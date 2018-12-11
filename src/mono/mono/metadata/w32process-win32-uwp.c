@@ -29,13 +29,12 @@ mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)
 HANDLE
 ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("OpenProcess");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "OpenProcess");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "OpenProcess");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -69,13 +68,12 @@ process_add_module (HANDLE process, HMODULE mod, gunichar2 *filename, gunichar2 
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, HANDLE process)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("EnumProcessModules, GetModuleBaseName, GetModuleFileNameEx");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "EnumProcessModules, GetModuleBaseName, GetModuleFileNameEx");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "EnumProcessModules, GetModuleBaseName, GetModuleFileNameEx");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -85,13 +83,12 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 MonoBoolean
 ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_info)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("ShellExecuteEx");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "ShellExecuteEx");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "ShellExecuteEx");
+	mono_error_set_pending_exception (error);
 
 	process_info->pid = (guint32)(-ERROR_NOT_SUPPORTED);
 	SetLastError (ERROR_NOT_SUPPORTED);
@@ -133,7 +130,7 @@ gboolean
 mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *cmd, guint32 creation_flags,
 	gunichar2 *env_vars, gunichar2 *dir, STARTUPINFO *start_info, PROCESS_INFORMATION *process_info)
 {
-	ERROR_DECL_VALUE (mono_error);
+	ERROR_DECL (error);
 	gchar		*api_name = "";
 
 	if (mono_process_info->username) {
@@ -145,9 +142,8 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *
 	memset (&process_info, 0, sizeof (PROCESS_INFORMATION));
 	g_unsupported_api (api_name);
 
-	error_init (&mono_error);
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, api_name);
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, api_name);
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -157,13 +153,12 @@ mono_process_create_process (MonoW32ProcessInfo *mono_process_info, MonoString *
 MonoBoolean
 mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("GetProcessWorkingSetSize");
 
-	mono_error_set_not_supported(&mono_error, G_UNSUPPORTED_API, "GetProcessWorkingSetSize");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "GetProcessWorkingSetSize");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -173,13 +168,12 @@ mono_icall_get_process_working_set_size (gpointer handle, gsize *min, gsize *max
 MonoBoolean
 mono_icall_set_process_working_set_size (gpointer handle, gsize min, gsize max)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("SetProcessWorkingSetSize");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "SetProcessWorkingSetSize");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SetProcessWorkingSetSize");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -189,13 +183,12 @@ mono_icall_set_process_working_set_size (gpointer handle, gsize min, gsize max)
 gint32
 mono_icall_get_priority_class (gpointer handle)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("GetPriorityClass");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetPriorityClass");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetPriorityClass");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -205,13 +198,12 @@ mono_icall_get_priority_class (gpointer handle)
 MonoBoolean
 mono_icall_set_priority_class (gpointer handle, gint32 priorityClass)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("SetPriorityClass");
 
-	mono_error_set_not_supported(&mono_error, G_UNSUPPORTED_API, "SetPriorityClass");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported(error, G_UNSUPPORTED_API, "SetPriorityClass");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 

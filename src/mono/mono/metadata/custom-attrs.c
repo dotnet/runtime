@@ -196,15 +196,15 @@ find_event_index (MonoClass *klass, MonoEvent *event)
 static MonoType*
 cattr_type_from_name (char *n, MonoImage *image, gboolean is_enum, MonoError *error)
 {
-	ERROR_DECL_VALUE (inner_error);
-	MonoType *t = mono_reflection_type_from_name_checked (n, image, &inner_error);
+	ERROR_DECL (inner_error);
+	MonoType *t = mono_reflection_type_from_name_checked (n, image, inner_error);
 	if (!t) {
 		mono_error_set_type_load_name (error, g_strdup(n), NULL,
 					       "Could not load %s %s while decoding custom attribute: %s",
 					       is_enum ? "enum type": "type",
 					       n,
-					       mono_error_get_message (&inner_error));
-		mono_error_cleanup (&inner_error);
+					       mono_error_get_message (inner_error));
+		mono_error_cleanup (inner_error);
 		return NULL;
 	}
 	return t;

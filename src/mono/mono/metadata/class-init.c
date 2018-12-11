@@ -987,11 +987,10 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
 		/*Arrays of those two types are invalid.*/
-		ERROR_DECL_VALUE (prepared_error);
-		error_init (&prepared_error);
-		mono_error_set_invalid_program (&prepared_error, "Arrays of System.TypedReference types are invalid.");
-		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
-		mono_error_cleanup (&prepared_error);
+		ERROR_DECL (prepared_error);
+		mono_error_set_invalid_program (prepared_error, "Arrays of System.TypedReference types are invalid.");
+		mono_class_set_failure (klass, mono_error_box (prepared_error, klass->image));
+		mono_error_cleanup (prepared_error);
 	} else if (m_class_is_byreflike (eclass)) {
 		/* .NET Core throws a type load exception: "Could not create array type 'fullname[]'" */
 		char *full_name = mono_type_get_full_name (eclass);
@@ -1068,12 +1067,11 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->this_arg.byref = 1;
 
 	if (rank > 32) {
-		ERROR_DECL_VALUE (prepared_error);
-		error_init (&prepared_error);
+		ERROR_DECL (prepared_error);
 		name = mono_type_get_full_name (klass);
-		mono_error_set_type_load_class (&prepared_error, klass, "%s has too many dimensions.", name);
-		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
-		mono_error_cleanup (&prepared_error);
+		mono_error_set_type_load_class (prepared_error, klass, "%s has too many dimensions.", name);
+		mono_class_set_failure (klass, mono_error_box (prepared_error, klass->image));
+		mono_error_cleanup (prepared_error);
 		g_free (name);
 	}
 
@@ -3640,11 +3638,10 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				if (field_class) {
 					mono_class_setup_fields (field_class);
 					if (mono_class_has_failure (field_class)) {
-						ERROR_DECL_VALUE (field_error);
-						error_init (&field_error);
-						mono_error_set_for_class_failure (&field_error, field_class);
-						mono_class_set_type_load_failure (klass, "Could not set up field '%s' due to: %s", field->name, mono_error_get_message (&field_error));
-						mono_error_cleanup (&field_error);
+						ERROR_DECL (field_error);
+						mono_error_set_for_class_failure (field_error, field_class);
+						mono_class_set_type_load_failure (klass, "Could not set up field '%s' due to: %s", field->name, mono_error_get_message (field_error));
+						mono_error_cleanup (field_error);
 						break;
 					}
 				}

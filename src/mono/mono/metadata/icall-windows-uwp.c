@@ -35,13 +35,12 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 MonoArray *
 mono_icall_get_logical_drives (void)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("GetLogicalDriveStrings");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetLogicalDriveStrings");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetLogicalDriveStrings");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -65,13 +64,12 @@ ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 gint32
 mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("WaitForInputIdle");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "WaitForInputIdle");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "WaitForInputIdle");
+	mono_error_set_pending_exception (error);
 
 	return WAIT_TIMEOUT;
 }

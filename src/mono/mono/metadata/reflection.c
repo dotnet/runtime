@@ -2301,9 +2301,9 @@ mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError 
 	tmp = g_strdup (name);
 	
 	/*g_print ("requested type %s\n", str);*/
-	ERROR_DECL_VALUE (parse_error);
-	if (!mono_reflection_parse_type_checked (tmp, &info, &parse_error)) {
-		mono_error_cleanup (&parse_error);
+	ERROR_DECL (parse_error);
+	if (!mono_reflection_parse_type_checked (tmp, &info, parse_error)) {
+		mono_error_cleanup (parse_error);
 		goto leave;
 	}
 	type = _mono_reflection_get_type_from_info (&info, image, FALSE, error);
@@ -3038,11 +3038,11 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 	params [0] = mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (oklass), error);
 	return_val_if_nok (error, FALSE);
 
-	ERROR_DECL_VALUE (inner_error);
-	res = mono_runtime_try_invoke (method, &mono_class_get_ref_info_raw (klass)->type.object, params, &exc, &inner_error); /* FIXME use handles */
+	ERROR_DECL (inner_error);
+	res = mono_runtime_try_invoke (method, &mono_class_get_ref_info_raw (klass)->type.object, params, &exc, inner_error); /* FIXME use handles */
 
-	if (exc || !is_ok (&inner_error)) {
-		mono_error_cleanup (&inner_error);
+	if (exc || !is_ok (inner_error)) {
+		mono_error_cleanup (inner_error);
 		return FALSE;
 	} else
 		return *(MonoBoolean*)mono_object_unbox_internal (res);

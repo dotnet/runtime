@@ -2553,7 +2553,7 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 	MethodRef ref;
 	gboolean res;
 	gpointer addr;
-	ERROR_DECL_VALUE (inner_error);
+	ERROR_DECL (inner_error);
 
 	error_init (error);
 
@@ -2568,12 +2568,12 @@ mono_aot_get_method_from_vt_slot (MonoDomain *domain, MonoVTable *vtable, int sl
 		return NULL;
 
 	for (i = 0; i < slot; ++i) {
-		decode_method_ref (amodule, &ref, p, &p, &inner_error);
-		mono_error_cleanup (&inner_error); /* FIXME don't swallow the error */
+		decode_method_ref (amodule, &ref, p, &p, inner_error);
+		mono_error_cleanup (inner_error); /* FIXME don't swallow the error */
 	}
 
-	res = decode_method_ref (amodule, &ref, p, &p, &inner_error);
-	mono_error_cleanup (&inner_error); /* FIXME don't swallow the error */
+	res = decode_method_ref (amodule, &ref, p, &p, inner_error);
+	mono_error_cleanup (inner_error); /* FIXME don't swallow the error */
 	if (!res)
 		return NULL;
 	if (ref.no_aot_trampoline)
@@ -4667,7 +4667,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 	MonoAotModule *amodule = m_class_get_image (klass)->aot_module;
 	guint8 *code;
 	gboolean cache_result = FALSE;
-	ERROR_DECL_VALUE (inner_error);
+	ERROR_DECL (inner_error);
 
 	error_init (error);
 
@@ -4749,8 +4749,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		if (method_index == 0xffffff && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_MANAGED && m_class_get_rank (method->klass) && strstr (method->name, "System.Collections.Generic")) {
 			MonoMethod *m = mono_aot_get_array_helper_from_wrapper (method);
 
-			code = (guint8 *)mono_aot_get_method (domain, m, &inner_error);
-			mono_error_cleanup (&inner_error);
+			code = (guint8 *)mono_aot_get_method (domain, m, inner_error);
+			mono_error_cleanup (inner_error);
 			if (code)
 				return code;
 		}
@@ -4785,8 +4785,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 			 * Get the code for the <object> instantiation which should be emitted into
 			 * the mscorlib aot image by the AOT compiler.
 			 */
-			code = (guint8 *)mono_aot_get_method (domain, m, &inner_error);
-			mono_error_cleanup (&inner_error);
+			code = (guint8 *)mono_aot_get_method (domain, m, inner_error);
+			mono_error_cleanup (inner_error);
 			if (code)
 				return code;
 		}
@@ -4826,8 +4826,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 			 * Get the code for the <object> instantiation which should be emitted into
 			 * the mscorlib aot image by the AOT compiler.
 			 */
-			code = (guint8 *)mono_aot_get_method (domain, m, &inner_error);
-			mono_error_cleanup (&inner_error);
+			code = (guint8 *)mono_aot_get_method (domain, m, inner_error);
+			mono_error_cleanup (inner_error);
 			if (code)
 				return code;
 		}
@@ -4854,8 +4854,8 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 
 					m = mono_marshal_get_array_accessor_wrapper (m);
 					if (m != method) {
-						code = (guint8 *)mono_aot_get_method (domain, m, &inner_error);
-						mono_error_cleanup (&inner_error);
+						code = (guint8 *)mono_aot_get_method (domain, m, inner_error);
+						mono_error_cleanup (inner_error);
 						if (code)
 							return code;
 					}

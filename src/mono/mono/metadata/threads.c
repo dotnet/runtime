@@ -617,9 +617,9 @@ get_current_thread_ptr_for_domain (MonoDomain *domain, MonoInternalThread *threa
 		g_assert (current_thread_field);
 	}
 
-	ERROR_DECL_VALUE (thread_vt_error);
-	mono_class_vtable_checked (domain, mono_defaults.thread_class, &thread_vt_error);
-	mono_error_assert_ok (&thread_vt_error);
+	ERROR_DECL (thread_vt_error);
+	mono_class_vtable_checked (domain, mono_defaults.thread_class, thread_vt_error);
+	mono_error_assert_ok (thread_vt_error);
 	mono_domain_lock (domain);
 	offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, current_thread_field));
 	mono_domain_unlock (domain);

@@ -1365,11 +1365,10 @@ gboolean
 mono_class_set_type_load_failure_causedby_class (MonoClass *klass, const MonoClass *caused_by, const gchar* msg)
 {
 	if (mono_class_has_failure (caused_by)) {
-		ERROR_DECL_VALUE (cause_error);
-		error_init (&cause_error);
-		mono_error_set_for_class_failure (&cause_error, caused_by);
-		mono_class_set_type_load_failure (klass, "%s, due to: %s", msg, mono_error_get_message (&cause_error));
-		mono_error_cleanup (&cause_error);
+		ERROR_DECL (cause_error);
+		mono_error_set_for_class_failure (cause_error, caused_by);
+		mono_class_set_type_load_failure (klass, "%s, due to: %s", msg, mono_error_get_message (cause_error));
+		mono_error_cleanup (cause_error);
 		return TRUE;
 	} else {
 		return FALSE;
@@ -5273,20 +5272,18 @@ mono_class_has_failure (const MonoClass *klass)
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
 {
-	ERROR_DECL_VALUE (prepare_error);
+	ERROR_DECL (prepare_error);
 	va_list args;
 
 	if (mono_class_has_failure (klass))
 		return FALSE;
-	
-	error_init (&prepare_error);
-	
+
 	va_start (args, fmt);
-	mono_error_vset_type_load_class (&prepare_error, klass, fmt, args);
+	mono_error_vset_type_load_class (prepare_error, klass, fmt, args);
 	va_end (args);
 
-	MonoErrorBoxed *box = mono_error_box (&prepare_error, m_class_get_image (klass));
-	mono_error_cleanup (&prepare_error);
+	MonoErrorBoxed *box = mono_error_box (prepare_error, m_class_get_image (klass));
+	mono_error_cleanup (prepare_error);
 	return mono_class_set_failure (klass, box);
 }
 
@@ -5303,10 +5300,9 @@ mono_class_get_exception_for_failure (MonoClass *klass)
 {
 	if (!mono_class_has_failure (klass))
 		return NULL;
-	ERROR_DECL_VALUE (unboxed_error);
-	error_init (&unboxed_error);
-	mono_error_set_for_class_failure (&unboxed_error, klass);
-	return mono_error_convert_to_exception (&unboxed_error);
+	ERROR_DECL (unboxed_error);
+	mono_error_set_for_class_failure (unboxed_error, klass);
+	return mono_error_convert_to_exception (unboxed_error);
 }
 
 static gboolean

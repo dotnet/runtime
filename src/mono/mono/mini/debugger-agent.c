@@ -6435,10 +6435,10 @@ get_types (gpointer key, gpointer value, gpointer user_data)
 		ass = (MonoAssembly *)tmp->data;
 
 		if (ass->image) {
-			ERROR_DECL_VALUE (probe_type_error);
+			ERROR_DECL (probe_type_error);
 			/* FIXME really okay to call while holding locks? */
-			t = mono_reflection_get_type_checked (ass->image, ass->image, ud->info, ud->ignore_case, &type_resolve, &probe_type_error);
-			mono_error_cleanup (&probe_type_error);
+			t = mono_reflection_get_type_checked (ass->image, ass->image, ud->info, ud->ignore_case, &type_resolve, probe_type_error);
+			mono_error_cleanup (probe_type_error);
 			if (t) {
 				g_ptr_array_add (ud->res_classes, mono_type_get_class (t));
 				g_ptr_array_add (ud->res_domains, domain);

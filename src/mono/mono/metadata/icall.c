@@ -4502,6 +4502,7 @@ MonoReflectionTypeHandle
 ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHandle assembly_h, MonoReflectionModuleHandle module, MonoStringHandle name, MonoBoolean throwOnError, MonoBoolean ignoreCase, MonoError *error)
 {
 	error_init (error);
+	ERROR_DECL (parse_error);
 
 	MonoTypeNameParse info;
 	gboolean type_resolve;
@@ -4512,11 +4513,10 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 	goto_if_nok (error, fail);
 
 	/*g_print ("requested type %s in %s\n", str, assembly->assembly->aname.name);*/
-	ERROR_DECL_VALUE (parse_error);
-	if (!mono_reflection_parse_type_checked (str, &info, &parse_error)) {
+	if (!mono_reflection_parse_type_checked (str, &info, parse_error)) {
 		g_free (str);
 		mono_reflection_free_type_info (&info);
-		mono_error_cleanup (&parse_error);
+		mono_error_cleanup (parse_error);
 		if (throwOnError) {
 			mono_error_set_argument (error, "typeName", "failed to parse the type");
 			goto fail;
@@ -4607,9 +4607,9 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 
 	if (!type) {
 		if (throwOnError) {
-			ERROR_DECL_VALUE (inner_error);
-			char *type_name = mono_string_handle_to_utf8 (name, &inner_error);
-			mono_error_assert_ok (&inner_error);
+			ERROR_DECL (inner_error);
+			char *type_name = mono_string_handle_to_utf8 (name, inner_error);
+			mono_error_assert_ok (inner_error);
 			MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
 			char *assmname = mono_stringify_assembly_name (&assembly->aname);
 			mono_error_set_type_load_name (error, type_name, assmname, "%s", "");
@@ -5517,8 +5517,8 @@ image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int t
 {
 	error_init (error);
 	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL_VALUE (klass_error);
-	MonoClass *klass = mono_class_get_checked (image, table_idx | MONO_TOKEN_TYPE_DEF, &klass_error);
+	ERROR_DECL (klass_error);
+	MonoClass *klass = mono_class_get_checked (image, table_idx | MONO_TOKEN_TYPE_DEF, klass_error);
 
 	if (klass) {
 		MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
@@ -5526,7 +5526,7 @@ image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int t
 
 		MONO_HANDLE_ARRAY_SETREF (res, count, rt);
 	} else {
-		MonoException *ex = mono_error_convert_to_exception (&klass_error);
+		MonoException *ex = mono_error_convert_to_exception (klass_error);
 		MONO_HANDLE_ARRAY_SETRAW (exceptions, count, ex);
 	}
 	HANDLE_FUNCTION_RETURN ();
@@ -5604,11 +5604,10 @@ static void
 set_class_failure_in_array (MonoArrayHandle exl, int i, MonoClass *klass)
 {
 	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL_VALUE (unboxed_error);
-	error_init (&unboxed_error);
-	mono_error_set_for_class_failure (&unboxed_error, klass);
+	ERROR_DECL (unboxed_error);
+	mono_error_set_for_class_failure (unboxed_error, klass);
 
-	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, mono_error_convert_to_exception (&unboxed_error));
+	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, mono_error_convert_to_exception (unboxed_error));
 	MONO_HANDLE_ARRAY_SETREF (exl, i, exc);
 	HANDLE_FUNCTION_RETURN ();
 }
@@ -6129,17 +6128,17 @@ module_resolve_type_token (MonoImage *image, guint32 token, MonoArrayHandle type
 
 	if (image_is_dynamic (image)) {
 		if ((table == MONO_TABLE_TYPEDEF) || (table == MONO_TABLE_TYPEREF)) {
-			ERROR_DECL_VALUE (inner_error);
-			klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &inner_error);
-			mono_error_cleanup (&inner_error);
+			ERROR_DECL (inner_error);
+			klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, inner_error);
+			mono_error_cleanup (inner_error);
 			result = klass ? m_class_get_byval_arg (klass) : NULL;
 			goto leave;
 		}
 
 		init_generic_context_from_args_handles (&context, type_args, method_args);
-		ERROR_DECL_VALUE (inner_error);
-		klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, &inner_error);
-		mono_error_cleanup (&inner_error);
+		ERROR_DECL (inner_error);
+		klass = (MonoClass *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, inner_error);
+		mono_error_cleanup (inner_error);
 		result = klass ? m_class_get_byval_arg (klass) : NULL;
 		goto leave;
 	}
@@ -6188,9 +6187,9 @@ module_resolve_method_token (MonoImage *image, guint32 token, MonoArrayHandle ty
 
 	if (image_is_dynamic (image)) {
 		if (table == MONO_TABLE_METHOD) {
-			ERROR_DECL_VALUE (inner_error);
-			method = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &inner_error);
-			mono_error_cleanup (&inner_error);
+			ERROR_DECL (inner_error);
+			method = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, inner_error);
+			mono_error_cleanup (inner_error);
 			goto leave;
 		}
 
@@ -6200,9 +6199,9 @@ module_resolve_method_token (MonoImage *image, guint32 token, MonoArrayHandle ty
 		}
 
 		init_generic_context_from_args_handles (&context, type_args, method_args);
-		ERROR_DECL_VALUE (inner_error);
-		method = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, &inner_error);
-		mono_error_cleanup (&inner_error);
+		ERROR_DECL (inner_error);
+		method = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, inner_error);
+		mono_error_cleanup (inner_error);
 		goto leave;
 	}
 
@@ -6280,9 +6279,9 @@ module_resolve_field_token (MonoImage *image, guint32 token, MonoArrayHandle typ
 
 	if (image_is_dynamic (image)) {
 		if (table == MONO_TABLE_FIELD) {
-			ERROR_DECL_VALUE (inner_error);
-			field = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, &inner_error);
-			mono_error_cleanup (&inner_error);
+			ERROR_DECL (inner_error);
+			field = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, NULL, inner_error);
+			mono_error_cleanup (inner_error);
 			goto leave;
 		}
 
@@ -6292,9 +6291,9 @@ module_resolve_field_token (MonoImage *image, guint32 token, MonoArrayHandle typ
 		}
 
 		init_generic_context_from_args_handles (&context, type_args, method_args);
-		ERROR_DECL_VALUE (inner_error);
-		field = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, &inner_error);
-		mono_error_cleanup (&inner_error);
+		ERROR_DECL (inner_error);
+		field = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, FALSE, NULL, &context, inner_error);
+		mono_error_cleanup (inner_error);
 		goto leave;
 	}
 
@@ -6523,12 +6522,12 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 	}
 
 	if (mono_security_core_clr_enabled ()) {
-		ERROR_DECL_VALUE (security_error);
-		if (!mono_security_core_clr_ensure_delegate_creation (method, &security_error)) {
+		ERROR_DECL (security_error);
+		if (!mono_security_core_clr_ensure_delegate_creation (method, security_error)) {
 			if (throwOnBindFailure)
-				mono_error_move (error, &security_error);
+				mono_error_move (error, security_error);
 			else
-				mono_error_cleanup (&security_error);
+				mono_error_cleanup (security_error);
 			return NULL_HANDLE;
 		}
 	}

@@ -1247,16 +1247,16 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 	if (unhandled_exception_hook) {
 		unhandled_exception_hook (exc, unhandled_exception_hook_data);
 	} else {
-		ERROR_DECL_VALUE (inner_error);
+		ERROR_DECL (inner_error);
 		MonoObject *other = NULL;
-		MonoString *str = mono_object_try_to_string (exc, &other, &inner_error);
+		MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
 		char *msg = NULL;
 		
-		if (str && is_ok (&inner_error)) {
-			msg = mono_string_to_utf8_checked_internal (str, &inner_error);
-			if (!is_ok (&inner_error)) {
+		if (str && is_ok (inner_error)) {
+			msg = mono_string_to_utf8_checked_internal (str, inner_error);
+			if (!is_ok (inner_error)) {
 				msg = g_strdup_printf ("Nested exception while formatting original exception");
-				mono_error_cleanup (&inner_error);
+				mono_error_cleanup (inner_error);
 			}
 		} else if (other) {
 			char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);

@@ -4990,9 +4990,9 @@ prepare_thread_to_exec_main (MonoDomain *domain, MonoMethod *method)
 		}
 	}
 
-	ERROR_DECL_VALUE (cattr_error);
-	cinfo = mono_custom_attrs_from_method_checked (method, &cattr_error);
-	mono_error_cleanup (&cattr_error); /* FIXME warn here? */
+	ERROR_DECL (cattr_error);
+	cinfo = mono_custom_attrs_from_method_checked (method, cattr_error);
+	mono_error_cleanup (cattr_error); /* FIXME warn here? */
 	if (cinfo) {
 		has_stathread_attribute = mono_custom_attrs_has_attr (cinfo, mono_class_get_sta_thread_attribute_class ());
 		if (!cinfo->cached)
@@ -5058,13 +5058,13 @@ do_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 
 	/* FIXME: check signature of method */
 	if (mono_method_signature_internal (method)->ret->type == MONO_TYPE_I4) {
-		ERROR_DECL_VALUE (inner_error);
+		ERROR_DECL (inner_error);
 		MonoObject *res;
-		res = mono_runtime_try_invoke (method, NULL, pa, exc, &inner_error);
-		if (*exc == NULL && !mono_error_ok (&inner_error))
-			*exc = (MonoObject*) mono_error_convert_to_exception (&inner_error);
+		res = mono_runtime_try_invoke (method, NULL, pa, exc, inner_error);
+		if (*exc == NULL && !mono_error_ok (inner_error))
+			*exc = (MonoObject*) mono_error_convert_to_exception (inner_error);
 		else
-			mono_error_cleanup (&inner_error);
+			mono_error_cleanup (inner_error);
 
 		if (*exc == NULL)
 			rval = *(guint32 *)(mono_object_get_data (res));
@@ -5073,12 +5073,12 @@ do_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 
 		mono_environment_exitcode_set (rval);
 	} else {
-		ERROR_DECL_VALUE (inner_error);
-		mono_runtime_try_invoke (method, NULL, pa, exc, &inner_error);
-		if (*exc == NULL && !mono_error_ok (&inner_error))
-			*exc = (MonoObject*) mono_error_convert_to_exception (&inner_error);
+		ERROR_DECL (inner_error);
+		mono_runtime_try_invoke (method, NULL, pa, exc, inner_error);
+		if (*exc == NULL && !mono_error_ok (inner_error))
+			*exc = (MonoObject*) mono_error_convert_to_exception (inner_error);
 		else
-			mono_error_cleanup (&inner_error);
+			mono_error_cleanup (inner_error);
 
 		if (*exc == NULL)
 			rval = 0;

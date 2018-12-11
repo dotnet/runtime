@@ -2310,8 +2310,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					}
 				}
 
-				ERROR_DECL_VALUE (isinst_error);
-				error_init (&isinst_error);
+				ERROR_DECL (isinst_error); // FIXME not used https://github.com/mono/mono/pull/3055/files#r240548187
 				if (ei->flags == MONO_EXCEPTION_CLAUSE_NONE && mono_object_isinst_checked (ex_obj, catch_class, error)) {
 					/* runtime invokes catch even unhandled exceptions */
 					setup_stack_trace (mono_ex, &dynamic_methods, trace_ips, method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE);
@@ -2328,7 +2327,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 					result = MONO_FIRST_PASS_HANDLED;
 					return result;
 				}
-				mono_error_cleanup (&isinst_error);
+				mono_error_cleanup (isinst_error);
 			}
 		}
 

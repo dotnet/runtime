@@ -1159,7 +1159,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	MonoMethod *invoke = tramp_info->invoke;
 	guint8 *impl_this = (guint8 *)tramp_info->impl_this;
 	guint8 *impl_nothis = (guint8 *)tramp_info->impl_nothis;
-	ERROR_DECL_VALUE (err);
+	ERROR_DECL (err);
 	MonoMethodSignature *sig;
 	gpointer addr, compiled_method;
 	gboolean is_remote = FALSE;
@@ -1183,14 +1183,14 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 #ifndef DISABLE_REMOTING
 		if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 			is_remote = TRUE;
-			error_init (&err);
+			error_init (err);
 #ifndef DISABLE_COM
 			if (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class != mono_class_get_com_object_class () &&
 			   !mono_class_is_com_object (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class))
 #endif
-				method = mono_marshal_get_remoting_invoke (method, &err);
-			if (!is_ok (&err)) {
-				mono_error_set_pending_exception (&err);
+				method = mono_marshal_get_remoting_invoke (method, err);
+			if (!is_ok (err)) {
+				mono_error_set_pending_exception (err);
 				return NULL;
 			}
 		}
@@ -1198,10 +1198,10 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		if (!is_remote) {
 			sig = tramp_info->sig;
 			if (!(sig && method == tramp_info->method)) {
-				error_init (&err);
-				sig = mono_method_signature_checked (method, &err);
+				error_init (err);
+				sig = mono_method_signature_checked (method, err);
 				if (!sig) {
-					mono_error_set_pending_exception (&err);
+					mono_error_set_pending_exception (err);
 					return NULL;
 				}
 			}
@@ -1232,10 +1232,10 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	if (method) {
 		sig = tramp_info->sig;
 		if (!(sig && method == tramp_info->method)) {
-			error_init (&err);
-			sig = mono_method_signature_checked (method, &err);
+			error_init (err);
+			sig = mono_method_signature_checked (method, err);
 			if (!sig) {
-				mono_error_set_pending_exception (&err);
+				mono_error_set_pending_exception (err);
 				return NULL;
 			}
 		}

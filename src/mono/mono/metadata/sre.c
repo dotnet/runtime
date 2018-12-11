@@ -3795,8 +3795,8 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 	MonoType *type = (MonoType*)key;
 	MonoClass *klass = data->klass;
 	gboolean already_failed = !is_ok (data->error);
-	ERROR_DECL_VALUE (lerror);
-	MonoError *error = already_failed ? &lerror : data->error;
+	ERROR_DECL (lerror);
+	MonoError *error = already_failed ? lerror : data->error;
 
 	if ((type->type == MONO_TYPE_GENERICINST) && (type->data.generic_class->container_class == klass)) {
 		MonoClass *inst_klass = mono_class_from_mono_type_internal (type);

@@ -706,7 +706,7 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 		}
 
 		if (method_should_be_regression_tested (method, TRUE)) {
-			ERROR_DECL_VALUE (interp_error);
+			ERROR_DECL (interp_error);
 			MonoObject *exc = NULL;
 
 			if (do_regression_retries) {
@@ -717,8 +717,8 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 				++regression_test_skip_index;
 			}
 
-			result_obj = mini_get_interp_callbacks ()->runtime_invoke (method, NULL, NULL, &exc, &interp_error);
-			if (!mono_error_ok (&interp_error)) {
+			result_obj = mini_get_interp_callbacks ()->runtime_invoke (method, NULL, NULL, &exc, interp_error);
+			if (!mono_error_ok (interp_error)) {
 				cfailed++;
 				g_print ("Test '%s' execution failed.\n", method->name);
 			} else if (exc != NULL) {
