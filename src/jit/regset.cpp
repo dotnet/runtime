@@ -348,7 +348,6 @@ void RegSet::rsSpillTree(regNumber reg, GenTree* tree, unsigned regIdx /* =0 */)
     // In case of multi-reg call nodes only the spill flag
     // associated with the reg is cleared. Spill flag on
     // call node should be cleared by the caller of this method.
-    assert(tree->gtOper != GT_REG_VAR);
     assert((tree->gtFlags & GTF_SPILL) != 0);
 
     unsigned regFlags = 0;
