@@ -172,7 +172,6 @@ namespace System.Net.Http.Functional.Tests
                 if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1607OrGreater) return;
 
                 expectedVersion = new Version(2,0);
-                TestHelper.EnsureHttp2Feature(handler);
             }
 
             using (HttpClient client = new HttpClient(handler))
