@@ -540,7 +540,7 @@ namespace Mono.Linker.Steps {
 		protected void MarkSecurityDeclarations (ISecurityDeclarationProvider provider)
 		{
 			// most security declarations are removed (if linked) but user code might still have some
-			// and if the attribtues references types then they need to be marked too
+			// and if the attributes references types then they need to be marked too
 			if ((provider == null) || !provider.HasSecurityDeclarations)
 				return;
 

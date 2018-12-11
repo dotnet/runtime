@@ -5,7 +5,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	/// <summary>
-	/// This is an acceptable bug with the currently implementation.  Embeddeded link xml files will not be processed
+	/// This is an acceptable bug with the currently implementation.  Embedded link xml files will not be processed
 	/// </summary>
 	[IncludeBlacklistStep (true)]
 	[SetupCompileBefore ("base.dll", new [] { "Dependencies/PreserveDependencyMethodInNonReferencedAssemblyBase.cs" })]

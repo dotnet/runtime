@@ -18,9 +18,9 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 			TestReference ();
 			TestArray ();
 			TestArrayOfArray ();
-			TestMultiDimentionalArray ();
-			TestMultiDimentionalArrayFullString ();
-			TestMultiDimentionalArrayAsmName ();
+			TestMultiDimensionalArray ();
+			TestMultiDimensionalArrayFullString ();
+			TestMultiDimensionalArrayAsmName ();
 		}
 
 		[Kept]
@@ -129,32 +129,32 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 
 
 		[Kept]
-		public class MultiDimentionalArray{ }
+		public class MultiDimensionalArray{ }
 
 		[Kept]
-		public static void TestMultiDimentionalArray ()
+		public static void TestMultiDimensionalArray ()
 		{
-			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimentionalArray[,]";
+			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimensionalArray[,]";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 
 		[Kept]
-		public class MultiDimentionalArrayFullString { }
+		public class MultiDimensionalArrayFullString { }
 
 		[Kept]
-		public static void TestMultiDimentionalArrayFullString ()
+		public static void TestMultiDimensionalArrayFullString ()
 		{
-			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimentionalArrayFullString[,], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
+			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimensionalArrayFullString[,], test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 
 		[Kept]
-		public class MultiDimentionalArrayAsmName { }
+		public class MultiDimensionalArrayAsmName { }
 
 		[Kept]
-		public static void TestMultiDimentionalArrayAsmName ()
+		public static void TestMultiDimensionalArrayAsmName ()
 		{
-			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimentionalArrayAsmName[,], test";
+			var reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+MultiDimensionalArrayAsmName[,], test";
 			var typeKept = Type.GetType (reflectionTypeKeptString, false);
 		}
 	}
