@@ -570,10 +570,10 @@
   "drafts": [],
   "queue": {
     "id": 36,
-    "name": "DotNet-Build",
+    "name": "DotNetCore-build",
     "pool": {
       "id": 39,
-      "name": "DotNet-Build"
+      "name": "DotNetCore-build"
     }
   },
   "id": 4371,
