@@ -86,7 +86,7 @@ namespace System.Net.Http
             }
 
             // Process the SETTINGS frame.  This will send an ACK.
-            await ProcessSettingsFrame(frameHeader).ConfigureAwait(false);
+            ProcessSettingsFrame(frameHeader);
 
             ProcessIncomingFrames();
         }
@@ -108,8 +108,19 @@ namespace System.Net.Http
         {
             Debug.Assert(_outgoingBuffer.ActiveSpan.Length > 0);
 
-            await SendFramesAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
-            _outgoingBuffer.Discard(_outgoingBuffer.ActiveMemory.Length);
+            try
+            {
+                await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                Abort();
+                throw;
+            }
+            finally
+            {
+                _outgoingBuffer.Discard(_outgoingBuffer.ActiveMemory.Length);
+            }
         }
 
         private async Task<FrameHeader> ReadFrameAsync()
@@ -145,11 +156,11 @@ namespace System.Net.Http
                             break;
 
                         case FrameType.Data:
-                            await ProcessDataFrame(frameHeader).ConfigureAwait(false);
+                            ProcessDataFrame(frameHeader);
                             break;
 
                         case FrameType.Settings:
-                            await ProcessSettingsFrame(frameHeader).ConfigureAwait(false);
+                            ProcessSettingsFrame(frameHeader);
                             break;
 
                         case FrameType.Priority:
@@ -157,7 +168,7 @@ namespace System.Net.Http
                             break;
 
                         case FrameType.Ping:
-                            await ProcessPingFrame(frameHeader).ConfigureAwait(false);
+                            ProcessPingFrame(frameHeader);
                             break;
 
                         case FrameType.WindowUpdate:
@@ -181,7 +192,7 @@ namespace System.Net.Http
             }
             catch (Exception)
             {
-                AbortStreams(0);
+                Abort();
             }
         }
 
@@ -205,19 +216,6 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendRstStreamFrameAsync(int streamId, Http2ProtocolErrorCode errorCode)
-        {
-            WriteFrameHeader(new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId));
-
-            _outgoingBuffer.AvailableSpan[0] = (byte)(((int)errorCode & 0xFF000000) >> 24);
-            _outgoingBuffer.AvailableSpan[1] = (byte)(((int)errorCode & 0x00FF0000) >> 16);
-            _outgoingBuffer.AvailableSpan[2] = (byte)(((int)errorCode & 0x0000FF00) >> 8);
-            _outgoingBuffer.AvailableSpan[3] = (byte)((int)errorCode & 0x000000FF);
-            _outgoingBuffer.Commit(FrameHeader.RstStreamLength);
-
-            await FlushOutgoingBytesAsync().ConfigureAwait(false);
-        }
-
         private async Task ProcessHeadersFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Headers);
@@ -229,7 +227,9 @@ namespace System.Net.Http
             if (http2Stream == null)
             {
                 _incomingBuffer.Discard(frameHeader.Length);
-                await SendRstStreamFrameAsync(streamId, Http2ProtocolErrorCode.StreamClosed);
+
+                // Don't wait for completion, which could happen asynchronously.
+                ValueTask ignored = SendRstStreamAsync(streamId, Http2ProtocolErrorCode.StreamClosed);
                 return;
             }
 
@@ -297,7 +297,7 @@ namespace System.Net.Http
             return frameData;
         }
 
-        private Task ProcessDataFrame(FrameHeader frameHeader)
+        private void ProcessDataFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Data);
 
@@ -305,7 +305,10 @@ namespace System.Net.Http
             if (http2Stream == null)
             {
                 _incomingBuffer.Discard(frameHeader.Length);
-                return SendRstStreamFrameAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+
+                // Don't wait for completion, which could happen asynchronously.
+                ValueTask ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+                return;
             }
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
@@ -320,11 +323,9 @@ namespace System.Net.Http
             {
                 RemoveStream(http2Stream);
             }
-
-            return Task.CompletedTask;
         }
 
-        private async Task ProcessSettingsFrame(FrameHeader frameHeader)
+        private void ProcessSettingsFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Settings);
 
@@ -363,8 +364,8 @@ namespace System.Net.Http
                 _incomingBuffer.Discard(frameHeader.Length);
 
                 // Send acknowledgement
-                WriteFrameHeader(new FrameHeader(0, FrameType.Settings, FrameFlags.Ack, 0));
-                await FlushOutgoingBytesAsync().ConfigureAwait(false);
+                // Don't wait for completion, which could happen asynchronously.
+                ValueTask ignored = SendSettingsAckAsync();
             }
         }
 
@@ -382,7 +383,7 @@ namespace System.Net.Http
             _incomingBuffer.Discard(frameHeader.Length);
         }
 
-        private async Task ProcessPingFrame(FrameHeader frameHeader)
+        private void ProcessPingFrame(FrameHeader frameHeader)
         {
             Debug.Assert(frameHeader.Type == FrameType.Ping);
 
@@ -403,11 +404,8 @@ namespace System.Net.Http
             }
 
             // Send PING ACK
-            WriteFrameHeader(new FrameHeader(FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0));
-            _outgoingBuffer.EnsureAvailableSpace(FrameHeader.PingLength);
-            _incomingBuffer.ActiveSpan.Slice(0, FrameHeader.PingLength).CopyTo(_outgoingBuffer.AvailableSpan);
-            _outgoingBuffer.Commit(FrameHeader.PingLength);
-            await FlushOutgoingBytesAsync().ConfigureAwait(false);
+            // Don't wait for completion, which could happen asynchronously.
+            ValueTask ignored = SendPingAckAsync(_incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength));
 
             _incomingBuffer.Discard(frameHeader.Length);
         }
@@ -480,11 +478,146 @@ namespace System.Net.Http
             _incomingBuffer.Discard(frameHeader.Length);
         }
 
+        private async ValueTask AcquireWriteLockAsync()
+        {
+            await _writerLock.WaitAsync().ConfigureAwait(false);
+
+            // If the connection has been aborted, then fail now instead of trying to send more data.
+            if (IsAborted())
+            {
+                throw new IOException(SR.net_http_invalid_response);
+            }
+        }
+
+        private void ReleaseWriteLock()
+        {
+            // Currently, we always flush the write buffer before releasing the lock.
+            // If we change this in the future, we will need to revisit this assert.
+            Debug.Assert(_outgoingBuffer.ActiveMemory.IsEmpty);
+
+            _writerLock.Release();
+        }
+
+        private async ValueTask SendSettingsAckAsync()
+        {
+            await AcquireWriteLockAsync().ConfigureAwait(false);
+            try
+            {
+                WriteFrameHeader(new FrameHeader(0, FrameType.Settings, FrameFlags.Ack, 0));
+
+                await FlushOutgoingBytesAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                ReleaseWriteLock();
+            }
+        }
+
+        private async ValueTask SendPingAckAsync(ReadOnlyMemory<byte> pingContent)
+        {
+            Debug.Assert(pingContent.Length == FrameHeader.PingLength);
+
+            await AcquireWriteLockAsync().ConfigureAwait(false);
+            try
+            {
+                WriteFrameHeader(new FrameHeader(FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0));
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.PingLength);
+                pingContent.CopyTo(_outgoingBuffer.AvailableMemory);
+                _outgoingBuffer.Commit(FrameHeader.PingLength);
+
+                await FlushOutgoingBytesAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                ReleaseWriteLock();
+            }
+        }
+
+        private async ValueTask SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode)
+        {
+            await AcquireWriteLockAsync().ConfigureAwait(false);
+            try
+            {
+                WriteFrameHeader(new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId));
+
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.RstStreamLength);
+                _outgoingBuffer.AvailableSpan[0] = (byte)(((int)errorCode & 0xFF000000) >> 24);
+                _outgoingBuffer.AvailableSpan[1] = (byte)(((int)errorCode & 0x00FF0000) >> 16);
+                _outgoingBuffer.AvailableSpan[2] = (byte)(((int)errorCode & 0x0000FF00) >> 8);
+                _outgoingBuffer.AvailableSpan[3] = (byte)((int)errorCode & 0x000000FF);
+                _outgoingBuffer.Commit(FrameHeader.RstStreamLength);
+
+                await FlushOutgoingBytesAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                ReleaseWriteLock();
+            }
+        }
+
+        private (ReadOnlyMemory<byte> first, ReadOnlyMemory<byte> rest) SplitBufferForFraming(ReadOnlyMemory<byte> buffer) =>
+            buffer.Length > FrameHeader.MaxLength ?
+                (buffer.Slice(0, FrameHeader.MaxLength), buffer.Slice(FrameHeader.MaxLength)) :
+                (buffer, Memory<byte>.Empty);
+
+        private async ValueTask SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer)
+        {
+            ReadOnlyMemory<byte> remaining = buffer;
+
+            while (remaining.Length > 0)
+            {
+                ReadOnlyMemory<byte> current;
+                (current, remaining) = SplitBufferForFraming(remaining);
+
+                await AcquireWriteLockAsync().ConfigureAwait(false);
+                try
+                {
+                    _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size + current.Length);
+                    WriteFrameHeader(new FrameHeader(current.Length, FrameType.Data, FrameFlags.None, streamId));
+                    current.CopyTo(_outgoingBuffer.AvailableMemory);
+                    _outgoingBuffer.Commit(current.Length);
+
+                    await FlushOutgoingBytesAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    ReleaseWriteLock();
+                }
+            }
+        }
+
+        private async ValueTask SendEndStreamAsync(int streamId)
+        {
+            await AcquireWriteLockAsync().ConfigureAwait(false);
+            try
+            {
+                _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
+                WriteFrameHeader(new FrameHeader(0, FrameType.Data, FrameFlags.EndStream, streamId));
+                await FlushOutgoingBytesAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                ReleaseWriteLock();
+            }
+        }
+
         private void WriteFrameHeader(FrameHeader frameHeader)
         {
             _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
             frameHeader.WriteTo(_outgoingBuffer.AvailableSpan);
             _outgoingBuffer.Commit(FrameHeader.Size);
+        }
+
+        private void Abort()
+        {
+            // The connection has failed, e.g. failed IO or a connection-level frame error.
+            // Abort all streams and cause further processing to fail.
+            AbortStreams(0);
+        }
+
+        private bool IsAborted()
+        {
+            return _disposed;
         }
 
         private void AbortStreams(int lastValidStream)
