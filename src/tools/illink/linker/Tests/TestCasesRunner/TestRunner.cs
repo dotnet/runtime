@@ -64,7 +64,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				expectationsAssemblyPath = GetResultOfTaskThatMakesNUnitAssertions (expectationsTask);
 			} catch (Exception) {
 				// If completing the input assembly task threw, we need to wait for the expectations task to complete before continuing
-				// otherwise we could set the next test up for a race condition with the expectations compiliation over access to the sandbox directory
+				// otherwise we could set the next test up for a race condition with the expectations compilation over access to the sandbox directory
 				if (inputAssemblyPath == null && expectationsAssemblyPath == null)
 				{
 					try {

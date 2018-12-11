@@ -92,7 +92,7 @@ namespace Mono.Linker.Steps
 						foreach (var attr in method.CustomAttributes) {
 							//
 							// [NonEvent] attribute is commonly used to mark code which calls
-							// IsEnabled we could check for that as well to be more aggresive
+							// IsEnabled we could check for that as well to be more aggressive
 							// but for now I haven't seen such code in wild
 							//
 							if (BCL.EventTracingForWindows.IsNonEventAtribute (attr.AttributeType)) {

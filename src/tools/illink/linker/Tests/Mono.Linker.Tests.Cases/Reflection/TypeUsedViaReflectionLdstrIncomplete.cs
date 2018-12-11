@@ -9,8 +9,8 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 		public static void Main ()
 		{
 			var typePart = GetTypePart ();
-			var asemmblyPart = ",test";
-			var typeKept = Type.GetType (string.Concat (typePart, asemmblyPart), false);
+			var assemblyPart = ",test";
+			var typeKept = Type.GetType (string.Concat (typePart, assemblyPart), false);
 		}
 
 		public class Full { }

@@ -26,7 +26,7 @@ namespace LinkerAnalyzer.Core
 				return string.Format (" [{0} deps]", parentIndexes.Count);
 			}
 		}
-	};
+	}
 
 	public class DependencyGraph
 	{
@@ -46,7 +46,7 @@ namespace LinkerAnalyzer.Core
 					Load (zipStream);
 				}
 			} catch (Exception) {
-				Console.WriteLine ("Unable to open and read the dependecies.");
+				Console.WriteLine ("Unable to open and read the dependencies.");
 				Environment.Exit (1);
 			}
 		}
