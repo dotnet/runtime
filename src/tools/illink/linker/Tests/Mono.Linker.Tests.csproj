@@ -110,5 +110,6 @@
     <Compile Include="TestCasesRunner\TestCaseMetadaProvider.cs" />
     <Compile Include="TestCasesRunner\TestCaseSandbox.cs" />
     <Compile Include="Tests\TypeNameParserTests.cs" />
+    <Compile Include="Tests\ParseResponseFileLinesTests.cs" />
   </ItemGroup>
 </Project>
