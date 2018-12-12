@@ -631,7 +631,7 @@ namespace System.Net.Http
             }
 
             WriteHeader(":authority", authority);
-            WriteHeader(":path", request.RequestUri.GetComponents(UriComponents.PathAndQuery | UriComponents.Fragment, UriFormat.UriEscaped));
+            WriteHeader(":path", request.RequestUri.PathAndQuery);
 
             if (request.HasHeaders)
             {
