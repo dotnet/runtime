@@ -51,7 +51,7 @@
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <UAPToolsPackageVersion>1.0.24</UAPToolsPackageVersion>
+    <UAPToolsPackageVersion>1.0.25</UAPToolsPackageVersion>
 
     <!-- Code coverage package version -->
     <CoverletConsolePackageVersion>1.3.0</CoverletConsolePackageVersion>
