@@ -154,7 +154,7 @@ void ShimRemoteDataTarget::Dispose()
 //
 
 HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
-                                        DWORD processId, 
+                                        const ProcessDescriptor * pProcessDescriptor,
                                         ShimDataTarget ** ppDataTarget)
 {
     HandleHolder hDummy;
@@ -164,7 +164,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     DbgTransportTarget *   pProxy = g_pDbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
 
-    hr = pProxy->GetTransportForProcess(processId, &pTransport, &hDummy);
+    hr = pProxy->GetTransportForProcess(pProcessDescriptor, &pTransport, &hDummy);
     if (FAILED(hr))
     {
         goto Label_Exit;
@@ -176,7 +176,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
         goto Label_Exit;
     }
 
-    pRemoteDataTarget = new (nothrow) ShimRemoteDataTarget(processId, pProxy, pTransport);
+    pRemoteDataTarget = new (nothrow) ShimRemoteDataTarget(pProcessDescriptor->m_Pid, pProxy, pTransport);
     if (pRemoteDataTarget == NULL)
     {
         hr = E_OUTOFMEMORY;

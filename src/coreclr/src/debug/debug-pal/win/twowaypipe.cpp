@@ -17,19 +17,19 @@
 // Creates a server side of the pipe. 
 // Id is used to create pipes names and uniquely identify the pipe on the machine. 
 // true - success, false - failure (use GetLastError() for more details)
-bool TwoWayPipe::CreateServer(DWORD id)
+bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 {
     _ASSERTE(m_state == NotInitialized);
     if (m_state != NotInitialized)
         return false;
 
-    m_inboundPipe = CreateOneWayPipe(id, true);
+    m_inboundPipe = CreateOneWayPipe(pd.m_Pid, true);
     if (m_inboundPipe == INVALID_HANDLE_VALUE)
     {
         return false;
     }
 
-    m_outboundPipe = CreateOneWayPipe(id, false);
+    m_outboundPipe = CreateOneWayPipe(pd.m_Pid, false);
     if (m_outboundPipe == INVALID_HANDLE_VALUE)
     {
         CloseHandle(m_inboundPipe);
@@ -45,19 +45,19 @@ bool TwoWayPipe::CreateServer(DWORD id)
 // Connects to a previously opened server side of the pipe.
 // Id is used to locate the pipe on the machine. 
 // true - success, false - failure (use GetLastError() for more details)
-bool TwoWayPipe::Connect(DWORD id)
+bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
 {
     _ASSERTE(m_state == NotInitialized);
     if (m_state != NotInitialized)
         return false;
 
-    m_inboundPipe = OpenOneWayPipe(id, true);
+    m_inboundPipe = OpenOneWayPipe(pd.m_Pid, true);
     if (m_inboundPipe == INVALID_HANDLE_VALUE)
     {
         return false;
     }
 
-    m_outboundPipe = OpenOneWayPipe(id, false);
+    m_outboundPipe = OpenOneWayPipe(pd.m_Pid, false);
     if (m_outboundPipe == INVALID_HANDLE_VALUE)
     {
         CloseHandle(m_inboundPipe);

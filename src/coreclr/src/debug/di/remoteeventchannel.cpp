@@ -90,7 +90,7 @@ private:
 // Allocate and return an old-style event channel object for this target platform.
 HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB, 
                                        ICorDebugMutableDataTarget * pMutableDataTarget,
-                                       DWORD dwProcessId,
+                                       const ProcessDescriptor * pProcessDescriptor,
                                        MachineInfo machineInfo,
                                        IEventChannel ** ppEventChannel)
 {
@@ -105,7 +105,7 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
     DbgTransportTarget *   pProxy     = g_pDbgTransportTarget;
     DbgTransportSession *  pTransport = NULL;
 
-    hr = pProxy->GetTransportForProcess(dwProcessId, &pTransport, &hDummy);
+    hr = pProxy->GetTransportForProcess(pProcessDescriptor, &pTransport, &hDummy);
     if (FAILED(hr))
     {
         goto Label_Exit;

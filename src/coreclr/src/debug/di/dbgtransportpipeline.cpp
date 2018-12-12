@@ -91,7 +91,7 @@ public:
         LPPROCESS_INFORMATION lpProcessInformation);
 
     // Attach
-    virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, DWORD processId);
+    virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor);
 
     // Detach
     virtual HRESULT DebugActiveProcessStop(DWORD processId);
@@ -224,8 +224,10 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
 
     if (SUCCEEDED(hr))
     {
+        ProcessDescriptor processDescriptor = ProcessDescriptor::Create(lpProcessInformation->dwProcessId, NULL);
+
         // Establish a connection to the actual runtime to be debugged.
-        hr = m_pProxy->GetTransportForProcess(lpProcessInformation->dwProcessId, 
+        hr = m_pProxy->GetTransportForProcess(&processDescriptor, 
                                               &m_pTransport, 
                                               &m_hProcess);
         if (SUCCEEDED(hr))
@@ -283,7 +285,7 @@ HRESULT DbgTransportPipeline::CreateProcessUnderDebugger(
 }
 
 // Attach the debugger to this process.
-HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, DWORD processId)
+HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor)
 {
     // INativeEventPipeline has a 1:1 relationship with CordbProcess.
     _ASSERTE(!IsTransportRunning());
@@ -293,7 +295,7 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, DWORD 
     m_pProxy = g_pDbgTransportTarget;
 
     // Establish a connection to the actual runtime to be debugged.
-    hr = m_pProxy->GetTransportForProcess(processId, &m_pTransport, &m_hProcess);
+    hr = m_pProxy->GetTransportForProcess(&processDescriptor, &m_pTransport, &m_hProcess);
     if (SUCCEEDED(hr))
     {
         // TODO: Pass this timeout as a parameter all the way from debugger
@@ -313,7 +315,7 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, DWORD 
 
     if (SUCCEEDED(hr))
     {
-        m_dwProcessId = processId;
+        m_dwProcessId = processDescriptor.m_Pid;
         m_fRunning = TRUE;
     }
     else
