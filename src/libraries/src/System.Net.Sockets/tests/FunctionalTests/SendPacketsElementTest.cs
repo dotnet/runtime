@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendPacketsElementTest
+    public partial class SendPacketsElementTest
     {
         #region Buffer
 
@@ -15,7 +16,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement((byte[])null);
+                new SendPacketsElement((byte[])null);
             });
         }
 
@@ -24,7 +25,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement((byte[])null, 0, 0);
+                new SendPacketsElement((byte[])null, 0, 0);
             });
         }
 
@@ -34,7 +35,7 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() =>
             {
                 // Elements with null Buffers are ignored on Send
-                SendPacketsElement element = new SendPacketsElement((byte[])null, 0, 0, true);
+                new SendPacketsElement((byte[])null, 0, 0, true);
             });
         }
 
@@ -68,7 +69,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement(new byte[10], -1, 11);
+                new SendPacketsElement(new byte[10], -1, 11);
             });
         }
 
@@ -77,7 +78,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement(new byte[10], 0, -1);
+                new SendPacketsElement(new byte[10], 0, -1);
             });
         }
 
@@ -86,7 +87,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement(new byte[10], 11, 1);
+                new SendPacketsElement(new byte[10], 11, 1);
             });
         }
 
@@ -95,7 +96,7 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement(new byte[10], 5, 10);
+                new SendPacketsElement(new byte[10], 5, 10);
             });
         }
 
@@ -145,7 +146,15 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentNullException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement((string)null);
+                new SendPacketsElement((string)null);
+            });
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                new SendPacketsElement((string)null, 0, 0);
+            });
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                new SendPacketsElement((string)null, 0, 0, true);
             });
         }
 
@@ -202,7 +211,11 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement("SomeFileName", -1, 11);
+                new SendPacketsElement("SomeFileName", -1, 11);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                new SendPacketsElement("SomeFileName", -1, 11, true);
             });
         }
 
@@ -211,7 +224,11 @@ namespace System.Net.Sockets.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
-                SendPacketsElement element = new SendPacketsElement("SomeFileName", 0, -1);
+                new SendPacketsElement("SomeFileName", 0, -1);
+            });
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                new SendPacketsElement("SomeFileName", 0, -1, true);
             });
         }
 
