@@ -184,5 +184,12 @@ namespace System.Net.Http.Functional.Tests
             return (bool)hasMatchingOpenSslVersion.GetValue(null);
 #endif
         }
+
+        public static byte[] GenerateRandomContent(int size)
+        {
+            byte[] data = new byte[size];
+            new Random(42).NextBytes(data);
+            return data;
+        }
     }
 }
