@@ -569,10 +569,10 @@
   "quality": "definition",
   "drafts": [],
   "queue": {
-    "id": 36,
+    "id": 330,
     "name": "DotNetCore-build",
     "pool": {
-      "id": 39,
+      "id": 97,
       "name": "DotNetCore-build"
     }
   },
