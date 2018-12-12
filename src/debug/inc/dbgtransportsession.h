@@ -318,7 +318,7 @@ public:
     // requires the addresses of a couple of runtime data structures to service certain debugger requests that
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-    HRESULT Init(DWORD pid, HANDLE hProcessExited);
+    HRESULT Init(const ProcessDescriptor& pd, HANDLE hProcessExited);
 #else
     HRESULT Init(DebuggerIPCControlBlock * pDCB, AppDomainEnumerationIPCBlock * pADB);
 #endif // RIGHT_SIDE_COMPILE
@@ -717,11 +717,11 @@ private:
 
 #ifdef RIGHT_SIDE_COMPILE
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
-    DWORD           m_pid;                  // Id of a process we're talking to.
+    ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
 
-    HANDLE          m_hProcessExited;       // event which will be signaled when the debuggee is terminated
+    HANDLE            m_hProcessExited;       // event which will be signaled when the debuggee is terminated
 
-    bool            m_fDebuggerAttached;
+    bool              m_fDebuggerAttached;
 #endif
 
     // Debugger event handling. To improve performance we allow the debugger to send as many events as it
