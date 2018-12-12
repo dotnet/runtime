@@ -670,15 +670,15 @@ namespace System.Net.Http
             // We also serialize usage of the header encoder and the header buffer this way.
             await _writerLock.WaitAsync().ConfigureAwait(false);
 
-            // Generate the entire header block, without framing, into the connection header buffer.
-            WriteHeaders(request);
-
-            ReadOnlyMemory<byte> remaining = _headerBuffer.ActiveMemory;
-            Debug.Assert(remaining.Length > 0);
-
-            // Split into frames and send.
             try
             {
+                // Generate the entire header block, without framing, into the connection header buffer.
+                WriteHeaders(request);
+
+                ReadOnlyMemory<byte> remaining = _headerBuffer.ActiveMemory;
+                Debug.Assert(remaining.Length > 0);
+
+                // Split into frames and send.
                 ReadOnlyMemory<byte> current;
                 (current, remaining) = SplitBufferForFraming(remaining);
 
