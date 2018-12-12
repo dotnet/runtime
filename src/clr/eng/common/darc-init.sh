@@ -17,10 +17,14 @@ verbosity=m
 
 function InstallDarcCli {
   local darc_cli_package_name="microsoft.dotnet.darc"
-  local uninstall_command=`$DOTNET_INSTALL_DIR/dotnet tool uninstall $darc_cli_package_name -g`
-  local tool_list=$($DOTNET_INSTALL_DIR/dotnet tool list -g)
+
+  InitializeDotNetCli
+  local dotnet_root=$_InitializeDotNetCli
+
+  local uninstall_command=`$dotnet_root/dotnet tool uninstall $darc_cli_package_name -g`
+  local tool_list=$($dotnet_root/dotnet tool list -g)
   if [[ $tool_list = *$darc_cli_package_name* ]]; then
-    echo $($DOTNET_INSTALL_DIR/dotnet tool uninstall $darc_cli_package_name -g)
+    echo $($dotnet_root/dotnet tool uninstall $darc_cli_package_name -g)
   fi
 
   ReadGlobalVersion "Microsoft.DotNet.Arcade.Sdk"
@@ -28,8 +32,7 @@ function InstallDarcCli {
 
   echo "Installing Darc CLI version $toolset_version..."
   echo "You may need to restart your command shell if this is the first dotnet tool you have installed."
-  echo $($DOTNET_INSTALL_DIR/dotnet tool install $darc_cli_package_name --version $toolset_version -v $verbosity -g)
+  echo $($dotnet_root/dotnet tool install $darc_cli_package_name --version $toolset_version -v $verbosity -g)
 }
 
-InitializeTools
 InstallDarcCli
