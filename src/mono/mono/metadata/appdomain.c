@@ -462,7 +462,7 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 	context = MONO_HANDLE_CAST (MonoAppContext, mono_object_new_pinned_handle (domain, klass, error));
 	goto_if_nok (error, exit);
 
-	MONO_HANDLE_SETVAL (context, domain_id, intptr_t, domain->domain_id);
+	MONO_HANDLE_SETVAL (context, domain_id, gint32, domain->domain_id);
 	MONO_HANDLE_SETVAL (context, context_id, gint32, 0);
 	mono_threads_register_app_context (context, error);
 	mono_error_assert_ok (error);

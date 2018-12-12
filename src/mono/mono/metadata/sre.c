@@ -2576,7 +2576,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 		goto leave;
 	}
 
-	MONO_HANDLE_SETVAL (ref_tb, state, MonoTypeBuilderState, MonoTypeBuilderEntered);
+	MONO_HANDLE_SETVAL (ref_tb, state, gint32/*MonoTypeBuilderState*/, MonoTypeBuilderEntered);
 	MonoReflectionModuleBuilderHandle module_ref;
 	module_ref = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, ref_tb, module);
 	GHashTable *unparented_classes;

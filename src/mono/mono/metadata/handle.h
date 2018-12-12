@@ -379,6 +379,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // but it is not widely enough implemented (i.e. Microsoft C).
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
 		TYPE __val = (VALUE);	\
+		if (0) { TYPE * typecheck G_GNUC_UNUSED = &MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (HANDLE)->FIELD); } \
 		MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD = __val); \
 	 } while (0)
 

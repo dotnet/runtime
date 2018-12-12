@@ -4912,7 +4912,7 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 		unlock = FALSE;
 	} else if (MONO_HANDLE_GETVAL (thread, thread_interrupt_requested)) {
 		// thread->thread_interrupt_requested = FALSE
-		MONO_HANDLE_SETVAL (thread, thread_interrupt_requested, gboolean, FALSE);
+		MONO_HANDLE_SETVAL (thread, thread_interrupt_requested, MonoBoolean, FALSE);
 		unlock_thread_handle (thread);
 		unlock = FALSE;
 		ERROR_DECL (error);
