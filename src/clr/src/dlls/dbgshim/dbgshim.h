@@ -35,6 +35,14 @@ RegisterForRuntimeStartup(
     __out PVOID *ppUnregisterToken);
 
 EXTERN_C HRESULT
+RegisterForRuntimeStartupEx(
+    __in DWORD dwProcessId,
+    __in LPCWSTR szApplicationGroupId,
+    __in PSTARTUP_CALLBACK pfnCallback,
+    __in PVOID parameter,
+    __out PVOID *ppUnregisterToken);
+
+EXTERN_C HRESULT
 UnregisterForRuntimeStartup(
     __in PVOID pUnregisterToken);
 
@@ -67,6 +75,13 @@ EXTERN_C HRESULT
 CreateDebuggingInterfaceFromVersionEx(
     __in int iDebuggerVersion,
     __in LPCWSTR szDebuggeeVersion,
+    __out IUnknown ** ppCordb);
+
+EXTERN_C HRESULT 
+CreateDebuggingInterfaceFromVersion2(
+    __in int iDebuggerVersion,
+    __in LPCWSTR szDebuggeeVersion,
+    __in LPCWSTR szApplicationGroupId,
     __out IUnknown ** ppCordb);
 
 EXTERN_C HRESULT 

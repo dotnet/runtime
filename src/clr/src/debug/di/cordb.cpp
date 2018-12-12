@@ -87,9 +87,6 @@ HINSTANCE       g_hInst;                // Instance handle to this piece of code
 // This was used by the Mix07 release of Silverlight, but it didn't properly support versioning
 // and we no longer support it's debugger protocol so we require callers to use 
 // code:CoreCLRCreateCordbObject instead.
-// 
-// This is also still used on Mac - multi-instance debugging and debugger
-// versioning isn't really implemented there yet.  This probably needs to change.
 //*****************************************************************************
 STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 {
@@ -112,7 +109,61 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
         return E_INVALIDARG;
     }
 
-    return Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, IID_ICorDebug, (void **) ppCordb);
+    return Cordb::CreateObject(
+        (CorDebugInterfaceVersion)iDebuggerVersion, ProcessDescriptor::UNINITIALIZED_PID, /*lpApplicationGroupId*/ NULL, IID_ICorDebug, (void **) ppCordb);
+}
+
+//
+// Public API.  
+// Telesto Creation path with Mac sandbox support - only way to debug a sandboxed application on Mac.  
+// This supercedes code:CoreCLRCreateCordbObject
+// 
+// Arguments:
+//    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
+//    pid - pid of debuggee that we're attaching to.
+//    lpApplicationGroupId - A string representing the application group ID of a sandboxed
+//                           process running in Mac. Pass NULL if the process is not 
+//                           running in a sandbox and other platforms.
+//    hmodTargetCLR - module handle to clr in target pid that we're attaching to.
+//    ppCordb - (out) the resulting ICorDebug object.
+//
+// Notes:
+//    It's inconsistent that this takes a (handle, pid) but hands back an ICorDebug instead of an ICorDebugProcess.
+//    Callers will need to call *ppCordb->DebugActiveProcess(pid).
+STDAPI CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
+{
+    if (ppCordb == NULL)
+    {
+        return E_INVALIDARG;
+    }
+    if ((iDebuggerVersion < CorDebugVersion_2_0) ||
+        (iDebuggerVersion > CorDebugLatestVersion))
+    {
+        return E_INVALIDARG;
+    }
+
+    //
+    // Create the ICorDebug object
+    // 
+    RSExtSmartPtr<ICorDebug> pCordb;
+    Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, pid, lpApplicationGroupId, IID_ICorDebug, (void **) &pCordb);
+
+    //
+    // Associate it with the target instance
+    //
+    HRESULT hr = static_cast<Cordb*>(pCordb.GetValue())->SetTargetCLR(hmodTargetCLR);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    //
+    // Assign to out parameter.
+    // 
+    hr = pCordb->QueryInterface(IID_IUnknown, (void**) ppCordb);
+
+    // Implicit release of pUnk, pCordb
+    return hr;
 }
 
 //
@@ -131,40 +182,7 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 //    Callers will need to call *ppCordb->DebugActiveProcess(pid).
 STDAPI CoreCLRCreateCordbObject(int iDebuggerVersion, DWORD pid, HMODULE hmodTargetCLR, IUnknown ** ppCordb)
 {
-    if (ppCordb == NULL)
-    {
-        return E_INVALIDARG;
-    }
-    if ((iDebuggerVersion < CorDebugVersion_2_0) ||
-        (iDebuggerVersion > CorDebugLatestVersion))
-    {
-        return E_INVALIDARG;
-    }
-
-    //
-    // Create the ICorDebug object
-    // 
-    RSExtSmartPtr<ICorDebug> pCordb;
-    Cordb::CreateObject((CorDebugInterfaceVersion)iDebuggerVersion, IID_ICorDebug, (void **) &pCordb);
-
-    // @dbgtodo - we should stash the pid and validate that it's the same pid we're attaching to in ICorDebug::DebugActiveProcess.
-    
-    //
-    // Associate it with the target instance
-    //
-    HRESULT hr = static_cast<Cordb*>(pCordb.GetValue())->SetTargetCLR(hmodTargetCLR);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    //
-    // Assign to out parameter.
-    // 
-    hr = pCordb->QueryInterface(IID_IUnknown, (void**) ppCordb);
-
-    // Implicit release of pUnk, pCordb
-    return hr;
+    return CoreCLRCreateCordbObjectEx(iDebuggerVersion, pid, NULL, hmodTargetCLR, ppCordb);
 }
 
 

@@ -14,15 +14,14 @@
 // Creates a server side of the pipe. 
 // Id is used to create pipes names and uniquely identify the pipe on the machine. 
 // true - success, false - failure (use GetLastError() for more details)
-bool TwoWayPipe::CreateServer(DWORD id)
+bool TwoWayPipe::CreateServer(const ProcessDescriptor& pd)
 {
     _ASSERTE(m_state == NotInitialized);
     if (m_state != NotInitialized)
         return false;
 
-    m_id = id;
-    PAL_GetTransportPipeName(m_inPipeName, id, "in");
-    PAL_GetTransportPipeName(m_outPipeName, id, "out");
+    PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
+    PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
 
     unlink(m_inPipeName);
 
@@ -47,16 +46,15 @@ bool TwoWayPipe::CreateServer(DWORD id)
 // Connects to a previously opened server side of the pipe.
 // Id is used to locate the pipe on the machine. 
 // true - success, false - failure (use GetLastError() for more details)
-bool TwoWayPipe::Connect(DWORD id)
+bool TwoWayPipe::Connect(const ProcessDescriptor& pd)
 {
     _ASSERTE(m_state == NotInitialized);
     if (m_state != NotInitialized)
         return false;
 
-    m_id = id;
     //"in" and "out" are switched deliberately, because we're on the client
-    PAL_GetTransportPipeName(m_inPipeName, id, "out");
-    PAL_GetTransportPipeName(m_outPipeName, id, "in");
+    PAL_GetTransportPipeName(m_inPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "out");
+    PAL_GetTransportPipeName(m_outPipeName, pd.m_Pid, pd.m_ApplicationGroupId, "in");
 
     // Pipe opening order is reversed compared to WaitForConnection()
     // in order to avaid deadlock.

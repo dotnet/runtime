@@ -293,13 +293,13 @@ HRESULT EventRedirectionPipeline::CreateProcessUnderDebugger(
 
 
 // Attach
-HRESULT EventRedirectionPipeline::DebugActiveProcess(MachineInfo machineInfo, DWORD processId)
+HRESULT EventRedirectionPipeline::DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor)
 {
-    m_dwProcessId = processId;
+    m_dwProcessId = processDescriptor.m_Pid;
 
     // Use redirected pipeline
     // Spin up debugger to attach to target.
-    return AttachDebuggerToTarget(m_AttachParams.Value(), processId);
+    return AttachDebuggerToTarget(m_AttachParams.Value(), processDescriptor.m_Pid);
 }
 
 // Detach

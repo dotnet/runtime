@@ -47,12 +47,13 @@ void DbgTransportTarget::Shutdown()
 // Given a PID attempt to find or create a DbgTransportSession instance to manage a connection to a runtime in
 // that process. Returns E_UNEXPECTED if the process can't be found. Also returns a handle that can be waited
 // on for process termination.
-HRESULT DbgTransportTarget::GetTransportForProcess(DWORD                   dwPID,
-                                                   DbgTransportSession   **ppTransport,
-                                                   HANDLE                 *phProcessHandle)
+HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pProcessDescriptor,
+                                                   DbgTransportSession     **ppTransport,
+                                                   HANDLE                   *phProcessHandle)
 {
     RSLockHolder lock(&m_sLock);
     HRESULT hr = S_OK;
+    DWORD dwPID = pProcessDescriptor->m_Pid;
 
     ProcessEntry *entry = LocateProcessByPID(dwPID);
 
@@ -78,7 +79,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(DWORD                   dwPID
        }
 
        // Initialize it (this immediately starts the remote connection process).
-       hr = transport->Init(dwPID, hProcess);
+       hr = transport->Init(*pProcessDescriptor, hProcess);
        if (FAILED(hr))
        {
            transport->Shutdown();
