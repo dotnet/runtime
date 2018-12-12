@@ -73,9 +73,6 @@ ICALL_EXPORT
 int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first);
 
 ICALL_EXPORT
-int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, gunichar2 value, gint32 options, MonoBoolean first);
-
-ICALL_EXPORT
 int
 ves_icall_System_Threading_Thread_current_lcid (void);
 

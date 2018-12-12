@@ -49,9 +49,6 @@ static gint32 string_invariant_compare (MonoString *str1, gint32 off1,
 static gint32 string_invariant_indexof (MonoString *source, gint32 sindex,
 					gint32 count, MonoString *value,
 					MonoBoolean first);
-static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
-					     gint32 count, gunichar2 value,
-					     MonoBoolean first);
 
 static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 
@@ -768,12 +765,6 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *
 	return(string_invariant_indexof (source, sindex, count, value, first));
 }
 
-int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, gunichar2 value, gint32 options, MonoBoolean first)
-{
-	return(string_invariant_indexof_char (source, sindex, count, value,
-					      first));
-}
-
 int
 ves_icall_System_Threading_Thread_current_lcid (void)
 {
@@ -906,32 +897,6 @@ static gint32 string_invariant_indexof (MonoString *source, gint32 sindex,
 			}
 		}
 		
-		return(-1);
-	}
-}
-
-static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
-					     gint32 count, gunichar2 value,
-					     MonoBoolean first)
-{
-	gint32 pos;
-	gunichar2 *src;
-
-	src = mono_string_chars_internal (source);
-	if(first) {
-		for (pos = sindex; pos != count + sindex; pos++) {
-			if (src [pos] == value) {
-				return(pos);
-			}
-		}
-
-		return(-1);
-	} else {
-		for (pos = sindex; pos > sindex - count; pos--) {
-			if (src [pos] == value)
-				return(pos);
-		}
-
 		return(-1);
 	}
 }
