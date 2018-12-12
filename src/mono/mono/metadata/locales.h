@@ -63,10 +63,6 @@ void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoComp
 
 ICALL_EXPORT
 MonoBoolean
-ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid (MonoRegionInfo *this_obj, gint lcid);
-
-ICALL_EXPORT
-MonoBoolean
 ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this_obj,
  MonoString *name);
 

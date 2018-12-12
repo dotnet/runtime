@@ -363,8 +363,7 @@ HANDLES(CULINF_7, "get_current_locale_name", ves_icall_System_Globalization_Cult
 ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures)
 //ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
 
-ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_1)
-ICALL(REGINF_1, "construct_internal_region_from_lcid", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid)
+ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_2)
 ICALL(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name)
 
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH)

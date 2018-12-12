@@ -55,8 +55,6 @@ static gint32 string_invariant_indexof_char (MonoString *source, gint32 sindex,
 
 static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
 
-static const RegionInfoEntry* region_info_entry_from_lcid (int lcid);
-
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (culture_info, "System.Globalization", "CultureInfo")
 
@@ -429,22 +427,6 @@ culture_info_entry_from_lcid (int lcid)
 	return ci;
 }
 
-static const RegionInfoEntry*
-region_info_entry_from_lcid (int lcid)
-{
-	const RegionInfoEntry *entry;
-	const CultureInfoEntry *ne;
-
-	ne = (const CultureInfoEntry *)mono_binary_search (&lcid, culture_entries, NUM_CULTURE_ENTRIES, sizeof (CultureInfoEntry), culture_lcid_locator);
-
-	if (ne == NULL)
-		return FALSE;
-
-	entry = &region_entries [ne->region_entry_index];
-
-	return entry;
-}
-
 #if defined (__APPLE__)
 static gchar*
 get_darwin_locale (void)
@@ -663,21 +645,6 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_specif
 	return ret;
 }
 */
-MonoBoolean
-ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid (MonoRegionInfo *this_obj,
-		gint lcid)
-{
-	ERROR_DECL (error);
-	const RegionInfoEntry *ri;
-	
-	ri = region_info_entry_from_lcid (lcid);
-	if(ri == NULL)
-		return FALSE;
-
-	MonoBoolean result = construct_region (this_obj, ri, error);
-	mono_error_set_pending_exception (error);
-	return result;
-}
 
 MonoBoolean
 ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this_obj,
