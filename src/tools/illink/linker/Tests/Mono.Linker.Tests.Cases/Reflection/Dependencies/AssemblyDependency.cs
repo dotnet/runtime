@@ -7,5 +7,12 @@ namespace Mono.Linker.Tests.Cases.Reflection.Dependencies
 		public AssemblyDependency ()
 		{
 		}
+
+		public static void UsedToKeepReferenceAtCompileTime ()
+		{
+		}
+
+		class TypeThatIsUsedViaReflection {
+		}
 	}
 }
