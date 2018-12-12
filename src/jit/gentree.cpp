@@ -227,10 +227,6 @@ LONG GenTree::s_gtNodeCounts[GT_COUNT + 1] = {0};
 /* static */
 void GenTree::InitNodeSize()
 {
-    /* 'GT_LCL_VAR' often gets changed to 'GT_REG_VAR' */
-
-    assert(GenTree::s_gtNodeSizes[GT_LCL_VAR] >= GenTree::s_gtNodeSizes[GT_REG_VAR]);
-
     /* Set all sizes to 'small' first */
 
     for (unsigned op = 0; op <= GT_COUNT; op++)
@@ -315,7 +311,6 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeRegVar)       <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeCast)         <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBox)          <= TREE_NODE_SZ_LARGE); // *** large node
@@ -4709,7 +4704,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_REG_VAR:
         case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
         case GT_ARGPLACE:
@@ -6744,9 +6738,6 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 GenTreeClsVar(tree->gtType, tree->gtClsVar.gtClsVarHnd, tree->gtClsVar.gtFieldSeq);
             break;
 
-        case GT_REG_VAR:
-            assert(!"clone regvar");
-
         default:
             if (!complexOK)
             {
@@ -6954,10 +6945,6 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_ARGPLACE:
                 copy = gtNewArgPlaceHolderNode(tree->gtType, tree->gtArgPlace.gtArgPlaceClsHnd);
-                goto DONE;
-
-            case GT_REG_VAR:
-                NO_WAY("Cloning of GT_REG_VAR node not supported");
                 goto DONE;
 
             case GT_FTN_ADDR:
@@ -8372,7 +8359,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_REG_VAR:
         case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
         case GT_ARGPLACE:
@@ -9453,7 +9439,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
-            case GT_REG_VAR:
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
                     printf("U");
@@ -10313,29 +10298,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                     printf(" (last use)");
                 }
             }
-            break;
-
-        case GT_REG_VAR:
-            printf(" ");
-            gtDispLclVar(tree->gtRegVar.gtLclNum);
-            if (isFloatRegType(tree->gtType))
-            {
-                assert(tree->gtRegVar.gtRegNum == tree->gtRegNum);
-                printf(" FPV%u", tree->gtRegNum);
-            }
-            else
-            {
-                printf(" %s", compRegVarName(tree->gtRegVar.gtRegNum));
-            }
-
-            varNum = tree->gtRegVar.gtLclNum;
-            varDsc = &lvaTable[varNum];
-
-            if (varDsc->lvTracked && fgLocalVarLivenessDone && ((tree->gtFlags & GTF_VAR_DEATH) != 0))
-            {
-                printf(" (last use)");
-            }
-
             break;
 
         case GT_JMP:

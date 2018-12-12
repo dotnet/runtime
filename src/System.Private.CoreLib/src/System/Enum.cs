@@ -402,32 +402,32 @@ namespace System
             switch (Type.GetTypeCode(rt))
             {
                 case TypeCode.SByte:
-                    parsed = TryParseInt32Enum(rt, value, valueSpan, sbyte.MinValue, sbyte.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_SByte), out intResult);
+                    parsed = TryParseInt32Enum(rt, value, valueSpan, sbyte.MinValue, sbyte.MaxValue, ignoreCase, throwOnFailure, TypeCode.SByte, out intResult);
                     result = parsed ? InternalBoxEnum(rt, intResult) : null;
                     return parsed;
 
                 case TypeCode.Int16:
-                    parsed = TryParseInt32Enum(rt, value, valueSpan, short.MinValue, short.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_Int16), out intResult);
+                    parsed = TryParseInt32Enum(rt, value, valueSpan, short.MinValue, short.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int16, out intResult);
                     result = parsed ? InternalBoxEnum(rt, intResult) : null;
                     return parsed;
 
                 case TypeCode.Int32:
-                    parsed = TryParseInt32Enum(rt, value, valueSpan, int.MinValue, int.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_Int32), out intResult);
+                    parsed = TryParseInt32Enum(rt, value, valueSpan, int.MinValue, int.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int32, out intResult);
                     result = parsed ? InternalBoxEnum(rt, intResult) : null;
                     return parsed;
 
                 case TypeCode.Byte:
-                    parsed = TryParseUInt32Enum(rt, value, valueSpan, byte.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_Byte), out uintResult);
+                    parsed = TryParseUInt32Enum(rt, value, valueSpan, byte.MaxValue, ignoreCase, throwOnFailure, TypeCode.Byte, out uintResult);
                     result = parsed ? InternalBoxEnum(rt, uintResult) : null;
                     return parsed;
 
                 case TypeCode.UInt16:
-                    parsed = TryParseUInt32Enum(rt, value, valueSpan, ushort.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_UInt16), out uintResult);
+                    parsed = TryParseUInt32Enum(rt, value, valueSpan, ushort.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt16, out uintResult);
                     result = parsed ? InternalBoxEnum(rt, uintResult) : null;
                     return parsed;
 
                 case TypeCode.UInt32:
-                    parsed = TryParseUInt32Enum(rt, value, valueSpan, uint.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_UInt32), out uintResult);
+                    parsed = TryParseUInt32Enum(rt, value, valueSpan, uint.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt32, out uintResult);
                     result = parsed ? InternalBoxEnum(rt, uintResult) : null;
                     return parsed;
 
@@ -482,36 +482,36 @@ namespace System
             switch (Type.GetTypeCode(typeof(TEnum)))
             {
                 case TypeCode.SByte:
-                    parsed = TryParseInt32Enum(rt, value, valueSpan, sbyte.MinValue, sbyte.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_SByte), out intResult);
+                    parsed = TryParseInt32Enum(rt, value, valueSpan, sbyte.MinValue, sbyte.MaxValue, ignoreCase, throwOnFailure, TypeCode.SByte, out intResult);
                     sbyte sbyteResult = (sbyte)intResult;
                     result = Unsafe.As<sbyte, TEnum>(ref sbyteResult);
                     return parsed;
 
                 case TypeCode.Int16:
-                    parsed = TryParseInt32Enum(rt, value, valueSpan, short.MinValue, short.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_Int16), out intResult);
+                    parsed = TryParseInt32Enum(rt, value, valueSpan, short.MinValue, short.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int16, out intResult);
                     short shortResult = (short)intResult;
                     result = Unsafe.As<short, TEnum>(ref shortResult);
                     return parsed;
 
                 case TypeCode.Int32:
-                    parsed = TryParseInt32Enum(rt, value, valueSpan, int.MinValue, int.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_Int32), out intResult);
+                    parsed = TryParseInt32Enum(rt, value, valueSpan, int.MinValue, int.MaxValue, ignoreCase, throwOnFailure, TypeCode.Int32, out intResult);
                     result = Unsafe.As<int, TEnum>(ref intResult);
                     return parsed;
 
                 case TypeCode.Byte:
-                    parsed = TryParseUInt32Enum(rt, value, valueSpan, byte.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_Byte), out uintResult);
+                    parsed = TryParseUInt32Enum(rt, value, valueSpan, byte.MaxValue, ignoreCase, throwOnFailure, TypeCode.Byte, out uintResult);
                     byte byteResult = (byte)uintResult;
                     result = Unsafe.As<byte, TEnum>(ref byteResult);
                     return parsed;
 
                 case TypeCode.UInt16:
-                    parsed = TryParseUInt32Enum(rt, value, valueSpan, ushort.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_UInt16), out uintResult);
+                    parsed = TryParseUInt32Enum(rt, value, valueSpan, ushort.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt16, out uintResult);
                     ushort ushortResult = (ushort)uintResult;
                     result = Unsafe.As<ushort, TEnum>(ref ushortResult);
                     return parsed;
 
                 case TypeCode.UInt32:
-                    parsed = TryParseUInt32Enum(rt, value, valueSpan, uint.MaxValue, ignoreCase, throwOnFailure, nameof(SR.Overflow_UInt32), out uintResult);
+                    parsed = TryParseUInt32Enum(rt, value, valueSpan, uint.MaxValue, ignoreCase, throwOnFailure, TypeCode.UInt32, out uintResult);
                     result = Unsafe.As<uint, TEnum>(ref uintResult);
                     return parsed;
 
@@ -534,29 +534,33 @@ namespace System
 
         /// <summary>Tries to parse the value of an enum with known underlying types that fit in an Int32 (Int32, Int16, and SByte).</summary>
         private static bool TryParseInt32Enum(
-            RuntimeType enumType, string originalValueString, ReadOnlySpan<char> value, int minInclusive, int maxInclusive, bool ignoreCase, bool throwOnFailure, string overflowFailureResourceName, out int result)
+            RuntimeType enumType, string originalValueString, ReadOnlySpan<char> value, int minInclusive, int maxInclusive, bool ignoreCase, bool throwOnFailure, TypeCode type, out int result)
         {
             Debug.Assert(
                 enumType.GetEnumUnderlyingType() == typeof(sbyte) ||
                 enumType.GetEnumUnderlyingType() == typeof(short) ||
                 enumType.GetEnumUnderlyingType() == typeof(int));
 
-            bool failureIsOverflow = false;
-            if (StartsNumber(value[0]) && Number.TryParseInt32IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result, ref failureIsOverflow))
+            Number.ParsingStatus status = default;
+            if (StartsNumber(value[0]))
             {
-                if ((uint)(result - minInclusive) <= (uint)(maxInclusive - minInclusive))
+                status = Number.TryParseInt32IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result);
+                if (status == Number.ParsingStatus.OK)
                 {
-                    return true;
-                }
+                    if ((uint)(result - minInclusive) <= (uint)(maxInclusive - minInclusive))
+                    {
+                        return true;
+                    }
 
-                failureIsOverflow = true;
+                    status = Number.ParsingStatus.Overflow;
+                }
             }
 
-            if (failureIsOverflow)
+            if (status == Number.ParsingStatus.Overflow)
             {
                 if (throwOnFailure)
                 {
-                    throw new OverflowException(SR.GetResourceString(overflowFailureResourceName));
+                    Number.ThrowOverflowException(type);
                 }
             }
             else if (TryParseByName(enumType, originalValueString, value, ignoreCase, throwOnFailure, out ulong ulongResult))
@@ -571,29 +575,33 @@ namespace System
         }
 
         /// <summary>Tries to parse the value of an enum with known underlying types that fit in a UInt32 (UInt32, UInt16, and Byte).</summary>
-        private static bool TryParseUInt32Enum(RuntimeType enumType, string originalValueString, ReadOnlySpan<char> value, uint maxInclusive, bool ignoreCase, bool throwOnFailure, string overflowFailureResourceName, out uint result)
+        private static bool TryParseUInt32Enum(RuntimeType enumType, string originalValueString, ReadOnlySpan<char> value, uint maxInclusive, bool ignoreCase, bool throwOnFailure, TypeCode type, out uint result)
         {
             Debug.Assert(
                 enumType.GetEnumUnderlyingType() == typeof(byte) ||
                 enumType.GetEnumUnderlyingType() == typeof(ushort) ||
                 enumType.GetEnumUnderlyingType() == typeof(uint));
 
-            bool failureIsOverflow = false;
-            if (StartsNumber(value[0]) && Number.TryParseUInt32IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result, ref failureIsOverflow))
+            Number.ParsingStatus status = default;
+            if (StartsNumber(value[0]))
             {
-                if (result <= maxInclusive)
+                status = Number.TryParseUInt32IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result);
+                if (status == Number.ParsingStatus.OK)
                 {
-                    return true;
-                }
+                    if (result <= maxInclusive)
+                    {
+                        return true;
+                    }
 
-                failureIsOverflow = true;
+                    status = Number.ParsingStatus.Overflow;
+                }
             }
 
-            if (failureIsOverflow)
+            if (status == Number.ParsingStatus.Overflow)
             {
                 if (throwOnFailure)
                 {
-                    throw new OverflowException(SR.GetResourceString(overflowFailureResourceName));
+                    Number.ThrowOverflowException(type);
                 }
             }
             else if (TryParseByName(enumType, originalValueString, value, ignoreCase, throwOnFailure, out ulong ulongResult))
@@ -612,17 +620,21 @@ namespace System
         {
             Debug.Assert(enumType.GetEnumUnderlyingType() == typeof(long));
 
-            bool failureIsOverflow = false;
-            if (StartsNumber(value[0]) && Number.TryParseInt64IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result, ref failureIsOverflow))
+            Number.ParsingStatus status = default;
+            if (StartsNumber(value[0]))
             {
-                return true;
+                status = Number.TryParseInt64IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result);
+                if (status == Number.ParsingStatus.OK)
+                {
+                    return true;
+                }
             }
 
-            if (failureIsOverflow)
+            if (status == Number.ParsingStatus.Overflow)
             {
                 if (throwOnFailure)
                 {
-                    throw new OverflowException(SR.Overflow_Int64);
+                    Number.ThrowOverflowException(TypeCode.Int64);
                 }
             }
             else if (TryParseByName(enumType, originalValueString, value, ignoreCase, throwOnFailure, out ulong ulongResult))
@@ -640,17 +652,21 @@ namespace System
         {
             Debug.Assert(enumType.GetEnumUnderlyingType() == typeof(ulong));
 
-            bool failureIsOverflow = false;
-            if (StartsNumber(value[0]) && Number.TryParseUInt64IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result, ref failureIsOverflow))
+            Number.ParsingStatus status = default;
+            if (StartsNumber(value[0]))
             {
-                return true;
+                status = Number.TryParseUInt64IntegerStyle(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite, CultureInfo.InvariantCulture.NumberFormat, out result);
+                if (status == Number.ParsingStatus.OK)
+                {
+                    return true;
+                }
             }
 
-            if (failureIsOverflow)
+            if (status == Number.ParsingStatus.Overflow)
             {
                 if (throwOnFailure)
                 {
-                    throw new OverflowException(SR.Overflow_UInt64);
+                    Number.ThrowOverflowException(TypeCode.UInt64);
                 }
             }
             else if (TryParseByName(enumType, originalValueString, value, ignoreCase, throwOnFailure, out result))

@@ -257,7 +257,7 @@ public:
 
 HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB, 
                                        ICorDebugMutableDataTarget * pMutableDataTarget,
-                                       DWORD dwProcessId,
+                                       const ProcessDescriptor * pProcessDescriptor,
                                        MachineInfo machineInfo,
                                        IEventChannel ** ppEventChannel);
 

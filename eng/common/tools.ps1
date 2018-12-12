@@ -1,14 +1,43 @@
-# Initialize variables if they aren't already defined
+# Initialize variables if they aren't already defined.
+# These may be defined as parameters of the importing script, or set after importing this script.
 
-$ci = if (Test-Path variable:ci) { $ci } else { $false }
-$configuration = if (Test-Path variable:configuration) { $configuration } else { "Debug" }
-$nodereuse = if (Test-Path variable:nodereuse) { $nodereuse } else { !$ci }
-$prepareMachine = if (Test-Path variable:prepareMachine) { $prepareMachine } else { $false }
-$restore = if (Test-Path variable:restore) { $restore } else { $true }
-$verbosity = if (Test-Path variable:verbosity) { $verbosity } else { "minimal" }
-$warnaserror = if (Test-Path variable:warnaserror) { $warnaserror } else { $true }
-$msbuildEngine = if (Test-Path variable:msbuildEngine) { $msbuildEngine } else { $null }
-$useInstalledDotNetCli = if (Test-Path variable:useInstalledDotNetCli) { $useInstalledDotNetCli } else { $true }
+# CI mode - set to true on CI server for PR validation build or official build.
+[bool]$ci = if (Test-Path variable:ci) { $ci } else { $false }
+
+# Build configuration. Common values include 'Debug' and 'Release', but the repository may use other names.
+[string]$configuration = if (Test-Path variable:configuration) { $configuration } else { "Debug" }
+
+# Set to true to output binary log from msbuild. Note that emitting binary log slows down the build.
+# Binary log must be enabled on CI.
+[bool]$binaryLog = if (Test-Path variable:binaryLog) { $binaryLog } else { $ci }
+
+# Turns on machine preparation/clean up code that changes the machine state (e.g. kills build processes).
+[bool]$prepareMachine = if (Test-Path variable:prepareMachine) { $prepareMachine } else { $false }
+
+# True to restore toolsets and dependencies.
+[bool]$restore = if (Test-Path variable:restore) { $restore } else { $true }
+
+# Adjusts msbuild verbosity level.
+[string]$verbosity = if (Test-Path variable:verbosity) { $verbosity } else { "minimal" }
+
+# Set to true to reuse msbuild nodes. Recommended to not reuse on CI.
+[bool]$nodeReuse = if (Test-Path variable:nodeReuse) { $nodeReuse } else { !$ci }
+
+# Configures warning treatment in msbuild.
+[bool]$warnAsError = if (Test-Path variable:warnAsError) { $warnAsError } else { $true }
+
+# Specifies which msbuild engine to use for build: 'vs', 'dotnet' or unspecified (determined based on presence of tools.vs in global.json).
+[string]$msbuildEngine = if (Test-Path variable:msbuildEngine) { $msbuildEngine } else { $null }
+
+# True to attempt using .NET Core already that meets requirements specified in global.json 
+# installed on the machine instead of downloading one.
+[bool]$useInstalledDotNetCli = if (Test-Path variable:useInstalledDotNetCli) { $useInstalledDotNetCli } else { $true }
+
+# True to use global NuGet cache instead of restoring packages to repository-local directory.
+[bool]$useGlobalNuGetCache = if (Test-Path variable:useGlobalNuGetCache) { $useGlobalNuGetCache } else { !$ci }
+
+# An array of names of processes to stop on script exit if prepareMachine is true.
+$processesToStopOnExit = if (Test-Path variable:processesToStopOnExit) { $processesToStopOnExit } else { @("msbuild", "dotnet", "vbcscompiler") }
 
 set-strictmode -version 2.0
 $ErrorActionPreference = "Stop"
@@ -25,12 +54,53 @@ function Unzip([string]$zipfile, [string]$outpath) {
   [System.IO.Compression.ZipFile]::ExtractToDirectory($zipfile, $outpath)
 }
 
+# This will exec a process using the console and return it's exit code.
+# This will not throw when the process fails.
+# Returns process exit code.
+function Exec-Process([string]$command, [string]$commandArgs) {
+  $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+  $startInfo.FileName = $command
+  $startInfo.Arguments = $commandArgs
+  $startInfo.UseShellExecute = $false
+  $startInfo.WorkingDirectory = Get-Location
+
+  $process = New-Object System.Diagnostics.Process
+  $process.StartInfo = $startInfo
+  $process.Start() | Out-Null
+
+  $finished = $false
+  try {
+    while (-not $process.WaitForExit(100)) { 
+      # Non-blocking loop done to allow ctr-c interrupts
+    }
+
+    $finished = $true
+    return $global:LASTEXITCODE = $process.ExitCode
+  }
+  finally {
+    # If we didn't finish then an error occured or the user hit ctrl-c.  Either
+    # way kill the process
+    if (-not $finished) {
+      $process.Kill()
+    }
+  }
+}
+
 function InitializeDotNetCli([bool]$install) {
+  if (Test-Path global:_DotNetInstallDir) {
+    return $global:_DotNetInstallDir
+  }
+
   # Don't resolve runtime, shared framework, or SDK from other locations to ensure build determinism
   $env:DOTNET_MULTILEVEL_LOOKUP=0
 
   # Disable first run since we do not need all ASP.NET packages restored.
   $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+
+  # Disable telemetry on CI.
+  if ($ci) {
+    $env:DOTNET_CLI_TELEMETRY_OPTOUT=1
+  }
 
   # Source Build uses DotNetCoreSdkDir variable
   if ($env:DotNetCoreSdkDir -ne $null) {
@@ -39,7 +109,10 @@ function InitializeDotNetCli([bool]$install) {
 
   # Find the first path on %PATH% that contains the dotnet.exe
   if ($useInstalledDotNetCli -and ($env:DOTNET_INSTALL_DIR -eq $null)) {
-    $env:DOTNET_INSTALL_DIR = ${env:PATH}.Split(';') | where { ($_ -ne "") -and (Test-Path (Join-Path $_ "dotnet.exe")) }
+    $dotnetCmd = Get-Command "dotnet.exe" -ErrorAction SilentlyContinue
+    if ($dotnetCmd -ne $null) {
+      $env:DOTNET_INSTALL_DIR = Split-Path $dotnetCmd.Path -Parent
+    }
   }
 
   $dotnetSdkVersion = $GlobalJson.tools.dotnet
@@ -50,9 +123,8 @@ function InitializeDotNetCli([bool]$install) {
     $dotnetRoot = $env:DOTNET_INSTALL_DIR
   } else {
     $dotnetRoot = Join-Path $RepoRoot ".dotnet"
-    $env:DOTNET_INSTALL_DIR = $dotnetRoot
 
-    if (-not (Test-Path(Join-Path $env:DOTNET_INSTALL_DIR "sdk\$dotnetSdkVersion"))) {
+    if (-not (Test-Path(Join-Path $dotnetRoot "sdk\$dotnetSdkVersion"))) {
       if ($install) {
         InstallDotNetSdk $dotnetRoot $dotnetSdkVersion
       } else {
@@ -60,9 +132,11 @@ function InitializeDotNetCli([bool]$install) {
         ExitWithExitCode 1
       }
     }
+
+    $env:DOTNET_INSTALL_DIR = $dotnetRoot
   }
 
-  return $dotnetRoot
+  return $global:_DotNetInstallDir = $dotnetRoot
 }
 
 function GetDotNetInstallScript([string] $dotnetRoot) {
@@ -95,7 +169,11 @@ function InstallDotNetSdk([string] $dotnetRoot, [string] $version) {
 # Returns full path to msbuild.exe.
 # Throws on failure.
 #
-function InitializeVisualStudioMSBuild {
+function InitializeVisualStudioMSBuild([bool]$install) {
+  if (Test-Path global:_MSBuildExe) {
+    return $global:_MSBuildExe
+  }
+
   $vsMinVersionStr = if (!$GlobalJson.tools.vs.version) { $GlobalJson.tools.vs.version } else { "15.9" }
   $vsMinVersion = [Version]::new($vsMinVersionStr) 
 
@@ -104,7 +182,7 @@ function InitializeVisualStudioMSBuild {
     $msbuildCmd = Get-Command "msbuild.exe" -ErrorAction SilentlyContinue
     if ($msbuildCmd -ne $null) {
       if ($msbuildCmd.Version -ge $vsMinVersion) {
-        return $msbuildCmd.Path
+        return $global:_MSBuildExe = $msbuildCmd.Path
       }
 
       # Report error - the developer environment is initialized with incompatible VS version.
@@ -119,7 +197,7 @@ function InitializeVisualStudioMSBuild {
     $vsMajorVersion = $vsInfo.installationVersion.Split('.')[0]
 
     InitializeVisualStudioEnvironmentVariables $vsInstallDir $vsMajorVersion
-  } else {
+  } elseif ($install) {
 
     if (Get-Member -InputObject $GlobalJson.tools -Name "xcopy-msbuild") {
       $xcopyMSBuildVersion = $GlobalJson.tools.'xcopy-msbuild'
@@ -130,10 +208,12 @@ function InitializeVisualStudioMSBuild {
     }
 
     $vsInstallDir = InstallXCopyMSBuild $xcopyMSBuildVersion
+  } else {
+    throw "Unable to find Visual Studio that has required version and components installed"
   }
 
   $msbuildVersionDir = if ([int]$vsMajorVersion -lt 16) { "$vsMajorVersion.0" } else { "Current" }
-  return Join-Path $vsInstallDir "MSBuild\$msbuildVersionDir\Bin\msbuild.exe"
+  return $global:_MSBuildExe = Join-Path $vsInstallDir "MSBuild\$msbuildVersionDir\Bin\msbuild.exe"
 }
 
 function InitializeVisualStudioEnvironmentVariables([string] $vsInstallDir, [string] $vsMajorVersion) {
@@ -216,36 +296,19 @@ function LocateVisualStudio {
   return $vsInfo[0]
 }
 
-function ConfigureTools { 
-  # Include custom tools configuration
-  $script = Join-Path $EngRoot "configure-toolset.ps1"
-
-  if (Test-Path $script) {
-    . $script
-  }
-}
-
-function InitializeTools() {
-  ConfigureTools
-
-  $tools = $GlobalJson.tools
-
-  # Initialize dotnet cli if listed in 'tools'
-  $dotnetRoot = $null
-  if (Get-Member -InputObject $tools -Name "dotnet") {
-    $dotnetRoot = InitializeDotNetCli -install:$restore
+function InitializeBuildTool() {
+  if (Test-Path global:_BuildTool) {
+    return $global:_BuildTool
   }
 
   if (-not $msbuildEngine) {
-    # Presence of tools.vs indicates the repo needs to build using VS msbuild on Windows.
-    if (Get-Member -InputObject $tools -Name "vs") {
-      $msbuildEngine = "vs"
-    } elseif ($dotnetRoot -ne $null) {
-      $msbuildEngine = "dotnet"
-    } else {
-      Write-Host "-msbuildEngine must be specified, or /global.json must specify 'tools.dotnet' or 'tools.vs'." -ForegroundColor Red
-      ExitWithExitCode 1
-    }
+    $msbuildEngine = GetDefaultMSBuildEngine
+  }
+
+  # Initialize dotnet cli if listed in 'tools'
+  $dotnetRoot = $null
+  if (Get-Member -InputObject $GlobalJson.tools -Name "dotnet") {
+    $dotnetRoot = InitializeDotNetCli -install:$restore
   }
 
   if ($msbuildEngine -eq "dotnet") {
@@ -254,34 +317,66 @@ function InitializeTools() {
       ExitWithExitCode 1
     }
 
-    $script:buildDriver = Join-Path $dotnetRoot "dotnet.exe"
-    $script:buildArgs = "msbuild"
+    $buildTool = @{ Path = Join-Path $dotnetRoot "dotnet.exe"; Command = "msbuild" }
   } elseif ($msbuildEngine -eq "vs") {
     try {
-      $script:buildDriver = InitializeVisualStudioMSBuild
-      $script:buildArgs = ""
-    } catch { 
+      $msbuildPath = InitializeVisualStudioMSBuild -install:$restore
+    } catch {
       Write-Host $_ -ForegroundColor Red
       ExitWithExitCode 1
     }
+
+    $buildTool = @{ Path = $msbuildPath; Command = "" }
   } else {
     Write-Host "Unexpected value of -msbuildEngine: '$msbuildEngine'." -ForegroundColor Red
     ExitWithExitCode 1
   }
 
-  InitializeToolSet $script:buildDriver $script:buildArgs
-  InitializeCustomToolset
+  return $global:_BuildTool = $buildTool
 }
 
-function InitializeToolset([string] $buildDriver, [string]$buildArgs) {
+function GetDefaultMSBuildEngine() {
+  # Presence of tools.vs indicates the repo needs to build using VS msbuild on Windows.
+  if (Get-Member -InputObject $GlobalJson.tools -Name "vs") {
+    return "vs"
+  }
+  
+  if (Get-Member -InputObject $GlobalJson.tools -Name "dotnet") {
+    return "dotnet"
+  }
+
+  Write-Host "-msbuildEngine must be specified, or /global.json must specify 'tools.dotnet' or 'tools.vs'." -ForegroundColor Red
+  ExitWithExitCode 1
+}
+
+function GetNuGetPackageCachePath() {
+  if ($env:NUGET_PACKAGES -eq $null) {
+    # Use local cache on CI to ensure deterministic build,
+    # use global cache in dev builds to avoid cost of downloading packages.
+    if ($useGlobalNuGetCache) {
+      $env:NUGET_PACKAGES = Join-Path $env:UserProfile ".nuget\packages"
+    } else {
+      $env:NUGET_PACKAGES = Join-Path $RepoRoot ".packages"
+    }
+  }
+
+  return $env:NUGET_PACKAGES
+}
+
+function InitializeToolset() {
+  if (Test-Path global:_ToolsetBuildProj) {
+    return $global:_ToolsetBuildProj
+  }
+
+  $nugetCache = GetNuGetPackageCachePath
+
   $toolsetVersion = $GlobalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
   $toolsetLocationFile = Join-Path $ToolsetDir "$toolsetVersion.txt"
 
   if (Test-Path $toolsetLocationFile) {
     $path = Get-Content $toolsetLocationFile -TotalCount 1
     if (Test-Path $path) {
-      $script:ToolsetBuildProj = $path
-      return
+      return $global:_ToolsetBuildProj = $path
     }
   }
 
@@ -290,35 +385,20 @@ function InitializeToolset([string] $buildDriver, [string]$buildArgs) {
     ExitWithExitCode 1
   }
 
-  $ToolsetRestoreLog = Join-Path $LogDir "ToolsetRestore.binlog"
+  $buildTool = InitializeBuildTool
+
   $proj = Join-Path $ToolsetDir "restore.proj"
-
+  $bl = if ($binaryLog) { "/bl:" + (Join-Path $LogDir "ToolsetRestore.binlog") } else { "" }
+  
   '<Project Sdk="Microsoft.DotNet.Arcade.Sdk"/>' | Set-Content $proj
-  MSBuild $proj /t:__WriteToolsetLocation /clp:None /bl:$ToolsetRestoreLog /p:__ToolsetLocationOutputFile=$toolsetLocationFile
-
-  if ($lastExitCode -ne 0) {
-    Write-Host "Failed to restore toolset (exit code '$lastExitCode'). See log: $ToolsetRestoreLog" -ForegroundColor Red
-    ExitWithExitCode $lastExitCode
-  }
-
+  MSBuild $proj $bl /t:__WriteToolsetLocation /noconsolelogger /p:__ToolsetLocationOutputFile=$toolsetLocationFile
+  
   $path = Get-Content $toolsetLocationFile -TotalCount 1
   if (!(Test-Path $path)) {
     throw "Invalid toolset path: $path"
   }
-
-  $script:ToolsetBuildProj = $path
-}
-
-function InitializeCustomToolset {
-  if (-not $restore) {
-    return
-  }
-
-  $script = Join-Path $EngRoot "restore-toolset.ps1"
-
-  if (Test-Path $script) {
-    . $script
-  }
+  
+  return $global:_ToolsetBuildProj = $path
 }
 
 function ExitWithExitCode([int] $exitCode) {
@@ -330,14 +410,70 @@ function ExitWithExitCode([int] $exitCode) {
 
 function Stop-Processes() {
   Write-Host "Killing running build processes..."
-  Get-Process -Name "msbuild" -ErrorAction SilentlyContinue | Stop-Process
-  Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Stop-Process
-  Get-Process -Name "vbcscompiler" -ErrorAction SilentlyContinue | Stop-Process
+  foreach ($processName in $processesToStopOnExit) {
+    Get-Process -Name $processName -ErrorAction SilentlyContinue | Stop-Process
+  }
 }
 
-function MsBuild() {
-  $warnaserrorSwitch = if ($warnaserror) { "/warnaserror" } else { "" }
-  & $buildDriver $buildArgs $warnaserrorSwitch /m /nologo /clp:Summary /v:$verbosity /nr:$nodereuse $args
+#
+# Executes msbuild (or 'dotnet msbuild') with arguments passed to the function.
+# The arguments are automatically quoted.
+# Terminates the script if the build fails.
+#
+function MSBuild() {
+  if ($ci) {
+    if (!$binaryLog) {
+      throw "Binary log must be enabled in CI build."
+    }
+
+    if ($nodeReuse) {
+      throw "Node reuse must be disabled in CI build."
+    }
+  }
+
+  $buildTool = InitializeBuildTool
+
+  $cmdArgs = "$($buildTool.Command) /m /nologo /clp:Summary /v:$verbosity /nr:$nodeReuse"
+
+  if ($warnAsError) { 
+    $cmdArgs += " /warnaserror /p:TreatWarningsAsErrors=true" 
+  }
+
+  foreach ($arg in $args) {
+    if ($arg -ne $null -and $arg.Trim() -ne "") {
+      $cmdArgs += " `"$arg`""
+    }
+  }
+  
+  $exitCode = Exec-Process $buildTool.Path $cmdArgs
+
+  if ($exitCode -ne 0) {
+    Write-Host "Build failed." -ForegroundColor Red
+
+    $buildLog = GetMSBuildBinaryLogCommandLineArgument $args
+    if ($buildLog -ne $null) {      
+      Write-Host "See log: $buildLog" -ForegroundColor DarkGray 
+    }
+
+    ExitWithExitCode $exitCode
+  }
+}
+
+function GetMSBuildBinaryLogCommandLineArgument($arguments) {  
+  foreach ($argument in $arguments) {
+    if ($argument -ne $null) {
+      $arg = $argument.Trim()
+      if ($arg.StartsWith("/bl:", "OrdinalIgnoreCase")) {
+        return $arg.Substring("/bl:".Length)
+      } 
+        
+      if ($arg.StartsWith("/binaryLogger:", "OrdinalIgnoreCase")) {
+        return $arg.Substring("/binaryLogger:".Length)
+      }
+    }
+  }
+
+  return $null
 }
 
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -349,18 +485,11 @@ $LogDir = Join-Path (Join-Path $ArtifactsDir "log") $configuration
 $TempDir = Join-Path (Join-Path $ArtifactsDir "tmp") $configuration
 $GlobalJson = Get-Content -Raw -Path (Join-Path $RepoRoot "global.json") | ConvertFrom-Json
 
-if ($env:NUGET_PACKAGES -eq $null) {
-  # Use local cache on CI to ensure deterministic build,
-  # use global cache in dev builds to avoid cost of downloading packages.
-  $env:NUGET_PACKAGES = if ($ci) { Join-Path $RepoRoot ".packages" }
-                        else { Join-Path $env:UserProfile ".nuget\packages" }
-}
-
 Create-Directory $ToolsetDir
+Create-Directory $TempDir
 Create-Directory $LogDir
 
 if ($ci) {
-  Create-Directory $TempDir
   $env:TEMP = $TempDir
   $env:TMP = $TempDir
 }

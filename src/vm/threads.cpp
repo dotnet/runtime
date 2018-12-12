@@ -8080,8 +8080,7 @@ static void ManagedThreadBase_DispatchMiddle(ManagedThreadCallState *pCallState)
         // behavior (swallowing all unhandled exception), then swallow all unhandled exception.
         //
         if (SwallowUnhandledExceptions() ||
-            IsExceptionOfType(kThreadAbortException, pException) ||
-            IsExceptionOfType(kAppDomainUnloadedException, pException))
+            IsExceptionOfType(kThreadAbortException, pException))
         {
             // Do nothing to swallow the exception
         }

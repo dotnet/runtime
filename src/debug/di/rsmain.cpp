@@ -957,13 +957,17 @@ namespace
 /* ------------------------------------------------------------------------- *
  * Cordb class
  * ------------------------------------------------------------------------- */
-
-
 Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion)
+  : Cordb(iDebuggerVersion, ProcessDescriptor::CreateUninitialized())
+{
+}
+
+Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd)
   : CordbBase(NULL, 0, enumCordb),
     m_processes(11),
     m_initialized(false),
-    m_debuggerSpecifiedVersion(iDebuggerVersion)
+    m_debuggerSpecifiedVersion(iDebuggerVersion),
+    m_pd(pd)
 #ifdef FEATURE_CORESYSTEM
     ,
     m_targetCLR(0)
@@ -980,6 +984,10 @@ Cordb::Cordb(CorDebugInterfaceVersion iDebuggerVersion)
 Cordb::~Cordb()
 {
     LOG((LF_CORDB, LL_INFO10, "C::~C Terminating Cordb object.\n"));
+    if (m_pd.m_ApplicationGroupId != NULL)
+    {
+        delete [] m_pd.m_ApplicationGroupId;
+    }
     g_pRSDebuggingInfo->m_Cordb = NULL;
 }
 
@@ -1819,6 +1827,12 @@ HRESULT Cordb::DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
             ThrowHR(E_FAIL);
         }
 
+        // Verify that given process ID, matches the process ID for which the object was created
+        if (m_pd.IsInitialized() && m_pd.m_Pid != dwProcessId)
+        {
+            ThrowHR(E_INVALIDARG);
+        }
+
         // See the comment in Cordb::CreateProcess
         _ASSERTE(CorDebugInvalidVersion != m_debuggerSpecifiedVersion);
 
@@ -1845,7 +1859,7 @@ HRESULT Cordb::DebugActiveProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
     hr = ShimProcess::DebugActiveProcess(
         this,
         pRemoteTarget,
-        dwProcessId,
+        &m_pd,
         fWin32Attach == TRUE);
 
     // If that worked, then there will be a process object...
@@ -2065,7 +2079,7 @@ void Cordb::EnsureCanLaunchOrAttach(BOOL fWin32DebuggingEnabled)
 
 HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
 {
-    return CreateObject(CorDebugVersion_1_0, id, object);
+    return CreateObject(CorDebugVersion_1_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, id, object);
 }
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
@@ -2073,21 +2087,52 @@ HRESULT Cordb::CreateObjectV1(REFIID id, void **object)
 // same debug engine version as V2, though this may change in the future.
 HRESULT Cordb::CreateObjectTelesto(REFIID id, void ** pObject)
 {
-    return CreateObject(CorDebugVersion_2_0, id, pObject);
+    return CreateObject(CorDebugVersion_2_0, ProcessDescriptor::UNINITIALIZED_PID, NULL, id, pObject);
 }
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
 
 // Static
 // Used to create an instance for a ClassFactory (thus an external ref).
-HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, REFIID id, void **object)
+HRESULT Cordb::CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, REFIID id, void **object)
 {
     if (id != IID_IUnknown && id != IID_ICorDebug)
         return (E_NOINTERFACE);
 
-    Cordb *db = new (nothrow) Cordb(iDebuggerVersion);
+    LPSTR applicationGroupId = NULL;
+    if (lpApplicationGroupId != NULL)
+    {
+        // Get length of target string
+        int cbMultiByte = WideCharToMultiByte(CP_ACP, 0, lpApplicationGroupId, -1, NULL, 0, NULL, NULL);
+        if (cbMultiByte == 0)
+        {
+            return E_FAIL;
+        }
+
+        applicationGroupId = new (nothrow) CHAR[cbMultiByte];
+        if (applicationGroupId == NULL)
+        {
+            return (E_OUTOFMEMORY);
+        }
+
+        /* Convert to ASCII */
+        cbMultiByte = WideCharToMultiByte(CP_ACP, 0, lpApplicationGroupId, -1, applicationGroupId, cbMultiByte, NULL, NULL);
+        if (cbMultiByte == 0)
+        {
+            return E_FAIL;
+        }
+    }
+
+    ProcessDescriptor pd = ProcessDescriptor::Create(pid, applicationGroupId);
+
+    Cordb *db = new (nothrow) Cordb(iDebuggerVersion, pd);
 
     if (db == NULL)
+    {
+        if (applicationGroupId != NULL)
+            delete [] applicationGroupId;
+
         return (E_OUTOFMEMORY);
+    }
 
     *object = static_cast<ICorDebug*> (db);
     db->ExternalAddRef();

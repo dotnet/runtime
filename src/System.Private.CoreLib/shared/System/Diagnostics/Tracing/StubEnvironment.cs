@@ -344,19 +344,6 @@ namespace System.Security.Permissions
 }
 #endif
 
-#if ES_BUILD_PN
-namespace System
-{
-    internal static class AppDomain
-    {
-        public static int GetCurrentThreadId()
-        {
-            return Internal.Runtime.Augments.RuntimeThread.CurrentThread.ManagedThreadId;
-        }
-    }    
-}
-#endif
-
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Win32
 {
@@ -366,7 +353,10 @@ namespace Microsoft.Win32
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal static class Win32Native
     {
-        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
+        public static extern int GetCurrentThreadId();
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
         internal static extern uint GetCurrentProcessId();
     }
 }
