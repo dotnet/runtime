@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Text;
 
 namespace System.Globalization
 {
@@ -39,16 +37,11 @@ namespace System.Globalization
     // CurrencySymbol            "$"      String used as local monetary symbol.
     //
 
-    sealed public class NumberFormatInfo : IFormatProvider, ICloneable
+    public sealed class NumberFormatInfo : IFormatProvider, ICloneable
     {
         // invariantInfo is constant irrespective of your current culture.
         private static volatile NumberFormatInfo s_invariantInfo;
 
-        // READTHIS READTHIS READTHIS
-        // This class has an exact mapping onto a native structure defined in COMNumber.cpp
-        // DO NOT UPDATE THIS WITHOUT UPDATING THAT STRUCTURE. IF YOU ADD BOOL, ADD THEM AT THE END.
-        // ALSO MAKE SURE TO UPDATE mscorlib.h in the VM directory to check field offsets.
-        // READTHIS READTHIS READTHIS
         internal int[] numberGroupSizes = new int[] { 3 };
         internal int[] currencyGroupSizes = new int[] { 3 };
         internal int[] percentGroupSizes = new int[] { 3 };
@@ -83,10 +76,9 @@ namespace System.Globalization
 
         internal bool isReadOnly = false;
 
-        // Is this NumberFormatInfo for invariant culture?
-        internal bool m_isInvariant = false;
+        private bool _hasInvariantNumberSigns = true;
 
-        public NumberFormatInfo() : this(null)
+        public NumberFormatInfo()
         {
         }
 
@@ -171,6 +163,13 @@ namespace System.Globalization
             }
         }
 
+        internal bool HasInvariantNumberSigns => _hasInvariantNumberSigns;
+
+        private void UpdateHasInvariantNumberSigns()
+        {
+            _hasInvariantNumberSigns = positiveSign == "+" && negativeSign == "-";
+        }
+
         internal NumberFormatInfo(CultureData cultureData)
         {
             if (cultureData != null)
@@ -179,11 +178,7 @@ namespace System.Globalization
                 // don't need to verify their values (except for invalid parsing situations).
                 cultureData.GetNFIValues(this);
 
-                if (cultureData.IsInvariantCulture)
-                {
-                    // For invariant culture
-                    this.m_isInvariant = true;
-                }
+                UpdateHasInvariantNumberSigns();
             }
         }
 
@@ -208,9 +203,10 @@ namespace System.Globalization
                 {
                     // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
                     // be thrown out of a .cctor stack that will need this.
-                    NumberFormatInfo nfi = new NumberFormatInfo();
-                    nfi.m_isInvariant = true;
-                    s_invariantInfo = ReadOnly(nfi);
+                    s_invariantInfo = new NumberFormatInfo
+                    {
+                        isReadOnly = true
+                    };
                 }
                 return s_invariantInfo;
             }
@@ -568,6 +564,7 @@ namespace System.Globalization
                 }
                 VerifyWritable();
                 negativeSign = value;
+                UpdateHasInvariantNumberSigns();
             }
         }
 
@@ -669,6 +666,7 @@ namespace System.Globalization
                 }
                 VerifyWritable();
                 positiveSign = value;
+                UpdateHasInvariantNumberSigns();
             }
         }
 
@@ -803,15 +801,18 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleInteger(NumberStyles style)
         {
-            // Check for undefined flags
-            if ((style & InvalidNumberStyles) != 0)
+            // Check for undefined flags or invalid hex number flags
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0
+                && (style & ~NumberStyles.HexNumber) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-            }
-            if ((style & NumberStyles.AllowHexSpecifier) != 0)
-            { // Check for hex number
-                if ((style & ~NumberStyles.HexNumber) != 0)
+                throwInvalid(style);
+
+                void throwInvalid(NumberStyles value)
                 {
+                    if ((value & InvalidNumberStyles) != 0)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+                    }
                     throw new ArgumentException(SR.Arg_InvalidHexStyle);
                 }
             }
@@ -819,14 +820,19 @@ namespace System.Globalization
 
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
-            // Check for undefined flags
-            if ((style & InvalidNumberStyles) != 0)
+            // Check for undefined flags or hex number
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
             {
-                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-            }
-            if ((style & NumberStyles.AllowHexSpecifier) != 0)
-            { // Check for hex number
-                throw new ArgumentException(SR.Arg_HexStyleNotSupported);
+                throwInvalid(style);
+
+                void throwInvalid(NumberStyles value)
+                {
+                    if ((value & InvalidNumberStyles) != 0)
+                    {
+                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+                    }
+                    throw new ArgumentException(SR.Arg_HexStyleNotSupported);
+                }
             }
         }
     } // NumberFormatInfo
