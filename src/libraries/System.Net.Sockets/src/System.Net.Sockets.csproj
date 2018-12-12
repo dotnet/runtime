@@ -125,7 +125,6 @@
     <Compile Include="System\Net\Sockets\DynamicWinsockMethods.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\SafeSocketHandle.Windows.cs" />
-    <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Windows.cs" />
     <Compile Include="System\Net\Sockets\Socket.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
     <Compile Include="System\Net\Sockets\IOControlKeepAlive.Windows.cs" />
@@ -250,7 +249,6 @@
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\SafeSocketHandle.Unix.cs" />
-    <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Unix.cs" />
     <Compile Include="System\Net\Sockets\Socket.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncContext.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />

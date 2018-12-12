@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -360,6 +359,10 @@ namespace System.Net.Sockets
                     else if (spe.FilePath != null)
                     {
                         NetEventSource.NotLoggedFile(spe.FilePath, _currentSocket, _completedOperation);
+                    }
+                    else if (spe.FileStream != null)
+                    {
+                        NetEventSource.NotLoggedFile(spe.FileStream.Name, _currentSocket, _completedOperation);
                     }
                 }
             }
