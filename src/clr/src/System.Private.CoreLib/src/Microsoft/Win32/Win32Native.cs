@@ -249,7 +249,10 @@ namespace Microsoft.Win32
         [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Unicode)]
         internal static extern unsafe bool FreeEnvironmentStrings(char* pStrings);
 
-        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto, SetLastError = true)]
+        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto)]
+        internal static extern int GetCurrentThreadId();
+
+        [DllImport(Interop.Libraries.Kernel32, CharSet = CharSet.Auto)]
         internal static extern uint GetCurrentProcessId();
 
         [DllImport(Interop.Libraries.Ole32)]

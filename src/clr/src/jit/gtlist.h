@@ -280,7 +280,6 @@ GTNODE(SWITCH_TABLE     , GenTreeOp          ,0, GTK_BINOP|GTK_NOVALUE)  // Jump
 //  Nodes used only within the code generator:
 //-----------------------------------------------------------------------------
 
-GTNODE(REG_VAR          , GenTreeLclVar      ,0,GTK_LEAF|GTK_LOCAL)              // register variable
 GTNODE(CLS_VAR          , GenTreeClsVar      ,0,GTK_LEAF)                        // static data member
 GTNODE(CLS_VAR_ADDR     , GenTreeClsVar      ,0,GTK_LEAF)                        // static data member address
 GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF|GTK_NOVALUE|GTK_NOTLIR) // placeholder for a register arg

@@ -12,6 +12,7 @@ if(WIN32)
 
     set(TWO_WAY_PIPE_SOURCES 
         win/twowaypipe.cpp
+        win/processdescriptor.cpp
     )
 endif(WIN32)
 
@@ -24,6 +25,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 
     set(TWO_WAY_PIPE_SOURCES
       unix/twowaypipe.cpp
+      unix/processdescriptor.cpp
     )
 
 endif(CLR_CMAKE_PLATFORM_UNIX)

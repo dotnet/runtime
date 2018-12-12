@@ -16,9 +16,6 @@ genTreeOps storeForm(genTreeOps loadForm)
             return GT_STORE_LCL_VAR;
         case GT_LCL_FLD:
             return GT_STORE_LCL_FLD;
-        case GT_REG_VAR:
-            noway_assert(!"reg vars only supported in classic backend\n");
-            unreached();
         default:
             noway_assert(!"not a data load opcode\n");
             unreached();
@@ -416,7 +413,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     {
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_REG_VAR:
         case GT_PHI_ARG:
             RewriteAssignmentIntoStoreLclCore(assignment, location, value, locationOp);
             BlockRange().Remove(location);

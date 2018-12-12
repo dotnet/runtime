@@ -7,6 +7,7 @@ EXPORTS
         ResumeProcess
         CloseResumeHandle
         RegisterForRuntimeStartup
+	RegisterForRuntimeStartupEx
         UnregisterForRuntimeStartup
 	GetStartupNotificationEvent
 	EnumerateCLRs
@@ -14,4 +15,5 @@ EXPORTS
 	CreateVersionStringFromModule
 	CreateDebuggingInterfaceFromVersion
 	CreateDebuggingInterfaceFromVersionEx
+	CreateDebuggingInterfaceFromVersion2
 	CLRCreateInstance
