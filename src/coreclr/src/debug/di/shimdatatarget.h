@@ -126,7 +126,7 @@ protected:
 //
 
 HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
-                                        DWORD processId, 
+                                        const ProcessDescriptor * pProcessDescriptor,
                                         ShimDataTarget ** ppDataTarget);
 
 #endif //  SHIMDATATARGET_H_

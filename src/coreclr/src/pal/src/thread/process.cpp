@@ -81,6 +81,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+#include <sys/posix_sem.h>
 #endif
 
 #ifdef __NetBSD__
@@ -195,9 +196,13 @@ PathCharString* gSharedFilesPath = nullptr;
 // MacOSX 10.11: 31 -- Core 1.0 RC2 compatibility
 #if defined(__NetBSD__)
 #define CLR_SEM_MAX_NAMELEN 15
+#elif defined(__APPLE__)
+#define CLR_SEM_MAX_NAMELEN PSEMNAMLEN
 #else
 #define CLR_SEM_MAX_NAMELEN (NAME_MAX - 4)
 #endif
+
+static_assert_no_msg(CLR_SEM_MAX_NAMELEN <= MAX_PATH);
 
 // Function to call during PAL/process shutdown/abort
 Volatile<PSHUTDOWN_CALLBACK> g_shutdownCallback = nullptr;
@@ -224,6 +229,31 @@ enum FILETYPE
     FILE_DIR   /*Directory*/
 };
 
+#pragma pack(push,1)
+// When creating the semaphore name on Mac running in a sandbox, We reference this structure as a byte array 
+// in order to encode its data into a string. Its important to make sure there is no padding between the fields
+// and also at the end of the buffer. Hence, this structure is defined inside a pack(1)
+struct UnambiguousProcessDescriptor
+{
+    UnambiguousProcessDescriptor()
+    {
+    }
+
+    UnambiguousProcessDescriptor(DWORD processId, UINT64 disambiguationKey)
+    {
+        Init(processId, disambiguationKey);
+    }
+
+    void Init(DWORD processId, UINT64 disambiguationKey)
+    {
+        m_processId = processId;
+        m_disambiguationKey = disambiguationKey;
+    }
+    UINT64 m_disambiguationKey;
+    DWORD m_processId;
+};
+#pragma pack(pop)
+
 static
 DWORD
 PALAPI
@@ -242,6 +272,14 @@ PROCGetProcessStatus(
     HANDLE hProcess,
     PROCESS_STATE *pps,
     DWORD *pdwExitCode);
+
+static
+void 
+CreateSemaphoreName(
+    char semName[CLR_SEM_MAX_NAMELEN],
+    LPCSTR semaphoreName,
+    const UnambiguousProcessDescriptor& unambiguousProcessDescriptor,
+    LPCSTR applicationGroupId);
 
 static BOOL getFileName(LPCWSTR lpApplicationName, LPWSTR lpCommandLine, PathCharString& lpFileName);
 static char ** buildArgv(LPCWSTR lpCommandLine, PathCharString& lpAppPath, UINT *pnArg, BOOL prependLoader);
@@ -1520,12 +1558,13 @@ static bool IsCoreClrModule(const char* pModulePath)
 // NetBSD limits semaphore names to 15 characters, including null (at least up to 7.99.25).
 // Keep 31 length for Core 1.0 RC2 compatibility
 #if defined(__NetBSD__)
-static const char* RuntimeStartupSemaphoreName = "/clrst%08llx";
-static const char* RuntimeContinueSemaphoreName = "/clrco%08llx";
+static const char* RuntimeSemaphoreNameFormat = "/clr%s%08llx";
 #else
-static const char* RuntimeStartupSemaphoreName = "/clrst%08x%016llx";
-static const char* RuntimeContinueSemaphoreName = "/clrco%08x%016llx";
+static const char* RuntimeSemaphoreNameFormat = "/clr%s%08x%016llx";
 #endif
+
+static const char* RuntimeStartupSemaphoreName = "st";
+static const char* RuntimeContinueSemaphoreName = "co";
 
 #if defined(__NetBSD__)
 static uint64_t HashSemaphoreName(uint64_t a, uint64_t b)
@@ -1547,6 +1586,11 @@ class PAL_RuntimeStartupHelper
     DWORD m_threadId;
     HANDLE m_threadHandle;
     DWORD m_processId;
+#ifdef __APPLE__    
+    char m_applicationGroupId[MAX_APPLICATION_GROUP_ID_LENGTH+1];
+#endif // __APPLE__    
+    char m_startupSemName[CLR_SEM_MAX_NAMELEN];
+    char m_continueSemName[CLR_SEM_MAX_NAMELEN];
 
     // A value that, used in conjunction with the process ID, uniquely identifies a process.
     // See the format we use for debugger semaphore names for why this is necessary.
@@ -1558,6 +1602,15 @@ class PAL_RuntimeStartupHelper
     // Debuggee waits on this semaphore and the debugger signals it after the startup callback 
     // registered (m_callback) returns.
     sem_t *m_continueSem;
+
+    LPCSTR GetApplicationGroupId() const
+    {
+#ifdef __APPLE__        
+        return m_applicationGroupId[0] == '\0' ? nullptr : m_applicationGroupId;
+#else // __APPLE__
+        return nullptr;
+#endif // __APPLE__        
+    }
 
 public:
     PAL_RuntimeStartupHelper(DWORD dwProcessId, PPAL_STARTUP_CALLBACK pfnCallback, PVOID parameter) :
@@ -1577,28 +1630,14 @@ public:
     {
         if (m_startupSem != SEM_FAILED)
         {
-            char startupSemName[CLR_SEM_MAX_NAMELEN];
-            sprintf_s(startupSemName,
-                      sizeof(startupSemName),
-                      RuntimeStartupSemaphoreName,
-                      HashSemaphoreName(m_processId,
-                                        m_processIdDisambiguationKey));
-
             sem_close(m_startupSem);
-            sem_unlink(startupSemName);
+            sem_unlink(m_startupSemName);
         }
 
         if (m_continueSem != SEM_FAILED)
         {
-            char continueSemName[CLR_SEM_MAX_NAMELEN];
-            sprintf_s(continueSemName,
-                      sizeof(continueSemName),
-                      RuntimeContinueSemaphoreName,
-                      HashSemaphoreName(m_processId,
-                                        m_processIdDisambiguationKey));
-
             sem_close(m_continueSem);
-            sem_unlink(continueSemName);
+            sem_unlink(m_continueSemName);
         }
 
         if (m_threadHandle != NULL)
@@ -1654,39 +1693,54 @@ public:
         return pe;
     }
 
-    PAL_ERROR Register()
+    PAL_ERROR Register(LPCWSTR lpApplicationGroupId)
     {
         CPalThread *pThread = InternalGetCurrentThread();
-        char startupSemName[CLR_SEM_MAX_NAMELEN];
-        char continueSemName[CLR_SEM_MAX_NAMELEN];
         PAL_ERROR pe = NO_ERROR;
+        BOOL ret;
+        UnambiguousProcessDescriptor unambiguousProcessDescriptor;
+
+#ifdef __APPLE__
+        if (lpApplicationGroupId != NULL)
+        {
+            /* Convert to ASCII */
+            int applicationGroupIdLength = WideCharToMultiByte(CP_ACP, 0, lpApplicationGroupId, -1, m_applicationGroupId, sizeof(m_applicationGroupId), NULL, NULL);
+            if (applicationGroupIdLength == 0)
+            {
+                pe = GetLastError();
+                TRACE("applicationGroupId: Failed to convert to multibyte string (%u)\n", pe);
+                if (pe == ERROR_INSUFFICIENT_BUFFER)
+                {
+                    pe = ERROR_BAD_LENGTH;
+                }
+                goto exit;
+            }
+        }
+        else
+        {
+            // Indicate that group ID is not being used
+            m_applicationGroupId[0] = '\0';
+        }
+#endif // __APPLE__
 
         // See semaphore name format for details about this value. We store it so that
         // it can be used by the cleanup code that removes the semaphore with sem_unlink.
-        BOOL ret = GetProcessIdDisambiguationKey(m_processId, &m_processIdDisambiguationKey);
+        ret = GetProcessIdDisambiguationKey(m_processId, &m_processIdDisambiguationKey);
 
         // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
         // to 0. We expect that anyone else opening the semaphore name will also fail and thus 
         // will also try to use 0 as the value.
         _ASSERTE(ret == TRUE || m_processIdDisambiguationKey == 0);
 
-        sprintf_s(startupSemName,
-                  sizeof(startupSemName),
-                  RuntimeStartupSemaphoreName,
-                  HashSemaphoreName(m_processId,
-                                    m_processIdDisambiguationKey));
+        unambiguousProcessDescriptor.Init(m_processId, m_processIdDisambiguationKey);
+        CreateSemaphoreName(m_startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, GetApplicationGroupId());
+        CreateSemaphoreName(m_continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, GetApplicationGroupId());
 
-        sprintf_s(continueSemName,
-                  sizeof(continueSemName),
-                  RuntimeContinueSemaphoreName,
-                  HashSemaphoreName(m_processId,
-                                    m_processIdDisambiguationKey));
-
-        TRACE("PAL_RuntimeStartupHelper.Register creating startup '%s' continue '%s'\n", startupSemName, continueSemName);
+        TRACE("PAL_RuntimeStartupHelper.Register creating startup '%s' continue '%s'\n", m_startupSemName, m_continueSemName);
 
         // Create the continue semaphore first so we don't race with PAL_NotifyRuntimeStarted. This open will fail if another 
         // debugger is trying to attach to this process because the name will already exist.
-        m_continueSem = sem_open(continueSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
+        m_continueSem = sem_open(m_continueSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
         if (m_continueSem == SEM_FAILED)
         {
             TRACE("sem_open(continue) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1695,7 +1749,7 @@ public:
         }
 
         // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for a debugger connection.
-        m_startupSem = sem_open(startupSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
+        m_startupSem = sem_open(m_startupSemName, O_CREAT | O_EXCL, S_IRWXU, 0);
         if (m_startupSem == SEM_FAILED)
         {
             TRACE("sem_open(startup) failed: errno is %d (%s)\n", errno, strerror(errno));
@@ -1771,7 +1825,7 @@ public:
     {
         char pipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];  
 
-        PAL_GetTransportPipeName(pipeName, m_processId, "in");
+        PAL_GetTransportPipeName(pipeName, m_processId, GetApplicationGroupId(), "in");
 
         struct stat buf;
         if (stat(pipeName, &buf) == 0) 
@@ -1886,6 +1940,9 @@ StartupHelperThread(LPVOID p)
 
 Parameters:
     dwProcessId - process id of runtime process
+    lpApplicationGroupId - A string representing the application group ID of a sandboxed
+                           process running in Mac. Pass NULL if the process is not 
+                           running in a sandbox and other platforms.
     pfnCallback - function to callback for coreclr module found
     parameter - data to pass to callback
     ppUnregisterToken - pointer to put PAL_UnregisterForRuntimeStartup token.
@@ -1906,6 +1963,7 @@ DWORD
 PALAPI
 PAL_RegisterForRuntimeStartup(
     IN DWORD dwProcessId,
+    IN LPCWSTR lpApplicationGroupId,
     IN PPAL_STARTUP_CALLBACK pfnCallback,
     IN PVOID parameter,
     OUT PVOID *ppUnregisterToken)
@@ -1917,7 +1975,7 @@ PAL_RegisterForRuntimeStartup(
 
     // Create the debuggee startup semaphore so the runtime (debuggee) knows to wait for 
     // a debugger connection.
-    PAL_ERROR pe = helper->Register();
+    PAL_ERROR pe = helper->Register(lpApplicationGroupId);
     if (NO_ERROR != pe)
     {
         helper->Release();
@@ -1985,8 +2043,15 @@ PAL_NotifyRuntimeStarted()
     // will also try to use 0 as the value.
     _ASSERTE(ret == TRUE || processIdDisambiguationKey == 0);
 
-    sprintf_s(startupSemName, sizeof(startupSemName), RuntimeStartupSemaphoreName, HashSemaphoreName(gPID, processIdDisambiguationKey));
-    sprintf_s(continueSemName, sizeof(continueSemName), RuntimeContinueSemaphoreName, HashSemaphoreName(gPID, processIdDisambiguationKey));
+    UnambiguousProcessDescriptor unambiguousProcessDescriptor(gPID, processIdDisambiguationKey);
+    LPCSTR applicationGroupId = 
+#ifdef __APPLE__    
+        PAL_GetApplicationGroupId();
+#else
+        nullptr;
+#endif
+    CreateSemaphoreName(startupSemName, RuntimeStartupSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
+    CreateSemaphoreName(continueSemName, RuntimeContinueSemaphoreName, unambiguousProcessDescriptor, applicationGroupId);
 
     TRACE("PAL_NotifyRuntimeStarted opening continue '%s' startup '%s'\n", continueSemName, startupSemName);
 
@@ -2041,7 +2106,78 @@ PAL_GetApplicationGroupId()
 {
     return gApplicationGroupId;
 }
-#endif // __APPLE__
+
+// We use 7bits from each byte, so this computes the extra size we need to encode a given byte count
+constexpr int GetExtraEncodedAreaSize(UINT rawByteCount)
+{
+    return (rawByteCount+6)/7;
+}
+const int SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH = GetExtraEncodedAreaSize(sizeof(UnambiguousProcessDescriptor));
+const int SEMAPHORE_ENCODED_NAME_LENGTH =
+    sizeof(UnambiguousProcessDescriptor) + /* For process ID + disambiguationKey */
+    SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; /* For base 255 extra encoding space */
+
+static_assert_no_msg(MAX_APPLICATION_GROUP_ID_LENGTH
+    + 1 /* For / */
+    + 2 /* For ST/CO name prefix */
+    + SEMAPHORE_ENCODED_NAME_LENGTH /* For encoded name string */
+    + 1 /* For null terminator */
+    <= CLR_SEM_MAX_NAMELEN);
+
+// In Apple we are limited by the length of the semaphore name. However, the characters which can be used in the
+// name can be anything between 1 and 255 (since 0 will terminate the string). Thus, we encode each byte b in 
+// unambiguousProcessDescriptor as b ? b : 1, and mark an additional bit indicating if b is 0 or not. We use 7 bits
+// out of each extra byte so 1 bit will always be '1'. This will ensure that our extra bytes are never 0 which are
+// invalid characters. Thus we need an extra byte for each 7 input bytes. Hence, only extra 2 bytes for the name string.
+void EncodeSemaphoreName(char *encodedSemName, const UnambiguousProcessDescriptor& unambiguousProcessDescriptor)
+{
+    const unsigned char *buffer = (const unsigned char *)&unambiguousProcessDescriptor;
+    char *extraEncodingBits = encodedSemName + sizeof(UnambiguousProcessDescriptor);
+
+    // Reset the extra encoding bit area
+    for (int i=0; i<SEMAPHORE_ENCODED_NAME_EXTRA_LENGTH; i++)
+    {
+        extraEncodingBits[i] = 0x80;
+    }
+
+    // Encode each byte in unambiguousProcessDescriptor
+    for (int i=0; i<sizeof(UnambiguousProcessDescriptor); i++)
+    {
+        unsigned char b = buffer[i];
+        encodedSemName[i] = b ? b : 1;
+        extraEncodingBits[i/7] |= (b ? 0 : 1) << (i%7);
+    }
+}
+#endif
+
+void CreateSemaphoreName(char semName[CLR_SEM_MAX_NAMELEN], LPCSTR semaphoreName, const UnambiguousProcessDescriptor& unambiguousProcessDescriptor, LPCSTR applicationGroupId)
+{
+    int length = 0;
+
+#ifdef __APPLE__
+    if (applicationGroupId != nullptr)
+    {
+        // We assume here that applicationGroupId has been already tested for length and is less than MAX_APPLICATION_GROUP_ID_LENGTH
+        length = sprintf_s(semName, CLR_SEM_MAX_NAMELEN, "%s/%s", applicationGroupId, semaphoreName);
+        _ASSERTE(length > 0 && length < CLR_SEM_MAX_NAMELEN);
+
+        EncodeSemaphoreName(semName+length, unambiguousProcessDescriptor);
+        length += SEMAPHORE_ENCODED_NAME_LENGTH;
+        semName[length] = 0;
+    }
+    else
+#endif // __APPLE__    
+    {
+        length = sprintf_s(
+            semName,
+            CLR_SEM_MAX_NAMELEN,
+            RuntimeSemaphoreNameFormat,
+            semaphoreName,
+            HashSemaphoreName(unambiguousProcessDescriptor.m_processId, unambiguousProcessDescriptor.m_disambiguationKey));
+    }
+
+    _ASSERTE(length > 0 && length < CLR_SEM_MAX_NAMELEN );
+}
 
 /*++
  Function:
@@ -2188,33 +2324,70 @@ PALAPI
 PAL_GetTransportPipeName(
     OUT char *name,
     IN DWORD id,
+    IN const char *applicationGroupId,
     IN const char *suffix)
 {
     *name = '\0';
     DWORD dwRetVal = 0;
     UINT64 disambiguationKey = 0;
-    char formatBuffer[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];
+    PathCharString formatBufferString;
     BOOL ret = GetProcessIdDisambiguationKey(id, &disambiguationKey);
+    char *formatBuffer = formatBufferString.OpenStringBuffer(MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH-1);
+    if (formatBuffer == nullptr)
+    {
+        ERROR("Out Of Memory");
+        return;
+    }
 
     // If GetProcessIdDisambiguationKey failed for some reason, it should set the value 
     // to 0. We expect that anyone else making the pipe name will also fail and thus will
     // also try to use 0 as the value.
     _ASSERTE(ret == TRUE || disambiguationKey == 0);
-
-    // Get a temp file location
-    dwRetVal = ::GetTempPathA(MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, formatBuffer);
-    if (dwRetVal == 0)
+#ifdef __APPLE__
+    if (nullptr != applicationGroupId)
     {
-        ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
-        return;
+        // Verify the length of the application group ID
+        int applicationGroupIdLength = strlen(applicationGroupId);
+        if (applicationGroupIdLength > MAX_APPLICATION_GROUP_ID_LENGTH)
+        {
+            ERROR("The length of applicationGroupId is larger than MAX_APPLICATION_GROUP_ID_LENGTH");
+            return;
+        }
+
+        // In sandbox, all IPC files (locks, pipes) should be written to the application group
+        // container. The path returned by GetTempPathA will be unique for each process and cannot
+        // be used for IPC between two different processes
+        if (!GetApplicationContainerFolder(formatBufferString, applicationGroupId, applicationGroupIdLength))
+        {
+            ERROR("Out Of Memory");
+            return;
+        }
+
+        // Verify the size of the path won't exceed maximum allowed size
+        if (formatBufferString.GetCount() >= MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH)
+        {
+            ERROR("GetApplicationContainerFolder returned a path that was larger than MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH");
+            return;
+        }
     }
-    if (dwRetVal > MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH)
+    else
+#endif // __APPLE__    
     {
-        ERROR("GetTempPath returned a path that was larger than MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH");
-        return;
+        // Get a temp file location
+        dwRetVal = ::GetTempPathA(MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, formatBuffer);
+        if (dwRetVal == 0)
+        {
+            ERROR("GetTempPath failed (0x%08x)", ::GetLastError());
+            return;
+        }
+        if (dwRetVal > MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH)
+        {
+            ERROR("GetTempPath returned a path that was larger than MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH");
+            return;
+        }
     }
 
-    if (strncat_s(formatBuffer, _countof(formatBuffer), PipeNameFormat, strlen(PipeNameFormat)) == STRUNCATE)
+    if (strncat_s(formatBuffer, MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH, PipeNameFormat, strlen(PipeNameFormat)) == STRUNCATE)
     {
         ERROR("TransportPipeName was larger than MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH");
         return;

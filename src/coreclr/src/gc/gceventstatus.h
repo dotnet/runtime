@@ -241,9 +241,12 @@ void FireDynamicEvent(const char* name, EventArgument... arguments)
   template<typename... EventActualArgument>                       \
   inline void GCEventFire##name(EventActualArgument... arguments) \
   {                                                               \
-      IGCToCLREventSink* sink = GCToEEInterface::EventSink();     \
-      assert(sink != nullptr);                                    \
-      sink->Fire##name(arguments...);                             \
+      if (GCEventEnabled##name())                                 \
+      {                                                           \
+          IGCToCLREventSink* sink = GCToEEInterface::EventSink(); \
+          assert(sink != nullptr);                                \
+          sink->Fire##name(arguments...);                         \
+      }                                                           \
   }
 
 #define DYNAMIC_EVENT(name, level, keyword, ...)                                                                   \

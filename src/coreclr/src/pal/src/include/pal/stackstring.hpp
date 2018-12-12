@@ -109,7 +109,7 @@ private:
 
 public:
     StackString()
-        : m_buffer(m_innerBuffer), m_size(0), m_count(0)
+        : m_buffer(m_innerBuffer), m_size(STACKCOUNT+1), m_count(0)
     {
     }
 
@@ -237,6 +237,7 @@ public:
         m_count = 0;
         NullTerminate();
     }
+
     ~StackString()
     {
         DeleteBuffer();
@@ -247,8 +248,8 @@ public:
 typedef StackString<32, CHAR> PathCharString;
 typedef StackString<32, WCHAR> PathWCharString; 
 #else
-typedef StackString<260, CHAR> PathCharString;
-typedef StackString<260, WCHAR> PathWCharString; 
+typedef StackString<MAX_PATH, CHAR> PathCharString;
+typedef StackString<MAX_PATH, WCHAR> PathWCharString; 
 #endif
 #endif
 

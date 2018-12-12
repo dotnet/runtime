@@ -202,7 +202,7 @@ namespace System
                     high++;
 
                 if (high > uint.MaxValue)
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    Number.ThrowOverflowException(TypeCode.Decimal);
                 result.Low64 = low;
                 result.High = (uint)high;
             }
@@ -687,7 +687,8 @@ PosRem:
                 return scale;
 
 ThrowOverflow:
-                throw new OverflowException(SR.Overflow_Decimal);
+                Number.ThrowOverflowException(TypeCode.Decimal);
+                return 0;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -758,7 +759,7 @@ ThrowOverflow:
             private static int OverflowUnscale(ref Buf12 bufQuo, int scale, bool sticky)
             {
                 if (--scale < 0)
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    Number.ThrowOverflowException(TypeCode.Decimal);
 
                 Debug.Assert(bufQuo.U2 == 0);
 
@@ -870,7 +871,7 @@ ThrowOverflow:
                 // positive if it isn't already.
                 //
                 if (curScale + scale < 0)
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    Number.ThrowOverflowException(TypeCode.Decimal);
 
                 return curScale;
             }
@@ -1138,7 +1139,7 @@ AlignedScale:
                     // Divide the value by 10, dropping the scale factor.
                     //
                     if ((flags & ScaleMask) == 0)
-                        throw new OverflowException(SR.Overflow_Decimal);
+                        Number.ThrowOverflowException(TypeCode.Decimal);
                     flags -= 1 << ScaleShift;
 
                     const uint den = 10;
@@ -1578,7 +1579,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (exp > 96)
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    Number.ThrowOverflowException(TypeCode.Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -1745,7 +1746,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (exp > 96)
-                    throw new OverflowException(SR.Overflow_Decimal);
+                    Number.ThrowOverflowException(TypeCode.Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -2213,7 +2214,7 @@ RoundUp:
                 }
 
 ThrowOverflow:
-                throw new OverflowException(SR.Overflow_Decimal);
+                Number.ThrowOverflowException(TypeCode.Decimal);
             }
 
             /// <summary>

@@ -22,7 +22,7 @@ test_scenarios = {
                     "COMPlus_JitStress": "2" },
 }
 
-if sys.platform == "linux" or sys.platform == "darwin":
+if sys.platform.startswith('linux') or sys.platform == "darwin":
     platform_type = "unix"
 elif sys.platform == "win32":
     platform_type = "windows"

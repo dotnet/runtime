@@ -208,7 +208,7 @@ void ShimLocalDataTarget::Dispose()
 //
 
 HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
-                                        DWORD processId, 
+                                        const ProcessDescriptor * pProcessDescriptor,
                                         ShimDataTarget ** ppDataTarget)
 {
     HRESULT hr = S_OK;
@@ -226,7 +226,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
         PROCESS_VM_WRITE          |
         SYNCHRONIZE,
         FALSE,
-        processId);
+        pProcessDescriptor->m_Pid);
 
     if (hProcess == NULL)
     {
@@ -247,7 +247,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
     {
         goto Label_Exit;
     }
-    pLocalDataTarget = new (nothrow) ShimLocalDataTarget(processId, hProcess);
+    pLocalDataTarget = new (nothrow) ShimLocalDataTarget(pProcessDescriptor->m_Pid, hProcess);
     if (pLocalDataTarget == NULL)
     {
         hr = E_OUTOFMEMORY;

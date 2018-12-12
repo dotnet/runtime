@@ -20,13 +20,16 @@
 // Usual lifecycle looks like this:
 // Debug a new process:
 // * CreateProcess(&pid)
-// * GetTransportForProcess(pid, &transport) 
+// * On Mac, Optionally obtain an application group ID from a user
+// * Create a ProcessDescriptor pd
+// * GetTransportForProcess(&pd, &transport) 
 // * ReleaseTransport(transport)
 // * KillProcess(pid)
 
 // Attach to an existing process:
-// * Obtain pid from a user
-// * GetTransportForProcess(pid, &transport) 
+// * Obtain pid (and optionally application group ID on Mac) from a user
+// * Create a ProcessDescriptor pd
+// * GetTransportForProcess(&pd, &transport) 
 // * ReleaseTransport(transport)
 
 class DbgTransportTarget
@@ -37,7 +40,7 @@ public:
     // Given a PID attempt to find or create a DbgTransportSession instance to manage a connection to a
     // runtime in that process. Returns E_UNEXPECTED if the process can't be found. Also returns a handle that
     // can be waited on for process termination.
-    HRESULT GetTransportForProcess(DWORD dwPID, DbgTransportSession **ppTransport, HANDLE *phProcessHandle);
+    HRESULT GetTransportForProcess(const ProcessDescriptor *pProcessDescriptor, DbgTransportSession **ppTransport, HANDLE *phProcessHandle);
 
     // Give back a previously acquired transport (if nobody else is using the transport it will close down the
     // connection at this point).

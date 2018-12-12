@@ -1324,7 +1324,7 @@ VARSET_VALRET_TP Compiler::fgUpdateLiveSet(VARSET_VALARG_TP liveSet, GenTree* tr
     VARSET_TP newLiveSet(VarSetOps::MakeCopy(this, liveSet));
     assert(fgLocalVarLivenessDone == true);
     GenTree* lclVarTree = tree; // After the tests below, "lclVarTree" will be the local variable.
-    if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_FLD || tree->gtOper == GT_REG_VAR ||
+    if (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_FLD ||
         (lclVarTree = fgIsIndirOfAddrOfLocal(tree)) != nullptr)
     {
         const VARSET_TP& varBits(fgGetVarBits(lclVarTree));

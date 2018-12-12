@@ -6,6 +6,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
+using System.Runtime.Loader;
 using System.Runtime.Versioning;
 using System.Threading;
 
@@ -13,15 +15,8 @@ namespace System
 {
     public static class AppContext
     {
-        private static Dictionary<string, object> s_dataStore = new Dictionary<string, object>();
+        private static readonly Dictionary<string, object> s_dataStore = new Dictionary<string, object>();
         private static Dictionary<string, bool> s_switches;
-
-        static AppContext()
-        {
-            // Unloading event must happen before ProcessExit event
-            AppDomain.CurrentDomain.ProcessExit += OnUnloading;
-            AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
-        }
 
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
@@ -83,50 +78,17 @@ namespace System
             }
         }
 
-        public static event UnhandledExceptionEventHandler UnhandledException
-        {
-            add
-            {
-                AppDomain.CurrentDomain.UnhandledException += value;
-            }
+        public static event UnhandledExceptionEventHandler UnhandledException;
 
-            remove
-            {
-                AppDomain.CurrentDomain.UnhandledException -= value;
-            }
-        }
-
-        public static event System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> FirstChanceException
-        {
-            add
-            {
-                AppDomain.CurrentDomain.FirstChanceException += value;
-            }
-            remove
-            {
-                AppDomain.CurrentDomain.FirstChanceException -= value;
-            }
-        }
+        public static event System.EventHandler<FirstChanceExceptionEventArgs> FirstChanceException;
 
         public static event System.EventHandler ProcessExit;
-        internal static event System.EventHandler Unloading;
 
-        private static void OnProcessExit(object sender, EventArgs e)
+        private static void OnProcessExit()
         {
-            var processExit = ProcessExit;
-            if (processExit != null)
-            {
-                processExit(null, EventArgs.Empty);
-            }
-        }
+            AssemblyLoadContext.OnProcessExit();
 
-        private static void OnUnloading(object sender, EventArgs e)
-        {
-            var unloading = Unloading;
-            if (unloading != null)
-            {
-                unloading(null, EventArgs.Empty);
-            }
+            ProcessExit?.Invoke(null /* AppDomain */, EventArgs.Empty);
         }
 
         /// <summary>
@@ -177,7 +139,7 @@ namespace System
             if (s_switches == null)
             {
                 // Compatibility switches are rarely used. Initialize the Dictionary lazily
-                Interlocked.CompareExchange(ref s_switches, new Dictionary<string, bool>(), null); 
+                Interlocked.CompareExchange(ref s_switches, new Dictionary<string, bool>(), null);
             }
 
             lock (s_switches)

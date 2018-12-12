@@ -2041,8 +2041,8 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
         {
             if (treeNode->OperIsLocal() || treeNode->OperIsLocalAddr())
             {
-                // This should neither be a GT_REG_VAR nor GT_PHI_ARG.
-                assert((treeNode->OperGet() != GT_REG_VAR) && (treeNode->OperGet() != GT_PHI_ARG));
+                // This should not be a GT_PHI_ARG.
+                assert(treeNode->OperGet() != GT_PHI_ARG);
 
                 GenTreeLclVarCommon* lcl    = treeNode->AsLclVarCommon();
                 LclVarDsc*           lclVar = &comp->lvaTable[lcl->gtLclNum];

@@ -248,7 +248,7 @@ namespace System.Threading.Tasks
             for (int i = 0; i < exceptions.Count; i++)
             {
                 var t = exceptions[i].SourceException.GetType();
-                if (t != typeof(ThreadAbortException) && t != typeof(AppDomainUnloadedException))
+                if (t != typeof(ThreadAbortException))
                 {
                     MarkAsUnhandled();
                     break;

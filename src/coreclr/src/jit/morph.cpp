@@ -8541,8 +8541,7 @@ NO_TAIL_CALL:
             {
                 structHnd = call->gtRetClsHnd;
                 if (info.compCompHnd->isStructRequiringStackAllocRetBuf(structHnd) &&
-                    !((dest->OperGet() == GT_LCL_VAR || dest->OperGet() == GT_REG_VAR) &&
-                      dest->gtLclVar.gtLclNum == info.compRetBuffArg))
+                    !(dest->OperGet() == GT_LCL_VAR && dest->gtLclVar.gtLclNum == info.compRetBuffArg))
                 {
                     origDest = dest;
 

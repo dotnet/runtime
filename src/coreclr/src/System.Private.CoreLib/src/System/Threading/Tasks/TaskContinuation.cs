@@ -836,7 +836,7 @@ namespace System.Threading.Tasks
             // If unhandled error reporting APIs are available use those, otherwise since this 
             // would have executed on the thread pool otherwise, let it propagate there.
 
-            if (!(exc is ThreadAbortException || exc is AppDomainUnloadedException))
+            if (!(exc is ThreadAbortException))
             {
 #if FEATURE_COMINTEROP
                 if (!WindowsRuntimeMarshal.ReportUnhandledError(exc))
