@@ -487,12 +487,12 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result, out _);
+            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out decimal result)
         {
-            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result, out _);
+            return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out decimal result)
@@ -505,13 +505,13 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
+            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
+            return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         // Returns a binary representation of a Decimal. The return value is an
@@ -646,11 +646,12 @@ namespace System
             {
                 temp = ToUInt32(value);
             }
-            catch (OverflowException e)
+            catch (OverflowException)
             {
-                throw new OverflowException(SR.Overflow_Byte, e);
+                Number.ThrowOverflowException(TypeCode.Byte);
+                throw;
             }
-            if (temp != (byte)temp) throw new OverflowException(SR.Overflow_Byte);
+            if (temp != (byte)temp) Number.ThrowOverflowException(TypeCode.Byte);
             return (byte)temp;
         }
 
@@ -666,11 +667,12 @@ namespace System
             {
                 temp = ToInt32(value);
             }
-            catch (OverflowException e)
+            catch (OverflowException)
             {
-                throw new OverflowException(SR.Overflow_SByte, e);
+                Number.ThrowOverflowException(TypeCode.SByte);
+                throw;
             }
-            if (temp != (sbyte)temp) throw new OverflowException(SR.Overflow_SByte);
+            if (temp != (sbyte)temp) Number.ThrowOverflowException(TypeCode.SByte);
             return (sbyte)temp;
         }
 
@@ -685,11 +687,12 @@ namespace System
             {
                 temp = ToInt32(value);
             }
-            catch (OverflowException e)
+            catch (OverflowException)
             {
-                throw new OverflowException(SR.Overflow_Int16, e);
+                Number.ThrowOverflowException(TypeCode.Int16);
+                throw;
             }
-            if (temp != (short)temp) throw new OverflowException(SR.Overflow_Int16);
+            if (temp != (short)temp) Number.ThrowOverflowException(TypeCode.Int16);
             return (short)temp;
         }
 
@@ -759,11 +762,12 @@ namespace System
             {
                 temp = ToUInt32(value);
             }
-            catch (OverflowException e)
+            catch (OverflowException)
             {
-                throw new OverflowException(SR.Overflow_UInt16, e);
+                Number.ThrowOverflowException(TypeCode.UInt16);
+                throw;
             }
-            if (temp != (ushort)temp) throw new OverflowException(SR.Overflow_UInt16);
+            if (temp != (ushort)temp) Number.ThrowOverflowException(TypeCode.UInt16);
             return (ushort)temp;
         }
 

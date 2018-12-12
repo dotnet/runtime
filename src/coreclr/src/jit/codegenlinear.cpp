@@ -741,21 +741,9 @@ void CodeGen::genSpillVar(GenTree* tree)
         var_types lclTyp = genActualType(varDsc->TypeGet());
         emitAttr  size   = emitTypeSize(lclTyp);
 
-        bool restoreRegVar = false;
-        if (tree->gtOper == GT_REG_VAR)
-        {
-            tree->SetOper(GT_LCL_VAR);
-            restoreRegVar = true;
-        }
-
         instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
         assert(varDsc->lvRegNum == tree->gtRegNum);
         inst_TT_RV(storeIns, tree, tree->gtRegNum, 0, size);
-
-        if (restoreRegVar)
-        {
-            tree->SetOper(GT_REG_VAR);
-        }
 
         genUpdateRegLife(varDsc, /*isBorn*/ false, /*isDying*/ true DEBUGARG(tree));
         gcInfo.gcMarkRegSetNpt(varDsc->lvRegMask());

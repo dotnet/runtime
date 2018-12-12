@@ -6,6 +6,8 @@ parameters:
   priority: 0
   crossgen: false
   scenarios: ''
+  helixQueuesPublic: ''
+  helixQueuesInternal: ''
 
 ### Test job
 
@@ -53,6 +55,12 @@ jobs:
       - ${{ if eq(parameters.scenarios, '') }}:
         - name: scenariosArg
           value: ''
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        - name: helixTargetQueuesArg
+          value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesPublic) }}
+      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        - name: helixTargetQueuesArg
+          value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
 
     # TODO: Enable crossgen in build-test.sh. It currently doesn't
     # accept a crossgen arg, so disable the macos/linux crossgen test
@@ -113,7 +121,7 @@ jobs:
 
     # Send tests to helix
     - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj /maxcpucount $(scenariosArg)
+      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj /maxcpucount $(scenariosArg) $(helixTargetQueuesArg)
         displayName: Send test jobs to Helix
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -123,7 +131,7 @@ jobs:
             # Access token variable for public project
             HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj /maxcpucount  $(scenariosArg)
+      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj /maxcpucount $(scenariosArg) $(helixTargetQueuesArg)
         displayName: Send test jobs to Helix
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:

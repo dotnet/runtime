@@ -72,7 +72,8 @@ namespace System
 
         private static unsafe bool SystemSupportsLeapSeconds()
         {
-            Interop.NtDll.SYSTEM_LEAP_SECOND_INFORMATION slsi = new Interop.NtDll.SYSTEM_LEAP_SECOND_INFORMATION();
+            Interop.NtDll.SYSTEM_LEAP_SECOND_INFORMATION slsi;
+
             return Interop.NtDll.NtQuerySystemInformation(
                                     Interop.NtDll.SystemLeapSecondInformation,
                                     (void *) &slsi,

@@ -143,12 +143,12 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
+            return Number.TryParseInt64IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out long result)
         {
-            return Number.TryParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
+            return Number.TryParseInt64IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out long result)
@@ -161,13 +161,13 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
+            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out long result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
+            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //

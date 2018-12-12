@@ -757,9 +757,8 @@ public:
 //  well to make sure it's the right operator for the particular flag.
 //---------------------------------------------------------------------
 
-// NB: GTF_VAR_* and GTF_REG_* share the same namespace of flags, because
-// GT_LCL_VAR nodes may be changed to GT_REG_VAR nodes without resetting
-// the flags. These are also used by GT_LCL_FLD.
+// NB: GTF_VAR_* and GTF_REG_* share the same namespace of flags.
+// These flags are also used by GT_LCL_FLD.
 #define GTF_VAR_DEF         0x80000000 // GT_LCL_VAR -- this is a definition
 #define GTF_VAR_USEASG      0x40000000 // GT_LCL_VAR -- this is a partial definition, a use of the previous definition is implied
                                        // A partial definition usually occurs when a struct field is assigned to (s.f = ...) or
@@ -772,8 +771,8 @@ public:
 // TODO-Cleanup: Currently, GTF_REG_BIRTH is used only by stackfp
 //         We should consider using it more generally for VAR_BIRTH, instead of
 //         GTF_VAR_DEF && !GTF_VAR_USEASG
-#define GTF_REG_BIRTH       0x04000000 // GT_REG_VAR -- enregistered variable born here
-#define GTF_VAR_DEATH       0x02000000 // GT_LCL_VAR, GT_REG_VAR -- variable dies here (last use)
+#define GTF_REG_BIRTH       0x04000000 // GT_LCL_VAR, -- enregistered variable born here
+#define GTF_VAR_DEATH       0x02000000 // GT_LCL_VAR, -- variable dies here (last use)
 
 #define GTF_VAR_ARR_INDEX   0x00000020 // The variable is part of (the index portion of) an array index expression.
                                        // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
@@ -1081,8 +1080,8 @@ public:
     static bool OperIsLocal(genTreeOps gtOper)
     {
         bool result = (OperKind(gtOper) & GTK_LOCAL) != 0;
-        assert(result == (gtOper == GT_LCL_VAR || gtOper == GT_PHI_ARG || gtOper == GT_REG_VAR ||
-                          gtOper == GT_LCL_FLD || gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD));
+        assert(result == (gtOper == GT_LCL_VAR || gtOper == GT_PHI_ARG || gtOper == GT_LCL_FLD ||
+                          gtOper == GT_STORE_LCL_VAR || gtOper == GT_STORE_LCL_FLD));
         return result;
     }
 
@@ -1103,7 +1102,7 @@ public:
 
     static bool OperIsScalarLocal(genTreeOps gtOper)
     {
-        return (gtOper == GT_LCL_VAR || gtOper == GT_REG_VAR || gtOper == GT_STORE_LCL_VAR);
+        return (gtOper == GT_LCL_VAR || gtOper == GT_STORE_LCL_VAR);
     }
 
     static bool OperIsNonPhiLocal(genTreeOps gtOper)
@@ -1966,18 +1965,20 @@ public:
 
     bool IsRegVarDeath() const
     {
-        assert(OperGet() == GT_REG_VAR);
+        unreached();
         return (gtFlags & GTF_VAR_DEATH) ? true : false;
     }
     bool IsRegVarBirth() const
     {
-        assert(OperGet() == GT_REG_VAR);
+        unreached();
         return (gtFlags & GTF_REG_BIRTH) ? true : false;
     }
+
     bool IsReverseOp() const
     {
         return (gtFlags & GTF_REVERSE_OPS) ? true : false;
     }
+
     bool IsUnsigned() const
     {
         return ((gtFlags & GTF_UNSIGNED) != 0);
@@ -2805,66 +2806,6 @@ struct GenTreeLclFld : public GenTreeLclVarCommon
     }
 #if DEBUGGABLE_GENTREE
     GenTreeLclFld() : GenTreeLclVarCommon()
-    {
-    }
-#endif
-};
-
-struct GenTreeRegVar : public GenTreeLclVarCommon
-{
-    // TODO-Cleanup: Note that the base class GenTree already has a gtRegNum field.
-    // It's not clear exactly why a GT_REG_VAR has a separate field. When
-    // GT_REG_VAR is created, the two are identical. It appears that they may
-    // or may not remain so. In particular, there is a comment in stackfp.cpp
-    // that states:
-    //
-    //      There used to be an assertion: assert(src->gtRegNum == src->gtRegVar.gtRegNum, ...)
-    //      here, but there's actually no reason to assume that.  AFAICT, for FP vars under stack FP,
-    //      src->gtRegVar.gtRegNum is the allocated stack pseudo-register, but src->gtRegNum is the
-    //      FP stack position into which that is loaded to represent a particular use of the variable.
-    //
-    // It might be the case that only for stackfp do they ever differ.
-    //
-    // The following might be possible: the GT_REG_VAR node has a last use prior to a complex
-    // subtree being evaluated. It could then be spilled from the register. Later,
-    // it could be unspilled into a different register, which would be recorded at
-    // the unspill time in the GenTree::gtRegNum, whereas GenTreeRegVar::gtRegNum
-    // is left alone. It's not clear why that is useful.
-    //
-    // Assuming there is a particular use, like stack fp, that requires it, maybe we
-    // can get rid of GT_REG_VAR and just leave it as GT_LCL_VAR, using the base class gtRegNum field.
-    // If we need it for stackfp, we could add a GenTreeStackFPRegVar type, which carries both the
-    // pieces of information, in a clearer and more specific way (in particular, with
-    // a different member name).
-    //
-
-private:
-    regNumberSmall _gtRegNum;
-
-public:
-    GenTreeRegVar(var_types type, unsigned lclNum, regNumber regNum) : GenTreeLclVarCommon(GT_REG_VAR, type, lclNum)
-    {
-        gtRegNum = regNum;
-    }
-
-    // The register number is stored in a small format (8 bits), but the getters return and the setters take
-    // a full-size (unsigned) format, to localize the casts here.
-
-    __declspec(property(get = GetRegNum, put = SetRegNum)) regNumber gtRegNum;
-
-    regNumber GetRegNum() const
-    {
-        return (regNumber)_gtRegNum;
-    }
-
-    void SetRegNum(regNumber reg)
-    {
-        _gtRegNum = (regNumberSmall)reg;
-        assert(_gtRegNum == reg);
-    }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeRegVar() : GenTreeLclVarCommon()
     {
     }
 #endif

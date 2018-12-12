@@ -315,11 +315,14 @@ namespace System.Runtime.Intrinsics
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
                 return Avx2.InsertVector128(AsByte(), value.AsByte(), 0).As<T>();
             }
 
             if (Avx.IsSupported)
             {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
                 return Avx.InsertVector128(AsSingle(), value.AsSingle(), 0).As<T>();
             }
 
@@ -344,11 +347,14 @@ namespace System.Runtime.Intrinsics
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
                 return Avx2.ExtractVector128(AsByte(), 1).As<T>();
             }
 
             if (Avx.IsSupported)
             {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
                 return Avx.ExtractVector128(AsSingle(), 1).As<T>();
             }
 
@@ -373,11 +379,14 @@ namespace System.Runtime.Intrinsics
 
             if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
             {
+                // All integral types generate the same instruction, so just pick one rather than handling each T separately
                 return Avx2.InsertVector128(AsByte(), value.AsByte(), 1).As<T>();
             }
 
             if (Avx.IsSupported)
             {
+                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
+                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
                 return Avx.InsertVector128(AsSingle(), value.AsSingle(), 1).As<T>();
             }
 

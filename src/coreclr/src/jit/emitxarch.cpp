@@ -245,6 +245,7 @@ bool emitter::TakesVexPrefix(instruction ins)
 // Add base VEX prefix without setting W, R, X, or B bits
 // L bit will be set based on emitter attr.
 //
+// 2-byte VEX prefix = C5 <R,vvvv,L,pp>
 // 3-byte VEX prefix = C4 <R,X,B,m-mmmm> <W,vvvv,L,pp>
 //  - R, X, B, W - bits to express corresponding REX prefixes
 //  - m-mmmmm (5-bit)
@@ -262,26 +263,31 @@ bool emitter::TakesVexPrefix(instruction ins)
 //   01  - 66     (66 0F - packed double)
 //   10  - F3     (F3 0F - scalar float
 //   11  - F2     (F2 0F - scalar double)
-//
-// TODO-AMD64-CQ: for simplicity of implementation this routine always adds 3-byte VEX
-// prefix. Based on 'attr' param we could add 2-byte VEX prefix in case of scalar
-// and AVX-128 bit operations.
 #define DEFAULT_3BYTE_VEX_PREFIX 0xC4E07800000000ULL
 #define DEFAULT_3BYTE_VEX_PREFIX_MASK 0xFFFFFF00000000ULL
 #define LBIT_IN_3BYTE_VEX_PREFIX 0x00000400000000ULL
 emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr attr)
 {
+    // The 2-byte VEX encoding is preferred when possible, but actually emitting
+    // it depends on a number of factors that we may not know until much later.
+    //
+    // In order to handle this "easily", we just carry the 3-byte encoding all
+    // the way through and "fix-up" the encoding when the VEX prefix is actually
+    // emitted, by simply checking that all the requirements were met.
+
     // Only AVX instructions require VEX prefix
     assert(IsAVXInstruction(ins));
 
-    // Shouldn't have already added Vex prefix
+    // Shouldn't have already added VEX prefix
     assert(!hasVexPrefix(code));
 
-    // Set L bit to 1 in case of instructions that operate on 256-bits.
     assert((code & DEFAULT_3BYTE_VEX_PREFIX_MASK) == 0);
+
     code |= DEFAULT_3BYTE_VEX_PREFIX;
+
     if (attr == EA_32BYTE)
     {
+        // Set L bit to 1 in case of instructions that operate on 256-bits.
         code |= LBIT_IN_3BYTE_VEX_PREFIX;
     }
 
@@ -485,9 +491,9 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
 {
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
-        // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
         if (TakesVexPrefix(ins))
         {
+            // W-bit is available only in 3-byte VEX prefix that starts with byte C4.
             assert(hasVexPrefix(code));
 
             // W-bit is the only bit that is added in non bit-inverted form.
@@ -508,9 +514,9 @@ emitter::code_t emitter::AddRexRPrefix(instruction ins, code_t code)
 {
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
-        // Right now support 3-byte VEX prefix
         if (TakesVexPrefix(ins))
         {
+            // R-bit is supported by both 2-byte and 3-byte VEX prefix
             assert(hasVexPrefix(code));
 
             // R-bit is added in bit-inverted form.
@@ -525,9 +531,9 @@ emitter::code_t emitter::AddRexXPrefix(instruction ins, code_t code)
 {
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
-        // Right now support 3-byte VEX prefix
         if (TakesVexPrefix(ins))
         {
+            // X-bit is available only in 3-byte VEX prefix that starts with byte C4.
             assert(hasVexPrefix(code));
 
             // X-bit is added in bit-inverted form.
@@ -542,9 +548,9 @@ emitter::code_t emitter::AddRexBPrefix(instruction ins, code_t code)
 {
     if (UseVEXEncoding() && IsAVXInstruction(ins))
     {
-        // Right now support 3-byte VEX prefix
         if (TakesVexPrefix(ins))
         {
+            // B-bit is available only in 3-byte VEX prefix that starts with byte C4.
             assert(hasVexPrefix(code));
 
             // B-bit is added in bit-inverted form.
@@ -677,7 +683,10 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
 
         // If there is an escape byte it must be 0x0F or 0x0F3A or 0x0F38
         // m-mmmmm bits in byte 1 of VEX prefix allows us to encode these
-        // implied leading bytes
+        // implied leading bytes. 0x0F is supported by both the 2-byte and
+        // 3-byte encoding. While 0x0F3A and 0x0F38 are only supported by
+        // the 3-byte version.
+
         switch (leadingBytes)
         {
             case 0x00:
@@ -702,6 +711,33 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
         //     VEX.0011RM22 got transformed as VEX.0000RM22
         //
         // Now output VEX prefix leaving the 4-byte opcode
+
+        // The 2-byte VEX encoding, requires that the X and B-bits are set (these
+        // bits are inverted from the REX values so set means off), the W-bit is
+        // not set (this bit is not inverted), and that the m-mmmm bits are 0-0001
+        // (the 2-byte VEX encoding only supports the 0x0F leading byte). When these
+        // conditions are met, we can change byte-0 from 0xC4 to 0xC5 and then
+        // byte-1 is the logical-or of bit 7 from byte-1 and bits 0-6 from byte 2
+        // from the 3-byte VEX encoding.
+        //
+        // Given the above, the check can be reduced to a simple mask and comparison.
+        // * 0xFFFF7F80 is a mask that ignores any bits whose value we don't care about:
+        //   * R can be set or unset              (0x7F ignores bit 7)
+        //   * vvvv can be any value              (0x80 ignores bits 3-6)
+        //   * L can be set or unset              (0x80 ignores bit 2)
+        //   * pp can be any value                (0x80 ignores bits 0-1)
+        // * 0x00C46100 is a value that signifies the requirements listed above were met:
+        //   * We must be a three-byte VEX opcode (0x00C4)
+        //   * X and B must be set                (0x61 validates bits 5-6)
+        //   * m-mmmm must be 0-00001             (0x61 validates bits 0-4)
+        //   * W must be unset                    (0x00 validates bit 7)
+        if ((vexPrefix & 0xFFFF7F80) == 0x00C46100)
+        {
+            emitOutputByte(dst, 0xC5);
+            emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0x80) | (vexPrefix & 0x7F));
+            return 2;
+        }
+
         emitOutputByte(dst, ((vexPrefix >> 16) & 0xFF));
         emitOutputByte(dst + 1, ((vexPrefix >> 8) & 0xFF));
         emitOutputByte(dst + 2, vexPrefix & 0xFF);
@@ -812,9 +848,6 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
 // Size of vex prefix in bytes
 unsigned emitter::emitGetVexPrefixSize(instruction ins, emitAttr attr)
 {
-    // TODO-XArch-CQ: right now we default to 3-byte VEX prefix. There is a
-    // scope for size win by using 2-byte vex prefix for some of the
-    // scalar, avx-128 and most common avx-256 instructions.
     if (IsAVXInstruction(ins))
     {
         return 3;
@@ -839,8 +872,6 @@ unsigned emitter::emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, c
     if (IsAVXInstruction(ins))
     {
         unsigned vexPrefixAdjustedSize = emitGetVexPrefixSize(ins, attr);
-        // Currently vex prefix size is hard coded as 3 bytes,
-        // In future we should support 2 bytes vex prefix.
         assert(vexPrefixAdjustedSize == 3);
 
         // In this case, opcode will contains escape prefix at least one byte,

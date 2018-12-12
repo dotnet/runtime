@@ -115,7 +115,7 @@ private:
 // Allocate and return an old-style event channel object for this target platform.
 HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB, 
                                        ICorDebugMutableDataTarget * pMutableDataTarget, 
-                                       DWORD dwProcessId,
+                                       const ProcessDescriptor * pProcessDescriptor,
                                        MachineInfo machineInfo,
                                        IEventChannel ** ppEventChannel)
 {

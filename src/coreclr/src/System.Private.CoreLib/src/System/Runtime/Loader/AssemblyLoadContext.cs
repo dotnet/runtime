@@ -2,18 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 using System.IO;
-using System.Runtime.Versioning;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security;
-using System.Threading;
-
 
 namespace System.Runtime.Loader
 {
@@ -46,12 +40,6 @@ namespace System.Runtime.Loader
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void InternalStartProfile(string profile, IntPtr ptrNativeAssemblyLoadContext);
-
-        static AssemblyLoadContext()
-        {
-            // We register the cleanup of all AssemblyLoadContext that have not been finalized in the AppContext.Unloading
-            AppContext.Unloading += OnAppContextUnloading;
-        }
 
         protected AssemblyLoadContext() : this(false, false)
         {
@@ -503,12 +491,7 @@ namespace System.Runtime.Loader
             InternalStartProfile(profile, m_pNativeAssemblyLoadContext);
         }
 
-        private void OnAppContextUnloading()
-        {
-            InitiateUnload();
-        }
-
-        private static void OnAppContextUnloading(object sender, EventArgs e)
+        internal static void OnProcessExit()
         {
             lock (ContextsToUnload)
             {
@@ -519,7 +502,7 @@ namespace System.Runtime.Loader
                     if (alcAlive.Value.TryGetTarget(out alc))
                     {
                         // Should we use a try/catch?
-                        alc.OnAppContextUnloading();
+                        alc.InitiateUnload();
                     }
                 }
                 ContextsToUnload.Clear();
@@ -541,32 +524,67 @@ namespace System.Runtime.Loader
         private static readonly object s_initLock = new object();
 
         // Occurs when an Assembly is loaded
-        public static event AssemblyLoadEventHandler AssemblyLoad
-        {
-            add { AppDomain.CurrentDomain.AssemblyLoad += value; }
-            remove { AppDomain.CurrentDomain.AssemblyLoad -= value; }
-        }
+        public static event AssemblyLoadEventHandler AssemblyLoad;
 
         // Occurs when resolution of type fails
-        public static event ResolveEventHandler TypeResolve
-        {
-            add { AppDomain.CurrentDomain.TypeResolve += value; }
-            remove { AppDomain.CurrentDomain.TypeResolve -= value; }
-        }
+        public static event ResolveEventHandler TypeResolve;
 
         // Occurs when resolution of resource fails
-        public static event ResolveEventHandler ResourceResolve
-        {
-            add { AppDomain.CurrentDomain.ResourceResolve += value; }
-            remove { AppDomain.CurrentDomain.ResourceResolve -= value; }
-        }
+        public static event ResolveEventHandler ResourceResolve;
 
         // Occurs when resolution of assembly fails
         // This event is fired after resolve events of AssemblyLoadContext fails
-        public static event ResolveEventHandler AssemblyResolve
+        public static event ResolveEventHandler AssemblyResolve;
+
+        // This method is called by the VM.
+        private static void OnAssemblyLoad(RuntimeAssembly assembly)
         {
-            add { AppDomain.CurrentDomain.AssemblyResolve += value; }
-            remove { AppDomain.CurrentDomain.AssemblyResolve -= value; }
+            AssemblyLoad?.Invoke(null /* AppDomain */, new AssemblyLoadEventArgs(assembly));
+        }
+
+        // This method is called by the VM.
+        private static RuntimeAssembly OnResourceResolve(RuntimeAssembly assembly, string resourceName)
+        {
+            return InvokeResolveEvent(ResourceResolve, assembly, resourceName);
+        }
+
+        // This method is called by the VM
+        private static RuntimeAssembly OnTypeResolve(RuntimeAssembly assembly, string typeName)
+        {
+            return InvokeResolveEvent(TypeResolve, assembly, typeName);
+        }
+
+        // This method is called by the VM.
+        private static RuntimeAssembly OnAssemblyResolve(RuntimeAssembly assembly, string assemblyFullName)
+        {
+            return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
+        }
+
+        private static RuntimeAssembly InvokeResolveEvent(ResolveEventHandler eventHandler, RuntimeAssembly assembly, string name)
+        {
+            if (eventHandler == null)
+                return null;
+
+            var args = new ResolveEventArgs(name, assembly);
+
+            foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
+            {
+                Assembly asm = handler(null /* AppDomain */, args);
+                RuntimeAssembly ret = GetRuntimeAssembly(asm);
+                if (ret != null)
+                    return ret;
+            }
+
+            return null;
+        }
+
+        private static RuntimeAssembly GetRuntimeAssembly(Assembly asm)
+        {
+            return
+                asm == null ? null :
+                asm is RuntimeAssembly rtAssembly ? rtAssembly :
+                asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
+                null;
         }
 
         private enum InternalState
