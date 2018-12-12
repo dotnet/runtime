@@ -71,9 +71,7 @@ ICALL_EXPORT int
 ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *source, gint32 sindex,
 	gint32 count, const gunichar2 *value, int value_length, MonoBoolean first);
 
-ICALL_EXPORT
-int
-ves_icall_System_Threading_Thread_current_lcid (void);
+#define MONO_LOCALE_INVARIANT (0x007F)
 
 ICALL_EXPORT
 MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this_obj, MonoCultureInfo *cult);
