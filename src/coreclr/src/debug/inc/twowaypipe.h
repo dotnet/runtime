@@ -6,6 +6,8 @@
 #ifndef TwoWayPipe_H
 #define TwoWayPipe_H
 
+#include "processdescriptor.h"
+
 #ifdef FEATURE_PAL
 #define INVALID_PIPE -1
 #else
@@ -43,14 +45,14 @@ public:
     }
 
     // Creates a server side of the pipe. 
-    // Id is used to create pipes names and uniquely identify the pipe on the machine. 
+    // pd is used to create pipes names and uniquely identify the pipe on the machine. 
     // true - success, false - failure (use GetLastError() for more details)
-    bool CreateServer(DWORD id);
+    bool CreateServer(const ProcessDescriptor& pd);
 
     // Connects to a previously opened server side of the pipe.
-    // Id is used to locate the pipe on the machine. 
+    // pd is used to locate the pipe on the machine. 
     // true - success, false - failure (use GetLastError() for more details)
-    bool Connect(DWORD id);
+    bool Connect(const ProcessDescriptor& pd);
 
     // Waits for incoming client connections, assumes GetState() == Created
     // true - success, false - failure (use GetLastError() for more details)
@@ -83,7 +85,6 @@ private:
 
 #ifdef FEATURE_PAL
 
-    int m_id;                               // id that was passed to CreateServer() or Connect()
     int m_inboundPipe, m_outboundPipe;      // two one sided pipes used for communication
     char m_inPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];   // filename of the inbound pipe
     char m_outPipeName[MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH];  // filename of the outbound pipe

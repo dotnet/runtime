@@ -59,7 +59,7 @@ public:
         LPPROCESS_INFORMATION lpProcessInformation);
 
     // Attach
-    virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, DWORD processId);
+    virtual HRESULT DebugActiveProcess(MachineInfo machineInfo, const ProcessDescriptor& processDescriptor);
 
     // Detach
     virtual HRESULT DebugActiveProcessStop(DWORD processId);

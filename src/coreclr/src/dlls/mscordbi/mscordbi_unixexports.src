@@ -8,6 +8,7 @@ DllGetClassObject
 
 ; CoreClr API
 CoreCLRCreateCordbObject
+CoreCLRCreateCordbObjectEx
 
 ; Out-of-proc creation path from the shim - ICLRDebugging
 OpenVirtualProcessImpl
