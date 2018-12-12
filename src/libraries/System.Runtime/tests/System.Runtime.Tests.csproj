@@ -244,6 +244,7 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
+    <Compile Include="System\Reflection\IsCollectibleTests.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\SignatureTypes.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />
@@ -296,6 +297,9 @@
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj">
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>TestLoadAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj">
+      <Name>TestCollectibleAssembly</Name>
     </ProjectReference>
     <Reference Include="TestModule\System.Reflection.TestModule.dll">
     </Reference>
