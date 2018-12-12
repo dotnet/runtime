@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
+
 namespace System.Net.Test.Common
-{
-    
+{    
     public enum FrameType : byte
     {
         Data = 0,
@@ -106,7 +107,7 @@ namespace System.Net.Test.Common
 
         public static DataFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            int idx = Frame.FrameHeaderLength;
+            int idx = 0;
 
             byte padLength = (byte)(header.PaddedFlag ? buffer[idx++] : 0);
             byte[] data = buffer.Slice(idx).ToArray();
@@ -146,7 +147,7 @@ namespace System.Net.Test.Common
         public HeadersFrame(byte[] data, FrameFlags flags, byte padLength, int streamDependency, byte weight, int streamId) :
             base(0, FrameType.Headers, flags, streamId)
         {
-            Length = data.Length + (PaddedFlag ? 0 : padLength + 1) + (PriorityFlag ? 0 : 5);
+            Length = data.Length + (PaddedFlag ? padLength + 1 : 0) + (PriorityFlag ? 5 : 0);
 
             Data = data;
             PadLength = padLength;
@@ -299,6 +300,36 @@ namespace System.Net.Test.Common
         public override string ToString()
         {
             return base.ToString() + $"\nOpaque Data: {string.Join(", ", Data)}";
+        }
+    }
+
+    public class WindowUpdateFrame : Frame
+    {
+        public int UpdateSize;
+
+        public WindowUpdateFrame(int updateSize, int streamId) :
+            base(4, FrameType.WindowUpdate, FrameFlags.None, streamId)
+        {
+            UpdateSize = updateSize;
+        }
+
+        public static WindowUpdateFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
+        {
+            int updateSize = BinaryPrimitives.ReadInt32BigEndian(buffer);
+
+            return new WindowUpdateFrame(updateSize, header.StreamId);
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+
+            BinaryPrimitives.WriteInt32BigEndian(buffer.Slice(Frame.FrameHeaderLength), UpdateSize);
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + $"\nUpdateSize: {UpdateSize}";
         }
     }
 }
