@@ -148,13 +148,13 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
+            return Number.TryParseUInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, out uint result)
         {
-            return Number.TryParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result, out _);
+            return Number.TryParseUInt32IntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
         [CLSCompliant(false)]
@@ -168,14 +168,14 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
+            return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         [CLSCompliant(false)]
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out uint result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
+            return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //

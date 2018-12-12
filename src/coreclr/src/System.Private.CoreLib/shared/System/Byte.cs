@@ -107,17 +107,13 @@ namespace System
 
         private static byte Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
-            int i = 0;
-            try
+            Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
+            if (status != Number.ParsingStatus.OK)
             {
-                i = Number.ParseInt32(s, style, info);
-            }
-            catch (OverflowException e)
-            {
-                throw new OverflowException(SR.Overflow_Byte, e);
+                Number.ThrowOverflowOrFormatException(status, TypeCode.Byte);
             }
 
-            if (i < MinValue || i > MaxValue) throw new OverflowException(SR.Overflow_Byte);
+            if (i > MaxValue) Number.ThrowOverflowException(TypeCode.Byte);
             return (byte)i;
         }
 
@@ -158,14 +154,10 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out byte result)
         {
-            result = 0;
-            int i;
-            if (!Number.TryParseInt32(s, style, info, out i, out _))
+            if (Number.TryParseUInt32(s, style, info, out uint i) != Number.ParsingStatus.OK
+                || i > MaxValue)
             {
-                return false;
-            }
-            if (i < MinValue || i > MaxValue)
-            {
+                result = 0;
                 return false;
             }
             result = (byte)i;
