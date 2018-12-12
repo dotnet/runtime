@@ -20,8 +20,8 @@ parameters:
   # Optional: enable sending telemetry
   #           if 'true', these "variables" must be specified in the variables object or as part of the queue matrix
   #             _HelixBuildConfig - differentiate between Debug, Release, other
-  #             _HelixSource - Example: build/product/
-  #             _HelixType - Example: official/dotnet/arcade/$(Build.SourceBranch)
+  #             _HelixType - Example: build/product/
+  #             _HelixSource - Example: official/dotnet/arcade/$(Build.SourceBranch)
   enableTelemetry: false
 
   # Required: A collection of jobs to run - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#job
