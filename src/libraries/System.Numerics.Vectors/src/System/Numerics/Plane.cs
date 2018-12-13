@@ -12,6 +12,8 @@ namespace System.Numerics
     /// </summary>
     public struct Plane : IEquatable<Plane>
     {
+        private const float NormalizeEpsilon = 1.192092896e-07f; // smallest such that 1.0+NormalizeEpsilon != 1.0
+
         /// <summary>
         /// The normal vector of the Plane.
         /// </summary>
@@ -118,11 +120,10 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Plane Normalize(Plane value)
         {
-            const float FLT_EPSILON = 1.192092896e-07f; // smallest such that 1.0+FLT_EPSILON != 1.0
             if (Vector.IsHardwareAccelerated)
             {
                 float normalLengthSquared = value.Normal.LengthSquared();
-                if (MathF.Abs(normalLengthSquared - 1.0f) < FLT_EPSILON)
+                if (MathF.Abs(normalLengthSquared - 1.0f) < NormalizeEpsilon)
                 {
                     // It already normalized, so we don't need to farther process.
                     return value;
@@ -136,7 +137,7 @@ namespace System.Numerics
             {
                 float f = value.Normal.X * value.Normal.X + value.Normal.Y * value.Normal.Y + value.Normal.Z * value.Normal.Z;
 
-                if (MathF.Abs(f - 1.0f) < FLT_EPSILON)
+                if (MathF.Abs(f - 1.0f) < NormalizeEpsilon)
                 {
                     return value; // It already normalized, so we don't need to further process.
                 }
