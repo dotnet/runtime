@@ -47,6 +47,11 @@ namespace System.Net.Http
 
         private const int InitialWindowSize = 65535;
 
+        // We don't really care about limiting control flow at the connection level.
+        // We limit it per stream, and the user controls how many streams are created.
+        // So set the connection window size to a large value.
+        private const int ConnectionWindowSize = 64 * 1024 * 1024;
+
         public Http2Connection(HttpConnectionPool pool, SslStream stream)
         {
             _pool = pool;
@@ -68,35 +73,38 @@ namespace System.Net.Http
 
         public async Task SetupAsync()
         {
+            _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length +
+                FrameHeader.Size + (FrameHeader.SettingLength * 2) +
+                FrameHeader.Size + FrameHeader.WindowUpdateLength);
+
             // Send connection preface
-            _outgoingBuffer.EnsureAvailableSpace(s_http2ConnectionPreface.Length);
             s_http2ConnectionPreface.AsSpan().CopyTo(_outgoingBuffer.AvailableSpan);
             _outgoingBuffer.Commit(s_http2ConnectionPreface.Length);
 
-            // Send empty settings frame
-            _outgoingBuffer.EnsureAvailableSpace(FrameHeader.Size);
-            WriteFrameHeader(new FrameHeader(0, FrameType.Settings, FrameFlags.None, 0));
+            // Send SETTINGS frame 
+            WriteFrameHeader(new FrameHeader(FrameHeader.SettingLength * 2, FrameType.Settings, FrameFlags.None, 0));
 
-            // TODO: ISSUE 31295: We should disable PUSH_PROMISE here.
+            // First setting: Disable push promise
+            BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.EnablePush);
+            _outgoingBuffer.Commit(2);
+            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
+            _outgoingBuffer.Commit(4);
 
-            // TODO: ISSUE 31298: We should send a connection-level WINDOW_UPDATE to allow
-            // a large amount of data to be received on the connection.  
-            // We don't care that much about connection-level flow control, we'll manage it per-stream.
+            // Second setting: Set header table size to 0 to disable dynamic header compression
+            BinaryPrimitives.WriteUInt16BigEndian(_outgoingBuffer.AvailableSpan, (ushort)SettingId.HeaderTableSize);
+            _outgoingBuffer.Commit(2);
+            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, 0);
+            _outgoingBuffer.Commit(4);
+
+            // Send initial connection-level WINDOW_UPDATE
+            WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0));
+            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (ConnectionWindowSize - InitialWindowSize));
+            _outgoingBuffer.Commit(4);
 
             await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
             _outgoingBuffer.Discard(_outgoingBuffer.ActiveMemory.Length);
 
             _expectingSettingsAck = true;
-
-            // Receive the initial SETTINGS frame from the peer.
-            FrameHeader frameHeader = await ReadFrameAsync().ConfigureAwait(false);
-            if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
-            {
-                throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
-            }
-
-            // Process the SETTINGS frame.  This will send an ACK.
-            ProcessSettingsFrame(frameHeader);
 
             ProcessIncomingFrames();
         }
@@ -155,9 +163,20 @@ namespace System.Net.Http
         {
             try
             {
+                // Receive the initial SETTINGS frame from the peer.
+                FrameHeader frameHeader = await ReadFrameAsync().ConfigureAwait(false);
+                if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
+                {
+                    throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                }
+
+                // Process the SETTINGS frame.  This will send an ACK.
+                ProcessSettingsFrame(frameHeader);
+
+                // Keep processing frames as they arrive.
                 while (true)
                 {
-                    FrameHeader frameHeader = await ReadFrameAsync().ConfigureAwait(false);
+                    frameHeader = await ReadFrameAsync().ConfigureAwait(false);
 
                     switch (frameHeader.Type)
                     {
@@ -367,10 +386,48 @@ namespace System.Net.Http
                     throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
                 }
 
-                // Just eat settings for now
+                // Parse settings and process the ones we care about.
+                ReadOnlySpan<byte> settings = _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length);
+                while (settings.Length > 0)
+                {
+                    Debug.Assert((settings.Length % 6) == 0);
 
-                // TODO: ISSUE 31296: We should handle SETTINGS_MAX_CONCURRENT_STREAMS.
-                // Others we don't care about, or are advisory.
+                    ushort settingId = BinaryPrimitives.ReadUInt16BigEndian(settings);
+                    settings = settings.Slice(2);
+                    uint settingValue = BinaryPrimitives.ReadUInt32BigEndian(settings);
+                    settings = settings.Slice(4);
+
+                    switch ((SettingId)settingId)
+                    {
+                        case SettingId.MaxConcurrentStreams:
+                            // ISSUE 31296: Handle SETTINGS_MAX_CONCURRENT_STREAMS.
+                            break;
+
+                        case SettingId.InitialWindowSize:
+                            if (settingValue > 0x7FFFFFFF)
+                            {
+                                throw new Http2ProtocolException(Http2ProtocolErrorCode.FlowControlError);
+                            }
+
+                            // ISSUE 34059: Handle SETTINGS_MAX_CONCURRENT_STREAMS.
+                            break;
+
+                        case SettingId.MaxFrameSize:
+                            if (settingValue < 16384 || settingValue > 16777215)
+                            {
+                                throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
+                            }
+
+                            // We don't actually store this value; we always send frames of the minimum size (16K).
+                            break;
+
+                        default:
+                            // All others are ignored because we don't care about them.
+                            // Note, per RFC, unknown settings IDs should be ignored.
+                            break;
+                    }
+                }
+
                 _incomingBuffer.Discard(frameHeader.Length);
 
                 // Send acknowledgement
@@ -911,6 +968,7 @@ namespace System.Net.Http
             public const int Size = 9;
             public const int MaxLength = 16384;
 
+            public const int SettingLength = 6;            // per setting (total SETTINGS length must be a multiple of this)
             public const int PriorityInfoLength = 5;       // for both PRIORITY frame and priority info within HEADERS
             public const int PingLength = 8;
             public const int WindowUpdateLength = 4;
@@ -919,7 +977,6 @@ namespace System.Net.Http
 
             public FrameHeader(int length, FrameType type, FrameFlags flags, int streamId)
             {
-                Debug.Assert(length <= MaxLength);
                 Debug.Assert(streamId >= 0);
 
                 Length = length;
@@ -950,6 +1007,7 @@ namespace System.Net.Http
                 Debug.Assert(buffer.Length >= Size);
                 Debug.Assert(Type <= FrameType.Last);
                 Debug.Assert((Flags & FrameFlags.ValidBits) == Flags);
+                Debug.Assert(Length <= MaxLength);
 
                 buffer[0] = (byte)((Length & 0x00FF0000) >> 16);
                 buffer[1] = (byte)((Length & 0x0000FF00) >> 8);
@@ -979,6 +1037,16 @@ namespace System.Net.Http
             Priority =      0b00100000,
 
             ValidBits =     0b00101101
+        }
+
+        private enum SettingId : ushort
+        {
+            HeaderTableSize = 0x1,
+            EnablePush = 0x2,
+            MaxConcurrentStreams = 0x3,
+            InitialWindowSize = 0x4,
+            MaxFrameSize = 0x5,
+            MaxHeaderListSize = 0x6
         }
 
         // Note that this is safe to be called concurrently by multiple threads.
