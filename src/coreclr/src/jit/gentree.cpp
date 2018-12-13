@@ -16357,7 +16357,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
     unsigned size = genTypeSize(simdType);
     if (isHWSIMD)
     {
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH_) && defined(FEATURE_HW_INTRINSICS)
         switch (simdType)
         {
             case TYP_SIMD16:
@@ -16367,7 +16367,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
             default:
                 break;
         }
-#endif // _TARGET_XARCH_
+#endif // _TARGET_XARCH_ && FEATURE_HW_INTRINSICS
         JITDUMP("Coudn't find the matching HW intrinsic SIMD type for %s<%s> in gtGetSIMDZero\n", varTypeName(simdType),
                 varTypeName(baseType));
     }
