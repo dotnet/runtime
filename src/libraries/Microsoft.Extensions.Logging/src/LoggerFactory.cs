@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
@@ -41,6 +42,18 @@ namespace Microsoft.Extensions.Logging
 
             _changeTokenRegistration = filterOption.OnChange(RefreshFilters);
             RefreshFilters(filterOption.CurrentValue);
+        }
+
+        /// <summary>
+        /// Creates new instance of <see cref="ILoggerFactory"/> configured using provided <paramref name="configure"/> delegate.
+        /// </summary>
+        public static ILoggerFactory Create(Action<ILoggingBuilder> configure)
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(configure);
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            return new DisposingLoggerFactory(loggerFactory, serviceProvider);
         }
 
         private void RefreshFilters(LoggerFilterOptions filterOptions)
@@ -205,6 +218,34 @@ namespace Microsoft.Extensions.Logging
         {
             public ILoggerProvider Provider;
             public bool ShouldDispose;
+        }
+
+        private class DisposingLoggerFactory: ILoggerFactory
+        {
+            private readonly ILoggerFactory _loggerFactory;
+
+            private readonly ServiceProvider _serviceProvider;
+
+            public DisposingLoggerFactory(ILoggerFactory loggerFactory, ServiceProvider serviceProvider)
+            {
+                _loggerFactory = loggerFactory;
+                _serviceProvider = serviceProvider;
+            }
+
+            public void Dispose()
+            {
+                _serviceProvider.Dispose();
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                return _loggerFactory.CreateLogger(categoryName);
+            }
+
+            public void AddProvider(ILoggerProvider provider)
+            {
+                _loggerFactory.AddProvider(provider);
+            }
         }
     }
 }
