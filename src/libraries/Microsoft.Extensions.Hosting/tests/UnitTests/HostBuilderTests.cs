@@ -1,9 +1,10 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -323,10 +324,20 @@ namespace Microsoft.Extensions.Hosting
                     s.AddTransient<ServiceD>();
                     s.AddScoped<ServiceC>();
                 })
-                .UseServiceProviderFactory(new DefaultServiceProviderFactory(new ServiceProviderOptions()
+                .ConfigureHostConfiguration(config =>
                 {
-                    ValidateScopes = true,
-                }));
+                    config.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>("Key", "Value"),
+                    });
+                })
+                .UseDefaultServiceProvider((context, options) =>
+                {
+                    Assert.NotNull(context);
+                    Assert.Equal("Value", context.Configuration["Key"]);
+                    Assert.NotNull(options);
+                    options.ValidateScopes = true;
+                });
             var host = hostBuilder.Build();
 
             Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
