@@ -1,2 +1,0 @@
-Compat issues with assembly System.Threading.ThreadPool:
-MembersMustExist : Member 'System.Threading.ThreadPool.UnsafeQueueUserWorkItem<TState>(System.Action<TState>, TState, System.Boolean)' does not exist in the implementation but it does exist in the contract.
