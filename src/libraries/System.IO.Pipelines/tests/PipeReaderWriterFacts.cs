@@ -163,48 +163,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void FlushAsync_ReturnsCompletedTaskWhenMaxSizeIfZero()
-        {
-            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(1);
-            ValueTask<FlushResult> flushTask = writableBuffer.FlushAsync();
-            Assert.True(flushTask.IsCompleted);
-
-            writableBuffer = _pipe.Writer.WriteEmpty(1);
-            flushTask = writableBuffer.FlushAsync();
-            Assert.True(flushTask.IsCompleted);
-        }
-
-        [Fact]
-        public async Task FlushAsync_ThrowsIfWriterReaderWithException()
-        {
-            void ThrowTestException()
-            {
-                try
-                {
-                    throw new InvalidOperationException("Reader exception");
-                }
-                catch (Exception e)
-                {
-                    _pipe.Reader.Complete(e);
-                }
-            }
-
-            ThrowTestException();
-
-            InvalidOperationException invalidOperationException =
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.FlushAsync());
-
-            Assert.Equal("Reader exception", invalidOperationException.Message);
-            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
-
-            invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.FlushAsync());
-            Assert.Equal("Reader exception", invalidOperationException.Message);
-            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
-
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetFlushResult"));
-        }
-
-        [Fact]
         public async Task HelloWorldAcrossTwoBlocks()
         {
             //     block 1       ->    block2
