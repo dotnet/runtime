@@ -10,7 +10,7 @@ namespace System.Reflection
 {
     public sealed partial class MetadataLoadContext
     {
-        private static readonly string[] CoreNames = { "mscorlib", "System.Runtime", "netstandard" };
+        private static readonly string[] s_CoreNames = { "mscorlib", "System.Runtime", "netstandard" };
 
         // Cache loaded coreAssembly and core types.
         internal RoAssembly TryGetCoreAssembly(string coreAssemblyName, out Exception e)
@@ -32,7 +32,7 @@ namespace System.Reflection
 
         private RoAssembly TryGetDefaultCoreAssembly(out Exception e)
         {
-            foreach (string coreName in CoreNames)
+            foreach (string coreName in s_CoreNames)
             {
                 RoAssemblyName roAssemblyName = new AssemblyName(coreName).ToRoAssemblyName();
                 RoAssembly roAssembly = TryResolveAssembly(roAssemblyName, out e);
