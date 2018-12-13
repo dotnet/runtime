@@ -684,7 +684,7 @@ static void ids_cleanup (void);
 
 static void suspend_init (void);
 
-static void start_debugger_thread (void);
+static void start_debugger_thread (MonoError *error);
 static void stop_debugger_thread (void);
 
 static void finish_agent_init (gboolean on_startup);
@@ -1064,7 +1064,9 @@ finish_agent_init (gboolean on_startup)
 	if (!on_startup) {
 		/* Do some which is usually done after sending the VMStart () event */
 		vm_start_event_sent = TRUE;
-		start_debugger_thread ();
+		ERROR_DECL (error);
+		start_debugger_thread (error);
+		mono_error_assert_ok (error);
 	}
 }
 
@@ -1613,16 +1615,16 @@ stop_debugger_thread (void)
 }
 
 static void
-start_debugger_thread (void)
+start_debugger_thread (MonoError *error)
 {
-	ERROR_DECL (error);
 	MonoInternalThread *thread;
 
 	thread = mono_thread_create_internal (mono_get_root_domain (), (gpointer)debugger_thread, NULL, MONO_THREAD_CREATE_FLAGS_DEBUGGER, error);
-	mono_error_assert_ok (error);
-
+	return_if_nok (error);
+	
 	debugger_thread_handle = mono_threads_open_thread_handle (thread->handle);
 	g_assert (debugger_thread_handle);
+	
 }
 
 /*
@@ -3803,8 +3805,11 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 
 	if (event == EVENT_KIND_VM_START) {
 		suspend_policy = agent_config.suspend ? SUSPEND_POLICY_ALL : SUSPEND_POLICY_NONE;
-		if (!agent_config.defer)
-			start_debugger_thread ();
+		if (!agent_config.defer) {
+			ERROR_DECL (error);
+			start_debugger_thread (error);
+			mono_error_assert_ok (error);
+		}
 	}
    
 	if (event == EVENT_KIND_VM_DEATH) {
@@ -3889,8 +3894,11 @@ static void
 runtime_initialized (MonoProfiler *prof)
 {
 	process_profiler_event (EVENT_KIND_VM_START, mono_thread_current ());
-	if (agent_config.defer)
-		start_debugger_thread ();
+	if (agent_config.defer) {
+		ERROR_DECL (error);
+		start_debugger_thread (error);
+		mono_error_assert_ok (error);
+	}
 }
 
 static void
@@ -9720,7 +9728,9 @@ debugger_thread (void *arg)
 	
 	if (!attach_failed && command_set == CMD_SET_VM && command == CMD_VM_DISPOSE && !(vm_death_event_sent || mono_runtime_is_shutting_down ())) {
 		DEBUG_PRINTF (2, "[dbg] Detached - restarting clean debugger thread.\n");
-		start_debugger_thread ();
+		ERROR_DECL (error);
+		start_debugger_thread (error);
+		mono_error_cleanup (error);
 	}
 
 	return 0;

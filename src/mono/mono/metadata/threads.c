@@ -1282,6 +1282,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 	mono_threads_lock ();
 	if (shutting_down && !(flags & MONO_THREAD_CREATE_FLAGS_FORCE_CREATE)) {
 		mono_threads_unlock ();
+		mono_error_set_execution_engine (error, "Couldn't create thread. Runtime is shutting down.");
 		return FALSE;
 	}
 	if (threads_starting_up == NULL) {
