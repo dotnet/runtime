@@ -15,20 +15,16 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class EventSourceLoggerTest: IDisposable
     {
-        private ServiceProvider _serviceProvider;
+        private ILoggerFactory _loggerFactory;
 
         protected ILoggerFactory CreateLoggerFactory()
         {
-            _serviceProvider = new ServiceCollection()
-                .AddLogging(builder => builder.AddEventSourceLogger())
-                .BuildServiceProvider();
-
-            return _serviceProvider.GetRequiredService<ILoggerFactory>();
+            return _loggerFactory = LoggerFactory.Create(builder => builder.AddEventSourceLogger());
         }
 
         public void Dispose()
         {
-            _serviceProvider?.Dispose();
+            _loggerFactory?.Dispose();
         }
 
         [Fact]

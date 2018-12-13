@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
 
@@ -176,6 +177,19 @@ namespace Microsoft.Extensions.Logging.Test
                     "Scope2",
                     "Message2",
                 });
+        }
+
+        [Fact]
+        public void CreateDisposeDisposesInnerServiceProvider()
+        {
+            var disposed = false;
+            var provider = new Mock<ILoggerProvider>();
+            provider.Setup(p => p.Dispose()).Callback(() => disposed = true);
+
+            var factory = LoggerFactory.Create(builder => builder.Services.AddSingleton(_=> provider.Object));
+            factory.Dispose();
+
+            Assert.True(disposed);
         }
 
         private class InternalScopeLoggerProvider : ILoggerProvider, ILogger
