@@ -762,7 +762,8 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
 {
     GenTree* asg;
 
-    if (varTypeIsStruct(val))
+    assert(val->TypeGet() != TYP_STRUCT || structType != NO_CLASS_HANDLE);
+    if (varTypeIsStruct(val) && (structType != NO_CLASS_HANDLE))
     {
         assert(tmpNum < lvaCount);
         assert(structType != NO_CLASS_HANDLE);
@@ -851,6 +852,20 @@ GenTreeArgList* Compiler::impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenT
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
             structType = ti.GetClassHandleForValueClass();
+
+            bool forceNormalization = false;
+            if (varTypeIsSIMD(temp))
+            {
+                // We need to ensure that fgMorphArgs will use the correct struct handle to ensure proper
+                // ABI handling of this argument.
+                // Note that this can happen, for example, if we have a SIMD intrinsic that returns a SIMD type
+                // with a different baseType than we've seen.
+                // TODO-Cleanup: Consider whether we can eliminate all of these cases.
+                if (gtGetStructHandleIfPresent(temp) != structType)
+                {
+                    forceNormalization = true;
+                }
+            }
 #ifdef DEBUG
             if (verbose)
             {
@@ -858,7 +873,7 @@ GenTreeArgList* Compiler::impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenT
                 gtDispTree(temp);
             }
 #endif
-            temp = impNormStructVal(temp, structType, (unsigned)CHECK_SPILL_ALL);
+            temp = impNormStructVal(temp, structType, (unsigned)CHECK_SPILL_ALL, forceNormalization);
 #ifdef DEBUG
             if (verbose)
             {
@@ -1014,11 +1029,11 @@ GenTreeArgList* Compiler::impPopRevList(unsigned count, CORINFO_SIG_INFO* sig, u
 }
 
 //------------------------------------------------------------------------
-// impAssignStruct: Assign (copy) the structure from 'src' to 'dest'.
+// impAssignStruct: Create a struct assignment
 //
 // Arguments:
-//    dest         - destination of the assignment
-//    src          - source of the assignment
+//    dest         - the destination of the assignment
+//    src          - the value to be assigned
 //    structHnd    - handle representing the struct type
 //    curLevel     - stack level for which a spill may be being done
 //    pAfterStmt   - statement to insert any additional statements after
@@ -1049,7 +1064,8 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
 
     while (dest->gtOper == GT_COMMA)
     {
-        assert(varTypeIsStruct(dest->gtOp.gtOp2)); // Second thing is the struct
+        // Second thing is the struct.
+        assert(varTypeIsStruct(dest->gtOp.gtOp2));
 
         // Append all the op1 of GT_COMMA trees before we evaluate op2 of the GT_COMMA tree.
         if (pAfterStmt)
@@ -1068,10 +1084,10 @@ GenTree* Compiler::impAssignStruct(GenTree*             dest,
     assert(dest->gtOper == GT_LCL_VAR || dest->gtOper == GT_RETURN || dest->gtOper == GT_FIELD ||
            dest->gtOper == GT_IND || dest->gtOper == GT_OBJ || dest->gtOper == GT_INDEX);
 
+    // Return a NOP if this is a self-assignment.
     if (dest->OperGet() == GT_LCL_VAR && src->OperGet() == GT_LCL_VAR &&
         src->gtLclVarCommon.gtLclNum == dest->gtLclVarCommon.gtLclNum)
     {
-        // Make this a NOP
         return gtNewNothingNode();
     }
 
@@ -1127,24 +1143,12 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         ilOffset = impCurStmtOffs;
     }
 
-#if defined(UNIX_AMD64_ABI)
-    assert(varTypeIsStruct(src) || (src->gtOper == GT_ADDR && src->TypeGet() == TYP_BYREF));
-    // TODO-ARM-BUG: Does ARM need this?
-    // TODO-ARM64-BUG: Does ARM64 need this?
-    assert(src->gtOper == GT_LCL_VAR || src->gtOper == GT_FIELD || src->gtOper == GT_IND || src->gtOper == GT_OBJ ||
-           src->gtOper == GT_CALL || src->gtOper == GT_MKREFANY || src->gtOper == GT_RET_EXPR ||
-           src->gtOper == GT_COMMA || src->gtOper == GT_ADDR ||
-           (src->TypeGet() != TYP_STRUCT &&
-            (GenTree::OperIsSIMD(src->gtOper) || src->OperIsSimdHWIntrinsic() || src->gtOper == GT_LCL_FLD)));
-#else  // !defined(UNIX_AMD64_ABI)
-    assert(varTypeIsStruct(src));
-
     assert(src->gtOper == GT_LCL_VAR || src->gtOper == GT_FIELD || src->gtOper == GT_IND || src->gtOper == GT_OBJ ||
            src->gtOper == GT_CALL || src->gtOper == GT_MKREFANY || src->gtOper == GT_RET_EXPR ||
            src->gtOper == GT_COMMA ||
            (src->TypeGet() != TYP_STRUCT &&
             (GenTree::OperIsSIMD(src->gtOper) || src->OperIsSimdHWIntrinsic() || src->gtOper == GT_LCL_FLD)));
-#endif // !defined(UNIX_AMD64_ABI)
+
     if (destAddr->OperGet() == GT_ADDR)
     {
         GenTree* destNode = destAddr->gtGetOp1();
@@ -1556,9 +1560,22 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd,
     return structType;
 }
 
-//****************************************************************************
-//  Given TYP_STRUCT value 'structVal', make sure it is 'canonical', that is
-//  it is either an OBJ or a MKREFANY node, or a node (e.g. GT_INDEX) that will be morphed.
+//------------------------------------------------------------------------
+//  Compiler::impNormStructVal: Normalize a struct value
+//
+//  Arguments:
+//     structVal          - the node we are going to normalize
+//     structHnd          - the class handle for the node
+//     curLevel           - the current stack level
+//     forceNormalization - Force the creation of an OBJ node (default is false).
+//
+// Notes:
+//     Given struct value 'structVal', make sure it is 'canonical', that is
+//     it is either:
+//     - a known struct type (non-TYP_STRUCT, e.g. TYP_SIMD8)
+//     - an OBJ or a MKREFANY node, or
+//     - a node (e.g. GT_INDEX) that will be morphed.
+//    If the node is a CALL or RET_EXPR, a copy will be made to a new temp.
 //
 GenTree* Compiler::impNormStructVal(GenTree*             structVal,
                                     CORINFO_CLASS_HANDLE structHnd,
@@ -1707,8 +1724,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             noway_assert(!"Unexpected node in impNormStructVal()");
             break;
     }
-    structVal->gtType  = structType;
-    GenTree* structObj = structVal;
+    structVal->gtType = structType;
 
     if (!alreadyNormalized || forceNormalization)
     {
@@ -1721,13 +1737,12 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             // The structVal is now the temp itself
 
             structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
-            // TODO-1stClassStructs: Avoid always wrapping in GT_OBJ.
-            structObj = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structLcl));
+            structVal = structLcl;
         }
-        else if (varTypeIsStruct(structType) && !structVal->OperIsBlk())
+        if ((forceNormalization || (structType == TYP_STRUCT)) && !structVal->OperIsBlk())
         {
             // Wrap it in a GT_OBJ
-            structObj = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
+            structVal = gtNewObjNode(structHnd, gtNewOperNode(GT_ADDR, TYP_BYREF, structVal));
         }
     }
 
@@ -1737,15 +1752,15 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
         // so we don't set GTF_EXCEPT here.
         if (!lvaIsImplicitByRefLocal(structLcl->gtLclNum))
         {
-            structObj->gtFlags &= ~GTF_GLOB_REF;
+            structVal->gtFlags &= ~GTF_GLOB_REF;
         }
     }
-    else
+    else if (structVal->OperIsBlk())
     {
         // In general a OBJ is an indirection and could raise an exception.
-        structObj->gtFlags |= GTF_EXCEPT;
+        structVal->gtFlags |= GTF_EXCEPT;
     }
-    return (structObj);
+    return structVal;
 }
 
 /******************************************************************************/

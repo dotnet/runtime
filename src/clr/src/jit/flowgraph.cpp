@@ -23274,7 +23274,7 @@ GenTree* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     const var_types argType = lclVarInfo[argNum].lclTypeInfo;
 
                     // Create the temp assignment for this argument
-                    CORINFO_CLASS_HANDLE structHnd = DUMMY_INIT(0);
+                    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
 
                     if (varTypeIsStruct(argType))
                     {
