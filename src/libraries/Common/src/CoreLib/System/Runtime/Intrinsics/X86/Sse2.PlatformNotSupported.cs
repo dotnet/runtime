@@ -1556,7 +1556,7 @@ namespace System.Runtime.Intrinsics.X86
         /// <summary>
         /// __m128i _mm_unpackhi_epi16 (__m128i a,  __m128i b)
         ///   PUNPCKHWD xmm, xmm/m128
-        /// </summary
+        /// </summary>
         public static Vector128<ushort> UnpackHigh(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m128i _mm_unpackhi_epi32 (__m128i a,  __m128i b)
