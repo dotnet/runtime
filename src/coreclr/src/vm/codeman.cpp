@@ -1263,6 +1263,7 @@ void EEJitManager::SetCpuInfo()
 
     //
     // NOTE: This function needs to be kept in sync with Zapper::CompileAssembly()
+    // NOTE: This function needs to be kept in sync with compSetProcesor() in jit\compiler.cpp
     //
 
     CORJIT_FLAGS CPUCompileFlags;
