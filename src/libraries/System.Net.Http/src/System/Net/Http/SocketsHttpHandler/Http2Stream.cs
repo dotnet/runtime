@@ -328,7 +328,7 @@ namespace System.Net.Http
                     ReadOnlyMemory<byte> current;
                     (current, remaining) = SplitBuffer(remaining, sendSize);
 
-                    await _connection.SendStreamDataAsync(_streamId, current);
+                    await _connection.SendStreamDataAsync(_streamId, current).ConfigureAwait(false);
                 }
             }
 
