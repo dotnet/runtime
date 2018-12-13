@@ -420,7 +420,13 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
     {
         if (genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
-            getEmitter()->emitIns_R_AI(INS_lea, EA_PTR_DSP_RELOC, reg, imm);
+            emitAttr newSize = EA_PTR_DSP_RELOC;
+            if (EA_IS_BYREF(size))
+            {
+                newSize = EA_SET_FLG(newSize, EA_BYREF_FLG);
+            }
+
+            getEmitter()->emitIns_R_AI(INS_lea, newSize, reg, imm);
         }
         else
         {
@@ -449,7 +455,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             if (con->ImmedValNeedsReloc(compiler))
             {
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
+                emitAttr size = EA_HANDLE_CNS_RELOC;
+
+                if (targetType == TYP_BYREF)
+                {
+                    size = EA_SET_FLG(size, EA_BYREF_FLG);
+                }
+
+                instGen_Set_Reg_To_Imm(size, targetReg, cnsVal);
                 regSet.verifyRegUsed(targetReg);
             }
             else
