@@ -15395,6 +15395,59 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (canExpandInline && shouldExpandInline)
                 {
+                    // See if we know anything about the type of op1, the object being unboxed.
+                    bool                 isExact   = false;
+                    bool                 isNonNull = false;
+                    CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(op1, &isExact, &isNonNull);
+
+                    // We can skip the "exact" bit here as we are comparing to a value class.
+                    // compareTypesForEquality should bail on comparisions for shared value classes.
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        const TypeCompareState compare =
+                            info.compCompHnd->compareTypesForEquality(resolvedToken.hClass, clsHnd);
+
+                        if (compare == TypeCompareState::Must)
+                        {
+                            JITDUMP("\nOptimizing %s (%s) -- type test will succeed\n",
+                                    opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY", eeGetClassName(clsHnd));
+
+                            // For UNBOX, null check (if necessary), and then leave the box payload byref on the stack.
+                            if (opcode == CEE_UNBOX)
+                            {
+                                GenTree* cloneOperand;
+                                op1 = impCloneExpr(op1, &cloneOperand, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                                   nullptr DEBUGARG("optimized unbox clone"));
+
+                                GenTree* boxPayloadOffset = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                                GenTree* boxPayloadAddress =
+                                    gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, boxPayloadOffset);
+                                GenTree* nullcheck = gtNewOperNode(GT_NULLCHECK, TYP_I_IMPL, op1);
+                                GenTree* result    = gtNewOperNode(GT_COMMA, TYP_BYREF, nullcheck, boxPayloadAddress);
+                                impPushOnStack(result, tiRetVal);
+                                break;
+                            }
+
+                            // For UNBOX.ANY load the struct from the box payload byref (the load will nullcheck)
+                            assert(opcode == CEE_UNBOX_ANY);
+                            GenTree* boxPayloadOffset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
+                            GenTree* boxPayloadAddress = gtNewOperNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffset);
+                            impPushOnStack(boxPayloadAddress, tiRetVal);
+                            oper = GT_OBJ;
+                            goto OBJ;
+                        }
+                        else
+                        {
+                            JITDUMP("\nUnable to optimize %s -- can't resolve type comparison\n",
+                                    opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY");
+                        }
+                    }
+                    else
+                    {
+                        JITDUMP("\nUnable to optimize %s -- class for [%06u] not known\n",
+                                opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY", dspTreeID(op1));
+                    }
+
                     JITDUMP("\n Importing %s as inline sequence\n", opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY");
                     // we are doing normal unboxing
                     // inline the common case of the unbox helper
