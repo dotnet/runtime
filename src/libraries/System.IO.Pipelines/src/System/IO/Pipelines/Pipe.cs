@@ -243,14 +243,17 @@ namespace System.IO.Pipelines
             // Always move the read tail to the write head
             _readTail = _writingHead;
             _readTailIndex = _writingHead.End;
+
+            long oldLength = _length;
             _length += _currentWriteLength;
 
             // Do not reset if reader is complete
             if (_pauseWriterThreshold > 0 &&
+                oldLength < _pauseWriterThreshold &&
                 _length >= _pauseWriterThreshold &&
                 !_readerCompletion.IsCompleted)
             {
-                _writerAwaitable.Reset();
+                _writerAwaitable.SetUncompleted();
             }
 
             _currentWriteLength = 0;
@@ -460,7 +463,7 @@ namespace System.IO.Pipelines
                     {
                         ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock();
                     }
-                    _readerAwaitable.Reset();
+                    _readerAwaitable.SetUncompleted();
                 }
 
                 while (returnStart != null && returnStart != returnEnd)
