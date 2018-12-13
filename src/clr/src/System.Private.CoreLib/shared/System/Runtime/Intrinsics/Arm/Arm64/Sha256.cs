@@ -14,28 +14,28 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     {
         public static bool IsSupported { get => IsSupported; }
 
-        // <summary>
+        /// <summary>
         /// Performs SHA256 hash update (part 1).
         /// vsha256hq_u32 (uint32x4_t hash_abcd, uint32x4_t hash_efgh, uint32x4_t wk)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> HashLower(Vector128<uint> hash_abcd, Vector128<uint> hash_efgh, Vector128<uint> wk) => HashLower(hash_abcd, hash_efgh, wk);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA256 hash update (part 2).
         /// vsha256h2q_u32 (uint32x4_t hash_efgh, uint32x4_t hash_abcd, uint32x4_t wk)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> HashUpper(Vector128<uint> hash_efgh, Vector128<uint> hash_abcd, Vector128<uint> wk) => HashUpper(hash_efgh, hash_abcd, wk);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA256 schedule update 0
         /// vsha256su0q_u32 (uint32x4_t w0_3, uint32x4_t w4_7)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> SchedulePart1(Vector128<uint> w0_3, Vector128<uint> w4_7) => SchedulePart1(w0_3, w4_7);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA256 schedule update 1
         /// vsha256su1q_u32 (uint32x4_t tw0_3, uint32x4_t w8_11, uint32x4_t w12_15)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> SchedulePart2(Vector128<uint> w0_3, Vector128<uint> w8_11, Vector128<uint> w12_15) => SchedulePart2(w0_3, w8_11, w12_15);
     }
 }
