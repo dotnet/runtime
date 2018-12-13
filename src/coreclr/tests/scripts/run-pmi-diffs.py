@@ -26,11 +26,16 @@ import os
 import re
 import shutil
 import subprocess
-import urllib
-import urllib2
 import sys
 import tarfile
 import zipfile
+
+# Version specific imports
+
+if sys.version_info.major < 3:
+    import urllib
+else:
+    import urllib.request
 
 ##########################################################################
 # Globals
@@ -67,7 +72,7 @@ Clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
 ##########################################################################
 
 def del_rw(action, name, exc):
-    os.chmod(name, 0651)
+    os.chmod(name, 0o651)
     os.remove(name)
 
 ##########################################################################
@@ -221,7 +226,7 @@ def log(message):
         message (str): message to be printed
     """
 
-    print '[%s]: %s' % (sys.argv[0], message)
+    print('[%s]: %s' % (sys.argv[0], message))
 
 def copy_files(source_dir, target_dir):
     """ Copy any files in the source_dir to the target_dir.
@@ -453,10 +458,8 @@ def do_pmi_diffs():
     log('Downloading: %s => %s' % (dotnetcliUrl, dotnetcliFilename))
 
     if not testing:
-        response = urllib2.urlopen(dotnetcliUrl)
-        request_url = response.geturl()
-        testfile = urllib.URLopener()
-        testfile.retrieve(request_url, dotnetcliFilename)
+        urlretrieve = urllib.urlretrieve if sys.version_info.major < 3 else urllib.request.urlretrieve
+        urlretrieve(dotnetcliUrl, dotnetcliFilename)
 
         if not os.path.isfile(dotnetcliFilename):
             log('ERROR: Did not download .Net CLI')

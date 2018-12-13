@@ -50,7 +50,7 @@ Is_windows = (os.name == 'nt')
 ##########################################################################
 
 def del_rw(action, name, exc):
-    os.chmod(name, 0651)
+    os.chmod(name, 0o651)
     os.remove(name)
 
 ##########################################################################
@@ -181,7 +181,7 @@ def log(message):
         message (str): message to be printed
     """
 
-    print '[%s]: %s' % (sys.argv[0], message)
+    print('[%s]: %s' % (sys.argv[0], message))
 
 def copy_files(source_dir, target_dir):
     """ Copy any files in the source_dir to the target_dir.
