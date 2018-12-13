@@ -973,7 +973,6 @@ typedef enum {
 	MONO_RGCTX_INFO_TYPE                         = 4,
 	MONO_RGCTX_INFO_REFLECTION_TYPE              = 5,
 	MONO_RGCTX_INFO_METHOD                       = 6,
-	/* In llvmonly mode, this is a function descriptor */
 	MONO_RGCTX_INFO_GENERIC_METHOD_CODE          = 7,
 	MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER        = 8,
 	MONO_RGCTX_INFO_CLASS_FIELD                  = 9,
@@ -1019,6 +1018,8 @@ typedef enum {
 	MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS = 31,
 	/* The MonoDelegateTrampInfo instance */
 	MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO           = 32,
+	/* Same as MONO_PATCH_INFO_METHOD_FTNDESC */
+	MONO_RGCTX_INFO_METHOD_FTNDESC                = 33,
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {
@@ -1174,6 +1175,8 @@ typedef enum {
 	JIT_FLAG_DIRECT_PINVOKE = (1 << 7),
 	/* Whenever this is a compile-all run and the result should be discarded */
 	JIT_FLAG_DISCARD_RESULTS = (1 << 8),
+	/* Whenever to generate code which can work with the interpreter */
+	JIT_FLAG_INTERP = (1 << 9),
 } JitFlags;
 
 /* Bit-fields in the MonoBasicBlock.region */
@@ -1387,6 +1390,7 @@ typedef struct {
 	guint            gsharedvt : 1;
 	guint            r4fp : 1;
 	guint            llvm_only : 1;
+	guint            interp : 1;
 	guint            domainvar_inited : 1;
 	guint8           uses_simd_intrinsics;
 	int              r4_stack_type;

@@ -1236,6 +1236,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHODCONST:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:
+	case MONO_PATCH_INFO_METHOD_FTNDESC:
 	case MONO_PATCH_INFO_IMAGE:
 	case MONO_PATCH_INFO_ICALL_ADDR:
 	case MONO_PATCH_INFO_ICALL_ADDR_CALL:
@@ -1430,6 +1431,21 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 				return NULL;
 		}
 		break;
+	case MONO_PATCH_INFO_METHOD_FTNDESC: {
+		/*
+		 * Return an ftndesc for either AOTed code, or for an interp entry.
+		 */
+		target = mono_compile_method_checked (patch_info->data.method, error);
+		return_val_if_nok (error, NULL);
+		if (target) {
+			gpointer arg = NULL;
+			target = mini_add_method_wrappers_llvmonly (patch_info->data.method, (gpointer)target, FALSE, FALSE, &arg);
+			return mini_create_llvmonly_ftndesc (domain, (gpointer)target, arg);
+		} else {
+			g_assert_not_reached ();
+		}
+		break;
+	}
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		gpointer code_slot;
 

@@ -2696,6 +2696,9 @@ static MonoInst*
 emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 					   MonoMethod *cmethod, MonoRgctxInfoType rgctx_type)
 {
+	if (context_used == -1)
+		context_used = mono_method_check_context_used (cmethod);
+
 	if (!context_used) {
 		MonoInst *ins;
 
@@ -2705,6 +2708,9 @@ emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 			return ins;
 		case MONO_RGCTX_INFO_METHOD_RGCTX:
 			EMIT_NEW_METHOD_RGCTX_CONST (cfg, ins, cmethod);
+			return ins;
+		case MONO_RGCTX_INFO_METHOD_FTNDESC:
+			EMIT_NEW_AOTCONST (cfg, ins, MONO_PATCH_INFO_METHOD_FTNDESC, cmethod);
 			return ins;
 		default:
 			g_assert_not_reached ();
@@ -2983,12 +2989,14 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 		/* FIXME: What if the class is shared?  We might not
 		   have to get the address of the method from the
 		   RGCTX. */
-		addr = emit_get_rgctx_method (cfg, context_used, method,
-									  MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 		if (cfg->llvm_only) {
+			addr = emit_get_rgctx_method (cfg, context_used, method,
+										  MONO_RGCTX_INFO_METHOD_FTNDESC);
 			cfg->signatures = g_slist_prepend_mempool (cfg->mempool, cfg->signatures, mono_method_signature_internal (method));
 			return mini_emit_llvmonly_calli (cfg, mono_method_signature_internal (method), &val, addr);
 		} else {
+			addr = emit_get_rgctx_method (cfg, context_used, method,
+										  MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
 			rgctx = emit_get_rgctx (cfg, context_used);
 
 			return mini_emit_calli (cfg, mono_method_signature_internal (method), &val, addr, NULL, rgctx);
@@ -3252,7 +3260,7 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 		if (context_used) {
 			if (cfg->llvm_only && cfg->gsharedvt) {
 				MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
-														MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+														MONO_RGCTX_INFO_METHOD_FTNDESC);
 				return mini_emit_llvmonly_calli (cfg, mono_method_signature_internal (method), &val, addr);
 			} else {
 				/* FIXME: What if the class is shared?  We might not
@@ -5547,7 +5555,7 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 
 		if (cfg->llvm_only) {
 			MonoInst *addr = emit_get_rgctx_method (cfg, context_used, cmethod,
-													MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+													MONO_RGCTX_INFO_METHOD_FTNDESC);
 			mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
 		} else {
 			cmethod_addr = emit_get_rgctx_method (cfg, context_used,
@@ -7621,7 +7629,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					if (cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig))
 						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER);
 					else
-						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_GENERIC_METHOD_CODE);
+						addr = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_FTNDESC);
 					// FIXME: Avoid initializing imt_arg/vtable_arg
 					ins = mini_emit_llvmonly_calli (cfg, fsig, sp, addr);
 					if (inst_tailcall) // FIXME

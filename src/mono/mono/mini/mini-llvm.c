@@ -92,6 +92,7 @@ typedef struct {
 	gboolean has_jitted_code;
 	gboolean static_link;
 	gboolean llvm_only;
+	gboolean interp;
 	GHashTable *idx_to_lmethod;
 	GHashTable *idx_to_unbox_tramp;
 	GPtrArray *callsite_list;
@@ -8853,9 +8854,13 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only)
+mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, LLVMModuleFlags flags)
 {
 	MonoLLVMModule *module = &aot_module;
+	gboolean emit_dwarf = (flags & LLVM_MODULE_FLAG_DWARF) ? 1 : 0;
+	gboolean static_link = (flags & LLVM_MODULE_FLAG_STATIC) ? 1 : 0;
+	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
+	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
 
 	/* Delete previous module */
 	g_hash_table_destroy (module->plt_entries);
@@ -8875,6 +8880,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->emit_dwarf = emit_dwarf;
 	module->static_link = static_link;
 	module->llvm_only = llvm_only;
+	module->interp = interp;
 	/* The first few entries are reserved */
 	module->max_got_offset = initial_got_size;
 	module->context = LLVMGetGlobalContext ();

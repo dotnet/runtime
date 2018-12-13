@@ -568,6 +568,7 @@ inflate_info (MonoRuntimeGenericContextInfoTemplate *oti, MonoGenericContext *co
 	}
 
 	case MONO_RGCTX_INFO_METHOD:
+	case MONO_RGCTX_INFO_METHOD_FTNDESC:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
 	case MONO_RGCTX_INFO_METHOD_RGCTX:
@@ -2031,20 +2032,23 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: {
 		MonoMethod *m = (MonoMethod*)data;
 		gpointer addr;
+
+		g_assert (!mono_llvm_only);
+		addr = mono_compile_method_checked (m, error);
+		return_val_if_nok (error, NULL);
+		return mini_add_method_trampoline (m, addr, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
+	}
+	case MONO_RGCTX_INFO_METHOD_FTNDESC: {
+		MonoMethod *m = (MonoMethod*)data;
+		gpointer addr;
 		gpointer arg = NULL;
 
-		if (mono_llvm_only) {
-			addr = mono_compile_method_checked (m, error);
-			return_val_if_nok (error, NULL);
-			addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, FALSE, &arg);
-
-			/* Returns an ftndesc */
-			return mini_create_llvmonly_ftndesc (domain, addr, arg);
-		} else {
-			addr = mono_compile_method_checked ((MonoMethod *)data, error);
-			return_val_if_nok (error, NULL);
-			return mini_add_method_trampoline ((MonoMethod *)data, addr, mono_method_needs_static_rgctx_invoke ((MonoMethod *)data, FALSE), FALSE);
-		}
+		/* Returns an ftndesc */
+		g_assert (mono_llvm_only);
+		MonoJumpInfo ji;
+		ji.type = MONO_PATCH_INFO_METHOD_FTNDESC;
+		ji.data.method = m;
+		return mono_resolve_patch_target (m, domain, NULL, &ji, FALSE, error);
 	}
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER: {
 		MonoMethod *m = (MonoMethod*)data;
@@ -2447,6 +2451,7 @@ mono_rgctx_info_type_to_str (MonoRgctxInfoType type)
 	case MONO_RGCTX_INFO_TYPE: return "TYPE";
 	case MONO_RGCTX_INFO_REFLECTION_TYPE: return "REFLECTION_TYPE";
 	case MONO_RGCTX_INFO_METHOD: return "METHOD";
+	case MONO_RGCTX_INFO_METHOD_FTNDESC: return "METHOD_FTNDESC";
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO: return "GSHAREDVT_INFO";
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE: return "GENERIC_METHOD_CODE";
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER: return "GSHAREDVT_OUT_WRAPPER";
@@ -2556,6 +2561,7 @@ info_equal (gpointer data1, gpointer data2, MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX:
 		return mono_class_from_mono_type_internal ((MonoType *)data1) == mono_class_from_mono_type_internal ((MonoType *)data2);
 	case MONO_RGCTX_INFO_METHOD:
+	case MONO_RGCTX_INFO_METHOD_FTNDESC:
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:
 	case MONO_RGCTX_INFO_GENERIC_METHOD_CODE:
 	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
