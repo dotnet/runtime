@@ -7518,10 +7518,7 @@ private:
             return SIMD_AVX2_Supported;
         }
 
-        // SIMD_SSE4_Supported actually requires all of SSE3, SSSE3, SSE4.1, and SSE4.2
-        // to be supported. We can only enable it if all four are enabled in the compiler
-        if (compSupports(InstructionSet_SSE42) && compSupports(InstructionSet_SSE41) &&
-            compSupports(InstructionSet_SSSE3) && compSupports(InstructionSet_SSE3))
+        if (compSupports(InstructionSet_SSE42))
         {
             return SIMD_SSE4_Supported;
         }
