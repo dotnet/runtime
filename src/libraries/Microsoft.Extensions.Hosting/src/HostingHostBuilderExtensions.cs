@@ -50,6 +50,19 @@ namespace Microsoft.Extensions.Hosting
             });
         }
 
+        public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<ServiceProviderOptions> configure)
+            => hostBuilder.UseDefaultServiceProvider((context, options) => configure(options));
+
+        public static IHostBuilder UseDefaultServiceProvider(this IHostBuilder hostBuilder, Action<HostBuilderContext, ServiceProviderOptions> configure)
+        {
+            return hostBuilder.UseServiceProviderFactory(context =>
+            {
+                var options = new ServiceProviderOptions();
+                configure(context, options);
+                return new DefaultServiceProviderFactory(options);
+            });
+        }
+
         /// <summary>
         /// Adds a delegate for configuring the provided <see cref="ILoggingBuilder"/>. This may be called multiple times.
         /// </summary>
