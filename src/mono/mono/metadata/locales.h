@@ -67,9 +67,6 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (M
  MonoString *name);
 
 ICALL_EXPORT
-void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo *this_obj, MonoSortKey *key, MonoString *source, gint32 options);
-
-ICALL_EXPORT
 int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first);
 
 ICALL_EXPORT

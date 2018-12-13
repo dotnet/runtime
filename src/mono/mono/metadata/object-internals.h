@@ -698,14 +698,6 @@ typedef struct {
 } MonoRegionInfo;
 
 typedef struct {
-	MonoObject obj;
-	MonoString *str;
-	gint32 options;
-	MonoArray *key;
-	gint32 lcid;
-} MonoSortKey;
-
-typedef struct {
 	MonoObject object;
 	guint32 intType;
 } MonoInterfaceTypeAttribute;

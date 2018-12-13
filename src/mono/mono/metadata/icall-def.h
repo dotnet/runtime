@@ -346,8 +346,7 @@ HANDLES(GC_8, "register_ephemeron_array", ves_icall_System_GC_register_ephemeron
 ICALL_TYPE(CALDATA, "System.Globalization.CalendarData", CALDATA_1)
 ICALL(CALDATA_1, "fill_calendar_data", ves_icall_System_Globalization_CalendarData_fill_calendar_data)
 
-ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
-ICALL(COMPINF_1, "assign_sortkey(object,string,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_assign_sortkey)
+ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_4)
 ICALL(COMPINF_4, "internal_compare(string,int,int,string,int,int,System.Globalization.CompareOptions)", ves_icall_System_Globalization_CompareInfo_internal_compare)
 ICALL(COMPINF_6, "internal_index(string,int,int,string,System.Globalization.CompareOptions,bool)", ves_icall_System_Globalization_CompareInfo_internal_index)
 
