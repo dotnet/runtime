@@ -2745,7 +2745,12 @@ ClrDataModule::RequestGetModuleData(
         COUNT_T peSize;
         outGMD->LoadedPEAddress = TO_CDADDR(PTR_TO_TADDR(pPEFile->GetLoadedImageContents(&peSize)));
         outGMD->LoadedPESize = (ULONG64)peSize;
-        outGMD->IsFileLayout = pPEFile->GetLoaded()->IsFlat();
+
+        // Can not get the file layout for a dynamic module
+        if (!outGMD->IsDynamic)
+        {
+            outGMD->IsFileLayout = pPEFile->GetLoaded()->IsFlat();
+        }
     }
 
     // If there is a in memory symbol stream
