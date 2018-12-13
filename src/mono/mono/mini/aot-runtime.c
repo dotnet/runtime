@@ -4340,12 +4340,19 @@ gboolean
 mono_aot_can_dedup (MonoMethod *method)
 {
 #ifdef TARGET_WASM
-	/* Use a set of wrappers/instances which work */
+	/* Use a set of wrappers/instances which work and useful */
 	switch (method->wrapper_type) {
 	case MONO_WRAPPER_RUNTIME_INVOKE:
-	case MONO_WRAPPER_OTHER:
 		return TRUE;
 		break;
+	case MONO_WRAPPER_OTHER: {
+		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+
+		if (info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE ||
+			info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR)
+			return FALSE;
+		return TRUE;
+	}
 	default:
 		break;
 	}
