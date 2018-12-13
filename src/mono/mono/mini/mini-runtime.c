@@ -106,7 +106,8 @@ gboolean mono_compile_aot = FALSE;
 gboolean mono_aot_only = FALSE;
 /* Same as mono_aot_only, but only LLVM compiled code is used, no trampolines */
 gboolean mono_llvm_only = FALSE;
-MonoAotMode mono_aot_mode = MONO_AOT_MODE_NONE;
+/* By default, don't require AOT but attempt to probe */
+MonoAotMode mono_aot_mode = MONO_AOT_MODE_NORMAL;
 MonoEEFeatures mono_ee_features;
 
 const char *mono_build_date;
