@@ -52,63 +52,88 @@ namespace System.Net.Http
             {
                 // TODO: ISSUE 31310: Cancellation support
 
-                HttpConnectionResponseContent responseContent = new HttpConnectionResponseContent();
-                _response = new HttpResponseMessage() { Version = HttpVersion.Version20, RequestMessage = request, Content = responseContent };
-
-                // TODO: ISSUE 31312: Expect: 100-continue and early response handling
-                // Note that in an "early response" scenario, where we get a response before we've finished sending the request body
-                // (either with a 100-continue that timed out, or without 100-continue),
-                // we can stop send a RST_STREAM on the request stream and stop sending the request without tearing down the entire connection.
-
-                // TODO: ISSUE 31313: Avoid allocating a TaskCompletionSource repeatedly by using a resettable ValueTaskSource.
-                // See: https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Threading/Tasks/Sources/ManualResetValueTaskSource.cs
-                Debug.Assert(_responseDataAvailable == null);
-                _responseDataAvailable = new TaskCompletionSource<bool>();
-                Task readDataAvailableTask = _responseDataAvailable.Task;
-
-                // Send headers
-                await _connection.SendHeadersAsync(_streamId, request).ConfigureAwait(false);
-
-                // Send request body, if any
-                if (request.Content != null)
+                try
                 {
-                    using (Http2WriteStream writeStream = new Http2WriteStream(this))
-                    {
-                        await request.Content.CopyToAsync(writeStream).ConfigureAwait(false);
-                    }
-                }
+                    HttpConnectionResponseContent responseContent = new HttpConnectionResponseContent();
+                    _response = new HttpResponseMessage() { Version = HttpVersion.Version20, RequestMessage = request, Content = responseContent };
 
-                // Wait for response headers to be read.
-                await readDataAvailableTask.ConfigureAwait(false);
+                    // TODO: ISSUE 31312: Expect: 100-continue and early response handling
+                    // Note that in an "early response" scenario, where we get a response before we've finished sending the request body
+                    // (either with a 100-continue that timed out, or without 100-continue),
+                    // we can stop send a RST_STREAM on the request stream and stop sending the request without tearing down the entire connection.
 
-                // Start to process the response body.
-                bool emptyResponse = false;
-                lock (_syncObject)
-                {
-                    if (_responseComplete && _responseBuffer.ActiveSpan.Length == 0)
+                    // TODO: ISSUE 31313: Avoid allocating a TaskCompletionSource repeatedly by using a resettable ValueTaskSource.
+                    // See: https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Threading/Tasks/Sources/ManualResetValueTaskSource.cs
+                    Debug.Assert(_responseDataAvailable == null);
+                    _responseDataAvailable = new TaskCompletionSource<bool>();
+                    Task readDataAvailableTask = _responseDataAvailable.Task;
+
+                    // Send headers
+                    await _connection.SendHeadersAsync(_streamId, request).ConfigureAwait(false);
+
+                    // Send request body, if any
+                    if (request.Content != null)
                     {
-                        if (_responseAborted)
+                        using (Http2WriteStream writeStream = new Http2WriteStream(this))
                         {
-                            throw new IOException(SR.net_http_invalid_response);
+                            await request.Content.CopyToAsync(writeStream).ConfigureAwait(false);
                         }
+                    }
 
-                        emptyResponse = true;
+                    // Wait for response headers to be read.
+                    await readDataAvailableTask.ConfigureAwait(false);
+
+                    // Start to process the response body.
+                    bool emptyResponse = false;
+                    lock (_syncObject)
+                    {
+                        if (_responseComplete && _responseBuffer.ActiveSpan.Length == 0)
+                        {
+                            if (_responseAborted)
+                            {
+                                throw new IOException(SR.net_http_invalid_response);
+                            }
+
+                            emptyResponse = true;
+                        }
+                    }
+
+                    if (emptyResponse)
+                    {
+                        responseContent.SetStream(EmptyReadStream.Instance);
+                    }
+                    else
+                    {
+                        responseContent.SetStream(new Http2ReadStream(this));
+                    }
+
+                    // Process Set-Cookie headers.
+                    if (_connection._pool.Settings._useCookies)
+                    {
+                        CookieHelper.ProcessReceivedCookies(_response, _connection._pool.Settings._cookieContainer);
                     }
                 }
+                catch (Exception e)
+                {
+                    Dispose();
 
-                if (emptyResponse)
-                {
-                    responseContent.SetStream(EmptyReadStream.Instance);
-                }
-                else
-                {
-                    responseContent.SetStream(new Http2ReadStream(this));
-                }
-
-                // Process Set-Cookie headers.
-                if (_connection._pool.Settings._useCookies)
-                {
-                    CookieHelper.ProcessReceivedCookies(_response, _connection._pool.Settings._cookieContainer);
+                    if (e is IOException ioe)
+                    {
+                        throw new HttpRequestException(SR.net_http_client_execution_error, ioe);
+                    }
+                    else if (e is ObjectDisposedException)
+                    {
+                        throw new HttpRequestException(SR.net_http_client_execution_error);
+                    }
+                    else if (e is Http2ProtocolException)
+                    {
+                        // ISSUE 31315: Determine if/how to expose HTTP2 error codes
+                        throw new HttpRequestException(SR.net_http_client_execution_error);
+                    }
+                    else
+                    {
+                        throw e;
+                    }
                 }
 
                 return _response;
