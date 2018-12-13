@@ -523,7 +523,7 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 {
 	MonoObject *item, *filever;
 	MonoDomain *domain;
-	gchar *filename;
+	char *filename = NULL;
 	const gchar *modulename;
 
 	error_init (error);
@@ -534,27 +534,30 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 
 	/* Build a System.Diagnostics.ProcessModule with the data. */
 	item = mono_object_new_checked (domain, proc_class, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	filever = mono_object_new_checked (domain, get_file_version_info_class (), error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	filename = g_strdup_printf ("[In Memory] %s", modulename);
 
 	process_get_assembly_fileversion (filever, assembly);
 	process_set_field_string_char (filever, "filename", filename, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 	process_set_field_object (item, "version_info", filever);
 
 	process_set_field_intptr (item, "baseaddr", assembly->image->raw_data);
 	process_set_field_int (item, "memory_size", assembly->image->raw_data_len);
 	process_set_field_string_char (item, "filename", filename, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 	process_set_field_string_char (item, "modulename", modulename, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
+	goto exit;
+return_null:
+	item = NULL;
+exit:
 	g_free (filename);
-
 	return item;
 }
 

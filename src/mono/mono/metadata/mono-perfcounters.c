@@ -1602,9 +1602,9 @@ mono_perfcounter_category_names (void)
 	perfctr_lock ();
 	custom_categories = get_custom_categories ();
 	res = mono_array_new_checked (domain, mono_get_string_class (), NUM_CATEGORIES + g_slist_length (custom_categories), error);
-	if (mono_error_set_pending_exception (error)) {
-		perfctr_unlock ();
-		return NULL;
+	if (!is_ok (error)) {
+		res = NULL;
+		goto leave;
 	}
 
 	for (i = 0; i < NUM_CATEGORIES; ++i) {
