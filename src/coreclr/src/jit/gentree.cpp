@@ -4383,6 +4383,15 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
 DONE:
 
+#ifdef FEATURE_HW_INTRINSICS
+    if ((oper == GT_HWIntrinsic) && (tree->gtGetOp1() == nullptr))
+    {
+        // We can have nullary HWIntrinsic nodes, and we must have non-zero cost.
+        costEx = 1;
+        costSz = 1;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Some path through this function must have set the costs.
     assert(costEx != -1);
     assert(costSz != -1);
@@ -14430,13 +14439,16 @@ GenTree* Compiler::gtNewTempAssign(
     CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(val);
     if (varTypeIsStruct(valTyp) && ((structHnd != NO_CLASS_HANDLE) || (varTypeIsSIMD(valTyp))))
     {
-        // The GT_OBJ may be be a child of a GT_COMMA.
+        // The struct value may be be a child of a GT_COMMA.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
 
-        if (valx->gtOper == GT_OBJ)
+        if (structHnd != NO_CLASS_HANDLE)
         {
-            assert(structHnd != nullptr);
             lvaSetStruct(tmp, structHnd, false);
+        }
+        else
+        {
+            assert(valx->gtOper != GT_OBJ);
         }
         dest->gtFlags |= GTF_DONT_CSE;
         valx->gtFlags |= GTF_DONT_CSE;
@@ -16140,6 +16152,232 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
     var_types   fieldTyp = JITtype2varType(cit);
     return fieldTyp != TYP_REF;
 }
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// gtGetSIMDZero: Get a zero value of the appropriate SIMD type.
+//
+// Arguments:
+//    var_types - The simdType
+//    baseType  - The base type we need
+//    simdHandle - The handle for the SIMD type
+//
+// Return Value:
+//    A node generating the appropriate Zero, if we are able to discern it,
+//    otherwise null (note that this shouldn't happen, but callers should
+//    be tolerant of this case).
+
+GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO_CLASS_HANDLE simdHandle)
+{
+    bool found    = false;
+    bool isHWSIMD = true;
+    noway_assert(m_simdHandleCache != nullptr);
+
+    // First, determine whether this is Vector<T>.
+    if (simdType == getSIMDVectorType())
+    {
+        switch (baseType)
+        {
+            case TYP_FLOAT:
+                found = (simdHandle == m_simdHandleCache->SIMDFloatHandle);
+                break;
+            case TYP_DOUBLE:
+                found = (simdHandle == m_simdHandleCache->SIMDDoubleHandle);
+                break;
+            case TYP_INT:
+                found = (simdHandle == m_simdHandleCache->SIMDIntHandle);
+                break;
+            case TYP_USHORT:
+                found = (simdHandle == m_simdHandleCache->SIMDUShortHandle);
+                break;
+            case TYP_UBYTE:
+                found = (simdHandle == m_simdHandleCache->SIMDUByteHandle);
+                break;
+            case TYP_SHORT:
+                found = (simdHandle == m_simdHandleCache->SIMDShortHandle);
+                break;
+            case TYP_BYTE:
+                found = (simdHandle == m_simdHandleCache->SIMDByteHandle);
+                break;
+            case TYP_LONG:
+                found = (simdHandle == m_simdHandleCache->SIMDLongHandle);
+                break;
+            case TYP_UINT:
+                found = (simdHandle == m_simdHandleCache->SIMDUIntHandle);
+                break;
+            case TYP_ULONG:
+                found = (simdHandle == m_simdHandleCache->SIMDULongHandle);
+                break;
+            default:
+                break;
+        }
+        if (found)
+        {
+            isHWSIMD = false;
+        }
+    }
+
+    if (!found)
+    {
+        // We must still have isHWSIMD set to true, and the only non-HW types left are the fixed types.
+        switch (simdType)
+        {
+            case TYP_SIMD8:
+                switch (baseType)
+                {
+                    case TYP_FLOAT:
+                        if (simdHandle == m_simdHandleCache->SIMDVector2Handle)
+                        {
+                            isHWSIMD = false;
+                        }
+#if defined(_TARGET_ARM64_)
+                        else
+                        {
+                            assert(simdHandle == m_simdHandleCache->Vector64FloatHandle);
+                        }
+                        break;
+                    case TYP_INT:
+                        assert(simdHandle == m_simdHandleCache->Vector64IntHandle);
+                        break;
+                    case TYP_USHORT:
+                        assert(simdHandle == m_simdHandleCache->Vector64UShortHandle);
+                        break;
+                    case TYP_UBYTE:
+                        assert(simdHandle == m_simdHandleCache->Vector64UByteHandle);
+                        break;
+                    case TYP_SHORT:
+                        assert(simdHandle == m_simdHandleCache->Vector64ShortHandle);
+                        break;
+                    case TYP_BYTE:
+                        assert(simdHandle == m_simdHandleCache->Vector64ByteHandle);
+                        break;
+                    case TYP_UINT:
+                        assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
+                        break;
+#endif // defined(_TARGET_ARM64_)
+                    default:
+                        break;
+                }
+                break;
+
+            case TYP_SIMD12:
+                assert((baseType == TYP_FLOAT) && (simdHandle == m_simdHandleCache->SIMDVector3Handle));
+                isHWSIMD = false;
+                break;
+
+            case TYP_SIMD16:
+                switch (baseType)
+                {
+                    case TYP_FLOAT:
+                        if (simdHandle == m_simdHandleCache->SIMDVector4Handle)
+                        {
+                            isHWSIMD = false;
+                        }
+                        else
+                        {
+                            assert(simdHandle == m_simdHandleCache->Vector128FloatHandle);
+                        }
+                        break;
+                    case TYP_DOUBLE:
+                        assert(simdHandle == m_simdHandleCache->Vector128DoubleHandle);
+                        break;
+                    case TYP_INT:
+                        assert(simdHandle == m_simdHandleCache->Vector128IntHandle);
+                        break;
+                    case TYP_USHORT:
+                        assert(simdHandle == m_simdHandleCache->Vector128UShortHandle);
+                        break;
+                    case TYP_UBYTE:
+                        assert(simdHandle == m_simdHandleCache->Vector128UByteHandle);
+                        break;
+                    case TYP_SHORT:
+                        assert(simdHandle == m_simdHandleCache->Vector128ShortHandle);
+                        break;
+                    case TYP_BYTE:
+                        assert(simdHandle == m_simdHandleCache->Vector128ByteHandle);
+                        break;
+                    case TYP_LONG:
+                        assert(simdHandle == m_simdHandleCache->Vector128LongHandle);
+                        break;
+                    case TYP_UINT:
+                        assert(simdHandle == m_simdHandleCache->Vector128UIntHandle);
+                        break;
+                    case TYP_ULONG:
+                        assert(simdHandle == m_simdHandleCache->Vector128ULongHandle);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+
+#ifdef _TARGET_XARCH_
+            case TYP_SIMD32:
+                switch (baseType)
+                {
+                    case TYP_FLOAT:
+                        assert(simdHandle == m_simdHandleCache->Vector256FloatHandle);
+                        break;
+                    case TYP_DOUBLE:
+                        assert(simdHandle == m_simdHandleCache->Vector256DoubleHandle);
+                        break;
+                    case TYP_INT:
+                        assert(simdHandle == m_simdHandleCache->Vector256IntHandle);
+                        break;
+                    case TYP_USHORT:
+                        assert(simdHandle == m_simdHandleCache->Vector256UShortHandle);
+                        break;
+                    case TYP_UBYTE:
+                        assert(simdHandle == m_simdHandleCache->Vector256UByteHandle);
+                        break;
+                    case TYP_SHORT:
+                        assert(simdHandle == m_simdHandleCache->Vector256ShortHandle);
+                        break;
+                    case TYP_BYTE:
+                        assert(simdHandle == m_simdHandleCache->Vector256ByteHandle);
+                        break;
+                    case TYP_LONG:
+                        assert(simdHandle == m_simdHandleCache->Vector256LongHandle);
+                        break;
+                    case TYP_UINT:
+                        assert(simdHandle == m_simdHandleCache->Vector256UIntHandle);
+                        break;
+                    case TYP_ULONG:
+                        assert(simdHandle == m_simdHandleCache->Vector256ULongHandle);
+                        break;
+                    default:
+                        break;
+                }
+                break;
+#endif // _TARGET_XARCH_
+            default:
+                break;
+        }
+    }
+
+    unsigned size = genTypeSize(simdType);
+    if (isHWSIMD)
+    {
+#ifdef _TARGET_XARCH_
+        switch (simdType)
+        {
+            case TYP_SIMD16:
+                return gtNewSimdHWIntrinsicNode(simdType, NI_Base_Vector128_Zero, baseType, size);
+            case TYP_SIMD32:
+                return gtNewSimdHWIntrinsicNode(simdType, NI_Base_Vector256_Zero, baseType, size);
+            default:
+                break;
+        }
+#endif // _TARGET_XARCH_
+        JITDUMP("Coudn't find the matching HW intrinsic SIMD type for %s<%s> in gtGetSIMDZero\n", varTypeName(simdType),
+                varTypeName(baseType));
+    }
+    else
+    {
+        return gtNewSIMDVectorZero(simdType, baseType, size);
+    }
+    return nullptr;
+}
+#endif // FEATURE_SIMD
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
 {
