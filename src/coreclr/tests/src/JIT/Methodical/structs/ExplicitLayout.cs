@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 
 class ExplicitLayout
 {
+#pragma warning disable 618
     [StructLayout(LayoutKind.Explicit, Size = SIZE)]
     internal unsafe struct TestStruct
     {
@@ -23,6 +24,7 @@ class ExplicitLayout
         [FieldOffset(16), MarshalAs(UnmanagedType.Struct, SizeConst = 16)]
         public Guid Guid2;
     }
+#pragma warning restore 618
 
     internal class Program
     {
