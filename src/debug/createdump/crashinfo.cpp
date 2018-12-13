@@ -708,6 +708,17 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
             break;
         }
 
+        // Skip any dynamic modules. The Request call below on some DACs crashes on dynamic modules.
+        ULONG32 flags;
+        if ((hr = pClrDataModule->GetFlags(&flags)) != S_OK) {
+            TRACE("MODULE: GetFlags FAILED %08x\n", hr);
+            continue;
+        }
+        if (flags & CLRDATA_MODULE_IS_DYNAMIC) {
+            TRACE("MODULE: Skipping dynamic module\n");
+            continue;
+        }
+
         DacpGetModuleData moduleData;
         if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
         {
@@ -719,17 +730,20 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
                 ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
                 if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                 {
-                    char* pszName = (char*)malloc(MAX_LONGPATH + 1);
-                    if (pszName == nullptr) {
-                        fprintf(stderr, "Allocating module name FAILED\n");
-                        result = false;
-                        break;
-                    }
-                    sprintf_s(pszName, MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
-                    TRACE(" %s\n", pszName);
+                    // If the module file name isn't empty
+                    if (wszUnicodeName[0] != 0) {
+                        char* pszName = (char*)malloc(MAX_LONGPATH + 1);
+                        if (pszName == nullptr) {
+                            fprintf(stderr, "Allocating module name FAILED\n");
+                            result = false;
+                            break;
+                        }
+                        sprintf_s(pszName, MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
+                        TRACE(" %s\n", pszName);
 
-                    // Change the module mapping name
-                    ReplaceModuleMapping(moduleData.LoadedPEAddress, pszName);
+                        // Change the module mapping name
+                        ReplaceModuleMapping(moduleData.LoadedPEAddress, pszName);
+                    }
                 }
                 else {
                     TRACE("\nModule.GetFileName FAILED %08x\n", hr);
