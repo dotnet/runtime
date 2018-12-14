@@ -32,6 +32,8 @@ namespace System.Net.Http
 
         private readonly SemaphoreSlim _writerLock;
 
+        private readonly CreditManager _connectionWindow;
+
         private int _nextStream;
         private bool _expectingSettingsAck;
 
@@ -59,6 +61,7 @@ namespace System.Net.Http
             _httpStreams = new Dictionary<int, Http2Stream>();
 
             _writerLock = new SemaphoreSlim(1, 1);
+            _connectionWindow = new CreditManager(InitialWindowSize);
 
             _nextStream = 1;
         }
@@ -426,17 +429,32 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
             }
 
-            int windowUpdate = (int)((uint)((_incomingBuffer.ActiveSpan[0] << 24) | (_incomingBuffer.ActiveSpan[1] << 16) | (_incomingBuffer.ActiveSpan[2] << 8) | _incomingBuffer.ActiveSpan[3]) & 0x7FFFFFFF);
+            int amount = BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF;
 
-            Debug.Assert(windowUpdate >= 0);
-            if (windowUpdate == 0)
+            Debug.Assert(amount >= 0);
+            if (amount == 0)
             {
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
             }
 
-            // TODO: ISSUE 31297: Window accounting
-
             _incomingBuffer.Discard(frameHeader.Length);
+
+            if (frameHeader.StreamId == 0)
+            {
+                _connectionWindow.AdjustCredit(amount);
+            }
+            else
+            {
+                Http2Stream http2Stream = GetStream(frameHeader.StreamId);
+                if (http2Stream == null)
+                {
+                    // Don't wait for completion, which could happen asynchronously.
+                    ValueTask ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+                    return;
+                }
+
+                http2Stream.OnWindowUpdate(amount);
+            }
         }
 
         private void ProcessRstStreamFrame(FrameHeader frameHeader)
@@ -562,9 +580,9 @@ namespace System.Net.Http
             }
         }
 
-        private (ReadOnlyMemory<byte> first, ReadOnlyMemory<byte> rest) SplitBufferForFraming(ReadOnlyMemory<byte> buffer) =>
-            buffer.Length > FrameHeader.MaxLength ?
-                (buffer.Slice(0, FrameHeader.MaxLength), buffer.Slice(FrameHeader.MaxLength)) :
+        private static (ReadOnlyMemory<byte> first, ReadOnlyMemory<byte> rest) SplitBuffer(ReadOnlyMemory<byte> buffer, int maxSize) =>
+            buffer.Length > maxSize ?
+                (buffer.Slice(0, maxSize), buffer.Slice(maxSize)) :
                 (buffer, Memory<byte>.Empty);
 
         private void WriteHeader(string name, string value)
@@ -683,7 +701,7 @@ namespace System.Net.Http
 
                 // Split into frames and send.
                 ReadOnlyMemory<byte> current;
-                (current, remaining) = SplitBufferForFraming(remaining);
+                (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
 
                 FrameFlags flags =
                     (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None) |
@@ -698,7 +716,7 @@ namespace System.Net.Http
 
                 while (remaining.Length > 0)
                 {
-                    (current, remaining) = SplitBufferForFraming(remaining);
+                    (current, remaining) = SplitBuffer(remaining, FrameHeader.MaxLength);
 
                     flags = (remaining.Length == 0 ? FrameFlags.EndHeaders : FrameFlags.None);
 
@@ -723,8 +741,12 @@ namespace System.Net.Http
 
             while (remaining.Length > 0)
             {
+                int frameSize = Math.Min(remaining.Length, FrameHeader.MaxLength);
+
+                frameSize = await _connectionWindow.RequestCreditAsync(frameSize).ConfigureAwait(false);
+
                 ReadOnlyMemory<byte> current;
-                (current, remaining) = SplitBufferForFraming(remaining);
+                (current, remaining) = SplitBuffer(remaining, frameSize);
 
                 await AcquireWriteLockAsync().ConfigureAwait(false);
                 try
@@ -846,6 +868,8 @@ namespace System.Net.Http
 
             // Do shutdown.
             _stream.Close();
+
+            _connectionWindow.Dispose();
         }
 
         public void Dispose()
