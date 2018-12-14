@@ -6977,12 +6977,28 @@ MethodTable::FindDispatchImpl(
                 //
                 // See if we can find a default method from one of the implemented interfaces 
                 //
+
+                // Try exact match first
                 MethodDesc *pDefaultMethod = NULL;
-                if (FindDefaultInterfaceImplementation(
+                BOOL foundDefaultInterfaceImplementation  = FindDefaultInterfaceImplementation(
                     pIfcMD,     // the interface method being resolved
                     pIfcMT,     // the interface being resolved
                     &pDefaultMethod,
-                    throwOnConflict))
+                    FALSE, // allowVariance
+                    throwOnConflict);
+
+                // If there's no exact match, try a variant match
+                if (!foundDefaultInterfaceImplementation && pIfcMT->HasVariance())
+                {
+                    foundDefaultInterfaceImplementation = FindDefaultInterfaceImplementation(
+                        pIfcMD,     // the interface method being resolved
+                        pIfcMT,     // the interface being resolved
+                        &pDefaultMethod,
+                        TRUE, // allowVariance
+                        throwOnConflict);
+                }
+
+                if (foundDefaultInterfaceImplementation)
                 {
                     // Now, construct a DispatchSlot to return in *pImplSlot
                     DispatchSlot ds(pDefaultMethod->GetMethodEntryPoint());
@@ -7062,6 +7078,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     MethodDesc *pInterfaceMD,
     MethodTable *pInterfaceMT,
     MethodDesc **ppDefaultMethod,
+    BOOL allowVariance,
     BOOL throwOnConflict
 )
 {
@@ -7120,7 +7137,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 {
                     if (pCurMT->HasSameTypeDefAs(pInterfaceMT))
                     {
-                        if (!pInterfaceMD->IsAbstract())
+                        if (allowVariance && !pInterfaceMD->IsAbstract())
                         {
                             // Generic variance match - we'll instantiate pCurMD with the right type arguments later
                             pCurMD = pInterfaceMD;
@@ -7178,7 +7195,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                                     // We do CanCastToInterface to also cover variance.
                                     // We already know this is a method on the same type definition as the (generic)
                                     // interface but we need to make sure the instantiations match.
-                                    if (pDeclMT->CanCastToInterface(pInterfaceMT))
+                                    if ((allowVariance && pDeclMT->CanCastToInterface(pInterfaceMT))
+                                        || pDeclMT == pInterfaceMT)
                                     {
                                         // We have a match
                                         pCurMD = pMD;
@@ -7234,7 +7252,11 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                             break;
                         }
 
-                        if (pCurMT->CanCastToInterface(pCandidateMT))
+                        if (allowVariance && pCandidateMT->HasSameTypeDefAs(pCurMT))
+                        {
+                            // Variant match on the same type - this is a tie
+                        }
+                        else if (pCurMT->CanCastToInterface(pCandidateMT))
                         {
                             // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
                             if (!seenMoreSpecific)
@@ -7281,6 +7303,8 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     }
 
     // scan to see if there are any conflicts
+    // If we are doing second pass (allowing variance), we know don't actually look for
+    // a conflict anymore, but pick the first match.
     MethodTable *pBestCandidateMT = NULL;
     MethodDesc *pBestCandidateMD = NULL;
     for (unsigned i = 0; i < candidatesCount; ++i)
@@ -7292,6 +7316,11 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
         {
             pBestCandidateMT = candidates[i].pMT;
             pBestCandidateMD = candidates[i].pMD;
+
+            // If this is a second pass lookup, we know this is a variant match. As such
+            // we pick the first result as the winner and don't look for a conflict.
+            if (allowVariance)
+                break;
         }
         else if (pBestCandidateMT != candidates[i].pMT)
         {
