@@ -17,6 +17,9 @@
       be resolved by default.
     -->
     <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
+
+    <!-- TODO: Remove when source link feature is available in coverlet. -->
+    <CoverageSourceLink>false</CoverageSourceLink>
   </PropertyGroup>
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->
@@ -30,10 +33,4 @@
     <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9\il" />
     <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9" />
   </ItemGroup>
-
-  <!-- Transform CI paths in System.Private.CoreLib.pdb with local path for shared CoreLib files. -->
-  <PropertyGroup>
-    <CoverageTransformSource>fullPath=&quot;&quot;.*System\.Private\.CoreLib\\shared</CoverageTransformSource>
-    <CoverageTransformDestination>fullPath=&quot;&quot;&quot;&quot;$(CommonPath)\CoreLib</CoverageTransformDestination>
-  </PropertyGroup>
 </Project>

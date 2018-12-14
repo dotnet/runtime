@@ -110,7 +110,7 @@ namespace System.Net.Http.Functional.Tests
         public static IPAddress GetIPv6LinkLocalAddress() =>
             NetworkInterface
                 .GetAllNetworkInterfaces()
-                .Where(i => i.Description != "PANGP Virtual Ethernet Adapter")      // This is a VPN adapter, but is reported as a regular Ethernet interface with
+                .Where(i => !i.Description.StartsWith("PANGP Virtual Ethernet"))    // This is a VPN adapter, but is reported as a regular Ethernet interface with
                                                                                     // a valid link-local address, but the link-local address doesn't actually work.
                                                                                     // So just manually filter it out.
                 .SelectMany(i => i.GetIPProperties().UnicastAddresses)
@@ -183,6 +183,13 @@ namespace System.Net.Http.Functional.Tests
             PropertyInfo hasMatchingOpenSslVersion = interopHttp.GetProperty("HasMatchingOpenSslVersion", BindingFlags.Static | BindingFlags.NonPublic);
             return (bool)hasMatchingOpenSslVersion.GetValue(null);
 #endif
+        }
+
+        public static byte[] GenerateRandomContent(int size)
+        {
+            byte[] data = new byte[size];
+            new Random(42).NextBytes(data);
+            return data;
         }
     }
 }

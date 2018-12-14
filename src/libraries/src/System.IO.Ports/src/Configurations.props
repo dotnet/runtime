@@ -4,6 +4,7 @@
     <PackageConfigurations>
       netstandard-Windows_NT;
       netstandard-Linux;
+      netstandard-OSX;
       netstandard;
       net461;
     </PackageConfigurations>

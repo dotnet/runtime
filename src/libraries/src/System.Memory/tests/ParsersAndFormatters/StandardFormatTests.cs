@@ -55,6 +55,24 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
+        [InlineData("G4", 'G', 4, true)]
+        [InlineData("n0", 'n', 0, true)]
+        [InlineData("d", 'd', StandardFormat.NoPrecision, true)]
+        [InlineData("x99", 'x', StandardFormat.MaxPrecision, true)]
+        [InlineData(null, default(char), default(byte), true)]
+        [InlineData("", default(char), default(byte), true)]
+        [InlineData("G$", default(char), default(byte), false)]
+        [InlineData("Ga", default(char), default(byte), false)]
+        [InlineData("G100", default(char), default(byte), false)]
+        public static void StandardFormatTryParse(string formatString, char expectedSymbol, byte expectedPrecision, bool expectedResult)
+        {
+            bool result = StandardFormat.TryParse(formatString, out StandardFormat format);
+            Assert.Equal(expectedSymbol, format.Symbol);
+            Assert.Equal(expectedPrecision, format.Precision);
+            Assert.Equal(expectedResult, result);
+        }
+
+        [Theory]
         [InlineData('a')]
         [InlineData('B')]
         public static void StandardFormatOpImplicitFromChar(char c)

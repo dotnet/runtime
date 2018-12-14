@@ -17,7 +17,7 @@
       <DocFile Include="$(XmlDocFileRoot)/**/*.xml"/>
       <DocFile>
         <!-- trim off slash since it differs by platform and we need to do a string compare -->
-        <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\').TrimEnd('/'))</LCID>
+        <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>
         <!-- set metadata expected by depProj -->
         <NuGetPackageId>$(XmlDocPackage)</NuGetPackageId>
         <NuGetPackageVersion>$(XmlDocPackageVersion)</NuGetPackageVersion>

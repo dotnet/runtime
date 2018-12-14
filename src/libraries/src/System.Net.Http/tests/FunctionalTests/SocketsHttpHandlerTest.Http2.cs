@@ -21,7 +21,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -39,7 +38,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -69,7 +67,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -93,7 +90,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -121,7 +117,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -153,7 +148,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -185,7 +179,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -216,7 +209,6 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
@@ -242,6 +234,133 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(FrameType.RstStream, receivedFrame.Type);
 
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
+        {
+            const int InitialWindowSize = 65535;
+            const int ContentSize = 100_000;
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            TestHelper.EnsureHttp2Feature(handler);
+
+            var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
+
+                await server.EstablishConnectionAsync();
+
+                Frame frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Receive up to initial window size
+                int bytesReceived = 0;
+                while (bytesReceived < InitialWindowSize)
+                {
+                    frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                    Assert.Equal(streamId, frame.StreamId);
+                    Assert.Equal(FrameType.Data, frame.Type);
+                    Assert.Equal(FrameFlags.None, frame.Flags);
+                    Assert.True(frame.Length > 0);
+
+                    bytesReceived += frame.Length;
+                }
+
+                Assert.Equal(InitialWindowSize, bytesReceived);
+
+                // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
+                Task<Frame> readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase connection window by one. This should still not complete the read.
+                await server.WriteFrameAsync(new WindowUpdateFrame(1, 0));
+
+                await Task.Delay(500);
+
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase stream window by two. This should complete the read with a single byte.
+                await server.WriteFrameAsync(new WindowUpdateFrame(2, streamId));
+
+                frame = await readFrameTask;
+                Assert.Equal(1, frame.Length);
+                bytesReceived++;
+
+                // Issue another read and ensure it doesn't complete yet.
+                readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase connection window by two. This should complete the read with a single byte.
+                await server.WriteFrameAsync(new WindowUpdateFrame(2, 0));
+
+                frame = await readFrameTask;
+                Assert.Equal(1, frame.Length);
+                bytesReceived++;
+
+                // Issue another read and ensure it doesn't complete yet.
+                readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase connection window to allow exactly the remaining request size. This should still not complete the read.
+                await server.WriteFrameAsync(new WindowUpdateFrame(ContentSize - bytesReceived - 1, 0));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase stream window to allow exactly the remaining request size. This should allow the rest of the request to be sent.
+                await server.WriteFrameAsync(new WindowUpdateFrame(ContentSize - bytesReceived, streamId));
+
+                frame = await readFrameTask;
+                Assert.Equal(streamId, frame.StreamId);
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(FrameFlags.None, frame.Flags);
+                Assert.True(frame.Length > 0);
+
+                bytesReceived += frame.Length;
+
+                // Read to end of stream
+                while (true)
+                {
+                    frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                    if (frame.EndStreamFlag)
+                    {
+                        break;
+                    }
+
+                    Assert.Equal(streamId, frame.StreamId);
+                    Assert.Equal(FrameType.Data, frame.Type);
+                    Assert.Equal(FrameFlags.None, frame.Flags);
+                    Assert.True(frame.Length > 0);
+
+                    bytesReceived += frame.Length;
+                }
+
+                Assert.Equal(ContentSize, bytesReceived);
+
+                // Verify EndStream frame
+                Assert.Equal(streamId, frame.StreamId);
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(FrameFlags.EndStream, frame.Flags);
+                Assert.True(frame.Length == 0);
+
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
     }

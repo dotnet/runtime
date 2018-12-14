@@ -124,7 +124,7 @@
     <value>Must be an array type.</value>
   </data>
   <data name="Argument_InvalidEnum" xml:space="preserve">
-    <value>The Enum type should contain one and only one instance field.</value>
+    <value>The enum type should contain one and only one instance field.</value>
   </data>
   <data name="Arg_AmbiguousMatchException" xml:space="preserve">
     <value>Ambiguous match found.</value>
@@ -139,7 +139,7 @@
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="Arg_MustBeEnum" xml:space="preserve">
-    <value>Type provided must be an Enum.</value>
+    <value>Type provided must be an enum.</value>
   </data>
   <data name="Arg_MustBeType" xml:space="preserve">
     <value>Type must be a type provided by the MetadataLoadContext.</value>
@@ -148,7 +148,7 @@
     <value>{0} is not a GenericMethodDefinition. MakeGenericMethod may only be called on a method for which MethodBase.IsGenericMethodDefinition is true.</value>
   </data>
   <data name="Arg_NotGenericParameter" xml:space="preserve">
-    <value>Method may only be called on a Type for which Type.IsGenericParameter is true.</value>
+    <value>Method may only be called on a type for which Type.IsGenericParameter is true.</value>
   </data>
   <data name="Arg_NotGenericTypeDefinition" xml:space="preserve">
     <value>{0} is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.</value>
@@ -166,10 +166,10 @@
     <value>It is illegal to request the default value on a ParameterInfo loaded by a MetadataLoadContext. Use RawDefaultValue instead.</value>
   </data>
   <data name="BadImageFormat_TypeRefBadScopeType" xml:space="preserve">
-    <value>Assembly '{0}' contains a type reference 0x{1} that contains an invalid scope token.</value>
+    <value>Assembly '{0}' contains a type reference '{1}' that contains an invalid scope token.</value>
   </data>
   <data name="BadImageFormat_TypeRefModuleNotInManifest" xml:space="preserve">
-    <value>Assembly '{0}' contains a type reference 0x{1} that references a module not in the manifest.</value>
+    <value>Assembly '{0}' contains a type reference '{1}' that references a module not in the manifest.</value>
   </data>
   <data name="CoreTypeNotFound" xml:space="preserve">
     <value>Could not find core type '{0}'</value>
@@ -187,10 +187,10 @@
     <value>Could not find the module file for '{0}'.</value>
   </data>
   <data name="GenericMethodParamIndexOutOfRange" xml:space="preserve">
-    <value>A type specification contained an out of range index for a generic method parameter: {0}.</value>
+    <value>A type specification contained an out of range index for a generic method parameter '{0}'.</value>
   </data>
   <data name="GenericTypeParamIndexOutOfRange" xml:space="preserve">
-    <value>A type specification contained an out of range index for a generic type parameter: {0}.</value>
+    <value>A type specification contained an out of range index for a generic type parameter '{0}'.</value>
   </data>
   <data name="InvalidOperation_IsSecurity" xml:space="preserve">
     <value>This property is not supported on assemblies loaded by a MetadataLoadContext as there is no trust level to evaluate these against.</value>
@@ -199,7 +199,7 @@
     <value>This operation is only valid on generic types.</value>
   </data>
   <data name="MakeGenericType_NotLoadedByMetadataLoadContext" xml:space="preserve">
-    <value>This type {0} was not loaded by the MetadataLoadContext that loaded the generic type or method.</value>
+    <value>This type '{0}' was not loaded by the MetadataLoadContext that loaded the generic type or method.</value>
   </data>
   <data name="ManifestResourceInfoReferencedBadModule" xml:space="preserve">
     <value>A manifest resource entry specified a filename that does not appear in the assembly manifest: '{0}'.</value>
@@ -208,7 +208,7 @@
     <value>This object is no longer valid because the MetadataLoadContext that created it has been disposed.</value>
   </data>
   <data name="MissingCustomAttributeConstructor" xml:space="preserve">
-    <value>The constructor invoked by a custom attribute cannot be found on type {0}.</value>
+    <value>The constructor invoked by a custom attribute cannot be found on type '{0}'.</value>
   </data>
   <data name="ModuleResolveEventReturnedExternalModule" xml:space="preserve">
     <value>ModuleResolve handlers may only return Modules loaded by the MetadataLoadContext that loaded the parent assembly.</value>
@@ -250,7 +250,7 @@
     <value>Resolving tokens is not supported on assemblies loaded by a MetadataLoadContext.</value>
   </data>
   <data name="ResourceOnlyModule" xml:space="preserve">
-    <value>It is illegal to perform this operation on a Module that returns true for IsResource().</value>
+    <value>The requested operation cannot be used on a module that returns true for IsResource().</value>
   </data>
   <data name="SpecifiedFileNameInvalid" xml:space="preserve">
     <value>The module or file name '{0}' is not specified in the assembly's manifest.</value>
@@ -262,12 +262,12 @@
     <value>Could not find type '{0}' in assembly '{1}'.</value>
   </data>
   <data name="UnexpectedUnderlyingEnumType" xml:space="preserve">
-    <value>Enum {0} has invalid underlying type: {1}.</value>
+    <value>Enum '{0}' has invalid underlying type '{1}'.</value>
   </data>
   <data name="UnableToDetermineCoreAssembly" xml:space="preserve">
-    <value>Could not find core assembly. Either specify a valid coreAssemblyName in the MetadataLoadContext constructor or provide a MetadataAssemblyResolver that can load the core assembly.</value>
+    <value>Could not find core assembly. Either specify a valid core assembly name in the MetadataLoadContext constructor or provide a MetadataAssemblyResolver that can load the core assembly.</value>
   </data>
   <data name="Arg_InvalidPath" xml:space="preserve">
-    <value>The path {0} is not valid.</value>
+    <value>The path '{0}' is not valid.</value>
   </data>
 </root>

@@ -1,10 +1,4 @@
 parameters:
-  # Optional: dependencies of the job
-  dependsOn: ''
-
-  # Optional: A defined YAML pool - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#pool
-  pool: {}
-
   configuration: 'Debug'
 
   # Optional: condition for the job to run
@@ -12,6 +6,15 @@ parameters:
 
   # Optional: 'true' if future jobs should run even if this job fails
   continueOnError: false
+
+  # Optional: dependencies of the job
+  dependsOn: ''
+
+  # Optional: Include PublishBuildArtifacts task
+  enablePublishBuildArtifacts: false
+
+  # Optional: A defined YAML pool - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#pool
+  pool: {}
 
   # Optional: should run as a public build even in the internal project
   #           if 'true', the build won't run any of the internal only steps, even if it is running in non-public projects.
@@ -49,3 +52,12 @@ jobs:
       displayName: Publish Build Assets
       condition: ${{ parameters.condition }}
       continueOnError: ${{ parameters.continueOnError }}
+    - ${{ if eq(parameters.enablePublishBuildArtifacts, 'true') }}:
+      - task: PublishBuildArtifacts@1
+        displayName: Publish Logs to VSTS
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)'
+          PublishLocation: Container
+          ArtifactName: $(Agent.Os)_PublishBuildAssets
+        continueOnError: true
+        condition: always()      

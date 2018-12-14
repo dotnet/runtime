@@ -27,14 +27,8 @@
     <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
       <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\IPv4AddressHelper.cs">
-      <Link>ProductionCode\System\Net\IPv4AddressHelper.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPv4AddressHelper.Common.cs">
       <Link>ProductionCode\System\Net\IPv4AddressHelper.Common.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\IPv6AddressHelper.cs">
-      <Link>ProductionCode\System\Net\IPv6AddressHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPv6AddressHelper.Common.cs">
       <Link>ProductionCode\System\Net\IPv6AddressHelper.Common.cs</Link>

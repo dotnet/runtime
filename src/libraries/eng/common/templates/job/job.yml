@@ -43,8 +43,8 @@ parameters:
   # Optional: enable sending telemetry
   #           if 'true', these "variables" must be specified in the variables object or as part of the queue matrix
   #             _HelixBuildConfig - differentiate between Debug, Release, other
-  #             _HelixSource - Example: build/product
-  #             _HelixType - Example: official/dotnet/arcade/$(Build.SourceBranch)
+  #             _HelixType - Example: build/product/
+  #             _HelixSource - Example: official/dotnet/arcade/$(Build.SourceBranch)
   enableTelemetry: false
 
   # Optional: If specified, then automatically derive "_HelixSource" variable for telemetry
@@ -95,11 +95,26 @@ jobs:
 
   variables:
   - ${{ each variable in parameters.variables }}:
+    # handle name-value variable syntax
+    # example:
+    # - name: [key]
+    #   value: [value]
     - ${{ if ne(variable.name, '') }}:
       - name: ${{ variable.name }}
         value: ${{ variable.value }}
+    
+    # handle variable groups
     - ${{ if ne(variable.group, '') }}:
       - group: ${{ variable.group }}
+
+    # handle key-value variable syntax.
+    # example:
+    # - [key]: [value]
+    - ${{ if and(eq(variable.name, ''), eq(variable.group, '')) }}:
+      - ${{ each pair in variable }}:
+        - name: ${{ pair.key }}
+          value: ${{ pair.value }}
+
   # Add additional variables
   - ${{ if and(ne(parameters.helixRepo, ''), eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
     - name: _HelixSource
