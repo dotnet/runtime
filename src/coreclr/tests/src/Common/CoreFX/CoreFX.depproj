@@ -150,6 +150,9 @@
     <PackageReference Include="System.Text.Encodings.Web">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
+    <PackageReference Include="System.Threading.AccessControl">
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+    </PackageReference>
     <PackageReference Include="System.Threading.Channels">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
