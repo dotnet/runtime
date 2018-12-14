@@ -951,6 +951,7 @@ Debugger::Debugger()
     m_pLazyData(NULL),
     m_defines(_defines),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
+    m_willBlockOnGarbageCollectionEvent(FALSE),
     m_isGarbageCollectionEventsEnabled(FALSE),
     m_isGarbageCollectionEventsEnabledLatch(FALSE)
 {
@@ -5989,7 +5990,20 @@ bool Debugger::ThreadsAtUnsafePlaces(void)
     return (m_threadsAtUnsafePlaces != 0);
 }
 
-void Debugger::BeforeGarbageCollection()
+void Debugger::SuspendForGarbageCollectionStarted()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    
+    this->m_isGarbageCollectionEventsEnabledLatch = this->m_isGarbageCollectionEventsEnabled;
+    this->m_willBlockOnGarbageCollectionEvent = this->m_isGarbageCollectionEventsEnabledLatch;
+}
+
+void Debugger::SuspendForGarbageCollectionCompleted()
 {
     CONTRACTL
     {
@@ -5998,12 +6012,11 @@ void Debugger::BeforeGarbageCollection()
     }
     CONTRACTL_END;
 
-    this->m_isGarbageCollectionEventsEnabledLatch = this->m_isGarbageCollectionEventsEnabled;
-
     if (!CORDebuggerAttached() || !this->m_isGarbageCollectionEventsEnabledLatch)
     {
         return;
     }
+    this->m_isBlockedOnGarbageCollectionEvent = TRUE; 
 
     Thread* pThread = GetThread();
 
@@ -6012,8 +6025,6 @@ void Debugger::BeforeGarbageCollection()
 
     {
         Debugger::DebuggerLockHolder dbgLockHolder(this);
-
-        this->m_isBlockedOnGarbageCollectionEvent = true;
 
         DebuggerIPCEvent* ipce1 = m_pRCThread->GetIPCEventSendBuffer();
         InitIPCEvent(ipce1,
@@ -6029,7 +6040,7 @@ void Debugger::BeforeGarbageCollection()
     ResetEvent(this->GetGarbageCollectionBlockerEvent());
 }
 
-void Debugger::AfterGarbageCollection()
+void Debugger::ResumeForGarbageCollectionStarted()
 {
     CONTRACTL
     {
@@ -6063,7 +6074,8 @@ void Debugger::AfterGarbageCollection()
 
     WaitForSingleObject(this->GetGarbageCollectionBlockerEvent(), INFINITE);
     ResetEvent(this->GetGarbageCollectionBlockerEvent());
-    this->m_isBlockedOnGarbageCollectionEvent = false;
+    this->m_isBlockedOnGarbageCollectionEvent = FALSE;
+    this->m_willBlockOnGarbageCollectionEvent = FALSE;
 }
 
 #ifdef FEATURE_DATABREAKPOINT
@@ -10738,9 +10750,9 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
 
     if ((pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ASYNC_BREAK ||
         (pEvent->type & DB_IPCE_TYPE_MASK) == DB_IPCE_ATTACHING ||
-        this->m_isBlockedOnGarbageCollectionEvent)
+        this->m_willBlockOnGarbageCollectionEvent)
     {
-        if (!this->m_isBlockedOnGarbageCollectionEvent)
+        if (!this->m_willBlockOnGarbageCollectionEvent && !this->m_stopped)
         {
             lockedThreadStore = true;
             ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_FOR_DEBUGGER);
@@ -10807,7 +10819,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 _ASSERTE(ThreadHoldsLock());
 
                 // Simply trap all Runtime threads if we're not already trying to.
-                if (!m_isBlockedOnGarbageCollectionEvent && !m_trappingRuntimeThreads)
+                if (!m_willBlockOnGarbageCollectionEvent && !m_trappingRuntimeThreads)
                 {
                     // If the RS sent an Async-break, then that's an explicit request.
                     m_RSRequestedSync = TRUE;

@@ -409,8 +409,9 @@ public:
     virtual void EnumMemoryRegionsIfFuncEvalFrame(CLRDataEnumMemoryFlags flags, Frame * pFrame) = 0;
 #endif
 #ifndef DACCESS_COMPILE
-    virtual void BeforeGarbageCollection() = 0;
-    virtual void AfterGarbageCollection() = 0;
+    virtual void SuspendForGarbageCollectionStarted() = 0;
+    virtual void SuspendForGarbageCollectionCompleted() = 0;
+    virtual void ResumeForGarbageCollectionStarted() = 0;
 #endif
     virtual BOOL IsSynchronizing() = 0;
 };
