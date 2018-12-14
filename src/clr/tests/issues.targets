@@ -190,9 +190,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinroot/*">
             <Issue>times out</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/ObjectStackAllocation/ObjectStackAllocationTests/*">
-          <Issue>21376</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/*">
             <Issue>times out</Issue>
         </ExcludeList>
