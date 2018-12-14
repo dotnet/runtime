@@ -439,6 +439,23 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
     }
 
     struct dirent* result = NULL;
+#ifdef _AIX
+    // AIX returns 0 on success, but bizarrely, it returns 9 for both error and
+    // end-of-directory. result is NULL for both cases. The API returns the
+    // same thing for EOD/error, so disambiguation between the two is nearly
+    // impossible without clobbering errno for yourself and seeing if the API
+    // changed it. See:
+    // https://www.ibm.com/support/knowledgecenter/ssw_aix_71/com.ibm.aix.basetrf2/readdir_r.htm
+
+    errno = 0; // create a success condition for the API to clobber
+    int error = readdir_r(dir, entry, &result);
+
+    if (error == 9)
+    {
+        memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
+        return errno == 0 ? -1 : errno;
+    }
+#else
     int error = readdir_r(dir, entry, &result);
 
     // positive error number returned -> failure
@@ -455,6 +472,7 @@ int32_t SystemNative_ReadDirR(DIR* dir, uint8_t* buffer, int32_t bufferSize, Dir
         memset(outputEntry, 0, sizeof(*outputEntry)); // managed out param must be initialized
         return -1;         // shim convention for end-of-stream
     }
+#endif
 
     // 0 returned with non-null result (guaranteed to be set to entry arg) -> success
     assert(result == entry);

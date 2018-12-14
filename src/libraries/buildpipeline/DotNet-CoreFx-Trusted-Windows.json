@@ -171,21 +171,18 @@
       "condition": "and(succeeded(), ne(variables.PB_SkipTests, 'true'), ne(variables.PB_EnableCloudTest, 'false'))",
       "task": {
         "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
-        "versionSpec": "2.*",
+        "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "targetType": "inline",
-        "filePath": "",
-        "arguments": "",
-        "script": "$(Build.SourcesDirectory)\\corefx\\eng\\common\\msbuild.ps1 -verbosity normal $(Build.SourcesDirectory)\\corefx\\src\\upload-tests.proj $(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudDropAccountName);AccountKey=$(CloudDropAccessToken);EndpointSuffix=core.windows.net\" /p:\"CloudResultsConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudResultsAccountName);AccountKey=$(OutputCloudResultsAccessToken);EndpointSuffix=core.windows.net\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\" /p:\"ProductBuildId=$(ProductBuildId)\"",
-        "errorActionPreference": "stop",
-        "failOnStderr": "true",
-        "ignoreLASTEXITCODE": "false",
-        "workingDirectory": ""
+        "scriptType": "filePath",
+        "scriptName": "$(Build.SourcesDirectory)\\corefx\\eng\\common\\msbuild.ps1",
+        "arguments": "-verbosity normal $(Build.SourcesDirectory)\\corefx\\src\\upload-tests.proj $(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropConnectionString=DefaultEndpointsProtocol=https%3bAccountName=$(PB_CloudDropAccountName)%3bAccountKey=$(CloudDropAccessToken)%3bEndpointSuffix=core.windows.net\" /p:\"CloudResultsConnectionString=DefaultEndpointsProtocol=https%3bAccountName=$(PB_CloudResultsAccountName)%3bAccountKey=$(OutputCloudResultsAccessToken)%3bEndpointSuffix=core.windows.net\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\" /p:\"ProductBuildId=$(ProductBuildId)\"",
+        "inlineScript": "",
+        "workingFolder": "",
+        "failOnStandardError": "true"
       }
     },
-
     {
       "environment": {},
       "enabled": true,

@@ -51,7 +51,7 @@ namespace System.IO.Tests
                     watcher1.EnableRaisingEvents = true;
                     local.Value = 84;
                     watcher2.EnableRaisingEvents = true;
-                    local.Value = 0;
+                    local.Value = 168;
 
                     File.Create(fileName).Dispose();
                     Task.WaitAll(new[] { tcs1.Task, tcs2.Task }, WaitForExpectedEventTimeout);

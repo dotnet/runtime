@@ -66,7 +66,7 @@ namespace System
 
             // Find all the methods that can be described by the types parameter.
             // Remove all of them that cannot.
-            int CurIdx = 0;
+            int curIdx = 0;
             for (i = 0; i < candidates.Length; i++)
             {
                 ParameterInfo[] par = candidates[i].GetParametersNoCopy();
@@ -103,11 +103,11 @@ namespace System
                     }
                 }
                 if (j == types.Length)
-                    candidates[CurIdx++] = candidates[i];
+                    candidates[curIdx++] = candidates[i];
             }
-            if (CurIdx == 0)
+            if (curIdx == 0)
                 return null;
-            if (CurIdx == 1)
+            if (curIdx == 1)
                 return candidates[0];
 
             // Walk all of the methods looking the most specific method to invoke
@@ -116,21 +116,25 @@ namespace System
             int[] paramOrder = new int[types.Length];
             for (i = 0; i < types.Length; i++)
                 paramOrder[i] = i;
-            for (i = 1; i < CurIdx; i++)
+            for (i = 1; i < curIdx; i++)
             {
-                int newMin = FindMostSpecificMethod(candidates[currentMin], paramOrder, null, candidates[i], paramOrder, null, types, null);
+                int newMin = FindMostSpecificMethod(
+                    candidates[currentMin],
+                    paramOrder,
+                    paramArrayType1:null,
+                    candidates[i],
+                    paramOrder,
+                    paramArrayType2:null,
+                    types, args:null);
+
                 if (newMin == 0)
                 {
                     ambig = true;
                 }
-                else
+                else if (newMin == 2)
                 {
-                    if (newMin == 2)
-                    {
-                        currentMin = i;
-                        ambig = false;
-                        currentMin = i;
-                    }
+                    currentMin = i;
+                    ambig = false;
                 }
             }
             if (ambig)
@@ -160,7 +164,7 @@ namespace System
             int i, j = 0;
 
             // Find all the properties that can be described by type indexes parameter
-            int CurIdx = 0;
+            int curIdx = 0;
             int indexesLength = (indexes != null) ? indexes.Length : 0;
             for (i = 0; i < candidates.Length; i++)
             {
@@ -174,7 +178,7 @@ namespace System
                     {
                         Type pCls = par[j].ParameterType;
 
-                        // If the classes  exactly match continue
+                        // If the classes exactly match continue
                         if (pCls == indexes[j])
                             continue;
                         if (pCls == _objectType)
@@ -210,32 +214,34 @@ namespace System
                                 continue;
                         }
                     }
-                    candidates[CurIdx++] = candidates[i];
+                    candidates[curIdx++] = candidates[i];
                 }
             }
-            if (CurIdx == 0)
+            if (curIdx == 0)
                 return null;
-            if (CurIdx == 1)
+            if (curIdx == 1)
                 return candidates[0];
 
-            // Walk all of the properties looking the most specific method to invoke
+            // Walk all of the properties looking for the most specific method to invoke
             int currentMin = 0;
             bool ambig = false;
             int[] paramOrder = new int[indexesLength];
             for (i = 0; i < indexesLength; i++)
                 paramOrder[i] = i;
-            for (i = 1; i < CurIdx; i++)
+            for (i = 1; i < curIdx; i++)
             {
                 int newMin = FindMostSpecificType(candidates[currentMin].PropertyType, candidates[i].PropertyType, returnType);
                 if (newMin == 0 && indexes != null)
-                    newMin = FindMostSpecific(candidates[currentMin].GetIndexParameters(),
-                                              paramOrder,
-                                              null,
-                                              candidates[i].GetIndexParameters(),
-                                              paramOrder,
-                                              null,
-                                              indexes,
-                                              null);
+                    newMin = FindMostSpecific(
+                        candidates[currentMin].GetIndexParameters(),
+                        paramOrder,
+                        paramArrayType1:null,
+                        candidates[i].GetIndexParameters(),
+                        paramOrder,
+                        paramArrayType2: null,
+                        indexes,
+                        args:null);
+
                 if (newMin == 0)
                 {
                     newMin = FindMostSpecificProperty(candidates[currentMin], candidates[i]);
@@ -254,7 +260,6 @@ namespace System
             return candidates[currentMin];
         }
 
-        // ChangeType
         // The default binder doesn't support any change type functionality.
         // This is because the default is built into the low level invoke code.
         public override object ChangeType(object value, Type type, CultureInfo cultureInfo) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
@@ -262,7 +267,7 @@ namespace System
         public sealed override void ReorderArgumentArray(ref object[] args, object state) => throw new InvalidOperationException(SR.Arg_InvalidOperation_Reflection);
 
         // Return any exact bindings that may exist. (This method is not defined on the
-        //  Binder and is used by RuntimeType.)
+        // Binder and is used by RuntimeType.)
         public static MethodBase ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
         {
             if (match == null)
@@ -348,8 +353,8 @@ namespace System
 
             // now either p1 and p2 both use params or neither does.
 
-            bool p1Less = false;
-            bool p2Less = false;
+            bool param1Less = false;
+            bool param2Less = false;
 
             for (int i = 0; i < types.Length; i++)
             {
@@ -383,19 +388,19 @@ namespace System
                 switch (FindMostSpecificType(c1, c2, types[i]))
                 {
                     case 0: return 0;
-                    case 1: p1Less = true; break;
-                    case 2: p2Less = true; break;
+                    case 1: param1Less = true; break;
+                    case 2: param2Less = true; break;
                 }
             }
 
-            // Two way p1Less and p2Less can be equal.  All the arguments are the
+            // Two ways param1Less and param2Less can be equal: all the arguments are the
             //  same they both equal false, otherwise there were things that both
-            //  were the most specific type on....
-            if (p1Less == p2Less)
+            //  were the most specific type on.
+            if (param1Less == param2Less)
             {
-                // if we cannot tell which is a better match based on parameter types (p1Less == p2Less),
+                // If we cannot tell which is a better match based on parameter types (param1Less == param2Less),
                 // let's see which one has the most matches without using the params array (the longer one wins).
-                if (!p1Less && args != null)
+                if (!param1Less && args != null)
                 {
                     if (p1.Length > p2.Length)
                     {
@@ -411,7 +416,7 @@ namespace System
             }
             else
             {
-                return (p1Less == true) ? 1 : 2;
+                return (param1Less == true) ? 1 : 2;
             }
         }
 

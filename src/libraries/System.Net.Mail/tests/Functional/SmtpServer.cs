@@ -31,6 +31,8 @@ namespace System.Net.Mail.Tests
             get { return (IPEndPoint)_server.LocalEndpoint; }
         }
 
+        public bool SupportSmtpUTF8 { get; set; }
+
         public SmtpServer()
         {
             IPAddress address = IPAddress.Loopback;
@@ -97,6 +99,10 @@ namespace System.Net.Mail.Tests
                     _clientdomain = s.Substring(5).Trim().ToLower();
                     WriteNS(ns, "250-localhost Hello" + s.Substring(5, s.Length - 5) + "\r\n");
                     WriteNS(ns, "250-AUTH PLAIN\r\n");
+                    if (SupportSmtpUTF8)
+                    {
+                        WriteNS(ns, "250-SMTPUTF8\r\n");
+                    }
                     break;
                 case "QUIT":
                     WriteNS(ns, "221 Quit\r\n");

@@ -964,7 +964,7 @@ namespace System.Net.Mail
                 else
                 {
                     _message.BeginSend(_writer, DeliveryMethod != SmtpDeliveryMethod.Network,
-                        ServerSupportsEai, new AsyncCallback(SendMessageCallback), result.AsyncState);
+                        IsUnicodeSupported(), new AsyncCallback(SendMessageCallback), result.AsyncState);
                 }
             }
             catch (Exception e)

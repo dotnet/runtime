@@ -243,14 +243,17 @@ namespace System.IO.Pipelines
             // Always move the read tail to the write head
             _readTail = _writingHead;
             _readTailIndex = _writingHead.End;
+
+            long oldLength = _length;
             _length += _currentWriteLength;
 
             // Do not reset if reader is complete
             if (_pauseWriterThreshold > 0 &&
+                oldLength < _pauseWriterThreshold &&
                 _length >= _pauseWriterThreshold &&
                 !_readerCompletion.IsCompleted)
             {
-                _writerAwaitable.Reset();
+                _writerAwaitable.SetUncompleted();
             }
 
             _currentWriteLength = 0;
@@ -407,7 +410,7 @@ namespace System.IO.Pipelines
                     returnEnd = consumedSegment;
 
                     // Check if we crossed _maximumSizeLow and complete backpressure
-                    long consumedBytes = new ReadOnlySequence<byte>(returnStart, _readHeadIndex, consumedSegment, consumedIndex).Length;
+                    long consumedBytes = GetLength(returnStart, _readHeadIndex, consumedSegment, consumedIndex);
                     long oldLength = _length;
                     _length -= consumedBytes;
 
@@ -460,7 +463,7 @@ namespace System.IO.Pipelines
                     {
                         ThrowHelper.ThrowInvalidOperationException_BackpressureDeadlock();
                     }
-                    _readerAwaitable.Reset();
+                    _readerAwaitable.SetUncompleted();
                 }
 
                 while (returnStart != null && returnStart != returnEnd)
@@ -474,6 +477,12 @@ namespace System.IO.Pipelines
             }
 
             TrySchedule(_writerScheduler, completionData);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static long GetLength(BufferSegment startSegment, int startIndex, BufferSegment endSegment, int endIndex)
+        {
+            return (endSegment.RunningIndex + (uint)endIndex) - (startSegment.RunningIndex + (uint)startIndex);
         }
 
         internal void CompleteReader(Exception exception)

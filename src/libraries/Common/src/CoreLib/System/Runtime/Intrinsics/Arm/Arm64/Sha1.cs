@@ -14,40 +14,40 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     {
         public static bool IsSupported {  get => IsSupported; }
 
-        // <summary>
+        /// <summary>
         /// Performs SHA1 hash update choose form.
         /// vsha1cq_u32 (uint32x4_t hash_abcd, uint32_t hash_e, uint32x4_t wk)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> HashChoose(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint>wk) => HashChoose(hash_abcd, hash_e, wk);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA1 hash update majority form.
         /// vsha1mq_u32 (uint32x4_t hash_abcd, uint32_t hash_e, uint32x4_t wk)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> HashMajority(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint>wk) => HashMajority(hash_abcd, hash_e, wk);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA1 hash update parity form.
         /// vsha1pq_u32 (uint32x4_t hash_abcd, uint32_t hash_e, uint32x4_t wk)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> HashParity(Vector128<uint> hash_abcd, uint hash_e, Vector128<uint>wk) => HashParity(hash_abcd, hash_e, wk);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA1 fixed rotate
         /// vsha1h_u32 (uint32_t hash_e)
-        ///</summary>
+        /// </summary>
         public static uint FixedRotate(uint hash_e) => FixedRotate(hash_e);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA1 schedule update 0
         /// vsha1su0q_u32 (uint32x4_t w0_3, uint32x4_t w4_7, uint32x4_t w8_11)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> SchedulePart1(Vector128<uint> w0_3, Vector128<uint> w4_7, Vector128<uint> w8_11) => SchedulePart1(w0_3, w4_7, w8_11);
 
-        // <summary>
+        /// <summary>
         /// Performs SHA1 schedule update 1
         /// vsha1su1q_u32 (uint32x4_t tw0_3, uint32x4_t w12_15)
-        ///</summary>
+        /// </summary>
         public static Vector128<uint> SchedulePart2(Vector128<uint> tw0_3, Vector128<uint> w12_15)  => SchedulePart2(tw0_3, w12_15);
     }
 }

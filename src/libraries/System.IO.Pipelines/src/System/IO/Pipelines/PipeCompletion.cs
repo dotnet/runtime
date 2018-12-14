@@ -19,6 +19,7 @@ namespace System.IO.Pipelines
         private bool _isCompleted;
         private ExceptionDispatchInfo _exceptionInfo;
 
+        private PipeCompletionCallback _firstCallback;
         private PipeCompletionCallback[] _callbacks;
         private int _callbackCount;
 
@@ -41,24 +42,20 @@ namespace System.IO.Pipelines
 
         public PipeCompletionCallbacks AddCallback(Action<Exception, object> callback, object state)
         {
-            if (_callbacks == null)
+            if (_callbackCount == 0)
             {
-                _callbacks = s_completionCallbackPool.Rent(InitialCallbacksSize);
+                _firstCallback = new PipeCompletionCallback(callback, state);
+                _callbackCount++;
             }
-
-            int newIndex = _callbackCount;
-            _callbackCount++;
-
-            if (newIndex == _callbacks.Length)
+            else
             {
-                PipeCompletionCallback[] newArray = s_completionCallbackPool.Rent(_callbacks.Length * 2);
-                Array.Copy(_callbacks, newArray, _callbacks.Length);
-                s_completionCallbackPool.Return(_callbacks, clearArray: true);
-                _callbacks = newArray;
-            }
+                EnsureSpace();
 
-            _callbacks[newIndex].Callback = callback;
-            _callbacks[newIndex].State = state;
+                // -1 to adjust for _firstCallback
+                var callbackIndex = _callbackCount - 1;
+                _callbackCount++;
+                _callbacks[callbackIndex] = new PipeCompletionCallback(callback, state);
+            }
 
             if (IsCompleted)
             {
@@ -66,6 +63,24 @@ namespace System.IO.Pipelines
             }
 
             return null;
+        }
+
+        private void EnsureSpace()
+        {
+            if (_callbacks == null)
+            {
+                _callbacks = s_completionCallbackPool.Rent(InitialCallbacksSize);
+            }
+
+            int newLength = _callbackCount - 1;
+
+            if (newLength == _callbacks.Length)
+            {
+                PipeCompletionCallback[] newArray = s_completionCallbackPool.Rent(_callbacks.Length * 2);
+                Array.Copy(_callbacks, newArray, _callbacks.Length);
+                s_completionCallbackPool.Return(_callbacks, clearArray: true);
+                _callbacks = newArray;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -95,8 +110,10 @@ namespace System.IO.Pipelines
             var callbacks = new PipeCompletionCallbacks(s_completionCallbackPool,
                 _callbackCount,
                 _exceptionInfo?.SourceException,
+                _firstCallback,
                 _callbacks);
 
+            _firstCallback = default;
             _callbacks = null;
             _callbackCount = 0;
             return callbacks;

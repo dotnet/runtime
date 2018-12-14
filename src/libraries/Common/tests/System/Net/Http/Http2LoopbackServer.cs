@@ -10,6 +10,8 @@ using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Xunit;
+
 namespace System.Net.Test.Common
 {
     public class Http2LoopbackServer : IDisposable
@@ -171,6 +173,38 @@ namespace System.Net.Test.Common
             }
 
             return System.Text.Encoding.UTF8.GetString(prefix, 0, prefix.Length);
+        }
+
+        // Accept connection and handle connection setup
+        public async Task EstablishConnectionAsync()
+        {
+            await AcceptConnectionAsync();
+
+            // Receive the initial client settings frame.
+            Frame receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(FrameType.Settings, receivedFrame.Type);
+            Assert.Equal(FrameFlags.None, receivedFrame.Flags);
+
+            // Send the initial server settings frame.
+            Frame emptySettings = new Frame(0, FrameType.Settings, FrameFlags.None, 0);
+            await WriteFrameAsync(emptySettings).ConfigureAwait(false);
+
+            // Send the client settings frame ACK.
+            Frame settingsAck = new Frame(0, FrameType.Settings, FrameFlags.Ack, 0);
+            await WriteFrameAsync(settingsAck).ConfigureAwait(false);
+
+            // Receive the server settings frame ACK.
+            receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(FrameType.Settings, receivedFrame.Type);
+            Assert.True(receivedFrame.AckFlag);
+        }
+
+        public async Task SendDefaultResponseAsync(int streamId)
+        {
+            byte[] headers = new byte[] { 0x88 };   // Encoding for ":status: 200"
+
+            HeadersFrame headersFrame = new HeadersFrame(headers, FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId);
+            await WriteFrameAsync(headersFrame).ConfigureAwait(false);
         }
 
         public void Dispose()
