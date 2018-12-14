@@ -39,10 +39,10 @@ The scrip allows automated test only for the following distro & version:
 
 | Distro | Version | 
 |--------|---------|
-| Ubuntu | 14.04, 16.04, 17.10, 18.04 | 
+| Ubuntu | 14.04, 16.04, 18.04 | 
 | Debian | 8, 9 | 
 | Centos | 7 |
-| Fedora | 26, 27 |
+| Fedora | 27 |
 | OpenSUSE | 42 |
 | Oracle Linux | 7 |
 | RHEL | 7 |
