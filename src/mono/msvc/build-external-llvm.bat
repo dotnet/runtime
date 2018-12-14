@@ -9,10 +9,11 @@
 :: %3 LLVM install root directory.
 :: %4 Mono distribution root directory.
 :: %5 VS CFLAGS.
-:: %6 VS platform (Win32/x64)
-:: %7 VS configuration (Debug/Release)
-:: %8 VS target
-:: %9 MsBuild bin path, if used.
+:: %6 Additional CMake arguments.
+:: %7 VS platform (Win32/x64).
+:: %8 VS configuration (Debug/Release).
+:: %9 VS target.
+:: %10 MsBuild bin path, if used.
 :: --------------------------------------------------
 
 @echo off
@@ -33,10 +34,11 @@ set LLVM_BUILD_DIR=%~2
 set LLVM_INSTALL_DIR=%~3
 set MONO_DIST_DIR=%~4
 set VS_CFLAGS=%~5
-set VS_PLATFORM=%~6
-set VS_CONFIGURATION=%~7
-set VS_TARGET=%~8
-set MSBUILD_BIN_PATH=%~9
+set LLVM_ADDITIONAL_CMAKE_ARGS=%~6
+set VS_PLATFORM=%~7
+set VS_CONFIGURATION=%~8
+set VS_TARGET=%~9
+set MSBUILD_BIN_PATH=%~10
 
 :: Setup toolchain.
 :: set GIT=
@@ -211,6 +213,7 @@ if /i "%CMAKE_GENERATOR%" == "ninja" (
 -DLLVM_TOOLS_TO_BUILD="opt;llc;llvm-config;llvm-dis;llvm-mc;llvm-as" ^
 -DLLVM_ENABLE_LIBXML2=Off ^
 -DCMAKE_SYSTEM_PROCESSOR="%LLVM_ARCH%" ^
+%LLVM_ADDITIONAL_CMAKE_ARGS% ^
 %CMAKE_GENERATOR_ARGS% ^
 -G "%CMAKE_GENERATOR%" ^
 "%LLVM_DIR%"

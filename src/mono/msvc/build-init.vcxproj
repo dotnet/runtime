@@ -166,4 +166,23 @@
   </Target>
 
   <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup" />
+
+  <Target Name="_BackupConfigFile" Condition="'$(_MonoConfigFileBackupExists)' != 'true'">
+    <Copy SourceFiles="$(MONO_DIR)/config.h" DestinationFiles="$(MONO_DIR)/cygconfig.h" />
+  </Target>
+
+  <Target Name="_CheckConfigFile">
+    <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/config.h" ConfRegEx="#include.*cygconfig.h.*">
+      <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="_MonoConfigFileBackupExists" />
+    </_CheckConfigurationProperty>
+  </Target>
+
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>
+      _CheckConfigFile;
+      _BackupConfigFile;
+      $(PrepareForBuildDependsOn);
+    </PrepareForBuildDependsOn>
+  </PropertyGroup>
+
 </Project>

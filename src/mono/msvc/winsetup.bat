@@ -73,6 +73,10 @@ for %%a in (%OPTIONAL_DEFINES%) do (
 
 echo #endif >> %CONFIG_H_TEMP%
 
+echo #if defined(ENABLE_LLVM) ^&^& defined(HOST_WIN32) ^&^& defined(TARGET_WIN32) ^&^& (!defined(TARGET_AMD64) ^|^| !defined(_MSC_VER)) >> %CONFIG_H_TEMP%
+echo #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build. >> %CONFIG_H_TEMP%
+echo #endif >> %CONFIG_H_TEMP%
+
 :: If the file is different, replace it.
 fc %CONFIG_H_TEMP% %CONFIG_H% >nul 2>&1 || move /y %CONFIG_H_TEMP% %CONFIG_H%
 del %CONFIG_H_TEMP% 2>nul

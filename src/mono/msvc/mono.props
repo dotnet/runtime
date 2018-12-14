@@ -17,6 +17,8 @@
     <MONO_USE_STATIC_LIBMONO>false</MONO_USE_STATIC_LIBMONO>
     <!-- When true, mono binaries will link and include llvm. When false, mono binaries will not link and include llvm.  -->
     <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
+    <!-- When true, enable LLVM asserts for internal LLVM build. When false, disable LLVM asserts for internal LLVM build.  -->
+    <MONO_ENABLE_LLVM_ASSERTS>false</MONO_ENABLE_LLVM_ASSERTS>
     <!-- When set, use an alternative LLVM source location for internal LLVM build.  -->
     <MONO_INTERNAL_LLVM_SOURCE_DIR></MONO_INTERNAL_LLVM_SOURCE_DIR>
     <!-- When set, use an external pre-build LLVM library instead of internal one.  -->

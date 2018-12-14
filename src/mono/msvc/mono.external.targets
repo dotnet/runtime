@@ -113,6 +113,7 @@
         <_LLVMSourceDir Condition="'$(_LLVMSourceDir)' == ''">$(_MonoSourceDir)\external\llvm</_LLVMSourceDir>
         <_LLVMBuildDir>$([System.IO.Path]::GetFullPath('$(MONO_BUILD_DIR_PREFIX)$(Platform)\obj\external\llvm-build\$(Configuration)'))</_LLVMBuildDir>
         <_LLVMInstallDir>$(_LLVMBuildDir)\install</_LLVMInstallDir>
+        <_MonoLLVMConfig>$(_LLVMInstallDir)\bin\llvm-config.exe</_MonoLLVMConfig>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -159,11 +160,21 @@
         <PropertyGroup Condition="'$(MONO_EXTERNAL_LLVM_CONFIG)' == ''">
             <_MonoEnableExternalLLVM>false</_MonoEnableExternalLLVM>
             <_MonoEnableInternalLLVM>true</_MonoEnableInternalLLVM>
-            <_MonoLLVMConfig>$(_LLVMInstallDir)\bin\llvm-config.exe</_MonoLLVMConfig>
         </PropertyGroup>
     </Target>
 
-    <Target Name="_SetupMonoLLVMBuildProperties" Condition="$(MONO_ENABLE_LLVM)=='true'">
+    <Target Name="_CheckLLVMPlatformSupport" Condition="'$(MONO_ENABLE_LLVM)' == 'true'">
+        <warning Text="LLVM only supported on x64 builds, disabling LLVM support." Condition="'$(Platform)' != 'x64'" />
+        <PropertyGroup Condition="'$(Platform)' != 'x64'">
+            <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
+        </PropertyGroup>
+    </Target>
+
+    <Target Name="_SetupMonoLLVMBuildProperties" Condition="$(MONO_ENABLE_LLVM) == 'true'">
+
+        <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/cygconfig.h" ConfRegEx=".*#define.*INTERNAL_LLVM_ASSERTS.*1" Condition="'$(MONO_ENABLE_LLVM_ASSERTS)' != 'true'">
+            <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="MONO_ENABLE_LLVM_ASSERTS" />
+        </_CheckConfigurationProperty>
 
         <Error Text="LLVM config executable $(_MonoLLVMConfig) not found." Condition="!Exists($(_MonoLLVMConfig))" />
 
@@ -216,7 +227,7 @@
 
     </Target>
 
-    <Target Name="_ConfigureExternalMonoLLVMBuildEnvironment" DependsOnTargets="_SetDefaultLLVMProperties;_CheckEnableLLVM;_CheckInternalLLVM;_CheckExternalLLVM" />
+    <Target Name="_ConfigureExternalMonoLLVMBuildEnvironment" DependsOnTargets="_SetDefaultLLVMProperties;_CheckEnableLLVM;_CheckInternalLLVM;_CheckExternalLLVM;_CheckLLVMPlatformSupport" />
     <Target Name="_ConfigureExternalMonoBTLSBuildEnvironment" DependsOnTargets="_CheckEnableBtls" />
     <Target Name="_ConfigureExternalMonoBuildEnvironment" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_ConfigureExternalMonoBTLSBuildEnvironment" />
 

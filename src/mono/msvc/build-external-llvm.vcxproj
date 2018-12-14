@@ -152,7 +152,10 @@
     <_LLVMCFlags Condition="'$(MONO_PREPROCESSOR_DEFINITIONS)' != ''">$(MONO_PREPROCESSOR_DEFINITIONS.Replace(";"," "))</_LLVMCFlags>
     <_LLVMCFlags>$(_LLVMCFlags.Trim())</_LLVMCFlags>
     <_LLVMCFlags Condition="'$(_LLVMCFlags)' != ''">-D$(_LLVMCFlags.Replace(" "," -D"))</_LLVMCFlags>
-    <_LLVMBuildCommand>build-external-llvm.bat &quot;$(_LLVMSourceDir)&quot; &quot;$(_LLVMBuildDir)&quot; &quot;$(_LLVMInstallDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_LLVMCFlags)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_LLVMBuildCommand>
+    <_LLVMEnableAsserts>-DLLVM_ENABLE_ASSERTIONS=Off</_LLVMEnableAsserts>
+    <_LLVMEnableAsserts Condition="'$(MONO_ENABLE_LLVM_ASSERTS)' == 'true'" >-DLLVM_ENABLE_ASSERTIONS=On</_LLVMEnableAsserts>
+    <_LLVMAdditionalCMakeArgs>$(_LLVMEnableAsserts)</_LLVMAdditionalCMakeArgs>
+    <_LLVMBuildCommand>build-external-llvm.bat &quot;$(_LLVMSourceDir)&quot; &quot;$(_LLVMBuildDir)&quot; &quot;$(_LLVMInstallDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_LLVMCFlags)&quot; &quot;$(_LLVMAdditionalCMakeArgs)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_LLVMBuildCommand>
   </PropertyGroup>
   <Target Name="_AfterBuildExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
     <Exec Command="$(_LLVMBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot;">
