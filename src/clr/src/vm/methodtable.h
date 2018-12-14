@@ -2459,6 +2459,7 @@ public:
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
+        BOOL allowVariance,
         BOOL throwOnConflict);
 #endif // DACCESS_COMPILE
 
