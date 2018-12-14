@@ -2489,14 +2489,6 @@ void Compiler::compSetProcessor()
             codeGen->getEmitter()->SetContainsAVX(false);
             codeGen->getEmitter()->SetContains256bitAVX(false);
         }
-        else if (compSupports(InstructionSet_SSSE3) || compSupports(InstructionSet_AES) ||
-                 compSupports(InstructionSet_PCLMULQDQ))
-        {
-            // Emitter::UseSSE4 controls whether we support the 4-byte encoding for certain
-            // instructions. We need to check if either is supported independently, since
-            // it is currently possible to enable/disable them separately.
-            codeGen->getEmitter()->SetUseSSE4(true);
-        }
     }
 #endif
 #if defined(_TARGET_ARM64_)
