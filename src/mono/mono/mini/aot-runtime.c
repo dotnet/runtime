@@ -60,6 +60,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-threads-coop.h>
+#include <mono/utils/bsearch.h>
 
 #include "mini.h"
 #include "seq-points.h"
@@ -5877,6 +5878,22 @@ mono_aot_get_unbox_arbitrary_trampoline (gpointer addr)
 	return mono_create_ftnptr (mono_domain_get (), code);
 }
 
+static int
+i32_idx_comparer (const void *key, const void *member)
+{
+	gint32 idx1 = GPOINTER_TO_INT (key);
+	gint32 idx2 = *(gint32*)member;
+	return idx1 - idx2;
+}
+
+static int
+i16_idx_comparer (const void *key, const void *member)
+{
+	int idx1 = GPOINTER_TO_INT (key);
+	int idx2 = *(gint16*)member;
+	return idx1 - idx2;
+}
+
 gpointer
 mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 {
@@ -5912,6 +5929,27 @@ mono_aot_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 		 *   (2) the receiver is a value type, thus needs unboxing */
 		g_assert (mono_use_interpreter);
 		return mono_aot_get_unbox_arbitrary_trampoline (addr);
+	}
+
+	if (amodule->info.llvm_unbox_tramp_indexes) {
+		int unbox_tramp_idx;
+
+		/* Search the llvm_unbox_tramp_indexes table using a binary search */
+		if (amodule->info.llvm_unbox_tramp_elemsize == sizeof (guint32)) {
+			void *ptr = mono_binary_search (GINT_TO_POINTER (method_index), amodule->info.llvm_unbox_tramp_indexes, amodule->info.llvm_unbox_tramp_num, amodule->info.llvm_unbox_tramp_elemsize, i32_idx_comparer);
+			g_assert (ptr);
+			g_assert (*(int*)ptr == method_index);
+			unbox_tramp_idx = (guint32*)ptr - (guint32*)amodule->info.llvm_unbox_tramp_indexes;
+		} else {
+			void *ptr = mono_binary_search (GINT_TO_POINTER (method_index), amodule->info.llvm_unbox_tramp_indexes, amodule->info.llvm_unbox_tramp_num, amodule->info.llvm_unbox_tramp_elemsize, i16_idx_comparer);
+			g_assert (ptr);
+			g_assert (*(gint16*)ptr == method_index);
+			unbox_tramp_idx = (guint16*)ptr - (guint16*)amodule->info.llvm_unbox_tramp_indexes;
+		}
+		g_assert (unbox_tramp_idx < amodule->info.llvm_unbox_tramp_num);
+		code = ((gpointer*)(amodule->info.llvm_unbox_trampolines))[unbox_tramp_idx];
+		g_assert (code);
+		return code;
 	}
 
 	if (amodule->info.llvm_get_unbox_tramp) {

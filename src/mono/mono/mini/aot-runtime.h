@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 149
+#define MONO_AOT_FILE_VERSION 150
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -113,6 +113,8 @@ typedef struct MonoAotFileInfo
 	gpointer jit_code_start;
 	gpointer jit_code_end;
 	gpointer method_addresses;
+	gpointer llvm_unbox_tramp_indexes;
+	gpointer llvm_unbox_trampolines;
 
 	/*
 	 * Data tables.
@@ -195,6 +197,10 @@ typedef struct MonoAotFileInfo
 	guint32 nshared_got_entries;
 	/* The size of the data file, if MONO_AOT_FILE_FLAG_SEPARATE_DATA is set */
 	guint32 datafile_size;
+	/* Number of entries in llvm_unbox_tramp_indexes */
+	guint32 llvm_unbox_tramp_num;
+	/* Size of entries in llvm_unbox_tramp_indexes (2/4) */
+	guint32 llvm_unbox_tramp_elemsize;
 
 	/* Arrays */
 	/* Offsets for tables inside the data file if MONO_AOT_FILE_FLAG_SEPARATE_DATA is set */

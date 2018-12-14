@@ -10673,6 +10673,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 		symbols [sindex ++] = NULL;
 		symbols [sindex ++] = NULL;
 	}
+	symbols [sindex ++] = NULL;
+	symbols [sindex ++] = NULL;
 
 	if (acfg->data_outfile) {
 		for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
@@ -10771,6 +10773,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->tramp_page_size);
 	emit_int32 (acfg, info->nshared_got_entries);
 	emit_int32 (acfg, info->datafile_size);
+	emit_int32 (acfg, 0);
+	emit_int32 (acfg, 0);
 
 	for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
 		emit_int32 (acfg, info->table_offsets [i]);
