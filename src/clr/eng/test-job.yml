@@ -8,6 +8,8 @@ parameters:
   scenarios: ''
   helixQueuesPublic: ''
   helixQueuesInternal: ''
+  timeoutInMinutes: ''
+  crossrootfsDir: ''
 
 ### Test job
 
@@ -25,10 +27,17 @@ jobs:
     # Compute job name from template parameters
     ${{ if eq(parameters.crossgen, 'false') }}:
         name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
-        displayName: ${{ format('Test pri{0} {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+        displayName: ${{ format('Test Pri{0} {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
     ${{ if eq(parameters.crossgen, 'true') }}:
         name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
         displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+
+    ${{ if eq(parameters.crossgen, 'false') }}:
+        helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
+    ${{ if eq(parameters.crossgen, 'true') }}:
+        helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
+
+    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
       # Map template parameters to command line arguments
@@ -61,6 +70,8 @@ jobs:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - name: helixTargetQueuesArg
           value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
+      - name: commonMSBuildArgs
+        value: ${{ format('/maxcpucount /p:__BuildOS={0} /p:__BuildArch={1} /p:__BuildType={2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
 
     # TODO: Enable crossgen in build-test.sh. It currently doesn't
     # accept a crossgen arg, so disable the macos/linux crossgen test
@@ -74,6 +85,8 @@ jobs:
     # Run all steps in the container.
     # Note that the containers are resources defined in azure-pipelines.yml
     containerName: ${{ parameters.containerName }}
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
     steps:
 
@@ -99,29 +112,18 @@ jobs:
 
       
     # Build tests
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-        # TODO: enable crossgen in build-test.sh
-      - script: ./build-test.sh $(buildConfig) $(archType) $(priorityArg) $(crossgenArg)
+    # TODO: enable crossgen in build-test.sh
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(crossgenArg)
         displayName: Build tests
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - script: build-test.cmd $(buildConfig) $(archType) $(priorityArg) $(crossgenArg)
         displayName: Build tests
 
 
-    # Prepare tests for helix
-    - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixprep.proj /p:CORE_ROOT=$(Build.SourcesDirectory)/bin/tests/$(osGroup).$(archType).$(buildConfigUpper)/Tests/Core_Root /p:__BuildType=$(buildConfig) /p:__BuildArch=$(archType) /p:UsePython=true
-        # TODO: remove UsePython argument once we've removed generated wrappers in helixprep.proj
-        displayName: Prepare test archives for Helix
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-        # TODO: remove UsePython argument once we've removed generated wrappers in helixprep.proj
-      - script: .\Tools\dotnetcli\dotnet.exe msbuild tests\helixprep.proj /p:CORE_ROOT=$(Build.SourcesDirectory)\bin\tests\Windows_NT.$(archType).$(buildConfigUpper)\tests\core_root /p:__BuildType=$(buildConfig) /p:__BuildArch=$(archType) /p:UsePython=true
-        displayName: Prepare test archives for Helix
-
-
     # Send tests to helix
     - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj /maxcpucount $(scenariosArg) $(helixTargetQueuesArg)
+      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg)
         displayName: Send test jobs to Helix
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -130,8 +132,9 @@ jobs:
           ${{ if eq(variables['System.TeamProject'], 'public') }}:
             # Access token variable for public project
             HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj /maxcpucount $(scenariosArg) $(helixTargetQueuesArg)
+      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg)
         displayName: Send test jobs to Helix
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -140,3 +143,4 @@ jobs:
           ${{ if eq(variables['System.TeamProject'], 'public') }}:
             # Access token variable for public project
             HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)

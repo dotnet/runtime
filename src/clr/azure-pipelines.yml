@@ -110,27 +110,28 @@ jobs:
 # Checked test builds
 #
 
-# Pri0 (CI)
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+# Pri0 (PullRequest)
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
       jobParameters:
         priority: 0
+        timeoutInMinutes: 120
 
 # Pri1 (CI)
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
       jobParameters:
         priority: 1
-        scenarios: 'normal;jitstress2'
+        timeoutInMinutes: 240
 
 # Pri1 crossgen (CI)
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -138,14 +139,25 @@ jobs:
       jobParameters:
         priority: 1
         crossgen: true
-        scenarios: 'normal;jitstress2'
+        timeoutInMinutes: 240
+
+# Pri1 (Manual)
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'Manual')) }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: checked
+      jobParameters:
+        priority: 1
+        scenarios: 'normal,jitstress1,jitstress2,gcstress0x3,gcstress0xc'
+        timeoutInMinutes: 300
 
 #
 # Release test builds (Official Build)
 #
 
 # Pri1
-- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -154,7 +166,7 @@ jobs:
         priority: 1
 
 # Pri1 crossgen (Official Build)
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
