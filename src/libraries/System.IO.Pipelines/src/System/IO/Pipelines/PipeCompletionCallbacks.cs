@@ -12,52 +12,65 @@ namespace System.IO.Pipelines
         private readonly ArrayPool<PipeCompletionCallback> _pool;
         private readonly int _count;
         private readonly Exception _exception;
+        private readonly PipeCompletionCallback _firstCallback;
         private readonly PipeCompletionCallback[] _callbacks;
 
-        public PipeCompletionCallbacks(ArrayPool<PipeCompletionCallback> pool, int count, Exception exception, PipeCompletionCallback[] callbacks)
+        public PipeCompletionCallbacks(ArrayPool<PipeCompletionCallback> pool, int count, Exception exception, PipeCompletionCallback firstCallback, PipeCompletionCallback[] callbacks)
         {
             _pool = pool;
             _count = count;
             _exception = exception;
+            _firstCallback = firstCallback;
             _callbacks = callbacks;
         }
 
         public void Execute()
         {
-            if (_callbacks == null || _count == 0)
+            if (_count == 0)
             {
                 return;
             }
 
-            try
-            {
-                List<Exception> exceptions = null;
+            List<Exception> exceptions = null;
 
-                for (int i = 0; i < _count; i++)
+            Execute(_firstCallback, ref exceptions);
+
+            if (_callbacks != null)
+            {
+                try
                 {
-                    PipeCompletionCallback callback = _callbacks[i];
-                    try
+                    for (var i = 0; i < _count - 1; i++)
                     {
-                        callback.Callback(_exception, callback.State);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (exceptions == null)
-                        {
-                            exceptions = new List<Exception>();
-                        }
-                        exceptions.Add(ex);
+                        var callback = _callbacks[i];
+                        Execute(callback, ref exceptions);
                     }
                 }
-
-                if (exceptions != null)
+                finally
                 {
-                    throw new AggregateException(exceptions);
+                    _pool.Return(_callbacks, clearArray: true);
                 }
             }
-            finally
+
+            if (exceptions != null)
             {
-                _pool.Return(_callbacks, clearArray: true);
+                throw new AggregateException(exceptions);
+            }
+        }
+
+        private void Execute(PipeCompletionCallback callback, ref List<Exception> exceptions)
+        {
+            try
+            {
+                callback.Callback(_exception, callback.State);
+            }
+            catch (Exception ex)
+            {
+                if (exceptions == null)
+                {
+                    exceptions = new List<Exception>();
+                }
+
+                exceptions.Add(ex);
             }
         }
     }
