@@ -17,6 +17,7 @@ jobs:
     osGroupName: Linux
     containerName: ubuntu_1404_arm_cross_build_image
     helixQueuesPublic: 'Ubuntu.1404.Arm32.Open'
+    crossrootfsDir: '/crossrootfs/arm'
     # Currently we don't have Linux/arm32 internal Helix queues
     ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -28,8 +29,11 @@ jobs:
     osGroup: Linux
     osGroupName: Linux
     containerName: ubuntu_1604_arm64_cross_build_image
-    helixQueuesPublic: 'Debian.9.Arm64.Open,Ubuntu.1604.Arm64.Open,Ubuntu.1804.Arm64.Open'
-    helixQueuesInternal: 'Debian.9.Arm64,Ubuntu.1604.Arm64,Ubuntu.1804.Arm64'
+    # TODO: enable Debian.9.Arm64.Open and Debian.9.Arm64 queues
+    # when https://github.com/dotnet/core-eng/issues/4805 is resolved
+    helixQueuesPublic: 'Ubuntu.1604.Arm64.Open,Ubuntu.1804.Arm64.Open'
+    helixQueuesInternal: 'Ubuntu.1604.Arm64,Ubuntu.1804.Arm64'
+    crossrootfsDir: '/crossrootfs/arm64'
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl
@@ -40,8 +44,7 @@ jobs:
     osGroup: Linux
     osGroupName: Linux_musl
     containerName: musl_x64_build_image
-    helixQueuesPublic: 'Alpine.3.Arm64.Open'
-    helixQueuesInternal: 'Alpine.3.Arm64'
+    # TODO: add Alpine.Amd64 queues
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 # RHEL 6
@@ -77,8 +80,8 @@ jobs:
     osGroup: Linux
     osGroupName: Linux
     containerName: ubuntu_1604_x64_build_image
-    helixQueuesPublic: 'Debian.8.Amd64.Open,Ubuntu.1604.Amd64.Open,Ubuntu.1804.Arm64.Open'
-    helixQueuesInternal: 'Debian.8.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Arm64'
+    helixQueuesPublic: 'Debian.8.Amd64.Open,Ubuntu.1604.Amd64.Open,Ubuntu.1804.Amd64.Open'
+    helixQueuesInternal: 'Debian.8.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64'
     ${{ insert }}: ${{ parameters.jobParameters }}
 
 # macOS x64
