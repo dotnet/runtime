@@ -177,7 +177,7 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 #define VEX3INT(c1,c2)   PACK4(c1, 0xc5, 0x02, c2)
 #define VEX3FLT(c1,c2)   PACK4(c1, 0xc5, 0x02, c2)
 
-INST3(FIRST_SSE2_INSTRUCTION, "FIRST_SSE2_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+INST3(FIRST_SSE_INSTRUCTION, "FIRST_SSE_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 // These are the SSE instructions used on x86
 INST3(mov_i2xmm,        "movd",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x6E),                            INS_FLAGS_None)    // Move int reg to a xmm reg. reg1=xmm reg, reg2=int reg
 INST3(mov_xmm2i,        "movd",             IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x7E),                            INS_FLAGS_None)    // Move xmm reg to an int reg. reg1=xmm reg, reg2=int reg
@@ -385,9 +385,7 @@ INST3(unpcklpd,         "unpcklpd",         IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(packssdw,         "packssdw",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x6B),                            INS_Flags_IsDstDstSrcAVXInstruction)    // Pack (narrow) int to short with saturation
 INST3(packsswb,         "packsswb",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x63),                            INS_Flags_IsDstDstSrcAVXInstruction)    // Pack (narrow) short to byte with saturation
 INST3(packuswb,         "packuswb",         IUM_WR, BAD_CODE,     BAD_CODE,     PCKDBL(0x67),                            INS_Flags_IsDstDstSrcAVXInstruction)    // Pack (narrow) short to unsigned byte with saturation
-INST3(LAST_SSE2_INSTRUCTION, "LAST_SSE2_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
-INST3(FIRST_SSE4_INSTRUCTION, "FIRST_SSE4_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 //    id                nm                  um      mr            mi            rm                                       flags
 INST3(dpps,             "dpps",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x40),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Packed dot product of two float vector regs
 INST3(dppd,             "dppd",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0x41),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Packed dot product of two double vector regs
@@ -470,7 +468,7 @@ INST3(aesenc,           "aesenc",           IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(aesenclast,       "aesenclast",       IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xDD),                             INS_Flags_IsDstDstSrcAVXInstruction)   // Perform last round of an AES encryption flow
 INST3(aesimc,           "aesimc",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xDB),                             INS_FLAGS_None)   // Perform the AES InvMixColumn Transformation
 INST3(aeskeygenassist,  "aeskeygenassist",  IUM_WR, BAD_CODE,     BAD_CODE,     SSE3A(0xDF),                             INS_FLAGS_None)   // AES Round Key Generation Assist
-INST3(LAST_SSE4_INSTRUCTION, "LAST_SSE4_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
+INST3(LAST_SSE_INSTRUCTION, "LAST_SSE_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
 INST3(FIRST_AVX_INSTRUCTION, "FIRST_AVX_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 // AVX only instructions
