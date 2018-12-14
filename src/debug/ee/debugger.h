@@ -2954,10 +2954,12 @@ public:
     DWORD m_defines;
     DWORD m_mdDataStructureVersion;
 #ifndef DACCESS_COMPILE
-    virtual void BeforeGarbageCollection();
-    virtual void AfterGarbageCollection();
+    virtual void SuspendForGarbageCollectionStarted();
+    virtual void SuspendForGarbageCollectionCompleted();
+    virtual void ResumeForGarbageCollectionStarted();
 #endif
     BOOL m_isBlockedOnGarbageCollectionEvent;
+    BOOL m_willBlockOnGarbageCollectionEvent;
     BOOL m_isGarbageCollectionEventsEnabled;
     // this latches m_isGarbageCollectionEventsEnabled in BeforeGarbageCollection so we can 
     // guarantee the corresponding AfterGC event is sent even if the events are disabled during GC.
