@@ -188,7 +188,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					Assert.IsTrue (expectedInterfaces.Remove (iface.InterfaceType.FullName), $"Type `{src}' interface `{iface.InterfaceType.FullName}' should have been removed");
 				}
 
-				Assert.IsEmpty (expectedInterfaces);
+				Assert.IsEmpty (expectedInterfaces, $"Unexpected interfaces on {src}");
 			}
 		}
 
