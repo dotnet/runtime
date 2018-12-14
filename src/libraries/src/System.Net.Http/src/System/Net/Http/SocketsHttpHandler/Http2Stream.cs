@@ -27,6 +27,8 @@ namespace System.Net.Http
             private bool _responseComplete;
             private bool _responseAborted;
 
+            private readonly CreditManager _streamWindow;
+
             private HttpResponseMessage _response;
             private bool _disposed;
 
@@ -40,6 +42,8 @@ namespace System.Net.Http
                 _disposed = false;
 
                 _responseBuffer = new ArrayBuffer(InitialBufferSize);
+
+                _streamWindow = new CreditManager(InitialWindowSize);
             }
 
             public int StreamId => _streamId;
@@ -108,6 +112,11 @@ namespace System.Net.Http
                 }
 
                 return _response;
+            }
+
+            public void OnWindowUpdate(int amount)
+            {
+                _streamWindow.AdjustCredit(amount);
             }
 
             private static readonly byte[] s_statusHeaderName = Encoding.ASCII.GetBytes(":status");
@@ -308,6 +317,21 @@ namespace System.Net.Http
                 return ReadDataAsyncCore(onDataAvailable, buffer);
             }
 
+            private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer)
+            {
+                ReadOnlyMemory<byte> remaining = buffer;
+
+                while (remaining.Length > 0)
+                {
+                    int sendSize = await _streamWindow.RequestCreditAsync(remaining.Length).ConfigureAwait(false);
+
+                    ReadOnlyMemory<byte> current;
+                    (current, remaining) = SplitBuffer(remaining, sendSize);
+
+                    await _connection.SendStreamDataAsync(_streamId, current).ConfigureAwait(false);
+                }
+            }
+
             public void Dispose()
             {
                 lock (_syncObject)
@@ -315,6 +339,8 @@ namespace System.Net.Http
                     if (!_disposed)
                     {
                         _disposed = true;
+
+                        _streamWindow.Dispose();
 
                         // TODO: ISSUE 31310: If the stream is not complete, we should send RST_STREAM
                     }
@@ -393,7 +419,7 @@ namespace System.Net.Http
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
-                    return _http2Stream._connection.SendStreamDataAsync(_http2Stream._streamId, buffer);
+                    return _http2Stream.SendDataAsync(buffer);
                 }
 
                 public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
