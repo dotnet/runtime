@@ -8,6 +8,9 @@ parameters:
   condition: ''
   dependsOn: ''
   containerName: ''
+  timeoutInMinutes: ''
+  helixType: ''
+  crossrootfsDir: ''
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
@@ -18,8 +21,11 @@ jobs:
     displayName: ${{ parameters.displayName }}
 
     condition: ${{ parameters.condition }}
-
     dependsOn: ${{ parameters.dependsOn }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    helixRepo: 'dotnet/coreclr'
+    helixType: ${{ parameters.helixType }}
 
     pool:
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
@@ -34,7 +40,6 @@ jobs:
         name: dotnet-internal-temp
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
         name: dotnet-external-temp
-      timeoutInMinutes: 240
 
     workspace:
       clean: all
@@ -74,17 +79,15 @@ jobs:
       - name: osGroupName
         value: ${{ parameters.osGroupName }}
       
-      # Crossbuild specific variables.
-      - ${{ if eq(parameters.archType, 'arm') }}:
-          - name: rootfsDir
-            value: /crossrootfs/arm
-
-          - name: cacRootfsDir
-            value: /crossrootfs/x86
-
-      - ${{ if eq(parameters.archType, 'arm64') }}:
-          - name: rootfsDir
-            value: /crossrootfs/arm64
+      - ${{ if ne(parameters.crossrootfsDir, '') }}:
+          - name: crossArg
+            value: 'cross'
+          # This is only required for cross builds.
+          - name: ROOTFS_DIR
+            value: ${{ parameters.crossrootfsDir }}
+      - ${{ if eq(parameters.crossrootfsDir, '') }}:
+          - name: crossArg
+            value: ''
 
       - ${{ each variable in parameters.variables }}:
         - ${{insert}}: ${{ variable }}
