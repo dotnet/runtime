@@ -132,7 +132,7 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        throw e;
+                        throw;
                     }
                 }
 
