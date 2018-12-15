@@ -3076,8 +3076,8 @@ namespace System.Data.SqlClient
         private void WriteByteArraySetupContinuation(byte[] b, int len, TaskCompletionSource<object> completion, int offset, Task packetTask)
         {
             AsyncHelper.ContinueTask(packetTask, completion,
-                () => WriteByteArray(b, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion),
-                connectionToDoom: _parser.Connection);
+                () => WriteByteArray(b, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion)
+            );
         }
 
         // Dumps contents of buffer to SNI for network write.
@@ -3147,7 +3147,7 @@ namespace System.Data.SqlClient
             if (willCancel)
             {
                 // If we have been cancelled, then ensure that we write the ATTN packet as well
-                task = AsyncHelper.CreateContinuationTask(task, CancelWritePacket, _parser.Connection);
+                task = AsyncHelper.CreateContinuationTask(task, CancelWritePacket);
             }
 
             return task;
