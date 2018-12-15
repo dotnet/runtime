@@ -40,7 +40,7 @@ steps:
       WorkItemCommand: ${{ parameters.WorkItemCommand }}
       CorrelationPayloadDirectory: ${{ parameters.CorrelationPayloadDirectory }}
       XUnitProjects: ${{ parameters.XUnitProjects }}
-      XUnitTargetFramework: ${{ parameters.XUnitTargetFramework }}
+      XUnitRuntimeTargetFramework: ${{ parameters.XUnitTargetFramework }}
       XUnitRunnerVersion: ${{ parameters.XUnitRunnerVersion }}
       IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
       DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
