@@ -14,6 +14,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
+    enableMicrobuild: true
 
     # Compute job name from template parameters
     name: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
@@ -68,6 +69,19 @@ jobs:
       - script: set __TestIntermediateDir=int&&build.cmd $(buildConfig) $(archType) -skiptests -skipbuildpackages
         displayName: Build product
 
+    # Sign on Windows
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.osGroup, 'Windows_NT')) }}:
+      - script: powershell eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 /p:ArcadeBuild=true /p:OfficialBuild=true /p:BuildOS=$(osGroup) /p:BuildArch=$(archType) /p:BuildType=$(buildConfig) /p:DotNetSignType=%_SignType%
+        displayName: Sign Binaries
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish Signing Logs to VSTS
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/'
+          PublishLocation: Container
+          ArtifactName: $(Agent.Os)_$(Agent.JobName)_$(archType)
+        continueOnError: true
+        condition: always()
 
     # Upload build as pipeline artifact
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
@@ -82,13 +96,6 @@ jobs:
         inputs:
           artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)\bin\Product\$(osGroup).$(archType).$(buildConfigUpper)
-
-
-    # TODO: Sign
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      - script: echo Sign!
-        displayName: Sign Binaries (empty for now)
-
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:

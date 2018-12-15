@@ -11,6 +11,7 @@ parameters:
   timeoutInMinutes: ''
   helixType: ''
   crossrootfsDir: ''
+  enableMicrobuild: ''
 
   # arcade-specific parameters
   gatherAssetManifests: false
@@ -30,6 +31,8 @@ jobs:
 
     helixRepo: 'dotnet/coreclr'
     helixType: ${{ parameters.helixType }}
+
+    enableMicrobuild: ${{ parameters.enableMicrobuild }}
 
     pool:
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
