@@ -409,7 +409,7 @@ namespace System.Net.Http
                                 throw new Http2ProtocolException(Http2ProtocolErrorCode.FlowControlError);
                             }
 
-                            // ISSUE 34059: Handle SETTINGS_MAX_CONCURRENT_STREAMS.
+                            // ISSUE 34059: Handle SETTINGS_INITIAL_WINDOW_SIZE.
                             break;
 
                         case SettingId.MaxFrameSize:
