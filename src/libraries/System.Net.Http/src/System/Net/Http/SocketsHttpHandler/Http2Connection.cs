@@ -36,6 +36,7 @@ namespace System.Net.Http
 
         private int _nextStream;
         private bool _expectingSettingsAck;
+        private int _initialWindowSize;
 
         private bool _disposed;
 
@@ -45,7 +46,7 @@ namespace System.Net.Http
 
         private const int InitialBufferSize = 4096;
 
-        private const int InitialWindowSize = 65535;
+        private const int DefaultInitialWindowSize = 65535;
 
         // We don't really care about limiting control flow at the connection level.
         // We limit it per stream, and the user controls how many streams are created.
@@ -66,9 +67,10 @@ namespace System.Net.Http
             _httpStreams = new Dictionary<int, Http2Stream>();
 
             _writerLock = new SemaphoreSlim(1, 1);
-            _connectionWindow = new CreditManager(InitialWindowSize);
+            _connectionWindow = new CreditManager(DefaultInitialWindowSize);
 
             _nextStream = 1;
+            _initialWindowSize = DefaultInitialWindowSize;
         }
 
         public async Task SetupAsync()
@@ -98,7 +100,7 @@ namespace System.Net.Http
 
             // Send initial connection-level WINDOW_UPDATE
             WriteFrameHeader(new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, 0));
-            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (ConnectionWindowSize - InitialWindowSize));
+            BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, (ConnectionWindowSize - DefaultInitialWindowSize));
             _outgoingBuffer.Commit(4);
 
             await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
@@ -409,7 +411,7 @@ namespace System.Net.Http
                                 throw new Http2ProtocolException(Http2ProtocolErrorCode.FlowControlError);
                             }
 
-                            // ISSUE 34059: Handle SETTINGS_INITIAL_WINDOW_SIZE.
+                            ChangeInitialWindowSize((int)settingValue);
                             break;
 
                         case SettingId.MaxFrameSize:
@@ -433,6 +435,23 @@ namespace System.Net.Http
                 // Send acknowledgement
                 // Don't wait for completion, which could happen asynchronously.
                 ValueTask ignored = SendSettingsAckAsync();
+            }
+        }
+
+        private void ChangeInitialWindowSize(int newSize)
+        {
+            Debug.Assert(newSize >= 0);
+
+            lock (_syncObject)
+            {
+                int delta = newSize - _initialWindowSize;
+                _initialWindowSize = newSize;
+
+                // Adjust existing streams
+                foreach (Http2Stream http2Stream in _httpStreams.Values)
+                {
+                    http2Stream.OnWindowUpdate(delta);
+                }
             }
         }
 
@@ -742,11 +761,16 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask SendHeadersAsync(int streamId, HttpRequestMessage request)
+        private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request)
         {
             // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
             // We also serialize usage of the header encoder and the header buffer this way.
+            // (If necessary, we could have a separate semaphore just for creating and encoding header blocks,
+            // and defer taking the actual _writerLock until we're ready to do the write below.)
             await _writerLock.WaitAsync().ConfigureAwait(false);
+
+            Http2Stream http2Stream = AddStream(request);
+            int streamId = http2Stream.StreamId;
 
             try
             {
@@ -785,11 +809,18 @@ namespace System.Net.Http
                     await FlushOutgoingBytesAsync().ConfigureAwait(false);
                 }
             }
+            catch (Exception)
+            {
+                http2Stream.Dispose();
+                throw;
+            }
             finally
             {
                 _headerBuffer.Discard(_headerBuffer.ActiveMemory.Length);
                 _writerLock.Release();
             }
+
+            return http2Stream;
         }
 
         private async ValueTask SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer)
@@ -1053,22 +1084,51 @@ namespace System.Net.Http
 
         public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Http2Stream http2Stream = new Http2Stream(this);
+            // TODO: ISSUE 31310: Cancellation support
+
+            Http2Stream http2Stream = null;
             try
             {
-                return await http2Stream.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                // Send headers
+                http2Stream = await SendHeadersAsync(request).ConfigureAwait(false);
+
+                // Send request body, if any
+                await http2Stream.SendRequestBodyAsync().ConfigureAwait(false);
+
+                // Wait for response headers to be read.
+                await http2Stream.ReadResponseHeadersAsync().ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                http2Stream.Dispose();
-                throw;
+                if (http2Stream != null)
+                {
+                    http2Stream.Dispose();
+                }
+
+                if (e is IOException ioe)
+                {
+                    throw new HttpRequestException(SR.net_http_client_execution_error, ioe);
+                }
+                else if (e is ObjectDisposedException)
+                {
+                    throw new HttpRequestException(SR.net_http_client_execution_error);
+                }
+                else if (e is Http2ProtocolException)
+                {
+                    // ISSUE 31315: Determine if/how to expose HTTP2 error codes
+                    throw new HttpRequestException(SR.net_http_client_execution_error);
+                }
+                else
+                {
+                    throw;
+                }
             }
+
+            return http2Stream.Response;
         }
 
-        private int AddStream(Http2Stream http2Stream)
+        private Http2Stream AddStream(HttpRequestMessage request)
         {
-            int streamId;
-
             lock (_syncObject)
             {
                 if (_disposed || _nextStream == MaxStreamId)
@@ -1078,15 +1138,17 @@ namespace System.Net.Http
                     throw new HttpRequestException(null, null, true);
                 }
 
-                streamId = _nextStream;
+                int streamId = _nextStream;
 
                 // Client-initiated streams are always odd-numbered, so increase by 2.
                 _nextStream += 2;
 
-                _httpStreams.Add(streamId, http2Stream);
-            }
+                Http2Stream http2Stream = new Http2Stream(request, this, streamId, _initialWindowSize);
 
-            return streamId;
+                _httpStreams.Add(streamId, http2Stream);
+
+                return http2Stream;
+            }
         }
 
         private void RemoveStream(Http2Stream http2Stream)
