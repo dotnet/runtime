@@ -139,8 +139,11 @@ namespace R2RDump
 
         public void WriteTo(TextWriter writer, DumpOptions options)
         {
-            writer.WriteLine($"Id: {Id}");
-            writer.WriteLine($"StartAddress: 0x{StartAddress:X8}");
+            if (!options.Naked)
+            {
+                writer.WriteLine($"Id: {Id}");
+                writer.WriteLine($"StartAddress: 0x{StartAddress:X8}");
+            }
             if (Size == -1)
             {
                 writer.WriteLine("Size: Unavailable");
@@ -149,7 +152,10 @@ namespace R2RDump
             {
                 writer.WriteLine($"Size: {Size} bytes");
             }
-            writer.WriteLine($"UnwindRVA: 0x{UnwindRVA:X8}");
+            if (!options.Naked)
+            {
+                writer.WriteLine($"UnwindRVA: 0x{UnwindRVA:X8}");
+            }
             if (UnwindInfo is Amd64.UnwindInfo amd64UnwindInfo)
             {
                 string parsedFlags = "";
@@ -175,7 +181,10 @@ namespace R2RDump
                 writer.WriteLine($"CountOfUnwindCodes: {amd64UnwindInfo.CountOfUnwindCodes}");
                 writer.WriteLine($"FrameRegister:      {amd64UnwindInfo.FrameRegister}");
                 writer.WriteLine($"FrameOffset:        0x{amd64UnwindInfo.FrameOffset}");
-                writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
+                if (!options.Naked)
+                {
+                    writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
+                }
 
                 for (int unwindCodeIndex = 0; unwindCodeIndex < amd64UnwindInfo.CountOfUnwindCodes; unwindCodeIndex++)
                 {
@@ -375,7 +384,10 @@ namespace R2RDump
 
             writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(R2RReader.MetadataReader, MethodHandle):X8}");
             writer.WriteLine($"Rid: {MetadataTokens.GetRowNumber(R2RReader.MetadataReader, MethodHandle)}");
-            writer.WriteLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
+            if (!options.Naked)
+            {
+                writer.WriteLine($"EntryPointRuntimeFunctionId: {EntryPointRuntimeFunctionId}");
+            }
             writer.WriteLine($"Number of RuntimeFunctions: {RuntimeFunctions.Count}");
             if (Fixups != null)
             {
@@ -388,7 +400,12 @@ namespace R2RDump
 
                 foreach (FixupCell cell in fixups)
                 {
-                    writer.WriteLine($"    TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}: {cell.Signature}");
+                    writer.Write("    ");
+                    if (!options.Naked)
+                    {
+                        writer.WriteLine($"TableIndex {cell.TableIndex}, Offset {cell.CellOffset:X4}: ");
+                    }
+                    writer.WriteLine(cell.Signature);
                 }
             }
         }
