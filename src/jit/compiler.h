@@ -7650,7 +7650,7 @@ private:
                     unreached();
             }
         }
-        assert(simdType == getSIMDVectorType());
+        assert(emitTypeSize(simdType) <= maxSIMDStructBytes());
         switch (simdBaseType)
         {
             case TYP_FLOAT:
