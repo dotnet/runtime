@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers.Binary;
+using System.Collections.Generic;
 
 namespace System.Net.Test.Common
 {    
@@ -35,6 +36,16 @@ namespace System.Net.Test.Common
         Priority =      0b00100000,
 
         ValidBits =     0b00101101
+    }
+
+    public enum SettingId : ushort
+    {
+        HeaderTableSize = 0x1,
+        EnablePush = 0x2,
+        MaxConcurrentStreams = 0x3,
+        InitialWindowSize = 0x4,
+        MaxFrameSize = 0x5,
+        MaxHeaderListSize = 0x6
     }
 
     public class Frame
@@ -330,6 +341,59 @@ namespace System.Net.Test.Common
         public override string ToString()
         {
             return base.ToString() + $"\nUpdateSize: {UpdateSize}";
+        }
+    }
+
+    public struct SettingsEntry
+    {
+        public SettingId SettingId;
+        public uint Value;
+    }
+
+    public class SettingsFrame : Frame
+    {
+        public List<SettingsEntry> Entries;
+
+        public SettingsFrame(params SettingsEntry[] entries) :
+            base(entries.Length * 6, FrameType.Settings, FrameFlags.None, 0)
+        {
+            Entries = new List<SettingsEntry>(entries);
+        }
+
+        public static SettingsFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
+        {
+            var entries = new List<SettingsEntry>();
+
+            while (buffer.Length > 0)
+            {
+                SettingId id = (SettingId)BinaryPrimitives.ReadUInt16BigEndian(buffer);
+                buffer = buffer.Slice(2);
+                uint value = BinaryPrimitives.ReadUInt32BigEndian(buffer);
+                buffer = buffer.Slice(4);
+
+                entries.Add(new SettingsEntry { SettingId = id, Value = value });
+            }
+
+            return new SettingsFrame(entries.ToArray());
+        }
+
+        public override void WriteTo(Span<byte> buffer)
+        {
+            base.WriteTo(buffer);
+            buffer = buffer.Slice(Frame.FrameHeaderLength);
+
+            foreach (SettingsEntry entry in Entries)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)entry.SettingId);
+                buffer = buffer.Slice(2);
+                BinaryPrimitives.WriteUInt32BigEndian(buffer, entry.Value);
+                buffer = buffer.Slice(4);
+            }
+        }
+
+        public override string ToString()
+        {
+            return base.ToString() + $"\nEntry Count: {Entries.Count}";
         }
     }
 }
