@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
@@ -15,7 +16,7 @@ namespace R2RDump
     /// </summary>
     public struct R2RImportSection
     {
-        public struct ImportSectionEntry
+        public class ImportSectionEntry
         {
             [XmlAttribute("Index")]
             public int Index { get; set; }
@@ -24,6 +25,8 @@ namespace R2RDump
             public long Section { get; set; }
             public uint SignatureRVA { get; set; }
             public string Signature { get; set; }
+            public GCRefMap GCRefMap { get; set; }
+
             public ImportSectionEntry(int index, int startOffset, int startRVA, long section, uint signatureRVA, string signature)
             {
                 Index = index;
@@ -34,15 +37,22 @@ namespace R2RDump
                 Signature = signature;
             }
 
-            public override string ToString()
+            public void WriteTo(TextWriter writer, DumpOptions options)
             {
-                StringBuilder builder = new StringBuilder();
-                builder.AppendFormat("+{0:X4}", StartOffset);
-                builder.AppendFormat(" ({0:X4})", StartRVA);
-                builder.AppendFormat("  Section: 0x{0:X8}", Section);
-                builder.AppendFormat("  SignatureRVA: 0x{0:X8}", SignatureRVA);
-                builder.AppendFormat("  {0}", Signature);
-                return builder.ToString();
+                if (!options.Naked)
+                {
+                    writer.Write($"+{StartOffset:X4}");
+                    writer.Write($" ({StartRVA:X4})");
+                    writer.Write($"  Section: 0x{Section:X8}");
+                    writer.Write($"  SignatureRVA: 0x{SignatureRVA:X8}");
+                    writer.Write("   ");
+                }
+                writer.Write(Signature);
+                if (GCRefMap != null)
+                {
+                    writer.Write(" -- ");
+                    GCRefMap.WriteTo(writer);
+                }
             }
         }
 
@@ -80,10 +90,23 @@ namespace R2RDump
         /// RVA of optional auxiliary data (typically GC info)
         /// </summary>
         public int AuxiliaryDataRVA { get; set; }
-        [XmlIgnore]
-        public BaseGcInfo AuxiliaryData { get; set; }
 
-        public R2RImportSection(int index, byte[] image, int rva, int size, CorCompileImportFlags flags, byte type, byte entrySize, int signatureRVA, List<ImportSectionEntry> entries, int auxDataRVA, int auxDataOffset, Machine machine, ushort majorVersion)
+        public int AuxiliaryDataSize { get; set; }
+
+        public R2RImportSection(
+            int index, 
+            R2RReader reader, 
+            int rva, 
+            int size, 
+            CorCompileImportFlags flags, 
+            byte type, 
+            byte entrySize, 
+            int signatureRVA, 
+            List<ImportSectionEntry> entries, 
+            int auxDataRVA, 
+            int auxDataOffset, 
+            Machine machine, 
+            ushort majorVersion)
         {
             Index = index;
             SectionRVA = rva;
@@ -96,36 +119,36 @@ namespace R2RDump
             Entries = entries;
 
             AuxiliaryDataRVA = auxDataRVA;
-            AuxiliaryData = null;
+            AuxiliaryDataSize = 0;
             if (AuxiliaryDataRVA != 0)
             {
-                if (machine == Machine.Amd64)
+                int startOffset = auxDataOffset + BitConverter.ToInt32(reader.Image, auxDataOffset);
+
+                for (int i = 0; i < Entries.Count; i++)
                 {
-                    AuxiliaryData = new Amd64.GcInfo(image, auxDataOffset, machine, majorVersion);
+                    GCRefMapDecoder decoder = new GCRefMapDecoder(reader, startOffset);
+                    Entries[i].GCRefMap = decoder.ReadMap();
+                    startOffset = decoder.GetOffset();
                 }
-                else if (machine == Machine.I386)
-                {
-                    AuxiliaryData = new x86.GcInfo(image, auxDataOffset, machine, majorVersion);
-                }
+
+                AuxiliaryDataSize = startOffset - auxDataOffset;
             }
+        }
+
+        public void WriteTo(TextWriter writer)
+        {
+            writer.WriteLine($"SectionRVA: 0x{SectionRVA:X8} ({SectionRVA})");
+            writer.WriteLine($"SectionSize: {SectionSize} bytes");
+            writer.WriteLine($"Flags: {Flags}");
+            writer.WriteLine($"Type: {Type}");
+            writer.WriteLine($"EntrySize: {EntrySize}");
+            writer.WriteLine($"SignatureRVA: 0x{SignatureRVA:X8} ({SignatureRVA})");
+            writer.WriteLine($"AuxiliaryDataRVA: 0x{AuxiliaryDataRVA:X8} ({AuxiliaryDataRVA})");
         }
 
         public override string ToString()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine($"SectionRVA: 0x{SectionRVA:X8} ({SectionRVA})");
-            sb.AppendLine($"SectionSize: {SectionSize} bytes");
-            sb.AppendLine($"Flags: {Flags}");
-            sb.AppendLine($"Type: {Type}");
-            sb.AppendLine($"EntrySize: {EntrySize}");
-            sb.AppendLine($"SignatureRVA: 0x{SignatureRVA:X8} ({SignatureRVA})");
-            sb.AppendLine($"AuxiliaryDataRVA: 0x{AuxiliaryDataRVA:X8} ({AuxiliaryDataRVA})");
-            if (AuxiliaryDataRVA != 0 && AuxiliaryData != null)
-            {
-                sb.AppendLine("AuxiliaryData:");
-                sb.AppendLine(AuxiliaryData.ToString());
-            }
-            return sb.ToString();
+            throw new NotImplementedException();
         }
     }
 }

@@ -315,7 +315,7 @@ namespace R2RDump
                             }
                             if (importSection.AuxiliaryDataRVA != 0)
                             {
-                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryData.Size, importSectionsNode, "AuxiliaryDataBytes");
+                                DumpBytes(importSection.AuxiliaryDataRVA, (uint)importSection.AuxiliaryDataSize, importSectionsNode, "AuxiliaryDataBytes");
                             }
                         }
                         foreach (R2RImportSection.ImportSectionEntry entry in importSection.Entries)
