@@ -318,3 +318,8 @@ sandbox
 
 #IL linker for testing
 linker
+
+# Arcade files
+/artifacts/toolset
+/.packages
+/.dotnet

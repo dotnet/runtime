@@ -1,4 +1,5 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(ArcadeBuild)' == 'True'"/>
   <PropertyGroup>
     <CL_MPCount>$(NumberOfCores)</CL_MPCount>
   </PropertyGroup>
