@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osGroupName: ''
+  osIdentifier: ''
   name: ''
   displayName: ''
   condition: ''
@@ -11,6 +11,10 @@ parameters:
   timeoutInMinutes: ''
   helixType: ''
   crossrootfsDir: ''
+
+  # arcade-specific parameters
+  gatherAssetManifests: false
+
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
@@ -54,42 +58,51 @@ jobs:
     ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       agentOs: Windows_NT
 
+    # Setting this results in the arcade job template including a step
+    # that gathers asset manifests and publishes them to pipeline
+    # storage. Only relevant for build jobs.
+    enablePublishBuildAssets: ${{ parameters.gatherAssetManifests }}
+
     variables:
-      - name: buildConfig
-        value: ${{ parameters.buildConfig }}
+    - name: buildConfig
+      value: ${{ parameters.buildConfig }}
         
-      - ${{ if eq(parameters.buildConfig, 'checked') }}:
-          - name: buildConfigUpper
-            value: 'Checked'
+    - ${{ if eq(parameters.buildConfig, 'checked') }}:
+      - name: buildConfigUpper
+        value: 'Checked'
 
-      - ${{ if eq(parameters.buildConfig, 'debug') }}:
-          - name: buildConfigUpper
-            value: 'Debug'
+    - ${{ if eq(parameters.buildConfig, 'debug') }}:
+      - name: buildConfigUpper
+        value: 'Debug'
 
-      - ${{ if eq(parameters.buildConfig, 'release') }}:
-          - name: buildConfigUpper
-            value: 'Release'
+    - ${{ if eq(parameters.buildConfig, 'release') }}:
+      - name: buildConfigUpper
+        value: 'Release'
 
-      - name: archType
-        value: ${{ parameters.archType }}
+    - name: archType
+      value: ${{ parameters.archType }}
 
-      - name: osGroup
-        value: ${{ parameters.osGroup }}
+    - name: osGroup
+      value: ${{ parameters.osGroup }}
 
-      - name: osGroupName
-        value: ${{ parameters.osGroupName }}
+    - name: osIdentifier
+      value: ${{ parameters.osIdentifier }}
       
-      - ${{ if ne(parameters.crossrootfsDir, '') }}:
-          - name: crossArg
-            value: 'cross'
-          # This is only required for cross builds.
-          - name: ROOTFS_DIR
-            value: ${{ parameters.crossrootfsDir }}
-      - ${{ if eq(parameters.crossrootfsDir, '') }}:
-          - name: crossArg
-            value: ''
+    - ${{ if ne(parameters.crossrootfsDir, '') }}:
+      - name: crossArg
+        value: 'cross'
+      - name: crossPackagesArg
+        value: '-__DoCrossArchBuild=1'
+      # This is only required for cross builds.
+      - name: ROOTFS_DIR
+        value: ${{ parameters.crossrootfsDir }}
+    - ${{ if eq(parameters.crossrootfsDir, '') }}:
+      - name: crossArg
+        value: ''
+      - name: crossPackagesArg
+        value: ''
 
-      - ${{ each variable in parameters.variables }}:
-        - ${{insert}}: ${{ variable }}
+    - ${{ each variable in parameters.variables }}:
+      - ${{insert}}: ${{ variable }}
 
     steps: ${{ parameters.steps }}

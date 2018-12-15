@@ -29,6 +29,9 @@ initHostDistroRid()
             if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
                __HostDistroRid="rhel.6-$__Arch"
             fi
+            if [[ $redhatRelease == "CentOS Linux release 7."* ]]; then
+                __HostDistroRid="rhel.7-$__Arch"
+            fi
         fi
     fi
     if [ "$__HostOS" == "FreeBSD" ]; then
