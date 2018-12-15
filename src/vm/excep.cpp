@@ -4467,9 +4467,9 @@ void DECLSPEC_NORETURN RaiseDeadLockException()
 //  Returns:
 //    true              If the exception is of a type that is always swallowed.
 //
-bool ExceptionIsAlwaysSwallowed(EXCEPTION_POINTERS *pExceptionInfo)
+BOOL ExceptionIsAlwaysSwallowed(EXCEPTION_POINTERS *pExceptionInfo)
 {
-    bool isSwallowed = false;
+    BOOL isSwallowed = false;
 
     // The exception code must be ours, if it is one of our Exceptions.
     if (IsComPlusException(pExceptionInfo->ExceptionRecord))
