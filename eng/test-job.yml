@@ -2,7 +2,7 @@ parameters:
   buildConfig: ''
   archType: ''
   osGroup: ''
-  osGroupName: ''
+  osIdentifier: ''
   priority: 0
   crossgen: false
   scenarios: ''
@@ -22,56 +22,56 @@ jobs:
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
-    osGroupName: ${{ parameters.osGroupName }}
+    osIdentifier: ${{ parameters.osIdentifier }}
 
     # Compute job name from template parameters
     ${{ if eq(parameters.crossgen, 'false') }}:
-        name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
-        displayName: ${{ format('Test Pri{0} {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('testbuild_pri{0}_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri{0} {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
     ${{ if eq(parameters.crossgen, 'true') }}:
-        name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
-        displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('testbuild_pri{0}_r2r_{1}_{2}_{3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri{0} R2R {1} {2} {3}', parameters.priority, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     ${{ if eq(parameters.crossgen, 'false') }}:
-        helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
+      helixType: ${{ format('test/functional/cli/pri{0}', parameters.priority) }}
     ${{ if eq(parameters.crossgen, 'true') }}:
-        helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
+      helixType: ${{ format('test/functional/r2r/cli/pri{0}', parameters.priority) }}
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
-      # Map template parameters to command line arguments
-      - ${{ if eq(parameters.priority, '1') }}:
-        - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-          - name: priorityArg
-            value: 'priority1'
-        - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-          - name: priorityArg
-            value: '-priority=1'
-      - ${{ if eq(parameters.priority, '0') }}:
+    # Map template parameters to command line arguments
+    - ${{ if eq(parameters.priority, '1') }}:
+      - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
         - name: priorityArg
-          value: ''
+          value: 'priority1'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: priorityArg
+          value: '-priority=1'
+    - ${{ if eq(parameters.priority, '0') }}:
+      - name: priorityArg
+        value: ''
 
-      - ${{ if eq(parameters.crossgen, 'true') }}:
-        - name: crossgenArg
-          value: 'crossgen'
-      - ${{ if eq(parameters.crossgen, 'false') }}:
-        - name: crossgenArg
-          value: ''
-      - ${{ if ne(parameters.scenarios, '') }}:
-        - name: scenariosArg
-          value: ${{ format('/p:Scenarios=\"{0}\"', parameters.scenarios) }}
-      - ${{ if eq(parameters.scenarios, '') }}:
-        - name: scenariosArg
-          value: ''
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - name: helixTargetQueuesArg
-          value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesPublic) }}
-      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        - name: helixTargetQueuesArg
-          value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
-      - name: commonMSBuildArgs
-        value: ${{ format('/maxcpucount /p:__BuildOS={0} /p:__BuildArch={1} /p:__BuildType={2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
+    - ${{ if eq(parameters.crossgen, 'true') }}:
+      - name: crossgenArg
+        value: 'crossgen'
+    - ${{ if eq(parameters.crossgen, 'false') }}:
+      - name: crossgenArg
+        value: ''
+    - ${{ if ne(parameters.scenarios, '') }}:
+      - name: scenariosArg
+        value: ${{ format('/p:Scenarios=\"{0}\"', parameters.scenarios) }}
+    - ${{ if eq(parameters.scenarios, '') }}:
+      - name: scenariosArg
+        value: ''
+    - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      - name: helixTargetQueuesArg
+        value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesPublic) }}
+    - ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      - name: helixTargetQueuesArg
+        value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
+    - name: commonMSBuildArgs
+      value: ${{ format('/maxcpucount /p:__BuildOS={0} /p:__BuildArch={1} /p:__BuildType={2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
 
     # TODO: Enable crossgen in build-test.sh. It currently doesn't
     # accept a crossgen arg, so disable the macos/linux crossgen test
@@ -80,7 +80,7 @@ jobs:
       condition: false
 
     # Test job depends on the corresponding build job
-    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+    dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
     # Note that the containers are resources defined in azure-pipelines.yml
@@ -101,13 +101,13 @@ jobs:
       - task: DownloadPipelineArtifact@0
         displayName: Download product build pipeline artifact
         inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
       - task: DownloadPipelineArtifact@0
         displayName: Download product build pipeline artifact
         inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osGroupName, parameters.archType, parameters.buildConfig) }}
+          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
           targetPath: $(Build.SourcesDirectory)\bin\Product\Windows_NT.$(archType).$(buildConfigUpper)
 
       

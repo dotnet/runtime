@@ -1,3 +1,8 @@
+
+# Temporarily set a build number format that includes a large revision
+# number that won't conflict with buildpipeline official builds.
+name: $(Date:yyyyMMdd)$(Rev:.7r)
+
 variables:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
 
@@ -183,23 +188,23 @@ jobs:
 # registry. Its dependencies should be updated to include all of the
 # official builds if we add more platform/arch combinations.
 
-# TODO: Enable publish to BAR
-#- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-#  - template: /eng/common/templates/phases/publish-build-assets.yml@arcade
-#- phase: publish_bar
-#  displayName: publish to BAR (empty currently)
-#  queue:
-#    name: Hosted VS2017
-#  dependsOn:
-#  - build_Linux_x64_release
-#  - build_OSX_x64_release
-#  - build_Windows_NT_x64_release
-#  - build_Windows_NT_x86_release
-#  - build_Windows_NT_arm_release
-#  - build_Windows_NT_arm64_release
-  # TODO: enable these builds
-  #  - build_rhel_x64_release
-  #  - build_alpine_x64_release
-  #  - build_crossbuild_arm_release
-  #  - build_crossbuild_arm64_release
-
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+  - template: /eng/common/templates/job/publish-build-assets.yml
+    parameters:
+      configuration: Release
+      pool:
+        name: dotnet-internal-temp
+      dependsOn:
+      - build_Linux_arm_release
+      - build_Linux_arm64_release
+      # TODO: depend on musl job once the glibc container issue is fixed
+      # https://dnceng.visualstudio.com/internal/_workitems/edit/109
+      # - build_Linux_musl_x64_release
+      - build_Linux_rhel6_x64_release
+      - build_Linux_rhel7_x64_release
+      - build_Linux_x64_release
+      - build_OSX_x64_release
+      - build_Windows_NT_x64_release
+      - build_Windows_NT_x86_release
+      - build_Windows_NT_arm_release
+      - build_Windows_NT_arm64_release
