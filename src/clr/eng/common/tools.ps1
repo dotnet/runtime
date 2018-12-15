@@ -87,7 +87,7 @@ function Exec-Process([string]$command, [string]$commandArgs) {
 }
 
 function InitializeDotNetCli([bool]$install) {
-  if (Test-Path global:_DotNetInstallDir) {
+  if (Test-Path variable:global:_DotNetInstallDir) {
     return $global:_DotNetInstallDir
   }
 
@@ -170,7 +170,7 @@ function InstallDotNetSdk([string] $dotnetRoot, [string] $version) {
 # Throws on failure.
 #
 function InitializeVisualStudioMSBuild([bool]$install) {
-  if (Test-Path global:_MSBuildExe) {
+  if (Test-Path variable:global:_MSBuildExe) {
     return $global:_MSBuildExe
   }
 
@@ -297,7 +297,7 @@ function LocateVisualStudio {
 }
 
 function InitializeBuildTool() {
-  if (Test-Path global:_BuildTool) {
+  if (Test-Path variable:global:_BuildTool) {
     return $global:_BuildTool
   }
 
@@ -364,7 +364,7 @@ function GetNuGetPackageCachePath() {
 }
 
 function InitializeToolset() {
-  if (Test-Path global:_ToolsetBuildProj) {
+  if (Test-Path variable:global:_ToolsetBuildProj) {
     return $global:_ToolsetBuildProj
   }
 
