@@ -16253,7 +16253,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         {
                             isHWSIMD = false;
                         }
-#if defined(_TARGET_ARM64_)
+#if defined(_TARGET_ARM64_) && defined(FEATURE_HW_INTRINSICS)
                         else
                         {
                             assert(simdHandle == m_simdHandleCache->Vector64FloatHandle);
@@ -16277,7 +16277,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     case TYP_UINT:
                         assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
                         break;
-#endif // defined(_TARGET_ARM64_)
+#endif // defined(_TARGET_ARM64_) && defined(FEATURE_HW_INTRINSICS)
                     default:
                         break;
                 }
@@ -16296,6 +16296,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         {
                             isHWSIMD = false;
                         }
+#if defined(FEATURE_HW_INTRINSICS)
                         else
                         {
                             assert(simdHandle == m_simdHandleCache->Vector128FloatHandle);
@@ -16328,12 +16329,14 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                     case TYP_ULONG:
                         assert(simdHandle == m_simdHandleCache->Vector128ULongHandle);
                         break;
+#endif // defined(FEATURE_HW_INTRINSICS)
+
                     default:
                         break;
                 }
                 break;
 
-#ifdef _TARGET_XARCH_
+#if defined(_TARGET_XARCH4_) && defined(FEATURE_HW_INTRINSICS)
             case TYP_SIMD32:
                 switch (baseType)
                 {
@@ -16371,7 +16374,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         break;
                 }
                 break;
-#endif // _TARGET_XARCH_
+#endif // _TARGET_XARCH_ && FEATURE_HW_INTRINSICS
             default:
                 break;
         }
@@ -16391,7 +16394,7 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                 break;
         }
 #endif // _TARGET_XARCH_ && FEATURE_HW_INTRINSICS
-        JITDUMP("Coudn't find the matching HW intrinsic SIMD type for %s<%s> in gtGetSIMDZero\n", varTypeName(simdType),
+        JITDUMP("Coudn't find the matching SIMD type for %s<%s> in gtGetSIMDZero\n", varTypeName(simdType),
                 varTypeName(baseType));
     }
     else
