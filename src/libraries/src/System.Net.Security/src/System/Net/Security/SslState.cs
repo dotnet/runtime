@@ -1373,7 +1373,7 @@ namespace System.Net.Security
                 return;
             }
             queuedStateRequest = null;
-                        
+
             switch (obj)
             {
                 case LazyAsyncResult lazy:
@@ -1381,7 +1381,17 @@ namespace System.Net.Security
                     break;
                 case TaskCompletionSource<int> taskCompletionSource when taskCompletionSource.Task.AsyncState != null:
                     Memory<byte> array = (Memory<byte>)taskCompletionSource.Task.AsyncState;
-                    taskCompletionSource.SetResult(CheckOldKeyDecryptedData(array));
+                    int oldKeyResult = -1;
+                    try
+                    {
+                        oldKeyResult = CheckOldKeyDecryptedData(array);
+                    }
+                    catch (Exception exc)
+                    {
+                        taskCompletionSource.SetException(exc);
+                        break;
+                    }
+                    taskCompletionSource.SetResult(oldKeyResult);
                     break;
                 case TaskCompletionSource<int> taskCompletionSource:
                     taskCompletionSource.SetResult(0);
