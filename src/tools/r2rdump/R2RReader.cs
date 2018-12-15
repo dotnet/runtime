@@ -8,6 +8,7 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml.Serialization;
 
@@ -107,7 +108,20 @@ namespace R2RDump
         /// </summary>
         public Machine Machine { get; set; }
 
+        /// <summary>
+        /// Targeting operating system for the R2R executable
+        /// </summary>
         public OperatingSystem OS { get; set; }
+
+        /// <summary>
+        /// Targeting processor architecture of the R2R executable
+        /// </summary>
+        public Architecture Architecture { get; set; }
+
+        /// <summary>
+        /// Pointer size in bytes for the target architecture
+        /// </summary>
+        public int PointerSize { get; set; }
 
         /// <summary>
         /// The preferred address of the first byte of image when loaded into memory; 
@@ -195,6 +209,36 @@ namespace R2RDump
                 {
                     throw new BadImageFormatException($"Invalid Machine: {machine}");
                 }
+
+                switch (Machine)
+                {
+                    case Machine.I386:
+                        Architecture = Architecture.X86;
+                        PointerSize = 4;
+                        break;
+
+                    case Machine.Amd64:
+                        Architecture = Architecture.X64;
+                        PointerSize = 8;
+                        break;
+
+                    case Machine.Arm:
+                    case Machine.Thumb:
+                    case Machine.ArmThumb2:
+                        Architecture = Architecture.Arm;
+                        PointerSize = 4;
+                        break;
+
+                    case Machine.Arm64:
+                        Architecture = Architecture.Arm64;
+                        PointerSize = 8;
+                        break;
+
+                    default:
+                        throw new NotImplementedException(Machine.ToString());
+                }
+
+
                 ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
 
                 // initialize R2RHeader
@@ -555,7 +599,6 @@ namespace R2RDump
                             break;
 
                         case Machine.Amd64:
-                        case Machine.IA64:
                         case Machine.Arm64:
                             entrySize = 8;
                             break;
@@ -594,7 +637,7 @@ namespace R2RDump
                 {
                     auxDataOffset = GetOffset(auxDataRVA);
                 }
-                ImportSections.Add(new R2RImportSection(ImportSections.Count, Image, rva, size, flags, type, entrySize, signatureRVA, entries, auxDataRVA, auxDataOffset, Machine, R2RHeader.MajorVersion));
+                ImportSections.Add(new R2RImportSection(ImportSections.Count, this, rva, size, flags, type, entrySize, signatureRVA, entries, auxDataRVA, auxDataOffset, Machine, R2RHeader.MajorVersion));
             }
         }
 
