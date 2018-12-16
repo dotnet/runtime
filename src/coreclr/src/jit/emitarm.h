@@ -267,7 +267,7 @@ void emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fdlHnd, int 
 
 void emitIns_S(instruction ins, emitAttr attr, int varx, int offs);
 
-void emitIns_genStackOffset(regNumber r, int varx, int offs);
+void emitIns_genStackOffset(regNumber r, int varx, int offs, bool isFloatUsage);
 
 void emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
