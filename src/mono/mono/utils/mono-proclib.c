@@ -964,7 +964,7 @@ mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
 int
 mono_atexit (void (*func)(void))
 {
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || !defined(HAVE_ATEXIT)
 	/* Some versions of android libc doesn't define atexit () */
 	return 0;
 #else
