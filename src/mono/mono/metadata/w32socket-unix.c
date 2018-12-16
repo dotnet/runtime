@@ -803,9 +803,13 @@ mono_w32socket_getpeername (SOCKET sock, struct sockaddr *name, socklen_t *namel
 		return SOCKET_ERROR;
 	}
 
+#ifdef HAVE_GETPEERNAME
 	MONO_ENTER_GC_SAFE;
 	ret = getpeername (((MonoFDHandle*) sockethandle)->fd, name, namelen);
 	MONO_EXIT_GC_SAFE;
+#else
+	ret = -1;
+#endif
 	if (ret == -1) {
 		gint errnum = errno;
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SOCKET, "%s: getpeername error: %s", __func__, g_strerror (errno));
