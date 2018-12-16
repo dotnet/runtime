@@ -25,6 +25,7 @@ mono_is_usermode_native_debugger_present (void)
 
 #include <unistd.h>
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 #include <fcntl.h>
 #if defined (__APPLE__)
 #include <sys/sysctl.h>
@@ -104,7 +105,7 @@ mono_is_usermode_native_debugger_present (void)
 	if (mono_is_usermode_native_debugger_present_cache == 0) {
 		int er = errno;
 		mono_is_usermode_native_debugger_present_cache = mono_is_usermode_native_debugger_present_slow () ? 1 : 2;
-		errno = er;
+		mono_set_errno (er);
 	}
 	return mono_is_usermode_native_debugger_present_cache == 1;
 }

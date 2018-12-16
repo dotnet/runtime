@@ -23,6 +23,7 @@
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/mono-errno.h>
 
 #include <errno.h>
 
@@ -156,7 +157,7 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 
 	if (result < 0) {
 		result = errno;
-		errno = old_errno;
+		mono_set_errno (old_errno);
 	}
 #elif defined (HAVE_PTHREAD_KILL)
 	result = pthread_kill (mono_thread_info_get_tid (info), signum);

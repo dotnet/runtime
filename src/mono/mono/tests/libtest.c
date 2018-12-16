@@ -8,6 +8,7 @@
 #include <time.h>
 #include <math.h>
 #include <setjmp.h>
+#include "../utils/mono-errno.h"
 
 #ifndef HOST_WIN32
 #include <dlfcn.h>
@@ -1769,7 +1770,7 @@ mono_test_last_error (int err)
 #ifdef WIN32
 	SetLastError (err);
 #else
-	errno = err;
+	mono_set_errno (err);
 #endif
 }
 

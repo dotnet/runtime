@@ -31,6 +31,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-errno.h>
 #include <mono/utils/mono-path.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-io-portability.h>
@@ -1764,9 +1765,9 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 					*status = MONO_IMAGE_IMAGE_INVALID;
 				else {
 					if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
-						errno = ENOENT;
+						mono_set_errno (ENOENT);
 					else
-						errno = 0;
+						mono_set_errno (0);
 				}
 			}
 			return NULL;

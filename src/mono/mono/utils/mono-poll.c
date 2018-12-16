@@ -11,6 +11,7 @@
 
 #include "mono-poll.h"
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 
 #ifdef DISABLE_SOCKETS
 #include <glib.h>
@@ -89,16 +90,16 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 #ifdef HOST_WIN32
 		int error = WSAGetLastError ();
 		switch (error) {
-		case WSAEFAULT: errno = EFAULT; break;
-		case WSAEINVAL: errno = EINVAL; break;
-		case WSAEINTR: errno = EINTR; break;
-		/* case WSAEINPROGRESS: errno = EINPROGRESS; break; */
-		case WSAEINPROGRESS: errno = EINTR; break;
-		case WSAENOTSOCK: errno = EBADF; break;
+		case WSAEFAULT: mono_set_errno (EFAULT); break;
+		case WSAEINVAL: mono_set_errno (EINVAL); break;
+		case WSAEINTR: mono_set_errno (EINTR); break;
+		/* case WSAEINPROGRESS: mono_set_errno (EINPROGRESS); break; */
+		case WSAEINPROGRESS: mono_set_errno (EINTR); break;
+		case WSAENOTSOCK: mono_set_errno (EBADF); break;
 #ifdef ENOSR
-		case WSAENETDOWN: errno = ENOSR; break;
+		case WSAENETDOWN: mono_set_errno (ENOSR); break;
 #endif
-		default: errno = 0;
+		default: mono_set_errno (0);
 		}
 #endif
 

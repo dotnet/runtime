@@ -538,7 +538,8 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 #endif  /* linux || __NetBSD__ */
 #endif  /* HAVE_MREMAP */
 #ifndef MALLOC_FAILURE_ACTION
-#define MALLOC_FAILURE_ACTION  errno = ENOMEM;
+#include <mono/utils/mono-errno.h>
+#define MALLOC_FAILURE_ACTION mono_set_errno (ENOMEM);
 #endif  /* MALLOC_FAILURE_ACTION */
 #ifndef HAVE_MORECORE
 #if ONLY_MSPACES
