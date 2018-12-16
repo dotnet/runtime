@@ -6722,7 +6722,7 @@ void Compiler::lvaDumpFrameLocation(unsigned lclNum)
     regNumber baseReg;
 
 #ifdef _TARGET_ARM_
-    offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0);
+    offset = lvaFrameAddress(lclNum, compLocallocUsed, &baseReg, 0, /* isFloatUsage */ false);
 #else
     bool EBPbased;
     offset  = lvaFrameAddress(lclNum, &EBPbased);

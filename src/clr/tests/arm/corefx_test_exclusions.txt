@@ -11,6 +11,5 @@ System.IO.Ports.Tests                # https://github.com/dotnet/coreclr/issues/
 System.Management.Tests              # https://github.com/dotnet/coreclr/issues/16001
 System.Linq.Expressions.Tests        # JitStress=1 https://github.com/dotnet/coreclr/issues/19457
 System.Net.HttpListener.Tests        # https://github.com/dotnet/coreclr/issues/17584
-System.Numerics.Vectors.Tests        # https://github.com/dotnet/coreclr/issues/19537
 System.Runtime.Numerics.Tests        # https://github.com/dotnet/coreclr/issues/18362 -- JitStress=1 JitStress=2
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
