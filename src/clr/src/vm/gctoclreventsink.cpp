@@ -205,6 +205,12 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
     EX_END_CATCH(SwallowAllExceptions)
 }
 
+void GCToCLREventSink::FirePinPlugAtGCTime(uint8_t* plugStart, uint8_t* plugEnd, uint8_t* gapBeforeSize)
+{
+    LIMITED_METHOD_CONTRACT;
+    FireEtwPinPlugAtGCTime(plugStart, plugEnd, gapBeforeSize, GetClrInstanceId());
+}
+
 void GCToCLREventSink::FireGCPerHeapHistory_V3(void *freeListAllocated,
                                                void *freeListRejected,
                                                void *endOfSegAllocated,
