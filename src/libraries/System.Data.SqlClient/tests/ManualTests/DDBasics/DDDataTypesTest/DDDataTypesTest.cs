@@ -10,7 +10,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DDDataTypesTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void XmlTest()
         {
             string tempTable = "xml_" + Guid.NewGuid().ToString().Replace('-', '_');
@@ -71,7 +71,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MaxTypesTest()
         {
             string tempTable = "max_" + Guid.NewGuid().ToString().Replace('-', '_');

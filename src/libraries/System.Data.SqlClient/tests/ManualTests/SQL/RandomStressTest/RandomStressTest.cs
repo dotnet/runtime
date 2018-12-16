@@ -35,7 +35,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private long _totalTicks;
         private RandomizerPool _randPool;
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestMain()
         {
             _operationCanceledErrorMessage = SystemDataResourceManager.Instance.SQL_OperationCancelled;
