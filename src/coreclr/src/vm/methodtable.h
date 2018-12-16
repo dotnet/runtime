@@ -4159,6 +4159,11 @@ public:
     // Is field layout of the inheritance chain fixed within the current version bubble?
     //
     BOOL IsInheritanceChainLayoutFixedInCurrentVersionBubble();
+
+    //
+    // Is the inheritance chain fixed within the current version bubble?
+    //
+    BOOL IsInheritanceChainFixedInCurrentVersionBubble();
 #endif
 
 };  // class MethodTable

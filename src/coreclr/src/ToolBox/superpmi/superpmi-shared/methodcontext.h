@@ -878,9 +878,10 @@ public:
 
     void recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                          CORINFO_METHOD_HANDLE   callerHandle,
+                         bool* pHasSideEffects,
                          CorInfoHelpFunc         result);
-    void dmpGetNewHelper(const Agnostic_GetNewHelper& key, DWORD value);
-    CorInfoHelpFunc repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle);
+    void dmpGetNewHelper(const Agnostic_GetNewHelper& key, DD value);
+    CorInfoHelpFunc repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects);
 
     void recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,
                                BOOL                          fEmbedParent,

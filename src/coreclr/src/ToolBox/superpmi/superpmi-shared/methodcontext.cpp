@@ -2900,10 +2900,11 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
 
 void MethodContext::recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_METHOD_HANDLE   callerHandle,
+                                    bool* pHasSideEffects,
                                     CorInfoHelpFunc         result)
 {
     if (GetNewHelper == nullptr)
-        GetNewHelper = new LightWeightMap<Agnostic_GetNewHelper, DWORD>();
+        GetNewHelper = new LightWeightMap<Agnostic_GetNewHelper, DD>();
 
     Agnostic_GetNewHelper key;
     ZeroMemory(&key, sizeof(Agnostic_GetNewHelper)); // We use the input structs as a key and use memcmp to compare.. so
@@ -2911,15 +2912,20 @@ void MethodContext::recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     key.hClass       = (DWORDLONG)pResolvedToken->hClass;
     key.callerHandle = (DWORDLONG)callerHandle;
 
-    GetNewHelper->Add(key, (DWORD)result);
-    DEBUG_REC(dmpGetNewHelper(key, (DWORD)result));
+    DD value;
+    value.A = (pHasSideEffects != nullptr) ? (DWORD)(*pHasSideEffects ? 1 : 0) : (DWORD)0;
+    value.B = (DWORD)result;
+
+    GetNewHelper->Add(key, value);
+    DEBUG_REC(dmpGetNewHelper(key, value));
 }
-void MethodContext::dmpGetNewHelper(const Agnostic_GetNewHelper& key, DWORD value)
+void MethodContext::dmpGetNewHelper(const Agnostic_GetNewHelper& key, DD value)
 {
-    printf("GetNewHelper key cls-%016llX chan-%016llX, value res-%u", key.hClass, key.callerHandle, value);
+    printf("GetNewHelper key cls-%016llX chan-%016llX, hasSideEffects-%u, value res-%u", key.hClass, key.callerHandle, value.A, value.B);
 }
 CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                               CORINFO_METHOD_HANDLE   callerHandle)
+                                               CORINFO_METHOD_HANDLE   callerHandle,
+                                               bool* pHasSideEffects)
 {
     Agnostic_GetNewHelper key;
     ZeroMemory(&key, sizeof(Agnostic_GetNewHelper)); // We use the input structs as a key and use memcmp to compare.. so
@@ -2929,9 +2935,17 @@ CorInfoHelpFunc MethodContext::repGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolved
 
     AssertCodeMsg(GetNewHelper != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX", (DWORDLONG)key.hClass);
     AssertCodeMsg(GetNewHelper->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX", (DWORDLONG)key.hClass);
-    CorInfoHelpFunc value = (CorInfoHelpFunc)GetNewHelper->Get(key);
+
+    DD value;
+    value = GetNewHelper->Get(key);
+    if (pHasSideEffects != nullptr)
+    {
+        *pHasSideEffects = (value.A == 0) ? false : true;
+    }
+    CorInfoHelpFunc result = (CorInfoHelpFunc)value.B;
+
     DEBUG_REP(dmpGetNewHelper(key, value));
-    return value;
+    return result;
 }
 
 void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolvedToken,

@@ -371,8 +371,9 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 {
     assert(allocObj != nullptr);
 
-    GenTree*     op1    = allocObj->gtGetOp1();
-    unsigned int helper = allocObj->gtNewHelper;
+    GenTree*     op1                  = allocObj->gtGetOp1();
+    unsigned int helper               = allocObj->gtNewHelper;
+    bool         helperHasSideEffects = allocObj->gtHelperHasSideEffects;
 
     GenTreeArgList* args;
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -389,6 +390,10 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 
     const bool morphArgs  = false;
     GenTree*   helperCall = comp->fgMorphIntoHelperCall(allocObj, allocObj->gtNewHelper, args, morphArgs);
+    if (helperHasSideEffects)
+    {
+        helperCall->gtCall.gtCallMoreFlags |= GTF_CALL_M_ALLOC_SIDE_EFFECTS;
+    }
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (entryPoint.addr != nullptr)

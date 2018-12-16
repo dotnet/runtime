@@ -587,10 +587,11 @@ BOOL interceptor_ICJI::checkMethodModifier(CORINFO_METHOD_HANDLE hMethod, LPCSTR
 
 // returns the "NEW" helper optimized for "newCls."
 CorInfoHelpFunc interceptor_ICJI::getNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                               CORINFO_METHOD_HANDLE   callerHandle)
+                                               CORINFO_METHOD_HANDLE   callerHandle,
+                                               bool* pHasSideEffects)
 {
     mcs->AddCall("getNewHelper");
-    return original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle);
+    return original_ICorJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
 }
 
 // returns the newArr (1-Dim array) helper optimized for "arrayCls."

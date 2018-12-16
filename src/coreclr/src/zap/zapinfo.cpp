@@ -3390,149 +3390,151 @@ unsigned ZapInfo::getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls)
     return m_pEEJitInfo->getClassNumInstanceFields(cls);
 }
 
-
-CorInfoHelpFunc ZapInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle)
+CorInfoHelpFunc ZapInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects)
 {
-	if (IsReadyToRunCompilation())
-		return CORINFO_HELP_NEWFAST;
+    if (!IsReadyToRunCompilation())
+    {
+        classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
+    }
 
-	classMustBeLoadedBeforeCodeIsRun(pResolvedToken->hClass);
-	return m_pEEJitInfo->getNewHelper(pResolvedToken, callerHandle);
+    CorInfoHelpFunc helper = m_pEEJitInfo->getNewHelper(pResolvedToken, callerHandle, pHasSideEffects);
+
+    return IsReadyToRunCompilation() ? CORINFO_HELP_NEWFAST : helper;
 }
 
 CorInfoHelpFunc ZapInfo::getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
 {
-	return m_pEEJitInfo->getSharedCCtorHelper(clsHnd);
+    return m_pEEJitInfo->getSharedCCtorHelper(clsHnd);
 }
 
 CorInfoHelpFunc ZapInfo::getSecurityPrologHelper(CORINFO_METHOD_HANDLE ftn)
 {
-	return m_pEEJitInfo->getSecurityPrologHelper(ftn);
+    return m_pEEJitInfo->getSecurityPrologHelper(ftn);
 }
 
 CORINFO_CLASS_HANDLE  ZapInfo::getTypeForBox(CORINFO_CLASS_HANDLE  cls)
 {
-	return m_pEEJitInfo->getTypeForBox(cls);
+    return m_pEEJitInfo->getTypeForBox(cls);
 }
 
 CorInfoHelpFunc ZapInfo::getBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
-	return m_pEEJitInfo->getBoxHelper(cls);
+    return m_pEEJitInfo->getBoxHelper(cls);
 }
 
 CorInfoHelpFunc ZapInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
-	return m_pEEJitInfo->getUnBoxHelper(cls);
+    return m_pEEJitInfo->getUnBoxHelper(cls);
 }
 
 CorInfoHelpFunc ZapInfo::getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing)
 {
-	if (IsReadyToRunCompilation())
-		return (fThrowing ? CORINFO_HELP_CHKCASTANY : CORINFO_HELP_ISINSTANCEOFANY);
+    if (IsReadyToRunCompilation())
+        return (fThrowing ? CORINFO_HELP_CHKCASTANY : CORINFO_HELP_ISINSTANCEOFANY);
 
-	return m_pEEJitInfo->getCastingHelper(pResolvedToken, fThrowing);
+    return m_pEEJitInfo->getCastingHelper(pResolvedToken, fThrowing);
 }
 
 CorInfoHelpFunc ZapInfo::getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls)
 {
-	if (IsReadyToRunCompilation())
-		return CORINFO_HELP_NEWARR_1_R2R_DIRECT;
+    if (IsReadyToRunCompilation())
+        return CORINFO_HELP_NEWARR_1_R2R_DIRECT;
 
-	return m_pEEJitInfo->getNewArrHelper(arrayCls);
+    return m_pEEJitInfo->getNewArrHelper(arrayCls);
 }
 
 bool ZapInfo::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken,
-	CORINFO_LOOKUP_KIND * pGenericLookupKind,
-	CorInfoHelpFunc id,
-	CORINFO_CONST_LOOKUP * pLookup)
+    CORINFO_LOOKUP_KIND * pGenericLookupKind,
+    CorInfoHelpFunc id,
+    CORINFO_CONST_LOOKUP * pLookup)
 {
 #ifdef FEATURE_READYTORUN_COMPILER
-	_ASSERTE(IsReadyToRunCompilation());
+    _ASSERTE(IsReadyToRunCompilation());
 
-	ZapImport * pImport = NULL;
+    ZapImport * pImport = NULL;
 
-	DWORD fAtypicalCallsite = (id & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
-	id = (CorInfoHelpFunc)(id & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
+    DWORD fAtypicalCallsite = (id & CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
+    id = (CorInfoHelpFunc)(id & ~CORINFO_HELP_READYTORUN_ATYPICAL_CALLSITE);
 
-	switch (id)
-	{
-	case CORINFO_HELP_READYTORUN_NEW:
+    switch (id)
+    {
+    case CORINFO_HELP_READYTORUN_NEW:
         // Call CEEInfo::getNewHelper to validate the request (e.g., check for abstract class).
         m_pEEJitInfo->getNewHelper(pResolvedToken, m_currentMethodHandle);
 
-		if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-			return false;   // Requires runtime lookup.
-		pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
-			(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
-		break;
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
+        break;
 
-	case CORINFO_HELP_READYTORUN_NEWARR_1:
-		if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-			return false;   // Requires runtime lookup.
-		pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
-			(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_ARRAY_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
-		break;
+    case CORINFO_HELP_READYTORUN_NEWARR_1:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_NEW_ARRAY_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
+        break;
 
-	case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
-		if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-			return false;   // Requires runtime lookup.
-		pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
-			(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_ISINSTANCEOF_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
-		break;
+    case CORINFO_HELP_READYTORUN_ISINSTANCEOF:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_ISINSTANCEOF_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
+        break;
 
-	case CORINFO_HELP_READYTORUN_CHKCAST:
-		if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-			return false;   // Requires runtime lookup.
-		pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
-			(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CHKCAST_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
-		break;
+    case CORINFO_HELP_READYTORUN_CHKCAST:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
+        pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+            (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CHKCAST_HELPER | fAtypicalCallsite), pResolvedToken->hClass);
+        break;
 
-	case CORINFO_HELP_READYTORUN_STATIC_BASE:
-		if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
-			return false;   // Requires runtime lookup.
-		if (m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getClassModule(pResolvedToken->hClass)))
-		{
-			pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
-				(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CCTOR_TRIGGER | fAtypicalCallsite), pResolvedToken->hClass);
-		}
-		else
-		{
-			// READYTORUN: FUTURE: Cross-module static cctor triggers
-			m_zapper->Warning(W("ReadyToRun: Cross-module static cctor triggers not supported\n"));
-			ThrowHR(E_NOTIMPL);
-		}
-		break;
+    case CORINFO_HELP_READYTORUN_STATIC_BASE:
+        if ((getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) != 0)
+            return false;   // Requires runtime lookup.
+        if (m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getClassModule(pResolvedToken->hClass)))
+        {
+            pImport = m_pImage->GetImportTable()->GetDynamicHelperCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_CCTOR_TRIGGER | fAtypicalCallsite), pResolvedToken->hClass);
+        }
+        else
+        {
+            // READYTORUN: FUTURE: Cross-module static cctor triggers
+            m_zapper->Warning(W("ReadyToRun: Cross-module static cctor triggers not supported\n"));
+            ThrowHR(E_NOTIMPL);
+        }
+        break;
 
-	case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
-		_ASSERTE(pGenericLookupKind != NULL && pGenericLookupKind->needsRuntimeLookup);
-		if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
-		{
-			pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-				(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
-		}
+    case CORINFO_HELP_READYTORUN_GENERIC_HANDLE:
+        _ASSERTE(pGenericLookupKind != NULL && pGenericLookupKind->needsRuntimeLookup);
+        if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_METHODPARAM)
+        {
+            pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_METHOD | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+        }
         else if (pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_THISOBJ)
         {
             pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
                 (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_THISOBJ | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
         }
-		else
-		{
-			_ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
-			pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
-				(CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
-		}
-		break;
+        else
+        {
+            _ASSERTE(pGenericLookupKind->runtimeLookupKind == CORINFO_LOOKUP_CLASSPARAM);
+            pImport = m_pImage->GetImportTable()->GetDictionaryLookupCell(
+                (CORCOMPILE_FIXUP_BLOB_KIND)(ENCODE_DICTIONARY_LOOKUP_TYPE | fAtypicalCallsite), pResolvedToken, pGenericLookupKind);
+        }
+        break;
 
-	default:
-		_ASSERTE(false);
-		ThrowHR(E_NOTIMPL);
-	}
+    default:
+        _ASSERTE(false);
+        ThrowHR(E_NOTIMPL);
+    }
 
-	pLookup->accessType = IAT_PVALUE;
-	pLookup->addr = pImport;
-	return true;
+    pLookup->accessType = IAT_PVALUE;
+    pLookup->addr = pImport;
+    return true;
 #else
-	return false;
+    return false;
 #endif
 }
 
