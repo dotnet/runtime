@@ -997,8 +997,12 @@ mono_set_rootdir (void)
 	int  s;
 	char *str;
 
+#if defined(HAVE_READLINK)
 	/* Linux style */
 	s = readlink ("/proc/self/exe", buf, sizeof (buf)-1);
+#else
+	s = -1;
+#endif
 
 	if (s != -1){
 		buf [s] = 0;
@@ -1008,7 +1012,13 @@ mono_set_rootdir (void)
 
 	/* Solaris 10 style */
 	str = g_strdup_printf ("/proc/%d/path/a.out", getpid ());
+
+#if defined(HAVE_READLINK)
 	s = readlink (str, buf, sizeof (buf)-1);
+#else
+	s = -1;
+#endif
+
 	g_free (str);
 	if (s != -1){
 		buf [s] = 0;
