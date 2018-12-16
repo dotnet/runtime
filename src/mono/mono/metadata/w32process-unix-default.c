@@ -322,8 +322,11 @@ mono_w32process_get_modules (pid_t pid)
 		if (!g_ascii_isspace (*p)) {
 			continue;
 		}
-
+#if defined(MAJOR_IN_MKDEV) || defined(MAJOR_IN_SYSMACROS)
 		device = makedev ((int)maj_dev, (int)min_dev);
+#else
+		device = 0;
+#endif
 		if ((device == 0) && (inode == 0)) {
 			continue;
 		}
