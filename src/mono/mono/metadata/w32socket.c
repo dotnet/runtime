@@ -37,7 +37,9 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_NETINET_TCP_H
 #include <arpa/inet.h>
+#endif
 #endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
