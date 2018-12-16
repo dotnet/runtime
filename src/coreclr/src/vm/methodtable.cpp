@@ -10236,4 +10236,30 @@ BOOL MethodTable::IsInheritanceChainLayoutFixedInCurrentVersionBubble()
 
     return TRUE;
 }
+
+//
+// Is the inheritance chain fixed within the current version bubble?
+//
+BOOL MethodTable::IsInheritanceChainFixedInCurrentVersionBubble()
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodTable * pMT = this;
+
+    if (pMT->IsValueType())
+    {
+        return pMT->GetModule()->IsInCurrentVersionBubble();
+    }
+
+    while ((pMT != g_pObjectClass) && (pMT != NULL))
+    {
+        if (!pMT->GetModule()->IsInCurrentVersionBubble())
+            return FALSE;
+
+        pMT = pMT->GetParentMethodTable();
+    }
+
+    return TRUE;
+}
+
 #endif // FEATURE_READYTORUN_COMPILER

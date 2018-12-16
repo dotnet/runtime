@@ -550,7 +550,7 @@ public:
 
     unsigned getClassNumInstanceFields(CORINFO_CLASS_HANDLE cls);
 
-    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle);
+    CorInfoHelpFunc getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects = NULL);
     CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, bool fThrowing);
     CorInfoHelpFunc getNewArrHelper(CORINFO_CLASS_HANDLE arrayCls);
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd);
