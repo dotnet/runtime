@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class ParallelTransactionsTest
     {
         #region <<Basic Parallel Test>>
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void BasicParallelTest_shouldThrowsUnsupported()
         {
             string connectionString = DataTestUtility.TcpConnStr;
@@ -65,7 +65,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         #endregion
 
         #region <<MultipleExecutesInSameTransactionTest>>
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MultipleExecutesInSameTransactionTest_shouldThrowsUnsupported()
         {
             string connectionString = DataTestUtility.TcpConnStr;

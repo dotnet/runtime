@@ -24,7 +24,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string s_selectTableCmd = $"SELECT COUNT(*) FROM {s_tableName}";
         private static readonly string s_dropDatabaseCmd = $"DROP DATABASE {s_databaseName}";
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void EnvironmentHostNameTest()
         {
             SqlConnectionStringBuilder builder = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { Pooling = true });
@@ -59,7 +59,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(false, "No non-empty hostname found for the application");
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ConnectionTimeoutTestWithThread()
         {
             const int timeoutSec = 5;
@@ -93,7 +93,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(timeElapsed < threshold);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ProcessIdTest()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
@@ -180,7 +180,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ConnectionKilledTest()
         {
             try
