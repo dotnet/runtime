@@ -4200,7 +4200,8 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
     // Always do the layout even if returning early. Callers might
     // depend on us to do the layout.
     unsigned frameSize = lvaFrameSize(curState);
-    JITDUMP("\ncompRsvdRegCheck\n"
+    JITDUMP("\n"
+            "compRsvdRegCheck\n"
             "  frame size  = %6d\n"
             "  compArgSize = %6d\n",
             frameSize, compArgSize);
