@@ -45,6 +45,7 @@ public:
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind);
     void FireGCAllocationTick_V3(uint64_t allocationAmount, uint32_t allocationKind, uint32_t heapIndex, void* objectAddress);
     void FirePinObjectAtGCTime(void* object, uint8_t** ppObject);
+    void FirePinPlugAtGCTime(uint8_t* plug_start, uint8_t* plug_end, uint8_t* gapBeforeSize);
     void FireGCPerHeapHistory_V3(void *freeListAllocated,
                                  void *freeListRejected,
                                  void *endOfSegAllocated,
