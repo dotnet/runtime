@@ -925,7 +925,7 @@ bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool
     // If this is not a Pure helper call or an allocator (that will not need to run a finalizer)
     // then this call has side effects.
     return !helperProperties.IsPure(helper) &&
-           (!helperProperties.IsAllocator(helper) || helperProperties.MayFinalize(helper));
+           (!helperProperties.IsAllocator(helper) || ((gtCallMoreFlags & GTF_CALL_M_ALLOC_SIDE_EFFECTS) != 0));
 }
 
 //-------------------------------------------------------------------------
@@ -6724,8 +6724,15 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
             assert(compDonotInline());
             return nullptr;
         }
+    }
 
-        helper = info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd);
+    bool            helperHasSideEffects;
+    CorInfoHelpFunc helperTemp =
+        info.compCompHnd->getNewHelper(pResolvedToken, info.compMethodHnd, &helperHasSideEffects);
+
+    if (!usingReadyToRunHelper)
+    {
+        helper = helperTemp;
     }
 
     // TODO: ReadyToRun: When generic dictionary lookups are necessary, replace the lookup call
@@ -6735,7 +6742,8 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
     //      3) Allocate and return the new object for boxing
     // Reason: performance (today, we'll always use the slow helper for the R2R generics case)
 
-    GenTreeAllocObj* allocObj = gtNewAllocObjNode(helper, pResolvedToken->hClass, TYP_REF, opHandle);
+    GenTreeAllocObj* allocObj =
+        gtNewAllocObjNode(helper, helperHasSideEffects, pResolvedToken->hClass, TYP_REF, opHandle);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (usingReadyToRunHelper)
@@ -7134,8 +7142,9 @@ GenTree* Compiler::gtCloneExpr(
             case GT_ALLOCOBJ:
             {
                 GenTreeAllocObj* asAllocObj = tree->AsAllocObj();
-                copy = new (this, GT_ALLOCOBJ) GenTreeAllocObj(tree->TypeGet(), asAllocObj->gtNewHelper,
-                                                               asAllocObj->gtAllocObjClsHnd, asAllocObj->gtOp1);
+                copy                        = new (this, GT_ALLOCOBJ)
+                    GenTreeAllocObj(tree->TypeGet(), asAllocObj->gtNewHelper, asAllocObj->gtHelperHasSideEffects,
+                                    asAllocObj->gtAllocObjClsHnd, asAllocObj->gtOp1);
             }
             break;
 

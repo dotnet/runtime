@@ -5990,7 +5990,7 @@ bool __stdcall TrackAllocationsEnabled()
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle)
+CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, bool * pHasSideEffects)
 {
     CONTRACTL {
         SO_TOLERANT;
@@ -6016,7 +6016,7 @@ CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
     }
 
     MethodTable* pMT = VMClsHnd.AsMethodTable();
-    result = getNewHelperStatic(pMT);
+    result = getNewHelperStatic(pMT, pHasSideEffects);
 
     _ASSERTE(result != CORINFO_HELP_UNDEF);
         
@@ -6026,23 +6026,43 @@ CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
 }
 
 /***********************************************************************/
-CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT)
+CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEffects)
 {
     STANDARD_VM_CONTRACT;
 
 
     // Slow helper is the default
     CorInfoHelpFunc helper = CORINFO_HELP_NEWFAST;
+    bool hasFinalizer = pMT->HasFinalizer();
+    bool isComObjectType = pMT->IsComObjectType();
 
+    if (pHasSideEffects != nullptr)
+    {
+        if (isComObjectType)
+        {
+            *pHasSideEffects = true;
+        }
+        else
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (IsReadyToRunCompilation())
+        {
+            *pHasSideEffects = hasFinalizer || !pMT->IsInheritanceChainFixedInCurrentVersionBubble();
+        }
+        else
+#endif
+        {
+            *pHasSideEffects = hasFinalizer;
+        }
+    }
 
-    if (pMT->IsComObjectType())
+    if (isComObjectType)
     {
         // Use slow helper
         _ASSERTE(helper == CORINFO_HELP_NEWFAST);
     }
     else
     if ((pMT->GetBaseSize() >= LARGE_OBJECT_SIZE) || 
-        pMT->HasFinalizer())
+        hasFinalizer)
     {
         // Use slow helper
         _ASSERTE(helper == CORINFO_HELP_NEWFAST);

@@ -1170,7 +1170,6 @@ void HelperCallProperties::init()
         bool isAllocator   = false; // true if the result is usually a newly created heap item, or may throw OutOfMemory
         bool mutatesHeap   = false; // true if any previous heap objects [are|can be] modified
         bool mayRunCctor   = false; // true if the helper call may cause a static constructor to be run.
-        bool mayFinalize   = false; // true if the helper call allocates an object that may need to run a finalizer
 
         switch (helper)
         {
@@ -1228,19 +1227,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_NEWSFAST:
             case CORINFO_HELP_NEWSFAST_ALIGN8:
             case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
-
-                isAllocator   = true;
-                nonNullReturn = true;
-                noThrow       = true; // only can throw OutOfMemory
-                break;
-
             case CORINFO_HELP_NEW_CROSSCONTEXT:
             case CORINFO_HELP_NEWFAST:
             case CORINFO_HELP_NEWSFAST_FINALIZE:
             case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:
+            case CORINFO_HELP_BOX:
 
-                mayFinalize   = true; // These may run a finalizer
                 isAllocator   = true;
                 nonNullReturn = true;
                 noThrow       = true; // only can throw OutOfMemory
@@ -1250,20 +1243,12 @@ void HelperCallProperties::init()
             // and can throw exceptions other than OOM.
             case CORINFO_HELP_NEWARR_1_VC:
             case CORINFO_HELP_NEWARR_1_ALIGN8:
-
-                isAllocator   = true;
-                nonNullReturn = true;
-                break;
-
-            // These allocation helpers do some checks on the size (and lower bound) inputs,
-            // and can throw exceptions other than OOM.
             case CORINFO_HELP_NEW_MDARR:
             case CORINFO_HELP_NEWARR_1_DIRECT:
             case CORINFO_HELP_NEWARR_1_OBJ:
             case CORINFO_HELP_NEWARR_1_R2R_DIRECT:
             case CORINFO_HELP_READYTORUN_NEWARR_1:
 
-                mayFinalize   = true; // These may run a finalizer
                 isAllocator   = true;
                 nonNullReturn = true;
                 break;
@@ -1274,12 +1259,6 @@ void HelperCallProperties::init()
                 isPure        = true;
                 isAllocator   = true;
                 nonNullReturn = true;
-                noThrow       = true; // only can throw OutOfMemory
-                break;
-
-            case CORINFO_HELP_BOX:
-                nonNullReturn = true;
-                isAllocator   = true;
                 noThrow       = true; // only can throw OutOfMemory
                 break;
 
@@ -1481,7 +1460,6 @@ void HelperCallProperties::init()
         m_isAllocator[helper]   = isAllocator;
         m_mutatesHeap[helper]   = mutatesHeap;
         m_mayRunCctor[helper]   = mayRunCctor;
-        m_mayFinalize[helper]   = mayFinalize;
     }
 }
 
