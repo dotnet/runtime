@@ -2066,25 +2066,37 @@ inline int Compiler::lvaCachedGenericContextArgOffset()
     return lvaCachedGenericContextArgOffs;
 }
 
-/*****************************************************************************
- *
- *  Return the stack framed offset of the given variable; set *FPbased to
- *  true if the variable is addressed off of FP, false if it's addressed
- *  off of SP. Note that 'varNum' can be a negated spill-temporary var index.
- *
- *  mustBeFPBased - strong about whether the base reg is FP. But it is also
- *  strong about not being FPBased after FINAL_FRAME_LAYOUT. i.e.,
- *  it enforces SP based.
- *
- *  addrModeOffset - is the addressing mode offset, for example: v02 + 0x10
- *  So, V02 itself is at offset sp + 0x10 and then addrModeOffset is what gets
- *  added beyond that.
- */
-
+//------------------------------------------------------------------------
+// lvaFrameAddress: Determine the stack frame offset of the given variable,
+// and how to generate an address to that stack frame.
+//
+// Arguments:
+//    varNum         - The variable to inquire about. Positive for user variables
+//                     or arguments, negative for spill-temporaries.
+//    mustBeFPBased  - [_TARGET_ARM_ only] True if the base register must be FP.
+//                     After FINAL_FRAME_LAYOUT, if false, it also requires SP base register.
+//    pBaseReg       - [_TARGET_ARM_ only] Out arg. *pBaseReg is set to the base
+//                     register to use.
+//    addrModeOffset - [_TARGET_ARM_ only] The mode offset within the variable that we need to address.
+//                     For example, for a large struct local, and a struct field reference, this will be the offset
+//                     of the field. Thus, for V02 + 0x28, if V02 itself is at offset SP + 0x10
+//                     then addrModeOffset is what gets added beyond that, here 0x28.
+//    isFloatUsage   - [_TARGET_ARM_ only] True if the instruction being generated is a floating
+//                     point instruction. This requires using floating-point offset restrictions.
+//                     Note that a variable can be non-float, e.g., struct, but accessed as a
+//                     float local field.
+//    pFPbased       - [non-_TARGET_ARM_] Out arg. Set *FPbased to true if the
+//                     variable is addressed off of FP, false if it's addressed
+//                     off of SP.
+//
+// Return Value:
+//    Returns the variable offset from the given base register.
+//
 inline
 #ifdef _TARGET_ARM_
     int
-    Compiler::lvaFrameAddress(int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset)
+    Compiler::lvaFrameAddress(
+        int varNum, bool mustBeFPBased, regNumber* pBaseReg, int addrModeOffset, bool isFloatUsage)
 #else
     int
     Compiler::lvaFrameAddress(int varNum, bool* pFPbased)
@@ -2092,17 +2104,15 @@ inline
 {
     assert(lvaDoneFrameLayout != NO_FRAME_LAYOUT);
 
-    int       offset;
-    bool      FPbased;
-    bool      fConservative = false;
-    var_types type          = TYP_UNDEF;
+    int  varOffset;
+    bool FPbased;
+    bool fConservative = false;
     if (varNum >= 0)
     {
         LclVarDsc* varDsc;
 
         assert((unsigned)varNum < lvaCount);
         varDsc               = lvaTable + varNum;
-        type                 = varDsc->TypeGet();
         bool isPrespilledArg = false;
 #if defined(_TARGET_ARM_) && defined(PROFILING_SUPPORTED)
         isPrespilledArg = varDsc->lvIsParam && compIsProfilerHookNeeded() &&
@@ -2146,7 +2156,7 @@ inline
         }
 #endif // DEBUG
 
-        offset = varDsc->lvStkOffs;
+        varOffset = varDsc->lvStkOffs;
     }
     else // Its a spill-temp
     {
@@ -2160,8 +2170,7 @@ inline
                 tmpDsc = codeGen->regSet.tmpFindNum(varNum, RegSet::TEMP_USAGE_USED);
             }
             assert(tmpDsc != nullptr);
-            offset = tmpDsc->tdTempOffs();
-            type   = tmpDsc->tdTempType();
+            varOffset = tmpDsc->tdTempOffs();
         }
         else
         {
@@ -2188,7 +2197,6 @@ inline
             //   :                         :
             // ---------------------------------------------------
 
-            type          = compFloatingPointUsed ? TYP_FLOAT : TYP_INT;
             fConservative = true;
             if (!FPbased)
             {
@@ -2199,7 +2207,7 @@ inline
 #else
                 int outGoingArgSpaceSize = 0;
 #endif
-                offset = outGoingArgSpaceSize + max(-varNum * TARGET_POINTER_SIZE, (int)lvaGetMaxSpillTempSize());
+                varOffset = outGoingArgSpaceSize + max(-varNum * TARGET_POINTER_SIZE, (int)lvaGetMaxSpillTempSize());
             }
             else
             {
@@ -2207,9 +2215,9 @@ inline
                 CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef _TARGET_ARM_
-                offset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
+                varOffset = codeGen->genCallerSPtoInitialSPdelta() - codeGen->genCallerSPtoFPdelta();
 #else
-                offset                   = -(codeGen->genTotalFrameSize());
+                varOffset                = -(codeGen->genTotalFrameSize());
 #endif
             }
         }
@@ -2231,19 +2239,20 @@ inline
             // we have already selected the instruction. MinOpts will always reserve R10, so
             // for MinOpts always use SP-based offsets, using R10 as necessary, for simplicity.
 
-            int spOffset           = fConservative ? compLclFrameSize : offset + codeGen->genSPtoFPdelta();
-            int actualOffset       = spOffset + addrModeOffset;
-            int encodingLimitUpper = varTypeIsFloating(type) ? 0x3FC : 0xFFF;
-            int encodingLimitLower = varTypeIsFloating(type) ? -0x3FC : -0xFF;
+            int spVarOffset        = fConservative ? compLclFrameSize : varOffset + codeGen->genSPtoFPdelta();
+            int actualSPOffset     = spVarOffset + addrModeOffset;
+            int actualFPOffset     = varOffset + addrModeOffset;
+            int encodingLimitUpper = isFloatUsage ? 0x3FC : 0xFFF;
+            int encodingLimitLower = isFloatUsage ? -0x3FC : -0xFF;
 
             // Use SP-based encoding. During encoding, we'll pick the best encoding for the actual offset we have.
-            if (opts.MinOpts() || (actualOffset <= encodingLimitUpper))
+            if (opts.MinOpts() || (actualSPOffset <= encodingLimitUpper))
             {
-                offset    = spOffset;
+                varOffset = spVarOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
             }
             // Use Frame Pointer (R11)-based encoding.
-            else if ((encodingLimitLower <= offset) && (offset <= encodingLimitUpper))
+            else if ((encodingLimitLower <= actualFPOffset) && (actualFPOffset <= encodingLimitUpper))
             {
                 *pBaseReg = REG_FPBASE;
             }
@@ -2252,7 +2261,7 @@ inline
             // the "reserved register", which will get used during encoding.
             else
             {
-                offset    = spOffset;
+                varOffset = spVarOffset;
                 *pBaseReg = compLocallocUsed ? REG_SAVED_LOCALLOC_SP : REG_SPBASE;
             }
         }
@@ -2265,7 +2274,7 @@ inline
     *pFPbased                            = FPbased;
 #endif
 
-    return offset;
+    return varOffset;
 }
 
 inline bool Compiler::lvaIsParameter(unsigned varNum)
