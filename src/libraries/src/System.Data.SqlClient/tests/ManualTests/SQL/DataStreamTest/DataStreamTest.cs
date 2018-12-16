@@ -15,7 +15,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class DataStreamTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void RunAllTestsForSingleServer_NP()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -28,7 +28,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void RunAllTestsForSingleServer_TCP()
         {
             RunAllTestsForSingleServer(DataTestUtility.TcpConnStr);
