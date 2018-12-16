@@ -341,7 +341,11 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 	gint ret;
 
 	MONO_ENTER_GC_SAFE;
+#if defined(HAVE_CHMOD)
 	ret = chmod (pathname, mode);
+#else
+	ret = -1;
+#endif
 	MONO_EXIT_GC_SAFE;
 	if (ret == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
 		gint saved_errno = errno;
@@ -352,9 +356,13 @@ _wapi_chmod (const gchar *pathname, mode_t mode)
 			return -1;
 		}
 
+#if defined(HAVE_CHMOD)
 		MONO_ENTER_GC_SAFE;
 		ret = chmod (located_filename, mode);
 		MONO_EXIT_GC_SAFE;
+#else
+		ret = -1;
+#endif
 		g_free (located_filename);
 	}
 
@@ -3669,9 +3677,13 @@ mono_w32file_set_attributes (const gunichar2 *name, guint32 attrs)
 		if ((buf.st_mode & S_IROTH) != 0)
 			exec_mask |= S_IXOTH;
 
+#if defined(HAVE_CHMOD)
 		MONO_ENTER_GC_SAFE;
 		result = chmod (utf8_name, buf.st_mode | exec_mask);
 		MONO_EXIT_GC_SAFE;
+#else
+		result = -1;
+#endif
 	}
 	/* Don't bother to reset executable (might need to change this
 	 * policy)
