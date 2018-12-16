@@ -2024,6 +2024,7 @@ if test x$host_win32 = xno; then
 
 	AC_CHECK_FUNCS(readlink)
 	AC_CHECK_FUNCS(chmod)
+	AC_CHECK_FUNCS(lstat)
 
 	AC_FUNC_STRERROR_R()
 

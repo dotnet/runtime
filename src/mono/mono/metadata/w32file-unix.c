@@ -519,6 +519,7 @@ _wapi_lstat (const gchar *path, struct stat *buf)
 {
 	gint ret;
 
+#ifdef HAVE_LSTAT
 	MONO_ENTER_GC_SAFE;
 	ret = lstat (path, buf);
 	MONO_EXIT_GC_SAFE;
@@ -534,6 +535,9 @@ _wapi_lstat (const gchar *path, struct stat *buf)
 		ret = lstat (located_filename, buf);
 		g_free (located_filename);
 	}
+#else
+	ret = -1;
+#endif
 
 	return ret;
 }
