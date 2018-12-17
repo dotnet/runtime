@@ -33,10 +33,12 @@ namespace System.Net.Http
         private readonly SemaphoreSlim _writerLock;
 
         private readonly CreditManager _connectionWindow;
+        private readonly CreditManager _concurrentStreams;
 
         private int _nextStream;
         private bool _expectingSettingsAck;
         private int _initialWindowSize;
+        private int _maxConcurrentStreams;
 
         private bool _disposed;
 
@@ -68,9 +70,11 @@ namespace System.Net.Http
 
             _writerLock = new SemaphoreSlim(1, 1);
             _connectionWindow = new CreditManager(DefaultInitialWindowSize);
+            _concurrentStreams = new CreditManager(int.MaxValue);
 
             _nextStream = 1;
             _initialWindowSize = DefaultInitialWindowSize;
+            _maxConcurrentStreams = int.MaxValue;
         }
 
         public async Task SetupAsync()
@@ -402,7 +406,7 @@ namespace System.Net.Http
                     switch ((SettingId)settingId)
                     {
                         case SettingId.MaxConcurrentStreams:
-                            // ISSUE 31296: Handle SETTINGS_MAX_CONCURRENT_STREAMS.
+                            ChangeMaxConcurrentStreams(settingValue);
                             break;
 
                         case SettingId.InitialWindowSize:
@@ -436,6 +440,18 @@ namespace System.Net.Http
                 // Don't wait for completion, which could happen asynchronously.
                 ValueTask ignored = SendSettingsAckAsync();
             }
+        }
+
+        private void ChangeMaxConcurrentStreams(uint newValue)
+        {
+            // The value is provided as a uint.
+            // Limit this to int.MaxValue since the CreditManager implementation only supports singed values.
+            // In practice, we should never reach this value.
+            int effectiveValue = (newValue > (uint)int.MaxValue ? int.MaxValue : (int)newValue);
+            int delta = effectiveValue - _maxConcurrentStreams;
+            _maxConcurrentStreams = effectiveValue;
+
+            _concurrentStreams.AdjustCredit(delta);
         }
 
         private void ChangeInitialWindowSize(int newSize)
@@ -555,12 +571,14 @@ namespace System.Net.Http
                 return;
             }
 
+            _incomingBuffer.Discard(frameHeader.Length);
+
             // CONSIDER: We ignore the error code in the RST_STREAM frame.
             // We could read this and report it to the user as part of the request exception.
 
             http2Stream.OnResponseAbort();
 
-            _incomingBuffer.Discard(frameHeader.Length);
+            RemoveStream(http2Stream);
         }
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
@@ -763,6 +781,9 @@ namespace System.Net.Http
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request)
         {
+            // Ensure we don't exceed the max conurrent streams setting.
+            await _concurrentStreams.RequestCreditAsync(1).ConfigureAwait(false);
+
             // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
             // We also serialize usage of the header encoder and the header buffer this way.
             // (If necessary, we could have a separate semaphore just for creating and encoding header blocks,
@@ -958,6 +979,8 @@ namespace System.Net.Http
             _stream.Close();
 
             _connectionWindow.Dispose();
+            _concurrentStreams.Dispose();
+            _writerLock.Dispose();
         }
 
         public void Dispose()
@@ -1159,6 +1182,8 @@ namespace System.Net.Http
                 {
                     Debug.Fail("_httpStreams.Remove failed");
                 }
+
+                _concurrentStreams.AdjustCredit(1);
 
                 Debug.Assert(removed == http2Stream, "_httpStreams.TryRemove returned unexpected stream");
 

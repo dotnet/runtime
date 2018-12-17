@@ -253,15 +253,15 @@ namespace System.Net.Test.Common
         public int ErrorCode = 0;
 
         public RstStreamFrame(FrameFlags flags, int errorCode, int streamId) :
-            base(Frame.FrameHeaderLength + 4, FrameType.RstStream, flags, streamId)
+            base(4, FrameType.RstStream, flags, streamId)
         {
             ErrorCode = errorCode;
         }
 
         public static RstStreamFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            int idx = Frame.FrameHeaderLength;
-            int errorCode = (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << idx++) | buffer[idx++]) & 0x7FFFFFFF);
+            int idx = 0;
+            int errorCode = (int)((uint)((buffer[idx++] << 24) | (buffer[idx++] << 16) | (buffer[idx++] << 8) | buffer[idx++]) & 0x7FFFFFFF);
 
             return new RstStreamFrame(header.Flags, errorCode, header.StreamId);
         }
