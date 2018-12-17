@@ -1419,9 +1419,14 @@ namespace System.Data.SqlClient
         //
         internal void WriteFloat(float v, TdsParserStateObject stateObj)
         {
+#if netcoreapp // BitConverter.TryGetBytes is only availble in netcoreapp 2.1> at this time, review support when changing
+            Span<byte> bytes = stackalloc byte[sizeof(float)];
+            BitConverter.TryWriteBytes(bytes, v);
+            stateObj.WriteByteSpan(bytes);
+#else
             byte[] bytes = BitConverter.GetBytes(v);
-
-            stateObj.WriteByteArray(bytes, bytes.Length, 0);
+            stateObj.WriteByteArray(bytes, bytes.Length, 0); 
+#endif
         }
 
         //
@@ -1493,9 +1498,14 @@ namespace System.Data.SqlClient
         //
         internal void WriteDouble(double v, TdsParserStateObject stateObj)
         {
+#if netcoreapp // BitConverter.TryGetBytes is only availble in netcoreapp 2.1> at this time, review support when changing
+            Span<byte> bytes = stackalloc byte[sizeof(double)];
+            BitConverter.TryWriteBytes(bytes, v);
+            stateObj.WriteByteSpan(bytes);
+#else
             byte[] bytes = BitConverter.GetBytes(v);
-
             stateObj.WriteByteArray(bytes, bytes.Length, 0);
+#endif
         }
 
         internal void PrepareResetConnection(bool preserveTransaction)
