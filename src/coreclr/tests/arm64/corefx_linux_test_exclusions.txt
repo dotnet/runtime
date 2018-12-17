@@ -2,6 +2,7 @@ System.Buffers.Tests                          # https://github.com/dotnet/corecl
 System.Collections.Immutable.Tests            # https://github.com/dotnet/coreclr/issues/20209 -- JitStress=2 TieredCompilation=0
 System.Memory.Tests                           # https://github.com/dotnet/coreclr/issues/20958
 System.Net.NameResolution.Functional.Tests    # https://github.com/dotnet/coreclr/issues/20924 https://github.com/dotnet/corefx/issues/24355
+System.Runtime.Tests                          # https://github.com/dotnet/coreclr/issues/21223 -- JitStress=2
 System.Runtime.Serialization.Formatters.Tests # https://github.com/dotnet/coreclr/issues/20246 -- timeout
 System.Text.RegularExpressions.Tests          # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts + Tiered only
 System.Threading.Tests                        # https://github.com/dotnet/coreclr/issues/20215
