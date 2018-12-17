@@ -1227,6 +1227,7 @@ void HelperCallProperties::init()
             // Heap Allocation helpers, these all never return null
             case CORINFO_HELP_NEWSFAST:
             case CORINFO_HELP_NEWSFAST_ALIGN8:
+            case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
 
                 isAllocator   = true;
                 nonNullReturn = true;
@@ -1235,6 +1236,8 @@ void HelperCallProperties::init()
 
             case CORINFO_HELP_NEW_CROSSCONTEXT:
             case CORINFO_HELP_NEWFAST:
+            case CORINFO_HELP_NEWSFAST_FINALIZE:
+            case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
             case CORINFO_HELP_READYTORUN_NEW:
 
                 mayFinalize   = true; // These may run a finalizer
