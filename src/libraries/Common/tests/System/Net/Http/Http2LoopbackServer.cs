@@ -21,6 +21,7 @@ namespace System.Net.Test.Common
         private Http2Options _options;
         private Uri _uri;
         private bool _ignoreSettingsAck;
+        private bool _ignoreWindowUpdates;
 
         public Uri Address
         {
@@ -120,6 +121,11 @@ namespace System.Net.Test.Common
                 return await ReadFrameAsync(timeout);
             }
 
+            if (_ignoreWindowUpdates && header.Type == FrameType.WindowUpdate)
+            {
+                return await ReadFrameAsync(timeout);
+            }
+
             // Construct the correct frame type and return it.
             switch (header.Type)
             {
@@ -190,6 +196,11 @@ namespace System.Net.Test.Common
 
             Assert.False(_ignoreSettingsAck);
             _ignoreSettingsAck = true;
+        }
+
+        public void IngoreWindowUpdates()
+        {
+            _ignoreWindowUpdates = true;
         }
 
         // Accept connection and handle connection setup
