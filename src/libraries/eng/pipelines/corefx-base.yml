@@ -172,8 +172,10 @@ jobs:
                   officialBuildId: $(Build.BuildNumber)
 
                 ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-                  creator: $(Build.RequestedFor)
-                  isExternal: true
+                  # TODO: SET Creator and isExternal: true whenever there is a viable way to get github user
+                  # that created the PR for the test telemetry to have the correct owner.
+                  # creator: $(Build.RequestedFor)
+                  isExternal: false
                   waitForCompletion: true
 
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
