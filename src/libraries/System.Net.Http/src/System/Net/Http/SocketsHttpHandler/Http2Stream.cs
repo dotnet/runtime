@@ -51,7 +51,7 @@ namespace System.Net.Http
 
                 _streamWindow = new CreditManager(initialWindowSize);
 
-                _responseHeadersAvailable = new TaskCompletionSource<bool>();
+                _responseHeadersAvailable = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                 // TODO: ISSUE 31313: Avoid allocating a TaskCompletionSource repeatedly by using a resettable ValueTaskSource.
                 // See: https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Threading/Tasks/Sources/ManualResetValueTaskSource.cs
@@ -201,8 +201,6 @@ namespace System.Net.Http
 
             public void OnResponseAbort()
             {
-                TaskCompletionSource<bool> readDataAvailable = null;
-
                 lock (_syncObject)
                 {
                     if (_disposed)
@@ -227,15 +225,10 @@ namespace System.Net.Http
                     {
                         if (_responseDataAvailable != null)
                         {
-                            readDataAvailable = _responseDataAvailable;
+                            _responseDataAvailable.SetResult(true);
                             _responseDataAvailable = null;
                         }
                     }
-                }
-
-                if (readDataAvailable != null)
-                {
-                    readDataAvailable.SetResult(true);
                 }
             }
 
