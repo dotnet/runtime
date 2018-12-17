@@ -53,10 +53,10 @@ namespace BenchmarksGame
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
             var outBytes = new byte[helpers.FileLength];
-            using (var input = new FileStream(helpers.InputFile, FileMode.Open))
-            using (var output = new MemoryStream(outBytes))
+            using (var inputStream = helpers.GetInputStream())
+            using (var outputStream = new MemoryStream(outBytes))
             {
-                Bench(input, output);
+                Bench(inputStream, outputStream);
             }
             Console.WriteLine(System.Text.Encoding.UTF8.GetString(outBytes));
             if (!MatchesChecksum(outBytes, helpers.CheckSum))
@@ -74,10 +74,10 @@ namespace BenchmarksGame
 
             Benchmark.Iterate(() =>
             {
-                using (var input = new FileStream(helpers.InputFile, FileMode.Open))
-                using (var output = new MemoryStream(outBytes))
+                using (var inputStream = helpers.GetInputStream())
+                using (var outputStream = new MemoryStream(outBytes))
                 {
-                    Bench(input, output);
+                    Bench(inputStream, outputStream);
                 }
             });
 

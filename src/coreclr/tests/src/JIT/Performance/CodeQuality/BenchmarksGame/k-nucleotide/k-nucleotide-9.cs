@@ -291,7 +291,7 @@ namespace BenchmarksGame
             tonum['t'] = 3; tonum['T'] = 3;
             tonum['\n'] = 255; tonum['>'] = 255; tonum[255] = 255;
 
-            using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var inputStream = helpers.GetInputStream())
             {
                 loadThreeData(inputStream);
             }
