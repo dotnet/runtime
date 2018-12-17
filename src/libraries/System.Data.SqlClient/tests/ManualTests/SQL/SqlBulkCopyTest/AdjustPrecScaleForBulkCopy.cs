@@ -9,7 +9,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class AdjustPrecScaleForBulkCopy
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void RunTest()
         {
             SqlDecimal value = BulkCopySqlDecimalToTable(new SqlDecimal(0), 1, 0, 2, 2);

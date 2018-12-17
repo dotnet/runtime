@@ -14,7 +14,7 @@ namespace System.ComponentModel
     public class WarningException : SystemException
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error 
+        /// Initializes a new instance of the <see cref='System.ComponentModel.WarningException'/> class with the last Win32 error 
         /// that occurred.
         /// </summary>
         public WarningException() : this(null, null, null)

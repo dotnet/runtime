@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <summary>
         /// Creates a <see cref="CompositionService"/>.
         /// </summary>
-        /// <param name="catalog">The catalog.</param>
+        /// <param name="composablePartCatalog">The catalog.</param>
         /// <returns>The newly created <see cref="CompositionService"/>.</returns>
         public static CompositionService CreateCompositionService(this ComposablePartCatalog composablePartCatalog)
         {

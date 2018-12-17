@@ -45,7 +45,7 @@ namespace System.IO.Compression
         /// <code>public ZLibException(string message, string zlibErrorContext, ZLibNative.ErrorCode zlibErrorCode, string zlibErrorMessage)</code>.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
-        /// <param name="inner">The exception that is the cause of the current exception, or a <code>null</code>.</param>
+        /// <param name="innerException">The exception that is the cause of the current exception, or a <code>null</code>.</param>
         public ZLibException(string message, Exception innerException) : base(message, innerException) { }
 
         /// <summary>

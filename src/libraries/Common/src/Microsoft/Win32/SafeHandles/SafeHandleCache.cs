@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <summary>
         /// Gets a cached, invalid handle.  As the instance is cached, it should either never be Disposed
         /// or it should override <see cref="SafeHandle.Dispose(bool)"/> to prevent disposal when the
-        /// instance is the <see cref="InvalidHandle"/>.
+        /// instance is the <see cref="C:InvalidHandle"/>.
         /// </summary>
         internal static T GetInvalidHandle(Func<T> invalidHandleFactory)
         {
@@ -41,9 +41,9 @@ namespace Microsoft.Win32.SafeHandles
             return currentHandle;
         }
 
-        /// <summary>Gets whether the specified handle is <see cref="InvalidHandle"/>.</summary>
+        /// <summary>Gets whether the specified handle is <see cref="C:InvalidHandle"/>.</summary>
         /// <param name="handle">The handle to compare.</param>
-        /// <returns>true if <paramref name="handle"/> is <see cref="InvalidHandle"/>; otherwise, false.</returns>
+        /// <returns>true if <paramref name="handle"/> is <see cref="C:InvalidHandle"/>; otherwise, false.</returns>
         internal static bool IsCachedInvalidHandle(SafeHandle handle)
         {
             Debug.Assert(handle != null);

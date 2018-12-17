@@ -99,7 +99,7 @@ namespace System.Net.NetworkInformation
             string tcp6FileContents = File.ReadAllText(tcp6ConnectionsFile);
             string[] v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
 
-            /// First line is header in each file.
+            // First line is header in each file.
             IPEndPoint[] endPoints = new IPEndPoint[v4connections.Length + v6connections.Length - 2];
             int index = 0;
             int skip = 0;

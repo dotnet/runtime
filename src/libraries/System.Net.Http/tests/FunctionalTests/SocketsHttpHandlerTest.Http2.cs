@@ -55,14 +55,20 @@ namespace System.Net.Http.Functional.Tests
                 await server.WriteFrameAsync(emptySettings).ConfigureAwait(false);
 
                 // Receive the server settings frame ACK.
-                receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.Settings, receivedFrame.Type);
-                Assert.True(receivedFrame.AckFlag);
+                // This doesn't have to be the next frame, as the client is allowed to send before receiving our SETTINGS frame.
+                // So, loop until we see it (or the timeout expires)
+                while (true)
+                {
+                    receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                    if (receivedFrame.Type == FrameType.Settings && receivedFrame.AckFlag)
+                    {
+                        break;
+                    }
+                }
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue(31315)]
         public async Task Http2_DataSentBeforeServerPreface_ProtocolError()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -79,13 +85,67 @@ namespace System.Net.Http.Functional.Tests
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.Padded, 10, 1);
                 await server.WriteFrameAsync(invalidFrame);
 
-                // This currently throws an Http2ProtocolException, but that type is not public.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue(31315)]
+        public async Task Http2_ServerSendsValidSettingsValues_Success()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                // Send a bunch of valid SETTINGS values (that won't interfere with processing requests)
+                await server.EstablishConnectionAsync(
+                    new SettingsEntry { SettingId = SettingId.HeaderTableSize, Value = 0 },
+                    new SettingsEntry { SettingId = SettingId.HeaderTableSize, Value = 1 },
+                    new SettingsEntry { SettingId = SettingId.HeaderTableSize, Value = 345678 },
+                    new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 0 },
+                    new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 1 },
+                    new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 4567890 },
+                    new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 1 },
+                    new SettingsEntry { SettingId = SettingId.MaxFrameSize, Value = 16384 },
+                    new SettingsEntry { SettingId = SettingId.MaxFrameSize, Value = 16777215 },
+                    new SettingsEntry { SettingId = SettingId.MaxHeaderListSize, Value = 0 },
+                    new SettingsEntry { SettingId = SettingId.MaxHeaderListSize, Value = 10000000 },
+                    new SettingsEntry { SettingId = (SettingId)5678, Value = 1234 });
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(SettingId.MaxFrameSize, 16383)]
+        [InlineData(SettingId.MaxFrameSize, 162777216)]
+        [InlineData(SettingId.InitialWindowSize, 0x80000000)]
+        public async Task Http2_ServerSendsInvalidSettingsValue_ProtocolError(SettingId settingId, uint value)
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task sendTask = client.GetAsync(server.Address);
+
+                // Send invalid initial SETTINGS value
+                await server.EstablishConnectionAsync(new SettingsEntry { SettingId = settingId, Value = value });
+
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_StreamResetByServer_RequestFails()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -96,23 +156,18 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task sendTask = client.GetAsync(server.Address);
 
-                await server.AcceptConnectionAsync();
-                await server.SendConnectionPrefaceAsync();
-
-                // Receive the request header frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
 
                 // Send a reset stream frame so that stream 1 moves to a terminal state.
                 RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.Padded, 0x1, 1);
                 await server.WriteFrameAsync(resetStream);
 
-                // This currently throws an IOException.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue(31394)]
         public async Task DataFrame_NoStream_ConnectionError()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -123,27 +178,19 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task sendTask = client.GetAsync(server.Address);
 
-                await server.AcceptConnectionAsync();
-                await server.SendConnectionPrefaceAsync();
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
 
-                // Receive the request header frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-
-                // Send a malformed frame.
+                // Send a malformed frame (streamId is 0)
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, 0);
                 await server.WriteFrameAsync(invalidFrame);
 
                 // As this is a connection level error, the client should see the request fail.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
-
-                // The server should receive a GOAWAY frame.
-                receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.GoAway, receivedFrame.Type);
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue(31520)]
         public async Task DataFrame_TooLong_ConnectionError()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -154,11 +201,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task sendTask = client.GetAsync(server.Address);
 
-                await server.AcceptConnectionAsync();
-                await server.SendConnectionPrefaceAsync();
-
-                // Receive the request header frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
 
                 // Send a malformed frame.
                 DataFrame invalidFrame = new DataFrame(new byte[Frame.MaxFrameLength + 1], FrameFlags.None, 0, 0);
@@ -166,40 +210,6 @@ namespace System.Net.Http.Functional.Tests
 
                 // As this is a connection level error, the client should see the request fail.
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
-
-                // The server should receive a GOAWAY frame.
-                receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.GoAway, receivedFrame.Type);
-            }
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue(31315)]
-        public async Task DataFrame_PaddingOnly_ResetsStream()
-        {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
-            using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
-            {
-                Task sendTask = client.GetAsync(server.Address);
-
-                await server.AcceptConnectionAsync();
-                await server.SendConnectionPrefaceAsync();
-
-                // Receive the request header frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-
-                // Send a malformed frame.
-                DataFrame invalidFrame = new DataFrame(new byte[0], FrameFlags.Padded, 10, 1);
-                await server.WriteFrameAsync(invalidFrame);
-
-                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
-
-                // Receive a RST_STREAM frame.
-                receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
-                Assert.Equal(FrameType.RstStream, receivedFrame.Type);
             }
         }
 
@@ -215,11 +225,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task sendTask = client.GetAsync(server.Address);
 
-                await server.AcceptConnectionAsync();
-                await server.SendConnectionPrefaceAsync();
-
-                // Receive the request header frame.
-                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
 
                 // Send a reset stream frame so that stream 1 moves to a terminal state.
                 RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.Padded, 0x1, 1);
@@ -230,7 +237,7 @@ namespace System.Net.Http.Functional.Tests
                 await server.WriteFrameAsync(invalidFrame);
 
                 // Receive a RST_STREAM frame.
-                receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
                 Assert.Equal(FrameType.RstStream, receivedFrame.Type);
 
                 await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);

@@ -10,7 +10,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class AsyncTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestReadAsyncTimeConsumed()
         {
             const string sql = "SET NOCOUNT ON"
