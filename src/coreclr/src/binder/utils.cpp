@@ -146,11 +146,6 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    BOOL IsURL(SString &urlOrPath)
-    {
-        return PathIsURLW(urlOrPath);
-    }
-
     void MutateUrlToPath(SString &urlOrPath)
     {
         BINDER_LOG_ENTER(W("Utils::MutateUrlToPath"));
