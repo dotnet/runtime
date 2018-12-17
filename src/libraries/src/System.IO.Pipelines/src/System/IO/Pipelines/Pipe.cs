@@ -23,7 +23,6 @@ namespace System.IO.Pipelines
         private static readonly Action<object> s_invokeCompletionCallbacks = state => ((PipeCompletionCallbacks)state).Execute();
 
         // These callbacks all point to the same methods but are different delegate types
-        private static readonly ContextCallback s_executionContextCallback = ExecuteWithExecutionContext;
         private static readonly ContextCallback s_executionContextRawCallback = ExecuteWithoutExecutionContext;
         private static readonly SendOrPostCallback s_syncContextExecutionContextCallback = ExecuteWithExecutionContext;
         private static readonly SendOrPostCallback s_syncContextExecuteWithoutExecutionContextCallback = ExecuteWithoutExecutionContext;
@@ -359,7 +358,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_readerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
+                ScheduleCallbacks(_readerScheduler, completionCallbacks);
             }
 
             TrySchedule(_readerScheduler, completionData);
@@ -514,7 +513,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_writerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
+                ScheduleCallbacks(_writerScheduler, completionCallbacks);
             }
 
             TrySchedule(_writerScheduler, completionData);
@@ -522,7 +521,7 @@ namespace System.IO.Pipelines
 
         internal void OnWriterCompleted(Action<Exception, object> callback, object state)
         {
-            if (callback == null)
+            if (callback is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callback);
             }
@@ -535,7 +534,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_readerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
+                ScheduleCallbacks(_readerScheduler, completionCallbacks);
             }
         }
 
@@ -561,7 +560,7 @@ namespace System.IO.Pipelines
 
         internal void OnReaderCompleted(Action<Exception, object> callback, object state)
         {
-            if (callback == null)
+            if (callback is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.callback);
             }
@@ -574,7 +573,7 @@ namespace System.IO.Pipelines
 
             if (completionCallbacks != null)
             {
-                TrySchedule(_writerScheduler, s_invokeCompletionCallbacks, completionCallbacks);
+                ScheduleCallbacks(_writerScheduler, completionCallbacks);
             }
         }
 
@@ -632,18 +631,19 @@ namespace System.IO.Pipelines
             }
         }
 
-        private static void TrySchedule(PipeScheduler scheduler, Action<object> action, object state)
+        private static void ScheduleCallbacks(PipeScheduler scheduler, PipeCompletionCallbacks completionCallbacks)
         {
-            if (action != null)
-            {
-                scheduler.UnsafeSchedule(action, state);
-            }
+            Debug.Assert(completionCallbacks != null);
+
+            scheduler.UnsafeSchedule(s_invokeCompletionCallbacks, completionCallbacks);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void TrySchedule(PipeScheduler scheduler, in CompletionData completionData)
         {
+            Action<object> completion = completionData.Completion;
             // Nothing to do
-            if (completionData.Completion == null)
+            if (completion is null)
             {
                 return;
             }
@@ -653,24 +653,31 @@ namespace System.IO.Pipelines
             // 2. The scheduler with a delegate
             // That delegate and state will either be the action passed in directly
             // or it will be that specified delegate wrapped in ExecutionContext.Run
-
-            if (completionData.SynchronizationContext == null)
+            if (completionData.SynchronizationContext is null && completionData.ExecutionContext is null)
             {
-                // We don't have a SynchronizationContext so execute on the specified scheduler
-                if (completionData.ExecutionContext == null)
-                {
-                    // We can run directly, this should be the default fast path
-                    scheduler.UnsafeSchedule(completionData.Completion, completionData.CompletionState);
-                    return;
-                }
+                // Common fast-path
+                scheduler.UnsafeSchedule(completion, completionData.CompletionState);
+            }
+            else
+            {
+                ScheduleWithContext(scheduler, in completionData);
+            }
+        }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ScheduleWithContext(PipeScheduler scheduler, in CompletionData completionData)
+        {
+            Debug.Assert(completionData.SynchronizationContext != null || completionData.ExecutionContext != null);
+
+            if (completionData.SynchronizationContext is null)
+            {
                 // We also have to run on the specified execution context so run the scheduler and execute the
                 // delegate on the execution context
                 scheduler.UnsafeSchedule(s_scheduleWithExecutionContextCallback, completionData);
             }
             else
             {
-                if (completionData.ExecutionContext == null)
+                if (completionData.ExecutionContext is null)
                 {
                     // We need to box the struct here since there's no generic overload for state
                     completionData.SynchronizationContext.Post(s_syncContextExecuteWithoutExecutionContextCallback, completionData);

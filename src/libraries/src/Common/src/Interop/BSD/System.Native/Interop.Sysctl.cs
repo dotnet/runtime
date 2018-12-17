@@ -45,7 +45,7 @@ internal static partial class Interop
                 ret = Sysctl(name,  name_len, pBuffer, &bytesLength);
                 if (ret != 0)
                 {
-                    throw new InvalidOperationException(string.Format("sysctl returned {0}", ret));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
                 }
                 pBuffer = (byte*)Marshal.AllocHGlobal((int)bytesLength);
             }
@@ -57,7 +57,7 @@ internal static partial class Interop
                     // This is case we allocated memory for caller
                     Marshal.FreeHGlobal((IntPtr)pBuffer);
                 }
-                throw new InvalidOperationException(string.Format("sysctl returned {0}", ret));
+                throw new InvalidOperationException(SR.Format(SR.InvalidSysctl, *name, Marshal.GetLastWin32Error()));
             }
 
             value = pBuffer;

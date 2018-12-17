@@ -1,0 +1,101 @@
+# Linux legs
+parameters:
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+
+jobs:
+
+- template: corefx-base.yml
+  parameters:
+    isOfficialBuild: ${{ parameters.isOfficialBuild }}
+    targetOS: Linux
+    jobs:
+
+    # Legs with Helix testing
+    - job: LinuxTest
+      displayName: Linux
+      strategy:
+        matrix:
+          x64_Release:
+            _configuration: Release
+            _architecture: x64
+            _framework: netcoreapp
+            _helixQueues: $(linuxDefaultQueues)
+            _dockerContainer: rhel7_container
+            _buildScriptPrefix: ''
+            _buildExtraArguments: ''
+
+          arm64_Release:
+            _configuration: Release
+            _architecture: arm64
+            _framework: netcoreapp
+            _helixQueues: $(linuxArm64Queues)
+            _dockerContainer: ubuntu_1604_arm64_cross_container
+            _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
+            _buildExtraArguments: ''
+          
+          ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            musl_x64_Release:
+              _configuration: Release
+              _architecture: x64
+              _framework: netcoreapp
+              _helixQueues: $(alpineQueues)
+              _dockerContainer: alpine_36_container
+              _buildScriptPrefix: ''
+              _buildExtraArguments: /p:RuntimeOS=linux-musl /p:PortableBuild=false
+
+      pool:
+        name: Hosted Ubuntu 1604
+
+      container: $[ variables['_dockerContainer'] ]
+      buildScriptPrefix: $(_buildScriptPrefix)
+      buildExtraArguments: $(_buildExtraArguments)
+      submitToHelix: true
+
+      variables:
+        - _skipTests: true
+        - _outerloop: ${{ parameters.isOfficialBuild }}
+
+        - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+          - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.8.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+OpenSuse.42.Amd64.Open+Fedora.27.Amd64.Open
+          - linuxArm64Queues: Ubuntu.1604.Arm64.Open
+      
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - linuxDefaultQueues: Centos.7.Amd64+RedHat.7.Amd64+Debian.8.Amd64+Debian.9.Amd64+Ubuntu.1604.Amd64+Ubuntu.1804.Amd64+Ubuntu.1810.Amd64+OpenSuse.42.Amd64+SLES.12.Amd64+SLES.15.Amd64+Fedora.27.Amd64+Fedora.28.Amd64
+          - linuxArm64Queues: Ubuntu.1604.Arm64
+          - alpineQueues: Alpine.36.Amd64+Alpine.38.Amd64
+
+    # Legs without helix testing
+    - job: LinuxNoTest
+      displayName: Linux
+      strategy:
+        matrix:
+          ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            musl_x64_Debug:
+              _configuration: Debug
+              _architecture: x64
+              _framework: netcoreapp
+              _dockerContainer: alpine_36_container
+              _buildScriptPrefix: ''
+              _buildExtraArguments: /p:RuntimeOS=linux-musl /p:PortableBuild=false
+
+          arm_Release:
+            _configuration: Release
+            _architecture: arm
+            _framework: netcoreapp
+            _buildExtraArguments: /p:RuntimeOS=ubuntu.16.04
+            _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
+            _dockerContainer: ubuntu_1604_arm_cross_container
+
+      pool:
+        name: Hosted Ubuntu 1604
+
+      container: $[ variables['_dockerContainer'] ]
+      buildExtraArguments: $(_buildExtraArguments)
+      buildScriptPrefix: $(_buildScriptPrefix)
+      submitToHelix: false
+
+      variables:
+        - _skipTests: true
+        - _outerloop: ${{ parameters.isOfficialBuild }}

@@ -4,7 +4,6 @@
     <AssemblyName>System.Security.Cryptography.Primitives</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <NoWarn>$(NoWarn);CS1570;CS1572;CS1574;CS1587;CS1589;CS1591;CS1723;CS1734;CS3016</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

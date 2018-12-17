@@ -2984,11 +2984,29 @@ namespace System.Data.SqlClient
             _outBuff[_outBytesUsed++] = b;
         }
 
-        //
-        // Takes a byte array and writes it to the buffer.
-        //
+
+        internal Task WriteByteSpan(ReadOnlySpan<byte> span, bool canAccumulate = true, TaskCompletionSource<object> completion = null)
+        {
+            return WriteBytes(span, span.Length, 0, canAccumulate, completion);
+        }
+
         internal Task WriteByteArray(byte[] b, int len, int offsetBuffer, bool canAccumulate = true, TaskCompletionSource<object> completion = null)
         {
+            return WriteBytes(ReadOnlySpan<byte>.Empty, len, offsetBuffer, canAccumulate, completion, b);
+        }
+
+        //
+        // Takes a span or a byte array and writes it to the buffer
+        // If you pass in a span and a null array then the span wil be used.
+        // If you pass in a non-null array then the array will be used and the span is ignored.
+        // if the span cannot be written into the current packet then the remaining contents of the span are copied to a 
+        //  new heap allocated array that will used to callback into the method to continue the write operation.
+        private Task WriteBytes(ReadOnlySpan<byte> b, int len, int offsetBuffer, bool canAccumulate = true, TaskCompletionSource<object> completion = null, byte[] array = null)
+        {
+            if (array != null)
+            {
+                b = new ReadOnlySpan<byte>(array, offsetBuffer, len);
+            }
             try
             {
                 bool async = _parser._asyncWrite;  // NOTE: We are capturing this now for the assert after the Task is returned, since WritePacket will turn off async if there is an exception
@@ -3003,26 +3021,31 @@ namespace System.Data.SqlClient
 
                 int offset = offsetBuffer;
 
-                Debug.Assert(b.Length >= len, "Invalid length sent to WriteByteArray()!");
+                Debug.Assert(b.Length >= len, "Invalid length sent to WriteBytes()!");
 
                 // loop through and write the entire array
                 do
                 {
                     if ((_outBytesUsed + len) > _outBuff.Length)
                     {
-                        // If the remainder of the string won't fit into the buffer, then we have to put
+                        // If the remainder of the data won't fit into the buffer, then we have to put
                         // whatever we can into the buffer, and flush that so we can then put more into
                         // the buffer on the next loop of the while.
 
                         int remainder = _outBuff.Length - _outBytesUsed;
 
                         // write the remainder
-                        Buffer.BlockCopy(b, offset, _outBuff, _outBytesUsed, remainder);
+                        Span<byte> copyTo = _outBuff.AsSpan(_outBytesUsed, remainder);
+                        ReadOnlySpan<byte> copyFrom = b.Slice(0, remainder);
 
-                        // handle counters
+                        Debug.Assert(copyTo.Length == copyFrom.Length, $"copyTo.Length:{copyTo.Length} and copyFrom.Length{copyFrom.Length:D} should be the same");
+
+                        copyFrom.CopyTo(copyTo);
+
                         offset += remainder;
                         _outBytesUsed += remainder;
                         len -= remainder;
+                        b = b.Slice(remainder, len);
 
                         Task packetTask = WritePacket(TdsEnums.SOFTFLUSH, canAccumulate);
 
@@ -3035,16 +3058,35 @@ namespace System.Data.SqlClient
                                 completion = new TaskCompletionSource<object>();
                                 task = completion.Task; // we only care about return from topmost call, so do not access Task property in other cases
                             }
-                            WriteByteArraySetupContinuation(b, len, completion, offset, packetTask);
+
+                            if (array == null)
+                            {
+                                byte[] tempArray = new byte[len];
+                                Span<byte> copyTempTo = tempArray.AsSpan();
+
+                                Debug.Assert(copyTempTo.Length == b.Length, $"copyTempTo.Length:{copyTempTo.Length} and copyTempFrom.Length:{b.Length:D} should be the same");
+
+                                b.CopyTo(copyTempTo);
+                                array = tempArray;
+                                offset = 0;
+                            }
+
+                            WriteBytesSetupContinuation(array, len, completion, offset, packetTask);
                             return task;
                         }
                     }
                     else
-                    { //((stateObj._outBytesUsed + len) <= stateObj._outBuff.Length )
+                    {
+                        //((stateObj._outBytesUsed + len) <= stateObj._outBuff.Length )
                         // Else the remainder of the string will fit into the buffer, so copy it into the
                         // buffer and then break out of the loop.
 
-                        Buffer.BlockCopy(b, offset, _outBuff, _outBytesUsed, len);
+                        Span<byte> copyTo = _outBuff.AsSpan(_outBytesUsed, len);
+                        ReadOnlySpan<byte> copyFrom = b.Slice(0, len);
+
+                        Debug.Assert(copyTo.Length == copyFrom.Length, $"copyTo.Length:{copyTo.Length} and copyFrom.Length:{copyFrom.Length:D} should be the same");
+
+                        copyFrom.CopyTo(copyTo);
 
                         // handle out buffer bytes used counter
                         _outBytesUsed += len;
@@ -3072,11 +3114,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        // This is in its own method to avoid always allocating the lambda in WriteByteArray
-        private void WriteByteArraySetupContinuation(byte[] b, int len, TaskCompletionSource<object> completion, int offset, Task packetTask)
+        // This is in its own method to avoid always allocating the lambda in WriteBytes
+        private void WriteBytesSetupContinuation(byte[] array, int len, TaskCompletionSource<object> completion, int offset, Task packetTask)
         {
             AsyncHelper.ContinueTask(packetTask, completion,
-                () => WriteByteArray(b, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion)
+                () => WriteBytes(ReadOnlySpan<byte>.Empty, len: len, offsetBuffer: offset, canAccumulate: false, completion: completion, array),
+                connectionToDoom: _parser.Connection
             );
         }
 
@@ -3147,7 +3190,7 @@ namespace System.Data.SqlClient
             if (willCancel)
             {
                 // If we have been cancelled, then ensure that we write the ATTN packet as well
-                task = AsyncHelper.CreateContinuationTask(task, CancelWritePacket);
+                task = AsyncHelper.CreateContinuationTask(task, CancelWritePacket, _parser.Connection);
             }
 
             return task;

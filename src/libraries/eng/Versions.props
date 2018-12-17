@@ -23,5 +23,6 @@
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetBuildTasksPackagingPackageVersion>
     <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetCoreFxTestingPackageVersion>
     <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.18613.4</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.18613.3</MicrosoftDotNetBuildTasksFeedPackageVersion>
   </PropertyGroup>
 </Project>

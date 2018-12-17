@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private string _connStr;
 
         [ActiveIssue(27858, TestPlatforms.AnyUnix)]
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestMain()
         {
             Assert.True(RunTestCoreAndCompareWithBaseline());

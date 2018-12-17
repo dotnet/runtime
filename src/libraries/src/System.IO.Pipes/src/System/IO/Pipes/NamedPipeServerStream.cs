@@ -72,10 +72,7 @@ namespace System.IO.Pipes
         /// Note: this size is always advisory; OS uses a suggestion.
         /// </param>
         /// <param name="outBufferSize">Outgoing buffer size, 0 or higher (see above)</param>
-        /// <param name="pipeSecurity">PipeSecurity, or null for default security descriptor</param>
         /// <param name="inheritability">Whether handle is inheritable</param>
-        /// <param name="additionalAccessRights">Combination (logical OR) of PipeAccessRights.TakeOwnership, 
-        /// PipeAccessRights.AccessSystemSecurity, and PipeAccessRights.ChangePermissions</param>
         private NamedPipeServerStream(string pipeName, PipeDirection direction, int maxNumberOfServerInstances,
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
