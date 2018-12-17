@@ -34,12 +34,8 @@
     <Compile Include="harness-helpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="regexdna-input25.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="regexdna-input25000.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="regexdna-input25.txt" />
+    <EmbeddedResource Include="regexdna-input25000.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>

@@ -92,9 +92,9 @@ namespace BenchmarksGame
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 
-            using (var inputFile = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var inputStream = helpers.GetInputStream())
             {
-                if (!Bench(inputFile, helpers, true))
+                if (!Bench(inputStream, helpers, true))
                 {
                     return -1;
                 }
@@ -111,9 +111,9 @@ namespace BenchmarksGame
 
             Benchmark.Iterate(() =>
             {
-                using (var inputFile = new FileStream(helpers.InputFile, FileMode.Open))
+                using (var inputStream = helpers.GetInputStream())
                 {
-                    ok &= Bench(inputFile, helpers, false);
+                    ok &= Bench(inputStream, helpers, false);
                 }
             });
             Assert.True(ok);
