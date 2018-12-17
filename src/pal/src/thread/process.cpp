@@ -216,15 +216,12 @@ char* g_argvCreateDump[8] = { nullptr };
 //
 pthread_key_t CorUnix::thObjKey;
 
-#define PROCESS_PELOADER_FILENAME  "clix"
-
 static WCHAR W16_WHITESPACE[]= {0x0020, 0x0009, 0x000D, 0};
 static WCHAR W16_WHITESPACE_DQUOTE[]= {0x0020, 0x0009, 0x000D, '"', 0};
 
 enum FILETYPE
 {
     FILE_ERROR,/*ERROR*/
-    FILE_PE,   /*PE/COFF file*/
     FILE_UNIX, /*Unix Executable*/
     FILE_DIR   /*Directory*/
 };
@@ -282,7 +279,7 @@ CreateSemaphoreName(
     LPCSTR applicationGroupId);
 
 static BOOL getFileName(LPCWSTR lpApplicationName, LPWSTR lpCommandLine, PathCharString& lpFileName);
-static char ** buildArgv(LPCWSTR lpCommandLine, PathCharString& lpAppPath, UINT *pnArg, BOOL prependLoader);
+static char ** buildArgv(LPCWSTR lpCommandLine, PathCharString& lpAppPath, UINT *pnArg);
 static BOOL getPath(PathCharString& lpFileName, PathCharString& lpPathFileName);
 static int checkFileType(LPCSTR lpFileName);
 static BOOL PROCEndProcess(HANDLE hProcess, UINT uExitCode, BOOL bTerminateUnconditionally);
@@ -825,28 +822,6 @@ CorUnix::InternalCreateProcess(
             palError = ERROR_FILE_NOT_FOUND;
             goto InternalCreateProcessExit;
 
-        case FILE_PE: /* PE/COFF file */
-            //Get the path name where the PAL DLL was loaded from
-            if ( PAL_GetPALDirectoryA( lpFileNamePS ))
-            {
-                if (lpFileNamePS.Append("/", 1) == FALSE  ||
-                    lpFileNamePS.Append( PROCESS_PELOADER_FILENAME, strlen(PROCESS_PELOADER_FILENAME)) == FALSE)
-                {
-                    ERROR("Append failed!\n");
-                    palError = ERROR_INTERNAL_ERROR;
-                    goto InternalCreateProcessExit;
-                }
-            }
-            else
-            {
-                ASSERT("PAL_GetPALDirectoryA failed to return the"
-                       "pal installation directory \n");
-                palError = ERROR_INTERNAL_ERROR;
-                goto InternalCreateProcessExit;
-            }
-
-            break;
-
         case FILE_UNIX: /* Unix binary file */
             break;  /* nothing to do */
 
@@ -864,7 +839,7 @@ CorUnix::InternalCreateProcess(
 
     /* build Argument list, lppArgv is allocated in buildArgv function and
        requires to be freed */
-    lppArgv = buildArgv(lpCommandLine, lpFileNamePS, &nArg, iRet==1);
+    lppArgv = buildArgv(lpCommandLine, lpFileNamePS, &nArg);
 
     /* set the Environment variable */
     if (lpEnvironment != NULL)
@@ -4387,7 +4362,6 @@ getFileName(
 
         /* Replace '\' by '/' */
         FILEDosToUnixPathA(lpFileName);
-
         if (!getPath(lpFileNamePS, lpPathFileName))
         {
             /* file is not in the path */
@@ -4395,183 +4369,6 @@ getFileName(
         }
     }
     return TRUE;
-}
-
-/*++
-Functions: VAL16 & VAL32
-   Byte swapping functions for reading in little endian format files
---*/
-#ifdef BIGENDIAN
-
-static inline USHORT    VAL16(USHORT x)
-{
-    return ( ((x & 0xFF00) >> 8) | ((x & 0x00FF) << 8) );
-}
-static inline ULONG   VAL32(DWORD x)
-{
-    return( ((x & 0xFF000000L) >> 24) |
-            ((x & 0x00FF0000L) >>  8) |
-            ((x & 0x0000FF00L) <<  8) |
-            ((x & 0x000000FFL) << 24) );
-}
-#else   // BIGENDIAN
-// For little-endian machines, do nothing
-static __inline USHORT  VAL16(unsigned short x) { return x; }
-static __inline DWORD   VAL32(DWORD x){ return x; }
-#endif  // BIGENDIAN
-
-static const DWORD IMAGE_DOS_SIGNATURE = 0x5A4D;
-static const DWORD IMAGE_NT_SIGNATURE  = 0x00004550;
-static const DWORD IMAGE_SIZEOF_NT_OPTIONAL32_HEADER     = 224;
-static const DWORD IMAGE_NT_OPTIONAL_HDR32_MAGIC         = 0x10b;
-static const DWORD IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR  = 14;
-
-typedef struct _IMAGE_DATA_DIRECTORY {
-    DWORD   VirtualAddress;
-    DWORD   Size;
-} IMAGE_DATA_DIRECTORY, *PIMAGE_DATA_DIRECTORY;
-
-typedef struct _IMAGE_OPTIONAL_HEADER {
-    //
-    // Standard fields.
-    //
-
-    WORD    Magic;
-    BYTE    MajorLinkerVersion;
-    BYTE    MinorLinkerVersion;
-    DWORD   SizeOfCode;
-    DWORD   SizeOfInitializedData;
-    DWORD   SizeOfUninitializedData;
-    DWORD   AddressOfEntryPoint;
-    DWORD   BaseOfCode;
-    DWORD   BaseOfData;
-
-    //
-    // NT additional fields.
-    //
-
-    DWORD   ImageBase;
-    DWORD   SectionAlignment;
-    DWORD   FileAlignment;
-    WORD    MajorOperatingSystemVersion;
-    WORD    MinorOperatingSystemVersion;
-    WORD    MajorImageVersion;
-    WORD    MinorImageVersion;
-    WORD    MajorSubsystemVersion;
-    WORD    MinorSubsystemVersion;
-    DWORD   Win32VersionValue;
-    DWORD   SizeOfImage;
-    DWORD   SizeOfHeaders;
-    DWORD   CheckSum;
-    WORD    Subsystem;
-    WORD    DllCharacteristics;
-    DWORD   SizeOfStackReserve;
-    DWORD   SizeOfStackCommit;
-    DWORD   SizeOfHeapReserve;
-    DWORD   SizeOfHeapCommit;
-    DWORD   LoaderFlags;
-    DWORD   NumberOfRvaAndSizes;
-    IMAGE_DATA_DIRECTORY DataDirectory[16];
-} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
-
-typedef struct _IMAGE_FILE_HEADER {
-    WORD    Machine;
-    WORD    NumberOfSections;
-    DWORD   TimeDateStamp;
-    DWORD   PointerToSymbolTable;
-    DWORD   NumberOfSymbols;
-    WORD    SizeOfOptionalHeader;
-    WORD    Characteristics;
-} IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
-
-typedef struct _IMAGE_NT_HEADERS {
-    DWORD Signature;
-    IMAGE_FILE_HEADER FileHeader;
-    IMAGE_OPTIONAL_HEADER32 OptionalHeader;
-} IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
-
-typedef struct _IMAGE_DOS_HEADER {      /* DOS .EXE header*/
-    WORD   e_magic;                     /* Magic number*/
-    WORD   e_cblp;                      /* Bytes on last page of file*/
-    WORD   e_cp;                        /* Pages in file*/
-    WORD   e_crlc;                      /* Relocations*/
-    WORD   e_cparhdr;                   /* Size of header in paragraphs*/
-    WORD   e_minalloc;                  /* Minimum extra paragraphs needed*/
-    WORD   e_maxalloc;                  /* Maximum extra paragraphs needed*/
-    WORD   e_ss;                        /* Initial (relative) SS value*/
-    WORD   e_sp;                        /* Initial SP value*/
-    WORD   e_csum;                      /* Checksum*/
-    WORD   e_ip;                        /* Initial IP value*/
-    WORD   e_cs;                        /* Initial (relative) CS value*/
-    WORD   e_lfarlc;                    /* File address of relocation table*/
-    WORD   e_ovno;                      /* Overlay number*/
-    WORD   e_res[4];                    /* Reserved words*/
-    WORD   e_oemid;                     /* OEM identifier (for e_oeminfo)*/
-    WORD   e_oeminfo;                   /* OEM information; e_oemid specific*/
-    WORD   e_res2[10];                  /* Reserved words*/
-    LONG   e_lfanew;                    /* File address of new exe header*/
-  } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
-
-
-/*++
-Function:
-  isManagedExecutable
-
-Determines if the passed in file is a managed executable
-
---*/
-static
-int
-isManagedExecutable(LPCSTR lpFileName)
-{
-    HANDLE hFile = INVALID_HANDLE_VALUE;
-    DWORD cbRead;
-    IMAGE_DOS_HEADER        dosheader;
-    IMAGE_NT_HEADERS32      NtHeaders; 
-    BOOL ret = 0;
-
-    /* then check if it is a PE/COFF file */ 
-    if((hFile = CreateFileA(lpFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
-                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                            NULL)) == INVALID_HANDLE_VALUE)
-    {        
-          goto isManagedExecutableExit;
-    }
-      
-    /* Open the file and read the IMAGE_DOS_HEADER structure */ 
-    if(!ReadFile(hFile, &dosheader, sizeof(IMAGE_DOS_HEADER), &cbRead, NULL) || cbRead != sizeof(IMAGE_DOS_HEADER) )
-      goto isManagedExecutableExit;
-       
-    /* check the DOS headers */
-    if ( (dosheader.e_magic != VAL16(IMAGE_DOS_SIGNATURE)) || (VAL32(dosheader.e_lfanew) <= 0) ) 
-      goto isManagedExecutableExit;         
- 
-    /* Advance the file pointer to File address of new exe header */
-    if( SetFilePointer(hFile, VAL32(dosheader.e_lfanew), NULL, FILE_BEGIN) == 0xffffffff)
-      goto isManagedExecutableExit;
-            
-    if( !ReadFile(hFile, &NtHeaders , sizeof(IMAGE_NT_HEADERS32), &cbRead, NULL) || cbRead != sizeof(IMAGE_NT_HEADERS32) )
-      goto isManagedExecutableExit;
-   
-    /* check the NT headers */   
-    if ((NtHeaders.Signature != VAL32(IMAGE_NT_SIGNATURE)) ||
-        (NtHeaders.FileHeader.SizeOfOptionalHeader != VAL16(IMAGE_SIZEOF_NT_OPTIONAL32_HEADER)) ||
-        (NtHeaders.OptionalHeader.Magic != VAL16(IMAGE_NT_OPTIONAL_HDR32_MAGIC)))
-        goto isManagedExecutableExit;
-     
-    /* Check that the virtual address of IMAGE_DIRECTORY_ENTRY_COMHEADER is non-null */
-    if ( NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR].VirtualAddress == 0 )
-        goto isManagedExecutableExit;
-  
-    /* The file is a managed executable */
-    ret =  1;
-     
- isManagedExecutableExit:
-    /* Close the file handle if we opened it */
-    if ( hFile != INVALID_HANDLE_VALUE )
-      CloseHandle(hFile);
-
-    return ret;
 }
 
 /*++
@@ -4587,7 +4384,6 @@ Parameters:
 Return:
     FILE_DIR: Directory
     FILE_UNIX: Unix executable file
-    FILE_PE: managed PE/COFF file
     FILE_ERROR: Error
 --*/
 static
@@ -4602,15 +4398,9 @@ checkFileType( LPCSTR lpFileName)
         return FILE_ERROR;
     }
     
-    if( isManagedExecutable(lpFileName) )
-    {
-        return FILE_PE;
-    }
-
     /* if it's not a PE/COFF file, check if it is executable */
     if ( -1 != stat( lpFileName, &stat_data ) )
     {
-
         if((stat_data.st_mode & S_IFMT) == S_IFDIR )
         {
             /*The given file is a directory*/
@@ -4643,7 +4433,6 @@ Parameters:
     IN  lpCommandLine: second parameter from CreateProcessW (an unicode string)
     IN  lpAppPath: cannonical name of the application to launched
     OUT lppArgv: array of arguments to be passed to the new process
-    IN  prependLoader:  If True first argument should be the PE loader
 
 Return:
     the number of arguments
@@ -4667,8 +4456,7 @@ char **
 buildArgv(
       LPCWSTR lpCommandLine,
       PathCharString& lpAppPath,
-      UINT *pnArg,
-      BOOL prependLoader)
+      UINT *pnArg)
 {
     CPalThread *pThread = NULL;
     UINT iWlen;
@@ -4690,7 +4478,7 @@ buildArgv(
 
     pThread = InternalGetCurrentThread();
     /* make sure to allocate enough space, up for the worst case scenario */
-    int iLength = (iWlen + strlen(PROCESS_PELOADER_FILENAME) + lpAppPath.GetCount() + 2);
+    int iLength = (iWlen + lpAppPath.GetCount() + 2);
     lpAsciiCmdLine = (char *) InternalMalloc(iLength);
 
     if (lpAsciiCmdLine == NULL)
@@ -4701,98 +4489,82 @@ buildArgv(
 
     pChar = lpAsciiCmdLine;
 
-    /* Prepend the PE loader, if it's required */
-    if (prependLoader)
+    /* put the cannonical name of the application as the first parameter */
+    if ((strcpy_s(lpAsciiCmdLine, iLength, "\"") != SAFECRT_SUCCESS) ||
+        (strcat_s(lpAsciiCmdLine, iLength, lpAppPath) != SAFECRT_SUCCESS) ||
+        (strcat_s(lpAsciiCmdLine, iLength,  "\"") != SAFECRT_SUCCESS) ||
+        (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
     {
-        if ((strcpy_s(lpAsciiCmdLine, iLength,  PROCESS_PELOADER_FILENAME) != SAFECRT_SUCCESS) ||
-            (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
-        {
-            ERROR("strcpy_s/strcat_s failed!\n");
-            return NULL;
-        }
-
-        pChar = lpAsciiCmdLine + strlen (lpAsciiCmdLine);
-
+        ERROR("strcpy_s/strcat_s failed!\n");
+        return NULL;
     }
-    else
+
+    pChar = lpAsciiCmdLine + strlen (lpAsciiCmdLine);
+
+    /* let's skip the first argument in the command line */
+
+    /* strip leading whitespace; function returns NULL if there's only 
+        whitespace, so the if statement below will work correctly */
+    lpCommandLine = UTIL_inverse_wcspbrk((LPWSTR)lpCommandLine, W16_WHITESPACE);
+
+    if (lpCommandLine)
     {
-        /* put the cannonical name of the application as the first parameter */
-        if ((strcpy_s(lpAsciiCmdLine, iLength, "\"") != SAFECRT_SUCCESS) ||
-            (strcat_s(lpAsciiCmdLine, iLength, lpAppPath) != SAFECRT_SUCCESS) ||
-            (strcat_s(lpAsciiCmdLine, iLength,  "\"") != SAFECRT_SUCCESS) ||
-            (strcat_s(lpAsciiCmdLine, iLength, " ") != SAFECRT_SUCCESS))
+        LPCWSTR stringstart = lpCommandLine;
+
+        do
         {
-            ERROR("strcpy_s/strcat_s failed!\n");
-            return NULL;
-        }
-
-        pChar = lpAsciiCmdLine + strlen (lpAsciiCmdLine);
-
-        /* let's skip the first argument in the command line */
-
-        /* strip leading whitespace; function returns NULL if there's only 
-           whitespace, so the if statement below will work correctly */
-        lpCommandLine = UTIL_inverse_wcspbrk((LPWSTR)lpCommandLine, W16_WHITESPACE);
-
-        if (lpCommandLine)
-        {
-            LPCWSTR stringstart = lpCommandLine;
-
-            do
+            /* find first whitespace or dquote character */
+            lpCommandLine = PAL_wcspbrk(lpCommandLine,W16_WHITESPACE_DQUOTE);
+            if(NULL == lpCommandLine)
             {
-                /* find first whitespace or dquote character */
-                lpCommandLine = PAL_wcspbrk(lpCommandLine,W16_WHITESPACE_DQUOTE);
-                if(NULL == lpCommandLine)
+                /* no whitespace or dquote found : first arg is only arg */
+                break;
+            }
+            else if('"' == *lpCommandLine)
+            {
+                /* got a dquote; skip over it if it's escaped; make sure we 
+                    don't try to look before the first character in the 
+                    string */
+                if(lpCommandLine > stringstart && '\\' == lpCommandLine[-1])
                 {
-                    /* no whitespace or dquote found : first arg is only arg */
-                    break;
-                }
-                else if('"' == *lpCommandLine)
-                {
-                    /* got a dquote; skip over it if it's escaped; make sure we 
-                       don't try to look before the first character in the 
-                       string */
-                    if(lpCommandLine > stringstart && '\\' == lpCommandLine[-1])
-                    {
-                        lpCommandLine++;
-                        continue;
-                    } 
-
-                    /* found beginning of dquoted sequence, run to the end */
-                    /* don't stop if we hit an escaped dquote */
                     lpCommandLine++;
-                    while( *lpCommandLine )
+                    continue;
+                } 
+
+                /* found beginning of dquoted sequence, run to the end */
+                /* don't stop if we hit an escaped dquote */
+                lpCommandLine++;
+                while( *lpCommandLine )
+                {
+                    lpCommandLine = PAL_wcschr(lpCommandLine, '"');
+                    if(NULL == lpCommandLine)
                     {
-                        lpCommandLine = PAL_wcschr(lpCommandLine, '"');
-                        if(NULL == lpCommandLine)
-                        {
-                            /* no ending dquote, arg runs to end of string */
-                            break;
-                        }
-                        if('\\' != lpCommandLine[-1])
-                        {
-                            /* dquote is not escaped, dquoted sequence is over*/
-                            break;
-                        } 
-                        lpCommandLine++;
-                    }   
-                    if(NULL == lpCommandLine || '\0' == *lpCommandLine)
-                    {
-                        /* no terminating dquote */
+                        /* no ending dquote, arg runs to end of string */
                         break;
                     }
-
-                    /* step over dquote, keep looking for end of arg */
+                    if('\\' != lpCommandLine[-1])
+                    {
+                        /* dquote is not escaped, dquoted sequence is over*/
+                        break;
+                    } 
                     lpCommandLine++;
-                }
-                else
+                }   
+                if(NULL == lpCommandLine || '\0' == *lpCommandLine)
                 {
-                    /* found whitespace : end of arg. */
-                    lpCommandLine++;
+                    /* no terminating dquote */
                     break;
                 }
-            }while(lpCommandLine);
-        }
+
+                /* step over dquote, keep looking for end of arg */
+                lpCommandLine++;
+            }
+            else
+            {
+                /* found whitespace : end of arg. */
+                lpCommandLine++;
+                break;
+            }
+        }while(lpCommandLine);
     }
 
     /* Convert to ASCII */
