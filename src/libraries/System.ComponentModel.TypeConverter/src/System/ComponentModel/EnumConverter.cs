@@ -289,7 +289,7 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether the list of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> 
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> 
         /// is an exclusive list using the specified context.
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)

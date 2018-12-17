@@ -5,8 +5,8 @@
 namespace System.ComponentModel.Composition
 {
     /// <summary>
-    ///     Place on a type that should not be discovered as a <see cref="ComposablePart" /> in
-    ///     a <see cref="ComposablePartCatalog" />.
+    ///     Place on a type that should not be discovered as a <see cref="Primitives.ComposablePart" /> in
+    ///     a <see cref="Primitives.ComposablePartCatalog" />.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class PartNotDiscoverableAttribute : Attribute

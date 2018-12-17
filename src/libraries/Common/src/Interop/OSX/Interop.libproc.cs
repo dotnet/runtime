@@ -166,7 +166,7 @@ internal static partial class Interop
         /// <summary>
         /// Queries the OS for the PIDs for all running processes
         /// </summary>
-        /// <param name="buffer">A pointer to the memory block where the PID array will start</param>
+        /// <param name="pBuffer">A pointer to the memory block where the PID array will start</param>
         /// <param name="buffersize">The length of the block of memory allocated for the PID array</param>
         /// <returns>Returns the number of elements (PIDs) in the buffer</returns>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]

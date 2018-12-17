@@ -160,7 +160,7 @@ namespace System.Net.Http
             /// </summary>
             /// <returns>
             /// <paramref name="length"/> if all of the data was written, or 
-            /// <see cref="Interop.libcurl.CURL_WRITEFUNC_PAUSE"/> if the data wasn't copied and the connection
+            /// <see cref="Interop.Http.CURL_WRITEFUNC_PAUSE"/> if the data wasn't copied and the connection
             /// should be paused until a reader is available.
             /// </returns>
             internal ulong TransferDataToResponseStream(IntPtr pointer, long length)

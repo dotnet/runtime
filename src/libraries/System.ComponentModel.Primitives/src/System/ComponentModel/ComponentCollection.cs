@@ -16,7 +16,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///    <para>
-        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>.
+        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.IContainer'/>.
         ///    </para>
         /// </summary>
         public virtual IComponent this[string name]
@@ -40,7 +40,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///    <para>
-        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>.
+        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.IContainer'/>.
         ///    </para>
         /// </summary>
         public virtual IComponent this[int index] => (IComponent)InnerList[index];

@@ -417,7 +417,7 @@ namespace System.Security.Principal
                         }
                         else
                         {
-                            /// This is an impersonation token, get the impersonation level
+                            // This is an impersonation token, get the impersonation level
                             int level = GetTokenInformation<int>(TokenInformationClass.TokenImpersonationLevel);
                             impersonationLevel = (TokenImpersonationLevel)level + 1;
                         }
