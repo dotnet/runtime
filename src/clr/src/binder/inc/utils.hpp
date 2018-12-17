@@ -34,8 +34,6 @@ namespace BINDER_SPACE
     HRESULT FileOrDirectoryExists(PathString &path);
     HRESULT FileOrDirectoryExistsLog(PathString &path);
 
-    BOOL IsURL(SString &urlOrPath);
-
     void MutateUrlToPath(SString &urlOrPath);
     void MutatePathToUrl(SString &pathOrUrl);
 

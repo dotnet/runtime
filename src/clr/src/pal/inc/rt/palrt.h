@@ -63,7 +63,6 @@ Revision History:
 
 #define CO_E_CLASSSTRING                 _HRESULT_TYPEDEF_(0x800401F3L)
 
-#define URL_E_INVALID_SYNTAX             _HRESULT_TYPEDEF_(0x80041001L)
 #define MK_E_SYNTAX                      _HRESULT_TYPEDEF_(0x800401E4L)
 
 #define STG_E_INVALIDFUNCTION            _HRESULT_TYPEDEF_(0x80030001L)
@@ -949,29 +948,6 @@ STDAPI_(BOOL) PathRenameExtensionW(LPWSTR pszPath, LPCWSTR pszExt);
 STDAPI_(BOOL) PathRemoveFileSpecW(LPWSTR pFile);
 STDAPI_(void) PathStripPathW (LPWSTR pszPath);
 
-STDAPI PathCreateFromUrlW(LPCWSTR pszUrl, LPWSTR pszPath, LPDWORD pcchPath, DWORD dwFlags);
-STDAPI_(BOOL) PathIsURLW(LPCWSTR pszPath);
-
-
-#define URL_UNESCAPE                    0x10000000
-#define URL_ESCAPE_PERCENT              0x00001000
-
-typedef enum {
-    URLIS_FILEURL = 3,
-} URLIS;
-
-typedef enum {
-    URL_PART_SCHEME     = 1,
-    URL_PART_HOSTNAME   = 2,
-} URL_PART;
-
-STDAPI UrlCanonicalizeW(LPCWSTR pszUrl, LPWSTR pszCanonicalized, LPDWORD pcchCanonicalized, DWORD dwFlags);
-STDAPI UrlCombineW(LPCWSTR pszBase, LPCWSTR pszRelative, LPWSTR pszCombined, LPDWORD pcchCombined, DWORD dwFlags);
-STDAPI UrlEscapeW(LPCWSTR pszUrl, LPWSTR pszEscaped, LPDWORD pcchEscaped, DWORD dwFlags);
-STDAPI UrlUnescapeW(LPWSTR pszURL, LPWSTR pszUnescaped, LPDWORD pcchUnescaped, DWORD dwFlags);
-STDAPI_(BOOL) UrlIsW(LPCWSTR pszUrl, URLIS dwUrlIs);
-STDAPI UrlGetPartW(LPCWSTR pszIn, LPWSTR pszOut, LPDWORD pcchOut, DWORD dwPart, DWORD dwFlags);
-
 #ifdef UNICODE
 #define PathAppend          PathAppendW
 #define PathCommonPrefix    PathCommonPrefixW
@@ -991,15 +967,6 @@ STDAPI UrlGetPartW(LPCWSTR pszIn, LPWSTR pszOut, LPDWORD pcchOut, DWORD dwPart, 
 #define PathRenameExtension PathRenameExtensionW
 #define PathStripPath       PathStripPathW
 
-#define PathCreateFromUrl   PathCreateFromUrlW
-#define PathIsURL           PathIsURLW
-
-#define UrlCanonicalize     UrlCanonicalizeW
-#define UrlCombine          UrlCombineW
-#define UrlEscape           UrlEscapeW
-#define UrlUnescape         UrlUnescapeW 
-#define UrlIs               UrlIsW
-#define UrlGetPart          UrlGetPartW
 
 #endif // UNICODE
 
