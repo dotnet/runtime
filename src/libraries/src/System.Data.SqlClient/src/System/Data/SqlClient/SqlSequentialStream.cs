@@ -283,7 +283,7 @@ namespace System.Data.SqlClient
         /// Checks the parameters passed into a Read() method are valid
         /// </summary>
         /// <param name="buffer"></param>
-        /// <param name="index"></param>
+        /// <param name="offset"></param>
         /// <param name="count"></param>
         internal static void ValidateReadParameters(byte[] buffer, int offset, int count)
         {

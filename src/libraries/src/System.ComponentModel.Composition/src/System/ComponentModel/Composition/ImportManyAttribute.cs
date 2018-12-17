@@ -122,7 +122,7 @@ namespace System.ComponentModel.Composition
         /// <value>
         ///     <see langword="true"/> if the property or field allows for recomposition when exports
         ///     that provide the same <see cref="ContractName"/> are added or removed from the 
-        ///     <see cref="CompositionContainer"/>; otherwise, <see langword="false"/>. 
+        ///     <see cref="Hosting.CompositionContainer"/>; otherwise, <see langword="false"/>. 
         ///     The default value is <see langword="false"/>.
         /// </value>
         public bool AllowRecomposition { get; set; }

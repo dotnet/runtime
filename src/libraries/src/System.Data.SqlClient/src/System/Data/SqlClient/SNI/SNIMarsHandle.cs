@@ -468,7 +468,6 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Check SNI handle connection
         /// </summary>
-        /// <param name="handle"></param>
         /// <returns>SNI error status</returns>
         public override uint CheckConnection()
         {
