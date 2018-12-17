@@ -55,8 +55,9 @@ MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (Mon
 ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale);
 
-ICALL_EXPORT
-int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this_obj, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options);
+ICALL_EXPORT int
+ves_icall_System_Globalization_CompareInfo_internal_compare (const gunichar2 *str1, gint32 len1,
+	const gunichar2 *str2, gint32 len2, gint32 options);
 
 ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this_obj);
@@ -66,8 +67,9 @@ MonoBoolean
 ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this_obj,
  MonoString *name);
 
-ICALL_EXPORT
-int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first);
+ICALL_EXPORT int
+ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *source, gint32 sindex,
+	gint32 count, const gunichar2 *value, int value_length, MonoBoolean first);
 
 ICALL_EXPORT
 int
