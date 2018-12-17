@@ -288,7 +288,6 @@ mono_marshal_init (void)
 
 		mono_counters_register ("MonoClass::class_marshal_info_count count",
 								MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_marshal_info_count);
-
 	}
 }
 
@@ -1060,9 +1059,9 @@ mono_string_to_byvalstr (char *dst, MonoString *src, int size)
 		return;
 	const gsize len2 = strlen (s);
 	len = MIN (size, len2);
-	if (len >= size)
-		len--;
+	len -= (len >= size);
 	memcpy (dst, s, len);
+	dst [len] = 0;
 	g_free (s);
 }
 
