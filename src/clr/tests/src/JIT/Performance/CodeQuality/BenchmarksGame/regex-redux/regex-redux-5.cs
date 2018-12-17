@@ -45,7 +45,7 @@ namespace BenchmarksGame
         {
             var helpers = new TestHarnessHelpers(bigInput: false);
 
-            using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+            using (var inputStream = helpers.GetInputStream())
             using (var input = new StreamReader(inputStream))
             {
                 if (Bench(input, true) != helpers.ExpectedLength)
@@ -64,7 +64,7 @@ namespace BenchmarksGame
 
             Benchmark.Iterate(() =>
             {
-                using (var inputStream = new FileStream(helpers.InputFile, FileMode.Open))
+                using (var inputStream = helpers.GetInputStream())
                 using (var input = new StreamReader(inputStream))
                 {
                     Assert.Equal(helpers.ExpectedLength, Bench(input, false));
