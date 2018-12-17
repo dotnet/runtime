@@ -13,25 +13,25 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         // Shrink the packet size - this should make timeouts more likely
         private static readonly string s_connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { PacketSize = 512 }).ConnectionString;
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void PlainCancelTest()
         {
             PlainCancel(s_connStr);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void PlainMARSCancelTest()
         {
             PlainCancel((new SqlConnectionStringBuilder(s_connStr) { MultipleActiveResultSets = true }).ConnectionString);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void PlainCancelTestAsync()
         {
             PlainCancelAsync(s_connStr);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void PlainMARSCancelTestAsync()
         {
             PlainCancelAsync((new SqlConnectionStringBuilder(s_connStr) { MultipleActiveResultSets = true }).ConnectionString);
@@ -87,31 +87,31 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MultiThreadedCancel_NonAsync()
         {
             MultiThreadedCancel(s_connStr, false);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void MultiThreadedCancel_Async()
         {
             MultiThreadedCancel(s_connStr, true);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TimeoutCancel()
         {
             TimeoutCancel(s_connStr);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void CancelAndDisposePreparedCommand()
         {
             CancelAndDisposePreparedCommand(s_connStr);
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TimeOutDuringRead()
         {
             TimeOutDuringRead(s_connStr);

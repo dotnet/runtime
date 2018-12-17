@@ -92,4 +92,7 @@
     <UpdateVSConfigurations ProjectsToUpdate="@(_projectsToUpdate)" SolutionsToUpdate="@(_solutionsToUpdate)" />
     <Message Importance="High" Text="Updating configurations for projects ... Done." />
   </Target>
+
+  <!-- Define an empty Execute target for Arcade's publish to BAR finds it: https://github.com/dotnet/arcade/issues/1452 -->
+  <Target Name="Execute" />
 </Project>

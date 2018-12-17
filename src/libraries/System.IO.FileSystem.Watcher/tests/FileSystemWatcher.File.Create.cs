@@ -27,6 +27,7 @@ namespace System.IO.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "#34017")]
         [OuterLoop]
         [Fact]
         public void FileSystemWatcher_File_Create_MultipleWatchers_ExecutionContextFlowed()

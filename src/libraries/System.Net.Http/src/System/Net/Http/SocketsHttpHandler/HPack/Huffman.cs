@@ -302,8 +302,6 @@ namespace System.Net.Http.HPack
         /// Decodes a Huffman encoded string from a byte array.
         /// </summary>
         /// <param name="src">The source byte array containing the encoded data.</param>
-        /// <param name="offset">The offset in the byte array where the coded data starts.</param>
-        /// <param name="count">The number of bytes to decode.</param>
         /// <param name="dst">The destination byte array to store the decoded data.</param>
         /// <returns>The number of decoded symbols.</returns>
         public static int Decode(ReadOnlySpan<byte> src, Span<byte> dst)

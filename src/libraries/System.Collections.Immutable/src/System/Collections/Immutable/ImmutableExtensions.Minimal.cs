@@ -147,7 +147,7 @@ namespace System.Collections.Immutable
         /// <param name="count">The number of elements in the sequence.</param>
         /// <returns>The array.</returns>
         /// <remarks>
-        /// This is more efficient than the <see cref="Enumerable.ToArray{TSource}"/> extension method
+        /// This is more efficient than the <see cref="M:System.Linq.Enumerable.ToArray``1(System.Collections.Generic.IEnumerable{``0})"/> extension method
         /// because that only tries to cast the sequence to <see cref="ICollection{T}"/> to determine
         /// the count before it falls back to reallocating arrays as it enumerates.
         /// </remarks>

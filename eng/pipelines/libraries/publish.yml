@@ -1,0 +1,74 @@
+parameters:
+  buildConfiguration: Release
+
+jobs:
+  - job: Publish
+    displayName: Publish Packages
+    timeoutInMinutes: 120
+    dependsOn:
+      - WindowsTest
+      - WindowsNoTest
+      - AllConfigurations
+      - LinuxTest
+      - LinuxNoTest
+      - MacOS
+      - RedHat6
+
+    pool:
+      name: dotnet-internal-temp
+
+    workspace: 
+      clean: all
+
+    variables:
+      - group: Publish-Build-Assets
+      - group: DotNet-Blob-Feed
+      - group: DotNet-MyGet-Publish
+      - name: _dotnetFeedUrl
+        value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+      - name: _maestroApiEndpoint
+        value: https://maestro-prod.westus2.cloudapp.azure.com
+      - name: _mygetFeedUrl
+        value: https://dotnet.myget.org/F/dotnet-core/api/v2/package
+
+    steps:
+      - task: DownloadBuildArtifacts@0
+        displayName: Download packages to publish
+        inputs:
+          artifactName: packages
+          downloadPath: $(Build.SourcesDirectory)/artifacts
+
+      - script: build.cmd -InitTools
+        displayName: Restore Tools
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:PublishToAzureBlobFeed
+                /p:ManifestBuildId=$(Build.BuildNumber)
+                /p:ManifestBranch=$(Build.SourceBranchName)
+                /p:ManifestCommit=$(Build.SourceVersion)
+                /p:ManifestRepoUri=$(Build.Repository.Uri)
+                /p:AccountKey=$(dotnetfeed-storage-access-key-1)
+                /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
+        displayName: Push to dotnet feed
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish assets manifest to artifacts
+        inputs:
+          pathToPublish: $(Build.SourcesDirectory)/artifacts/AssetManifests
+          artifactName: BuildAssetsManifest
+          artifactType: container
+
+      - script: eng\common\publishbuildassets.cmd
+                /p:ManifestsPath='$(Build.SourcesDirectory)/artifacts/AssetManifests'
+                /p:BuildAssetRegistryToken=$(MaestroAccessToken)
+                /p:MaestroApiEndpoint=https://maestro-prod.westus2.cloudapp.azure.com
+                /p:Configuration=${{ parameters.buildConfiguration }}
+        displayName: Publish to Build Assets Registry
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:NuGetPush
+                /p:NuGetSource=$(_mygetFeedUrl)
+                /p:NuGetApiKey=$(dotnet-myget-org-api-key)
+        displayName: Push to myget.org

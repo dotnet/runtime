@@ -58,7 +58,7 @@ namespace System.Linq.Expressions
         /// <summary>Creates a <see cref="MemberListBinding"/> where the member is a field or property.</summary>
         /// <returns>A <see cref="MemberListBinding"/> that has the <see cref="MemberBinding.BindingType"/> property equal to <see cref="MemberBindingType.ListBinding"/> and the <see cref="MemberBinding.Member"/> and <see cref="MemberListBinding.Initializers"/> properties set to the specified values.</returns>
         /// <param name="member">A <see cref="MemberInfo"/> that represents a field or property to set the <see cref="MemberBinding.Member"/> property equal to.</param>
-        /// <param name="initializers">An array of <see cref="ElementInit"/> objects to use to populate the <see cref="MemberListBinding.Initializers"/> collection.</param>
+        /// <param name="initializers">An array of <see cref="System.Linq.Expressions.ElementInit"/> objects to use to populate the <see cref="MemberListBinding.Initializers"/> collection.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="member"/> is null. -or-One or more elements of <paramref name="initializers"/> is null.</exception>
         /// <exception cref="ArgumentException">
@@ -71,7 +71,7 @@ namespace System.Linq.Expressions
         /// <summary>Creates a <see cref="MemberListBinding"/> where the member is a field or property.</summary>
         /// <returns>A <see cref="MemberListBinding"/> that has the <see cref="MemberBinding.BindingType"/> property equal to <see cref="MemberBindingType.ListBinding"/> and the <see cref="MemberBinding.Member"/> and <see cref="MemberListBinding.Initializers"/> properties set to the specified values.</returns>
         /// <param name="member">A <see cref="MemberInfo"/> that represents a field or property to set the <see cref="MemberBinding.Member"/> property equal to.</param>
-        /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="ElementInit"/> objects to use to populate the <see cref="MemberListBinding.Initializers"/> collection.</param>
+        /// <param name="initializers">An <see cref="IEnumerable{T}"/> that contains <see cref="System.Linq.Expressions.ElementInit"/> objects to use to populate the <see cref="MemberListBinding.Initializers"/> collection.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="member"/> is null. -or-One or more elements of <paramref name="initializers"/> is null.</exception>
         /// <exception cref="ArgumentException">
