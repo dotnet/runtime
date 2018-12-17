@@ -191,7 +191,6 @@ namespace System.Xml.Xsl
         /// <summary>
         /// Compute the cardinality of a subset of a set of the given cardinality.
         /// </summary>
-        /// <param name="c">the cardinality of a set</param>
         /// <returns>the cardinality of a subset</returns>
         public XmlQueryCardinality AtMost()
         {

@@ -31,7 +31,7 @@ namespace System.Linq.Expressions
     /// For the object case we store the first argument in a field typed to <see cref="object"/> and when
     /// the node is initially constructed this holds directly onto the <see cref="Expression"/> of the
     /// first argument.  When utilities in this library access the arguments it again uses this interface
-    /// and the accessor for the first argument uses <see cref="Expression.ReturnObject"/> to return the object
+    /// and the accessor for the first argument uses <see cref="System.Dynamic.Utils.ExpressionUtils.ReturnObject{T}"/> to return the object
     /// which handles the <see cref="Expression"/> or <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/> case.
     /// When the user accesses the property the object field is updated to hold directly onto the
     /// <see cref="Collections.ObjectModel.ReadOnlyCollection{T}"/>.

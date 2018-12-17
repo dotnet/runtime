@@ -8,7 +8,7 @@ using System.Threading;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides a subset of the <see cref="BitVector32"/> surface area, using volatile
+    /// Provides a subset of the <see cref="System.Collections.Specialized.BitVector32"/> surface area, using volatile
     /// operations for reads and interlocked operations for writes. 
     /// </summary>
     internal struct InterlockedBitVector32

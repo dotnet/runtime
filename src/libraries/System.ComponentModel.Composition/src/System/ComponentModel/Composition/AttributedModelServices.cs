@@ -173,7 +173,7 @@ namespace System.ComponentModel.Composition
         ///     Satisfies the imports of the specified attributed object exactly once and they will not
         ///     ever be recomposed.
         /// </summary>
-        /// <param name="part">
+        /// <param name="attributedPart">
         ///     The attributed object to set the imports.
         /// </param>
         /// <exception cref="ArgumentNullException">
@@ -197,12 +197,12 @@ namespace System.ComponentModel.Composition
 
             return part;
         }
-        
+
         /// <summary>
         ///     Satisfies the imports of the specified attributed object exactly once and they will not
         ///     ever be recomposed.
         /// </summary>
-        /// <param name="part">
+        /// <param name="attributedPart">
         ///     The attributed object to set the imports.
         /// </param>
         /// <exception cref="ArgumentNullException">
