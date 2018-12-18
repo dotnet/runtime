@@ -81,7 +81,9 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 //-----------------------------------------------------------------------------
 // Determine whether we should report the generic parameter context
 // 
-// This is meant to detect the situation where a ThreadAbortException is raised
+// This is meant to detect following situations:
+//
+// When a ThreadAbortException is raised
 // in the prolog of a managed method, before the location for the generics 
 // context has been initialized; when such a TAE is raised, we are open to a
 // race with the GC (e.g. while creating the managed object for the TAE).
@@ -90,9 +92,23 @@ unsigned FindFirstInterruptiblePoint(CrawlFrame* pCF, unsigned offs, unsigned en
 // The long term solution is to avoid raising TAEs in any non-GC safe points, 
 // and to additionally ensure that we do not expose the runtime to TAE 
 // starvation.
+//
+// When we're in the process of resolution of an interface method and the
+// interface method happens to have a default implementation. Normally,
+// such methods require a generic context, but since we didn't resolve the
+// method to an implementation yet, we don't have the right context (in fact,
+// there's no context provided by the caller).
+// See code:CEEInfo::getMethodSigInternal
+//
 inline bool SafeToReportGenericParamContext(CrawlFrame* pCF)
 {
     LIMITED_METHOD_CONTRACT;
+
+    if (!pCF->IsFrameless() && pCF->GetFrame()->GetVTablePtr() == StubDispatchFrame::GetMethodFrameVPtr())
+    {
+        return !((StubDispatchFrame*)pCF->GetFrame())->SuppressParamTypeArg();
+    }
+
     if (!pCF->IsFrameless() || !(pCF->IsActiveFrame() || pCF->IsInterrupted()))
     {
         return true;
@@ -353,7 +369,7 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
                         paramContextType = GENERIC_PARAM_CONTEXT_METHODTABLE;
                 }
 
-                if (SafeToReportGenericParamContext(pCF))
+                if (paramContextType != GENERIC_PARAM_CONTEXT_NONE && SafeToReportGenericParamContext(pCF))
                 {
                     // Handle the case where the method is a static shared generic method and we need to keep the type 
                     // of the generic parameters alive

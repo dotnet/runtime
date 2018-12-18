@@ -958,6 +958,15 @@ public:
     //---------------------------------------------------------------
     PTR_VOID GetParamTypeArg();
 
+    //---------------------------------------------------------------
+    // Gets value indicating whether the generic parameter type
+    // argument should be supressed.
+    //---------------------------------------------------------------
+    virtual BOOL SuppressParamTypeArg()
+    {
+        return FALSE;
+    }
+
 protected:  // we don't want people using this directly
     //---------------------------------------------------------------
     // Get the address of the "this" object. WARNING!!! Whether or not "this"
@@ -2266,6 +2275,22 @@ public:
     }
 
     Interception GetInterception();
+
+    virtual BOOL SuppressParamTypeArg()
+    {
+        //
+        // Shared default interface methods (i.e. virtual interface methods with an implementation) require
+        // an instantiation argument. But if we're in the stub dispatch frame, we haven't actually resolved
+        // the method yet (we could end up in class's override of this method, for example).
+        //
+        // So we need to pretent that unresolved default interface methods are like any other interface
+        // methods and don't have an instantiation argument.
+        //
+        // See code:CEEInfo::getMethodSigInternal
+        //
+        assert(GetFunction()->GetMethodTable()->IsInterface());
+        return TRUE;
+    }
 
 private:
     friend class VirtualCallStubManager;
