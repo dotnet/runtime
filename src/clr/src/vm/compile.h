@@ -338,7 +338,8 @@ class CEECompileInfo : public ICorCompileInfo
                              SString                &result);
 
     void GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, 
-                       GCRefMapBuilder * pBuilder);
+                       GCRefMapBuilder * pBuilder,
+                       bool isDispatchCell);
 
     void CompressDebugInfo(
                                     IN ICorDebugInfo::OffsetMapping * pOffsetMapping,

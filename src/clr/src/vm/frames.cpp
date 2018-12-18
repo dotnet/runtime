@@ -1238,7 +1238,16 @@ void TransitionFrame::PromoteCallerStack(promote_func* fn, ScanContext* sc)
     //If not "vararg" calling convention, assume "default" calling convention
     if (!MetaSig::IsVarArg(pFunction->GetModule(), callSignature))
     {
-        MetaSig msig(pFunction);
+        SigTypeContext typeContext(pFunction);
+        PCCOR_SIGNATURE pSig;
+        DWORD cbSigSize;
+        pFunction->GetSig(&pSig, &cbSigSize);
+
+        MetaSig msig(pSig, cbSigSize, pFunction->GetModule(), &typeContext);
+
+        if (pFunction->RequiresInstArg() && !SuppressParamTypeArg())
+            msig.SetHasParamTypeArg();
+
         PromoteCallerStackHelper (fn, sc, pFunction, &msig);
     }
     else

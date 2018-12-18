@@ -1711,7 +1711,8 @@ class ICorCompileInfo
     //
     virtual void GetCallRefMap(
             CORINFO_METHOD_HANDLE hMethod,
-            GCRefMapBuilder * pBuilder) = 0;
+            GCRefMapBuilder * pBuilder,
+            bool isDispatchCell) = 0;
 
     // Returns a compressed block of debug information
     //
