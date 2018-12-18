@@ -34,6 +34,7 @@ int __cdecl main()
         Run_ArrayTests();
         Run_StringTests();
         Run_ErrorTests();
+        Run_ColorTests();
     }
     catch (HRESULT hr)
     {

@@ -23,6 +23,10 @@
   <comClass
     clsid="{71CF5C45-106C-4B32-B418-43A463C6041F}"
     threadingModel="Both" />
+  <!-- ColorTesting -->
+  <comClass
+    clsid="{C222F472-DA5A-4FC6-9321-92F4F7053A65}"
+    threadingModel="Both" />
 </file>
 
 </assembly>

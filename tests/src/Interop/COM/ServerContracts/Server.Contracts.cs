@@ -7,6 +7,7 @@
 namespace Server.Contract
 {
     using System;
+    using System.Drawing;
     using System.Runtime.InteropServices;
     using System.Text;
 
@@ -245,6 +246,15 @@ namespace Server.Contract
         [return: MarshalAs(UnmanagedType.VariantBool)]
         bool AreAggregated([MarshalAs(UnmanagedType.IUnknown)] object aggregateMaybe1, [MarshalAs(UnmanagedType.IUnknown)] object aggregateMaybe2);
     };
+
+    [ComVisible(true)]
+    [Guid("E6D72BA7-0936-4396-8A69-3B76DA1108DA")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    public interface IColorTesting
+    {
+        bool AreColorsEqual(Color managed, int native);
+        Color GetRed();
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features
