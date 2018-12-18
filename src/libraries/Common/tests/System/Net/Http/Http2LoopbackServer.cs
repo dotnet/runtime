@@ -198,7 +198,7 @@ namespace System.Net.Test.Common
             _ignoreSettingsAck = true;
         }
 
-        public void IngoreWindowUpdates()
+        public void IgnoreWindowUpdates()
         {
             _ignoreWindowUpdates = true;
         }
