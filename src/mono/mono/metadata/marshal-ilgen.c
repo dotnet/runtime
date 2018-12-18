@@ -1711,17 +1711,18 @@ typedef struct EmitGCSafeTransitionBuilder {
 static gboolean
 gc_safe_transition_builder_init (GCSafeTransitionBuilder *builder, MonoMethodBuilder *mb, gboolean func_param)
 {
-	if (mono_threads_is_blocking_transition_enabled ()) {
-		builder->mb = mb;
-		builder->func_param = func_param;
-		builder->coop_gc_stack_dummy = -1;
-		builder->coop_gc_var = -1;
+	builder->mb = mb;
+	builder->func_param = func_param;
+	builder->coop_gc_stack_dummy = -1;
+	builder->coop_gc_var = -1;
 #ifndef DISABLE_COM
-		builder->coop_cominterop_fnptr = -1;
+	builder->coop_cominterop_fnptr = -1;
 #endif
-		return TRUE;
-	} else
-		return FALSE;
+#if defined (TARGET_WASM)
+	return FALSE;
+#else
+	return TRUE;
+#endif
 }
 
 /**
@@ -1917,12 +1918,8 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_calli (mb, csig);
 	} else if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 #ifndef DISABLE_COM
-		if (!mono_threads_is_blocking_transition_enabled ()) {
-			mono_mb_emit_cominterop_call (mb, csig, &piinfo->method);
-		} else {
-			mono_mb_emit_ldloc (mb, gc_safe_transition_builder.coop_cominterop_fnptr);
-			mono_mb_emit_cominterop_call_function_pointer (mb, csig);
-		}
+		mono_mb_emit_ldloc (mb, gc_safe_transition_builder.coop_cominterop_fnptr);
+		mono_mb_emit_cominterop_call_function_pointer (mb, csig);
 #else
 		g_assert_not_reached ();
 #endif
@@ -4169,6 +4166,11 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	int pos_leave, coop_gc_var = 0, coop_gc_stack_dummy = 0;
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
+#if defined (TARGET_WASM)
+	const gboolean do_blocking_transition = FALSE;
+#else
+	const gboolean do_blocking_transition = TRUE;
+#endif
 
 	/* local 0 (temp for exception object) */
 	mono_mb_add_local (mb, object_type);
@@ -4177,7 +4179,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		mono_mb_add_local (mb, sig->ret);
 
-	if (mono_threads_is_blocking_transition_enabled ()) {
+	if (do_blocking_transition) {
 		/* local 4, dummy local used to get a stack address for suspend funcs */
 		coop_gc_stack_dummy = mono_mb_add_local (mb, mono_get_int_type ());
 		/* local 5, the local to be used when calling the suspend funcs */
@@ -4189,7 +4191,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 
-	if (mono_threads_is_blocking_transition_enabled ()) {
+	if (do_blocking_transition) {
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_enter_gc_unsafe_region_unbalanced);
 		mono_mb_emit_stloc (mb, coop_gc_var);
@@ -4264,7 +4266,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (sig->ret));
 	}
 
-	if (mono_threads_is_blocking_transition_enabled ()) {
+	if (do_blocking_transition) {
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_exit_gc_unsafe_region_unbalanced);
@@ -6311,7 +6313,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		/* FIXME: we only want the transitions for hybrid suspend.  Q: What to do about AOT? */
 		need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, FALSE);
 
-		if (G_UNLIKELY (need_gc_safe))
+		if (need_gc_safe)
 			gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
 	}
 
@@ -6444,7 +6446,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			mono_mb_emit_ldarg (mb, i);
 	}
 
-	if (G_UNLIKELY (need_gc_safe))
+	if (need_gc_safe)
 		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, aot);
 
 	if (aot) {
@@ -6456,7 +6458,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		mono_mb_emit_native_call (mb, call_sig, piinfo->addr);
 	}
 
-	if (G_UNLIKELY (need_gc_safe))
+	if (need_gc_safe)
 		gc_safe_transition_builder_emit_exit (&gc_safe_transition_builder);
 
 	// Copy back ObjOut and ObjInOut from locals through parameters.
@@ -6474,7 +6476,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	}
 	g_free (handles_locals);
 
-	if (G_UNLIKELY (need_gc_safe))
+	if (need_gc_safe)
 		gc_safe_transition_builder_cleanup (&gc_safe_transition_builder);
 
 	if (check_exceptions)
