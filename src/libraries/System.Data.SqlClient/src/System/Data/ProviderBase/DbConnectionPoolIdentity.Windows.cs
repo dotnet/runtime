@@ -22,8 +22,9 @@ namespace System.Data.ProviderBase
             using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
             {
                 IntPtr token = identity.AccessToken.DangerousGetHandle();
-                bool isNetwork = identity.User.IsWellKnown(WellKnownSidType.NetworkSid);
-                string sidString = identity.User.Value;
+                SecurityIdentifier user = identity.User;
+                bool isNetwork = user.IsWellKnown(WellKnownSidType.NetworkSid);
+                string sidString = user.Value;
 
                 // Win32NativeMethods.IsTokenRestricted will raise exception if the native call fails
                 bool isRestricted = Win32NativeMethods.IsTokenRestrictedWrapper(token);
