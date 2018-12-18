@@ -8,7 +8,9 @@
 
   <PropertyGroup>
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
-    <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(GitHubRepositoryName).xml</AssetManifestFilePath>
+    <AssetManifestFileName Condition="'$(AssetsManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId)</AssetManifestFileName>
+    <AssetManifestFileName Condition="'$(AssetsManifestFileName)' == ''">$(GitHubRepositoryName)</AssetManifestFileName>
+    <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(AssetManifestFileName).xml</AssetManifestFilePath>
 
     <PackageOutputRoot Condition="'$(PackagesOutputRoot)' == ''">$(ArtifactsDir)/packages/</PackageOutputRoot>
     <FinalPublishPattern>$(PackageOutputRoot)*.nupkg</FinalPublishPattern>
@@ -18,6 +20,7 @@
     <SymbolsOutputRoot Condition="'$(SymbolsOutputRoot)' == ''">$(PackageOutputRoot)/symbols/</SymbolsOutputRoot>
     <SymbolsPublishPattern>$(SymbolsOutputRoot)*.nupkg</SymbolsPublishPattern>
   </PropertyGroup>
+
 
   <ItemGroup Condition="'$(PackagesGlob)' != ''">
     <PackagesToPublish Include="$(PackagesGlob)" />
