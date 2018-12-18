@@ -122,6 +122,25 @@ namespace Server.Contract.Servers
     internal class AggregationTestingClass
     {
     }
+
+    /// <summary>
+    /// Managed definition of CoClass 
+    /// </summary>
+    [ComImport]
+    [CoClass(typeof(ColorTestingClass))]
+    [Guid("E6D72BA7-0936-4396-8A69-3B76DA1108DA")]
+    internal interface ColorTesting : Server.Contract.IColorTesting
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    [ComImport]
+    [Guid(Server.Contract.Guids.ColorTesting)]
+    internal class ColorTestingClass
+    {
+    }
 }
 
 #pragma warning restore IDE1006 // Naming Styles

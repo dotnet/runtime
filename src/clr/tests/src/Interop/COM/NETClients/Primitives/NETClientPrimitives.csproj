@@ -32,6 +32,7 @@
     <Compile Include="ErrorTests.cs" />
     <Compile Include="NumericTests.cs" />
     <Compile Include="StringTests.cs" />
+    <Compile Include="ColorTests.cs" />
     <Compile Include="../../ServerContracts/NativeServers.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
@@ -39,6 +40,9 @@
   <ItemGroup>
     <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
     <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+    <PackageReference Include="System.Drawing.Common">
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
+    </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
