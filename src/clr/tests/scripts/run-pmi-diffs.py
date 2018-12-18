@@ -487,6 +487,11 @@ def do_pmi_diffs():
     log('Add %s to my PATH' % dotnetcliPath)
     my_env["PATH"] = dotnetcliPath + os.pathsep + my_env["PATH"]
 
+    # To aid diagnosing problems, do "dotnet --info" to output to any capturing logfile.
+
+    command = ["dotnet", "--info"]
+    returncode = run_command(command, my_env)
+
     # Clone jitutils
 
     command = 'git clone -b master --single-branch %s %s' % (Jitutils_url, jitutilsPath)
