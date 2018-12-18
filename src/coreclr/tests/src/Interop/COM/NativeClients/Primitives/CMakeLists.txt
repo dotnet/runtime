@@ -10,6 +10,7 @@ set(SOURCES
     ArrayTests.cpp
     StringTests.cpp
     ErrorTests.cpp
+    ColorTests.cpp
     App.manifest)
 
 # add the executable

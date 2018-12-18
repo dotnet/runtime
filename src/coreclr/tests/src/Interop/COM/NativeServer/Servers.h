@@ -16,6 +16,7 @@ class DECLSPEC_UUID("C73C83E8-51A2-47F8-9B5C-4284458E47A6") StringTesting;
 class DECLSPEC_UUID("71CF5C45-106C-4B32-B418-43A463C6041F") ErrorMarshalTesting;
 class DECLSPEC_UUID("0F8ACD0C-ECE0-4F2A-BD1B-6BFCA93A0726") DispatchTesting;
 class DECLSPEC_UUID("4CEFE36D-F377-4B6E-8C34-819A8BB9CB04") AggregationTesting;
+class DECLSPEC_UUID("C222F472-DA5A-4FC6-9321-92F4F7053A65") ColorTesting;
 
 #define CLSID_NumericTesting __uuidof(NumericTesting)
 #define CLSID_ArrayTesting __uuidof(ArrayTesting)
@@ -23,6 +24,7 @@ class DECLSPEC_UUID("4CEFE36D-F377-4B6E-8C34-819A8BB9CB04") AggregationTesting;
 #define CLSID_ErrorMarshalTesting __uuidof(ErrorMarshalTesting)
 #define CLSID_DispatchTesting __uuidof(DispatchTesting)
 #define CLSID_AggregationTesting __uuidof(AggregationTesting)
+#define CLSID_ColorTesting __uuidof(ColorTesting)
 
 #define IID_INumericTesting __uuidof(INumericTesting)
 #define IID_IArrayTesting __uuidof(IArrayTesting)
@@ -30,6 +32,7 @@ class DECLSPEC_UUID("4CEFE36D-F377-4B6E-8C34-819A8BB9CB04") AggregationTesting;
 #define IID_IErrorMarshalTesting __uuidof(IErrorMarshalTesting)
 #define IID_IDispatchTesting __uuidof(IDispatchTesting)
 #define IID_IAggregationTesting __uuidof(IAggregationTesting)
+#define IID_IColorTesting __uuidof(IColorTesting)
 
 // Class used for COM activation when using CoreShim
 struct CoreShimComActivation
@@ -65,4 +68,5 @@ private:
     #include "ErrorMarshalTesting.h"
     #include "DispatchTesting.h"
     #include "AggregationTesting.h"
+    #include "ColorTesting.h"
 #endif

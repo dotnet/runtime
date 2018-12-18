@@ -22,6 +22,7 @@ namespace NetClient
                 new ArrayTests().Run();
                 new StringTests().Run();
                 new ErrorTests().Run();
+                new ColorTests().Run();
             }
             catch (Exception e)
             {

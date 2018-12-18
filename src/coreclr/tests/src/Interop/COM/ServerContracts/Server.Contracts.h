@@ -21,6 +21,8 @@ struct __declspec(uuid("a5e04c1c-474e-46d2-bbc0-769d04e12b54"))
 /* interface */ IDispatchTesting;
 struct __declspec(uuid("98cc27f0-d521-4f79-8b63-e980e3a92974"))
 /* interface */ IAggregationTesting;
+struct __declspec(uuid("E6D72BA7-0936-4396-8A69-3B76DA1108DA"))
+/* interface */ IColorTesting;
 
 //
 // Smart pointer typedef declarations
@@ -32,6 +34,7 @@ _COM_SMARTPTR_TYPEDEF(IStringTesting, __uuidof(IStringTesting));
 _COM_SMARTPTR_TYPEDEF(IErrorMarshalTesting, __uuidof(IErrorMarshalTesting));
 _COM_SMARTPTR_TYPEDEF(IDispatchTesting, __uuidof(IDispatchTesting));
 _COM_SMARTPTR_TYPEDEF(IAggregationTesting, __uuidof(IAggregationTesting));
+_COM_SMARTPTR_TYPEDEF(IColorTesting, __uuidof(IColorTesting));
 
 //
 // Type library items
@@ -453,6 +456,18 @@ IAggregationTesting : IUnknown
         _In_ IUnknown *aggregateMaybe1,
         _In_ IUnknown *aggregateMaybe2,
         _Out_ VARIANT_BOOL *areAggregated) = 0;
+};
+
+struct __declspec(uuid("E6D72BA7-0936-4396-8A69-3B76DA1108DA"))
+IColorTesting : public IUnknown
+{
+    virtual HRESULT STDMETHODCALLTYPE AreColorsEqual(
+        _In_ OLE_COLOR managed,
+        _In_ OLE_COLOR native,
+        _Out_ _Ret_ BOOL* areEqual) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetRed(
+        _Out_ _Ret_ OLE_COLOR* color) = 0;
 };
 
 #pragma pack(pop)
