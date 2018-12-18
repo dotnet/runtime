@@ -837,6 +837,67 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
     return 0;
 }
 
+// This child process acquires the mutex lock, creates another child process (to ensure that file locks are not inherited), and
+// abandons the mutex abruptly. The second child process detects the abandonment and abandons the mutex again for the parent to
+// detect. Issue: https://github.com/dotnet/coreclr/issues/21455
+DWORD AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit(void *arg = nullptr)
+{
+    const char *testName = "AbandonTests";
+
+    DWORD currentPid = test_getpid();
+    TestAssert(currentPid != g_parentPid); // this test needs to run in a separate process
+
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
+
+        // ... root parent waits for child to lock mutex
+        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, 0) == WAIT_OBJECT_0);
+
+        // Start a child process while holding the lock on the mutex, to ensure that file locks are not inherited by the
+        // immediate child, such that the immediate child would be able to detect the mutex being abandoned below. This process
+        // does not communicate with the root parent, it only communicates to the immediate child by abandoning the mutex. The
+        // immediate child communicates with the root parent to complete the test.
+        TestAssert(StartProcess("AbandonTests_Child_FileLocksNotInherited_Child_AbruptExit")); // immediate child waits on mutex
+
+        Sleep(g_expectedTimeoutMilliseconds); // wait for immediate child to wait on mutex
+        m.Abandon(); // don't close the mutex
+    }
+
+    TestAssert(test_kill(currentPid) == 0); // abandon the mutex abruptly
+    return 0;
+}
+
+DWORD AbandonTests_Child_FileLocksNotInherited_Child_AbruptExit(void *arg = nullptr)
+{
+    const char *testName = "AbandonTests";
+
+    DWORD currentPid = test_getpid();
+    TestAssert(currentPid != g_parentPid); // this test needs to run in a separate process
+
+    AutoCloseMutexHandle childRunningEvent, parentEvents[2], childEvents[2];
+    TestAssert(InitializeChild(testName, childRunningEvent, parentEvents, childEvents));
+    int ei = 0;
+
+    {
+        char name[MaxPathSize];
+        AutoCloseMutexHandle m;
+
+        // ... immediate parent expects child to wait on mutex
+        TestCreateMutex(m, BuildName(testName, name, GlobalPrefix, NamePrefix));
+        TestAssert(m != nullptr);
+        TestAssert(WaitForSingleObject(m, FailTimeoutMilliseconds) == WAIT_ABANDONED_0); // attempt to lock and see abandoned mutex
+        TestAssert(YieldToParent(parentEvents, childEvents, ei)); // root parent waits on mutex
+        Sleep(g_expectedTimeoutMilliseconds); // wait for root parent to wait on mutex
+        m.Close(); // close mutex without releasing lock (root parent expects the mutex to be abandoned)
+    }
+
+    UninitializeChild(childRunningEvent, parentEvents, childEvents);
+    return 0;
+}
+
 DWORD PALAPI AbandonTests_Child_TryLock(void *arg)
 {
     const char *testName = "AbandonTests";
@@ -876,6 +937,9 @@ bool AbandonTests()
 
     // Abandon by abrupt exit unblocks a waiter
     TestAssert(StartProcess("AbandonTests_Child_AbruptExit"));
+    TestAssert(AbandonTests_Parent());
+
+    TestAssert(StartProcess("AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit"));
     TestAssert(AbandonTests_Parent());
 
     return true;
@@ -1048,6 +1112,14 @@ int __cdecl main(int argc, char **argv)
     else if (test_strcmp(argv[2], "AbandonTests_Child_AbruptExit") == 0)
     {
         AbandonTests_Child_AbruptExit();
+    }
+    else if (test_strcmp(argv[2], "AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit") == 0)
+    {
+        AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit();
+    }
+    else if (test_strcmp(argv[2], "AbandonTests_Child_FileLocksNotInherited_Child_AbruptExit") == 0)
+    {
+        AbandonTests_Child_FileLocksNotInherited_Child_AbruptExit();
     }
     else if (test_strcmp(argv[2], "AbandonTests_Child_TryLock") == 0)
     {
