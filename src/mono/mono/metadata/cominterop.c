@@ -91,7 +91,7 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 {
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
-	mono_register_jit_icall (func, name, sig, save);
+	mono_register_jit_icall_full (func, name, sig, save, name);
 }
 
 static mono_bstr
