@@ -533,7 +533,7 @@ public:
     {
     }
 
-    void Append(CORINFO_METHOD_HANDLE handle);
+    void Append(CORINFO_METHOD_HANDLE handle, bool isDispatchCell = false);
 
     virtual DWORD GetSize();
 

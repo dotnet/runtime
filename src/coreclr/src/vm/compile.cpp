@@ -964,7 +964,7 @@ void FakeGcScanRoots(MetaSig& msig, ArgIterator& argit, MethodDesc * pMD, BYTE *
     }
 }
 
-void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilder * pBuilder)
+void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilder * pBuilder, bool isDispatchCell)
 {
 #ifdef _DEBUG
     DWORD dwInitialLength = pBuilder->GetBlobLength();
@@ -973,7 +973,25 @@ void CEECompileInfo::GetCallRefMap(CORINFO_METHOD_HANDLE hMethod, GCRefMapBuilde
 
     MethodDesc *pMD = (MethodDesc *)hMethod;
 
-    MetaSig msig(pMD);
+    SigTypeContext typeContext(pMD);
+    PCCOR_SIGNATURE pSig;
+    DWORD cbSigSize;
+    pMD->GetSig(&pSig, &cbSigSize);
+    MetaSig msig(pSig, cbSigSize, pMD->GetModule(), &typeContext);
+
+    //
+    // Shared default interface methods (i.e. virtual interface methods with an implementation) require
+    // an instantiation argument. But if we're in a situation where we haven't resolved the method yet
+    // we need to pretent that unresolved default interface methods are like any other interface
+    // methods and don't have an instantiation argument.
+    // See code:CEEInfo::getMethodSigInternal
+    //
+    assert(!isDispatchCell || !pMD->RequiresInstArg() || pMD->GetMethodTable()->IsInterface());
+    if (pMD->RequiresInstArg() && !isDispatchCell)
+    {
+        msig.SetHasParamTypeArg();
+    }
+
     ArgIterator argit(&msig);
 
     UINT nStackBytes = argit.SizeOfFrameArgumentArray();
