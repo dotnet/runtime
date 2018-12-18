@@ -62,7 +62,6 @@ protected:
     CorRuntimeHostBase()
     :m_Started(FALSE),
      m_cRef(0)
-    , m_fStarted(FALSE)
     {LIMITED_METHOD_CONTRACT;}
 
     STDMETHODIMP_(ULONG) AddRef(void);
@@ -124,10 +123,6 @@ protected:
     BOOL        m_Started;              // Has START been called?
 
     LONG        m_cRef;                 // Ref count.
-
-    // This flag will be used to ensure that a CoreCLR host can invoke Start/Stop in pairs only.
-    BOOL m_fStarted; 
-    BOOL m_fAppDomainCreated; // this flag is used when an appdomain can only create a single appdomain
 
     static ULONG       m_Version;              // Version of ICorRuntimeHost.
                                         // Some functions are only available in ICLRRuntimeHost.
@@ -365,9 +360,9 @@ private:
     // This flag indicates if this instance was the first to load and start CoreCLR
     BOOL m_fFirstToLoadCLR;
 
-    // This flag indicates if the host has authenticated with us or not
-    BOOL m_fIsHostAuthenticated;
-
+    // This flag will be used to ensure that a CoreCLR host can invoke Start/Stop in pairs only.
+    BOOL m_fStarted;
+    BOOL m_fAppDomainCreated; // this flag is used when an appdomain can only create a single appdomain
 
     // Helpers for both ICLRRuntimeHost2 and ICLRPrivRuntime
     HRESULT _CreateAppDomain(
