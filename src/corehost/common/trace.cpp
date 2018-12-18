@@ -124,23 +124,31 @@ void trace::error(const pal::char_t* format, ...)
     va_list args;
     va_start(args, format);
 
+    va_list trace_args;
+    va_copy(trace_args, args);
+
+    va_list dup_args;
+    va_copy(dup_args, args);
+    int count = pal::str_vprintf(NULL, 0, format, args) + 1;
+    std::vector<pal::char_t> buffer(count);
+    pal::str_vprintf(&buffer[0], count, format, dup_args);
+
     if (g_error_writer == nullptr)
     {
-        pal::err_vprintf(format, args);
+        pal::err_fputs(buffer.data());
     }
     else
     {
-        va_list dup_args;
-        va_copy(dup_args, args);
-        int count = pal::str_vprintf(NULL, 0, format, args) + 1;
-        std::vector<pal::char_t> buffer(count);
-        pal::str_vprintf(&buffer[0], count, format, dup_args);
         g_error_writer(buffer.data());
     }
 
-    if (g_trace_verbosity && (g_trace_file != stderr))
+#if defined(_WIN32)
+    ::OutputDebugStringW(buffer.data());
+#endif
+
+    if (g_trace_verbosity && ((g_trace_file != stderr) || g_error_writer != nullptr))
     {
-        pal::file_vprintf(g_trace_file, format, args);
+        pal::file_vprintf(g_trace_file, format, trace_args);
     }
     va_end(args);
 }

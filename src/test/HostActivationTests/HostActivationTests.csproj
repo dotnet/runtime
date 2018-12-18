@@ -5,6 +5,7 @@
     <AssemblyName>HostActivationTests</AssemblyName>
     <PackageId>HostActivationTests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <DefineConstants Condition="'$(OSGroup)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

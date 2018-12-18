@@ -5,6 +5,7 @@
 #define UTILS_H
 
 #include "pal.h"
+#include "trace.h"
 struct host_option
 {
     pal::string_t option;
@@ -55,4 +56,38 @@ size_t index_of_non_numeric(const pal::string_t& str, unsigned i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 pal::string_t get_dotnet_root_env_var_name();
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
+
+// Helper class to make it easy to propagate error writer to the hostpolicy
+class propagate_error_writer_t
+{
+public:
+	typedef trace::error_writer_fn(*set_error_writer_fn)(trace::error_writer_fn error_writer);
+
+private:
+	set_error_writer_fn m_set_error_writer;
+	bool m_error_writer_set;
+
+public:
+	propagate_error_writer_t(set_error_writer_fn set_error_writer)
+	{
+		m_set_error_writer = set_error_writer;
+		m_error_writer_set = false;
+
+		trace::error_writer_fn error_writer = trace::get_error_writer();
+		if (error_writer != nullptr && m_set_error_writer != nullptr)
+		{
+			m_set_error_writer(error_writer);
+			m_error_writer_set = true;
+		}
+	}
+
+	~propagate_error_writer_t()
+	{
+		if (m_error_writer_set && m_set_error_writer != nullptr)
+		{
+			m_set_error_writer(nullptr);
+			m_error_writer_set = false;
+		}
+	}
+};
 #endif
