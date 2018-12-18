@@ -68,11 +68,11 @@ centralized, while still allowing user code to do its own thing if it
 so desires.
 
 The producer of `StartupHook.dll` needs to ensure that
-`StartupHook.dll` is compatible with the dependencies specified in the
-main application's deps.json, since those dependencies are put on the
-TPA list during the runtime startup, before `StartupHook.dll` is
-loaded. This means that `StartupHook.dll` needs to built against the
-same or lower version of .NET Core than the app.
+`StartupHook.dll` is compatible with the dependencies specified in the 
+main application's deps.json, since those dependencies are put on the 
+Trusted Platform Assemblies (TPA) list during the runtime startup, 
+before `StartupHook.dll` is loaded. This means that `StartupHook.dll` 
+needs to be built against the same or lower version of .NET Core than the app.
 
 ## Example
 
@@ -102,9 +102,9 @@ namespace SharedHostPolicy
     {
         public static Assembly LoadAssemblyFromSharedLocation(AssemblyLoadContext context, AssemblyName assemblyName)
         {
-            string sharedAssemblyPath = // find assemblyName in shared location...
+            string sharedAssemblyPath = ""; // find assemblyName in shared location...
             if (sharedAssemblyPath != null)
-                return AssemblyLoadContext.Default.LoadFromAssemblyPath(sharedAssemblyPath)
+                return AssemblyLoadContext.Default.LoadFromAssemblyPath(sharedAssemblyPath);
             return null;
         }
     }
