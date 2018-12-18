@@ -122,56 +122,39 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
 
 void Compiler::createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR cfiOpcode, USHORT dwarfReg, INT offset)
 {
-#if defined(_TARGET_ARM_)
-    if (compGeneratingEpilog && unwindCfiEpilogFormed)
-        return;
-#endif
     CFI_CODE cfiEntry(codeOffset, cfiOpcode, dwarfReg, offset);
     func->cfiCodes->push_back(cfiEntry);
 }
 
 void Compiler::unwindPushPopCFI(regNumber reg)
 {
-#if defined(_TARGET_ARM_)
-    assert(compGeneratingEpilog);
-#else
     assert(compGeneratingProlog);
-#endif
 
     FuncInfoDsc* func     = funCurrentFunc();
-    unsigned int cbProlog = 0;
-    if (compGeneratingProlog)
-    {
-        cbProlog = unwindGetCurrentOffset(func);
-        noway_assert((BYTE)cbProlog == cbProlog);
+    unsigned int cbProlog = unwindGetCurrentOffset(func);
+    noway_assert((BYTE)cbProlog == cbProlog);
 
-        createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES == 8 ? 8 : 4);
-    }
-
-    if ((RBM_CALLEE_SAVED & genRegMask(reg))
-#if defined(UNIX_AMD64_ABI)
-#if ETW_EBP_FRAMED
-        // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
-        // is excluded from the callee-save register list.
-        // Make sure the register gets PUSH unwind info in this case,
-        // since it is pushed as a frame register.
-        || (reg == REG_FPBASE)
-#endif // ETW_EBP_FRAMED
-#endif // UNIX_AMD64_ABI
+    regMaskTP relOffsetMask = RBM_CALLEE_SAVED
+#if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
+                              // In case of ETW_EBP_FRAMED defined the REG_FPBASE (RBP)
+                              // is excluded from the callee-save register list.
+                              // Make sure the register gets PUSH unwind info in this case,
+                              // since it is pushed as a frame register.
+                              | RBM_FPBASE
+#endif
 #if defined(_TARGET_ARM_)
-        || (reg == REG_R11) || (reg == REG_LR) || (reg == REG_PC)
-#endif // _TARGET_ARM_
-            )
+                              | RBM_R11 | RBM_LR | RBM_PC
+#endif
+        ;
+
+    if (relOffsetMask & genRegMask(reg))
     {
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg));
     }
-#if defined(_TARGET_ARM_)
-    // The non-callee-saved registers are for stack space allocation only
     else
     {
         createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, REGSIZE_BYTES);
     }
-#endif // _TARGET_ARM_
 }
 
 typedef jitstd::vector<CFI_CODE> CFICodeVector;
@@ -218,11 +201,7 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 
 void Compiler::unwindAllocStackCFI(unsigned size)
 {
-#if defined(_TARGET_ARM_)
-    assert(compGeneratingEpilog);
-#else
     assert(compGeneratingProlog);
-#endif
     FuncInfoDsc* func     = funCurrentFunc();
     unsigned int cbProlog = 0;
     if (compGeneratingProlog)
@@ -242,18 +221,10 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 //
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
-#if defined(_TARGET_ARM_)
-    assert(compGeneratingEpilog);
-#else
     assert(compGeneratingProlog);
-#endif
     FuncInfoDsc* func     = funCurrentFunc();
-    unsigned int cbProlog = 0;
-    if (compGeneratingProlog)
-    {
-        cbProlog = unwindGetCurrentOffset(func);
-        noway_assert((BYTE)cbProlog == cbProlog);
-    }
+    unsigned int cbProlog = unwindGetCurrentOffset(func);
+    noway_assert((BYTE)cbProlog == cbProlog);
 
     createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
     if (offset != 0)
