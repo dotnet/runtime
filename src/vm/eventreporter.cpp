@@ -18,6 +18,8 @@
 #include "typestring.h"
 #include "debugdebugger.h"
 
+#include <configuration.h>
+
 #include "../dlls/mscorrc/resource.h"
 
 #include "getproductversionnumber.h"
@@ -106,7 +108,16 @@ EventReporter::EventReporter(EventReporterType type)
         {
             m_Description.Append(ssMessage);
             m_Description.Append(W("\n"));
-        }        
+        }
+    }
+
+    // Log the .NET Core Version if we can get it
+    LPCWSTR fxProductVersion = Configuration::GetKnobStringValue(W("FX_PRODUCT_VERSION"));
+    if (fxProductVersion != nullptr)
+    {
+        m_Description.Append(W(".NET Core Version: "));
+        m_Description.Append(fxProductVersion);
+        m_Description.Append(W("\n"));
     }
 
     ssMessage.Clear();
