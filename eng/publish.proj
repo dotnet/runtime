@@ -1,5 +1,9 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
+  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
+
+  <!-- We need to import Directory.Build.targets at the beginning because there is where we import the restored tools targets, in 
+  this case we need Microsoft.DotNet.Build.Tasks.Feed targets to be imported. -->
   <Import Project="..\Directory.Build.targets" />
 
   <PropertyGroup>
@@ -10,6 +14,9 @@
     <FinalPublishPattern>$(PackageOutputRoot)*.nupkg</FinalPublishPattern>
     <FinalPublishPrivatePattern>$(PackageOutputRoot)*Private*.nupkg</FinalPublishPrivatePattern>
     <FinalPublishExperimentalPattern>$(PackageOutputRoot)*Experimental*.nupkg</FinalPublishExperimentalPattern>
+
+    <SymbolsOutputRoot Condition="'$(SymbolsOutputRoot)' == ''">$(PackageOutputRoot)/symbols/</SymbolsOutputRoot>
+    <SymbolsPublishPattern>$(SymbolsOutputRoot)*.nupkg</SymbolsPublishPattern>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(PackagesGlob)' != ''">
@@ -23,8 +30,22 @@
     <PackagesToPublish Include="$(FinalPublishPattern)" Exclude="@(PackagesToPublish)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <SymbolPackagesToPublish  Include="$(SymbolsPublishPattern)">
+      <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
+    </SymbolPackagesToPublish>
+
+    <PublishSymbolsDependsOn Include="SetupPublishSymbols" />
+  </ItemGroup>
+
   <Target Name="PublishToAzureBlobFeed">
     <Error Condition="'@(PackagesToPublish)'==''" Text="PackagesToPublish for packages is empty." />
+
+    <!-- Include Symbols when publishing to blob feed so that the manifest contains symbols and we send all the assets to BAR -->
+    <ItemGroup>
+      <PackagesToPublish Include="@(SymbolPackagesToPublish)" />
+    </ItemGroup>
+
     <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
                     AccountKey="$(AccountKey)"
                     ItemsToPush="@(PackagesToPublish)"
@@ -82,8 +103,16 @@
       IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)"
       PackageFile="%(NuGetPushCommand.PackageToPush)"
       PassIfIdenticalV2Feed="$(PassIfIdenticalV2Feed)" />
-
   </Target>
 
-  <Target Name="CheckForBuildTools" />
+  <Target Name="SetupPublishSymbols">
+    <PropertyGroup>
+      <ConvertPortablePdbsToWindowsPdbs Condition="'$(ConvertPortablePdbsToWindowsPdbs)'==''">true</ConvertPortablePdbsToWindowsPdbs>
+    </PropertyGroup>
+
+    <Error Condition="'$(SymbolServerPath)'==''" Text="Missing property SymbolServerPath" />
+    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
+
+    <Message Importance="High" Text="Publishing %(SymbolPackagesToPublish.Identity) to $(SymbolServerPath)"/>
+  </Target>
 </Project>

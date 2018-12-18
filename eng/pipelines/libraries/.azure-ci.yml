@@ -48,3 +48,12 @@ jobs:
 
     # Publish step
     - template: /eng/pipelines/publish.yml
+      parameters:
+        dependsOn:
+          - WindowsTest
+          - WindowsNoTest
+          - AllConfigurations
+          - LinuxTest
+          - LinuxNoTest
+          - MacOS
+          - RedHat6
