@@ -28,6 +28,8 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         private bool _running = false;
         private bool _quietBuildReporter = false;
 
+        public Process Process { get => _process; }
+
         private Command(string executable, string args)
         {
             // Set the things we need
@@ -166,7 +168,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return Execute(false);
         }
 
-        public CommandResult Execute(bool fExpectedToFail)
+        public Command Start()
         {
             ThrowIfRunning();
             _running = true;
@@ -189,7 +191,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             _process.EnableRaisingEvents = true;
 
-            var sw = Stopwatch.StartNew();
             ReportExecBegin();
 
             _process.Start();
@@ -204,6 +205,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 _process.BeginErrorReadLine();
             }
 
+            return this;
+        }
+
+        public CommandResult WaitForExit(bool fExpectedToFail)
+        {
             _process.WaitForExit();
 
             var exitCode = _process.ExitCode;
@@ -215,6 +221,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 exitCode,
                 _stdOutCapture?.GetStringBuilder()?.ToString(),
                 _stdErrCapture?.GetStringBuilder()?.ToString());
+        }
+
+        public CommandResult Execute(bool fExpectedToFail)
+        {
+            Start();
+            return WaitForExit(fExpectedToFail);
         }
 
         public Command WorkingDirectory(string projectDirectory)

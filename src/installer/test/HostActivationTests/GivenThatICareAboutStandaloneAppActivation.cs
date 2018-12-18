@@ -2,23 +2,25 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using Xunit;
 using FluentAssertions;
 using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
-using Newtonsoft.Json.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.DotNet.InternalAbstractions;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 {
     public class GivenThatICareAboutStandaloneAppActivation : IClassFixture<GivenThatICareAboutStandaloneAppActivation.SharedTestState>
     {
+        private readonly string AppHostExeName = "apphost" + Constants.ExeSuffix;
+
         private SharedTestState sharedTestState;
 
         public GivenThatICareAboutStandaloneAppActivation(GivenThatICareAboutStandaloneAppActivation.SharedTestState fixture)
@@ -237,30 +239,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
                 .Copy();
 
-            var appExe = fixture.TestProject.AppExe;
+            string appExe = fixture.TestProject.AppExe;
 
-            string hostExeName = $"apphost{Constants.ExeSuffix}";
-            string builtAppHost = Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, hostExeName);
-            string appName = Path.GetFileNameWithoutExtension(appExe);
-            string appDll = $"{appName}.dll";
-            string appDir = Path.GetDirectoryName(appExe);
-            string appDirHostExe = Path.Combine(appDir, hostExeName);
-
-            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
-            // overwrite app.exe and edit in place, because the file is opened as "write" for
-            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
-            // executing a file opened in "write" mode.
-            File.Copy(builtAppHost, appDirHostExe, true);
-            using (var sha256 = SHA256.Create())
-            {
-                // Replace the hash with the managed DLL name.
-                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
-                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll), true);
-            }
-            File.Copy(appDirHostExe, appExe, true);
+            UseBuiltAppHost(appExe);
+            BindAppHost(appExe);
 
             Command.Create(appExe)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -270,6 +255,160 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .HaveStdOutContaining("Hello World")
                 .And
                 .HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
+        }
+
+        [Fact]
+        public void Running_AppHost_with_GUI_Reports_Errors_In_Window()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // GUI app host is only supported on Windows.
+                return;
+            }
+
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+
+            // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
+            UseBuiltAppHost(appExe);
+            MarkAppHostAsGUI(appExe);
+
+            Command command = Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Start();
+
+            IntPtr windowHandle = WaitForPopupFromProcess(command.Process);
+            Assert.NotEqual(IntPtr.Zero, windowHandle);
+
+            // In theory we should close the window - but it's just easier to kill the process.
+            // The popup should be the last thing the process does anyway.
+            command.Process.Kill();
+
+            CommandResult result = command.WaitForExit(true);
+
+            // There should be no output written by the process.
+            Assert.Equal(string.Empty, result.StdOut);
+            Assert.Equal(string.Empty, result.StdErr);
+
+            result.Should().Fail();
+        }
+
+        [Fact]
+        public void Running_AppHost_with_GUI_Reports_Errors_In_Window_and_Traces()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // GUI app host is only supported on Windows.
+                return;
+            }
+
+            var fixture = sharedTestState.PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+
+            // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
+            UseBuiltAppHost(appExe);
+            MarkAppHostAsGUI(appExe);
+
+            string traceFilePath = Path.Combine(Path.GetDirectoryName(appExe), "trace.log");
+
+            Command command = Command.Create(appExe)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("COREHOST_TRACEFILE", traceFilePath)
+                .Start();
+
+            IntPtr windowHandle = WaitForPopupFromProcess(command.Process);
+            Assert.NotEqual(IntPtr.Zero, windowHandle);
+
+            // In theory we should close the window - but it's just easier to kill the process.
+            // The popup should be the last thing the process does anyway.
+            command.Process.Kill();
+
+            CommandResult result = command.WaitForExit(true);
+
+            result.Should().Fail()
+                .And.FileExists(traceFilePath)
+                .And.FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.");
+        }
+
+#if WINDOWS
+        private delegate bool EnumThreadWindowsDelegate(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWindowsDelegate plfn, IntPtr lParam);
+
+        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 5000)
+        {
+            IntPtr windowHandle = IntPtr.Zero;
+            while (timeout > 0)
+            {
+                foreach (ProcessThread thread in process.Threads)
+                {
+                    // Note we take the last window we find - there really should only be one at most anyway.
+                    EnumThreadWindows(thread.Id,
+                        (hWnd, lParam) => { windowHandle = hWnd; return true; }, IntPtr.Zero);
+                }
+
+                if (windowHandle != IntPtr.Zero)
+                {
+                    break;
+                }
+
+                Thread.Sleep(100);
+                timeout -= 100;
+            }
+
+            return windowHandle;
+        }
+#else
+        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 5000)
+        {
+            throw new PlatformNotSupportedException();
+        }
+#endif
+
+        private void UseBuiltAppHost(string appExe)
+        {
+            File.Copy(Path.Combine(sharedTestState.RepoDirectories.HostArtifacts, AppHostExeName), appExe, true);
+        }
+
+        private void BindAppHost(string appExe)
+        {
+            string appName = Path.GetFileNameWithoutExtension(appExe);
+            string appDll = $"{appName}.dll";
+            string appDir = Path.GetDirectoryName(appExe);
+            string appDirHostExe = Path.Combine(appDir, AppHostExeName);
+
+            // Make a copy of apphost first, replace hash and overwrite app.exe, rather than
+            // overwrite app.exe and edit in place, because the file is opened as "write" for
+            // the replacement -- the test fails with ETXTBSY (exit code: 26) in Linux when
+            // executing a file opened in "write" mode.
+            File.Copy(appExe, appDirHostExe, true);
+            using (var sha256 = SHA256.Create())
+            {
+                // Replace the hash with the managed DLL name.
+                var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
+                var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
+                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll), true);
+            }
+            File.Copy(appDirHostExe, appExe, true);
+        }
+
+        private void MarkAppHostAsGUI(string appExe)
+        {
+            string appDir = Path.GetDirectoryName(appExe);
+            string appDirHostExe = Path.Combine(appDir, AppHostExeName);
+
+            File.Copy(appExe, appDirHostExe, true);
+            using (var sha256 = SHA256.Create())
+            {
+                AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(appDirHostExe);
+            }
+            File.Copy(appDirHostExe, appExe, true);
         }
 
         public class SharedTestState : IDisposable
