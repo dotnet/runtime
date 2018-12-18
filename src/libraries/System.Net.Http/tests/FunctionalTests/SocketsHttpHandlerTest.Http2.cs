@@ -275,7 +275,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
                 await server.EstablishConnectionAsync();
-                server.IngoreWindowUpdates();
+                server.IgnoreWindowUpdates();
                 int streamId = await server.ReadRequestHeaderAsync();
 
                 // Send response and end stream.
@@ -666,7 +666,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
                 await server.EstablishConnectionAsync();
-                server.IngoreWindowUpdates();
+                server.IgnoreWindowUpdates();
 
                 // Process first request and send response.
                 int streamId = await server.ReadRequestHeaderAsync();
