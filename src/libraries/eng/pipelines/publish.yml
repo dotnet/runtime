@@ -1,18 +1,14 @@
 parameters:
   buildConfiguration: Release
+  dependsOn: ''
 
 jobs:
-  - job: Publish
+  - job: PublishPackages
     displayName: Publish Packages
     timeoutInMinutes: 120
-    dependsOn:
-      - WindowsTest
-      - WindowsNoTest
-      - AllConfigurations
-      - LinuxTest
-      - LinuxNoTest
-      - MacOS
-      - RedHat6
+
+    ${{ if ne(parameters.dependsOn, '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
 
     pool:
       name: dotnet-internal-temp
@@ -72,3 +68,49 @@ jobs:
                 /p:NuGetSource=$(_mygetFeedUrl)
                 /p:NuGetApiKey=$(dotnet-myget-org-api-key)
         displayName: Push to myget.org
+
+  - job: PublishSymbols
+    displayName: Publish Symbols
+    timeoutInMinutes: 120
+
+    ${{ if ne(parameters.dependsOn, '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
+    pool:
+      name: dotnet-internal-temp
+
+    workspace:
+      clean: all
+
+    variables:
+      - group: DotNet-Symbol-Server-Pats
+      - name: _msdlSymbolServerUrl
+        value: https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection
+      - name: _symwebSymbolServerUrl
+        value: https://microsoft.artifacts.visualstudio.com/DefaultCollection
+      - name: _symbolExpirationInDays
+        value: 30
+
+    steps:
+      - task: DownloadBuildArtifacts@0
+        displayName: Download symbols to publish
+        inputs:
+          artifactName: packages
+          downloadPath: $(Build.SourcesDirectory)/artifacts
+
+      - script: build.cmd -InitTools
+        displayName: Restore Tools
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:PublishSymbols
+                /p:SymbolServerPath=$(_msdlSymbolServerUrl)
+                /p:SymbolServerPAT=$(microsoft-symbol-server-pat)
+        displayName: Publish symbols to msdl
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:PublishSymbols
+                /p:SymbolServerPath=$(_symwebSymbolServerUrl)
+                /p:SymbolServerPAT=$(symweb-symbol-server-pat)
+        displayName: Publish symbols to symweb
