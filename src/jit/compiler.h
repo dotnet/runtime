@@ -7487,10 +7487,6 @@ private:
                      DWORD                 cfiCodeBytes,
                      const CFI_CODE* const pCfiCode);
 #endif
-#if defined(_TARGET_ARM_)
-    bool unwindCfiEpilogFormed; // Avoid duplicated unwind info for methods with multiple epilogs (we expect and require
-                                // all the epilogs to be precisely the same)
-#endif
 
 #endif // _TARGET_UNIX_
 
