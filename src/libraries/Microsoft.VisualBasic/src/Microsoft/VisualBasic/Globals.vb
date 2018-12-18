@@ -7,4 +7,5 @@ Namespace Global.Microsoft.VisualBasic
         [Binary] = 0
         [Text] = 1
     End Enum
+
 End Namespace
