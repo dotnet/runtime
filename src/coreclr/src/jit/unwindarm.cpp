@@ -194,9 +194,6 @@ void Compiler::unwindBegProlog()
     if (generateCFIUnwindCodes())
     {
         unwindBegPrologCFI();
-#if defined(_TARGET_ARM_)
-        unwindCfiEpilogFormed = false;
-#endif
         return;
     }
 #endif // _TARGET_UNIX_
@@ -238,11 +235,6 @@ void Compiler::unwindBegEpilog()
 void Compiler::unwindEndEpilog()
 {
     assert(compGeneratingEpilog);
-#if defined(_TARGET_UNIX_)
-#if defined(_TARGET_ARM_)
-    unwindCfiEpilogFormed = true;
-#endif
-#endif // _TARGET_UNIX_
 }
 
 #if defined(_TARGET_ARM_)
@@ -379,6 +371,12 @@ void Compiler::unwindPushMaskInt(regMaskTP maskInt)
 #if defined(_TARGET_UNIX_)
     if (generateCFIUnwindCodes())
     {
+        // If we are pushing LR, we should give unwind codes in terms of caller's PC
+        if (maskInt & RBM_LR)
+        {
+            maskInt = (maskInt & ~RBM_LR) | RBM_PC;
+        }
+        unwindPushPopMaskCFI(maskInt, false);
         return;
     }
 #endif // _TARGET_UNIX_
@@ -395,6 +393,7 @@ void Compiler::unwindPushMaskFloat(regMaskTP maskFloat)
 #if defined(_TARGET_UNIX_)
     if (generateCFIUnwindCodes())
     {
+        unwindPushPopMaskCFI(maskFloat, true);
         return;
     }
 #endif // _TARGET_UNIX_
@@ -407,7 +406,6 @@ void Compiler::unwindPopMaskInt(regMaskTP maskInt)
 #if defined(_TARGET_UNIX_)
     if (generateCFIUnwindCodes())
     {
-        unwindPushPopMaskCFI(maskInt, false);
         return;
     }
 #endif // _TARGET_UNIX_
@@ -436,7 +434,6 @@ void Compiler::unwindPopMaskFloat(regMaskTP maskFloat)
 #if defined(_TARGET_UNIX_)
     if (generateCFIUnwindCodes())
     {
-        unwindPushPopMaskCFI(maskFloat, true);
         return;
     }
 #endif // _TARGET_UNIX_
@@ -451,7 +448,7 @@ void Compiler::unwindAllocStack(unsigned size)
 #if defined(_TARGET_UNIX_)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingEpilog)
+        if (compGeneratingProlog)
         {
             unwindAllocStackCFI(size);
         }
@@ -505,7 +502,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 #if defined(_TARGET_UNIX_)
     if (generateCFIUnwindCodes())
     {
-        if (compGeneratingEpilog)
+        if (compGeneratingProlog)
         {
             unwindSetFrameRegCFI(reg, offset);
         }
