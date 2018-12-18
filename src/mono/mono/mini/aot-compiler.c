@@ -12497,6 +12497,11 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	get_got_offset (acfg, FALSE, ji);
 	get_got_offset (acfg, TRUE, ji);
 
+	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+	ji->type = MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG;
+	get_got_offset (acfg, FALSE, ji);
+	get_got_offset (acfg, TRUE, ji);
+
 	for (i = 0; i < TLS_KEY_NUM; i++) {
 		ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 		ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
