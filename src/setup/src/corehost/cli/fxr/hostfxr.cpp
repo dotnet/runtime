@@ -100,37 +100,6 @@ int load_host_library_with_return(
         : StatusCode::CoreHostEntryPointFailure;
 }
 
-// Helper class to make it easy to propagate error writer to the hostpolicy
-class propagate_error_writer_to_corehost_t
-{
-private:
-    corehost_set_error_writer_fn m_set_error_writer_fn;
-    bool m_error_writer_set;
-
-public:
-    propagate_error_writer_to_corehost_t(corehost_set_error_writer_fn set_error_writer_fn)
-    {
-        m_set_error_writer_fn = set_error_writer_fn;
-        m_error_writer_set = false;
-
-        trace::error_writer_fn error_writer = trace::get_error_writer();
-        if (error_writer != nullptr && m_set_error_writer_fn != nullptr)
-        {
-            m_set_error_writer_fn(error_writer);
-            m_error_writer_set = true;
-        }
-    }
-
-    ~propagate_error_writer_to_corehost_t()
-    {
-        if (m_error_writer_set && m_set_error_writer_fn != nullptr)
-        {
-            m_set_error_writer_fn(nullptr);
-            m_error_writer_set = false;
-        }
-    }
-};
-
 int execute_app(
     const pal::string_t& impl_dll_dir,
     corehost_init_t* init,
@@ -154,7 +123,7 @@ int execute_app(
     trace::flush();
 
     {
-        propagate_error_writer_to_corehost_t propagate_error_writer_to_corehost(host_set_error_writer);
+        propagate_error_writer_t propagate_error_writer_to_corehost(host_set_error_writer);
 
         const host_interface_t& intf = init->get_host_init_data();
         if ((code = host_load(&intf)) == 0)
@@ -196,7 +165,7 @@ int execute_host_command(
     trace::flush();
 
     {
-        propagate_error_writer_to_corehost_t propagate_error_writer_to_corehost(host_set_error_writer);
+        propagate_error_writer_t propagate_error_writer_to_corehost(host_set_error_writer);
 
         const host_interface_t& intf = init->get_host_init_data();
         if ((code = host_load(&intf)) == 0)
