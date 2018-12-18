@@ -97,14 +97,34 @@ namespace R2RDump
         /// <param name="memberRefHandle">Member reference handle</param>
         private string EmitMemberReferenceName(MemberReferenceHandle memberRefHandle, string owningTypeOverride)
         {
-            MemberReference methodRef = _metadataReader.GetMemberReference(memberRefHandle);
+            MemberReference memberRef = _metadataReader.GetMemberReference(memberRefHandle);
             StringBuilder builder = new StringBuilder();
             DisassemblingGenericContext genericContext = new DisassemblingGenericContext(Array.Empty<string>(), Array.Empty<string>());
-            MethodSignature<String> methodSig = methodRef.DecodeMethodSignature<string, DisassemblingGenericContext>(this, genericContext);
-            builder.Append(methodSig.ReturnType);
-            builder.Append(" ");
-            builder.Append(EmitContainingTypeAndMethodName(methodRef, owningTypeOverride));
-            builder.Append(EmitMethodSignature(methodSig));
+            switch (memberRef.GetKind())
+            {
+                case MemberReferenceKind.Field:
+                    {
+                        string fieldSig = memberRef.DecodeFieldSignature<string, DisassemblingGenericContext>(this, genericContext);
+                        builder.Append(fieldSig);
+                        builder.Append(" ");
+                        builder.Append(EmitContainingTypeAndMemberName(memberRef, owningTypeOverride));
+                        break;
+                    }
+
+                case MemberReferenceKind.Method:
+                    {
+                        MethodSignature<String> methodSig = memberRef.DecodeMethodSignature<string, DisassemblingGenericContext>(this, genericContext);
+                        builder.Append(methodSig.ReturnType);
+                        builder.Append(" ");
+                        builder.Append(EmitContainingTypeAndMemberName(memberRef, owningTypeOverride));
+                        builder.Append(EmitMethodSignature(methodSig));
+                        break;
+                    }
+
+                default:
+                    throw new NotImplementedException(memberRef.GetKind().ToString());
+            }
+
             return builder.ToString();
         }
 
@@ -176,17 +196,17 @@ namespace R2RDump
         }
 
         /// <summary>
-        /// Emit containing type and method name and extract the method signature from a method reference.
+        /// Emit containing type and member name.
         /// </summary>
-        /// <param name="methodRef">Method reference to format</param>
-        /// <param name="methodSignature">Output method signature</param>
-        private string EmitContainingTypeAndMethodName(MemberReference methodRef, string owningTypeOverride)
+        /// <param name="memberRef">Member reference to format</param>
+        /// <param name="owningTypeOverride">Optional override for the owning type, null = MemberReference.Parent</param>
+        private string EmitContainingTypeAndMemberName(MemberReference memberRef, string owningTypeOverride)
         {
             if (owningTypeOverride == null)
             {
-                owningTypeOverride = EmitHandleName(methodRef.Parent, namespaceQualified: true, owningTypeOverride: null);
+                owningTypeOverride = EmitHandleName(memberRef.Parent, namespaceQualified: true, owningTypeOverride: null);
             }
-            return owningTypeOverride + "." + EmitString(methodRef.Name);
+            return owningTypeOverride + "." + EmitString(memberRef.Name);
         }
 
         /// <summary>
@@ -550,13 +570,13 @@ namespace R2RDump
 
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldAddress:
-                    builder.Append("FIELD_ADDRESS");
-                    // TODO
+                    ParseField(builder);
+                    builder.Append(" (FIELD_ADDRESS)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_CctorTrigger:
-                    builder.Append("CCTOR_TRIGGER");
-                    // TODO
+                    ParseType(builder);
+                    builder.Append(" (CCTOR_TRIGGER)");
                     break;
 
 
@@ -933,6 +953,32 @@ namespace R2RDump
         {
             uint methodRefToken = ReadUInt() | (uint)CorTokenType.mdtMemberRef;
             builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodRefToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
+        }
+
+        /// <summary>
+        /// Parse field signature and output its textual representation into the given string builder.
+        /// </summary>
+        /// <param name="builder">Output string builder</param>
+        private void ParseField(StringBuilder builder)
+        {
+            uint flags = ReadUInt();
+            string owningTypeOverride = null;
+            if ((flags & (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_OwnerType) != 0)
+            {
+                StringBuilder owningTypeBuilder = new StringBuilder();
+                ParseType(owningTypeBuilder);
+                owningTypeOverride = owningTypeBuilder.ToString();
+            }
+            uint fieldToken;
+            if ((flags & (uint)ReadyToRunFieldSigFlags.READYTORUN_FIELD_SIG_MemberRefToken) != 0)
+            {
+                fieldToken = ReadUInt() | (uint)CorTokenType.mdtMemberRef;
+            }
+            else
+            {
+                fieldToken = ReadUInt() | (uint)CorTokenType.mdtFieldDef;
+            }
+            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)fieldToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
         }
 
         /// <summary>
