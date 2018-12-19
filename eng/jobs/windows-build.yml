@@ -1,0 +1,200 @@
+parameters:
+  additionalMSBuildArguments: ''
+  buildFullPlatformManifest: false
+  displayName: ''
+  publishRidAgnosticPackages: false
+  skipTests: $(SkipTests)
+  targetArchitecture: null
+
+jobs:
+  - job: ${{ parameters.displayName }}
+    displayName: ${{ parameters.displayName }}
+    pool:
+      # For public or PR jobs, use the hosted pool.  For internal jobs use the internal pool.
+      # Will eventually change this to two BYOC pools.
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        name: Hosted VS2017
+      ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        name: dotnet-internal-temp
+    strategy:
+      matrix: 
+        debug:
+          _BuildConfig: Debug
+          _PublishType: none
+        release:
+          _BuildConfig: Release
+          _PublishType: blob
+    variables: 
+      CommonMSBuildArgs: "/p:ConfigurationGroup=$(_BuildConfig) 
+                          /p:TargetArchitecture=${{ parameters.targetArchitecture }} 
+                          /p:PortableBuild=true
+                          /p:SkipTests=${{ parameters.skipTests }}
+                          /p:StabilizePackageVersion=$(IsStable)"
+      MsbuildSigningArguments: /p:CertificateId=400 /v:detailed /p:SignType=$(SignType)
+    steps:
+
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin for Signing
+        inputs:
+          signType: $(SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+        continueOnError: false
+        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+    # Initialize building
+    - script: $(Build.SourcesDirectory)\build.cmd
+        -- $(CommonMSBuildArgs)
+        '/t:BuildTraversalBuildDependencies 
+        /bl:$(Build.SourcesDirectory)\init.binlog'
+      displayName: Build traversal build dependencies
+      condition: succeeded()
+
+    # Build binaries
+    - script: build.cmd
+        --src-builds
+        -- $(CommonMSBuildArgs)
+        /p:BuildAppx=false
+      displayName: Build binaries
+      condition: succeeded()
+
+    # Sign Binaries, signing requires VS MSBuild
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: MSBuild@1
+        displayName: Sign Binaries
+        inputs: 
+          solution: '$(Build.SourcesDirectory)\signing\sign.proj'
+          msbuildVersion: 15.0
+          msbuildArchitecture: x64
+          msbuildArguments: '/t:SignBinaries  
+            $(CommonMSBuildArgs)
+            $(MsbuildSigningArguments)
+            /bl:$(Build.SourcesDirectory)\singbinaries.binlog'
+        condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+    # Build Nuget package
+    - script: build.cmd -pkg
+       -- '$(CommonMSBuildArgs)
+        /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
+        /flp:v=detailed;LogFile=$(Build.SourcesDirectory)\packages.binlog'
+      displayName: Build Nuget package
+      condition: succeeded()
+
+    # Build sharedframework layout
+    - script: build.cmd -sharedfx
+        -- '$(CommonMSBuildArgs)
+        /bl:$(Build.SourcesDirectory)\sharedframework.binlog'
+      displayName: Build sharedframework layout
+      condition: succeeded()
+
+    - ${{ if and(ne(parameters.displayName,'Build_Windows_x86'), ne(parameters.displayName,'Build_Windows_x64')) }}:
+      - script: build.cmd -packaging
+            -- '$(CommonMSBuildArgs)
+            /bl:$(Build.SourcesDirectory)\packaging.binlog'
+        displayName: Create Package
+        condition: succeeded()
+
+    # Following steps followed in sequence only for Windows x86 and Windows x64
+    #       Create installers
+    #       Sign MSIs
+    #       Create bundles
+    #       Extract Engine
+    #       Sign Engine
+    #       Re-attach Bundle
+    #       Sign Bundle
+    - ${{ if or(eq(parameters.displayName,'Build_Windows_x86'), eq(parameters.displayName,'Build_Windows_x64')) }}:
+      - script: build.cmd -packaging
+          -- '/t:BuildInstallers
+            $(CommonMSBuildArgs)
+            /bl:$(Build.SourcesDirectory)\packaging.binlog'
+        displayName: Create installers
+        condition: succeeded()
+
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        - task: MSBuild@1
+          displayName: Sign MSI and cab files
+          inputs: 
+            solution: '$(Build.SourcesDirectory)\signing\sign.proj'
+            msbuildVersion: 15.0
+            msbuildArchitecture: x64
+            msbuildArguments: '/t:SignMsiAndCab
+              $(CommonMSBuildArgs) 
+              $(MsbuildSigningArguments)'
+          condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+      - script: build.cmd -packaging
+          -- '/t:BuildCombinedInstallers
+          $(CommonMSBuildArgs)
+          /bl:$(Build.SourcesDirectory)\createbundles.binlog'
+        displayName: Create bundles
+        condition: succeeded()
+
+      - script: build.cmd -packaging
+          -- '/t:ExtractEngineBundle
+          $(CommonMSBuildArgs)
+          /bl:$(Build.SourcesDirectory)\extractengine.binlog'
+        displayName: Extract Engine from Bundle
+        condition: succeeded()
+
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        - task: MSBuild@1
+          displayName: Sign Engine
+          inputs: 
+            solution: '$(Build.SourcesDirectory)\signing\sign.proj'
+            msbuildVersion: 15.0
+            msbuildArchitecture: x64
+            msbuildArguments: '/t:SignEngine 
+              $(CommonMSBuildArgs) 
+              $(MsbuildSigningArguments)
+              /bl:$(Build.SourcesDirectory)\signengine.binlog'
+          condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+      - script: build.cmd -packaging
+          -- '/t:ReattachEngineToBundle
+          $(CommonMSBuildArgs)
+          /bl:$(Build.SourcesDirectory)\reattachengine.binlog'
+        displayName: Re-attach Engine
+        condition: succeeded()
+
+      - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        - task: MSBuild@1
+          displayName: Sign Bundle
+          inputs: 
+            solution: '$(Build.SourcesDirectory)\signing\sign.proj'
+            msbuildVersion: 15.0
+            msbuildArchitecture: x64
+            msbuildArguments: '/t:SignBundle  
+              $(CommonMSBuildArgs) 
+              $(MsbuildSigningArguments)
+              /bl:$(Build.SourcesDirectory)\signbundle.binlog'
+          condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+    # Publish all build assets
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - script: build.cmd -publishing
+          -- '$(CommonMSBuildArgs)
+          $(_CommonPublishArgs)
+          /p:PublishType=$(_PublishType)
+          /p:PublishRidAgnosticPackages=${{ parameters.publishRidAgnosticPackages }}
+          /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
+          /bl:$(Build.SourcesDirectory)\publish.binlog'
+        displayName: Publish build assets
+        condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+    
+    - task: CopyFiles@2
+      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: |
+          *.log
+          *.binlog
+        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+      continueOnError: true
+      condition: succeededOrFailed()
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifact BuildLogs
+      inputs:
+        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
+        ArtifactName: ${{ parameters.displayName }}-$(_BuildConfig)
+      continueOnError: true
+      condition: succeededOrFailed()

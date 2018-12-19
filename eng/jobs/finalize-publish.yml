@@ -1,0 +1,111 @@
+parameters:
+  _PublishType: {}
+jobs:
+  - job: Finalize_Publish
+    displayName: Finalize_Publish
+    # Run only if all build legs succeeded
+    condition: and(succeeded('Build_Linux_x64_glibc'),
+                  succeeded('Build_Linux_Arm64'),
+                  succeeded('Build_Linux_Arm'),
+                  succeeded('Build_Linux_x64_Alpine36'),
+                  succeeded('Build_Linux_x64_Rhel6'),
+                  succeeded('Build_OSX'),
+                  succeeded('Build_Windows_x64'),
+                  succeeded('Build_Windows_x86'),
+                  succeeded('Build_Windows_Arm'),
+                  succeeded('Build_Windows_Arm64'),
+                  ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))
+    # Run after all dependent legs are executed
+    dependsOn: 
+      - Build_Linux_x64_glibc
+      - Build_Linux_Arm64
+      - Build_Linux_Arm
+      - Build_Linux_x64_Alpine36
+      # - Build_Linux_x64_FreeBSD
+      - Build_Linux_x64_Rhel6
+      - Build_Windows_x64
+      - Build_Windows_x86
+      - Build_Windows_Arm
+      - Build_Windows_Arm64
+      - Build_OSX
+    pool:
+      # For public or PR jobs, use the hosted pool.  For internal jobs use the internal pool.
+      # Will eventually change this to two BYOC pools.
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        name: Hosted VS2017
+      ${{ if ne(variables['System.TeamProject'], 'public') }}:
+        name: dotnet-internal-temp
+    variables:
+      _PublishType: ${{ parameters._PublishType}}
+    steps:
+
+    # Initialize tooling
+    - script: build.cmd
+        -- /t:BuildTraversalBuildDependencies
+      displayName: Initialize tooling
+      condition: succeeded()
+
+    - task: MicroBuildSigningPlugin@2
+      displayName: Install MicroBuild plugin for Signing
+      inputs:
+        signType: $(SignType)
+        zipSources: false
+        feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+      continueOnError: false
+      condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+    - task: MSBuild@1
+      displayName: Publish (no PublishType)
+      inputs: 
+        solution: $(Build.SourcesDirectory)\publish\publish.proj
+        platform: x64
+        configuration: Release
+        msbuildVersion: 15.0
+        msbuildArchitecture: x64
+        msbuildArguments: '/p:Finalize=true 
+        /p:OfficialPublish=true 
+        /p:PublishType=nopublishtype 
+        /p:SignType=$(SignType) 
+        /p:StabilizePackageVersion=$(IsStable) 
+        /p:TargetArchitecture=x64
+        $(_BlobFeedArgs) 
+        $(_CommonPublishArgs) 
+        $(_NugetFeedArgs) 
+        $(_SymbolServerArgs) 
+        /bl:$(Build.SourcesDirectory)\finalizepublish.binlog'
+      condition: and(succeeded(), eq(variables._PublishType, 'nopublishtype'))
+
+    - task: CopyFiles@2
+      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)'
+        Contents: |
+          *.log
+          *.binlog
+        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+      continueOnError: true
+      condition: succeededOrFailed()
+
+    - task: CopyFiles@2
+      displayName: Copy Manifest file
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/artifacts/log/AssetManifest'
+        TargetFolder: '$(Build.StagingDirectory)/AssetManifests'
+      continueOnError: true
+      condition: succeededOrFailed()
+
+    - task: PublishBuildArtifacts@1
+      displayName: Publish Artifact BuildLogs
+      inputs:
+        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
+        ArtifactName: Finalize_Publish
+      condition: succeededOrFailed()
+
+    - task: PublishBuildArtifacts@1
+      displayName: Push Asset Manifests
+      inputs:
+        PathtoPublish: '$(Build.StagingDirectory)/AssetManifests'
+        PublishLocation: Container
+        ArtifactName: AssetManifests
+      continueOnError: true
+      condition: succeededOrFailed()

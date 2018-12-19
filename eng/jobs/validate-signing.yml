@@ -1,0 +1,59 @@
+jobs:
+- job: Signing_Validation
+  # Run only if all build legs succeeded
+  condition: and(succeeded('Build_Linux_x64_glibc'),
+                succeeded('Build_Linux_Arm64'),
+                succeeded('Build_Linux_Arm'),
+                succeeded('Build_Linux_x64_Alpine36'),
+                succeeded('Build_Linux_x64_Rhel6'),
+                succeeded('Build_Windows_x64'),
+                succeeded('Build_Windows_x86'),
+                succeeded('Build_Windows_Arm'),
+                succeeded('Build_Windows_Arm64'),
+                succeeded('Build_OSX'),
+                ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'))
+  # Run after all dependent legs are executed
+  pool:
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      name: Hosted VS2017
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      name: dotnet-internal-temp
+  dependsOn: 
+    - Build_Linux_x64_glibc
+    - Build_Linux_Arm64
+    - Build_Linux_Arm
+    - Build_Linux_x64_Alpine36
+    # - Build_Linux_x64_FreeBSD
+    - Build_Linux_x64_Rhel6
+    - Build_Windows_x64
+    - Build_Windows_x86
+    - Build_Windows_Arm
+    - Build_Windows_Arm64
+    - Build_OSX
+  steps:
+
+  - script: build.cmd
+      -signing-validation 
+      -- '$(_CommonPublishArgs)
+      /p:OfficialBuildId=$(OfficialBuildId)
+      /flp:v=detailed
+      /p:SignType=$(SignType)
+      /p:StabilizePackageVersion=$(IsStable)'
+  
+  - task: CopyFiles@2
+    displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: |
+        *.log
+        Bin\SigningValidation\Logs\**
+      TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+    continueOnError: true
+    condition: succeededOrFailed()
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact BuildLogs
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
+      ArtifactName: Signing_Validation
+    continueOnError: true
+    condition: succeededOrFailed()
