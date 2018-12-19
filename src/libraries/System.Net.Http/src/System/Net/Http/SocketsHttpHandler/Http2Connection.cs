@@ -464,9 +464,9 @@ namespace System.Net.Http
                 _initialWindowSize = newSize;
 
                 // Adjust existing streams
-                foreach (Http2Stream http2Stream in _httpStreams.Values)
+                foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
-                    http2Stream.OnWindowUpdate(delta);
+                    kvp.Value.OnWindowUpdate(delta);
                 }
             }
         }
@@ -781,7 +781,7 @@ namespace System.Net.Http
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request)
         {
-            // Ensure we don't exceed the max conurrent streams setting.
+            // Ensure we don't exceed the max concurrent streams setting.
             await _concurrentStreams.RequestCreditAsync(1).ConfigureAwait(false);
 
             // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
@@ -830,7 +830,7 @@ namespace System.Net.Http
                     await FlushOutgoingBytesAsync().ConfigureAwait(false);
                 }
             }
-            catch (Exception)
+            catch
             {
                 http2Stream.Dispose();
                 throw;
@@ -1123,10 +1123,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (http2Stream != null)
-                {
-                    http2Stream.Dispose();
-                }
+                http2Stream?.Dispose();
 
                 if (e is IOException ioe)
                 {
