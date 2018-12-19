@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{03D84CBD-896D-4B2F-9A22-07034F51E73D}</ProjectGuid>
     <AssemblyName>System.Security.Cryptography.Pkcs</AssemblyName>
@@ -7,7 +7,7 @@
     <OmitResources Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</OmitResources>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
-    <NoWarn>$(NoWarn);CS3016</NoWarn>
+    <NoWarn>$(NoWarn);CS1574;CS3016</NoWarn>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
@@ -145,8 +145,29 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptGetProvParam.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.CryptGetProvParam.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptAcquireContext.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.CryptAcquireContext.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertNameToStr.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptDestroyHash.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.CryptDestroyHash.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptDestroyKey.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.CryptDestroyKey.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CryptReleaseContext.cs">
+      <Link>Common\Interop\Windows\advapi32\Interop.CryptReleaseContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\SafeHashHandle.cs">
+      <Link>Common\Interop\Windows\advapi32\SafeHashHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\SafeKeyHandle.cs">
+      <Link>Common\Interop\Windows\advapi32\SafeKeyHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\SafeProvHandle.cs">
+      <Link>Common\Interop\Windows\advapi32\SafeProvHandle.cs</Link>
     </Compile>
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_ID.cs" />
@@ -231,6 +252,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs">
       <Link>Common\Interop\Windows\NCrypt\Interop.NCryptFreeObject.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleCache.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Internal types (platform: AnyOS) -->
