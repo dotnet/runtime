@@ -90,6 +90,56 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_NoResponseBody_Success()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(0, (await response.Content.ReadAsByteArrayAsync()).Length);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_ZeroLengthResponseBody_Success()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                await server.SendDefaultResponseHeadersAsync(streamId);
+
+                // Send zero-length body
+                var frame = new DataFrame(new byte[0], FrameFlags.EndStream, 0, streamId);
+                await server.WriteFrameAsync(frame);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal(0, (await response.Content.ReadAsByteArrayAsync()).Length);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_ServerSendsValidSettingsValues_Success()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -214,8 +264,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue(31514)]
-        public async Task ClosedStream_FrameReceived_ResetsStream()
+        public async Task CompletedResponse_FrameReceived_ResetsStream()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -223,27 +272,115 @@ namespace System.Net.Http.Functional.Tests
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(handler))
             {
-                Task sendTask = client.GetAsync(server.Address);
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
                 await server.EstablishConnectionAsync();
-                await server.ReadRequestHeaderAsync();
+                server.IgnoreWindowUpdates();
+                int streamId = await server.ReadRequestHeaderAsync();
 
-                // Send a reset stream frame so that stream 1 moves to a terminal state.
-                RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.Padded, 0x1, 1);
-                await server.WriteFrameAsync(resetStream);
+                // Send response and end stream.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+                DataFrame dataFrame = new DataFrame(new byte[10], FrameFlags.EndStream, 0, streamId);
+                await server.WriteFrameAsync(dataFrame);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 // Send a frame on the now-closed stream.
-                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.Padded, 10, 1);
+                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
                 await server.WriteFrameAsync(invalidFrame);
 
                 // Receive a RST_STREAM frame.
                 Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
                 Assert.Equal(FrameType.RstStream, receivedFrame.Type);
+                Assert.Equal(streamId, receivedFrame.StreamId);
 
-                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+                // Connection should still be usable.
+                sendTask = client.GetAsync(server.Address);
+                streamId = await server.ReadRequestHeaderAsync();
+                await server.SendDefaultResponseAsync(streamId);
+                response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task EmptyResponse_FrameReceived_ResetsStream()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Send empty response.
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Send a frame on the now-closed stream.
+                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
+                await server.WriteFrameAsync(invalidFrame);
+
+                // Receive a RST_STREAM frame.
+                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(FrameType.RstStream, receivedFrame.Type);
+                Assert.Equal(streamId, receivedFrame.StreamId);
+
+                // Connection should still be usable.
+                sendTask = client.GetAsync(server.Address);
+                streamId = await server.ReadRequestHeaderAsync();
+                await server.SendDefaultResponseAsync(streamId);
+                response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task ResetResponseStream_FrameReceived_ResetsStream()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Send a reset stream frame so that stream 1 moves to a terminal state.
+                RstStreamFrame resetStream = new RstStreamFrame(FrameFlags.None, 0x1, streamId);
+                await server.WriteFrameAsync(resetStream);
+
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+
+                // Send a frame on the now-closed stream.
+                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
+                await server.WriteFrameAsync(invalidFrame);
+
+                // Receive a RST_STREAM frame.
+                Frame receivedFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(FrameType.RstStream, receivedFrame.Type);
+                Assert.Equal(streamId, receivedFrame.StreamId);
+
+                // Connection should still be usable.
+                sendTask = client.GetAsync(server.Address);
+                streamId = await server.ReadRequestHeaderAsync();
+                await server.SendDefaultResponseAsync(streamId);
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
         {
@@ -367,6 +504,225 @@ namespace System.Net.Http.Functional.Tests
                 await server.SendDefaultResponseAsync(streamId);
 
                 HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_InitialWindowSize_ClientDoesNotExceedWindows()
+        {
+            const int DefaultInitialWindowSize = 65535;
+            const int ContentSize = 100_000;
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            TestHelper.EnsureHttp2Feature(handler);
+
+            var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
+
+                await server.EstablishConnectionAsync();
+
+                // Bump connection window so it won't block the client.
+                await server.WriteFrameAsync(new WindowUpdateFrame(ContentSize - DefaultInitialWindowSize, 0));
+
+                Frame frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Receive up to initial window size
+                int bytesReceived = 0;
+                while (bytesReceived < DefaultInitialWindowSize)
+                {
+                    frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                    Assert.Equal(streamId, frame.StreamId);
+                    Assert.Equal(FrameType.Data, frame.Type);
+                    Assert.Equal(FrameFlags.None, frame.Flags);
+                    Assert.True(frame.Length > 0);
+
+                    bytesReceived += frame.Length;
+                }
+
+                Assert.Equal(DefaultInitialWindowSize, bytesReceived);
+
+                // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
+                Task<Frame> readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Change SETTINGS_INITIAL_WINDOW_SIZE to 0. This will make the client's credit go negative.
+                server.ExpectSettingsAck();
+                await server.WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 0 }));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase stream window by one. Client credit will still be negative.
+                await server.WriteFrameAsync(new WindowUpdateFrame(1, streamId));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Change SETTINGS_INITIAL_WINDOW_SIZE to 1. Client credit will still be negative.
+                server.ExpectSettingsAck();
+                await server.WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 1 }));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase stream window so client credit will be 0.
+                await server.WriteFrameAsync(new WindowUpdateFrame(DefaultInitialWindowSize - 2, streamId));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase stream window by one, so client can now send a single byte.
+                await server.WriteFrameAsync(new WindowUpdateFrame(1, streamId));
+
+                frame = await readFrameTask;
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(1, frame.Length);
+                bytesReceived++;
+
+                // Issue another read and ensure it doesn't complete yet.
+                readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase SETTINGS_INITIAL_WINDOW_SIZE to 2, so client can now send a single byte.
+                server.ExpectSettingsAck();
+                await server.WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = 2 }));
+
+                frame = await readFrameTask;
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(1, frame.Length);
+                bytesReceived++;
+
+                // Issue another read and ensure it doesn't complete yet.
+                readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Increase SETTINGS_INITIAL_WINDOW_SIZE to be enough that the client can send the rest of the content.
+                server.ExpectSettingsAck();
+                await server.WriteFrameAsync(new SettingsFrame(new SettingsEntry { SettingId = SettingId.InitialWindowSize, Value = ContentSize - (DefaultInitialWindowSize - 1) }));
+
+                frame = await readFrameTask;
+                Assert.Equal(streamId, frame.StreamId);
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(FrameFlags.None, frame.Flags);
+                Assert.True(frame.Length > 0);
+
+                bytesReceived += frame.Length;
+
+                // Read to end of stream
+                while (true)
+                {
+                    frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                    if (frame.EndStreamFlag)
+                    {
+                        break;
+                    }
+
+                    Assert.Equal(streamId, frame.StreamId);
+                    Assert.Equal(FrameType.Data, frame.Type);
+                    Assert.Equal(FrameFlags.None, frame.Flags);
+                    Assert.True(frame.Length > 0);
+
+                    bytesReceived += frame.Length;
+                }
+
+                Assert.Equal(ContentSize, bytesReceived);
+
+                // Verify EndStream frame
+                Assert.Equal(streamId, frame.StreamId);
+                Assert.Equal(FrameType.Data, frame.Type);
+                Assert.Equal(FrameFlags.EndStream, frame.Flags);
+                Assert.True(frame.Length == 0);
+
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await clientTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_MaxConcurrentStreams_LimitEnforced()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                server.IgnoreWindowUpdates();
+
+                // Process first request and send response.
+                int streamId = await server.ReadRequestHeaderAsync();
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Change MaxConcurrentStreams setting and wait for ack.
+                // (We don't want to send any new requests until we receive the ack, otherwise we may have a timing issue.)
+                SettingsFrame settingsFrame = new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 0 });
+                await server.WriteFrameAsync(settingsFrame);
+                Frame settingsAckFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(FrameType.Settings, settingsAckFrame.Type);
+                Assert.Equal(FrameFlags.Ack, settingsAckFrame.Flags);
+
+                // Issue two more requests. We shouldn't send either of them.
+                sendTask = client.GetAsync(server.Address);
+                Task<HttpResponseMessage> sendTask2 = client.GetAsync(server.Address);
+
+                // Issue another read. It shouldn't complete yet. Wait a brief period of time to ensure it doesn't complete.
+                Task<Frame> readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Change MaxConcurrentStreams again to allow a single request to come through.
+                server.ExpectSettingsAck();
+                settingsFrame = new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 1 });
+                await server.WriteFrameAsync(settingsFrame);
+
+                // First request should be sent
+                Frame frame = await readFrameTask;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                streamId = frame.StreamId;
+
+                // Issue another read. Second request should not be sent yet.
+                readFrameTask = server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                await Task.Delay(500);
+                Assert.False(readFrameTask.IsCompleted);
+
+                // Send response for first request
+                await server.SendDefaultResponseAsync(streamId);
+                response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Second request should be sent now
+                frame = await readFrameTask;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                streamId = frame.StreamId;
+
+                // Send response for second request
+                await server.SendDefaultResponseAsync(streamId);
+                response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
