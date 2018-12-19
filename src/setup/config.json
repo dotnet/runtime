@@ -196,10 +196,40 @@
             "Project": "src\\corehost\\build.proj"
           }
         },
+        "packaging": {
+          "description": "Build packaging project.",
+          "settings": {
+            "Project": "src\\pkg\\packaging\\dir.proj"
+          }
+        },
+        "pkg": {
+          "description": "Build nuget packaging project.",
+          "settings": {
+            "Project": "src\\pkg\\dir.proj"
+          }
+        },
+        "publishing": {
+          "description": "Build publishing project.",
+          "settings": {
+            "Project": "publish\\publish.proj"
+          }
+        },
+        "sharedfx": {
+          "description": "Build Shared Framework project.",
+          "settings": {
+            "Project": "src\\sharedframework\\sharedframework.proj"
+          }
+        },
         "signing-validation": {
           "description": "Build signing validation project.",
           "settings": {
             "Project": "signing\\signingvalidation.proj"
+          }
+        },
+        "signing": {
+          "description": "Build signing project.",
+          "settings": {
+            "Project": "signing\\sign.proj"
           }
         },
         "GenerateVersion": {
@@ -345,12 +375,12 @@
     "msbuild": {
       "osSpecific":{
         "windows": {
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false",
-          "path": "Tools/msbuild.cmd"
+          "defaultParameters": "msbuild /nologo /verbosity:minimal /clp:Summary /maxcpucount /nodeReuse:false",
+          "path": "Tools/dotnetcli/dotnet"
         },
         "unix":{
-          "defaultParameters": "/nologo /verbosity:minimal /clp:Summary /maxcpucount /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
-          "path": "Tools/msbuild.sh"
+          "defaultParameters": "msbuild /nologo /verbosity:minimal /clp:Summary /maxcpucount /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log",
+          "path": "Tools/dotnetcli/dotnet"
         }
       },
       "valueTypes": {

@@ -1,0 +1,189 @@
+trigger:
+- master
+
+variables:
+  - name: TeamName
+    value: dotnet-core-acquisition
+  # Skip Running CI tests
+  - name: SkipTests
+    value: false
+  # Set build as stable to remove build number from package names, used for milestone builds
+  - name: IsStable
+    value: false
+  # Set Official Build Id
+  - name: OfficialBuildId
+    value: $(Build.BuildNumber)
+  # Produce Test build for PR and Public builds
+  - ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+    - name: SignType
+      value: test
+  # Set variables only for Official build from internal
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - name: SignType
+      value: real
+  # Variable groups
+    - group: DotNet-Blob-Feed
+    - group: DotNet-Symbol-Server-Pats
+    # Used for publishing individual leg assets to azure blobstorage
+    - group: DotNet-DotNetCli-Storage
+    # Used for publishing to myget
+    - group: DotNet-MyGet-Publish
+    # Used for dotnet/versions update
+    - group: DotNet-Versions-Publish
+
+    # BlobFeed update
+    - name: _PublishBlobFeedUrl
+      value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+    - name: _BlobFeedArgs
+      value: /p:PackagesUrl=$(_PublishBlobFeedUrl)
+        /p:SymbolPackagesUrl=$(_PublishBlobFeedUrl)
+        /p:TransportFeedAccessToken=$(dotnetfeed-storage-access-key-1)
+
+    # Symbol Server update
+    - name: _SymbolServerPath
+      value: https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection
+    - name: _SymbolServerArgs
+      value: /p:SymbolServerPath=$(_SymbolServerPath)
+         /p:SymbolServerPAT=$(microsoft-symbol-server-pat)
+         /p:SymbolExpirationInDays=365
+
+    # ******** Official values *****
+    - name: _CommonPublishArgs
+      value: /p:AzureAccountName=dotnetcli
+        /p:ContainerName=dotnet
+        /p:AzureAccessToken=$(dotnetcli-storage-key)
+        /p:ChecksumAzureAccountName=dotnetclichecksums
+        /p:ChecksumContainerName=dotnet
+        /p:ChecksumAzureAccessToken=$(dotnetclichecksums-storage-key)
+    # Used for publishing to dotnet myget account
+    - name: MyGetApiKey
+      value: $(dotnet-myget-org-api-key )
+    - name: MyGetFeedUrl
+      value: https://dotnet.myget.org/F/dotnet-core/api/v2/package
+    - name: MyGetSymbolsFeedUrl
+      value: https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package
+    - name: _NugetFeedArgs
+      value: /p:NuGetFeedUrl=$(MyGetFeedUrl)
+        /p:NuGetSymbolsFeedUrl=$(MyGetSymbolsFeedUrl)
+        /p:NuGetApiKey=$(MyGetApiKey)
+
+    # ******* End Dev testing Configuration ********
+jobs:
+  ################################################################################
+  # Build Linux legs
+  ################################################################################
+- template: /eng/jobs/linux-build.yml
+  parameters:
+    displayName: Build_Linux_x64_glibc
+    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-7-d485f41-20173404063424
+    packageDistroListDeb: [debian.8,debian.9,ubuntu.16.04,ubuntu.18.04]
+    packageDistroListRpm: [centos.7,fedora.27,opensuse.42,oraclelinux.7,sles.12]
+    portableBuild: true
+    targetArchitecture: x64
+
+- template: /eng/jobs/linux-build.yml
+  parameters:
+    crossBuild: true
+    displayName: Build_Linux_Arm
+    dockerImage: microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-e435274-20180323032140
+    additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm
+    portableBuild: true
+    skipTests: true
+    targetArchitecture: arm
+
+- template: /eng/jobs/linux-build.yml
+  parameters:
+    crossBuild: true
+    displayName: Build_Linux_Arm64
+    dockerImage: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180316023254
+    additionalRunArgs: -e ROOTFS_DIR=/crossrootfs/arm64
+    portableBuild: true
+    skipTests: true
+    targetArchitecture: arm64
+
+- template: /eng/jobs/linux-build.yml
+  parameters:
+    additionalMSBuildArgs: /p:OutputRid=linux-musl-x64
+    displayName: Build_Linux_x64_Alpine36
+    dockerImage: microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-20171119021156
+    portableBuild: false
+    targetArchitecture: x64
+
+- template: /eng/jobs/linux-build.yml
+  parameters:
+    additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
+    displayName: Build_Linux_x64_Rhel6
+    dockerImage: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+    portableBuild: false
+    targetArchitecture: x64
+
+# - template: /eng/jobs/linux-build.yml
+#   parameters:
+#     additionalMSBuildArgs: /p:OutputRid=rhel.6-x64
+#     displayName: Build_Linux_x64_FreeBSD
+#     dockerImage: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+#     osGroup: FreeBSD
+#     portableBuild: true
+#     skipTests: true
+#     targetArchitecture: x64
+
+  ################################################################################
+  # Build Windows legs
+  ################################################################################
+
+# Windows x64
+- template: /eng/jobs/windows-build.yml
+  parameters:
+    buildFullPlatformManifest: true
+    displayName: Build_Windows_x64
+    publishRidAgnosticPackages: true
+    targetArchitecture: x64
+
+# Windows x86
+- template: /eng/jobs/windows-build.yml
+  parameters:
+    displayName: Build_Windows_x86
+    targetArchitecture: x86
+
+# Windows Arm64
+- template: /eng/jobs/windows-build.yml
+  parameters:
+    displayName: Build_Windows_Arm64
+    skipTests: true
+    targetArchitecture: arm64
+
+# Windows Arm
+- template: /eng/jobs/windows-build.yml
+  parameters:
+    displayName: Build_Windows_Arm
+    skipTests: true
+    targetArchitecture: arm
+
+  ################################################################################
+  # Build Build_OSX leg
+  ################################################################################
+- template: /eng/jobs/osx-build.yml
+
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  ################################################################################
+  # Signing validation
+  ################################################################################
+  - template: /eng/jobs/validate-signing.yml
+ 
+  ################################################################################
+  # Finalize build publish
+  # publish nuget packages to blobfeed, symbolserver, and myget
+  ################################################################################
+  - template: /eng/jobs/finalize-publish.yml
+    parameters:
+      _PublishType: nopublishtype
+
+  ################################################################################
+  # Publish to B.A.R
+  ################################################################################
+  - template: /eng/common/templates/job/publish-build-assets.yml
+    parameters:
+      pool:
+        name: dotnet-internal-temp
+      dependsOn:
+        - Finalize_Publish
