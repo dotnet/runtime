@@ -1,0 +1,59 @@
+jobs:
+- job: Build_OSX
+  pool:
+    ${{ if eq(variables['System.TeamProject'], 'public') }}:
+      name: Hosted macOS
+    ${{ if ne(variables['System.TeamProject'], 'public') }}:
+      name: Hosted Mac internal
+  strategy:
+    matrix: 
+      debug:
+        _BuildConfig: Debug
+        _PublishType: none
+      release:
+        _BuildConfig: Release
+        _PublishType: blob
+  steps:
+  - script: $(Build.SourcesDirectory)/build.sh
+      -OfficialBuildId=$(OfficialBuildId)
+      -ConfigurationGroup=$(_BuildConfig)
+      -PortableBuild=true
+      -strip-symbols
+      -SkipTests=$(SkipTests)
+      -- /p:StabilizePackageVersion=$(IsStable)
+      /bl:$(Build.SourcesDirectory)\build.binlog
+    displayName: Build 
+    condition: succeeded()
+
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - script: $(Build.SourcesDirectory)/Tools/msbuild.sh
+        $(Build.SourcesDirectory)/publish/publish.proj
+        $(_CommonPublishArgs)
+        /p:PublishType=$(_PublishType)
+        /p:TargetArchitecture=x64
+        /p:ConfigurationGroup=$(_BuildConfig)
+        /p:PortableBuild=true
+        /p:OSGroup=OSX
+        /p:StabilizePackageVersion=$(IsStable)
+        /bl:$(Build.SourcesDirectory)\publish.binlog
+      displayName: Publish 
+      condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
+
+  - task: CopyFiles@2
+    displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
+    inputs:
+      SourceFolder: '$(Build.SourcesDirectory)'
+      Contents: |
+        *.log
+        *.binlog
+      TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+    continueOnError: true
+    condition: succeededOrFailed()
+  - task: PublishBuildArtifacts@1
+    displayName: Publish Artifact BuildLogs
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
+      ArtifactName: $(Agent.Os)_$(Agent.JobName)
+    continueOnError: true
+    condition: succeededOrFailed()
+  

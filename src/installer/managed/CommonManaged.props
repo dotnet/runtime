@@ -10,7 +10,7 @@
     <Serviceable>true</Serviceable>
     <PackageLicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</PackageLicenseUrl>
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
-    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <NugetLicenseFile>$(RepoRoot)LICENSE.TXT</NugetLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
   </PropertyGroup>
 
@@ -36,8 +36,8 @@
 
   <!-- Add required legal files to packages -->
   <ItemGroup>
-    <Content Condition="Exists('$(PackageLicenseFile)')"
-             Include="$(PackageLicenseFile)">
+    <Content Condition="Exists('$(NugetLicenseFile)')"
+             Include="$(NugetLicenseFile)">
       <PackagePath />
     </Content>
     <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
