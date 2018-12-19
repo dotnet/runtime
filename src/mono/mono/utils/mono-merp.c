@@ -110,6 +110,7 @@ typedef struct {
 	const char *eventType;
 
 	MonoStackHash hashes;
+	GSList *annotations;
 } MERPStruct;
 
 typedef struct {
@@ -127,9 +128,15 @@ typedef struct {
 	const char *moduleVersion;
 
 	gboolean log;
+	GSList *annotations;
 } MerpOptions;
 
 static MerpOptions config;
+
+typedef struct {
+	char *key;
+	char *value;
+} MonoMerpAnnotationEntry;
 
 static const char *
 get_merp_bitness (MerpArch arch)
@@ -345,6 +352,8 @@ mono_init_merp (const intptr_t crashed_pid, const char *signal, MonoStackHash *h
 	merp->eventType = config.eventType;
 
 	merp->hashes = *hashes;
+
+	merp->annotations = config.annotations;
 }
 
 static gboolean
@@ -369,6 +378,14 @@ mono_merp_write_fingerprint_payload (const char *non_param_data, const MERPStruc
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t\"ExceptionType\" : \"%s\",\n", get_merp_exctype (merp->exceptionArg));
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t\"StackChecksum\" : \"0x%llx\",\n", merp->hashes.offset_free_hash);
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t\"StackHash\" : \"0x%llx\",\n", merp->hashes.offset_rich_hash);
+	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t\"Extra\" : \n\t\t{\n");
+
+	for (GSList *cursor = merp->annotations; cursor; cursor = cursor->next) {
+		MonoMerpAnnotationEntry *iter = (MonoMerpAnnotationEntry *) cursor->data;
+		MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t\t\"%s\" : \"%s\"\n", iter->key, iter->value);
+	}
+
+	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t},\n");
 
 	// Provided by icall
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "\t\t\"OSVersion\" : \"%s\",\n", merp->osVersion);
@@ -472,6 +489,15 @@ mono_merp_invoke (const intptr_t crashed_pid, const char *signal, const char *no
 }
 
 void
+mono_merp_add_annotation (const char *key, const char *value)
+{
+	MonoMerpAnnotationEntry *entry = g_new0 (MonoMerpAnnotationEntry, 1);
+	entry->key = g_strdup (key);
+	entry->value = g_strdup (value);
+	config.annotations = g_slist_prepend (config.annotations, entry);
+}
+
+void
 mono_merp_disable (void)
 {
 	if (!config.enable_merp)
@@ -484,6 +510,7 @@ mono_merp_disable (void)
 	g_free ((char*)config.eventType);
 	g_free ((char*)config.appPath); 
 	g_free ((char*)config.moduleVersion);
+	g_slist_free (config.annotations);
 	memset (&config, 0, sizeof (config));
 }
 
