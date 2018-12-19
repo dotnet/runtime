@@ -399,7 +399,7 @@ mono_write_wer_template (MERPStruct *merp)
 	g_assertf (handle != -1, "Could not open WER XML file at %s", merp->werXmlPath);
 
 	// Provided by icall
-	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "<?xml version=\"1.0\" encoding=\"UTF-16\"?>\n");
+	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "<WERReportMetadata>\n");
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "<ProblemSignatures>\n");
 	MOSTLY_ASYNC_SAFE_FPRINTF(handle, "<EventType>%s</EventType>\n", merp->eventType);
