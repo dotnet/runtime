@@ -4,6 +4,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\UIHintAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\FilterUIHintAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayAttributeTests.cs" />
@@ -21,6 +22,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\FileExtensionsAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MaxLengthAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\MetadataTypeAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" />
@@ -45,5 +47,5 @@
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
-  </ItemGroup>  
+  </ItemGroup>
 </Project>
