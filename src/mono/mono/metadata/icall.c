@@ -7643,7 +7643,7 @@ ves_icall_MonoMethod_get_name (MonoReflectionMethodHandle m, MonoError *error)
 }
 
 void
-mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
+ves_icall_System_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 {
 	iter->sig = *(MonoMethodSignature**)argsp;
 	
@@ -7662,45 +7662,41 @@ mono_ArgIterator_Setup (MonoArgIterator *iter, char* argsp, char* start)
 	/* g_print ("sig %p, param_count: %d, sent: %d\n", iter->sig, iter->sig->param_count, iter->sig->sentinelpos); */
 }
 
-MonoTypedRef
-mono_ArgIterator_IntGetNextArg (MonoArgIterator *iter)
+void
+ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator *iter, MonoTypedRef *res)
 {
 	guint32 i, arg_size;
 	gint32 align;
-	MonoTypedRef res;
 
 	i = iter->sig->sentinelpos + iter->next_arg;
 
 	g_assert (i < iter->sig->param_count);
 
-	res.type = iter->sig->params [i];
-	res.klass = mono_class_from_mono_type_internal (res.type);
-	arg_size = mono_type_stack_size (res.type, &align);
+	res->type = iter->sig->params [i];
+	res->klass = mono_class_from_mono_type_internal (res->type);
+	arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__) || defined(__mips__)
 	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
-	res.value = iter->args;
+	res->value = iter->args;
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
 	if (arg_size <= sizeof (gpointer)) {
 		int dummy;
-		int padding = arg_size - mono_type_size (res.type, &dummy);
-		res.value = (guint8*)res.value + padding;
+		int padding = arg_size - mono_type_size (res->type, &dummy);
+		res->value = (guint8*)res->value + padding;
 	}
 #endif
 	iter->args = (char*)iter->args + arg_size;
 	iter->next_arg++;
 
-	/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value); */
-
-	return res;
+	/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res->type->type, arg_size, res->value); */
 }
 
-MonoTypedRef
-mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
+void
+ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoTypedRef *res, MonoType *type)
 {
 	guint32 i, arg_size;
 	gint32 align;
-	MonoTypedRef res;
 
 	i = iter->sig->sentinelpos + iter->next_arg;
 
@@ -7709,29 +7705,26 @@ mono_ArgIterator_IntGetNextArgT (MonoArgIterator *iter, MonoType *type)
 	while (i < iter->sig->param_count) {
 		if (!mono_metadata_type_equal (type, iter->sig->params [i]))
 			continue;
-		res.type = iter->sig->params [i];
-		res.klass = mono_class_from_mono_type_internal (res.type);
+		res->type = iter->sig->params [i];
+		res->klass = mono_class_from_mono_type_internal (res->type);
 		/* FIXME: endianess issue... */
-		arg_size = mono_type_stack_size (res.type, &align);
+		arg_size = mono_type_stack_size (res->type, &align);
 #if defined(__arm__) || defined(__mips__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
-		res.value = iter->args;
+		res->value = iter->args;
 		iter->args = (char*)iter->args + arg_size;
 		iter->next_arg++;
 		/* g_print ("returning arg %d, type 0x%02x of size %d at %p\n", i, res.type->type, arg_size, res.value); */
-		return res;
+		return;
 	}
 	/* g_print ("arg type 0x%02x not found\n", res.type->type); */
 
-	res.type = NULL;
-	res.value = NULL;
-	res.klass = NULL;
-	return res;
+	memset (res, 0, sizeof (MonoTypedRef));
 }
 
 MonoType*
-mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
+ves_icall_System_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 {
 	gint i;
 	
@@ -7743,45 +7736,42 @@ mono_ArgIterator_IntGetNextArgType (MonoArgIterator *iter)
 }
 
 MonoObjectHandle
-mono_TypedReference_ToObject (MonoTypedRef* tref, MonoError *error)
+ves_icall_System_TypedReference_ToObject (MonoTypedRef* tref, MonoError *error)
 {
 	return typed_reference_to_object (tref, error);
 }
 
-MonoTypedRef
-mono_TypedReference_MakeTypedReferenceInternal (MonoObject *target, MonoArray *fields)
+void
+ves_icall_System_TypedReference_InternalMakeTypedReference (MonoTypedRef *res, MonoObjectHandle target, MonoArrayHandle fields, MonoReflectionTypeHandle last_field, MonoError *error)
 {
-	MonoTypedRef res;
-	MonoReflectionField *f;
 	MonoClass *klass;
 	MonoType *ftype = NULL;
-	guint8 *p = NULL;
 	int i;
 
-	memset (&res, 0, sizeof (res));
+	memset (res, 0, sizeof (MonoTypedRef));
 
-	g_assert (fields);
-	g_assert (mono_array_length_internal (fields) > 0);
+	g_assert (mono_array_handle_length (fields) > 0);
 
-	klass = target->vtable->klass;
+	klass = mono_handle_class (target);
 
-	for (i = 0; i < mono_array_length_internal (fields); ++i) {
-		f = mono_array_get_internal (fields, MonoReflectionField*, i);
+	int offset = 0;
+	for (i = 0; i < mono_array_handle_length (fields); ++i) {
+		MonoClassField *f;
+		MONO_HANDLE_ARRAY_GETVAL (f, fields, MonoClassField*, i);
+
 		g_assert (f);
 
 		if (i == 0)
-			p = (guint8*)target + f->field->offset;
+			offset = f->offset;
 		else
-			p += f->field->offset - sizeof (MonoObject);
-		klass = mono_class_from_mono_type_internal (f->field->type);
-		ftype = f->field->type;
+			offset += f->offset - sizeof (MonoObject);
+		klass = mono_class_from_mono_type_internal (f->type);
+		ftype = f->type;
 	}
 
-	res.type = ftype;
-	res.klass = mono_class_from_mono_type_internal (ftype);
-	res.value = p;
-
-	return res;
+	res->type = ftype;
+	res->klass = mono_class_from_mono_type_internal (ftype);
+	res->value = (guint8*)MONO_HANDLE_RAW (target) + offset;
 }
 
 static void

@@ -195,10 +195,10 @@ HANDLES(APPDOM_21, "getRootDomain", ves_icall_System_AppDomain_getRootDomain, Mo
 HANDLES(APPDOM_22, "getSetup", ves_icall_System_AppDomain_getSetup, MonoAppDomainSetup, 1, (MonoAppDomain))
 
 ICALL_TYPE(ARGI, "System.ArgIterator", ARGI_1)
-NOHANDLES(ICALL(ARGI_1, "IntGetNextArg()",                  mono_ArgIterator_IntGetNextArg))
-NOHANDLES(ICALL(ARGI_2, "IntGetNextArg(intptr)", mono_ArgIterator_IntGetNextArgT))
-NOHANDLES(ICALL(ARGI_3, "IntGetNextArgType",                mono_ArgIterator_IntGetNextArgType))
-NOHANDLES(ICALL(ARGI_4, "Setup",                            mono_ArgIterator_Setup))
+NOHANDLES(ICALL(ARGI_1, "IntGetNextArg",         ves_icall_System_ArgIterator_IntGetNextArg))
+NOHANDLES(ICALL(ARGI_2, "IntGetNextArgType",     ves_icall_System_ArgIterator_IntGetNextArgType))
+NOHANDLES(ICALL(ARGI_3, "IntGetNextArgWithType", ves_icall_System_ArgIterator_IntGetNextArgWithType))
+NOHANDLES(ICALL(ARGI_4, "Setup",                 ves_icall_System_ArgIterator_Setup))
 
 ICALL_TYPE(ARRAY, "System.Array", ARRAY_1)
 HANDLES(ARRAY_1, "ClearInternal", ves_icall_System_Array_ClearInternal, void, 3, (MonoArray, int, int))
@@ -1151,8 +1151,8 @@ ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))
 
 ICALL_TYPE(TYPEDR, "System.TypedReference", TYPEDR_1)
-HANDLES(TYPEDR_1, "InternalToObject", mono_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))
-ICALL(TYPEDR_2, "MakeTypedReferenceInternal", mono_TypedReference_MakeTypedReferenceInternal)
+HANDLES(TYPEDR_1, "InternalMakeTypedReference", ves_icall_System_TypedReference_InternalMakeTypedReference, void, 4, (MonoTypedRef_ptr, MonoObject, MonoArray, MonoReflectionType))
+HANDLES(TYPEDR_2, "InternalToObject", ves_icall_System_TypedReference_ToObject, MonoObject, 1, (MonoTypedRef_ptr))
 
 ICALL_TYPE(VALUET, "System.ValueType", VALUET_1)
 ICALL(VALUET_1, "InternalEquals", ves_icall_System_ValueType_Equals)
