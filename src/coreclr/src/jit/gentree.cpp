@@ -6701,7 +6701,7 @@ GenTreeAllocObj* Compiler::gtNewAllocObjNode(CORINFO_RESOLVED_TOKEN* pResolvedTo
     const BOOL      mustRestoreHandle     = TRUE;
     BOOL* const     pRuntimeLookup        = nullptr;
     bool            usingReadyToRunHelper = false;
-    CorInfoHelpFunc helper;
+    CorInfoHelpFunc helper                = CORINFO_HELP_UNDEF;
     GenTree*        opHandle = impTokenToHandle(pResolvedToken, pRuntimeLookup, mustRestoreHandle, useParent);
 
 #ifdef FEATURE_READYTORUN_COMPILER
