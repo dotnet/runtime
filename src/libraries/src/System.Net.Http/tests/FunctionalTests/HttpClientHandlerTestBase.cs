@@ -4,23 +4,23 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Net.Test.Common;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTestBase : RemoteExecutorTestBase
     {
         protected virtual bool UseSocketsHttpHandler => true;
+        protected virtual bool UseHttp2LoopbackServer => false;
 
         protected bool IsWinHttpHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows && !PlatformDetection.IsUap && !PlatformDetection.IsFullFramework;
         protected bool IsCurlHandler => !UseSocketsHttpHandler && !PlatformDetection.IsWindows;
         protected bool IsNetfxHandler => PlatformDetection.IsWindows && PlatformDetection.IsFullFramework;
         protected bool IsUapHandler => PlatformDetection.IsWindows && PlatformDetection.IsUap;
 
-        protected bool BackendSupportsAlpn => PlatformDetection.SupportsAlpn;
-
         protected HttpClient CreateHttpClient() => new HttpClient(CreateHttpClientHandler());
 
-        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseSocketsHttpHandler);
+        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseSocketsHttpHandler, UseHttp2LoopbackServer);
 
         protected static HttpClient CreateHttpClient(string useSocketsHttpHandlerBoolString) =>
             new HttpClient(CreateHttpClientHandler(useSocketsHttpHandlerBoolString));
@@ -28,7 +28,7 @@ namespace System.Net.Http.Functional.Tests
         protected static HttpClientHandler CreateHttpClientHandler(string useSocketsHttpHandlerBoolString) =>
             CreateHttpClientHandler(bool.Parse(useSocketsHttpHandlerBoolString));
 
-        protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler)
+        protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler, bool useHttp2LoopbackServer = false)
         {
             HttpClientHandler handler;
 
@@ -48,6 +48,11 @@ namespace System.Net.Http.Functional.Tests
 
             TestHelper.EnsureHttp2Feature(handler);
 
+            if (useHttp2LoopbackServer)
+            {
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            }
+
             return handler;
         }
 
@@ -59,5 +64,9 @@ namespace System.Net.Http.Functional.Tests
             FieldInfo field = typeof(HttpClientHandler).GetField("_socketsHttpHandler", BindingFlags.Instance | BindingFlags.NonPublic);
             return field?.GetValue(handler);
         }
+
+        protected LoopbackServerFactory LoopbackServerFactory => UseHttp2LoopbackServer ? 
+                                                                (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton : 
+                                                                (LoopbackServerFactory)Http11LoopbackServerFactory.Singleton;
     }
 }
