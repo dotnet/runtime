@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Net.Test.Common
 {
-    public sealed partial class LoopbackServer : IDisposable
+    public sealed partial class LoopbackServer : GenericLoopbackServer, IDisposable
     {
         private Socket _listenSocket;
         private Options _options;
@@ -40,7 +40,7 @@ namespace System.Net.Test.Common
             _uri = new Uri($"{scheme}://{host}:{localEndPoint.Port}/");
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
             if (_listenSocket != null)
             {
@@ -437,6 +437,49 @@ namespace System.Net.Test.Common
                 await SendResponseAsync(statusCode, additionalHeaders, content);
                 return lines;
             }
+        }
+
+        //
+        // GenericLoopbackServer implementation
+        //
+
+        public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null)
+        {
+            string headerString = null;
+            if (headers != null)
+            {
+                foreach (HttpHeaderData headerData in headers)
+                {
+                    headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
+                }
+            }
+
+            List<string> headerLines = await AcceptConnectionSendResponseAndCloseAsync(statusCode, headerString, content);
+
+            HttpRequestData requestData = new HttpRequestData();
+
+            // Parse method and path
+            string[] splits = headerLines[0].Split(' ');
+            requestData.Method = splits[0];
+            requestData.Path = splits[1];
+
+            // TODO: Add handling for request body.
+            // In the meantime, just fail any request that's not a GET so that we don't confuse
+            // the client by not consuming the request body.
+            if (requestData.Method != "GET")
+            {
+                throw new NotImplementedException("Request body not supported");
+            }
+
+            // Convert header lines to key/value pairs
+            // Skip first line since it's the status line
+            foreach (var line in headerLines.Skip(1))
+            {
+                splits = line.Split(": ", 2);
+                requestData.Headers.Add(new HttpHeaderData(splits[0], splits[1]));
+            }
+
+            return requestData;
         }
     }
 }

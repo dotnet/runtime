@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
@@ -139,6 +140,11 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
+    public sealed class PlatformHandler_HttpCookieProtocolTests_Http11 : HttpCookieProtocolTests_Http11
+    {
+        protected override bool UseSocketsHttpHandler => false;
+    }
+
     public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         protected override bool UseSocketsHttpHandler => false;
@@ -154,11 +160,18 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-// Enable this to run HTTP2 tests on platform handler
+    // Enable this to run HTTP2 tests on platform handler
 #if PLATFORM_HANDLER_HTTP2_TESTS
     public sealed class PlatformHandlerTest_Http2 : HttpClientHandlerTest_Http2
     {
         protected override bool UseSocketsHttpHandler => false;
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class PlatformHandlerTest_Cookies_Http2 : HttpCookieProtocolTests
+    {
+        protected override bool UseSocketsHttpHandler => false;
+        protected override bool UseHttp2LoopbackServer => true;
     }
 #endif
 }
