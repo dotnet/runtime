@@ -41,8 +41,6 @@ typedef struct {
 	int indent;
 } MonoStateWriter;
 
-MONO_BEGIN_DECLS
-
 // Logging
 gboolean
 mono_summarize_set_timeline_dir (const char *directory);
@@ -95,7 +93,6 @@ mono_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread
 void
 mono_crash_dump (const char *jsonFile, MonoStackHash *hashes);
 
-MONO_END_DECLS
 #endif // DISABLE_CRASH_REPORTING
 
 #endif // MONO_UTILS_NATIVE_STATE
