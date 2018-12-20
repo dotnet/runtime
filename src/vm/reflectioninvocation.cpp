@@ -2375,15 +2375,6 @@ FCIMPL1(Object*, ReflectionInvocation::TypedReferenceToObject, TypedByRef * valu
 }
 FCIMPLEND
 
-#ifdef _DEBUG
-FCIMPL1(FC_BOOL_RET, ReflectionInvocation::IsAddressInStack, void * ptr)
-{
-    FCALL_CONTRACT;
-    FC_RETURN_BOOL(Thread::IsAddressInCurrentStack(ptr));
-}
-FCIMPLEND
-#endif
-
 FCIMPL2_IV(Object*, ReflectionInvocation::CreateEnum, ReflectClassBaseObject *pTypeUNSAFE, INT64 value) {
     FCALL_CONTRACT;
     

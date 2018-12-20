@@ -781,7 +781,7 @@ public:
         DWORD dwFactorLocalNum = NewLocal(ELEMENT_TYPE_I4);
         DWORD dwLengthLocalNum = NewLocal(ELEMENT_TYPE_I4);
 
-        mdToken tokPinningHelper = GetToken(MscorlibBinder::GetField(FIELD__PINNING_HELPER__M_DATA));
+        mdToken tokRawData = GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
 
         ILCodeLabel * pRangeExceptionLabel = NewCodeLabel();
         ILCodeLabel * pRangeExceptionLabel1 = NewCodeLabel();
@@ -817,13 +817,13 @@ public:
                 m_pCode->EmitBRFALSE(pTypeCheckOK); //Storing NULL is OK
                 
                 m_pCode->EmitLDARG(rank); // return param
-                m_pCode->EmitLDFLDA(tokPinningHelper);
+                m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // TypeHandle
 
                 m_pCode->EmitLoadThis();
-                m_pCode->EmitLDFLDA(tokPinningHelper);
+                m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
@@ -851,13 +851,13 @@ public:
                 m_pCode->EmitLDARG(hiddenArgIdx); // hidden param
                 m_pCode->EmitBRFALSE(pTypeCheckPassed);
                 m_pCode->EmitLDARG(hiddenArgIdx);
-                m_pCode->EmitLDFLDA(tokPinningHelper);          
+                m_pCode->EmitLDFLDA(tokRawData);          
                 m_pCode->EmitLDC(offsetof(ParamTypeDesc, m_Arg) - (Object::GetOffsetOfFirstField()+2));
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I();
                 
                 m_pCode->EmitLoadThis();
-                m_pCode->EmitLDFLDA(tokPinningHelper);
+                m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
                 m_pCode->EmitSUB();
                 m_pCode->EmitLDIND_I(); // Array MT
@@ -875,7 +875,7 @@ public:
         {
             // check if the array is SZArray.
             m_pCode->EmitLoadThis();
-            m_pCode->EmitLDFLDA(tokPinningHelper);
+            m_pCode->EmitLDFLDA(tokRawData);
             m_pCode->EmitLDC(Object::GetOffsetOfFirstField());
             m_pCode->EmitSUB();
             m_pCode->EmitLDIND_I();
@@ -889,7 +889,7 @@ public:
             // it is SZArray
             // bounds check
             m_pCode->EmitLoadThis();
-            m_pCode->EmitLDFLDA(tokPinningHelper);
+            m_pCode->EmitLDFLDA(tokRawData);
             m_pCode->EmitLDC(ArrayBase::GetOffsetOfNumComponents() - Object::GetOffsetOfFirstField());
             m_pCode->EmitADD();
             m_pCode->EmitLDIND_I4();
@@ -897,7 +897,7 @@ public:
             m_pCode->EmitBLE_UN(pRangeExceptionLabel);
 
             m_pCode->EmitLoadThis();
-            m_pCode->EmitLDFLDA(tokPinningHelper);
+            m_pCode->EmitLDFLDA(tokRawData);
             m_pCode->EmitLDC(ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField());
             m_pCode->EmitADD();
             m_pCode->EmitLDARG(firstIdx);          
@@ -909,7 +909,7 @@ public:
         {
             // Cache length
             m_pCode->EmitLoadThis();
-            m_pCode->EmitLDFLDA(tokPinningHelper);
+            m_pCode->EmitLDFLDA(tokRawData);
             m_pCode->EmitLDC((ArrayBase::GetBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + (idx-firstIdx)*sizeof(DWORD));
             m_pCode->EmitADD();
             m_pCode->EmitLDIND_I4();
@@ -922,7 +922,7 @@ public:
             {
                 // Load lower bound
                 m_pCode->EmitLoadThis();
-                m_pCode->EmitLDFLDA(tokPinningHelper);
+                m_pCode->EmitLDFLDA(tokRawData);
                 m_pCode->EmitLDC((ArrayBase::GetLowerBoundsOffset(pMT) - Object::GetOffsetOfFirstField()) + (idx-firstIdx)*sizeof(DWORD));
                 m_pCode->EmitADD();
                 m_pCode->EmitLDIND_I4();
@@ -961,7 +961,7 @@ public:
 
         // Compute element address
         m_pCode->EmitLoadThis();
-        m_pCode->EmitLDFLDA(tokPinningHelper);
+        m_pCode->EmitLDFLDA(tokRawData);
         m_pCode->EmitLDC(ArrayBase::GetDataPtrOffset(pMT) - Object::GetOffsetOfFirstField());
         m_pCode->EmitADD();
         m_pCode->EmitLDLOC(dwTotalLocalNum);
