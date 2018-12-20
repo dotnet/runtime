@@ -68,9 +68,6 @@
 
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
-    <FeedTasksPackage>Microsoft.DotNet.Build.Tasks.Feed</FeedTasksPackage>
-    <FeedTasksPackageVersion>3.0.0-preview1-03430-01</FeedTasksPackageVersion>
-
     <BuildToolsPackage>microsoft.dotnet.buildtools</BuildToolsPackage>
     <BuildToolsPackageVersion>3.0.0-preview1-03430-01</BuildToolsPackageVersion>
   </PropertyGroup>
@@ -205,11 +202,6 @@
       <ElementName>BuildToolsPackageVersion</ElementName>
       <PackageId>Microsoft.DotNet.BuildTools</PackageId>
     </XmlUpdateStep>
-     <XmlUpdateStep Include="BuildTools">
-       <Path>$(MSBuildThisFileFullPath)</Path>
-       <ElementName>FeedTasksPackageVersion</ElementName>
-       <PackageId>$(FeedTasksPackage)</PackageId>
-     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreFxOptimizationData">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreFxOptimizationDataVersion</ElementName>
