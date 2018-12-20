@@ -66,7 +66,7 @@ Handle macros/functions
 	typedef struct {							\
 		MONO_IF_CPLUSPLUS (						\
 			MONO_ALWAYS_INLINE					\
-			TYPE * GetRaw () { return __raw ? *__raw : NULL; }	\
+			TYPE * GetRaw () const { return __raw ? *__raw : NULL; } \
 		)								\
 		TYPE * volatile *__raw;						\
 	} TYPED_HANDLE_NAME (TYPE),						\

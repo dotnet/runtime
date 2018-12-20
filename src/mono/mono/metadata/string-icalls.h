@@ -25,18 +25,6 @@ void
 ves_icall_System_String_ctor_RedirectToCreateString (void);
 
 ICALL_EXPORT
-MonoString *
-ves_icall_System_String_InternalAllocateStr (gint32 length);
-
-ICALL_EXPORT
-MonoString  *
-ves_icall_System_String_InternalIntern (MonoString *str);
-
-ICALL_EXPORT
-MonoString * 
-ves_icall_System_String_InternalIsInterned (MonoString *str);
-
-ICALL_EXPORT
 int
 ves_icall_System_String_GetLOSLimit (void);
 

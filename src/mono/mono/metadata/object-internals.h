@@ -1933,8 +1933,24 @@ mono_string_to_utf8_ignore (MonoString *s);
 gboolean
 mono_monitor_is_il_fastpath_wrapper (MonoMethod *method);
 
-MonoString*
-mono_string_intern_checked (MonoString *str, MonoError *error);
+MonoStringHandle
+mono_string_is_interned_lookup (MonoStringHandle str, gboolean insert, MonoError *error);
+
+/**
+ * mono_string_intern_checked:
+ * \param str String to intern
+ * \param error set on error.
+ * Interns the string passed.
+ * \returns The interned string. On failure returns NULL and sets \p error
+ */
+#define mono_string_intern_checked(str, error) (mono_string_is_interned_lookup ((str), TRUE, (error)))
+
+/**
+ * mono_string_is_interned_internal:
+ * \param o String to probe
+ * \returns Whether the string has been interned.
+ */
+#define mono_string_is_interned_internal(str, error) (mono_string_is_interned_lookup ((str), FALSE, (error)))
 
 char *
 mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
@@ -1996,6 +2012,9 @@ mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *er
 MonoObjectHandle
 mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
+MonoStringHandle
+mono_string_new_size_handle (MonoDomain *domain, gint32 len, MonoError *error);
+
 MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
 
@@ -2007,9 +2026,6 @@ mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, Mo
 
 MonoStringHandle
 mono_ldstr_handle (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
-
-MonoString*
-mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MONO_PROFILER_API MonoString*
 mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror);
@@ -2024,7 +2040,7 @@ MonoStringHandle
 mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);
+mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MonoString *
 mono_string_from_utf16_checked (const mono_unichar2 *data, MonoError *error);
@@ -2201,9 +2217,6 @@ mono_string_length_internal (MonoString *s);
 
 MonoString*
 mono_string_empty_internal (MonoDomain *domain);
-
-MonoString*
-mono_string_is_interned_internal (MonoString *str);
 
 MonoString*
 mono_string_new_wrapper_internal (const char *text);

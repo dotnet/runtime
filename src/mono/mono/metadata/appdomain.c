@@ -204,12 +204,12 @@ create_domain_objects (MonoDomain *domain)
 	mono_error_assert_ok (error);
 	string_empty_fld = mono_class_get_field_from_name_full (mono_defaults.string_class, "Empty", NULL);
 	g_assert (string_empty_fld);
-	MonoString *empty_str = mono_string_new_checked (domain, "", error);
+	MonoStringHandle empty_str = mono_string_new_handle (domain, "", error);
 	mono_error_assert_ok (error);
 	empty_str = mono_string_intern_checked (empty_str, error);
 	mono_error_assert_ok (error);
-	mono_field_static_set_value_internal (string_vt, string_empty_fld, empty_str);
-	domain->empty_string = empty_str;
+	mono_field_static_set_value_internal (string_vt, string_empty_fld, MONO_HANDLE_RAW (empty_str));
+	domain->empty_string = MONO_HANDLE_RAW (empty_str);
 
 	/*
 	 * Create an instance early since we can't do it when there is no memory.

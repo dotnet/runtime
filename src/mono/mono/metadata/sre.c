@@ -4228,7 +4228,7 @@ mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **h
 	error_init (error);
 
 	if (strcmp (oklass->name, "String") == 0) {
-		result = mono_string_intern_checked ((MonoString*)obj, error);
+		result = MONO_HANDLE_RAW (mono_string_intern_checked (MONO_HANDLE_NEW (MonoString, (MonoString*)obj), error));
 		goto_if_nok (error, return_null);
 		*handle_class = mono_defaults.string_class;
 		g_assert (result);

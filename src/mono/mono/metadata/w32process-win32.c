@@ -255,11 +255,11 @@ process_get_shell_arguments (MonoCreateProcessCoop *proc_start_info, MonoStringH
 			cmd_utf8 = mono_string_handle_to_utf8 (*cmd, error);
 			goto_if_nok (error, error);
 			new_cmd = g_strdup_printf ("%s %s", spath, cmd_utf8);
-			*cmd = mono_string_new_utf8_len_handle (mono_domain_get (), new_cmd, strlen (new_cmd), error);
+			*cmd = mono_string_new_utf8_len (mono_domain_get (), new_cmd, strlen (new_cmd), error);
 			goto_if_nok (error, error);
 		}
 		else {
-			*cmd = mono_string_new_utf8_len_handle (mono_domain_get (), spath, strlen (spath), error);
+			*cmd = mono_string_new_utf8_len (mono_domain_get (), spath, strlen (spath), error);
 			goto_if_nok (error, error);
 		}
 	}

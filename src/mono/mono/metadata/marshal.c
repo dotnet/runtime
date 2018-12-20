@@ -635,15 +635,17 @@ mono_string_from_byvalstr (const char *data, int max_len)
 	if (!data)
 		return NULL;
 
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
 	int len = 0;
 
 	while (len < max_len - 1 && data [len])
 		len++;
 
-	MonoString *result = mono_string_new_len_checked (mono_domain_get (), data, len, error);
+	MonoStringHandle result = mono_string_new_utf8_len (mono_domain_get (), data, len, error);
 	mono_error_set_pending_exception (error);
-	return result;
+
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 /* This is a JIT icall, it sets the pending exception and return NULL on error */
@@ -1112,10 +1114,11 @@ mono_string_to_byvalwstr (gunichar2 *dst, MonoString *src, int size)
 MonoString*
 mono_string_new_len_wrapper (const char *text, guint length)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoString *result = mono_string_new_len_checked (mono_domain_get (), text, length, error);
+	MonoStringHandle result = mono_string_new_utf8_len (mono_domain_get (), text, length, error);
 	mono_error_set_pending_exception (error);
-	return result;
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 guint
@@ -5077,7 +5080,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringAnsi_len (const char
 		mono_error_set_argument_null (error, "ptr", "");
 		return NULL_HANDLE_STRING;
 	}
-	return mono_string_new_utf8_len_handle (mono_domain_get (), ptr, len, error);
+	return mono_string_new_utf8_len (mono_domain_get (), ptr, len, error);
 }
 
 MonoStringHandle
