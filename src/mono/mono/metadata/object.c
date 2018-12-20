@@ -6945,14 +6945,21 @@ mono_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 }
 
 void
-mono_value_copy_array_internal (MonoArray *dest, int dest_idx, gpointer src, int count)
+mono_value_copy_array_internal (MonoArray *dest, int dest_idx, gconstpointer src, int count)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	int size = mono_array_element_size (dest->obj.vtable->klass);
 	char *d = mono_array_addr_with_size_fast (dest, size, dest_idx);
 	g_assert (size == mono_class_value_size (m_class_get_element_class (mono_object_class (dest)), NULL));
-	mono_gc_wbarrier_value_copy_internal (d, src, count, m_class_get_element_class (mono_object_class (dest)));
+	// FIXME remove (gpointer) cast.
+	mono_gc_wbarrier_value_copy_internal (d, (gpointer)src, count, m_class_get_element_class (mono_object_class (dest)));
+}
+
+void
+mono_value_copy_array_handle (MonoArrayHandle dest, int dest_idx, gconstpointer src, int count)
+{
+	mono_value_copy_array_internal (MONO_HANDLE_RAW (dest), dest_idx, src, count);
 }
 
 /**

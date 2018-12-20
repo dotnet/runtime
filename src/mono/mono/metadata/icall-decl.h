@@ -73,7 +73,6 @@ ICALL_EXPORT MonoArray* ves_icall_System_Environment_GetEnvironmentVariableNames
 ICALL_EXPORT MonoArray* ves_icall_System_Environment_GetLogicalDrives (void);
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
 ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType*, MonoType*);
-ICALL_EXPORT MonoBoolean ves_icall_System_Array_FastCopy (MonoArray*, int, MonoArray*, int, int);
 ICALL_EXPORT MonoBoolean ves_icall_System_Buffer_BlockCopyInternal (MonoArray*, gint32, MonoArray*, gint32, gint32);
 ICALL_EXPORT MonoBoolean ves_icall_System_Environment_GetIs64BitOperatingSystem (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Environment_get_HasShutdownStarted (void);

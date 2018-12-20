@@ -2244,7 +2244,7 @@ void
 mono_value_copy_internal (void* dest, /*const*/ void* src, MonoClass *klass);
 
 void
-mono_value_copy_array_internal (MonoArray *dest, int dest_idx, void* src, int count);
+mono_value_copy_array_internal (MonoArray *dest, int dest_idx, const void* src, int count);
 
 MONO_PROFILER_API MonoVTable* mono_object_get_vtable_internal (MonoObject *obj);
 

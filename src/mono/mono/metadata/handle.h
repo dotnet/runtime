@@ -557,6 +557,9 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t ind
 
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) ((type*)mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out)))
 
+void
+mono_value_copy_array_handle (MonoArrayHandle dest, int dest_idx, gconstpointer src, int count);
+
 gunichar2 *
 mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);
 
