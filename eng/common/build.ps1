@@ -80,7 +80,11 @@ function Build {
   $bl = if ($binaryLog) { "/bl:" + (Join-Path $LogDir "Build.binlog") } else { "" }
 
   if ($projects) {
-    $properties += "/p:Projects=$projects"
+    # Re-assign properties to a new variable because PowerShell doesn't let us append properties directly for unclear reasons.
+    # Explicitly set the type as string[] because otherwise PowerShell would make this char[] if $properties is empty.
+    [string[]] $msbuildArgs = $properties
+    $msbuildArgs += "/p:Projects=$projects"
+    $properties = $msbuildArgs
   }
 
   MSBuild $toolsetBuildProj `
