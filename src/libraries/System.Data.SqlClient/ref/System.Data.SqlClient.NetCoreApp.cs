@@ -37,15 +37,6 @@ namespace System.Data.SqlClient
         public PoolBlockingPeriod PoolBlockingPeriod { get { throw null; } set { } }
     }
 
-    public sealed partial class SqlCommand : System.Data.Common.DbCommand, System.ICloneable
-    {
-        public System.IAsyncResult BeginExecuteReader() { throw null; }
-        public System.IAsyncResult BeginExecuteReader(System.AsyncCallback callback, object stateObject) { throw null; }
-        public System.IAsyncResult BeginExecuteReader(System.AsyncCallback callback, object stateObject, System.Data.CommandBehavior behavior) { throw null; }
-        public System.IAsyncResult BeginExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
-        public System.Data.SqlClient.SqlDataReader EndExecuteReader(System.IAsyncResult asyncResult) { throw null; }
-    }
-
 }
 
 namespace System.Data.SqlTypes
