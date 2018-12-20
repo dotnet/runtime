@@ -61,6 +61,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs">
       <Link>Common\System\Net\Http\LoopbackServer.AuthenticationHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\GenericLoopbackServer.cs">
+      <Link>Common\System\Net\Http\GenericLoopbackServer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Threading\TrackingSynchronizationContext.cs">
       <Link>Common\System\Threading\TrackingSynchronizationContext.cs</Link>
     </Compile>
@@ -136,6 +139,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Http\Http2LoopbackServer.cs">
       <Link>Common\System\Net\Http\Http2LoopbackServer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\HuffmanDecoder.cs">
+      <Link>Common\System\Net\Http\HuffmanDecoder.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
