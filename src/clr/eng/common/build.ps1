@@ -1,7 +1,7 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [string][Alias('c')]$configuration = "Debug",
-  [string] $projects = "",
+  [string] $projects,
   [string][Alias('v')]$verbosity = "minimal",
   [string] $msbuildEngine = $null,
   [bool] $warnAsError = $true,
@@ -79,10 +79,17 @@ function Build {
   InitializeCustomToolset
   $bl = if ($binaryLog) { "/bl:" + (Join-Path $LogDir "Build.binlog") } else { "" }
 
+  if ($projects) {
+    # Re-assign properties to a new variable because PowerShell doesn't let us append properties directly for unclear reasons.
+    # Explicitly set the type as string[] because otherwise PowerShell would make this char[] if $properties is empty.
+    [string[]] $msbuildArgs = $properties
+    $msbuildArgs += "/p:Projects=$projects"
+    $properties = $msbuildArgs
+  }
+
   MSBuild $toolsetBuildProj `
     $bl `
     /p:Configuration=$configuration `
-    /p:Projects=$projects `
     /p:RepoRoot=$RepoRoot `
     /p:Restore=$restore `
     /p:DeployDeps=$deployDeps `
@@ -104,10 +111,6 @@ try {
   if ($help -or (($properties -ne $null) -and ($properties.Contains("/help") -or $properties.Contains("/?")))) {
     Print-Usage
     exit 0
-  }
-
-  if ($projects -eq "") {
-    $projects = Join-Path $RepoRoot "*.sln"
   }
 
   if ($ci) {

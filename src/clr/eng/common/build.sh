@@ -159,8 +159,8 @@ function Build {
   InitializeToolset
   InitializeCustomToolset
 
-  if [[ -z $projects ]]; then
-    projects="$repo_root/*.sln"
+  if [[ ! -z "$projects" ]]; then
+    properties="$properties /p:Projects=$projects"
   fi
 
   local bl=""
@@ -171,7 +171,6 @@ function Build {
   MSBuild $_InitializeToolset \
     $bl \
     /p:Configuration=$configuration \
-    /p:Projects="$projects" \
     /p:RepoRoot="$repo_root" \
     /p:Restore=$restore \
     /p:Build=$build \
