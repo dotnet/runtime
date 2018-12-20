@@ -176,6 +176,10 @@
     <Compile Include="Inheritance.AbstractClasses\UnusedVirtualMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfAbstractMethodIsKept.cs" />
     <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfVirtualMethodIsKept.cs" />
+    <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssemblyExplicit_Copy.cs" />
+    <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssemblyExplicit_Link.cs" />
+    <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssembly_Copy.cs" />
+    <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssembly_Link.cs" />
     <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed_Lib.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplementingInterfaceMethodsNested.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\ClassImplementingInterfaceMethodsNested2.cs" />
@@ -190,6 +194,8 @@
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter2.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter3.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeInOtherUsedOnlyByCopiedAssembly.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeInOtherUsedOnlyByCopiedAssemblyExplicit.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceUsedOnlyAsConstraintIsKept.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeOnlyUsedHasInterfacesRemoved.cs" />
