@@ -166,11 +166,6 @@ jobs:
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
   ################################################################################
-  # Signing validation
-  ################################################################################
-  - template: /eng/jobs/validate-signing.yml
- 
-  ################################################################################
   # Finalize build publish
   # publish nuget packages to blobfeed, symbolserver, and myget
   ################################################################################
