@@ -105,16 +105,26 @@ namespace Mono.Linker.Steps {
 
 			MarkType (type);
 
-			// Edge case to cover a scenario where a type has preserve all, implements interfaces, but does not have any instance ctors.
-			// Normally TypePreserve.All would cause an instance ctor to be marked and that would in turn lead to MarkInterfaceImplementations being called
-			// Without an instance ctor, MarkInterfaceImplementations is not called and then TypePreserve.All isn't truly respected.
-			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All)
-				MarkInterfaceImplementations (type);
-
 			if (type.HasFields)
 				InitializeFields (type);
 			if (type.HasMethods)
 				InitializeMethods (type.Methods);
+		}
+
+		protected bool IsFullyPreserved (TypeDefinition type)
+		{
+			if (Annotations.TryGetPreserve (type, out TypePreserve preserve) && preserve == TypePreserve.All)
+				return true;
+
+			switch (Annotations.GetAction (type.Module.Assembly)) {
+			case AssemblyAction.Copy:
+			case AssemblyAction.CopyUsed:
+			case AssemblyAction.AddBypassNGen:
+			case AssemblyAction.AddBypassNGenUsed:
+				return true;
+			}
+
+			return false;
 		}
 
 		void InitializeFields (TypeDefinition type)
@@ -961,8 +971,19 @@ namespace Mono.Linker.Steps {
 				// Note : Technically interfaces could be removed from value types in some of the same cases as reference types, however, it's harder to know when
 				// a value type instance could exist.  You'd have to track initobj and maybe locals types.  Going to punt for now.
 				MarkRequirementsForInstantiatedTypes (type);
+			} else if (IsFullyPreserved (type)) {
+				// Here for a couple reasons:
+				// * Edge case to cover a scenario where a type has preserve all, implements interfaces, but does not have any instance ctors.
+				//    Normally TypePreserve.All would cause an instance ctor to be marked and that would in turn lead to MarkInterfaceImplementations being called
+				//    Without an instance ctor, MarkInterfaceImplementations is not called and then TypePreserve.All isn't truly respected.
+				// * If an assembly has the action Copy and had ResolveFromAssemblyStep ran for the assembly, then InitializeType will have led us here
+				//    When the entire assembly is preserved, then all interfaces, base, etc will be preserved on the type, so we need to make sure
+				//    all of these types are marked.  For example, if an interface implementation is of a type in another assembly that is linked,
+				//    and there are no other usages of that interface type, then we need to make sure the interface type is still marked because
+				//    this type is going to retain the interface implementation
+				MarkRequirementsForInstantiatedTypes (type);
 			}
-			
+
 			if (type.HasInterfaces)
 				_typesWithInterfaces.Add (type);
 
@@ -2025,10 +2046,7 @@ namespace Mono.Linker.Steps {
 			if (resolvedInterfaceType.IsImport || resolvedInterfaceType.IsWindowsRuntime)
 				return true;
 
-			if (!Annotations.TryGetPreserve (type, out TypePreserve preserve))
-				return false;
-
-			return preserve == TypePreserve.All;
+			return IsFullyPreserved (type);
 		}
 
 		protected virtual void MarkInterfaceImplementation (InterfaceImplementation iface)
