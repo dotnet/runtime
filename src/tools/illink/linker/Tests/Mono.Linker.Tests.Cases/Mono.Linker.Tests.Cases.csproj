@@ -221,6 +221,7 @@
     <Compile Include="Inheritance.Interfaces\OnReferenceType\UnusedComInterfaceIsRemovedWhenComFeatureExcluded.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\UnusedExplicitInterfaceHasMethodPreservedViaXml.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\UnusedExplicitInterfaceIsRemoved.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\UnusedInterfaceHasMethodPreservedViaXml.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\UnusedInterfaceTypeIsRemoved.cs" />
     <Compile Include="Inheritance.Interfaces\OnValueType\NoKeptCtor\InterfaceCanBeRemovedFromClassWithOnlyStaticMethodUsed.cs" />
     <Compile Include="Inheritance.Interfaces\OnValueType\NoKeptCtor\InterfaceCanBeRemovedFromClassWithOnlyStaticMethodUsedWithCctor.cs" />
@@ -231,7 +232,9 @@
     <Compile Include="Inheritance.Interfaces\OnValueType\StructUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
     <Compile Include="Inheritance.Interfaces\OnValueType\StructUsedFromConcreteTypeHasInterfaceMethodRemoved2.cs" />
     <Compile Include="Inheritance.Interfaces\OnValueType\StructUsedFromInterfaceHasInterfaceMethodKept.cs" />
+    <Compile Include="Inheritance.Interfaces\OnValueType\UnusedExplicitInterfaceHasMethodPreservedViaXml.cs" />
     <Compile Include="Inheritance.Interfaces\OnValueType\UnusedExplicitInterfaceIsRemoved.cs" />
+    <Compile Include="Inheritance.Interfaces\OnValueType\UnusedInterfaceHasMethodPreservedViaXml.cs" />
     <Compile Include="Inheritance.Interfaces\OnValueType\UnusedInterfaceTypeIsRemoved.cs" />
     <Compile Include="Inheritance.VirtualMethods\HarderToDetectUnusedVirtualMethodGetsRemoved.cs" />
     <Compile Include="Inheritance.VirtualMethods\UnusedTypeWithOverrideOfVirtualMethodIsRemoved.cs" />
@@ -489,6 +492,9 @@
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeWithPreserveFields.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeWithPreserveMethods.xml" />
     <Content Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\UnusedTypeWithPreserveMethodsAndInterfaceTypeMarked.xml" />
+    <Content Include="Inheritance.Interfaces\OnReferenceType\UnusedInterfaceHasMethodPreservedViaXml.xml" />
+    <Content Include="Inheritance.Interfaces\OnValueType\UnusedExplicitInterfaceHasMethodPreservedViaXml.xml" />
+    <Content Include="Inheritance.Interfaces\OnValueType\UnusedInterfaceHasMethodPreservedViaXml.xml" />
     <Content Include="LinkXml\AssemblyWithPreserveAll.xml" />
     <Content Include="LinkXml\CanPreserveTypesUsingRegex.xml" />
     <Content Include="LinkXml\CanPreserveAnExportedType.xml" />
