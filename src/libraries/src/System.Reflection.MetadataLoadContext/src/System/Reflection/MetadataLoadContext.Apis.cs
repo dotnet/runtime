@@ -176,7 +176,7 @@ namespace System.Reflection
         /// Resolves the supplied assembly name to an assembly. If an assembly was previously bound by to this name, that assembly is returned.
         /// Otherwise, the MetadataLoadContext calls the specified MetadataAssemblyResolver. If the resolver returns null, this method throws a FileNotFoundException.
         /// 
-        /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() resolve event but does not match the behavior of 
+        /// Note that this behavior matches the behavior of AssemblyLoadContext.LoadFromAssemblyName() but does not match the behavior of
         /// Assembly.ReflectionOnlyLoad(). (the latter gives up without raising its resolve event.)
         /// </summary>
         public Assembly LoadFromAssemblyName(string assemblyName)

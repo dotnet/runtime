@@ -10,7 +10,7 @@ namespace System.Configuration
     /**
       * Single-tag dictionary config factory
       *
-      * Use for tags of the form: <MySingleTag key1="value1" ... keyN="valueN"/> 
+      * Use for tags of the form: &lt;MySingleTag key1="value1" ... keyN="valueN"/&gt;
       */
     public class SingleTagSectionHandler : IConfigurationSectionHandler
     {

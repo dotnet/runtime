@@ -1,0 +1,130 @@
+parameters:
+  artifactsDir: $(Build.SourcesDirectory)/artifacts
+  buildConfiguration: Release
+  dependsOn: ''
+
+jobs:
+  - job: PublishPackages
+    displayName: Publish Packages
+    timeoutInMinutes: 120
+
+    ${{ if ne(parameters.dependsOn, '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
+    pool:
+      name: dotnet-internal-temp
+
+    workspace: 
+      clean: all
+
+    variables:
+      - group: Publish-Build-Assets
+      - group: DotNet-Blob-Feed
+      - group: DotNet-MyGet-Publish
+      - group: DotNet-Versions-Publish
+      - name: _dotnetFeedUrl
+        value: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+      - name: _maestroApiEndpoint
+        value: https://maestro-prod.westus2.cloudapp.azure.com
+      - name: _mygetFeedUrl
+        value: https://dotnet.myget.org/F/dotnet-core/api/v2/package
+      - name: _manifestsDir
+        value: ${{ parameters.artifactsDir }}/AssetManifests
+
+    steps:
+      - task: DownloadBuildArtifacts@0
+        displayName: Download packages to publish
+        inputs:
+          artifactName: packages
+          downloadPath: ${{ parameters.artifactsDir }}
+
+      - script: build.cmd -InitTools
+        displayName: Restore Tools
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:PublishToAzureBlobFeed
+                /p:ManifestBuildId=$(Build.BuildNumber)
+                /p:ManifestBranch=$(Build.SourceBranchName)
+                /p:ManifestCommit=$(Build.SourceVersion)
+                /p:ManifestRepoUri=$(Build.Repository.Uri)
+                /p:AccountKey=$(dotnetfeed-storage-access-key-1)
+                /p:ExpectedFeedUrl=$(_dotnetFeedUrl)
+        displayName: Push to dotnet feed
+
+      - task: PublishBuildArtifacts@1
+        displayName: Publish assets manifest to artifacts
+        inputs:
+          pathToPublish: $(_manifestsDir)
+          artifactName: BuildAssetsManifest
+          artifactType: container
+
+      - script: eng\common\publishbuildassets.cmd
+                /p:ManifestsPath='$(_manifestsDir)'
+                /p:BuildAssetRegistryToken=$(MaestroAccessToken)
+                /p:MaestroApiEndpoint=https://maestro-prod.westus2.cloudapp.azure.com
+                /p:Configuration=${{ parameters.buildConfiguration }}
+        displayName: Publish to Build Assets Registry
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:NuGetPush
+                /p:NuGetSource=$(_mygetFeedUrl)
+                /p:NuGetApiKey=$(dotnet-myget-org-api-key)
+        displayName: Push to myget.org
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 build.proj
+                -warnaserror:0 -ci
+                /t:UpdatePublishedVersions
+                /p:GitHubAuthToken=$(AccessToken-dotnet-build-bot-public-repo)
+                /p:VersionsRepoOwner=dotnet
+                /p:VersionsRepo=versions
+                /p:VersionsRepoPath=build-info/dotnet/corefx/$(Build.SourceBranchName)
+                /p:ShippedNuGetPackageGlobPath=${{ parameters.artifactsDir }}/packages/*.nupkg
+        displayName: Update dotnet/versions
+
+  - job: PublishSymbols
+    displayName: Publish Symbols
+    timeoutInMinutes: 120
+
+    ${{ if ne(parameters.dependsOn, '') }}:
+      dependsOn: ${{ parameters.dependsOn }}
+
+    pool:
+      name: dotnet-internal-temp
+
+    workspace:
+      clean: all
+
+    variables:
+      - group: DotNet-Symbol-Server-Pats
+      - name: _msdlSymbolServerUrl
+        value: https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection
+      - name: _symwebSymbolServerUrl
+        value: https://microsoft.artifacts.visualstudio.com/DefaultCollection
+      - name: _symbolExpirationInDays
+        value: 30
+
+    steps:
+      - task: DownloadBuildArtifacts@0
+        displayName: Download symbols to publish
+        inputs:
+          artifactName: packages
+          downloadPath: ${{ parameters.artifactsDir }}
+
+      - script: build.cmd -InitTools
+        displayName: Restore Tools
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:PublishSymbols
+                /p:SymbolServerPath=$(_msdlSymbolServerUrl)
+                /p:SymbolServerPAT=$(microsoft-symbol-server-pat)
+        displayName: Publish symbols to msdl
+
+      - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
+                -warnaserror:0 -ci
+                /t:PublishSymbols
+                /p:SymbolServerPath=$(_symwebSymbolServerUrl)
+                /p:SymbolServerPAT=$(symweb-symbol-server-pat)
+        displayName: Publish symbols to symweb

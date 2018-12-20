@@ -1576,7 +1576,7 @@ namespace System.Net.Sockets
         public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback) =>
             SendFileAsync(handle, fileStream, 0, (int)fileStream.Length, callback);
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, int offset, int count, Action<long, SocketError> callback)
+        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, int count, Action<long, SocketError> callback)
         {
             long bytesSent;
             SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback);
@@ -1600,24 +1600,26 @@ namespace System.Net.Sockets
                     SendPacketsElement e = elements[i];
                     if (e != null)
                     {
-                        if (e.FilePath == null)
+                        if (e.Buffer != null)
                         {
                             bytesTransferred += await socket.SendAsync(new ArraySegment<byte>(e.Buffer, e.Offset, e.Count), SocketFlags.None).ConfigureAwait(false);
                         }
                         else
                         {
-                            FileStream fs = files[i];
-                            if (e.Offset > fs.Length - e.Count)
+                            FileStream fs = files[i] ?? e.FileStream;
+                            if (e.Count > fs.Length - e.OffsetLong)
                             {
                                 throw new ArgumentOutOfRangeException();
                             }
 
                             var tcs = new TaskCompletionSource<SocketError>();
-                            error = SendFileAsync(socket.SafeHandle, fs, e.Offset, e.Count > 0 ? e.Count : checked((int)(fs.Length - e.Offset)), (transferred, se) =>
-                            {
-                                bytesTransferred += transferred;
-                                tcs.TrySetResult(se);
-                            });
+                            error = SendFileAsync(socket.SafeHandle, fs, e.OffsetLong,
+                                e.Count > 0 ? e.Count : checked((int)(fs.Length - e.OffsetLong)),
+                                (transferred, se) =>
+                                {
+                                    bytesTransferred += transferred;
+                                    tcs.TrySetResult(se);
+                                });
                             if (error == SocketError.IOPending)
                             {
                                 error = await tcs.Task.ConfigureAwait(false);

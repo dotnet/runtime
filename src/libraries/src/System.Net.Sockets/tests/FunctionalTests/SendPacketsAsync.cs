@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendPacketsAsync
+    public partial class SendPacketsAsync
     {
         private readonly ITestOutputHelper _log;
 
@@ -357,7 +357,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketImplementationType.Async)]
         public void SendPacketsElement_FileMultiPart_Success(SocketImplementationType type)
         {
-            SendPacketsElement[] elements = new SendPacketsElement[]
+            var elements = new[]
             {
                 new SendPacketsElement(TestFileName, 10, 20),
                 new SendPacketsElement(TestFileName, 30, 10),
@@ -429,17 +429,17 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private void SendPackets(SocketImplementationType type, SendPacketsElement element, int bytesExpected)
+        private void SendPackets(SocketImplementationType type, SendPacketsElement element, int bytesExpected, byte[] contentExpected = null)
         {
-            SendPackets(type, new SendPacketsElement[] { element }, SocketError.Success, bytesExpected);
+            SendPackets(type, new[] {element}, SocketError.Success, bytesExpected, contentExpected);
         }
 
-        private void SendPackets(SocketImplementationType type, SendPacketsElement element, SocketError expectedResut, int bytesExpected)
+        private void SendPackets(SocketImplementationType type, SendPacketsElement element, SocketError expectedResult, int bytesExpected)
         {
-            SendPackets(type, new SendPacketsElement[] { element }, expectedResut, bytesExpected);
+            SendPackets(type, new[] {element}, expectedResult, bytesExpected);
         }
 
-        private void SendPackets(SocketImplementationType type, SendPacketsElement[] elements, SocketError expectedResut, int bytesExpected)
+        private void SendPackets(SocketImplementationType type, SendPacketsElement[] elements, SocketError expectedResult, int bytesExpected, byte[] contentExpected = null)
         {
             Assert.True(Capability.IPv6Support());
 
@@ -461,8 +461,20 @@ namespace System.Net.Sockets.Tests
                         {
                             Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timed out");
                         }
-                        Assert.Equal(expectedResut, args.SocketError);
+                        Assert.Equal(expectedResult, args.SocketError);
                         Assert.Equal(bytesExpected, args.BytesTransferred);
+                    
+                    }
+
+                    if (contentExpected != null) {
+                        // test server just echos back, so read number of expected bytes from the stream
+                        var contentActual = new byte[bytesExpected];
+                        int bytesReceived = 0;
+                        while (bytesReceived < bytesExpected) {
+                            bytesReceived += sock.Receive(contentActual, bytesReceived, bytesExpected-bytesReceived, SocketFlags.None);
+                        }
+                        Assert.Equal(bytesExpected, bytesReceived);
+                        Assert.Equal(contentExpected, contentActual);
                     }
                 }
             }

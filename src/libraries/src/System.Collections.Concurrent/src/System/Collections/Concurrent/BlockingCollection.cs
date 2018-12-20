@@ -1697,7 +1697,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <summary>Centralizes the logic for validating the BlockingCollections array passed to TryAddToAny()
         /// and TryTakeFromAny().</summary>
         /// <param name="collections">The collections to/from which an item should be added/removed.</param>
-        /// <param name="operationMode">Indicates whether this method is called to Add or Take.</param>
+        /// <param name="isAddOperation">Indicates whether this method is called to Add or Take.</param>
         /// <exception cref="System.ArgumentNullException">If the collections argument is null.</exception>
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a 
         /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>

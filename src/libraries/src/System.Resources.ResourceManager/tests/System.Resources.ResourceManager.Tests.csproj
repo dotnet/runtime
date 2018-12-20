@@ -2,8 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}</ProjectGuid>
     <RootNamespace>System.Resources.Tests</RootNamespace>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
     <TestRuntime>true</TestRuntime>
+    <BinPlaceSatelliteAssemblies>true</BinPlaceSatelliteAssemblies>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
@@ -34,9 +35,19 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>TestResx.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="Resources\TestResx.es.resx"/>
+    <EmbeddedResource Include="Resources\TestResx.es-MX.resx"/>
+    <EmbeddedResource Include="Resources\TestResx.fr-FR.resx"/>
+    <EmbeddedResource Include="Resources\TestClassWithoutNeutralResources.fr.resx"/>
     <SupplementalTestData Include="Resources\TestResx.netstandard17.resources" />
     <SupplementalTestData Include="Resources\bitmap.bmp" />
     <SupplementalTestData Include="Resources\icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221

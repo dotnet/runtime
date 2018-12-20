@@ -215,7 +215,7 @@ namespace System.Net.Http
         /// <summary>
         /// This function is used to parse WinINet Proxy strings. The strings are a semicolon
         /// or whitespace separated list, with each entry in the following format:
-        /// ([<scheme>=][<scheme>"://"]<server>[":"<port>])
+        /// ([&lt;scheme&gt;=][&lt;scheme&gt;"://"]&lt;server&gt;[":"&lt;port&gt;])
         /// </summary>
         private static void ParseProxyConfig(string value, out Uri insecureProxy, out Uri secureProxy )
         {

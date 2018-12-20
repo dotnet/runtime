@@ -48,5 +48,4 @@
     <Compile Include="ThreadPoolTest.cs" />
     <Compile Include="VersionUtil.cs" />
   </ItemGroup>
-  <!--Import the targets-->
 </Project>

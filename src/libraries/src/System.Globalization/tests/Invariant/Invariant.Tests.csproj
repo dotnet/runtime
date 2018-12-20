@@ -7,8 +7,7 @@
       Overriding the runtime config file to include "System.Globalization.Invariant": true
       which enables the globalization invariant mode.
     -->
-    <RuntimeConfigPath Condition="'$(UseCoverageDedicatedRuntime)' != 'true'">$(AppDesignerFolder)/xunit.console.runtimeconfig.json</RuntimeConfigPath>
-    <RuntimeConfigPath Condition="'$(UseCoverageDedicatedRuntime)' == 'true'">$(AppDesignerFolder)/coverage.runtimeconfig.json</RuntimeConfigPath>
+    <TestRuntimeConfigPath>$(AppDesignerFolder)/runtimeconfig.json</TestRuntimeConfigPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InvariantMode.cs" />

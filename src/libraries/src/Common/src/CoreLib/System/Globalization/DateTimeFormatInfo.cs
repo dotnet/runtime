@@ -2336,7 +2336,7 @@ namespace System.Globalization
                 InsertHash(temp, CJKMinuteSuff, TokenType.SEP_MinuteSuff, 0);
                 InsertHash(temp, CJKSecondSuff, TokenType.SEP_SecondSuff, 0);
 
-                if (!AppContextSwitches.EnforceLegacyJapaneseDateParsing && Calendar.ID == CalendarId.JAPAN)
+                if (!LocalAppContextSwitches.EnforceLegacyJapaneseDateParsing && Calendar.ID == CalendarId.JAPAN)
                 {
                     // We need to support parsing the dates has the start of era symbol which means it is year 1 in the era.
                     // The start of era symbol has to be followed by the year symbol suffix, otherwise it would be invalid date.
@@ -2650,7 +2650,7 @@ namespace System.Globalization
             // Allow the parser to recognize the case when having some date part followed by JapaneseEraStart "\u5143"
             // without spaces in between. e.g. Era name followed by \u5143 in the date formats ggy.
             // Also, allow recognizing the year suffix symbol "\u5e74" followed the JapaneseEraStart "\u5143"
-            if (!AppContextSwitches.EnforceLegacyJapaneseDateParsing && Calendar.ID == CalendarId.JAPAN &&
+            if (!LocalAppContextSwitches.EnforceLegacyJapaneseDateParsing && Calendar.ID == CalendarId.JAPAN &&
                 (
                     // something like ggy, era followed by year and the year is specified using the JapaneseEraStart "\u5143"
                     nextCh == JapaneseEraStart[0] ||

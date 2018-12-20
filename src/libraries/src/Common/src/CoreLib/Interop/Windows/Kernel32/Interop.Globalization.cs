@@ -9,7 +9,6 @@ internal static partial class Interop
 {
     internal static unsafe partial class Kernel32
     {
-        internal const int  LOCALE_NAME_MAX_LENGTH      = 85;
         internal const uint LOCALE_ALLOW_NEUTRAL_NAMES  = 0x08000000; // Flag to allow returning neutral names/lcids for name conversion
         internal const uint LOCALE_SUPPLEMENTAL         = 0x00000002;
         internal const uint LOCALE_REPLACEMENT          = 0x00000008;
@@ -97,9 +96,6 @@ internal static partial class Interop
         internal static extern bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
 
         internal delegate BOOL EnumLocalesProcEx(char* lpLocaleString, uint dwFlags, void* lParam);
-
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern int ResolveLocaleName(string lpNameToResolve, char* lpLocaleName, int cchLocaleName);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);

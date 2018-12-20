@@ -133,10 +133,10 @@ namespace System.DirectoryServices
                     return _currentEntry;
                 }
             }
-            
+
             /// <devdoc>
             /// Advances the enumerator to the next element of the collection
-            /// and returns a Boolean value indicating whether a valid element is available.</para>
+            /// and returns a Boolean value indicating whether a valid element is available.
             /// </devdoc>                        
             public bool MoveNext()
             {

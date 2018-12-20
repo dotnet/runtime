@@ -1,0 +1,188 @@
+parameters:
+  # Required: TargetOS value to know what script commands to use
+  # Accepted values:
+  # - Windows_NT
+  # - Linux
+  # - OSX
+  # - FreeBSD
+  targetOS: ''
+
+  # Required: A collection of jobs to run - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#job
+  jobs: []
+
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+
+  # EACH JOB SHOULD INCLUDE THE FOLLOWING PROPERTIES (ASIDE FROM THE REQUIRED ONES IN THE JOB SCHEMA)
+
+  # Required: as part of the strategy matrix, the following variables should be defined
+  #     _configuration: Debug | Release
+  #     _architecture: x64 | x86 | arm | arm64
+  #     _framework: (netcoreapp, netfx, uap, etc).
+  #     _helixQueues: Windows.Amd64 (Only needed if submitToHelix -> true.) -- Queues should be separated by + if multiple.
+
+  # Required: as part of the variables object, the following values need to be passed:
+  #     _skipTests: true | false
+  #     _outerloop: true | false
+
+  # Required: submitToHelix -> Boolean -> Value to know if it should submit tests payloads to helix.
+  
+  # Optional: buildScriptPrefix -> String -> string to append to Unix build script.
+  #   buildScriptPrefix: 'HOME=/home/ ' -> 'HOME=/home/ ./build.sh ...'
+
+  # Optional: buildExtraArguments -> String -> string to append at the end of the build arguments
+  #   buildExtraArguments: /p:RuntimeOS=win10 -> 'build.cmd ... /p:RuntimeOS=win10'
+
+  # Optional: customBuildSteps -> Array -> list of steps to run instead of the common build steps.
+  #   customBuildSteps:
+  #     - script: echo Hello World
+  #       displayName: MyScript
+
+  # Optional: enableMicrobuild -> Boolean - if microbuild plugin for signing should be enabled
+  # Default: false
+  
+  # Optional: preBuildSteps -> Array -> list of steps to be executed before common build steps.
+  # In example, to install build dependencies, or setup an environment.
+  #   preBuildSteps:
+  #     - script: brew install cmake
+  #       displayName: Install Cmake
+
+  # timeoutInMinutes: if a job doesn't define it, we will default it to 150 minutes
+
+jobs:
+  - ${{ each job in parameters.jobs }}:
+    - template: ../common/templates/job/job.yml
+      parameters:
+        variables:
+        # pass along job variables
+        - ${{ each variable in job.variables }}:
+          - ${{ if ne(variable.name, '') }}:
+            - name: ${{ variable.name }}
+              value: ${{ variable.value }}
+          - ${{ if ne(variable.group, '') }}:
+            - group: ${{ variable.group }}
+
+          # handle key-value variable syntax.
+          # example:
+          # - [key]: [value]
+          - ${{ if and(eq(variable.name, ''), eq(variable.group, '')) }}:
+            - ${{ each pair in variable }}:
+              - name: ${{ pair.key }}
+                value: ${{ pair.value }}
+
+        - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
+        - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+          - _msbuildCommonParameters: ''
+
+        - ${{ if eq(job.submitToHelix, 'true') }}:
+          - group: DotNet-HelixApi-Access
+
+          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            - HelixApiAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
+
+        # Windows variables
+        - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
+          - _buildScript: build.cmd
+          - _commonArguments: -ci -includetests
+          - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
+
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _optionalToolsArguments: /p:OptionalToolSourceUser=dn-bot
+                                       /p:OptionalToolSource=$(OptionalToolSourceUri)
+                                       /p:OptionalToolSourcePassword=$(dn-bot-devdiv-nuget-feed-read)
+            - _windowsOfficialBuildArguments: -sign
+                                              /p:DotNetSignType=$(_SignType)
+                                              /p:EnableProfileGuidedOptimization=true
+                                              $(_optionalToolsArguments)
+
+          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            - _windowsOfficialBuildArguments: ''
+
+          # Optional tooling variables
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - group: DotNet-Internal-Tools-Feed
+
+        # Non-Windows variables
+        - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
+          - _buildScript: ${{ job.buildScriptPrefix }}./build.sh
+
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - _commonArguments: --ci -includetests -stripSymbols
+          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+            - _commonArguments: --ci -includetests
+
+          - _msbuildCommand: ${{ job.buildScriptPrefix }}./eng/common/msbuild.sh --warnaserror false --ci
+          - _windowsOfficialBuildArguments: ''
+
+        - ${{ if and(eq(job.enableMicrobuild, 'true'), eq(parameters.isOfficialBuild, 'true')) }}:
+          - _TeamName: DotNetCore
+          - _SignType: real
+
+        # pass along job properties
+        ${{ each property in job }}:
+          ${{ if and(ne(property.key, 'job'), ne(property.key, 'variables'), ne(property.key, 'enableMicrobuild')) }}:
+            ${{ property.key }}: ${{ property.value }}
+
+        name: ${{ job.job }}
+        workspace:
+          clean: all
+
+        ${{ if ne(job.enableMicrobuild, '') }}:
+          enableMicrobuild: ${{ job.enableMicrobuild }}
+
+        ${{ if eq(job.timeoutInMinutes, '') }}:
+          timeoutInMinutes: 150
+
+        steps:
+          - ${{ if ne(job.preBuildSteps[0], '') }}:
+            - ${{ job.preBuildSteps }}
+
+          - ${{ if eq(job.customBuildSteps[0], '') }}:
+            - script: $(_buildScript)
+                    $(_commonArguments)
+                    -framework $(_framework)
+                    /p:ArchGroup=$(_architecture)
+                    /p:ConfigurationGroup=$(_configuration)
+                    /p:SkipTests=$(_skipTests)
+                    /p:Outerloop=$(_outerloop)
+                    /p:ArchiveTests=${{ job.submitToHelix }}
+                    ${{ job.buildExtraArguments }}
+                    $(_msbuildCommonParameters)
+                    $(_windowsOfficialBuildArguments)
+              displayName: Build Sources and Tests
+
+          - ${{ if ne(job.customBuildSteps[0], '') }}:
+            - ${{ job.customBuildSteps }}
+
+          - ${{ if eq(job.submitToHelix, 'true') }}:
+            - template: /eng/pipelines/helix.yml
+              parameters:
+                targetOS: ${{ parameters.targetOS }}
+                archGroup: $(_architecture)
+                configuration: $(_configuration)
+                helixQueues: $(_helixQueues)
+                msbuildScript: $(_msbuildCommand)
+                framework: $(_framework)
+                helixToken: $(HelixApiAccessToken)
+                ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+                  isExternal: false
+                  waitForCompletion: false
+                  officialBuildId: $(Build.BuildNumber)
+
+                ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+                  # TODO: SET Creator and isExternal: true whenever there is a viable way to get github user
+                  # that created the PR for the test telemetry to have the correct owner.
+                  # creator: $(Build.RequestedFor)
+                  isExternal: false
+                  waitForCompletion: true
+
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - task: PublishBuildArtifacts@1
+              displayName: Publish packages to artifacts container
+              inputs:
+                pathToPublish: $(Build.SourcesDirectory)/artifacts/packages/$(_configuration)
+                artifactName: packages
+                artifactType: container
+              condition: and(succeeded(), ne(variables['_skipPublishPackages'], 'true'))

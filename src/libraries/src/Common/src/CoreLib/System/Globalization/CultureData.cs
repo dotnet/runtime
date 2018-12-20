@@ -2134,7 +2134,7 @@ namespace System.Globalization
         // Date separator (derived from short date format)
         internal string DateSeparator(CalendarId calendarId)
         {
-            if (calendarId == CalendarId.JAPAN && !AppContextSwitches.EnforceLegacyJapaneseDateParsing)
+            if (calendarId == CalendarId.JAPAN && !LocalAppContextSwitches.EnforceLegacyJapaneseDateParsing)
             {
                 // The date separator is derived from the default short date pattern. So far this pattern is using
                 // '/' as date separator when using the Japanese calendar which make the formatting and parsing work fine.
@@ -2359,7 +2359,7 @@ namespace System.Globalization
                 nfi.nativeDigits = new string[10];
                 for (int i = 0; i < nfi.nativeDigits.Length; i++)
                 {
-                    nfi.nativeDigits[i] = new string(digits[i], 1);
+                    nfi.nativeDigits[i] = char.ToString(digits[i]);
                 }
 
                 nfi.digitSubstitution = GetDigitSubstitution(_sRealName);
@@ -2407,35 +2407,8 @@ namespace System.Globalization
 
         // Helper
         // This is ONLY used for caching names and shouldn't be used for anything else
-        internal static string AnsiToLower(string testString)
-        {
-            int index = 0;
-
-            while (index<testString.Length && (testString[index]<'A' || testString[index]>'Z' ))
-            {
-                index++;
-            }
-            if (index >= testString.Length)
-            {
-                return testString; // we didn't really change the string
-            }
-
-            StringBuilder sb = new StringBuilder(testString.Length);
-            for (int i=0; i<index; i++)
-            {
-                sb.Append(testString[i]);
-            }
-
-            sb.Append((char) (testString[index] -'A' + 'a'));
-
-            for (int ich = index+1; ich < testString.Length; ich++)
-            {
-                char ch = testString[ich];
-                sb.Append(ch <= 'Z' && ch >= 'A' ? (char)(ch - 'A' + 'a') : ch);
-            }
-
-            return (sb.ToString());
-        }
+        internal static string AnsiToLower(string testString) =>
+            TextInfo.ToLowerAsciiInvariant(testString);
 
         /// <remarks>
         /// The numeric values of the enum members match their Win32 counterparts.  The CultureData Win32 PAL implementation

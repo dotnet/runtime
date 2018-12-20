@@ -39,6 +39,10 @@ The following are the minimum requirements:
   * Windows Universal CRT SDK
   * VC++ 2015.3 v140 Toolset (x86, x64)
 
+To build binaries for ARM, you need the following additional indivdual components:
+* Visual C++ compilers and libraries for ARM
+* Visual C++ compilers and libraries for ARM64
+
 #### Visual Studio 2017 - Command line install
 
 If you've installed Visual Studio 2017 already, go to `C:\Program Files (x86)\Microsoft Visual Studio\Installer` and run

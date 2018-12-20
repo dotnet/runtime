@@ -249,25 +249,7 @@ namespace System.Reflection.Tests
         private static MetadataLoadContext TestMetadataLoadContext => s_lazyTestMetadataLoadContext.Value;
         private static readonly Lazy<MetadataLoadContext> s_lazyTestMetadataLoadContext = new Lazy<MetadataLoadContext>(() =>
         {
-            MetadataLoadContext lc = new MetadataLoadContext(
-                new FuncMetadataAssemblyResolver(
-                    delegate (MetadataLoadContext context, AssemblyName assemblyName)
-                    {
-                        string name = assemblyName.Name;
-                        if (name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase) ||
-                            name.Equals("System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) ||
-                            name.Equals("System.Runtime", StringComparison.OrdinalIgnoreCase) ||
-                            name.Equals("System.Runtime.InteropServices", StringComparison.OrdinalIgnoreCase) ||
-                            name.Equals("netstandard", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return context.LoadFromStream(CreateStreamForCoreAssembly());
-                        }
-
-                        return null;
-                    }),
-                    "mscorlib");
-
-            return lc;
+            return new MetadataLoadContext(new SimpleAssemblyResolver());
         });
 
         private static readonly Lazy<bool> s_useRuntimeTypesForTests = new Lazy<bool>(() =>

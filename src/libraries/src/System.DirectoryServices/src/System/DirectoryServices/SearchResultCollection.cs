@@ -422,14 +422,11 @@ namespace System.DirectoryServices
                 SafeNativeMethods.ADsSetLastError(SafeNativeMethods.ERROR_SUCCESS, null, null);
             }
 
-            private int GetLastError(ref int errorCode)
+            private unsafe int GetLastError(ref int errorCode)
             {
-                StringBuilder errorBuffer = new StringBuilder();
-                StringBuilder nameBuffer = new StringBuilder();
+                char c1 = '\0', c2 = '\0';
                 errorCode = SafeNativeMethods.ERROR_SUCCESS;
-                int hr = SafeNativeMethods.ADsGetLastError(out errorCode, errorBuffer, 0, nameBuffer, 0);
-
-                return hr;
+                return SafeNativeMethods.ADsGetLastError(out errorCode, &c1, 0, &c2, 0);
             }
         }
     }

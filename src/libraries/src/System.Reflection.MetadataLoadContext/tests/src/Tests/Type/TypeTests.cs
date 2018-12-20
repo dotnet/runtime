@@ -13,22 +13,6 @@ namespace System.Reflection.Tests
 {
     public static partial class TypeTests
     {
-        //public static int Main(string[] args)
-        //{
-        //    while (!Diagnostics.Debugger.IsAttached)
-        //    {
-        //        Console.WriteLine("Waiting for debugger to attach");
-        //        Threading.Thread.Sleep(2000);
-        //    }
-        //    Console.WriteLine("Debugger attached");
-        //    //System.Diagnostics.Debugger.Launch();
-        //    //System.Console.ReadLine();
-        //    TestGuid();
-
-        //    return 0;
-        //}
-
-
         [Theory]
         [MemberData(nameof(InvariantTheoryData))]
         public static void TestInvariants(TypeWrapper tw)

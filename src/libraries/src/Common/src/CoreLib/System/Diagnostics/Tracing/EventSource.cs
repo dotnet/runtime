@@ -456,15 +456,13 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-#pragma warning disable 612, 618
-                int threadID = AppDomain.GetCurrentThreadId();
+                int threadID = Win32Native.GetCurrentThreadId();
 
                 // Managed thread IDs are more aggressively re-used than native thread IDs,
                 // so we'll use the latter...
                 return new Guid(unchecked((uint)threadID),
                                 unchecked((ushort)s_currentPid), unchecked((ushort)(s_currentPid >> 16)),
                                 0x94, 0x1b, 0x87, 0xd5, 0xa6, 0x5c, 0x36, 0x64);
-#pragma warning restore 612, 618
             }
         }
 #endif // !ES_BUILD_STANDALONE
@@ -1919,9 +1917,9 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
                             if (m_Dispatchers != null && m_eventData[eventId].EnabledForAnyListener)
                     {
-#if (!ES_BUILD_STANDALONE && !ES_BUILD_PN)
+#if !ES_BUILD_STANDALONE
                         // Maintain old behavior - object identity is preserved
-                        if (AppContextSwitches.PreserveEventListnerObjectIdentity)
+                        if (LocalAppContextSwitches.PreserveEventListnerObjectIdentity)
                         {
                             WriteToAllListeners(
                                 eventId: eventId,
@@ -4092,7 +4090,7 @@ namespace System.Diagnostics.Tracing
                 if (!s_EventSourceShutdownRegistered)
                 {
                     s_EventSourceShutdownRegistered = true;
-#if ES_BUILD_PN
+#if CORECLR || ES_BUILD_PN
                     AppContext.ProcessExit += DisposeOnShutdown;
 #else
                     AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
@@ -5672,19 +5670,11 @@ namespace System.Diagnostics.Tracing
                 cultures = new List<CultureInfo>();
                 cultures.Add(CultureInfo.CurrentUICulture);
             }
-#if ES_BUILD_STANDALONE || ES_BUILD_PN
-            var sortedStrings = new List<string>(stringTab.Keys);
-            sortedStrings.Sort();
-#else
-            // DD 947936
+
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
-            // Avoid using public Array.Sort as that attempts to access BinaryCompatibility. Unfortunately FrameworkEventSource gets called 
-            // very early in the app domain creation, when _FusionStore is not set up yet, resulting in a failure to run the static constructory
-            // for BinaryCompatibility. This failure is then cached and a TypeInitializationException is thrown every time some code attampts to
-            // access BinaryCompatibility.
-            ArraySortHelper<string>.IntrospectiveSort(sortedStrings, 0, sortedStrings.Length, string.Compare);
-#endif
+            Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
+
             foreach (var ci in cultures)
             {
                 sb.Append(" <resources culture=\"").Append(ci.Name).Append("\">").AppendLine();

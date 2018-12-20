@@ -41,7 +41,6 @@
            Text="The tools directory [$(ToolsDir)] does not exist. Please run init-tools.cmd in your repo to ensure the tools are installed before attempting to build an individual project." />
   </Target>
 
-  <Import Project="$(RepositoryEngineeringDir)buildvertical.targets" />
   <Import Project="$(RepositoryEngineeringDir)CodeAnalysis.targets" />
 
   <!-- Corefx-specific binplacing properties -->
@@ -159,15 +158,6 @@
     <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uapvNext -->
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
   </ItemGroup>
-
-  <!--
-    Import Test SDK props and targets.
-    This needs to happen here as the IsInvokableTestProject prop is required
-    which isn't available before Directory.Build.targets.
-    TODO: Fix VB test project reference to Test SDK.
-  -->
-  <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND Exists('$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\buildMultiTargeting\Microsoft.Net.Test.Sdk.props') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\buildMultiTargeting\Microsoft.Net.Test.Sdk.props" />
-  <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND Exists('$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets') AND ('$(BuildingNETCoreAppVertical)' == 'true' OR '$(BuildingNETFxVertical)' == 'true') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets" />
 
   <Target Name="ProducesPackageId"
           Returns="@(PackageIds)">

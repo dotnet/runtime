@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text;
 
 internal static partial class Interop
 {
@@ -13,6 +12,6 @@ internal static partial class Interop
         internal const uint MUI_PREFERRED_UI_LANGUAGES = 0x10;
 
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-        internal static extern bool GetFileMUIPath(uint flags, string filePath, [Out] StringBuilder language, ref int languageLength, [Out] StringBuilder fileMuiPath, ref int fileMuiPathLength, ref long enumerator);
+        internal static extern unsafe bool GetFileMUIPath(uint dwFlags, string pcwszFilePath, char* pwszLanguage, ref int pcchLanguage, char* pwszFileMUIPath, ref int pcchFileMUIPath, ref long pululEnumerator);
     }
 }

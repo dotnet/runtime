@@ -16,7 +16,7 @@ namespace System.IO.Enumeration
                 _directoryHandle,
                 Interop.Kernel32.FILE_INFO_BY_HANDLE_CLASS.FileFullDirectoryInfo,
                 _buffer,
-                (uint)_buffer.Length))
+                (uint)_bufferLength))
             {
                 int error = Marshal.GetLastWin32Error();
                 switch (error)

@@ -78,9 +78,18 @@ namespace System.Tests
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
         public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, int expected)
         {
+            int result;
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(int.TryParse(value.AsSpan(offset, count), out result));
+                Assert.Equal(expected, result);
+            }
+
             Assert.Equal(expected, int.Parse(value.AsSpan(offset, count), style, provider));
 
-            Assert.True(int.TryParse(value.AsSpan(offset, count), style, provider, out int result));
+            Assert.True(int.TryParse(value.AsSpan(offset, count), style, provider, out result));
             Assert.Equal(expected, result);
         }
 
@@ -90,9 +99,18 @@ namespace System.Tests
         {
             if (value != null)
             {
+                int result;
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(int.TryParse(value.AsSpan(), out result));
+                    Assert.Equal(0, result);
+                }
+
                 Assert.Throws(exceptionType, () => int.Parse(value.AsSpan(), style, provider));
 
-                Assert.False(int.TryParse(value.AsSpan(), style, provider, out int result));
+                Assert.False(int.TryParse(value.AsSpan(), style, provider, out result));
                 Assert.Equal(0, result);
             }
         }

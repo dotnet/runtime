@@ -36,7 +36,7 @@ namespace System
             if (char.IsSurrogatePair(highSurr, lowSurr))
             {
                 surrogatePair = true;
-                char[] chars = new char[2] { highSurr, lowSurr };
+                ReadOnlySpan<char> chars = stackalloc char[2] { highSurr, lowSurr };
                 string surrPair = new string(chars);
                 if (((string.CompareOrdinal(surrPair, "\U00010000") >= 0)
                         && (string.CompareOrdinal(surrPair, "\U0001FFFD") <= 0)) ||

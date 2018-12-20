@@ -39,7 +39,6 @@ namespace System
         /// </summary>
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span(T[] array)
@@ -64,7 +63,6 @@ namespace System
         /// <param name="start">The index at which to begin the span.</param>
         /// <param name="length">The number of items in the span.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
-        /// reference (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
@@ -131,6 +129,7 @@ namespace System
             _length = length;
         }
 
+        /// <summary>
         /// Returns a reference to specified element of the Span.
         /// </summary>
         /// <param name="index"></param>
@@ -163,7 +162,9 @@ namespace System
         {
             get
             {
-                return ref this [index.FromEnd ? _length - index.Value : index.Value];
+                // Evaluate the actual index first because it helps performance
+                int actualIndex = index.FromEnd ? _length - index.Value : index.Value;
+                return ref this [actualIndex];
             }
         }
 

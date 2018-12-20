@@ -17,5 +17,20 @@
       be resolved by default.
     -->
     <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
+
+    <!-- TODO: Remove when source link feature is available in coverlet. -->
+    <CoverageSourceLink>false</CoverageSourceLink>
   </PropertyGroup>
+
+  <!-- Use msbuild path functions as that property is used in bash scripts. -->
+  <ItemGroup>
+    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'SR.*'))" />
+    <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'NotImplemented.cs'))" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Use IL version of System.Private.CoreLib and link to the testhost folder to probe additional assemblies. -->
+    <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9\il" />
+    <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9" />
+  </ItemGroup>
 </Project>

@@ -20,6 +20,7 @@
     <Compile Include="System\Reflection\MetadataLoadContext.KnownConstructors.cs" />
     <Compile Include="System\Reflection\MetadataLoadContext.Loading.cs" />
     <Compile Include="System\Reflection\MetadataLoadContext.Resolving.cs" />
+    <Compile Include="System\Reflection\PathAssemblyResolver.cs" />
     <Compile Include="System\Reflection\Runtime\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\Runtime\SignatureTypeExtensions.cs" />
     <Compile Include="System\Reflection\Runtime\BindingFlagSupport\ConstructorPolicies.cs" />

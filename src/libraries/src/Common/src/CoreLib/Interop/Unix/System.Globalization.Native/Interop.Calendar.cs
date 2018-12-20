@@ -19,7 +19,7 @@ internal static partial class Interop
         internal static extern int GetCalendars(string localeName, CalendarId[] calendars, int calendarsCapacity);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetCalendarInfo")]
-        internal static extern ResultCode GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, [Out] StringBuilder result, int resultCapacity);
+        internal static extern unsafe ResultCode GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType calendarDataType, char* result, int resultCapacity);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EnumCalendarInfo")]
         internal static extern bool EnumCalendarInfo(EnumCalendarInfoCallback callback, string localeName, CalendarId calendarId, CalendarDataType calendarDataType, IntPtr context);

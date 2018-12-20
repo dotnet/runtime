@@ -13,7 +13,7 @@ namespace System.Linq.Expressions
     /// Represents initializing members of a member of a newly created object.
     /// </summary>
     /// <remarks>
-    /// Use the <see cref="Expression.MemberBind"/> factory methods to create a <see cref="MemberMemberBinding"/>.
+    /// Use the <see cref="Expression.MemberBind(MemberInfo, MemberBinding[])"/> factory methods to create a <see cref="MemberMemberBinding"/>.
     /// The value of the <see cref="MemberBinding.BindingType"/> property of a <see cref="MemberMemberBinding"/> object is <see cref="MemberBinding"/>.
     /// </remarks>
     public sealed class MemberMemberBinding : MemberBinding

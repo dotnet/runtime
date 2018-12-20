@@ -13,6 +13,11 @@ using System.Security.Cryptography;
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityAttribute))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityPermissionAttribute))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.SecurityPermissionFlag))]
+#if netcoreapp || uap
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.IStackWalk))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.PermissionSet))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Security.Permissions.PermissionState))]
+#endif
 
 namespace System
 {
@@ -593,6 +598,7 @@ namespace System.Security
         void FromXml(System.Security.SecurityElement e, System.Security.Policy.PolicyLevel level);
         System.Security.SecurityElement ToXml(System.Security.Policy.PolicyLevel level);
     }
+#if !netcoreapp && !uap
     public partial interface IStackWalk
     {
         void Assert();
@@ -600,6 +606,7 @@ namespace System.Security
         void Deny();
         void PermitOnly();
     }
+#endif
     public sealed partial class NamedPermissionSet : System.Security.PermissionSet
     {
         public NamedPermissionSet(System.Security.NamedPermissionSet permSet) : base(default(System.Security.Permissions.PermissionState)) { }
@@ -615,6 +622,7 @@ namespace System.Security
         public override int GetHashCode() => base.GetHashCode();
         public override System.Security.SecurityElement ToXml() { throw null; }
     }
+#if !netcoreapp && !uap
     public partial class PermissionSet : System.Collections.ICollection, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Security.ISecurityEncodable, System.Security.IStackWalk
     {
         public PermissionSet(System.Security.Permissions.PermissionState state) { }
@@ -656,6 +664,7 @@ namespace System.Security
         public virtual System.Security.SecurityElement ToXml() { throw null; }
         public System.Security.PermissionSet Union(System.Security.PermissionSet other) { throw null; }
     }
+#endif
     public enum PolicyLevelType
     {
         AppDomain = 3,
@@ -1079,11 +1088,13 @@ namespace System.Security.Permissions
         public override System.Security.IPermission CreatePermission() { throw null; }
         public System.Security.PermissionSet CreatePermissionSet() { throw null; }
     }
+#if !netcoreapp && !uap
     public enum PermissionState
     {
         None = 0,
         Unrestricted = 1,
     }
+#endif
     public sealed partial class PrincipalPermission : System.Security.IPermission, System.Security.ISecurityEncodable, System.Security.Permissions.IUnrestrictedPermission
     {
         public PrincipalPermission(System.Security.Permissions.PermissionState state) { }

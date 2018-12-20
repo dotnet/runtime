@@ -72,7 +72,6 @@ namespace System.Buffers.Text
 
             if (srcIndex == source.Length)
             {
-                number.IsNegative = false;
                 bytesConsumed = srcIndex;
                 number.CheckConsistency();
                 return true;
@@ -206,11 +205,6 @@ namespace System.Buffers.Text
 
             if ((c & ~0x20u) != 'E')
             {
-                if ((digits[0] == 0) && (numDigitsAfterDecimal == 0))
-                {
-                    number.IsNegative = false;
-                }
-
                 digits[dstIndex] = 0;
                 number.DigitsCount = dstIndex;
                 bytesConsumed = srcIndex;
@@ -258,10 +252,35 @@ namespace System.Buffers.Text
                     break;
             }
 
-            if (!Utf8Parser.TryParseUInt32D(source.Slice(srcIndex), out uint absoluteExponent, out int bytesConsumedByExponent))
+            // If the next character isn't a digit, an exponent wasn't specified
+            if ((byte)(c - (byte)('0')) > 9)
             {
                 bytesConsumed = 0;
                 return false;
+            }
+
+            if (!TryParseUInt32D(source.Slice(srcIndex), out uint absoluteExponent, out int bytesConsumedByExponent))
+            {
+                // Since we found at least one digit, we know that any failure to parse means we had an
+                // exponent that was larger than uint.MaxValue, and we can just eat characters until the end
+                absoluteExponent = uint.MaxValue;
+
+                // This also means that we know there was at least 10 characters and we can "eat" those, and
+                // continue eating digits from there
+                srcIndex += 10;
+
+                while (srcIndex != source.Length)
+                {
+                    c = source[srcIndex];
+                    int value = (byte)(c - (byte)('0'));
+
+                    if (value > 9)
+                    {
+                        break;
+                    }
+
+                    srcIndex++;
+                }
             }
 
             srcIndex += bytesConsumedByExponent;
@@ -284,10 +303,15 @@ namespace System.Buffers.Text
             {
                 if (number.Scale > int.MaxValue - (long)absoluteExponent)
                 {
-                    bytesConsumed = 0;
-                    return false;
+                    // A scale overflow means all non-zero digits are all so far to the right of the decimal point, no
+                    // number format we have will be able to see them. Just pin the scale at the absolute maximum 
+                    // and let the converter produce a 0 with the max precision available for that type.
+                    number.Scale = int.MaxValue;
                 }
-                number.Scale += (int)absoluteExponent;
+                else
+                {
+                    number.Scale += (int)absoluteExponent;
+                }
             }
 
             digits[dstIndex] = 0;

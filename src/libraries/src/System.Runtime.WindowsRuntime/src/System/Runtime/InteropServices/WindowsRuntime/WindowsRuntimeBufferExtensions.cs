@@ -357,14 +357,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Extensions for co-operation with memory streams (share mem stream data; expose data as managed/unmanaged mem stream)
         /// <summary>
-        /// Creates a new <code>IBuffer<code> instance backed by the same memory as is backing the specified <code>MemoryStream</code>.
+        /// Creates a new <code>IBuffer</code> instance backed by the same memory as is backing the specified <code>MemoryStream</code>.
         /// The <code>MemoryStream</code> may re-sized in future, as a result the stream will be backed by a different memory region.
         /// In such case, the buffer created by this method will remain backed by the memory behind the stream at the time the buffer was created.<br />
         /// This method can throw an <code>ObjectDisposedException</code> if the specified stream is closed.<br />
         /// This method can throw an <code>UnauthorizedAccessException</code> if the specified stream cannot expose its underlying memory buffer.
         /// </summary>
         /// <param name="underlyingStream">A memory stream to share the data memory with the buffer being created.</param>
-        /// <returns>A new <code>IBuffer<code> backed by the same memory as this specified stream.</returns>
+        /// <returns>A new <code>IBuffer</code> backed by the same memory as this specified stream.</returns>
         // The naming inconsistency with (Byte []).AsBuffer is intentional: as this extension method will appear on
         // MemoryStream, consistency with method names on MemoryStream is more important. There we already have an API
         // called GetBuffer which returns the underlying array.
@@ -389,7 +389,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
 
         /// <summary>
-        /// Creates a new <code>IBuffer<code> instance backed by the same memory as is backing the specified <code>MemoryStream</code>.
+        /// Creates a new <code>IBuffer</code> instance backed by the same memory as is backing the specified <code>MemoryStream</code>.
         /// The <code>MemoryStream</code> may re-sized in future, as a result the stream will be backed by a different memory region.
         /// In such case buffer created by this method will remain backed by the memory behind the stream at the time the buffer was created.<br />
         /// This method can throw an <code>ObjectDisposedException</code> if the specified stream is closed.<br />
@@ -402,13 +402,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         /// length end, or zero if <code>positionInStream</code> is beyond stream length end, but not more than <code>length</code>.
         /// </summary>
         /// <param name="underlyingStream">A memory stream to share the data memory with the buffer being created.</param>
-        /// <returns>A new <code>IBuffer<code> backed by the same memory as this specified stream.</returns>
-        // The naming inconsistency with (Byte []).AsBuffer is intentional: as this extension method will appear on
-        // MemoryStream, consistency with method names on MemoryStream is more important. There we already have an API
-        // called GetBuffer which returns the underlying array.
+        /// <returns>A new <code>IBuffer</code> backed by the same memory as this specified stream.</returns>
         [CLSCompliant(false)]
         public static IBuffer GetWindowsRuntimeBuffer(this MemoryStream underlyingStream, int positionInStream, int length)
         {
+            // The naming inconsistency with (Byte []).AsBuffer is intentional: as this extension method will appear on
+            // MemoryStream, consistency with method names on MemoryStream is more important. There we already have an API
+            // called GetBuffer which returns the underlying array.
+
             if (underlyingStream == null)
                 throw new ArgumentNullException(nameof(underlyingStream));
 

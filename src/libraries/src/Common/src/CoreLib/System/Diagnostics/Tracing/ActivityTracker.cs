@@ -450,7 +450,7 @@ namespace System.Diagnostics.Tracing
                 byte* endPtr = ptr + 12;
                 ptr += whereToAddId;
                 if (endPtr <= ptr)
-                    return 13;                // 12 means we might exactly fit, 13 means we definately did not fit
+                    return 13;                // 12 means we might exactly fit, 13 means we definitely did not fit
 
                 if (0 < id && id <= (uint)NumberListCodes.LastImmediateValue && !overflow)
                     WriteNibble(ref ptr, endPtr, id);

@@ -1166,7 +1166,7 @@ namespace System.Numerics
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination"/>.</param>
         /// <param name="isUnsigned">Whether or not an unsigned encoding is to be used</param>
         /// <param name="isBigEndian">Whether or not to write the bytes in a big-endian byte order</param>
-        /// <returns>true if the bytes fit in <see cref="destination"/>; false if not all bytes could be written due to lack of space.</returns>
+        /// <returns>true if the bytes fit in <paramref name="destination"/>; false if not all bytes could be written due to lack of space.</returns>
         /// <exception cref="OverflowException">If <paramref name="isUnsigned"/> is <c>true</c> and <see cref="Sign"/> is negative.</exception>
         public bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned=false, bool isBigEndian=false)
         {
@@ -2284,8 +2284,8 @@ namespace System.Numerics
         /// <param name="xd">
         /// The UInt32 array containing the entire big integer in "large" (denormalized) form.
         /// E.g., the number one (1) and negative one (-1) are both stored as 0x00000001
-        //  BigInteger values Int32.MinValue < x <= Int32.MaxValue are converted to this
-        //  format for convenience.
+        /// BigInteger values Int32.MinValue &lt; x &lt;= Int32.MaxValue are converted to this
+        /// format for convenience.
         /// </param>
         /// <param name="xl">The length of xd.</param>
         /// <returns>True for negative numbers.</returns>

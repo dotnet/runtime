@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         protected HashAlgorithm() { }
 
         public static HashAlgorithm Create() =>
-            throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);
+            CryptoConfigForwarder.CreateDefaultHashAlgorithm();
 
         public static HashAlgorithm Create(string hashName) =>
             (HashAlgorithm)CryptoConfigForwarder.CreateFromName(hashName);

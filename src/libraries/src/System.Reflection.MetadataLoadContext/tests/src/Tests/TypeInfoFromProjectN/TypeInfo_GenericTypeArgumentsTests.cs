@@ -113,7 +113,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void TestGenericArguments15()
         {
-            VerifyGenericTypeArguments(typeof(Test_SIG2<Int32, String>).Project(), new string[] { "Int32", "String" }, new string[] { "Int32", "String" });
+            VerifyGenericTypeArguments(typeof(Test_SIG2<Int32, string>).Project(), new string[] { "Int32", "String" }, new string[] { "Int32", "String" });
         }
 
         // Verify Generic Arguments 

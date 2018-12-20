@@ -387,7 +387,7 @@ namespace System.DirectoryServices
         /// <devdoc>
         /// Gets the <see cref='System.DirectoryServices.DirectoryEntry'/> that holds schema information for this 
         /// entry. An entry's <see cref='System.DirectoryServices.DirectoryEntry.SchemaClassName'/>
-        /// determines what properties are valid for it.</para>
+        /// determines what properties are valid for it.
         /// </devdoc>
         public DirectoryEntry SchemaEntry
         {
@@ -426,7 +426,7 @@ namespace System.DirectoryServices
         }
 
         /// <devdoc>
-        /// Gets or sets the username to use when authenticating the client.</para>
+        /// Gets or sets the username to use when authenticating the client.
         /// </devdoc>
         [
             DefaultValue(null),

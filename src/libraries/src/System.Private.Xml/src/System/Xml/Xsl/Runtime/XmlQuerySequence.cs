@@ -119,7 +119,7 @@ namespace System.Xml.Xsl.Runtime
         //-----------------------------------------------
 
         /// <summary>
-        /// Return IEnumerator<T> implementation.
+        /// Return IEnumerator{T} implementation.
         /// </summary>
         public IEnumerator<T> GetEnumerator()
         {
@@ -172,7 +172,7 @@ namespace System.Xml.Xsl.Runtime
         //-----------------------------------------------
 
         /// <summary>
-        /// Items may not be added, removed, or modified through the ICollection<T> interface.
+        /// Items may not be added, removed, or modified through the ICollection{T} interface.
         /// </summary>
         bool ICollection<T>.IsReadOnly
         {
@@ -180,7 +180,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be added through the ICollection<T> interface.
+        /// Items may not be added through the ICollection{T} interface.
         /// </summary>
         void ICollection<T>.Add(T value)
         {
@@ -188,7 +188,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be cleared through the ICollection<T> interface.
+        /// Items may not be cleared through the ICollection{T} interface.
         /// </summary>
         void ICollection<T>.Clear()
         {
@@ -213,7 +213,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be removed through the ICollection<T> interface.
+        /// Items may not be removed through the ICollection{T} interface.
         /// </summary>
         bool ICollection<T>.Remove(T value)
         {
@@ -342,7 +342,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be added through the IList<T> interface.
+        /// Items may not be added through the IList{T} interface.
         /// </summary>
         void IList<T>.Insert(int index, T value)
         {
@@ -350,7 +350,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be removed through the IList<T> interface.
+        /// Items may not be removed through the IList{T} interface.
         /// </summary>
         void IList<T>.RemoveAt(int index)
         {
@@ -658,7 +658,7 @@ namespace System.Xml.Xsl.Runtime
         //-----------------------------------------------
 
         /// <summary>
-        /// Return IEnumerator<XPathItem> implementation.
+        /// Return IEnumerator{XPathItem} implementation.
         /// </summary>
         IEnumerator<XPathItem> IEnumerable<XPathItem>.GetEnumerator()
         {
@@ -670,7 +670,7 @@ namespace System.Xml.Xsl.Runtime
         //-----------------------------------------------
 
         /// <summary>
-        /// Items may not be added, removed, or modified through the ICollection<T> interface.
+        /// Items may not be added, removed, or modified through the ICollection{T} interface.
         /// </summary>
         bool ICollection<XPathItem>.IsReadOnly
         {
@@ -678,7 +678,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be added through the ICollection<T> interface.
+        /// Items may not be added through the ICollection{T} interface.
         /// </summary>
         void ICollection<XPathItem>.Add(XPathItem value)
         {
@@ -686,7 +686,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be cleared through the ICollection<T> interface.
+        /// Items may not be cleared through the ICollection{T} interface.
         /// </summary>
         void ICollection<XPathItem>.Clear()
         {
@@ -711,7 +711,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be removed through the ICollection<T> interface.
+        /// Items may not be removed through the ICollection{T} interface.
         /// </summary>
         bool ICollection<XPathItem>.Remove(XPathItem value)
         {
@@ -746,7 +746,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be added through the IList<T> interface.
+        /// Items may not be added through the IList{T} interface.
         /// </summary>
         void IList<XPathItem>.Insert(int index, XPathItem value)
         {
@@ -754,7 +754,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// Items may not be removed through the IList<T> interface.
+        /// Items may not be removed through the IList{T} interface.
         /// </summary>
         void IList<XPathItem>.RemoveAt(int index)
         {

@@ -715,7 +715,7 @@ namespace System.Security.Cryptography.Asn1
     /// <summary>
     /// Compatibility encoding for T61Strings. Interprets the characters as UTF-8 or
     /// ISO-8859-1 as a fallback.
-    /// <summary>
+    /// </summary>
     internal class T61Encoding : Text.Encoding
     {
         private static readonly Text.Encoding s_utf8Encoding = new UTF8Encoding(false, throwOnInvalidBytes: true);

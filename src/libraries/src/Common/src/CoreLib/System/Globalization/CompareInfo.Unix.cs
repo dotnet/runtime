@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Globalization
 {
     public partial class CompareInfo
@@ -240,31 +242,12 @@ namespace System.Globalization
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
-
-            int index;
-
-            if (target.Length == 0)
-            {
-                if (matchLengthPtr != null)
-                    *matchLengthPtr = 0;
-                return startIndex;
-            }
-
-            if (options == CompareOptions.Ordinal)
-            {
-                index = IndexOfOrdinal(source, target, startIndex, count, ignoreCase: false);
-                if (index != -1)
-                {
-                    if (matchLengthPtr != null)
-                        *matchLengthPtr = target.Length;
-                }
-                return index;
-            }
+            Debug.Assert((options & CompareOptions.Ordinal) == 0);
 
 #if CORECLR
             if (_isAsciiEqualityOrdinal && CanUseAsciiOrdinalForOptions(options) && source.IsFastSort() && target.IsFastSort())
             {
-                index = IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
+                int index = IndexOf(source, target, startIndex, count, GetOrdinalCompareOptions(options));
                 if (index != -1)
                 {
                     if (matchLengthPtr != null)
@@ -277,7 +260,7 @@ namespace System.Globalization
             fixed (char* pSource = source)
             fixed (char* pTarget = target)
             {
-                index = Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource + startIndex, count, options, matchLengthPtr);
+                int index = Interop.Globalization.IndexOf(_sortHandle, pTarget, target.Length, pSource + startIndex, count, options, matchLengthPtr);
 
                 return index != -1 ? index + startIndex : -1;
             }

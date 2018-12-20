@@ -173,7 +173,7 @@ namespace System.Globalization
 
 
         /*=================================CurrentEraValue==========================
-        **Action: This is used to convert CurretEra(0) to an appropriate era value.
+        **Action: This is used to convert CurrentEra(0) to an appropriate era value.
         **Returns:
         **Arguments:
         **Exceptions:

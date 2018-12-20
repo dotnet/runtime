@@ -24,7 +24,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-201743110
         if (params.TestOuter) {
             additionalArgs = ' /p:OuterLoop=true'
         }
-        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false${additionalArgs}"
+        sh "LD_LIBRARY_PATH=/usr/local/lib ./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=false /p:PortableBuild=false${additionalArgs}"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials
@@ -37,7 +37,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-201743110
             // Get the user that should be associated with the submission
             def helixCreator = getUser()
             // Target queues
-            def targetHelixQueues = ['RedHat.69.Amd64.Open']
+            def targetHelixQueues = ['RedHat.6.Amd64.Open']
 
             sh "LD_LIBRARY_PATH=/usr/local/lib ./Tools/msbuild.sh --warnaserror false src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.CGroup} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
 

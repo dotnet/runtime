@@ -64,13 +64,8 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            // More compat with .NET behavior - whether or not a 0 keeps the negative sign depends on whether it an "integer" 0 or a "fractional" 0
-            if (number.Digits[0] == 0 && number.Scale == 0)
-            {
-                number.IsNegative = false;
-            }
-
             value = default;
+
             if (!Number.TryNumberToDecimal(ref number, ref value))
             {
                 value = default;

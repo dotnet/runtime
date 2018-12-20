@@ -94,7 +94,7 @@ namespace System.IO.Ports
 
         private static void CheckBaudRate(int baudRate)
         {
-            if (baudRate <= 0 || baudRate > 230400)
+            if (baudRate <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.ArgumentOutOfRange_NeedPosNum);
             }

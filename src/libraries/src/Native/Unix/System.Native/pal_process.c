@@ -648,7 +648,7 @@ int32_t SystemNative_SchedGetAffinity(int32_t pid, intptr_t* mask)
         {
             if (CPU_ISSET(cpu, &set))
             {
-                bits |= (1u << cpu);
+                bits |= ((intptr_t)1) << cpu;
             }
         }
 

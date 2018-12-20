@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -24,6 +25,45 @@ namespace System.IO.Tests
 
                 ExpectEvent(watcher, WatcherChangeTypes.Created, action, cleanup, fileName);
             }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public void FileSystemWatcher_File_Create_EnablingDisablingNotAffectRaisingEvent()
+        {
+            ExecuteWithRetry(() =>
+            {            
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path))
+                {
+                    string fileName = Path.Combine(testDirectory.Path, "file");
+                    watcher.Filter = Path.GetFileName(fileName);
+
+                    int numberOfRaisedEvents = 0;
+                    AutoResetEvent autoResetEvent = new AutoResetEvent(false);
+                    FileSystemEventHandler handler = (o, e) =>
+                    {
+                        Interlocked.Increment(ref numberOfRaisedEvents);
+                        autoResetEvent.Set();
+                    };
+
+                    watcher.Created += handler;
+
+                    for (int i = 0; i < 100; i++)
+                    {
+                        watcher.EnableRaisingEvents = true;
+                        watcher.EnableRaisingEvents = false;
+                    }
+
+                    watcher.EnableRaisingEvents = true;
+
+                    // this should raise one and only one event
+                    File.Create(fileName).Dispose();
+                    Assert.True(autoResetEvent.WaitOne(WaitForExpectedEventTimeout_NoRetry));
+                    Assert.False(autoResetEvent.WaitOne(SubsequentExpectedWait));
+                    Assert.True(numberOfRaisedEvents == 1);
+                }
+            });
         }
 
         [Fact]

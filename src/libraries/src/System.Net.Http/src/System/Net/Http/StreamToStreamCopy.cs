@@ -67,7 +67,7 @@ namespace System.Net.Http
             }
         }
 
-        /// <summary>Disposes the source stream if <paramref name="disposeSource"/> is true.</summary>
+        /// <summary>Disposes the source stream.</summary>
         private static void DisposeSource(Stream source)
         {
             try

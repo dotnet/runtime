@@ -12,7 +12,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class SqlSchemaInfoTest
     {
         #region TestMethods
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestGetSchema()
         {
             using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -33,7 +33,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestCommandBuilder()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
@@ -67,7 +67,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         // This test validates behavior of SqlInitialCatalogConverter used to present database names in PropertyGrid
         // with the SqlConnectionStringBuilder object presented in the control underneath.
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestInitialCatalogStandardValues()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))

@@ -5,9 +5,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -163,48 +160,6 @@ namespace System.IO.Pipelines.Tests
 
             var exception = Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(buffer.End));
             Assert.Equal("Reading is not allowed after reader was completed.", exception.Message);
-        }
-
-        [Fact]
-        public void FlushAsync_ReturnsCompletedTaskWhenMaxSizeIfZero()
-        {
-            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(1);
-            ValueTask<FlushResult> flushTask = writableBuffer.FlushAsync();
-            Assert.True(flushTask.IsCompleted);
-
-            writableBuffer = _pipe.Writer.WriteEmpty(1);
-            flushTask = writableBuffer.FlushAsync();
-            Assert.True(flushTask.IsCompleted);
-        }
-
-        [Fact]
-        public async Task FlushAsync_ThrowsIfWriterReaderWithException()
-        {
-            void ThrowTestException()
-            {
-                try
-                {
-                    throw new InvalidOperationException("Reader exception");
-                }
-                catch (Exception e)
-                {
-                    _pipe.Reader.Complete(e);
-                }
-            }
-
-            ThrowTestException();
-
-            InvalidOperationException invalidOperationException =
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.FlushAsync());
-
-            Assert.Equal("Reader exception", invalidOperationException.Message);
-            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
-
-            invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(async () => await _pipe.Writer.FlushAsync());
-            Assert.Equal("Reader exception", invalidOperationException.Message);
-            Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
-
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetFlushResult"));
         }
 
         [Fact]
@@ -763,6 +718,27 @@ namespace System.IO.Pipelines.Tests
             await _pipe.Writer.FlushAsync();
 
             Assert.False(task.IsCompleted);
+        }
+
+        [Fact]
+        public async Task ReadAsyncReturnsDataAfterCanceledRead()
+        {
+            var pipe = new Pipe();
+
+            ValueTask<ReadResult> readTask = pipe.Reader.ReadAsync();
+            pipe.Reader.CancelPendingRead();
+            ReadResult readResult = await readTask;
+            Assert.True(readResult.IsCanceled);
+
+            readTask = pipe.Reader.ReadAsync();
+            await pipe.Writer.WriteAsync(new byte[] { 1, 2, 3 });
+            readResult = await readTask;
+
+            Assert.False(readResult.IsCanceled);
+            Assert.False(readResult.IsCompleted);
+            Assert.Equal(3, readResult.Buffer.Length);
+
+            pipe.Reader.AdvanceTo(readResult.Buffer.End);
         }
 
         private bool IsTaskWithResult<T>(ValueTask<T> task)

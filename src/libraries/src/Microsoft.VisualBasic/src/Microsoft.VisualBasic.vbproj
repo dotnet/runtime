@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{a32671b6-5470-4f9c-9cd8-4094b9ab0799}</ProjectGuid>
     <NoVbRuntimeReference>true</NoVbRuntimeReference>
@@ -14,8 +14,19 @@
     <NoStdLib>true</NoStdLib>
     <RemoveIntegerChecks>false</RemoveIntegerChecks>
     <RootNamespace />
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <!-- Disable this as it seems to break windows builds for now. -->
+    <DocumentationFile />
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.Windows.vb" />
+    <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.Windows.vb" />
+    <Compile Include="Microsoft\VisualBasic\Helpers\NativeTypes.vb" />
+    <Compile Include="Microsoft\VisualBasic\Helpers\UnsafeNativeMethods.vb" />
+  </ItemGroup>
+    <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.Unix.vb" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\VisualBasic\CallType.vb" />
     <Compile Include="Microsoft\VisualBasic\Collection.vb" />
@@ -45,6 +56,10 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Versioned.vb" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.vb" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\MalformedLineException.vb" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\SpecialDirectories.vb" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\TextFieldParser.vb" />
     <Compile Include="Microsoft\VisualBasic\Globals.vb" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
@@ -80,5 +95,6 @@
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Reflection.Extensions" />
+    <Reference Include="System.Security.Permissions" />
   </ItemGroup>
 </Project>

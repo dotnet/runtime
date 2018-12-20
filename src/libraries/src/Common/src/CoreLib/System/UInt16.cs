@@ -133,17 +133,13 @@ namespace System
 
         private static ushort Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
-            uint i = 0;
-            try
+            Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
+            if (status != Number.ParsingStatus.OK)
             {
-                i = Number.ParseUInt32(s, style, info);
-            }
-            catch (OverflowException e)
-            {
-                throw new OverflowException(SR.Overflow_UInt16, e);
+                Number.ThrowOverflowOrFormatException(status, TypeCode.UInt16);
             }
 
-            if (i > MaxValue) throw new OverflowException(SR.Overflow_UInt16);
+            if (i > MaxValue) Number.ThrowOverflowException(TypeCode.UInt16);
             return (ushort)i;
         }
 
@@ -188,14 +184,10 @@ namespace System
 
         private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out ushort result)
         {
-            result = 0;
-            uint i;
-            if (!Number.TryParseUInt32(s, style, info, out i, out _))
+            if (Number.TryParseUInt32(s, style, info, out uint i) != Number.ParsingStatus.OK
+                || i > MaxValue)
             {
-                return false;
-            }
-            if (i > MaxValue)
-            {
+                result = 0;
                 return false;
             }
             result = (ushort)i;

@@ -18,11 +18,11 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetTimeZoneDisplayName")]
-        internal static extern ResultCode GetTimeZoneDisplayName(
+        internal static extern unsafe ResultCode GetTimeZoneDisplayName(
             string localeName, 
             string timeZoneId, 
             TimeZoneDisplayNameType type, 
-            [Out] StringBuilder result, 
+            char* result, 
             int resultLength);
     }
 }

@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Tests", "tests\Sy
 		{07390899-C8F6-4E83-A3A9-6867B8CB46A0} = {07390899-C8F6-4E83-A3A9-6867B8CB46A0}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Performance.Tests", "tests\Performance\System.IO.Performance.Tests.csproj", "{66AE57BA-B56C-4A1E-ACA6-7C18431D416B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.PerformanceTests", "tests\Performance\System.IO.PerformanceTests.csproj", "{66AE57BA-B56C-4A1E-ACA6-7C18431D416B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{07390899-C8F6-4E83-A3A9-6867B8CB46A0} = {07390899-C8F6-4E83-A3A9-6867B8CB46A0}
 	EndProjectSection

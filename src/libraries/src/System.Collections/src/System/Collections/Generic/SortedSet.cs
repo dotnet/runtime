@@ -17,10 +17,11 @@ namespace System.Collections.Generic
     //
     // The basic idea of a red-black tree is to represent 2-3-4 trees as standard BSTs but to add one extra bit of information
     // per node to encode 3-nodes and 4-nodes.
-    // 4-nodes will be represented as:          B
-    //                                                              R            R
-    // 3 -node will be represented as:           B             or         B
-    //                                                              R          B               B       R
+    // 4-nodes will be represented as:   B
+    //                                 R   R
+    //
+    // 3 -node will be represented as:   B     or     B
+    //                                 R   B        B   R
     //
     // For a detailed description of the algorithm, take a look at "Algorithms" by Robert Sedgewick.
 
@@ -679,7 +680,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="parent">The (possibly <c>null</c>) parent.</param>
         /// <param name="child">The child node to replace.</param>
-        /// <param name="newChild">The node to replace <paramref name="child"> with.</param>
+        /// <param name="newChild">The node to replace <paramref name="child"/> with.</param>
         private void ReplaceChildOrRoot(Node parent, Node child, Node newChild)
         {
             if (parent != null)

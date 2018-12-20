@@ -66,8 +66,8 @@ namespace System.Drawing
         ///     The comment above refers to the COM STA message pump, not to be confused with the UI message pump.
         ///     However, the effect is the same, the COM message pump will pump messages and dispatch them to the
         ///     window while waiting on the writer lock; this has the potential of creating a re-entrancy situation 
-        //      that if during the message processing a wait on a reader lock is originated the thread will be block 
-        //      on itself.
+        ///     that if during the message processing a wait on a reader lock is originated the thread will be block 
+        ///     on itself.
         ///     While processing STA message, the thread may call back into managed code. We do this because 
         ///     we can not block finalizer thread.  Finalizer thread may need to release STA objects on this thread. If 
         ///     the current thread does not pump message, finalizer thread is blocked, and AD  unload is blocked while 

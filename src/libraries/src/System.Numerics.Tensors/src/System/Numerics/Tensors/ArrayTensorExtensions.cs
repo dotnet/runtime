@@ -18,7 +18,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a copy of this two-dimensional array as a DenseTensorr&lt;T&gt;
+        /// Creates a copy of this two-dimensional array as a DenseTensor&lt;T&gt;
         /// </summary>
         /// <typeparam name="T">Type contained in the array to copy to the DenseTensor&lt;T&gt;.</typeparam>
         /// <param name="array">The array to create a DenseTensor&lt;T&gt; from.</param>
@@ -30,7 +30,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a copy of this three-dimensional array as a DenseTensorr&lt;T&gt;
+        /// Creates a copy of this three-dimensional array as a DenseTensor&lt;T&gt;
         /// </summary>
         /// <typeparam name="T">Type contained in the array to copy to the DenseTensor&lt;T&gt;.</typeparam>
         /// <param name="array">The array to create a DenseTensor&lt;T&gt; from.</param>
@@ -42,7 +42,7 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a copy of this n-dimensional array as a DenseTensorr&lt;T&gt;
+        /// Creates a copy of this n-dimensional array as a DenseTensor&lt;T&gt;
         /// </summary>
         /// <typeparam name="T">Type contained in the array to copy to the DenseTensor&lt;T&gt;.</typeparam>
         /// <param name="array">The array to create a DenseTensor&lt;T&gt; from.</param>
@@ -54,11 +54,11 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Creates a copy of this single-dimensional array as a SparseTensorr&lt;T&gt;
+        /// Creates a copy of this single-dimensional array as a SparseTensor&lt;T&gt;
         /// </summary>
-        /// <typeparam name="T">Type contained in the array to copy to the SparseTensorr&lt;T&gt;.</typeparam>
-        /// <param name="array">The array to create a SparseTensorr&lt;T&gt; from.</param>
-        /// <returns>A 1-dimensional SparseTensorr&lt;T&gt; with the same length and content as <paramref name="array"/>.</returns>
+        /// <typeparam name="T">Type contained in the array to copy to the SparseTensor&lt;T&gt;.</typeparam>
+        /// <param name="array">The array to create a SparseTensor&lt;T&gt; from.</param>
+        /// <returns>A 1-dimensional SparseTensor&lt;T&gt; with the same length and content as <paramref name="array"/>.</returns>
         public static SparseTensor<T> ToSparseTensor<T>(this T[] array)
         {
             return new SparseTensor<T>(array);

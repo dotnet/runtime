@@ -33,9 +33,18 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
             ///   MULX r64a, r64b, reg/m64
+            /// The above native signature does not directly correspond to the managed signature. 
             /// This intrinisc is only available on 64-bit processes
             /// </summary>
-            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) { throw new PlatformNotSupportedException(); }
+            public static ulong MultiplyNoFlags(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
+            ///   MULX r64a, r64b, reg/m64
+            /// The above native signature does not directly correspond to the managed signature. 
+            /// This intrinisc is only available on 64-bit processes
+            /// </summary>
+            public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
@@ -57,43 +66,31 @@ namespace System.Runtime.Intrinsics.X86
         ///   BZHI r32a, reg/m32, r32b
         /// </summary>
         public static uint ZeroHighBits(uint value, uint index) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// unsigned __int64 _bzhi_u64 (unsigned __int64 a, unsigned int index)
-        ///   BZHI r64a, reg/m32, r64b
-        /// </summary>
-        public static ulong ZeroHighBits(ulong value, ulong index) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
         ///   MULX r32a, r32b, reg/m32
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
-        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* high) { throw new PlatformNotSupportedException(); }
+        public static uint MultiplyNoFlags(uint left, uint right) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
-        /// unsigned __int64 _mulx_u64 (unsigned __int64 a, unsigned __int64 b, unsigned __int64* hi)
-        ///   MULX r64a, r64b, reg/m64
+        /// unsigned int _mulx_u32 (unsigned int a, unsigned int b, unsigned int* hi)
+        ///   MULX r32a, r32b, reg/m32
+        /// The above native signature does not directly correspond to the managed signature. 
         /// </summary>
-        public static unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* high) { throw new PlatformNotSupportedException(); }
+        public static unsafe uint MultiplyNoFlags(uint left, uint right, uint* low) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _pdep_u32 (unsigned int a, unsigned int mask)
         ///   PDEP r32a, r32b, reg/m32
         /// </summary>
         public static uint ParallelBitDeposit(uint value, uint mask) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// unsigned __int64 _pdep_u64 (unsigned __int64 a, unsigned __int64 mask)
-        ///   PDEP r64a, r64b, reg/m64
-        /// </summary>
-        public static ulong ParallelBitDeposit(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _pext_u32 (unsigned int a, unsigned int mask)
         ///   PEXT r32a, r32b, reg/m32
         /// </summary>
         public static uint ParallelBitExtract(uint value, uint mask) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// unsigned __int64 _pext_u64 (unsigned __int64 a, unsigned __int64 mask)
-        ///   PEXT r64a, r64b, reg/m64
-        /// </summary>
-        public static ulong ParallelBitExtract(ulong value, ulong mask) { throw new PlatformNotSupportedException(); }
     }
 }

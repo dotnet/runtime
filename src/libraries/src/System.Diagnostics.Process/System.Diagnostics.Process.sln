@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Process.
 		{F55047F8-E47B-46E3-B221-C23595AFE168} = {F55047F8-E47B-46E3-B221-C23595AFE168}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Process.Performance.Tests", "tests\Performance\System.Diagnostics.Process.Performance.Tests.csproj", "{4E05E43A-1DC9-47C7-8280-13CF4EF741EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.Process.PerformanceTests", "tests\Performance\System.Diagnostics.Process.PerformanceTests.csproj", "{4E05E43A-1DC9-47C7-8280-13CF4EF741EA}"
 	ProjectSection(ProjectDependencies) = postProject
 		{F55047F8-E47B-46E3-B221-C23595AFE168} = {F55047F8-E47B-46E3-B221-C23595AFE168}
 	EndProjectSection

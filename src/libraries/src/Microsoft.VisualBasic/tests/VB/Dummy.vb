@@ -6,16 +6,19 @@ Imports Microsoft.VisualBasic
 Imports System
 Imports Xunit
 
-Namespace Microsoft.VisualBasic.Tests
+Namespace Microsoft.VisualBasic.Tests.VB
 
-    Public Class Dummy
+    Public NotInheritable Class DummyTest
 
         <Fact>
-        Public Sub Dummy()
+        Public Shared Sub Dummy()
+            'While (Not System.Diagnostics.Debugger.IsAttached)
+            '    System.Threading.Thread.Sleep(1000)
+            'End While
 
-            Dim dateTimeNowBefore As DateTime = DateTime.Now()
-            Dim now As DateTime = DateAndTime.Now()
-            Dim dateTimeNowAfter As DateTime = DateTime.Now()
+            Dim dateTimeNowBefore As Date = Date.Now()
+            Dim now As Date = DateAndTime.Now()
+            Dim dateTimeNowAfter As Date = Date.Now()
 
             Assert.InRange(now, dateTimeNowBefore, dateTimeNowAfter)
 

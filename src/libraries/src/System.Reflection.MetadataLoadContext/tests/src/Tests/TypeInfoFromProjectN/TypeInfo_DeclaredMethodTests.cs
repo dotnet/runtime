@@ -88,7 +88,7 @@ namespace System.Reflection.Tests
 
     public class TypeInfoMethodSubClass : TypeInfoMethodBaseClass
     {
-        public new static String[] PublicMethodNames = new string[]{ "PubMeth1",
+        public new static string[] PublicMethodNames = new string[]{ "PubMeth1",
                                                                  "PubMeth2",
                                                                  "PubMeth3",
                                                                  "PubMeth2ToOverride"};

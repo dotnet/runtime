@@ -256,5 +256,93 @@ namespace System.Text.Json.Tests
                 }
             }
         }
+
+        [Theory]
+        [InlineData("[123, 456]", "123456", "123456")]
+        [InlineData("/*a*/[{\"testA\":[{\"testB\":[{\"testC\":123}]}]}]", "testAtestBtestC123", "/*a*/testAtestBtestC123")]
+        [InlineData("{\"testA\":[1/*hi*//*bye*/, 2, 3], \"testB\": 4}", "testA123testB4", "testA1/*hi*//*bye*/23testB4")]
+        [InlineData("{\"test\":[[[123,456]]]}", "test123456", "test123456")]
+        [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "/*a*//*z*//*b*//*z*/123/*c*//*z*//*d*//*z*/456/*e*//*z*//*f*//*z*/")]
+        [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123/*hi*/456/*bye*/")]
+        [InlineData("/*a*//*z*/{/*b*//*z*/\"test\":/*c*//*z*/[/*d*//*z*/[/*e*//*z*/[/*f*//*z*/123/*g*//*z*/,/*h*//*z*/456/*i*//*z*/]/*j*//*z*/]/*k*//*z*/]/*l*//*z*/}/*m*//*z*/",
+    "test123456", "/*a*//*z*//*b*//*z*/test/*c*//*z*//*d*//*z*//*e*//*z*//*f*//*z*/123/*g*//*z*//*h*//*z*/456/*i*//*z*//*j*//*z*//*k*//*z*//*l*//*z*//*m*//*z*/")]
+        [InlineData("//a\n//z\n{//b\n//z\n\"test\"://c\n//z\n[//d\n//z\n[//e\n//z\n[//f\n//z\n123//g\n//z\n,//h\n//z\n456//i\n//z\n]//j\n//z\n]//k\n//z\n]//l\n//z\n}//m\n//z\n",
+    "test123456", "//a\n//z\n//b\n//z\ntest//c\n//z\n//d\n//z\n//e\n//z\n//f\n//z\n123//g\n//z\n//h\n//z\n456//i\n//z\n//j\n//z\n//k\n//z\n//l\n//z\n//m\n//z\n")]
+        public static void AllowCommentStackMismatchMultiSegment(string jsonString, string expectedWithoutComments, string expectedWithComments)
+        {
+            byte[] data = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(data, 1);
+
+            TestReadingJsonWithComments(sequence, expectedWithoutComments, expectedWithComments);
+
+            var firstSegment = new BufferSegment<byte>(ReadOnlyMemory<byte>.Empty);
+            ReadOnlyMemory<byte> secondMem = data;
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+            sequence = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+
+            TestReadingJsonWithComments(sequence, expectedWithoutComments, expectedWithComments);
+        }
+
+        private static void TestReadingJsonWithComments(ReadOnlySequence<byte> sequence, string expectedWithoutComments, string expectedWithComments)
+        {
+            var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+            var json = new Utf8JsonReader(sequence, isFinalBlock: true, state);
+
+            var builder = new StringBuilder();
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.Number || json.TokenType == JsonTokenType.Comment || json.TokenType == JsonTokenType.PropertyName)
+                    builder.Append(Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan));
+            }
+
+            Assert.Equal(expectedWithComments, builder.ToString());
+
+            state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
+            json = new Utf8JsonReader(sequence, isFinalBlock: true, state);
+
+            builder = new StringBuilder();
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.Number || json.TokenType == JsonTokenType.Comment || json.TokenType == JsonTokenType.PropertyName)
+                    builder.Append(Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan));
+            }
+
+            Assert.Equal(expectedWithoutComments, builder.ToString());
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleValueJson))]
+        public static void SingleJsonValueMultiSegment(string jsonString, string expectedString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
+
+            TestReadingSingleValueJson(sequence, expectedString);
+
+            var firstSegment = new BufferSegment<byte>(ReadOnlyMemory<byte>.Empty);
+            ReadOnlyMemory<byte> secondMem = dataUtf8;
+            BufferSegment<byte> secondSegment = firstSegment.Append(secondMem);
+            sequence = new ReadOnlySequence<byte>(firstSegment, 0, secondSegment, secondMem.Length);
+
+            TestReadingSingleValueJson(sequence, expectedString);
+        }
+
+        private static void TestReadingSingleValueJson(ReadOnlySequence<byte> sequence, string expectedString)
+        {
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(sequence, false, state);
+
+                while (json.Read())
+                {
+                    // Check if the TokenType is a primitive "value", i.e. String, Number, True, False, and Null
+                    Assert.True(json.TokenType >= JsonTokenType.String && json.TokenType <= JsonTokenType.Null);
+                    Assert.Equal(expectedString, Encoding.UTF8.GetString(json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan));
+                }
+
+                Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+            }
+        }
     }
 }

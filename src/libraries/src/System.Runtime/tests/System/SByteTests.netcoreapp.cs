@@ -29,9 +29,18 @@ namespace System.Tests
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
         public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, sbyte expected)
         {
+            sbyte result;
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(sbyte.TryParse(value.AsSpan(offset, count), out result));
+                Assert.Equal(expected, result);
+            }
+
             Assert.Equal(expected, sbyte.Parse(value.AsSpan(offset, count), style, provider));
 
-            Assert.True(sbyte.TryParse(value.AsSpan(offset, count), style, provider, out sbyte result));
+            Assert.True(sbyte.TryParse(value.AsSpan(offset, count), style, provider, out result));
             Assert.Equal(expected, result);
         }
 
@@ -41,9 +50,18 @@ namespace System.Tests
         {
             if (value != null)
             {
+                sbyte result;
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(sbyte.TryParse(value.AsSpan(), out result));
+                    Assert.Equal(0, result);
+                }
+
                 Assert.Throws(exceptionType, () => sbyte.Parse(value.AsSpan(), style, provider));
 
-                Assert.False(sbyte.TryParse(value.AsSpan(), style, provider, out sbyte result));
+                Assert.False(sbyte.TryParse(value.AsSpan(), style, provider, out result));
                 Assert.Equal(0, result);
             }
         }

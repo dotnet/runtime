@@ -28,21 +28,21 @@ namespace System.Linq
         /// </summary>
         /// <param name="index">The 0-based index to access.</param>
         /// <param name="found"><c>true</c> if the sequence contains an element at that index, <c>false</c> otherwise.</param>
-        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <see cref="TElement"/>.</returns>
+        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TElement"/>.</returns>
         TElement TryGetElementAt(int index, out bool found);
 
         /// <summary>
         /// Gets the first item in this sequence.
         /// </summary>
         /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
-        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <see cref="TElement"/>.</returns>
+        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TElement"/>.</returns>
         TElement TryGetFirst(out bool found);
 
         /// <summary>
         /// Gets the last item in this sequence.
         /// </summary>
         /// <param name="found"><c>true</c> if the sequence contains an element, <c>false</c> otherwise.</param>
-        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <see cref="TElement"/>.</returns>
+        /// <returns>The element if <paramref name="found"/> is <c>true</c>, otherwise, the default value of <typeparamref name="TElement"/>.</returns>
         TElement TryGetLast(out bool found);
     }
 }

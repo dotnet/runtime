@@ -263,7 +263,7 @@ namespace System.Runtime.InteropServices.Tests
 
                 Variant result = Marshal.PtrToStructure<Variant>(pNative);
                 Assert.Equal(VarEnum.VT_R8, (VarEnum)result.vt);
-                Assert.Equal(*((IntPtr*)&obj), result.bstrVal);
+                Assert.Equal(*((ulong*)&obj), *((ulong*)&result.bstrVal));
 
                 object o = Marshal.GetObjectForNativeVariant(pNative);
                 Assert.Equal(obj, o);
@@ -287,7 +287,7 @@ namespace System.Runtime.InteropServices.Tests
 
                 Variant result = Marshal.PtrToStructure<Variant>(pNative);
                 Assert.Equal(VarEnum.VT_R4, (VarEnum)result.vt);
-                Assert.Equal(*((IntPtr*)&obj), result.bstrVal);
+                Assert.Equal(*((uint*)&obj), *((uint*)&result.bstrVal));
 
                 object o = Marshal.GetObjectForNativeVariant(pNative);
                 Assert.Equal(obj, o);
@@ -448,31 +448,6 @@ namespace System.Runtime.InteropServices.Tests
                 Marshal.FreeHGlobal(pNative);
             }
         }
-
-#if !netstandard // TODO: Enable for netstandard2.1
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetNativeVariantForObject_ObjectNotCollectible_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type type = typeBuilder.CreateType();
-
-            object o = Activator.CreateInstance(type);
-
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-            try
-            {
-                Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject(o, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
-        }
-#endif
 
         public struct StructWithValue
         {

@@ -188,9 +188,9 @@ internal static partial class Interop
             /*SQLSMALLINT*/ODBC32.SQL_HANDLE HandleType,
             /*SQLHANDLE*/OdbcHandle Handle,
             /*SQLSMALLINT*/short RecNumber,
-            /*SQLCHAR* */  StringBuilder rchState,
+            /*SQLCHAR* */  [Out] StringBuilder rchState,
             /*SQLINTEGER* */out int NativeError,
-            /*SQLCHAR* */StringBuilder MessageText,
+            /*SQLCHAR* */  [Out] StringBuilder MessageText,
             /*SQLSMALLINT*/short BufferLength,
             /*SQLSMALLINT* */out short TextLength);
 
@@ -201,7 +201,7 @@ internal static partial class Interop
            /*SQLSMALLINT*/ short RecNumber,
            /*SQLSMALLINT*/ short DiagIdentifier,
            [MarshalAs(UnmanagedType.LPWStr)]
-           /*SQLPOINTER*/  StringBuilder    rchState,
+           /*SQLPOINTER*/  [Out] StringBuilder rchState,
            /*SQLSMALLINT*/ short BufferLength,
            /*SQLSMALLINT* */ out short StringLength);
 

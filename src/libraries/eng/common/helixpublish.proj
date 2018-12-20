@@ -1,4 +1,8 @@
-<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+
+  <PropertyGroup>
+    <Language>msbuild</Language>
+  </PropertyGroup>
 
   <ItemGroup>
     <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
@@ -7,9 +11,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="WorkItem">
+    <HelixWorkItem Include="WorkItem" Condition="'$(WorkItemDirectory)' != ''">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand)</Command>
     </HelixWorkItem>
+  </ItemGroup>
+
+  <ItemGroup>
+    <XUnitProject Include="$(XUnitProjects.Split(';'))">
+      <Arguments />
+    </XUnitProject>
   </ItemGroup>
 </Project>

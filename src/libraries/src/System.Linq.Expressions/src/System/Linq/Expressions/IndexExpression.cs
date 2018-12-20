@@ -155,7 +155,7 @@ namespace System.Linq.Expressions
         /// <param name="array">An expression representing the array to index.</param>
         /// <param name="indexes">An array containing expressions used to index the array.</param>
         /// <remarks>The expression representing the array can be obtained by using the <see cref="MakeMemberAccess"/> method,
-        /// or through <see cref="NewArrayBounds"/> or <see cref="NewArrayInit"/>.</remarks>
+        /// or through <see cref="NewArrayBounds(Type, Expression[])"/> or <see cref="NewArrayInit(Type, Expression[])"/>.</remarks>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
         public static IndexExpression ArrayAccess(Expression array, params Expression[] indexes)
         {
@@ -168,7 +168,7 @@ namespace System.Linq.Expressions
         /// <param name="array">An expression representing the array to index.</param>
         /// <param name="indexes">An <see cref="IEnumerable{T}"/> containing expressions used to index the array.</param>
         /// <remarks>The expression representing the array can be obtained by using the <see cref="MakeMemberAccess"/> method,
-        /// or through <see cref="NewArrayBounds"/> or <see cref="NewArrayInit"/>.</remarks>
+        /// or through <see cref="NewArrayBounds(Type, IEnumerable{Expression})"/> or <see cref="NewArrayInit(Type, IEnumerable{Expression})"/>.</remarks>
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
         public static IndexExpression ArrayAccess(Expression array, IEnumerable<Expression> indexes)
         {

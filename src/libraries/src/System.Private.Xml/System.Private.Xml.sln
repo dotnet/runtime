@@ -57,7 +57,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.RW.XmlConvert.Te
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D} = {C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlDocument.Performance.Tests", "tests\XmlDocument\Performance\System.Xml.XmlDocument.Performance.Tests.csproj", "{8A7370E5-BF89-4BCF-ACCD-BA298869055B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlDocument.PerformanceTests", "tests\XmlDocument\Performance\System.Xml.XmlDocument.PerformanceTests.csproj", "{8A7370E5-BF89-4BCF-ACCD-BA298869055B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D} = {C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}
 	EndProjectSection
@@ -107,7 +107,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlSchema.XmlSch
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D} = {C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlSerializer.Performance.Tests", "tests\XmlSerializer\Performance\System.Xml.XmlSerializer.Performance.Tests.csproj", "{9891F9AC-9A0A-47DF-8D96-92B21AFC3B93}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XmlSerializer.PerformanceTests", "tests\XmlSerializer\Performance\System.Xml.XmlSerializer.PerformanceTests.csproj", "{9891F9AC-9A0A-47DF-8D96-92B21AFC3B93}"
 	ProjectSection(ProjectDependencies) = postProject
 		{C427CE0D-0740-41F3-9C3A-552BEA3DDB0D} = {C427CE0D-0740-41F3-9C3A-552BEA3DDB0D}
 	EndProjectSection

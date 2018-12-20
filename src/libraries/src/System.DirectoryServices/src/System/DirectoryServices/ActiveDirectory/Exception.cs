@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
-using System.Security.Authentication;
-using System.Text;
 using System.Collections;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Security.Authentication;
 using System.Security.Permissions;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -366,22 +366,8 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 temp = ((((temp) & 0x0000FFFF) | (7 << 16) | 0x80000000));
             }
-            string errorMsg = "";
-            StringBuilder sb = new StringBuilder(256);
-            int result = UnsafeNativeMethods.FormatMessageW(UnsafeNativeMethods.FORMAT_MESSAGE_IGNORE_INSERTS |
-                                       UnsafeNativeMethods.FORMAT_MESSAGE_FROM_SYSTEM |
-                                       UnsafeNativeMethods.FORMAT_MESSAGE_ARGUMENT_ARRAY,
-                                       0, (int)temp, 0, sb, sb.Capacity + 1, 0);
-            if (result != 0)
-            {
-                errorMsg = sb.ToString(0, result);
-            }
-            else
-            {
-                errorMsg = SR.Format(SR.DSUnknown , Convert.ToString(temp, 16));
-            }
 
-            return errorMsg;
+            return new Win32Exception((int)temp).Message;
         }
 
         internal static SyncFromAllServersOperationException CreateSyncAllException(IntPtr errorInfo, bool singleError)

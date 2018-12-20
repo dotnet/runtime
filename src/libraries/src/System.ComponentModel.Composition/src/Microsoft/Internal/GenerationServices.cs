@@ -66,8 +66,6 @@ namespace Microsoft.Internal
         /// 7. Delegates on static functions or any of the above
         /// Everything else cannot be represented as literals
         /// <param name="ilGenerator"></param>
-        /// <param name="item"></param>
-        /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
         public static void LoadValue(this ILGenerator ilGenerator, object value)
@@ -225,9 +223,8 @@ namespace Microsoft.Internal
 
         /// Generates the code to get the type of an object and store it in a local
         /// <param name="ilGenerator"></param>
-        /// <param name="dictionary"></param>
-        /// <param name="key"></param>
-        /// <param name="value"></param>
+        /// <param name="exception"></param>
+        /// <param name="dataStore"></param>
         /// <returns></returns>
         public static void GetExceptionDataAndStoreInLocal(this ILGenerator ilGenerator, LocalBuilder exception, LocalBuilder dataStore)
         {

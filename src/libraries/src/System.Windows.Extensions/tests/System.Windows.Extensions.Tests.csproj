@@ -18,6 +18,7 @@
     <Compile Include="System\Drawing\IconConverterTests.cs" />
     <Compile Include="System\Drawing\ImageConverterTests.cs" />
     <Compile Include="System\Drawing\ImageFormatConverterTests.cs" />
+    <Compile Include="System\Drawing\Printing\MarginsConverterTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(TestDataPackageVersion)\content\**\*.*">

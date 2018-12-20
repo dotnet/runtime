@@ -10,9 +10,11 @@ All .NET Core assemblies are [strong-named](https://docs.microsoft.com/en-us/dot
 ##  FAQ
 
 ### 1. Microsoft strong-names their assemblies, should I?
-For the most part, the majority of applications and libraries do not need strong-names. Strong-names are left over from previous eras of .NET where [sandboxing](https://en.wikipedia.org/wiki/Sandbox_(computer_security)) needed to differentiate between code that was trusted, versus code that was untrusted. However in recent years, sandboxing via AppDomains, especially to [isolate ASP.NET web applications](https://support.microsoft.com/en-us/help/2698981/asp-net-partial-trust-does-not-guarantee-application-isolation), is no longer guaranteed and is not recommended. 
+For the most part, the majority of applications do not need strong-names. Strong-names are left over from previous eras of .NET where [sandboxing](https://en.wikipedia.org/wiki/Sandbox_(computer_security)) needed to differentiate between code that was trusted, versus code that was untrusted. However in recent years, sandboxing via AppDomains, especially to [isolate ASP.NET web applications](https://support.microsoft.com/en-us/help/2698981/asp-net-partial-trust-does-not-guarantee-application-isolation), is no longer guaranteed and is not recommended. 
 
-However, strong-names are still required in some rare situations, most of which are called out on this page: [Strong-Named Assemblies](https://docs.microsoft.com/en-us/dotnet/framework/app-domains/strong-named-assemblies).
+However, strong-names are still required in applications in some rare situations, most of which are called out on this page: [Strong-Named Assemblies](https://docs.microsoft.com/en-us/dotnet/framework/app-domains/strong-named-assemblies).
+
+Because of the viral nature of strong-naming, it is recommended that publicly published .NET libraries are strong-named. Not strong-naming a .NET library excludes anyone who does need to strong-name their application or library from using it. Read more about .NET libraries and strong-naming in the [.NET Library Guidance](https://docs.microsoft.com/dotnet/standard/library-guidance/strong-naming).
 
 ### 2. I really, _really_ need to strong-name, what kinds of issues will I run into?
 There are three major problems that developers run into after strong naming their assemblies:

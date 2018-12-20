@@ -12,7 +12,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serializatio
 		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml.Performance.Tests", "tests\Performance\System.Runtime.Serialization.Xml.Performance.Tests.csproj", "{122A5432-C5B7-4293-AFDA-B24F4D54FDEF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Xml.PerformanceTests", "tests\Performance\System.Runtime.Serialization.Xml.PerformanceTests.csproj", "{122A5432-C5B7-4293-AFDA-B24F4D54FDEF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
 	EndProjectSection
