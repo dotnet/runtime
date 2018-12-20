@@ -35,6 +35,8 @@ jobs:
         name: Hosted VS2017
       ${{ if ne(variables['System.TeamProject'], 'public') }}:
         name: dotnet-internal-temp
+    # Double the default timeout. Publishing is subject to huge delays due to contention on the dotnet-core blob feed
+    timeoutInMinutes: 120
     variables:
       _PublishType: ${{ parameters._PublishType}}
     steps:
