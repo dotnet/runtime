@@ -1206,13 +1206,13 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     CreateInstantiatingILStubTargetSig(pTargetMD, typeContext, &stubSigBuilder);
 
     // 2. Emit the method body
-    mdToken tokPinningHelper = pCode->GetToken(MscorlibBinder::GetField(FIELD__PINNING_HELPER__M_DATA));
+    mdToken tokRawData = pCode->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     // 2.1 Push the thisptr
     // We need to skip over the MethodTable*
     // The trick below will do that.
     pCode->EmitLoadThis();
-    pCode->EmitLDFLDA(tokPinningHelper);
+    pCode->EmitLDFLDA(tokRawData);
 
 #if defined(_TARGET_X86_)
     // 2.2 Push the rest of the arguments for x86
@@ -1225,7 +1225,7 @@ Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetM
     // 2.3 Push the hidden context param
     // The context is going to be captured from the thisptr
     pCode->EmitLoadThis();
-    pCode->EmitLDFLDA(tokPinningHelper);
+    pCode->EmitLDFLDA(tokRawData);
     pCode->EmitLDC(Object::GetOffsetOfFirstField());
     pCode->EmitSUB();
     pCode->EmitLDIND_I();

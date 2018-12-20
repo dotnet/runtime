@@ -48,18 +48,18 @@ namespace System.Runtime.CompilerServices
 
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
-    internal class PinningHelper
+    internal class RawData
     {
-        public byte m_data;
+        public byte Data;
     }
 
-    internal class ArrayPinningHelper
+    internal class RawSzArrayData
     {
-        public IntPtr m_lengthAndPadding;
-        public byte m_arrayData;
+        public IntPtr Count; // Array._numComponents padded to IntPtr
+        public byte Data;
     }
 
-    internal static class JitHelpers
+    internal static unsafe class JitHelpers
     {
         // The special dll name to be used for DllImport of QCalls
         internal const string QCall = "QCall";
@@ -68,21 +68,21 @@ namespace System.Runtime.CompilerServices
         // s has to be a local variable on the stack.
         internal static StringHandleOnStack GetStringHandleOnStack(ref string s)
         {
-            return new StringHandleOnStack(UnsafeCastToStackPointer(ref s));
+            return new StringHandleOnStack((IntPtr)Unsafe.AsPointer(ref s));
         }
 
         // Wraps object variable into a handle. Used to pass managed object references in and out of QCalls.
         // o has to be a local variable on the stack.
         internal static ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class
         {
-            return new ObjectHandleOnStack(UnsafeCastToStackPointer(ref o));
+            return new ObjectHandleOnStack((IntPtr)Unsafe.AsPointer(ref o));
         }
 
         // Wraps StackCrawlMark into a handle. Used to pass StackCrawlMark to QCalls.
         // stackMark has to be a local variable on the stack.
         internal static StackCrawlMarkHandle GetStackCrawlMarkHandle(ref StackCrawlMark stackMark)
         {
-            return new StackCrawlMarkHandle(UnsafeCastToStackPointer(ref stackMark));
+            return new StackCrawlMarkHandle((IntPtr)Unsafe.AsPointer(ref stackMark));
         }
 
 #if DEBUG
@@ -121,22 +121,6 @@ namespace System.Runtime.CompilerServices
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
-
-        // Internal method for getting a raw pointer for handles in JitHelpers.
-        // The reference has to point into a local stack variable in order so it can not be moved by the GC.
-        internal static IntPtr UnsafeCastToStackPointer<T>(ref T val)
-        {
-            IntPtr p = UnsafeCastToStackPointerInternal<T>(ref val);
-            Debug.Assert(IsAddressInStack(p), "Pointer not in the stack!");
-            return p;
-        }
-
-        private static IntPtr UnsafeCastToStackPointerInternal<T>(ref T val)
-        {
-            // The body of this function will be replaced by the EE with unsafe code that just returns val!!!
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
 #else // DEBUG
 
         internal static int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
@@ -152,13 +136,6 @@ namespace System.Runtime.CompilerServices
             // See getILIntrinsicImplementation for how this happens.  
             throw new InvalidOperationException();
         }
-
-        internal static IntPtr UnsafeCastToStackPointer<T>(ref T val)
-        {
-            // The body of this function will be replaced by the EE with unsafe code that just returns o!!!
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
 #endif // DEBUG
 
         // Set the given element in the array without any type or range checks
@@ -168,22 +145,7 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawData(this object obj) =>
             ref Unsafe.As<RawData>(obj).Data;
 
-        private sealed class RawData
-        {
-            public byte Data;
-        }
-
-#if DEBUG
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsAddressInStack(IntPtr ptr);
-#endif
-
-        internal static ref byte GetRawSzArrayData(this Array array)
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementation for how this happens.
-            typeof(ArrayPinningHelper).ToString(); // Type used by the actual method body
-            throw new InvalidOperationException();
-        }
+        internal static ref byte GetRawSzArrayData(this Array array) =>
+            ref Unsafe.As<RawSzArrayData>(array).Data;
     }
 }

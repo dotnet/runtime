@@ -222,9 +222,6 @@ FCFuncEnd()
 
 FCFuncStart(gJitHelpers)
     FCFuncElement("UnsafeSetArrayElement", JitHelpers::UnsafeSetArrayElement)
-#ifdef _DEBUG
-    FCFuncElement("IsAddressInStack", ReflectionInvocation::IsAddressInStack)
-#endif
 FCFuncEnd()
 
 FCFuncStart(gCOMTypeHandleFuncs)
