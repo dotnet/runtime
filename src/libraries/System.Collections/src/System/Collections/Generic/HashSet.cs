@@ -11,7 +11,7 @@ namespace System.Collections.Generic
 {
     /// <summary>
     /// Implementation notes:
-    /// This uses an array-based implementation similar to Dictionary<T>, using a buckets array
+    /// This uses an array-based implementation similar to <see cref="Dictionary{TKey, TValue}"/>, using a buckets array
     /// to map hash values to the Slots array. Items in the Slots array that hash to the same value
     /// are chained together through the "next" indices. 
     /// 
@@ -218,7 +218,7 @@ namespace System.Collections.Generic
         #region ICollection<T> methods
 
         /// <summary>
-        /// Add item to this hashset. This is the explicit implementation of the ICollection<T>
+        /// Add item to this hashset. This is the explicit implementation of the <see cref="ICollection{T}"/>
         /// interface. The other Add method returns bool indicating whether item was added.
         /// </summary>
         /// <param name="item">item to add</param>
@@ -1158,7 +1158,6 @@ namespace System.Collections.Generic
         /// defragmentation, allowing faster execution; note that this is reasonable since 
         /// AddIfNotPresent attempts to insert new elements in re-opened spots.
         /// </summary>
-        /// <param name="sizeSuggestion"></param>
         private void IncreaseCapacity()
         {
             Debug.Assert(_buckets != null, "IncreaseCapacity called on a set with no elements");

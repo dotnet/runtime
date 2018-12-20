@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <ProjectGuid>{191B3618-FECD-4ABD-9D6B-5AC90DC33621}</ProjectGuid>
@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants);NETCORE</DefineConstants>
+    <NoWarn>$(NoWarn);CS1589</NoWarn>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS;FEATURE_SYSTEM_EVENTS</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_Drawing</GeneratePlatformNotSupportedAssemblyMessage>
@@ -243,7 +244,9 @@
     <Compile Include="misc\GDI\WindowsGraphics.cs" />
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
-    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\CoreLib\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>

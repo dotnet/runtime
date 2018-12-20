@@ -281,7 +281,7 @@ Use this attribute on test methods to specify that this test may only be run on 
 - `nonlinuxtests` for tests that don't run on Linux
 - `nonosxtests` for tests that don't run on OS X
 
-**[Available Test Platforms](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.XUnitExtensions/TestPlatforms.cs#L10)**
+**[Available Test Platforms](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TestPlatforms.cs)**
 
 When running tests by building a test project, tests that don't apply to the `OSGroup` are not run. For example, to run Linux-specific tests on a Linux box, use the following command line:
 ```sh
@@ -333,7 +333,7 @@ Use this attribute over test methods to skip tests only on the specific target f
 
 If it needs to be skipped in multiple frameworks and the reasons are different please use two attributes on the same test so that you can specify different reasons for each framework.
 
-**Currently this are the [Framework Monikers](https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.XUnitExtensions/TargetFrameworkMonikers.cs#L23-L26) that we support through our test execution infrastructure**
+**Currently this are the [Framework Monikers](https://github.com/dotnet/arcade/blob/master/src/Microsoft.DotNet.XUnitExtensions/src/TargetFrameworkMonikers.cs#L23-L26) that we support through our test execution infrastructure**
 
 #### ConditionalFactAttribute
 Use this attribute to run the test only when a condition is `true`. This attribute is used when `ActiveIssueAttribute` or `SkipOnTargetFrameworkAttribute` are not flexible enough due to needing to run a custom logic at test time. This test behaves as a `[Fact]` test that has no test data passed in as a parameter.
@@ -425,11 +425,14 @@ Code coverage is built into the corefx build system.  It utilizes OpenCover for 
 :: Run full coverage
 build -test -Coverage
 
+If coverage succeeds, the full report can be found at `artifacts\coverage\index.htm`.
+
 :: To run a single project with code coverage enabled pass the /p:Coverage=true property
 cd src\System.Collections.Immutable\tests
 dotnet msbuild /t:BuildAndTest /p:Coverage=true
 ```
-If coverage succeeds, the code coverage report will be generated automatically and placed in the bin\tests\coverage directory.  You can view the full report by opening index.htm
+
+If coverage succeeds, the individual report can be found at `$(TestPath)\report\index.htm`.
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
@@ -479,6 +482,4 @@ If you prefer, you can use a Debug build of System.Private.CoreLib, but if you d
 
 If the test project does not set the property `TestRuntime` to `true` and you want to collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
 
-`dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`
-
-In order to facilitate coverage tools that perform IL rewrite a dedicated shared framework directory is created by default for coverage runs. This shared runtime is copied from the default shared test runtime (the one with version 9.9.9, e.g.: `\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9`). This behavior can be overridden by adding `/p:UseCoverageDedicatedRuntime=false` to the build command used to capture code coverage, which will cause the coverage run to use the same shared runtime as a test run using the native image of System.Private.CoreLib.dll, causing loss of source coverage information for it.
+`dotnet msbuild /t:rebuildandtest /p:Coverage=true /p:TestRuntime=true`

@@ -39,38 +39,15 @@ namespace System.Diagnostics.TraceSourceTests
         }
 
         /// <summary>
-        /// Makes Assembly.GetEntryAssembly() return null by generating an AppDomainManager-derived type
-        /// with private reflection and reflection emit, and then again using private reflection to
-        /// store that instance as the current domain manager.  It overrides EntryAssembly to return
-        /// null, simulating the situation of a custom host that doesn't have a managed .exe.
+        /// Makes Assembly.GetEntryAssembly() return null using private reflection.
         /// </summary>
         private static void MakeAssemblyGetEntryAssemblyReturnNull()
         {
-            Type appDomainType = typeof(object).Assembly.GetType("System.AppDomain", true, false);
-            Assert.NotNull(appDomainType);
+            typeof(Assembly)
+                .GetField("s_forceNullEntryPoint", BindingFlags.NonPublic | BindingFlags.Static)
+                .SetValue(null, true);
 
-            Type appDomainManagerType = typeof(object).Assembly.GetType("System.AppDomainManager", true, false);
-            Assert.NotNull(appDomainManagerType);
-
-            var asmName = new AssemblyName("CustomAppDomainManager");
-            AssemblyBuilder asmBuilder = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
-            ModuleBuilder modBuilder = asmBuilder.DefineDynamicModule(asmName.Name);
-            asmBuilder.SetCustomAttribute(new CustomAttributeBuilder(
-                IgnoreAccessChecksToAttributeBuilder.AddToModule(modBuilder), // allow deriving from the internal AppDomainManager in coreclr
-                new object[] { typeof(object).Assembly.GetName().Name }));
-
-            TypeBuilder typeBuilder = modBuilder.DefineType("DerivedAppDomainManager", TypeAttributes.Class | TypeAttributes.Public, appDomainManagerType);
-            PropertyBuilder propBuilder = typeBuilder.DefineProperty("EntryAssembly", PropertyAttributes.None, appDomainType, Type.EmptyTypes);
-            MethodBuilder methodBuilder = typeBuilder.DefineMethod("get_EntryAssembly", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.Virtual, CallingConventions.HasThis, typeof(Assembly), Type.EmptyTypes);
-            ILGenerator il = methodBuilder.GetILGenerator();
-            il.Emit(OpCodes.Ldnull);
-            il.Emit(OpCodes.Ret);
-            propBuilder.SetGetMethod(methodBuilder);
-
-            appDomainType
-                .GetField("_domainManager", BindingFlags.NonPublic | BindingFlags.Instance)
-                .SetValue(appDomainType.GetProperty("CurrentDomain").GetValue(null),
-                Activator.CreateInstance(typeBuilder.CreateType()));
+            Assert.Null(Assembly.GetEntryAssembly());
         }
     }
 }

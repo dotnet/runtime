@@ -50,7 +50,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="PathTooLongException">
         ///     The specified path, file name, or both exceed the system-defined maximum length. 
         /// </exception>
-        /// <exception cref="SecurityException">
+        /// <exception cref="System.Security.SecurityException">
         ///     The caller does not have path discovery permission. 
         /// </exception>
         /// <exception cref="FileNotFoundException">
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="PathTooLongException">
         ///     The specified path, file name, or both exceed the system-defined maximum length. 
         /// </exception>
-        /// <exception cref="SecurityException">
+        /// <exception cref="System.Security.SecurityException">
         ///     The caller does not have path discovery permission. 
         /// </exception>
         /// <exception cref="FileNotFoundException">
@@ -163,7 +163,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="PathTooLongException">
         ///     The specified path, file name, or both exceed the system-defined maximum length. 
         /// </exception>
-        /// <exception cref="SecurityException">
+        /// <exception cref="System.Security.SecurityException">
         ///     The caller does not have path discovery permission. 
         /// </exception>
         /// <exception cref="FileNotFoundException">
@@ -227,7 +227,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="PathTooLongException">
         ///     The specified path, file name, or both exceed the system-defined maximum length. 
         /// </exception>
-        /// <exception cref="SecurityException">
+        /// <exception cref="System.Security.SecurityException">
         ///     The caller does not have path discovery permission. 
         /// </exception>
         /// <exception cref="FileNotFoundException">

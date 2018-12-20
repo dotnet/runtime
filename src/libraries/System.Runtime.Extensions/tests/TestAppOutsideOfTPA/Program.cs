@@ -20,7 +20,7 @@ internal static class Program
 
     public static object foo()
     {
-        AssemblyResolveTests.Class1 c = new AssemblyResolveTests.Class1();
+        AssemblyResolveTestApp.Class1 c = new AssemblyResolveTestApp.Class1();
         return c;
     }
 }

@@ -2,7 +2,6 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <ContainsPackageReferences>true</ContainsPackageReferences>
-    <IncludeVSTestReferences Condition="'$(IncludeVSTestReferences)' == ''">true</IncludeVSTestReferences>
     <!-- We need configuration-specific assets files. -->
     <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>

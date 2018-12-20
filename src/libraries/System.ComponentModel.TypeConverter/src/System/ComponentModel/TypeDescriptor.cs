@@ -251,7 +251,7 @@ namespace System.ComponentModel
         /// all types.
         /// 
         /// This method can be called from partially trusted code. If 
-        /// <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
+        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         /// is defined, the caller can register a provider for the specified type 
         /// if it's also partially trusted.
         /// </summary>
@@ -279,7 +279,7 @@ namespace System.ComponentModel
         /// the object from finalizing.
         /// 
         /// This method can be called from partially trusted code. If 
-        /// <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
+        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         /// is defined, the caller can register a provider for the specified instance 
         /// if its type is also partially trusted.
         /// </summary>
@@ -2508,7 +2508,7 @@ namespace System.ComponentModel
         /// associated with.
         /// 
         /// This method can be called from partially trusted code. If 
-        /// <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
+        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         /// is defined, the caller can unregister a provider for the specified type
         /// if it's also partially trusted.
         /// </summary>
@@ -2535,7 +2535,7 @@ namespace System.ComponentModel
         /// associated with.
         /// 
         /// This method can be called from partially trusted code. If 
-        /// <see cref="TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
+        /// <see cref="E:System.Security.Permissions.TypeDescriptorPermissionFlags.RestrictedRegistrationAccess"/>
         /// is defined, the caller can register a provider for the specified instance 
         /// if its type is also partially trusted.
         /// </summary>

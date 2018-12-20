@@ -6,7 +6,7 @@ namespace System.Net.Sockets
 {
     /// <devdoc>
     ///    <para>
-    ///       Specifies the address families that an instance of the <see cref='System.Net.Sockets.Socket'/>
+    ///       Specifies the address families that an instance of the <see cref='T:System.Net.Sockets.Socket'/>
     ///       class can use.
     ///    </para>
     /// </devdoc>

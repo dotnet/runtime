@@ -2,8 +2,10 @@
   <PropertyGroup>
     <ProjectGuid>{A0356E61-19E1-4722-A53D-5D2616E16312}</ProjectGuid>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
-    <AssemblyBeingTestedName Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'netstandard'">System.IO.Pipes</AssemblyBeingTestedName>
   </PropertyGroup>
+  <ItemGroup>
+    <AssembliesBeingTested Include="System.IO.Pipes" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AnonymousPipeTests\AnonymousPipeTest.AclExtensions.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.AclExtensions.cs" />

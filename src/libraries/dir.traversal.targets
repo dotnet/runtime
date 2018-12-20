@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="Directory.Build.targets" /> 
 
   <Target Name="ProducesPackageId"
           Returns="@(PackageIds)"
@@ -26,8 +27,6 @@
     </MSBuild>
     <Message Text="%(PackageIds.Identity)" Importance="High" />
   </Target>
-
-  <Import Project="$(RepositoryEngineeringDir)buildvertical.targets" Condition="'$(ImportedBuildVerticalTargets)' != 'true'" />
 
   <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
@@ -78,7 +77,8 @@
   </Target>
 
   <!-- Dumpling.targets needs to install dumpling.py before running tests. -->
-  <Import Project="$(ToolsDir)Dumpling.targets" Condition="Exists('$(ToolsDir)Dumpling.targets') AND ('$(EnableDumpling)' == 'true' OR '$(EnableCloudTest)' == 'true')" />
+  <!-- Disabling dumpling for the time being since the script only runs on python 2: https://github.com/dotnet/core-eng/issues/4753 -->
+  <!-- <Import Project="$(ToolsDir)Dumpling.targets" Condition="Exists('$(ToolsDir)Dumpling.targets') AND ('$(EnableDumpling)' == 'true' OR '$(EnableCloudTest)' == 'true')" /> -->
 
   <Target Name="GetFilesToPackage"
           DependsOnTargets="FilterProjects"

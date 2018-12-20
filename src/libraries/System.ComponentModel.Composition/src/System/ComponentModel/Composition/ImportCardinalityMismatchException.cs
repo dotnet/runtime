@@ -8,9 +8,9 @@ using System.Runtime.Serialization;
 namespace System.ComponentModel.Composition
 {
     /// <summary>
-    ///     The exception that is thrown when the cardinality of a <see cref="ImportDefinition"/>
-    ///     does not match the cardinality of the <see cref="Export"/> objects available in an 
-    ///     <see cref="ExportProvider"/>.
+    ///     The exception that is thrown when the cardinality of a <see cref="Primitives.ImportDefinition"/>
+    ///     does not match the cardinality of the <see cref="Primitives.Export"/> objects available in an 
+    ///     <see cref="Hosting.ExportProvider"/>.
     /// </summary>
     [DebuggerTypeProxy(typeof(ImportCardinalityMismatchExceptionDebuggerProxy))]
     [DebuggerDisplay("{Message}")]

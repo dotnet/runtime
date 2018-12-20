@@ -612,7 +612,7 @@ namespace System.Net.WebSockets
         /// </summary>
         /// <param name="payloadBuffer">The buffer into which payload data should be written.</param>
         /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
-        /// <param name="resultGetter">Used to get the result.  Allows the same method to be used with both <see cref="WebSocketReceiveResult"/> and <see cref="ValueWebSocketReceiveResult"/>.</param>
+        /// <param name="resultGetter">Used to get the result.  Allows the same method to be used with both <see cref="WebSocketReceiveResult"/> and <see cref="T:System.Net.WebSockets.ValueWebSocketReceiveResult"/>.</param>
         /// <returns>Information about the received message.</returns>
         private async ValueTask<TWebSocketReceiveResult> ReceiveAsyncPrivate<TWebSocketReceiveResultGetter, TWebSocketReceiveResult>(
             Memory<byte> payloadBuffer,

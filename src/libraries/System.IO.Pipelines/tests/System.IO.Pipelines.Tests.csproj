@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{9E984EB2-827E-4029-9647-FB5F8B67C553}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -6,13 +6,14 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <TargetingPackExclusions Include="System.IO.Pipelines" />
+    <DefaultReferenceExclusions Include="System.IO.Pipelines" />
     <ReferenceFromRuntime Include="System.IO.Pipelines" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BackpressureTests.cs" />
     <Compile Include="FlushAsyncCancellationTests.cs" />
     <Compile Include="FlushAsyncCompletionTests.cs" />
+    <Compile Include="FlushAsyncTests.cs" />
     <Compile Include="FlushResultTests.cs" />
     <Compile Include="PipeCompletionCallbacksTests.cs" />
     <Compile Include="PipeOptionsTests.cs" />

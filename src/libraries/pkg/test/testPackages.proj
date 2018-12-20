@@ -185,9 +185,7 @@
   <Target Name="BuildProjects"
           DependsOnTargets="RestoreProjects">
     <Message Importance="High" Text="*** Testing ***" />
-    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" EnvironmentVariables="@(CliEnvironment)"  ContinueOnError="ErrorAndContinue" StandardOutputImportance="High" />
-
-    <Error Condition="'$(MSBuildLastTaskResult)' == 'false'" Text="There were errors when building the test package projects." />
+    <Exec Command="$(TestBuildCommand) &quot;$(TestProject)&quot; /p:TestPackages=%(SupportedPackage.Identity)" EnvironmentVariables="@(CliEnvironment)" StandardOutputImportance="High" />
   </Target>
 
   <Target Name="Build" DependsOnTargets="BuildProjects" />

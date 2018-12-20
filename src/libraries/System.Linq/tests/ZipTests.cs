@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using Xunit;
 
 namespace System.Linq.Tests
 {
-    public partial class ZipTests : EnumerableTests
+    public class ZipTests : EnumerableTests
     {
         [Fact]
         public void ImplicitTypeParameters()

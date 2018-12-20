@@ -1,0 +1,63 @@
+# Disable triggers for now. TODO: add right merge triggers.
+trigger: none
+
+# TODO: add paths to exclude CI when modifying docs or stuff not affecting the build
+# TODO: enable PR triggers when helix SDK issues are fixed
+pr: none
+
+resources:
+  containers:
+  - container: rhel7_container
+    image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
+
+  - container: rhel6_container
+    image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
+
+  - container: alpine_36_container
+    image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181213005010
+
+  - container: ubuntu_1604_arm64_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+
+  - container: ubuntu_1604_arm_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
+
+jobs:
+  # Windows legs
+  - template: /eng/pipelines/windows.yml
+    ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+      parameters:
+        isOfficialBuild: true
+
+  # Linux legs
+  - template: /eng/pipelines/linux.yml
+    ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+      parameters:
+        isOfficialBuild: true
+
+  # MacOS legs
+  - template: /eng/pipelines/macos.yml
+    ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+      parameters:
+        isOfficialBuild: true
+
+  # Only run in official builds
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
+    # Redhat6 leg is only for official builds
+    - template: /eng/pipelines/redhat6.yml
+
+    # FreeBSD leg is only for official builds
+    - template: /eng/pipelines/freebsd.yml
+
+    # Publish step
+    - template: /eng/pipelines/publish.yml
+      parameters:
+        dependsOn:
+          - WindowsTest
+          - WindowsNoTest
+          - AllConfigurations
+          - LinuxTest
+          - LinuxNoTest
+          - MacOS
+          - RedHat6
+          - FreeBSD

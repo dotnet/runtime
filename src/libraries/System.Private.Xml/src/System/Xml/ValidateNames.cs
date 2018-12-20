@@ -32,7 +32,7 @@ namespace System.Xml
         // Nmtoken parsing
         //-----------------------------------------------
         /// <summary>
-        /// Attempts to parse the input string as an Nmtoken (see the XML spec production [7] && XML Namespaces spec).
+        /// Attempts to parse the input string as an Nmtoken (see the XML spec production [7] &amp;&amp; XML Namespaces spec).
         /// Quits parsing when an invalid Nmtoken char is reached or the end of string is reached.
         /// Returns the number of valid Nmtoken chars that were parsed.
         /// </summary>

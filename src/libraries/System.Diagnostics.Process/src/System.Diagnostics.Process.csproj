@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{F55047F8-E47B-46E3-B221-C23595AFE168}</ProjectGuid>
@@ -10,7 +10,7 @@
   </PropertyGroup>
   <PropertyGroup Condition=" '$(TargetsFreeBSD)' == 'true' OR '$(TargetsUnknownUnix)' == 'true' ">
     <!-- Suppress unused field warnings when using PlatformNotSupportedException stubs -->
-    <NoWarn>0649</NoWarn>
+    <NoWarn>$(NoWarn);0649</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
@@ -38,6 +38,9 @@
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
     <Compile Include="..\..\Common\src\System\PasteArguments.cs">
       <Link>Common\System\PasteArguments.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
@@ -220,11 +223,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TOKEN_PRIVILEGE.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.TOKEN_PRIVILEGE.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Constants.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreatePipe_SafeFileHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.CreatePipe.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
-      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ThreadOptions.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.ThreadOptions.cs</Link>
@@ -345,6 +348,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.WaitPid.cs">
       <Link>Common\Interop\Unix\Interop.WaitPid.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Access.cs">
+      <Link>Common\Interop\Unix\System.Native\Interop.Access.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true'">

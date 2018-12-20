@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{7F4B8C48-8692-4885-BF84-FEB7EA82E34B}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Perf.Regex.Cache.cs" />
+    <Compile Include="Perf.Regex.cs" />
+    <Compile Include="Perf.RegexRedux.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)system.text.regularexpressions.testdata\1.0.2\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

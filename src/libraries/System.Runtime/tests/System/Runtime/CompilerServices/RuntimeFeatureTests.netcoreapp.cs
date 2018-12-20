@@ -15,5 +15,24 @@ namespace System.Runtime.CompilerServices.Tests
         {
             Assert.True(RuntimeFeature.IsSupported("PortablePdb"));
         }
+
+        [Fact]
+        public static void DynamicCode()
+        {
+            Assert.Equal(RuntimeFeature.IsDynamicCodeSupported, RuntimeFeature.IsSupported("IsDynamicCodeSupported"));
+            Assert.Equal(RuntimeFeature.IsDynamicCodeCompiled, RuntimeFeature.IsSupported("IsDynamicCodeCompiled"));
+
+            if (RuntimeFeature.IsDynamicCodeCompiled)
+            {
+                Assert.True(RuntimeFeature.IsDynamicCodeSupported);
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
+        public static void DynamicCode_Jit()
+        {
+            Assert.True(RuntimeFeature.IsDynamicCodeSupported);
+            Assert.True(RuntimeFeature.IsDynamicCodeCompiled);
+        }
     }
 }

@@ -300,7 +300,6 @@ namespace System.Text.Json
             }
             else
             {
-
                 if (JsonReaderHelper.IsDigit(first) || first == '-')
                 {
                     if (!TryGetNumberMultiSegment(_buffer.Slice(_consumed), out int numberOfBytes))
@@ -309,21 +308,17 @@ namespace System.Text.Json
                     }
                     _tokenType = JsonTokenType.Number;
                     _consumed += numberOfBytes;
-                    goto Done;
                 }
-                else if (ConsumeValueMultiSegment(first))
+                else if (!ConsumeValueMultiSegment(first))
                 {
-                    goto Done;
+                    return false;
                 }
 
-                return false;
-
-            Done:
                 // Cannot use HasMoreData since the JSON payload contains a single, non-primitive value
                 // and hence must be handled differently.
                 if (_consumed >= (uint)_buffer.Length)
                 {
-                    return true;
+                    goto SetIsNotPrimitiveAndReturnTrue;
                 }
 
                 if (_buffer[_consumed] <= JsonConstants.Space)
@@ -331,7 +326,7 @@ namespace System.Text.Json
                     SkipWhiteSpaceMultiSegment();
                     if (_consumed >= (uint)_buffer.Length)
                     {
-                        return true;
+                        goto SetIsNotPrimitiveAndReturnTrue;
                     }
                 }
 
@@ -351,14 +346,17 @@ namespace System.Text.Json
                     else
                     {
                         Debug.Assert(_readerOptions.CommentHandling == JsonCommentHandling.Skip);
-                        if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
-                        {
-                            _isNotPrimitive = true;
-                        }
-                        return true;
+                        goto SetIsNotPrimitiveAndReturnTrue;
                     }
                 }
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, _buffer[_consumed]);
+
+            SetIsNotPrimitiveAndReturnTrue:
+                if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
+                {
+                    _isNotPrimitive = true;
+                }
+                // Intentionally fall out of the if-block to return true
             }
             return true;
         }

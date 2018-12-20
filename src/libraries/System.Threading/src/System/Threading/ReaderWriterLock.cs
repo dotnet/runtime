@@ -1200,7 +1200,7 @@ namespace System.Threading
         /// owned by a thread.
         /// 
         /// The original code maintained lists of thread-local lock entries on the CLR's thread objects, and manually released
-        /// lock entries, which involved walking through all threads. While this is possible with ThreadLocal<T>, this
+        /// lock entries, which involved walking through all threads. While this is possible with ThreadLocal{T}, this
         /// implementation prefers to use a similar design to that from ReaderWriterLockSlim, and allow reusing free entries
         /// without removing entries, since it is unlikely that the list length for any thread would get unreasonably long.
         /// </summary>

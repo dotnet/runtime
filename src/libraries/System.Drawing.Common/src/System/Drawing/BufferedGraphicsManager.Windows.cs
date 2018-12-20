@@ -12,7 +12,7 @@ namespace System.Drawing
     public static class BufferedGraphicsManager
     {
         /// <summary>
-        /// Static constructor.  Here, we hook the exit & unload events so we can clean up our context buffer.
+        /// Static constructor.  Here, we hook the exit &amp; unload events so we can clean up our context buffer.
         /// </summary>
         static BufferedGraphicsManager()
         {

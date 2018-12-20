@@ -39,16 +39,21 @@ namespace System.Tests
         [Theory]
         [InlineData((sbyte)114, (sbyte)114, 0)]
         [InlineData((sbyte)114, sbyte.MinValue, 1)]
+        [InlineData((sbyte)-114, sbyte.MinValue, 1)]
+        [InlineData(sbyte.MinValue, sbyte.MinValue, 0)]
         [InlineData((sbyte)114, (sbyte)-123, 1)]
         [InlineData((sbyte)114, (sbyte)0, 1)]
         [InlineData((sbyte)114, (sbyte)123, -1)]
         [InlineData((sbyte)114, sbyte.MaxValue, -1)]
+        [InlineData((sbyte)-114, sbyte.MaxValue, -1)]
+        [InlineData(sbyte.MaxValue, sbyte.MaxValue, 0)]
         [InlineData((sbyte)114, null, 1)]
         public void CompareTo_Other_ReturnsExpected(sbyte i, object value, int expected)
         {
             if (value is sbyte sbyteValue)
             {
                 Assert.Equal(expected, Math.Sign(i.CompareTo(sbyteValue)));
+                Assert.Equal(-expected, Math.Sign(sbyteValue.CompareTo(i)));
             }
 
             Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
@@ -93,17 +98,22 @@ namespace System.Tests
         {
             foreach (NumberFormatInfo defaultFormat in new[] { null, NumberFormatInfo.CurrentInfo })
             {
-                yield return new object[] { sbyte.MinValue, "G", defaultFormat, "-128" };
-                yield return new object[] { (sbyte)-123, "G", defaultFormat, "-123" };
-                yield return new object[] { (sbyte)0, "G", defaultFormat, "0" };
-                yield return new object[] { (sbyte)123, "G", defaultFormat, "123" };
-                yield return new object[] { sbyte.MaxValue, "G", defaultFormat, "127" };
+                foreach (string defaultSpecifier in new[] { "G", "G\0", "\0N222", "\0", "" })
+                {
+                    yield return new object[] { sbyte.MinValue, defaultSpecifier, defaultFormat, "-128" };
+                    yield return new object[] { (sbyte)-123, defaultSpecifier, defaultFormat, "-123" };
+                    yield return new object[] { (sbyte)0, defaultSpecifier, defaultFormat, "0" };
+                    yield return new object[] { (sbyte)123, defaultSpecifier, defaultFormat, "123" };
+                    yield return new object[] { sbyte.MaxValue, defaultSpecifier, defaultFormat, "127" };
+                }
 
                 yield return new object[] { (sbyte)123, "D", defaultFormat, "123" };
                 yield return new object[] { (sbyte)123, "D99", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
-                yield return new object[] { (sbyte)(-123), "D99", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
+                yield return new object[] { (sbyte)123, "D99\09", defaultFormat, "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
+                yield return new object[] { (sbyte)-123, "D99", defaultFormat, "-000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123" };
 
                 yield return new object[] { (sbyte)0x24, "x", defaultFormat, "24" };
+                yield return new object[] { (sbyte)-0x24, "x", defaultFormat, "dc" };
                 yield return new object[] { (sbyte)24, "N", defaultFormat, string.Format("{0:N}", 24.00) };
             }
 
@@ -166,32 +176,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
         }
 
-        public static IEnumerable<object[]> ParseValidData()
-        {
-            NumberFormatInfo defaultFormat = null;
-            NumberStyles defaultStyle = NumberStyles.Integer;
-            var emptyNfi = new NumberFormatInfo();
-
-            var testNfi = new NumberFormatInfo();
-            testNfi.CurrencySymbol = "$";
-
-            yield return new object[] { "-123", defaultStyle, defaultFormat, (sbyte)-123 };
-            yield return new object[] { "0", defaultStyle, defaultFormat, (sbyte)0 };
-            yield return new object[] { "123", defaultStyle, defaultFormat, (sbyte)123 };
-            yield return new object[] { "  123  ", defaultStyle, defaultFormat, (sbyte)123 };
-            yield return new object[] { "127", defaultStyle, defaultFormat, (sbyte)127 };
-
-            yield return new object[] { "12", NumberStyles.HexNumber, defaultFormat, (sbyte)0x12 };
-            yield return new object[] { "10", NumberStyles.AllowThousands, defaultFormat, (sbyte)10 };
-            yield return new object[] { "(123)", NumberStyles.AllowParentheses, defaultFormat, (sbyte)-123 }; // Parentheses = negative
-
-            yield return new object[] { "123", defaultStyle, emptyNfi, (sbyte)123 };
-
-            yield return new object[] { "123", NumberStyles.Any, emptyNfi, (sbyte)123 };
-            yield return new object[] { "12", NumberStyles.HexNumber, emptyNfi, (sbyte)0x12 };
-            yield return new object[] { "$100", NumberStyles.Currency, testNfi, (sbyte)100 };
-        }
-
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Integer;
@@ -222,70 +206,54 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse(string value, NumberStyles style, IFormatProvider provider, sbyte expected)
+        public static void Parse_Valid(string value, NumberStyles style, IFormatProvider provider, sbyte expected)
         {
             sbyte result;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Integer)
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
                 Assert.True(sbyte.TryParse(value, out result));
                 Assert.Equal(expected, result);
-
                 Assert.Equal(expected, sbyte.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
-                {
-                    Assert.Equal(expected, sbyte.Parse(value, provider));
-                }
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.True(sbyte.TryParse(value, style, provider ?? new NumberFormatInfo(), out result));
-            Assert.Equal(expected, result);
-
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+            // Default provider
             if (provider == null)
             {
                 Assert.Equal(expected, sbyte.Parse(value, style));
+
+                // Substitute default NumberFormatInfo
+                Assert.True(sbyte.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.Equal(expected, result);
+                Assert.Equal(expected, sbyte.Parse(value, style, new NumberFormatInfo()));
             }
-            Assert.Equal(expected, sbyte.Parse(value, style, provider ?? new NumberFormatInfo()));
+
+            // Default style
+            if (style == NumberStyles.Integer)
+            {
+                Assert.Equal(expected, sbyte.Parse(value, provider));
+            }
+
+            // Full overloads
+            Assert.True(sbyte.TryParse(value, style, provider, out result));
+            Assert.Equal(expected, result);
+            Assert.Equal(expected, sbyte.Parse(value, style, provider));
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
-            NumberStyles defaultStyle = NumberStyles.Integer;
+            // Include the test data for wider primitives.
+            foreach (object[] widerTests in Int32Tests.Parse_Invalid_TestData())
+            {
+                yield return widerTests;
+            }
 
-            NumberFormatInfo customFormat = new NumberFormatInfo();
-            customFormat.CurrencySymbol = "$";
-            customFormat.NumberDecimalSeparator = ".";
+            yield return new object[] { "-129", NumberStyles.Integer, null, typeof(OverflowException) }; // < min value
+            yield return new object[] { "128", NumberStyles.Integer, null, typeof(OverflowException) }; // > max value
 
-            yield return new object[] { null, defaultStyle, null, typeof(ArgumentNullException) };
-            yield return new object[] { "", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { " \t \n \r ", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "Garbage", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "ab", defaultStyle, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "1E23", defaultStyle, null, typeof(FormatException) }; // Exponent
-            yield return new object[] { "(123)", defaultStyle, null, typeof(FormatException) }; // Parentheses
-            yield return new object[] { 100.ToString("C0"), defaultStyle, null, typeof(FormatException) }; // Currency
-            yield return new object[] { 1000.ToString("N0"), defaultStyle, null, typeof(FormatException) }; // Thousands
-            yield return new object[] { 67.90.ToString("F2"), defaultStyle, null, typeof(FormatException) }; // Decimal
-            yield return new object[] { "+-123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "-+123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-            yield return new object[] { "-abc", NumberStyles.HexNumber, null, typeof(FormatException) };
-
-            yield return new object[] { "- 123", defaultStyle, null, typeof(FormatException) };
-            yield return new object[] { "+ 123", defaultStyle, null, typeof(FormatException) };
-
-            yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Hex value
-            yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
-
-            yield return new object[] { "67.90", defaultStyle, customFormat, typeof(FormatException) }; // Decimal
-
-            yield return new object[] { "-129", defaultStyle, null, typeof(OverflowException) }; // < min value
-            yield return new object[] { "128", defaultStyle, null, typeof(OverflowException) }; // > max value
+            yield return new object[] { "FFFFFFFF", NumberStyles.HexNumber, null, typeof(OverflowException) }; // Hex number < 0
+            yield return new object[] { "100", NumberStyles.HexNumber, null, typeof(OverflowException) }; // Hex number > max value
         }
 
         [Theory]
@@ -293,31 +261,36 @@ namespace System.Tests
         public static void Parse_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
         {
             sbyte result;
-            // If no style is specified, use the (String) or (String, IFormatProvider) overload
-            if (style == NumberStyles.Integer)
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
                 Assert.False(sbyte.TryParse(value, out result));
-                Assert.Equal(default(sbyte), result);
-
+                Assert.Equal(default, result);
                 Assert.Throws(exceptionType, () => sbyte.Parse(value));
-
-                // If a format provider is specified, but the style is the default, use the (String, IFormatProvider) overload
-                if (provider != null)
-                {
-                    Assert.Throws(exceptionType, () => sbyte.Parse(value, provider));
-                }
             }
 
-            // If a format provider isn't specified, test the default one, using a new instance of NumberFormatInfo
-            Assert.False(sbyte.TryParse(value, style, provider ?? new NumberFormatInfo(), out result));
-            Assert.Equal(default(sbyte), result);
-
-            // If a format provider isn't specified, test the default one, using the (String, NumberStyles) overload
+            // Default provider
             if (provider == null)
             {
                 Assert.Throws(exceptionType, () => sbyte.Parse(value, style));
+
+                // Substitute default NumberFormatInfo
+                Assert.False(sbyte.TryParse(value, style, new NumberFormatInfo(), out result));
+                Assert.Equal(default, result);
+                Assert.Throws(exceptionType, () => sbyte.Parse(value, style, new NumberFormatInfo()));
             }
-            Assert.Throws(exceptionType, () => sbyte.Parse(value, style, provider ?? new NumberFormatInfo()));
+
+            // Default style
+            if (style == NumberStyles.Integer)
+            {
+                Assert.Throws(exceptionType, () => sbyte.Parse(value, provider));
+            }
+
+            // Full overloads
+            Assert.False(sbyte.TryParse(value, style, provider, out result));
+            Assert.Equal(default, result);
+            Assert.Throws(exceptionType, () => sbyte.Parse(value, style, provider));
         }
 
         [Theory]

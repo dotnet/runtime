@@ -827,7 +827,7 @@ namespace System.Linq.Expressions
         /// <param name="binder">The runtime binder for the dynamic operation.</param>
         /// <param name="arguments">The arguments to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.DelegateType">DelegateType</see>,
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
@@ -845,7 +845,7 @@ namespace System.Linq.Expressions
         /// <param name="binder">The runtime binder for the dynamic operation.</param>
         /// <param name="arguments">The arguments to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.DelegateType">DelegateType</see>,
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
@@ -885,7 +885,7 @@ namespace System.Linq.Expressions
         /// <param name="binder">The runtime binder for the dynamic operation.</param>
         /// <param name="arg0">The argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.DelegateType">DelegateType</see>,
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
@@ -915,7 +915,7 @@ namespace System.Linq.Expressions
         /// <param name="arg0">The first argument to the dynamic operation.</param>
         /// <param name="arg1">The second argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.DelegateType">DelegateType</see>,
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
@@ -948,7 +948,7 @@ namespace System.Linq.Expressions
         /// <param name="arg1">The second argument to the dynamic operation.</param>
         /// <param name="arg2">The third argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.DelegateType">DelegateType</see>,
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
@@ -984,7 +984,7 @@ namespace System.Linq.Expressions
         /// <param name="arg2">The third argument to the dynamic operation.</param>
         /// <param name="arg3">The fourth argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.DelegateType">DelegateType</see>,
         /// <see cref="DynamicExpression.Binder">Binder</see>, and
@@ -1027,7 +1027,7 @@ namespace System.Linq.Expressions
         /// <param name="returnType">The result type of the dynamic expression.</param>
         /// <param name="arguments">The arguments to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.Binder">Binder</see> and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
@@ -1048,7 +1048,7 @@ namespace System.Linq.Expressions
         /// <param name="returnType">The result type of the dynamic expression.</param>
         /// <param name="arg0">The first argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.Binder">Binder</see> and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
@@ -1083,7 +1083,7 @@ namespace System.Linq.Expressions
         /// <param name="arg0">The first argument to the dynamic operation.</param>
         /// <param name="arg1">The second argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.Binder">Binder</see> and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
@@ -1123,7 +1123,7 @@ namespace System.Linq.Expressions
         /// <param name="arg1">The second argument to the dynamic operation.</param>
         /// <param name="arg2">The third argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.Binder">Binder</see> and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
@@ -1168,7 +1168,7 @@ namespace System.Linq.Expressions
         /// <param name="arg2">The third argument to the dynamic operation.</param>
         /// <param name="arg3">The fourth argument to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.Binder">Binder</see> and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.
@@ -1214,7 +1214,7 @@ namespace System.Linq.Expressions
         /// <param name="returnType">The result type of the dynamic expression.</param>
         /// <param name="arguments">The arguments to the dynamic operation.</param>
         /// <returns>
-        /// A <see cref="DynamicExpression" /> that has <see cref="NodeType" /> equal to
+        /// A <see cref="DynamicExpression" /> that has <see cref="DynamicExpression.NodeType" /> equal to
         /// <see cref="ExpressionType.Dynamic">Dynamic</see> and has the
         /// <see cref="DynamicExpression.Binder">Binder</see> and
         /// <see cref="DynamicExpression.Arguments">Arguments</see> set to the specified values.

@@ -6,7 +6,6 @@
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefaultLanguage>en-US</DefaultLanguage>
-    <NoWarn>1591</NoWarn>
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>$(NoWarn);3021</NoWarn>
     <DefineConstants>$(DefineConstants);CORERT</DefineConstants>

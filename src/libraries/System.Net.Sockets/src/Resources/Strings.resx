@@ -244,4 +244,7 @@
   <data name="InvalidOperation_MultipleContinuations" xml:space="preserve">
     <value>Another continuation was already registered.</value>
   </data>
+  <data name="net_sockets_sendpackelement_FileStreamMustBeAsync" xml:space="preserve">
+    <value>The FileStream must have been opened for asynchronous reading and writing.</value>
+  </data>
 </root>

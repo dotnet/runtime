@@ -51,11 +51,11 @@ namespace System.Reflection
             if (_binds.TryGetValue(refName, out RoAssembly prior))
                 return prior;
 
-            RoAssembly assembly = TryFindAssemblyByRaisingResolveEvent(refName);
+            RoAssembly assembly = TryFindAssemblyByCallingResolveHandler(refName);
             return _binds.GetOrAdd(refName, assembly);
         }
 
-        private RoAssembly TryFindAssemblyByRaisingResolveEvent(RoAssemblyName refName)
+        private RoAssembly TryFindAssemblyByCallingResolveHandler(RoAssemblyName refName)
         {
             Debug.Assert(refName != null);
 

@@ -391,7 +391,6 @@ internal static partial class Interop
         /// <summary>
         /// Gets the process information for a given process
         /// </summary>
-        // 
         /// <param name="pid">The PID (process ID) of the process</param>
         /// <param name="tid">The TID (thread ID) of the process</param>
         /// <returns>

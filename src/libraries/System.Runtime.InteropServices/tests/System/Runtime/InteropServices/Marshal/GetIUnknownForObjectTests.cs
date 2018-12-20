@@ -23,20 +23,5 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.GetIUnknownForObject(null));
         }
-
-#if !netstandard // TODO: Enable for netstandard2.1
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetIUnknownForObject_ObjectNotCollectible_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type type = typeBuilder.CreateType();
-
-            object o = Activator.CreateInstance(type);
-            Assert.Throws<NotSupportedException>(() => Marshal.GetIUnknownForObject(o));
-        }
-#endif
     }
 }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <ProjectGuid>{66AE57BA-B56C-4A1E-ACA6-7C18431D416B}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+      <Link>Common\System\IO\PathFeatures.cs</Link>
+    </Compile>
+    <Compile Include="Perf.StreamWriter.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

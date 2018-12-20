@@ -499,7 +499,7 @@ namespace System.DirectoryServices.AccountManagement
 
         /// <summary>
         /// Validate the passed credentials against the directory supplied.
-        //   This function will use the best determined method to do the evaluation
+        /// This function will use the best determined method to do the evaluation.
         /// </summary>
 
         public bool ValidateCredentials(string userName, string password)
@@ -522,7 +522,7 @@ namespace System.DirectoryServices.AccountManagement
 
         /// <summary>
         /// Validate the passed credentials against the directory supplied.
-        //   The supplied options will determine the directory method for credential validation.
+        /// The supplied options will determine the directory method for credential validation.
         /// </summary>
         public bool ValidateCredentials(string userName, string password, ContextOptions options)
         {

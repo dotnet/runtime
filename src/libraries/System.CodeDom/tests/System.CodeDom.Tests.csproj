@@ -19,6 +19,7 @@
     <Compile Include="System\CodeDom\CodeTypeMemberCollectionTests.cs" />
     <Compile Include="System\CodeDom\CodeTypeParameterCollectionTests.cs" />
     <Compile Include="System\CodeDom\CodeTypeReferenceCollectionTests.cs" />
+    <Compile Include="System\CodeDom\Compiler\ExecutorTests.cs" />
     <Compile Include="System\CodeDom\Compiler\CodeGeneratorTests.cs" />
     <Compile Include="System\CodeDom\Compiler\CompilerInfoTests.cs" />
     <Compile Include="System\CodeDom\Compiler\CodeGeneratorOptionsTests.cs" />
@@ -110,6 +111,10 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">

@@ -73,7 +73,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Serialize a QilExpression graph as XML.
         /// </summary>
-        /// <param name="q">the QilExpression graph</param>
+        /// <param name="node">the QilExpression graph</param>
         public void ToXml(QilNode node)
         {
             VisitAssumeReference(node);
@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.Qil
         /// Write all annotations as comments:
         ///     1. string -- <!-- (string) ann -->
         ///     2. IQilAnnotation -- <!-- ann.Name = ann.ToString() -->
-        ///     3. IList<object> -- recursively call WriteAnnotations for each object in list
+        ///     3. IList{object} -- recursively call WriteAnnotations for each object in list
         ///     4. otherwise, do not write the annotation
         /// </summary>
         protected virtual void WriteAnnotations(object ann)
@@ -410,7 +410,7 @@ namespace System.Xml.Xsl.Qil
             /// <summary>
             /// Lookup or generate a name for a node.  Uses annotations to store the name on the node.
             /// </summary>
-            /// <param name="i">the node</param>
+            /// <param name="n">the node</param>
             /// <returns>the node name (unique across nodes)</returns>
             public string NameOf(QilNode n)
             {

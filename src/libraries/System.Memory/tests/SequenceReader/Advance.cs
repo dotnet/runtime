@@ -57,5 +57,18 @@ namespace System.Memory.Tests.SequenceReader
             ReadOnlySequence<byte> sequence = reader.Sequence.Slice(reader.Position);
             Assert.Equal(0, sequence.Length);
         }
+
+        [Fact]
+        public void Advance_Exception()
+        {
+            ReadOnlySequence<byte> bytes = SequenceFactory.Create(new byte[][] {
+                new byte[] { 0          },
+                new byte[] { 1, 2       },
+                new byte[] { 3, 4       },
+                new byte[] { 5, 6, 7, 8 }
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SequenceReader<byte>(bytes).Advance(-1));
+        }
     }
 }

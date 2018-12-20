@@ -2534,6 +2534,9 @@ namespace System.Drawing.Printing
         protected InvalidPrinterException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
+#if netcoreapp
+    [System.ComponentModel.TypeConverter("System.Drawing.Printing.MarginsConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
+#endif
     public partial class Margins : System.ICloneable
     {
         public Margins() { }

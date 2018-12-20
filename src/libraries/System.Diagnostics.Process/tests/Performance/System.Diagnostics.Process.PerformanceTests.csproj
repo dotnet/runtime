@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectGuid>{4E05E43A-1DC9-47C7-8280-13CF4EF741EA}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\ProcessTestBase.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="..\ProcessTestBase.NonUap.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'uap'" Include="..\ProcessTestBase.Uap.cs" />
+    <Compile Include="..\RemotelyInvokable.cs" />
+    <Compile Include="Perf.Process.cs" />
+    <Compile Include="$(CommonPath)\System\PasteArguments.cs">
+      <Link>Common\System\PasteArguments.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\StringParser.cs">
+      <Link>Common\System\IO\StringParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
+      <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

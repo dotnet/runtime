@@ -2,7 +2,6 @@
   <Import Project="$(CommonTestPath)\Tests.props" />
   <PropertyGroup>
     <ProjectGuid>{7EAFC2D8-48D2-4A56-A9C6-6BADF2053499}</ProjectGuid>
-    <IncludePerformanceTests>true</IncludePerformanceTests>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

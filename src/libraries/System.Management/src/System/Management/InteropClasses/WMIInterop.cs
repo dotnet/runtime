@@ -9,6 +9,7 @@ using System.Runtime.Serialization;
 using System.Threading;
 using System.Security.Permissions;
 using System.Runtime.Versioning;
+using System.Text;
 
 namespace WbemClient_v1 {}
 namespace WbemUtilities_v1 {}
@@ -587,7 +588,7 @@ namespace System.Management
 
     #region Interfaces
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("DC12A681-737F-11CF-884D-00AA004B2E24")]
     [ComImport]
     interface IWbemClassObject_DoNotMarshal
@@ -620,7 +621,7 @@ namespace System.Management
 
     [InterfaceTypeAttribute(0x0001)]
     [GuidAttribute("DC12A680-737F-11CF-884D-00AA004B2E24")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [ComImport]
     interface IWbemQualifierSet_DoNotMarshal
     {
@@ -634,7 +635,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("DC12A687-737F-11CF-884D-00AA004B2E24")]
     [ComImport]
     interface IWbemLocator
@@ -643,7 +644,7 @@ namespace System.Management
     }
 
     [GuidAttribute("44ACA674-E8FC-11D0-A07C-00C04FB68820")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
     interface IWbemContext
@@ -660,7 +661,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("9556DC99-828C-11CF-A37E-00AA003240C7")]
     [ComImport]
     interface IWbemServices
@@ -691,7 +692,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("9556DC99-828C-11CF-A37E-00AA003240C7")]
     [ComImport]
     interface IWbemServices_Old
@@ -722,7 +723,7 @@ namespace System.Management
     }
 
     [GuidAttribute("44ACA675-E8FC-11D0-A07C-00C04FB68820")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
     interface IWbemCallResult
@@ -733,7 +734,7 @@ namespace System.Management
         [PreserveSig] int GetCallStatus_([In] int lTimeout, [Out] out int plStatus);
     }
 
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("7C857801-7381-11CF-884D-00AA004B2E24")]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
@@ -744,7 +745,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("027947E1-D731-11CE-A357-000000000001")]
     [ComImport]
     interface IEnumWbemClassObject
@@ -765,7 +766,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("BFBF883A-CAD7-11D3-A11B-00105A1F515A")]
     [ComImport]
     interface IWbemObjectTextSrc
@@ -775,7 +776,7 @@ namespace System.Management
     }
 
     [GuidAttribute("49353C9A-516B-11D1-AEA6-00C04FB68820")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
     interface IWbemObjectAccess
@@ -817,7 +818,7 @@ namespace System.Management
     }
 
     [GuidAttribute("1CFABA8C-1523-11D1-AD79-00C04FD8FDFF")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
     interface IUnsecuredApartment
@@ -835,7 +836,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("E246107B-B06E-11D0-AD61-00C04FD8FDFF")]
     [ComImport]
     interface IWbemUnboundObjectSink
@@ -845,7 +846,7 @@ namespace System.Management
 
     [InterfaceTypeAttribute(0x0001)]
     [GuidAttribute("CE61E841-65BC-11D0-B6BD-00AA003240C7")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [ComImport]
     interface IWbemPropertyProvider
     {
@@ -854,7 +855,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("E245105B-B06E-11D0-AD61-00C04FD8FDFF")]
     [ComImport]
     interface IWbemEventProvider
@@ -863,7 +864,7 @@ namespace System.Management
     }
 
     [GuidAttribute("580ACAF8-FA1C-11D0-AD72-00C04FD8FDFF")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
     interface IWbemEventProviderQuerySink
@@ -873,7 +874,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("631F7D96-D993-11D2-B339-00105A1F4AAF")]
     [ComImport]
     interface IWbemEventProviderSecurity
@@ -882,7 +883,7 @@ namespace System.Management
     }
 
     [GuidAttribute("631F7D97-D993-11D2-B339-00105A1F4AAF")]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [InterfaceTypeAttribute(0x0001)]
     [ComImport]
     interface IWbemProviderIdentity
@@ -891,7 +892,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("E246107A-B06E-11D0-AD61-00C04FD8FDFF")]
     [ComImport]
     interface IWbemEventConsumerProvider
@@ -925,7 +926,7 @@ namespace System.Management
     }
 
     [InterfaceTypeAttribute(0x0001)]
-    ///[TypeLibTypeAttribute(0x0200)]
+    //[TypeLibTypeAttribute(0x0200)]
     [GuidAttribute("3AE0080A-7E3A-4366-BF89-0FEEDC931659")]
     [ComImport]
     interface IWbemEventSink
@@ -948,13 +949,13 @@ namespace System.Management
         [PreserveSig] int GetCount_([Out] out uint puKeyCount);
         [PreserveSig] int SetKey_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] uint uFlags, [In] uint uCimType, [In] IntPtr pKeyVal);
         [PreserveSig] int SetKey2_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] uint uFlags, [In] uint uCimType, [In] ref object pKeyVal);
-        [PreserveSig] int GetKey_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszKeyName, [In][Out] ref uint puKeyValBufSize, [In][Out] IntPtr pKeyVal, [Out] out uint puApparentCimType);
-        [PreserveSig] int GetKey2_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszKeyName, [In][Out] ref object pKeyValue, [Out] out uint puApparentCimType);
+        [PreserveSig] int GetKey_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 2)]  char[]   pszKeyName, [In][Out] ref uint puKeyValBufSize, [In][Out] IntPtr pKeyVal, [Out] out uint puApparentCimType);
+        [PreserveSig] int GetKey2_([In] uint uKeyIx, [In] uint uFlags, [In][Out] ref uint puNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 2)]  char[]   pszKeyName, [In][Out] ref object pKeyValue, [Out] out uint puApparentCimType);
         [PreserveSig] int RemoveKey_([In][MarshalAs(UnmanagedType.LPWStr)]  string   wszName, [In] uint uFlags);
         [PreserveSig] int RemoveAllKeys_([In] uint uFlags);
         [PreserveSig] int MakeSingleton_([In] sbyte bSet);
         [PreserveSig] int GetInfo_([In] uint uRequestedInfo, [Out] out ulong puResponse);
-        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszText);
+        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszText);
     }
 
     [GuidAttribute("3BC15AF2-736C-477E-9E51-238AF8667DCC")]
@@ -963,24 +964,24 @@ namespace System.Management
     interface IWbemPath
     {
         [PreserveSig] int SetText_([In] uint uMode, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszPath);
-        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszText);
+        [PreserveSig] int GetText_([In] int lFlags, [In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszText);
         [PreserveSig] int GetInfo_([In] uint uRequestedInfo, [Out] out ulong puResponse);
         [PreserveSig] int SetServer_([In][MarshalAs(UnmanagedType.LPWStr)]  string   Name);
-        [PreserveSig] int GetServer_([In][Out] ref uint puNameBufLength, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pName);
+        [PreserveSig] int GetServer_([In][Out] ref uint puNameBufLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[]   pName);
         [PreserveSig] int GetNamespaceCount_([Out] out uint puCount);
-        [PreserveSig] int SetNamespaceAt_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszName);
-        [PreserveSig] int GetNamespaceAt_([In] uint uIndex, [In][Out] ref uint puNameBufLength, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pName);
+        [PreserveSig] int SetNamespaceAt_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[]   pszName);
+        [PreserveSig] int GetNamespaceAt_([In] uint uIndex, [In][Out] ref uint puNameBufLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pName);
         [PreserveSig] int RemoveNamespaceAt_([In] uint uIndex);
         [PreserveSig] int RemoveAllNamespaces_();
         [PreserveSig] int GetScopeCount_([Out] out uint puCount);
         [PreserveSig] int SetScope_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszClass);
         [PreserveSig] int SetScopeFromText_([In] uint uIndex, [In][MarshalAs(UnmanagedType.LPWStr)]  string   pszText);
-        [PreserveSig] int GetScope_([In] uint uIndex, [In][Out] ref uint puClassNameBufSize, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszClass, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList   pKeyList);
-        [PreserveSig] int GetScopeAsText_([In] uint uIndex, [In][Out] ref uint puTextBufSize, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszText);
+        [PreserveSig] int GetScope_([In] uint uIndex, [In][Out] ref uint puClassNameBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszClass, [Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList   pKeyList);
+        [PreserveSig] int GetScopeAsText_([In] uint uIndex, [In][Out] ref uint puTextBufSize, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 1)]  char[]   pszText);
         [PreserveSig] int RemoveScope_([In] uint uIndex);
         [PreserveSig] int RemoveAllScopes_();
         [PreserveSig] int SetClassName_([In][MarshalAs(UnmanagedType.LPWStr)]  string   Name);
-        [PreserveSig] int GetClassName_([In][Out] ref uint puBuffLength, [In][Out][MarshalAs(UnmanagedType.LPWStr)]  string   pszName);
+        [PreserveSig] int GetClassName_([In][Out] ref uint puBuffLength, [Out][MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2, SizeParamIndex = 0)]  char[]   pszName);
         [PreserveSig] int GetKeyList_([Out][MarshalAs(UnmanagedType.Interface)]  out IWbemPathKeyList   pOut);
         [PreserveSig] int CreateClassPart_([In] int lFlags, [In][MarshalAs(UnmanagedType.LPWStr)]  string   Name);
         [PreserveSig] int DeleteClassPart_([In] int lFlags);
@@ -1687,7 +1688,7 @@ namespace System.Management
     #region Co Classes
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("4590F811-1D3A-11D0-891F-00AA004B2E24")]
-    ///[TypeLibTypeAttribute(0x0202)]
+    //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
     class WbemLocator 
     {
@@ -1695,7 +1696,7 @@ namespace System.Management
 
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("674B6698-EE92-11D0-AD71-00C04FD8FDFF")]
-    ///[TypeLibTypeAttribute(0x0202)]
+    //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
     class WbemContext 
     {
@@ -1703,7 +1704,7 @@ namespace System.Management
 
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("49BD2028-1523-11D1-AD79-00C04FD8FDFF")]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
     class UnsecuredApartment 
     {
@@ -1711,7 +1712,7 @@ namespace System.Management
 
     [GuidAttribute("9A653086-174F-11D2-B5F9-00104B703EFD")]
     [ClassInterfaceAttribute((short)0x0000)]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
     class WbemClassObject 
     {
@@ -1719,14 +1720,14 @@ namespace System.Management
 
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("6DAF9757-2E37-11D2-AEC9-00C04FB68820")]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
     class MofCompiler 
     {
     }
 
     [ClassInterfaceAttribute((short)0x0000)]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [GuidAttribute("EB87E1BD-3233-11D2-AEC9-00C04FB68820")]
     [ComImport]
     class WbemStatusCodeText 
@@ -1735,14 +1736,14 @@ namespace System.Management
 
     [GuidAttribute("C49E32C6-BC8B-11D2-85D4-00105A1F8304")]
     [ClassInterfaceAttribute((short)0x0000)]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
     class WbemBackupRestore 
     {
     }
 
     [ClassInterfaceAttribute((short)0x0000)]
-    ///[TypeLibTypeAttribute(0x0202)]
+    //[TypeLibTypeAttribute(0x0202)]
     [GuidAttribute("8D1C559D-84F0-4BB3-A7D5-56A7435A9BA6")]
     [ComImport]
     class WbemObjectTextSrc 
@@ -1750,7 +1751,7 @@ namespace System.Management
     }
 
     [GuidAttribute("4CFC7932-0F9D-4BEF-9C32-8EA2A6B56FCB")]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ClassInterfaceAttribute((short)0x0000)]
     [ComImport]
     class WbemDecoupledRegistrar 
@@ -1758,7 +1759,7 @@ namespace System.Management
     }
 
     [GuidAttribute("F5F75737-2843-4F22-933D-C76A97CDA62F")]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ClassInterfaceAttribute((short)0x0000)]
     [ComImport]
     class WbemDecoupledBasicEventProvider 
@@ -1767,7 +1768,7 @@ namespace System.Management
 
     [ClassInterfaceAttribute((short)0x0000)]
     [GuidAttribute("CF4CC405-E2C5-4DDD-B3CE-5E7582D8C9FA")]
-    ///[TypeLibTypeAttribute(0x0202)]
+    //[TypeLibTypeAttribute(0x0202)]
     [ComImport]
     class WbemDefPath 
     {
@@ -1775,7 +1776,7 @@ namespace System.Management
 
     [GuidAttribute("EAC8A024-21E2-4523-AD73-A71A0AA2F56A")]
     [ClassInterfaceAttribute((short)0x0000)]
-    ///[TypeLibTypeAttribute(0x0002)]
+    //[TypeLibTypeAttribute(0x0002)]
     [ComImport]
     class WbemQuery 
     {
@@ -2203,6 +2204,7 @@ namespace System.Management
         /// <param name="threadParams">Parameters to be passed to thread</param>
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
+        /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithReturn workerMethod, ApartmentState aptState, bool background )
         {
             this.threadParams = threadParams ;
@@ -2218,6 +2220,7 @@ namespace System.Management
         /// <param name="threadParams">Parameters to be passed to thread</param>
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
+        /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithReturnAndParam workerMethod, ApartmentState aptState, bool background )
         {
             this.threadParams = threadParams ;
@@ -2233,6 +2236,7 @@ namespace System.Management
         /// <param name="threadParams">Parameters to be passed to thread</param>
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
+        /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethod workerMethod, ApartmentState aptState, bool background )
         {
             this.threadParams = threadParams ;
@@ -2248,6 +2252,7 @@ namespace System.Management
         /// <param name="threadParams">Parameters to be passed to thread</param>
         /// <param name="workerMethod">The delegate to be called from thread</param>
         /// <param name="aptState">The apartment of the thread created</param>
+        /// <param name="background">Thread is created as a background or not</param>
         private void InitializeThreadState ( object threadParams, ThreadWorkerMethodWithParam workerMethod, ApartmentState aptState, bool background )
         {
             this.threadParams = threadParams ;

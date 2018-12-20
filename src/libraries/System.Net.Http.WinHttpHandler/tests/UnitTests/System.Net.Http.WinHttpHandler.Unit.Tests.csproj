@@ -7,7 +7,7 @@
     <Configurations>netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <TargetingPackExclusions Include="System.Net.Http.WinHttpHandler" />
+    <DefaultReferenceExclusions Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="$(CommonTestPath)\System\Net\SslProtocolSupport.cs">

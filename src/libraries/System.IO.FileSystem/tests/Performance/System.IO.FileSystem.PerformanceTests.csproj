@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <ProjectGuid>{3C42F714-82AF-4A43-9B9C-744DE31B5C5D}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\PortedCommon\ReparsePointUtilities.cs" />
+    <Compile Include="..\TestData.cs" />
+    <Compile Include="..\FileSystemTest.cs" />
+    <Compile Include="..\PortedCommon\CommonUtilities.cs" />
+    <Compile Include="..\PortedCommon\DllImports.cs" />
+    <Compile Include="..\PortedCommon\IOInputs.cs" />
+    <Compile Include="..\PortedCommon\IOServices.cs" />
+    <Compile Include="Perf.Directory.cs" />
+    <Compile Include="Perf.File.cs" />
+    <Compile Include="Perf.FileInfo.cs" />
+    <Compile Include="Perf.FileStream.cs" />
+    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
+      <Link>Common\System\PerfUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+      <Link>Common\System\IO\PathFeatures.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

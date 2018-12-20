@@ -252,7 +252,8 @@ namespace System.Net
         private static void AppendSections(ushort[] address, int fromInclusive, int toExclusive, StringBuilder buffer)
         {
             // Find the longest sequence of zeros to be combined into a "::"
-            (int zeroStart, int zeroEnd) = IPv6AddressHelper.FindCompressionRange(address, fromInclusive, toExclusive);
+            ReadOnlySpan<ushort> addressSpan = new ReadOnlySpan<ushort>(address, fromInclusive, toExclusive - fromInclusive);
+            (int zeroStart, int zeroEnd) = IPv6AddressHelper.FindCompressionRange(addressSpan);
             bool needsColon = false;
 
             // Output all of the numbers before the zero sequence

@@ -34,19 +34,18 @@ namespace System.Reflection.Tests
                     {
                         return actualCoreAssembly = context.LoadFromStream(TestUtils.CreateStreamForCoreAssembly());
                     }
-                    //else if (refName.Equals(new AssemblyName(TestData.s_PhonyCoreAssemblyName)))
-                    else if (refName.Name == new AssemblyName(TestData.s_PhonyCoreAssemblyName).Name)
+                    else if (refName.Name == new AssemblyName(TestData.s_PhonyCoreAssemblyFullName).Name)
                     {
                         return testAssembly = context.LoadFromByteArray(TestData.s_PhonyCoreAssemblyImage);
                     }
                     return null;
                 });
 
-            using (MetadataLoadContext lc = new MetadataLoadContext(resolver, coreAssemblyName: TestData.s_PhonyCoreAssemblyName))
+            using (MetadataLoadContext lc = new MetadataLoadContext(resolver, coreAssemblyName: TestData.s_PhonyCoreAssemblyFullName))
             {
-                // This is a sanity check to ensure that "TestData.s_PhonyCoreAssemblyName" is actually the def-name of this
+                // This is a sanity check to ensure that "TestData.s_PhonyCoreAssemblyFullName" is actually the def-name of this
                 // assembly. It better be since we told our MetadataLoadContext to use it as our core assembly.
-                Assembly aAgain = lc.LoadFromAssemblyName(TestData.s_PhonyCoreAssemblyName);
+                Assembly aAgain = lc.LoadFromAssemblyName(TestData.s_PhonyCoreAssemblyFullName);
 
                 Type derived = testAssembly.GetType("Derived", throwOnError: true, ignoreCase: false);
 

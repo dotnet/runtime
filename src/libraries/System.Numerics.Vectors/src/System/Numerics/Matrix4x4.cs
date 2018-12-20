@@ -17,6 +17,10 @@ namespace System.Numerics
     [StructLayout(LayoutKind.Sequential)]
     public struct Matrix4x4 : IEquatable<Matrix4x4>
     {
+        private const float BillboardEpsilon = 1e-4f;
+        private const float BillboardMinAngle = 1.0f - (0.1f * (MathF.PI / 180.0f)); // 0.1 degrees
+        private const float DecomposeEpsilon = 0.0001f;
+
         #region Public Fields
         /// <summary>
         /// Value at row 1, column 1 of the matrix.
@@ -198,8 +202,6 @@ namespace System.Numerics
         /// <returns>The created billboard matrix</returns>
         public static Matrix4x4 CreateBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 cameraUpVector, Vector3 cameraForwardVector)
         {
-            const float epsilon = 1e-4f;
-
             Vector3 zaxis = new Vector3(
                 objectPosition.X - cameraPosition.X,
                 objectPosition.Y - cameraPosition.Y,
@@ -207,7 +209,7 @@ namespace System.Numerics
 
             float norm = zaxis.LengthSquared();
 
-            if (norm < epsilon)
+            if (norm < BillboardEpsilon)
             {
                 zaxis = -cameraForwardVector;
             }
@@ -254,9 +256,6 @@ namespace System.Numerics
         /// <returns>The created billboard matrix.</returns>
         public static Matrix4x4 CreateConstrainedBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
         {
-            const float epsilon = 1e-4f;
-            const float minAngle = 1.0f - (0.1f * (MathF.PI / 180.0f)); // 0.1 degrees
-
             // Treat the case when object and camera positions are too close.
             Vector3 faceDir = new Vector3(
                 objectPosition.X - cameraPosition.X,
@@ -265,7 +264,7 @@ namespace System.Numerics
 
             float norm = faceDir.LengthSquared();
 
-            if (norm < epsilon)
+            if (norm < BillboardEpsilon)
             {
                 faceDir = -cameraForwardVector;
             }
@@ -281,16 +280,16 @@ namespace System.Numerics
             // Treat the case when angle between faceDir and rotateAxis is too close to 0.
             float dot = Vector3.Dot(rotateAxis, faceDir);
 
-            if (MathF.Abs(dot) > minAngle)
+            if (MathF.Abs(dot) > BillboardMinAngle)
             {
                 zaxis = objectForwardVector;
 
                 // Make sure passed values are useful for compute.
                 dot = Vector3.Dot(rotateAxis, zaxis);
 
-                if (MathF.Abs(dot) > minAngle)
+                if (MathF.Abs(dot) > BillboardMinAngle)
                 {
-                    zaxis = (MathF.Abs(rotateAxis.Z) > minAngle) ? new Vector3(1, 0, 0) : new Vector3(0, 0, -1);
+                    zaxis = (MathF.Abs(rotateAxis.Z) > BillboardMinAngle) ? new Vector3(1, 0, 0) : new Vector3(0, 0, -1);
                 }
 
                 xaxis = Vector3.Normalize(Vector3.Cross(rotateAxis, zaxis));
@@ -1509,7 +1508,6 @@ namespace System.Numerics
                 fixed (Vector3* scaleBase = &scale)
                 {
                     float* pfScales = (float*)scaleBase;
-                    const float EPSILON = 0.0001f;
                     float det;
 
                     VectorBasis vectorBasis;
@@ -1593,14 +1591,14 @@ namespace System.Numerics
                     }
                     #endregion
 
-                    if (pfScales[a] < EPSILON)
+                    if (pfScales[a] < DecomposeEpsilon)
                     {
                         *(pVectorBasis[a]) = pCanonicalBasis[a];
                     }
 
                     *pVectorBasis[a] = Vector3.Normalize(*pVectorBasis[a]);
 
-                    if (pfScales[b] < EPSILON)
+                    if (pfScales[b] < DecomposeEpsilon)
                     {
                         uint cc;
                         float fAbsX, fAbsY, fAbsZ;
@@ -1653,7 +1651,7 @@ namespace System.Numerics
 
                     *pVectorBasis[b] = Vector3.Normalize(*pVectorBasis[b]);
 
-                    if (pfScales[c] < EPSILON)
+                    if (pfScales[c] < DecomposeEpsilon)
                     {
                         *pVectorBasis[c] = Vector3.Cross(*pVectorBasis[a], *pVectorBasis[b]);
                     }
@@ -1675,7 +1673,7 @@ namespace System.Numerics
                     det -= 1.0f;
                     det *= det;
 
-                    if ((EPSILON < det))
+                    if ((DecomposeEpsilon < det))
                     {
                         // Non-SRT matrix encountered
                         rotation = Quaternion.Identity;

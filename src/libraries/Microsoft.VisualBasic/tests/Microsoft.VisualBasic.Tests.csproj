@@ -25,6 +25,7 @@
     <Compile Include="Microsoft/VisualBasic/Devices/NetworkAvailableEventArgsTests.cs" />
     <Compile Include="ConversionsTests.cs" />
     <Compile Include="OperatorsTests.cs" />
+    <Compile Include="OperatorsTests.Comparison.cs" />
     <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="IConvertibleWrapper.cs" />
     <Compile Include="InformationTests.cs" />

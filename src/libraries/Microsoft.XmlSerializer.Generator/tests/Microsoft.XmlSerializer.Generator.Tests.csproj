@@ -3,7 +3,7 @@
     <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A737}</ProjectGuid>
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
-    <CodeCoverageEnabled>false</CodeCoverageEnabled>
+    <CoverageSupported>false</CoverageSupported>
   </PropertyGroup>
   <PropertyGroup>
     <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64' OR '$(ArchGroup)' == 'armel' OR '$(TargetGroup)' == 'netfx'">true</SkipTestsOnPlatform>
@@ -11,7 +11,7 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <!-- We're building netcoreap, run on the test CLI
          Reuse the same runtimeconfig that the tests use. -->
-    <GeneratorRuntimeConfig>$(ToolsDir)netcoreapp.runtimeconfig.json</GeneratorRuntimeConfig>
+    <GeneratorRuntimeConfig>$(TestAssetsDir)netcoreapp.runtimeconfig.json</GeneratorRuntimeConfig>
     <GeneratorCliPath>$(TestHostRootPath)</GeneratorCliPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' != 'netcoreapp'">

@@ -17,6 +17,9 @@
     <IgnoredTypes Include="XamlGeneratedNamespace.GeneratedInternalTypeHelper" />
     <IgnoredTypes Include="System.Deployment.Internal.CodeSigning.RSAPKCS1SHA256SignatureDescription" />
     <IgnoredTypes Include="System.ServiceModel.Channels.HttpRequestMessageExtensionMethods" />
+
+    <!-- windows.winmd is not part of the framework -->
+    <IgnoredReference Include="Windows" />
   </ItemGroup>
 
   <!-- this target must run before ResolveLockFileReferences so

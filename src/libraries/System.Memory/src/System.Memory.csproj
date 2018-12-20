@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ProjectGuid>{4BBC8F69-D03E-4432-AA8A-D458FA5B235A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>

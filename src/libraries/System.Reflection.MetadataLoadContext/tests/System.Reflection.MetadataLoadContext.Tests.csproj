@@ -3,7 +3,6 @@
     <ProjectGuid>{443B7659-B3FA-4B32-88BA-3A0517E21018}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
-    <LangVersion>7.2</LangVersion>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
@@ -22,6 +21,7 @@
     <Compile Include="src\Tests\Event\EventTests.cs" />
     <Compile Include="src\Tests\Field\FieldTests.cs" />
     <Compile Include="src\Tests\Identity\IdentityTests.cs" />
+    <Compile Include="src\Tests\MetadataLoadContext\PathAssemblyResolver.cs" />
     <Compile Include="src\Tests\Method\MethodInvariants.cs" />
     <Compile Include="src\Tests\Method\MethodTests.cs" />
     <Compile Include="src\Tests\Module\ModuleProhibitedApiTests.cs" />
@@ -66,6 +66,7 @@
     <Compile Include="src\TestUtils\EmptyCoreMetadataAssemblyResolver.cs" />
     <Compile Include="src\TestUtils\FuncMetadataAssemblyResolver.cs" />
     <Compile Include="src\TestUtils\NetStandardBridge.cs" />
+    <Compile Include="src\TestUtils\SimpleAssemblyResolver.cs" />
     <Compile Include="src\TestUtils\TestData.cs" />
     <Compile Include="src\TestUtils\TestUtils.cs" />
     <Compile Include="src\TestUtils\TestUtils.JittedRuntimes.cs" />

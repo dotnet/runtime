@@ -322,7 +322,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        // The maximum interval of time afterwhich the cache
+        // The maximum interval of time after which the cache
         // will update its memory statistics.
         public TimeSpan PollingInterval
         {

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ProjectGuid>{53134B0C-0D57-481B-B84E-D1991E8D54FF}</ProjectGuid>
     <RootNamespace>System.Numerics</RootNamespace>
-    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetsNetCoreAppOrUap Condition="'$(TargetsNetCoreApp)'=='true' OR '$(TargetsUap)' == 'true'">true</TargetsNetCoreAppOrUap>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true' OR '$(TargetsNetCoreAppOrUap)'=='true'">true</IsPartialFacadeAssembly>

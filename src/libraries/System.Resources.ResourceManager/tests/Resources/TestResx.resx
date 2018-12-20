@@ -70,4 +70,10 @@
   <data name="Two" xml:space="preserve">
     <value>Value-Two</value>
   </data>
+  <data name="OneLoc" xml:space="preserve">
+    <value>Value-One</value>
+  </data>
+  <data name="NeutOnly" xml:space="preserve">
+    <value>Neutral</value>
+  </data>
 </root>

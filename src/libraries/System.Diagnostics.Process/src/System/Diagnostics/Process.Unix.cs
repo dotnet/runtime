@@ -291,30 +291,9 @@ namespace System.Diagnostics
                 }
             }
 
-            int childPid, stdinFd, stdoutFd, stderrFd;
+            int stdinFd = -1, stdoutFd = -1, stderrFd = -1;
             string[] envp = CreateEnvp(startInfo);
             string cwd = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : null;
-
-            if (startInfo.UseShellExecute)
-            {
-                // use default program to open file/url
-                filename = GetPathToOpenFile();
-                argv = ParseArgv(startInfo, filename);
-            }
-            else
-            {
-                filename = ResolvePath(startInfo.FileName);
-                argv = ParseArgv(startInfo);
-                if (Directory.Exists(filename))
-                {
-                    throw new Win32Exception(SR.DirectoryNotValidAsInput);
-                }
-            }
-
-            if (string.IsNullOrEmpty(filename))
-            {
-                throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
-            }
 
             bool setCredentials = !string.IsNullOrEmpty(startInfo.UserName);
             uint userId = 0;
@@ -324,35 +303,58 @@ namespace System.Diagnostics
                 (userId, groupId) = GetUserAndGroupIds(startInfo);
             }
 
-            // Lock to avoid races with OnSigChild
-            // By using a ReaderWriterLock we allow multiple processes to start concurrently.
-            s_processStartLock.EnterReadLock();
-            try
+            if (startInfo.UseShellExecute)
             {
-                // Invoke the shim fork/execve routine.  It will create pipes for all requested
-                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
-                // descriptors, and execve to execute the requested process.  The shim implementation
-                // is used to fork/execve as executing managed code in a forked process is not safe (only
-                // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
-                Interop.Sys.ForkAndExecProcess(
-                    filename, argv, envp, cwd,
-                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
-                    setCredentials, userId, groupId, 
-                    out childPid,
-                    out stdinFd, out stdoutFd, out stderrFd);
+                string verb = startInfo.Verb;
+                if (verb != string.Empty &&
+                    !string.Equals(verb, "open", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
+                }
 
-                // Ensure we'll reap this process.
-                // note: SetProcessId will set this if we don't set it first.
-                _waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true);
+                // On Windows, UseShellExecute of executables and scripts causes those files to be executed.
+                // To achieve this on Unix, we check if the file is executable (x-bit).
+                // Some files may have the x-bit set even when they are not executable. This happens for example
+                // when a Windows filesystem is mounted on Linux. To handle that, treat it as a regular file
+                // when exec returns ENOEXEC (file format cannot be executed).
+                bool isExecuting = false;
+                filename = ResolveExecutableForShellExecute(startInfo.FileName, cwd);
+                if (filename != null)
+                {
+                    argv = ParseArgv(startInfo);
 
-                // Store the child's information into this Process object.
-                Debug.Assert(childPid >= 0);
-                SetProcessId(childPid);
-                SetProcessHandle(new SafeProcessHandle(childPid));
+                    isExecuting = ForkAndExecProcess(filename, argv, envp, cwd,
+                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                        setCredentials, userId, groupId,
+                        out stdinFd, out stdoutFd, out stderrFd,
+                        throwOnNoExec: false); // return false instead of throwing on ENOEXEC
+                }
+
+                // use default program to open file/url
+                if (!isExecuting)
+                {
+                    filename = GetPathToOpenFile();
+                    argv = ParseArgv(startInfo, filename, ignoreArguments: true);
+
+                    ForkAndExecProcess(filename, argv, envp, cwd,
+                        startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                        setCredentials, userId, groupId,
+                        out stdinFd, out stdoutFd, out stderrFd);
+                }
             }
-            finally
+            else
             {
-                s_processStartLock.ExitReadLock();
+                filename = ResolvePath(startInfo.FileName);
+                argv = ParseArgv(startInfo);
+                if (Directory.Exists(filename))
+                {
+                    throw new Win32Exception(SR.DirectoryNotValidAsInput);
+                }
+
+                ForkAndExecProcess(filename, argv, envp, cwd,
+                    startInfo.RedirectStandardInput, startInfo.RedirectStandardOutput, startInfo.RedirectStandardError,
+                    setCredentials, userId, groupId,
+                    out stdinFd, out stdoutFd, out stderrFd);
             }
 
             // Configure the parent's ends of the redirection streams.
@@ -381,6 +383,67 @@ namespace System.Diagnostics
             return true;
         }
 
+        private bool ForkAndExecProcess(
+            string filename, string[] argv, string[] envp, string cwd,
+            bool redirectStdin, bool redirectStdout, bool redirectStderr,
+            bool setCredentials, uint userId, uint groupId,
+            out int stdinFd, out int stdoutFd, out int stderrFd,
+            bool throwOnNoExec = true)
+        {
+            if (string.IsNullOrEmpty(filename))
+            {
+                throw new Win32Exception(Interop.Error.ENOENT.Info().RawErrno);
+            }
+
+            // Lock to avoid races with OnSigChild
+            // By using a ReaderWriterLock we allow multiple processes to start concurrently.
+            s_processStartLock.EnterReadLock();
+            try
+            {
+                int childPid;
+
+                // Invoke the shim fork/execve routine.  It will create pipes for all requested
+                // redirects, fork a child process, map the pipe ends onto the appropriate stdin/stdout/stderr
+                // descriptors, and execve to execute the requested process.  The shim implementation
+                // is used to fork/execve as executing managed code in a forked process is not safe (only
+                // the calling thread will transfer, thread IDs aren't stable across the fork, etc.)
+                int errno = Interop.Sys.ForkAndExecProcess(
+                    filename, argv, envp, cwd,
+                    redirectStdin, redirectStdout, redirectStderr,
+                    setCredentials, userId, groupId,
+                    out childPid,
+                    out stdinFd, out stdoutFd, out stderrFd);
+
+                if (errno == 0)
+                {
+                    // Ensure we'll reap this process.
+                    // note: SetProcessId will set this if we don't set it first.
+                    _waitStateHolder = new ProcessWaitState.Holder(childPid, isNewChild: true);
+
+                    // Store the child's information into this Process object.
+                    Debug.Assert(childPid >= 0);
+                    SetProcessId(childPid);
+                    SetProcessHandle(new SafeProcessHandle(childPid));
+
+                    return true;
+                }
+                else
+                {
+                    if (!throwOnNoExec &&
+                        new Interop.ErrorInfo(errno).Error == Interop.Error.ENOEXEC)
+                    {
+                        return false;
+                    }
+
+                    throw new Win32Exception(errno);
+                }
+            }
+            finally
+            {
+                s_processStartLock.ExitReadLock();
+            }
+        }
+
         // -----------------------------
         // ---- PAL layer ends here ----
         // -----------------------------
@@ -393,34 +456,39 @@ namespace System.Diagnostics
 
         /// <summary>Converts the filename and arguments information from a ProcessStartInfo into an argv array.</summary>
         /// <param name="psi">The ProcessStartInfo.</param>
-        /// <param name="alternativePath">alternative resolved path to use as first argument</param>
+        /// <param name="resolvedExe">Resolved executable to open ProcessStartInfo.FileName</param>
+        /// <param name="ignoreArguments">Don't pass ProcessStartInfo.Arguments</param>
         /// <returns>The argv array.</returns>
-        private static string[] ParseArgv(ProcessStartInfo psi, string alternativePath = null)
+        private static string[] ParseArgv(ProcessStartInfo psi, string resolvedExe = null, bool ignoreArguments = false)
         {
-            string argv0 = psi.FileName; // when no alternative path exists, pass filename (instead of resolved path) as argv[0], to match what caller supplied
-            if (string.IsNullOrEmpty(psi.Arguments) && string.IsNullOrEmpty(alternativePath) && psi.ArgumentList.Count == 0)
+            if (string.IsNullOrEmpty(resolvedExe) &&
+                (ignoreArguments || (string.IsNullOrEmpty(psi.Arguments) && psi.ArgumentList.Count == 0)))
             {
-                return new string[] { argv0 };
+                return new string[] { psi.FileName };
             }
 
             var argvList = new List<string>();
-            if (!string.IsNullOrEmpty(alternativePath))
+            if (!string.IsNullOrEmpty(resolvedExe))
             {
-                argvList.Add(alternativePath);
-                if (alternativePath.Contains("kfmclient"))
+                argvList.Add(resolvedExe);
+                if (resolvedExe.Contains("kfmclient"))
                 {
                     argvList.Add("openURL"); // kfmclient needs OpenURL
                 }
             }
 
-            argvList.Add(argv0);
-            if (!string.IsNullOrEmpty(psi.Arguments))
+            argvList.Add(psi.FileName);
+
+            if (!ignoreArguments)
             {
-                ParseArgumentsIntoList(psi.Arguments, argvList);
-            }
-            else
-            {
-                argvList.AddRange(psi.ArgumentList);
+                if (!string.IsNullOrEmpty(psi.Arguments))
+                {
+                    ParseArgumentsIntoList(psi.Arguments, argvList);
+                }
+                else
+                {
+                    argvList.AddRange(psi.ArgumentList);
+                }
             }
             return argvList.ToArray();
         }
@@ -437,6 +505,63 @@ namespace System.Diagnostics
                 envp[index++] = pair.Key + "=" + pair.Value;
             }
             return envp;
+        }
+
+        private static string ResolveExecutableForShellExecute(string filename, string workingDirectory)
+        {
+            // Determine if filename points to an executable file.
+            // filename may be an absolute path, a relative path or a uri.
+
+            string resolvedFilename = null;
+            // filename is an absolute path
+            if (Path.IsPathRooted(filename))
+            {
+                if (File.Exists(filename))
+                {
+                    resolvedFilename = filename;
+                }
+            }
+            // filename is a uri
+            else if (Uri.TryCreate(filename, UriKind.Absolute, out Uri uri))
+            {
+                if (uri.IsFile && uri.Host == "" && File.Exists(uri.LocalPath))
+                {
+                    resolvedFilename = uri.LocalPath;
+                }
+            }
+            // filename is relative
+            else
+            {
+                // The WorkingDirectory property specifies the location of the executable.
+                // If WorkingDirectory is an empty string, the current directory is understood to contain the executable.
+                workingDirectory = workingDirectory != null ? Path.GetFullPath(workingDirectory) :
+                                                              Directory.GetCurrentDirectory();
+                string filenameInWorkingDirectory = Path.Combine(workingDirectory, filename);
+                // filename is a relative path in the working directory
+                if (File.Exists(filenameInWorkingDirectory))
+                {
+                    resolvedFilename = filenameInWorkingDirectory;
+                }
+                // find filename on PATH
+                else
+                {
+                    resolvedFilename = FindProgramInPath(filename);
+                }
+            }
+
+            if (resolvedFilename == null)
+            {
+                return null;
+            }
+
+            if (Interop.Sys.Access(resolvedFilename, Interop.Sys.AccessMode.X_OK) == 0)
+            {
+                return resolvedFilename;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>

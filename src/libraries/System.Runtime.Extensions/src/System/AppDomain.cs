@@ -9,6 +9,8 @@ using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
+using System.Security;
+using System.Security.Permissions;
 using System.Security.Principal;
 using System.Threading;
 
@@ -32,6 +34,8 @@ namespace System
         public string RelativeSearchPath => null;
 
         public AppDomainSetup SetupInformation => new AppDomainSetup();
+
+        public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
         public event UnhandledExceptionEventHandler UnhandledException
         {
@@ -125,24 +129,12 @@ namespace System
                 throw new MissingMethodException(SR.EntryPointNotFound + assembly.FullName);
             }
 
-            object result = null;
-            try
-            {
-                result = entry.GetParameters().Length > 0 ?
-                    entry.Invoke(null, new object[] { args }) :
-                    entry.Invoke(null, null);
-            }
-            catch (TargetInvocationException targetInvocationException)
-            {
-                if (targetInvocationException.InnerException == null)
-                {
-                    throw;
-                }
-
-                // We are catching the TIE here and throws the inner exception only,
-                // this is needed to have a consistent exception story with desktop clr
-                ExceptionDispatchInfo.Throw(targetInvocationException.InnerException);
-            }
+            object result = entry.Invoke(
+                obj: null,
+                invokeAttr: BindingFlags.DoNotWrapExceptions,
+                binder: null,
+                parameters: entry.GetParameters().Length > 0 ? new object[] { args } : null,
+                culture: null);
 
             return result != null ? (int)result : 0;
         }

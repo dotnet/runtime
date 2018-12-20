@@ -12,7 +12,7 @@
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
   </PropertyGroup>
   <ItemGroup>
-    <TargetingPackExclusions Include="System.Linq.Expressions" />
+    <DefaultReferenceExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
   </ItemGroup>
   <ItemGroup>
@@ -39,7 +39,7 @@
     <ReferenceFromRuntime Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
-    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" />
+    <AssembliesBeingTested Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />

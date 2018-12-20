@@ -44,15 +44,12 @@ namespace System.Reflection
                     // We won the race.
                     RegisterForDisposal(peReader);
                     peReaderToDispose = null;
-                    return _binds.GetOrAdd(defName, winner);
 
-                    // What if we lost the race to bind the defName in the _binds list? Should we ignore it and return the newly created assembly
-                    // (like Assembly.LoadModule()) does or return the prior assembly (like we do if we lose the race to commit into _loadedAssemblies?)
-                    // There's no perfect answer here. Fundamentally, the dilemma comes about because our apis don't lets apps properly separate 
-                    // the act of creating an Assembly object from the act of committing the MetadataLoadContext to bind to it.
-                    //
-                    // We will choose to return the prior winner so that the api is consistent with itself. This is how other LoadFrom() 
-                    // apis work and they're used a lot more than LoadModule().
+                    // We do not add to the _binds list because the binding list is only for assemblies that have been resolved through
+                    // the Resolve method. This allows the resolver to have complete control over selecting the appropriate assembly
+                    // based on Version, CultureName and PublicKeyToken.
+
+                    return winner;
                 }
                 else
                 {

@@ -17,7 +17,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public static class SqlCredentialTest
     {
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void CreateSqlConnectionWithCredential()
         {
             var user = "u" + Guid.NewGuid().ToString().Replace("-", "");
@@ -49,7 +49,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void SqlConnectionChangePasswordPlaintext()
         {
             var user = "u" + Guid.NewGuid().ToString().Replace("-", "");
@@ -82,7 +82,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void SqlConnectionChangePasswordSecureString()
         {
             var user = "u" + Guid.NewGuid().ToString().Replace("-", "");

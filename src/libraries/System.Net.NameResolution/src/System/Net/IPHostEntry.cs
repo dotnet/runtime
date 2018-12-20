@@ -41,7 +41,7 @@ namespace System.Net
         ///    <para>
         ///       Provides an
         ///       array of strings containing other DNS names that resolve to the IP addresses
-        ///       in <paramref name='AddressList'/>.
+        ///       in <see cref="AddressList"/>.
         ///    </para>
         /// </devdoc>
         /// <devdoc>
@@ -61,7 +61,7 @@ namespace System.Net
         /// <devdoc>
         ///    <para>
         ///       Provides an
-        ///       array of <paramref name='IPAddress'/> objects.
+        ///       array of <see cref="IPAddress"/> objects.
         ///    </para>
         /// </devdoc>
         /// <devdoc>

@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptograph
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235} = {DF73E985-E143-4BF5-9FA4-E199E7D36235}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Primitives.Performance.Tests", "tests\Performance\System.Security.Cryptography.Primitives.Performance.Tests.csproj", "{FB3EA273-567D-414F-B36D-3698BE8D198B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Primitives.PerformanceTests", "tests\Performance\System.Security.Cryptography.Primitives.PerformanceTests.csproj", "{FB3EA273-567D-414F-B36D-3698BE8D198B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{DF73E985-E143-4BF5-9FA4-E199E7D36235} = {DF73E985-E143-4BF5-9FA4-E199E7D36235}
 	EndProjectSection

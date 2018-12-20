@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class DateTimeTests
+    public partial class DateTimeTests
     {
         [Theory]
         [MemberData(nameof(StandardFormatSpecifiers))]

@@ -163,10 +163,16 @@ namespace System.IO
 
         internal void SetCreationTime(string path, DateTimeOffset time)
         {
-            // There isn't a reliable way to set this; however, we can't just do nothing since the
-            // FileSystemWatcher specifically looks for this call to make a Metadata Change, so we
-            // should set the LastAccessTime of the file to cause the metadata change we need.
-            SetLastAccessTime(path, time);
+            // Unix provides APIs to update the last access time (atime) and last modification time (mtime).
+            // There is no API to update the CreationTime.
+            // Some platforms (e.g. Linux) don't store a creation time. On those platforms, the creation time
+            // is synthesized as the oldest of last status change time (ctime) and last modification time (mtime).
+            // We update the LastWriteTime (mtime).
+            // This triggers a metadata change for FileSystemWatcher NotifyFilters.CreationTime.
+            // Updating the mtime, causes the ctime to be set to 'now'. So, on platforms that don't store a
+            // CreationTime, GetCreationTime will return the value that was previously set (when that value
+            // wasn't in the future).
+            SetLastWriteTime(path, time);
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)

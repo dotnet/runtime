@@ -11,7 +11,7 @@ namespace System.Reflection
 {
     public abstract class MetadataAssemblyResolver
     {
-        public abstract Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName = null);
+        public abstract Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName);
     }
 
     public sealed partial class MetadataLoadContext : System.IDisposable
@@ -25,5 +25,11 @@ namespace System.Reflection
         public Assembly LoadFromAssemblyPath(string assemblyPath) { throw null; }
         public Assembly LoadFromByteArray(byte[] assembly) { throw null; }
         public Assembly LoadFromStream(System.IO.Stream assembly) { throw null; }
+    }
+
+    public class PathAssemblyResolver : MetadataAssemblyResolver
+    {
+        public PathAssemblyResolver(IEnumerable<string> assemblyPaths) { throw null; }
+        public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName) { throw null; }
     }
 }

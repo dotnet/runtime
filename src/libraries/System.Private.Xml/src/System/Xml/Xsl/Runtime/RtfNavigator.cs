@@ -303,7 +303,7 @@ namespace System.Xml.Xsl.Runtime
 
     /// <summary>
     /// This RtfNavigator specializes the case of a root node having a single text node child.  This is a very common
-    /// case, such as in <xsl:variable name="foo">bar</xsl:variable>.
+    /// case, such as in &lt;xsl:variable name="foo"&gt;bar&lt;/xsl:variable&gt;.
     /// </summary>
     internal sealed class RtfTextNavigator : RtfNavigator
     {

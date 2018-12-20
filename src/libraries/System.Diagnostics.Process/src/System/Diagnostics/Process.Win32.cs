@@ -221,9 +221,15 @@ namespace System.Diagnostics
                 return string.Empty;
             }
 
-            StringBuilder builder = new StringBuilder(length);
-            length = Interop.User32.GetWindowTextW(handle, builder, builder.Capacity + 1);
-
+            length++; // for null terminator, which GetWindowTextLengthW does not include in the length
+            Span<char> title = length <= 256 ? stackalloc char[256] : new char[length];
+            unsafe
+            {
+                fixed (char* titlePtr = title)
+                {
+                    length = Interop.User32.GetWindowTextW(handle, titlePtr, title.Length); // returned length does not include null terminator
+                }
+            }
 #if DEBUG
             if (length == 0)
             {
@@ -232,9 +238,7 @@ namespace System.Diagnostics
                 Debug.Assert(error == 0, $"Failed GetWindowTextW(): { new Win32Exception(error).Message }");
             }
 #endif
-
-            builder.Length = length;
-            return builder.ToString();
+            return title.Slice(0, length).ToString();
         }
 
         public IntPtr MainWindowHandle
