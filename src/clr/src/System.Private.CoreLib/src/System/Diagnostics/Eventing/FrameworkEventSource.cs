@@ -15,6 +15,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -572,7 +573,7 @@ namespace System.Diagnostics.Tracing
         public unsafe void ThreadPoolEnqueueWorkObject(object workID)
         {
             // convert the Object Id to a long
-            ThreadPoolEnqueueWork((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref workID)));
+            ThreadPoolEnqueueWork((long)*((void**)Unsafe.AsPointer(ref workID)));
         }
 
         [Event(31, Level = EventLevel.Verbose, Keywords = Keywords.ThreadPool | Keywords.ThreadTransfer)]
@@ -588,7 +589,7 @@ namespace System.Diagnostics.Tracing
         public unsafe void ThreadPoolDequeueWorkObject(object workID)
         {
             // convert the Object Id to a long
-            ThreadPoolDequeueWork((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref workID)));
+            ThreadPoolDequeueWork((long)*((void**)Unsafe.AsPointer(ref workID)));
         }
 
         // In the desktop runtime they don't use Tasks for the point at which the response happens, which means that the
@@ -686,7 +687,7 @@ namespace System.Diagnostics.Tracing
 #endif // !CORECLR
         public unsafe void ThreadTransferSendObj(object id, int kind, string info, bool multiDequeues, int intInfo1, int intInfo2)
         {
-            ThreadTransferSend((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info, multiDequeues, intInfo1, intInfo2);
+            ThreadTransferSend((long)*((void**)Unsafe.AsPointer(ref id)), kind, info, multiDequeues, intInfo1, intInfo2);
         }
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
@@ -711,7 +712,7 @@ namespace System.Diagnostics.Tracing
 #endif // !CORECLR
         public unsafe void ThreadTransferReceiveObj(object id, int kind, string info)
         {
-            ThreadTransferReceive((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
+            ThreadTransferReceive((long)*((void**)Unsafe.AsPointer(ref id)), kind, info);
         }
 
         // id -   represents a correlation ID that allows correlation of two activities, one stamped by 
@@ -736,7 +737,7 @@ namespace System.Diagnostics.Tracing
 #endif // !CORECLR
         public unsafe void ThreadTransferReceiveHandledObj(object id, int kind, string info)
         {
-            ThreadTransferReceive((long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref id)), kind, info);
+            ThreadTransferReceive((long)*((void**)Unsafe.AsPointer(ref id)), kind, info);
         }
 
         // return a stable ID for a an object.  We use the hash code which is not truely unique but is 

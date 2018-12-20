@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Security;
 
+using Internal.Runtime.CompilerServices;
+
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     internal class CLRIPropertyValueImpl : IPropertyValue
@@ -492,7 +494,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             fixed (byte* pData = &_data.GetRawData())
             {
-                byte* pUnboxed = (byte*)JitHelpers.UnsafeCastToStackPointer(ref unboxed);
+                byte* pUnboxed = (byte*)Unsafe.AsPointer(ref unboxed);
                 Buffer.Memcpy(pUnboxed, pData, Marshal.SizeOf(unboxed));
             }
 

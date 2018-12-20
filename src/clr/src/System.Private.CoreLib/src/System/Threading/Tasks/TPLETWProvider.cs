@@ -15,8 +15,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Security;
 using System.Runtime.CompilerServices;
-
 using System.Diagnostics.Tracing;
+
+using Internal.Runtime.CompilerServices;
 
 namespace System.Threading.Tasks
 {
@@ -514,7 +515,7 @@ namespace System.Threading.Tasks
         }
 
         [NonEvent]
-        public unsafe void RunningContinuation(int TaskID, object Object) { RunningContinuation(TaskID, (long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref Object))); }
+        public unsafe void RunningContinuation(int TaskID, object Object) { RunningContinuation(TaskID, (long)*((void**)Unsafe.AsPointer(ref Object))); }
         [Event(20, Keywords = Keywords.Debug)]
         private void RunningContinuation(int TaskID, long Object)
         {
@@ -523,7 +524,7 @@ namespace System.Threading.Tasks
         }
 
         [NonEvent]
-        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) { RunningContinuationList(TaskID, Index, (long)*((void**)JitHelpers.UnsafeCastToStackPointer(ref Object))); }
+        public unsafe void RunningContinuationList(int TaskID, int Index, object Object) { RunningContinuationList(TaskID, Index, (long)*((void**)Unsafe.AsPointer(ref Object))); }
 
         [Event(21, Keywords = Keywords.Debug)]
         public void RunningContinuationList(int TaskID, int Index, long Object)
