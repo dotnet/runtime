@@ -54,7 +54,7 @@
     <UAPToolsPackageVersion>1.0.25</UAPToolsPackageVersion>
 
     <!-- Code coverage package version -->
-    <CoverletConsolePackageVersion>1.3.0</CoverletConsolePackageVersion>
+    <CoverletConsolePackageVersion>1.4.0</CoverletConsolePackageVersion>
     <DotNetReportGeneratorGlobalToolPackageVersion>4.0.5-rc2</DotNetReportGeneratorGlobalToolPackageVersion>
 
     <!-- Roslyn optimization data package version -->
