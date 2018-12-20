@@ -57,7 +57,7 @@ variables:
         /p:ChecksumAzureAccessToken=$(dotnetclichecksums-storage-key)
     # Used for publishing to dotnet myget account
     - name: MyGetApiKey
-      value: $(dotnet-myget-org-api-key )
+      value: $(dotnet-myget-org-api-key)
     - name: MyGetFeedUrl
       value: https://dotnet.myget.org/F/dotnet-core/api/v2/package
     - name: MyGetSymbolsFeedUrl
