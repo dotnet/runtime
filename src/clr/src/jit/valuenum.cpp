@@ -6316,7 +6316,10 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 if (verbose)
                 {
                     var_types elemTyp = DecodeElemType(elemClsHnd);
-                    if (varTypeIsStruct(elemTyp))
+                    // If a valid class handle is given when the ElemType is set, DecodeElemType will
+                    // return TYP_STRUCT, and elemClsHnd is that handle.
+                    // Otherwise, elemClsHnd is NOT a valid class handle, and is the encoded var_types value.
+                    if (elemTyp == TYP_STRUCT)
                     {
                         printf("     Array map %s[]\n", eeGetClassName(elemClsHnd));
                     }
