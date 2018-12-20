@@ -562,7 +562,7 @@ namespace System.Text
         /// thus can be used in a C# 'foreach' statements to retreive the data in the StringBuilder
         /// as chunks (ReadOnlyMemory) of characters.  An example use is:
         /// 
-        ///      foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+        ///      foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetChunks())
         ///         foreach(char c in chunk.Span)
         ///             { /* operation on c }
         ///
@@ -577,10 +577,10 @@ namespace System.Text
         /// compared to the fetching of the character, so create a local variable for the SPAN 
         /// if you need to use it in a nested for statement.  For example 
         /// 
-        ///    foreach (ReadOnlyMemory<char> chunk in sb.GetChunks())
+        ///    foreach (ReadOnlyMemory&lt;char&gt; chunk in sb.GetChunks())
         ///    {
         ///         var span = chunk.Span;
-        ///         for(int i = 0; i < span.Length; i++)
+        ///         for(int i = 0; i &lt; span.Length; i++)
         ///             { /* operation on span[i] */ }
         ///    }
         /// </summary>
@@ -1819,9 +1819,9 @@ namespace System.Text
         }
 
         /// <summary>
-        /// Determines if the contents of this builder are equal to the contents of ReadOnlySpan<char>.
+        /// Determines if the contents of this builder are equal to the contents of <see cref="ReadOnlySpan{Char}"/>.
         /// </summary>
-        /// <param name="span">The ReadOnlySpan{char}.</param>
+        /// <param name="span">The <see cref="ReadOnlySpan{Char}"/>.</param>
         public bool Equals(ReadOnlySpan<char> span)
         {
             if (span.Length != Length)

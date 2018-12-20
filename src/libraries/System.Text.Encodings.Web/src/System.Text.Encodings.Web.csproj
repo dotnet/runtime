@@ -3,7 +3,6 @@
     <ProjectGuid>{B7EDBF00-765A-48E8-B593-CD668288E274}</ProjectGuid>
     <RootNamespace>System.Text.Encodings.Web</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <Configurations>netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

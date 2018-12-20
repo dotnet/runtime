@@ -20,7 +20,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:alpine-3.6-3148f11-2017111
         if (params.TestOuter) {
             additionalArgs = ' /p:OuterLoop=true'
         }
-        sh "./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true /p:PortableBuild=false${additionalArgs}"
+        sh "./build.sh -test ${commonprops} /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=false /p:PortableBuild=false${additionalArgs}"
     }
 
     // TODO: Add submission for Helix testing once we have queue for Alpine Linux working

@@ -5,8 +5,8 @@
 namespace System.ComponentModel.Composition
 {
     /// <summary>
-    ///     Specifies metadata for a type to be used as a <see cref="ComposablePartDefinition"/> and
-    ///     <see cref="ComposablePart"/>.
+    ///     Specifies metadata for a type to be used as a <see cref="Primitives.ComposablePartDefinition"/> and
+    ///     <see cref="Primitives.ComposablePart"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
     public sealed class PartMetadataAttribute : Attribute

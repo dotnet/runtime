@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public partial class ZipTests : EnumerableBasedTests
+    public class ZipTests : EnumerableBasedTests
     {
         [Fact]
         public void CorrectResults()

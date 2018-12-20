@@ -87,35 +87,33 @@ namespace System.Globalization
             return true;
         }
 
-        internal static bool GetLocaleName(string localeName, out string windowsName)
+        internal static unsafe bool GetLocaleName(string localeName, out string windowsName)
         {
             // Get the locale name from ICU
-            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
-            if (!Interop.Globalization.GetLocaleName(localeName, sb, sb.Capacity))
+            char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+            if (!Interop.Globalization.GetLocaleName(localeName, buffer, ICU_ULOC_FULLNAME_CAPACITY))
             {
-                StringBuilderCache.Release(sb);
                 windowsName = null;
                 return false; // fail
             }
 
             // Success - use the locale name returned which may be different than realNameBuffer (casing)
-            windowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
+            windowsName = new string(buffer); // the name passed to subsequent ICU calls
             return true;
         }
 
-        internal static bool GetDefaultLocaleName(out string windowsName)
+        internal static unsafe bool GetDefaultLocaleName(out string windowsName)
         {
             // Get the default (system) locale name from ICU
-            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
-            if (!Interop.Globalization.GetDefaultLocaleName(sb, sb.Capacity))
+            char* buffer = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+            if (!Interop.Globalization.GetDefaultLocaleName(buffer, ICU_ULOC_FULLNAME_CAPACITY))
             {
-                StringBuilderCache.Release(sb);
                 windowsName = null;
                 return false; // fail
             }
 
             // Success - use the locale name returned which may be different than realNameBuffer (casing)
-            windowsName = StringBuilderCache.GetStringAndRelease(sb); // the name passed to subsequent ICU calls
+            windowsName = new string(buffer); // the name passed to subsequent ICU calls
             return true;
         }
         
@@ -129,7 +127,7 @@ namespace System.Globalization
 
         // For LOCALE_SPARENT we need the option of using the "real" name (forcing neutral names) instead of the
         // "windows" name, which can be specific for downlevel (< windows 7) os's.
-        private string GetLocaleInfo(string localeName, LocaleStringData type)
+        private unsafe string GetLocaleInfo(string localeName, LocaleStringData type)
         {
             Debug.Assert(localeName != null, "[CultureData.GetLocaleInfo] Expected localeName to be not be null");
 
@@ -141,17 +139,16 @@ namespace System.Globalization
                         GetLocaleInfo(localeName, LocaleStringData.PositiveInfinitySymbol);
             }
 
-            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
-
-            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, sb, sb.Capacity);
+            char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
+            bool result = Interop.Globalization.GetLocaleInfoString(localeName, (uint)type, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
             if (!result)
             {
                 // Failed, just use empty string
-                StringBuilderCache.Release(sb);
                 Debug.Fail("[CultureData.GetLocaleInfo(LocaleStringData)] Failed");
                 return string.Empty;
             }
-            return StringBuilderCache.GetStringAndRelease(sb);
+
+            return new string(buffer);
         }
 
         private int GetLocaleInfo(LocaleNumberData type)
@@ -204,22 +201,22 @@ namespace System.Globalization
             return GetTimeFormatString(false);
         }
 
-        private string GetTimeFormatString(bool shortFormat)
+        private unsafe string GetTimeFormatString(bool shortFormat)
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
-            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+            char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
 
-            bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, sb, sb.Capacity);
+            bool result = Interop.Globalization.GetLocaleTimeFormat(_sWindowsName, shortFormat, buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
             if (!result)
             {
                 // Failed, just use empty string
-                StringBuilderCache.Release(sb);
                 Debug.Fail("[CultureData.GetTimeFormatString(bool shortFormat)] Failed");
                 return string.Empty;
             }
 
-            return ConvertIcuTimeFormatString(StringBuilderCache.GetStringAndRelease(sb));
+            var span = new ReadOnlySpan<char>(buffer, ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY);
+            return ConvertIcuTimeFormatString(span.Slice(0, span.IndexOf('\0')));
         }
 
         private int GetFirstDayOfWeek()
@@ -261,14 +258,17 @@ namespace System.Globalization
             return CultureInfo.GetUserDefaultCulture();
         }
 
-        private static string ConvertIcuTimeFormatString(string icuFormatString)
+        private static string ConvertIcuTimeFormatString(ReadOnlySpan<char> icuFormatString)
         {
-            StringBuilder sb = StringBuilderCache.Acquire(ICU_ULOC_FULLNAME_CAPACITY);
+            Debug.Assert(icuFormatString.Length < ICU_ULOC_FULLNAME_CAPACITY);
+            Span<char> result = stackalloc char[ICU_ULOC_FULLNAME_CAPACITY];
+
             bool amPmAdded = false;
+            int resultPos = 0;
 
             for (int i = 0; i < icuFormatString.Length; i++)
             {
-                switch(icuFormatString[i])
+                switch (icuFormatString[i])
                 {
                     case ':':
                     case '.':
@@ -276,27 +276,28 @@ namespace System.Globalization
                     case 'h':
                     case 'm':
                     case 's':
-                        sb.Append(icuFormatString[i]);
+                        result[resultPos++] = icuFormatString[i];
                         break;
 
                     case ' ':
                     case '\u00A0':
                         // Convert nonbreaking spaces into regular spaces
-                        sb.Append(' ');
+                        result[resultPos++] = ' ';
                         break;
 
                     case 'a': // AM/PM
                         if (!amPmAdded)
                         {
                             amPmAdded = true;
-                            sb.Append("tt");
+                            result[resultPos++] = 't';
+                            result[resultPos++] = 't';
                         }
                         break;
 
                 }
             }
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return result.Slice(0, resultPos).ToString();
         }
         
         private static string LCIDToLocaleName(int culture)
@@ -352,7 +353,7 @@ namespace System.Globalization
 
         private static string GetThreeLetterWindowsLanguageName(string cultureName)
         {
-            string langName = LocaleData.GetThreeLetterWindowsLangageName(cultureName);
+            string langName = LocaleData.GetThreeLetterWindowsLanguageName(cultureName);
             return langName == null ? "ZZZ" /* default lang name */ : langName; 
         }
 

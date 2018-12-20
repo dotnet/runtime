@@ -660,11 +660,6 @@ namespace System.Runtime.Intrinsics.X86
         public static Vector256<long> CompareGreaterThan(Vector256<long> left, Vector256<long> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// double _mm256_cvtsd_f64 (__m256d a)
-        ///   HELPER: MOVSD
-        /// </summary>
-        public static double ConvertToDouble(Vector256<double> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
         /// int _mm256_cvtsi256_si32 (__m256i a)
         ///   MOVD reg/m32, xmm
         /// </summary>
@@ -741,7 +736,7 @@ namespace System.Runtime.Intrinsics.X86
         ///   VEXTRACTI128 xmm, ymm, imm8
         /// </summary>
         public new static Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index) { throw new PlatformNotSupportedException(); }
-        // <summary>
+        /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
         ///   VEXTRACTI128 m128, ymm, imm8
         /// </summary>

@@ -5,12 +5,16 @@
 namespace System.Reflection
 {
     /// <summary>
-    /// The base class for binding algorithms used by ref="System.Reflection.MetadataLoadContext".>
+    /// The base class for binding algorithms used by <see cref="System.Reflection.MetadataLoadContext"/>.
     /// </summary>
     public abstract class MetadataAssemblyResolver
     {
         /// <summary>
-        /// The binding algorithm. It should use MetadataLoadContext.LoadFromStream(), LoadFromAssemblyPath()
+        /// The binding algorithm. This method is called when an Assembly is to be returned from a given AssemblyName.
+        /// This occurs when MetadataLoadContext.LoadAssemblyByName() is called or when a Type from one assembly has a
+        /// dependency on another assembly.
+        ///
+        /// It should use MetadataLoadContext.LoadFromStream(), LoadFromAssemblyPath()
         /// or LoadFromByteArray() to load the requested assembly and return it.
         /// </summary>
         ///<remarks>
@@ -22,7 +26,7 @@ namespace System.Reflection
         ///
         /// The handler will generally not be called more than once for the same name, unless two threads race to load the same assembly.
         /// Even in that case, one result will win and be atomically bound to the name.
-        ///
+        /// 
         /// The MetadataLoadContext intentionally performs no ref-def matching on the returned assembly as what constitutes a ref-def match is a policy.
         /// It is also the kind of arbitrary restriction that MetadataLoadContext strives to avoid.
         ///

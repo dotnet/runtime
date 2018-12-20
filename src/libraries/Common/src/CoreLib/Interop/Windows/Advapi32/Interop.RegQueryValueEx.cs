@@ -50,14 +50,5 @@ internal partial class Interop
             ref int lpType,
             [Out] char[] lpData,
             ref int lpcbData);
-
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
-        internal static extern int RegQueryValueEx(
-            SafeRegistryHandle hKey,
-            string lpValueName,
-            int[] lpReserved,
-            ref int lpType,
-            [Out]StringBuilder lpData,
-            ref int lpcbData);
     }
 }

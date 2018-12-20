@@ -1,23 +1,24 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{17DA7FB5-4370-4385-9A02-FFEF9F482903}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">$(DefineConstants);netcoreapp;STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <!-- This constant is only here for usage in $(CommonTestPath), since not all projects using these tests have been updated yet-->
+    <DefineConstants>$(DefineConstants);STREAM_MEMORY_OVERLOADS_AVAILABLE</DefineConstants>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CompressionStreamUnitTests.Deflate.cs" />
+    <Compile Include="CompressionStreamUnitTests.Gzip.cs" />
+    <Compile Include="Utilities\StripHeaderAndFooter.cs" />
+    <Compile Include="Utilities\WrappedStream.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />
     <Compile Include="ZipArchive\zip_InvalidParametersAndStrangeFiles.cs" />
     <Compile Include="ZipArchive\zip_ManualAndCompatibilityTests.cs" />
+    <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
     <Compile Include="ZipArchive\zip_ReadTests.cs" />
     <Compile Include="ZipArchive\zip_UpdateTests.cs" />
-    <Compile Include="Utilities\StripHeaderAndFooter.cs" />
-    <Compile Include="Utilities\WrappedStream.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
       <Link>Common\System\IO\PathFeatures.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\StreamSpanExtensions.netstandard.cs" Condition="'$(TargetGroup)' == 'netstandard'">
-      <Link>Common\System\IO\StreamSpanExtensions.netstandard.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
       <Link>Common\System\IO\Compression\CRC.cs</Link>
@@ -46,14 +47,6 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\CoreLib\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
-    <Compile Include="ZipArchive\zip_netcoreappTests.cs" />
-    <Compile Include="CompressionStreamUnitTests.Deflate.cs" />
-    <Compile Include="CompressionStreamUnitTests.Gzip.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp' and '$(TargetGroup)' != 'uap'">
-    <Compile Include="CompressionStreamUnitTests.NetFX.cs" />
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.6-prerelease\content\**\*.*">

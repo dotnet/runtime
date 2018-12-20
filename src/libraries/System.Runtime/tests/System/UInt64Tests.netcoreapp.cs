@@ -29,9 +29,18 @@ namespace System.Tests
         [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
         public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, ulong expected)
         {
+            ulong result;
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(ulong.TryParse(value.AsSpan(offset, count), out result));
+                Assert.Equal(expected, result);
+            }
+
             Assert.Equal(expected, ulong.Parse(value.AsSpan(offset, count), style, provider));
 
-            Assert.True(ulong.TryParse(value.AsSpan(offset, count), style, provider, out ulong result));
+            Assert.True(ulong.TryParse(value.AsSpan(offset, count), style, provider, out result));
             Assert.Equal(expected, result);
         }
 
@@ -41,10 +50,19 @@ namespace System.Tests
         {
             if (value != null)
             {
+                ulong result;
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(ulong.TryParse(value.AsSpan(), out result));
+                    Assert.Equal(0u, result);
+                }
+
                 Assert.Throws(exceptionType, () => ulong.Parse(value.AsSpan(), style, provider));
 
-                Assert.False(ulong.TryParse(value.AsSpan(), style, provider, out ulong result));
-                Assert.Equal(0, (long)result);
+                Assert.False(ulong.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(0u, result);
             }
         }
 

@@ -35,7 +35,7 @@ namespace System.Runtime.CompilerServices
             default; // coreclr's AsyncTaskMethodBuilder.Create just returns default as well
 #endif
 
-        /// <summary>Invokes <see cref="IAsyncStateMachine.MoveNext"/> on the state machine while guarding the <see cref="ExecutionContext."/></summary>
+        /// <summary>Invokes <see cref="IAsyncStateMachine.MoveNext"/> on the state machine while guarding the <see cref="ExecutionContext"/>.</summary>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

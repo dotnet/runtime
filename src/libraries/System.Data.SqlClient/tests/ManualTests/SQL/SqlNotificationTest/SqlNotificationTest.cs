@@ -39,7 +39,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         #region StartStop_Tests
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_DoubleStart_SameConnStr()
         {
             Assert.True(SqlDependency.Start(_startConnectionString), "Failed to start listener.");
@@ -51,7 +51,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             Assert.True(SqlDependency.Stop(_startConnectionString), "Failed to stop listener.");
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_DoubleStart_DifferentConnStr()
         {
             SqlConnectionStringBuilder cb = new SqlConnectionStringBuilder(_startConnectionString);
@@ -76,7 +76,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_Start_DifferentDB()
         {
             SqlConnectionStringBuilder cb = new SqlConnectionStringBuilder(_startConnectionString)
@@ -97,7 +97,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
         #region SqlDependency_Tests
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_SingleDependency_NoStart()
         {
             using (SqlConnection conn = new SqlConnection(_execConnectionString))
@@ -115,7 +115,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_SingleDependency_Stopped()
         {
             SqlDependency.Start(_startConnectionString);
@@ -137,7 +137,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_SingleDependency_AllDefaults_SqlAuth()
         {
             Assert.True(SqlDependency.Start(_startConnectionString), "Failed to start listener.");
@@ -181,7 +181,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_SingleDependency_CustomQueue_SqlAuth()
         {
             Assert.True(SqlDependency.Start(_startConnectionString, _queueName), "Failed to start listener.");
@@ -225,7 +225,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// SqlDependecy premature timeout
         /// </summary>
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void Test_SingleDependency_Timeout()
         {
             Assert.True(SqlDependency.Start(_startConnectionString), "Failed to start listener.");

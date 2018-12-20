@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Tests
 {
@@ -22,8 +23,10 @@ namespace System.IO.Tests
         public const int LongWaitTimeout = 50000;                   // ms to wait for an event that takes a longer time than the average operation
         public const int SubsequentExpectedWait = 10;               // ms to wait for checks that occur after the first.
         public const int WaitForExpectedEventTimeout_NoRetry = 3000;// ms to wait for an event that isn't surrounded by a retry.
+        public const int WaitForUnexpectedEventTimeout = 150;       // ms to wait for a non-expected event.
         public const int DefaultAttemptsForExpectedEvent = 3;       // Number of times an expected event should be retried if failing.
         public const int DefaultAttemptsForUnExpectedEvent = 2;     // Number of times an unexpected event should be retried if failing.
+        public const int RetryDelayMilliseconds = 500;              // ms to wait when retrying after failure
 
         /// <summary>
         /// Watches the Changed WatcherChangeType and unblocks the returned AutoResetEvent when a
@@ -173,13 +176,32 @@ namespace System.IO.Tests
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
-                    Thread.Sleep(500);
+                    Thread.Sleep(RetryDelayMilliseconds);
                 }
 
                 result = ExecuteAndVerifyEvents(newWatcher, expectedEvents, action, attemptsCompleted == attempts, expectedPaths, timeout);
 
                 if (cleanup != null)
                     cleanup();
+            }
+        }
+
+        /// <summary>Invokes the specified test action with retry on failure (other than assertion failure).</summary>
+        /// <param name="action">The test action.</param>
+        /// <param name="maxAttempts">The maximum number of times to attempt to run the test.</param>
+        public static void ExecuteWithRetry(Action action, int maxAttempts = DefaultAttemptsForExpectedEvent)
+        {
+            for (int retry = 0; retry < maxAttempts; retry++)
+            {
+                try
+                {
+                    action();
+                    return;
+                }
+                catch (Exception e) when (!(e is XunitException) && retry < maxAttempts - 1)
+                {
+                    Thread.Sleep(RetryDelayMilliseconds);
+                }
             }
         }
 

@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
         private readonly byte[] _hostHeaderValueBytes;
-        /// <summary>Options specialized and cached for this pool and its <see cref="_key"/>.</summary>
+        /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions _sslOptionsHttp2;
 
@@ -644,7 +644,6 @@ namespace System.Net.Http
         }
 
         /// <summary>Enqueues a waiter to the waiters list.</summary>
-        /// <param name="waiter">The waiter to add.</param>
         private TaskCompletionSourceWithCancellation<HttpConnection> EnqueueWaiter()
         {
             Debug.Assert(Monitor.IsEntered(SyncObj));

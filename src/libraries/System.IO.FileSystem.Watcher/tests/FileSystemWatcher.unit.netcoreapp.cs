@@ -4,6 +4,7 @@
 
 using System.Collections.ObjectModel;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -28,6 +29,10 @@ namespace System.IO.Tests
             watcher.Filters.Add("*.dll");
             Assert.Equal(2, watcher.Filters.Count);
             Assert.Equal(new string[] { "*.pdb", "*.dll" }, watcher.Filters);
+
+            string[] copied = new string[2];
+            watcher.Filters.CopyTo(copied, 0);
+            Assert.Equal(new string[] { "*.pdb", "*.dll" }, copied);
         }
 
         [Fact]
@@ -459,6 +464,39 @@ namespace System.IO.Tests
                 ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
                 ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
                 ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_ModifyFiltersConcurrentWithEvents()
+        {
+            DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
+            FileInfo fileOne = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+            FileInfo fileTwo = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+            FileInfo fileThree = new FileInfo(Path.Combine(directory.FullName, GetTestFileName()));
+
+            using (var watcher = new FileSystemWatcher(directory.FullName))
+            {
+                watcher.Filters.Add(fileOne.Name);
+                watcher.Filters.Add(fileTwo.Name);
+
+                var cts = new CancellationTokenSource();
+                Task modifier = Task.Run(() =>
+                {
+                    string otherFilter = Guid.NewGuid().ToString("N");
+                    while (!cts.IsCancellationRequested)
+                    {
+                        watcher.Filters.Add(otherFilter);
+                        watcher.Filters.RemoveAt(2);
+                    }
+                });
+
+                ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileOne.Create().Dispose(), cleanup: null, expectedPath: fileOne.FullName);
+                ExpectEvent(watcher, WatcherChangeTypes.Created, () => fileTwo.Create().Dispose(), cleanup: null, expectedPath: fileTwo.FullName);
+                ExpectNoEvent(watcher, WatcherChangeTypes.Created, () => fileThree.Create().Dispose(), cleanup: null, expectedPath: fileThree.FullName);
+
+                cts.Cancel();
+                modifier.Wait();
             }
         }
     }

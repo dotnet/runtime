@@ -19,7 +19,7 @@ namespace System.Reflection.Tests
                 AssemblyName name = a.GetName(copiedName: false);
                 Assert.NotNull(name);
                 string fullName = name.FullName;
-                Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
             }
         }
 
@@ -32,7 +32,7 @@ namespace System.Reflection.Tests
                 AssemblyName name = a.GetName(copiedName: true);   // Shadow-copying is irrevant for MetadataLoadContext-loaded assemblies so this parameter is ignored.
                 Assert.NotNull(name);
                 string fullName = name.FullName;
-                Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
             }
         }
 
@@ -55,7 +55,7 @@ namespace System.Reflection.Tests
             {
                 Assembly a = lc.LoadFromByteArray(TestData.s_SimpleAssemblyImage);
                 string fullName = a.FullName;
-                Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
             }
         }
 
@@ -376,7 +376,8 @@ namespace System.Reflection.Tests
         [Fact]
         public static void AssemblyGetForwardedTypes1()
         {
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            // Note this is using SimpleAssemblyResolver in order to resolve names between assemblies.
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
             {
                 Assembly upper = lc.LoadFromByteArray(TestData.s_UpperImage);
                 Assembly middle = lc.LoadFromByteArray(TestData.s_MiddleImage);
@@ -393,7 +394,8 @@ namespace System.Reflection.Tests
         [Fact]
         public static void AssemblyGetForwardedTypes2()
         {
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            // Note this is using SimpleAssemblyResolver in order to resolve names between assemblies.
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
             {
                 Assembly upper = lc.LoadFromByteArray(TestData.s_UpperImage);
                 Assembly middle = lc.LoadFromByteArray(TestData.s_MiddleImage);
@@ -413,7 +415,8 @@ namespace System.Reflection.Tests
         [Fact]
         public static void AssemblyGetForwardedTypes3()
         {
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            // Note this is using SimpleAssemblyResolver in order to resolve names between assemblies.
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
             {
                 Assembly upper = lc.LoadFromByteArray(TestData.s_UpperImage);
                 Assembly lower = lc.LoadFromByteArray(TestData.s_LowerImage);
@@ -434,6 +437,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void AssemblyWithEmbeddedResources()
         {
+            // Note this is using SimpleAssemblyResolver in order to resolve names between assemblies.
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
             {
                 Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
@@ -590,7 +594,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void CrossAssemblyTypeRefToNestedType()
         {
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
             {
                 Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithNestedTypeImage);
                 Assembly n = lc.LoadFromByteArray(TestData.s_AssemblyWithTypeRefToNestedTypeImage);

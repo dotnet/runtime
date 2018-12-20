@@ -4466,7 +4466,7 @@ namespace System.Globalization
             return s_nameIndexToNumericData[index * NUMERIC_LOCALE_DATA_COUNT_PER_ROW + (int) part];
         }
         
-        internal static string GetThreeLetterWindowsLangageName(string cultureName)
+        internal static string GetThreeLetterWindowsLanguageName(string cultureName)
         {
             int index = SearchCultureName(cultureName);
             if (index < 0)

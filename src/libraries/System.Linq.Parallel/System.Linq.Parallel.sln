@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Linq.Parallel.Tests"
 		{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD} = {BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Linq.Parallel.Performance.Tests", "tests\Performance\System.Linq.Parallel.Performance.Tests.csproj", "{11ABE2F8-4FB9-48AC-91AA-D04503059550}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Linq.Parallel.PerformanceTests", "tests\Performance\System.Linq.Parallel.PerformanceTests.csproj", "{11ABE2F8-4FB9-48AC-91AA-D04503059550}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BE28323E-327A-4E0F-B7F9-16AB7EAB59DD} = {BE28323E-327A-4E0F-B7F9-16AB7EAB59DD}
 	EndProjectSection

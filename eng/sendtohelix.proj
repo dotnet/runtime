@@ -1,0 +1,83 @@
+<Project InitialTargets="BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+  <PropertyGroup>
+    <!-- Set helix source -->
+    <HelixSourcePrefix>pr/</HelixSourcePrefix>
+    <HelixSourcePrefix Condition="'$(OfficialBuildId)' != ''">official/</HelixSourcePrefix>
+    <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/corefx</HelixSource>
+    <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
+    
+    <!-- Set helix build to build number if available -->
+    <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
+    <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
+
+    <HelixType Condition="'$(HelixType)' == ''">test/functional/cli</HelixType>
+
+    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
+    <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
+    
+    <!-- We need to enable xunit reporter so that it parses test results -->
+    <EnableXunitReporter>true</EnableXunitReporter>
+    
+    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)test-runtime-$(BuildConfiguration).zip</TestArchiveRuntimeFile>
+
+    <!-- The helix runtime payload and the tests to run -->
+    <HelixCorrelationPayload Condition="'$(HelixCorrelationPayload)' == ''">$(TestArchiveRuntimeFile)</HelixCorrelationPayload>
+    <WorkItemArchiveWildCard Condition="'$(WorkItemArchiveWildCard)' == ''">$(TestArchiveTestsRoot)**/*.zip</WorkItemArchiveWildCard>
+
+    <HelixConfiguration>$(ConfigurationGroup)</HelixConfiguration>
+    <HelixArchitecture>$(ArchGroup)</HelixArchitecture>
+
+    <!-- This property is used to show the tests results in Azure Dev Ops. By setting this property the
+    test run name will be displayed as $(BuildConfiguration)-$(HelixTargetQueue) -->
+    <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MaxRetryCount)' == ''">
+    <!-- In Windows we need a higher value due to some flakyness in Nano. Can remove when helix provides new containers model -->
+    <MaxRetryCount Condition="'$(TargetsWindows)' == 'true'">9</MaxRetryCount>
+    <MaxRetryCount Condition="'$(TargetsWindows)' != 'true'">1</MaxRetryCount>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixCommand)' == ''">
+    <!-- For windows we need to use call, since the command is going to be called from a bat script created by Helix
+    and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
+    if we don't use call, then we cause the parent script to exit, and anything after will not be executed. -->
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh $HELIX_CORRELATION_PAYLOAD</HelixCommand>
+  </PropertyGroup>
+
+  <!-- We need to include all dlls in the runtime path as inputs to make it really incremental
+  if we use the root folder, if a dll is updated, the folder's timestamp is not updated, therefore skipped. -->
+  <ItemGroup>
+    <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
+  </ItemGroup>
+
+  <Target Name="CompressRuntimeDirectory"
+          Inputs="@(_RuntimeInputs)"
+          Outputs="$(TestArchiveRuntimeFile)">
+
+    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
+    <ZipDirectory
+        SourceDirectory="$(TestHostRootPath)"
+        DestinationFile="$(TestArchiveRuntimeFile)"
+        Overwrite="true" />
+
+  </Target>
+
+  <Target Name="BuildHelixWorkItems" DependsOnTargets="CompressRuntimeDirectory">
+    <ItemGroup>
+
+      <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+
+      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(_timeoutSpan)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+  </Target>
+
+</Project>

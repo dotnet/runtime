@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Channels.T
 		{AAADA5D3-CF64-4E9D-943C-EFDC006D6366} = {AAADA5D3-CF64-4E9D-943C-EFDC006D6366}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Channels.Performance.Tests", "tests\Performance\System.Threading.Channels.Performance.Tests.csproj", "{856BC941-58C3-4568-AAF2-238349DFA53E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Channels.PerformanceTests", "tests\Performance\System.Threading.Channels.PerformanceTests.csproj", "{856BC941-58C3-4568-AAF2-238349DFA53E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{AAADA5D3-CF64-4E9D-943C-EFDC006D6366} = {AAADA5D3-CF64-4E9D-943C-EFDC006D6366}
 	EndProjectSection

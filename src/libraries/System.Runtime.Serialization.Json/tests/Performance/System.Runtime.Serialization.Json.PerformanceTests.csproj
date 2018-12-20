@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{F6836E5C-BFA0-4E92-ADEE-87E797D7C90C}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
+    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
+    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
+    <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Performance\PerformanceTestsCommon.cs" />
+    <Compile Include="DcjsPerformanceTest.cs" />
+    <Compile Include="JsonNetPerformanceTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="Newtonsoft.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\Performance\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

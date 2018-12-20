@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Primitives.T
 		{8F472B93-574C-4AEC-9D28-6C2360A55BBF} = {8F472B93-574C-4AEC-9D28-6C2360A55BBF}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Primitives.Performance.Tests", "tests\Performance\System.Drawing.Primitives.Performance.Tests.csproj", "{1BD5C9BF-D7F2-4249-AA31-43B1850A5DB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Drawing.Primitives.PerformanceTests", "tests\Performance\System.Drawing.Primitives.PerformanceTests.csproj", "{1BD5C9BF-D7F2-4249-AA31-43B1850A5DB3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8F472B93-574C-4AEC-9D28-6C2360A55BBF} = {8F472B93-574C-4AEC-9D28-6C2360A55BBF}
 	EndProjectSection

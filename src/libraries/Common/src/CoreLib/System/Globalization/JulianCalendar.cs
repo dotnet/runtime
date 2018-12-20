@@ -128,7 +128,7 @@ namespace System.Globalization
         {
             if (year == 1 && month == 1)
             {
-                // The mimimum supported Julia date is Julian 0001/01/03.
+                // The minimum supported Julia date is Julian 0001/01/03.
                 if (day < 3)
                 {
                     throw new ArgumentOutOfRangeException(null,

@@ -88,6 +88,7 @@ namespace System.Threading.Tasks.Sources
 
         /// <summary>Gets the result of the operation.</summary>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
+        [StackTraceHidden]
         public TResult GetResult(short token)
         {
             ValidateToken(token);
@@ -265,6 +266,7 @@ namespace System.Threading.Tasks.Sources
 
     internal static class ManualResetValueTaskSourceCoreShared // separated out of generic to avoid unnecessary duplication
     {
+        [StackTraceHidden]
         internal static void ThrowInvalidOperationException() => throw new InvalidOperationException();
 
         internal static readonly Action<object> s_sentinel = CompletionSentinel;

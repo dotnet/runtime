@@ -18,7 +18,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryInfoKeyW")]
         internal static extern int RegQueryInfoKey(
             SafeRegistryHandle hKey,
-            [Out]StringBuilder lpClass,
+            [Out] char[] lpClass,
             int[] lpcbClass,
             IntPtr lpReserved_MustBeZero,
             ref int lpcSubKeys,

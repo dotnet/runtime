@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9758106C-5D4E-475D-B5E7-B7ABC46B1DDA}</ProjectGuid>
@@ -31,7 +31,6 @@
     <Compile Include="System\Diagnostics\PerformanceCounterManager.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterType.cs" />
     <Compile Include="System\Diagnostics\SharedPerformanceCounter.cs" />
-    <Compile Include="System\Diagnostics\SharedUtils.cs" />
     <Compile Include="System\Diagnostics\SystemDiagnosticsSection.cs" />
     <Compile Include="System\Diagnostics\TraceInternal.cs" />
     <Compile Include="misc\EnvironmentHelpers.cs" />
@@ -64,6 +63,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.TOKEN_INFORMATION_CLASS.cs">
       <Link>Common\Interop\Windows\advapi32\Interop.TOKEN_INFORMATION_CLASS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Constants.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFileMapping.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.CreateFileMapping.cs</Link>
@@ -146,8 +148,11 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLocalMemHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLocalMemHandle.cs</Link>
     </Compile>
-  <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs">
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafePerfProviderHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Diagnostics\NetFrameworkUtils.cs">
+      <Link>Common\System\Diagnostics\NetFrameworkUtils.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">

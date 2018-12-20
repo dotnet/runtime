@@ -247,6 +247,7 @@ namespace System.Buffers
         public static bool operator !=(System.Buffers.StandardFormat left, System.Buffers.StandardFormat right) { throw null; }
         public static System.Buffers.StandardFormat Parse(System.ReadOnlySpan<char> format) { throw null; }
         public static System.Buffers.StandardFormat Parse(string format) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> format, out StandardFormat result) { throw null; }
         public override string ToString() { throw null; }
     }
 }

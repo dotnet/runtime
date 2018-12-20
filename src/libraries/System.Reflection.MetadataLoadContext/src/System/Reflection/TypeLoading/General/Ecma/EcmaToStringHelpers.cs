@@ -35,7 +35,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     return ((TypeSpecificationHandle)handle).ToTypeString(reader, typeContext);
 
                 default:
-                    Debug.Assert(false, "Invalid handle passed to ToTypeString: " + handle.GetToken().ToString("x8"));
+                    Debug.Assert(false, $"Invalid handle passed to ToTypeString: 0x{handle.GetToken():x8}");
                     return "?";
             }
         }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}</ProjectGuid>
     <OutputType>Library</OutputType>
@@ -137,6 +137,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ContentLengthWriteStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\CookieHelper.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\CreditManager.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\Http2Connection.cs" />

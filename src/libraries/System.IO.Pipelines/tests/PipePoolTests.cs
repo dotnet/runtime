@@ -83,7 +83,7 @@ namespace System.IO.Pipelines.Tests
 
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
             while (pool.CurrentlyRentedBlocks != 3)
             {
                 PipeWriter writableBuffer = pipe.Writer.WriteEmpty(writeSize);
@@ -98,13 +98,36 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public async Task AdvanceToEndReturnsAllButOneBlockIfWritingBeforeAdvance()
+        {
+            var pool = new DisposeTrackingBufferPool();
+
+            var writeSize = 512;
+
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
+            while (pool.CurrentlyRentedBlocks != 3)
+            {
+                PipeWriter writableBuffer = pipe.Writer.WriteEmpty(writeSize);
+                await writableBuffer.FlushAsync();
+            }
+
+            ReadResult readResult = await pipe.Reader.ReadAsync();
+            pipe.Writer.WriteEmpty(writeSize);
+            pipe.Reader.AdvanceTo(readResult.Buffer.End);
+            await pipe.Writer.FlushAsync();
+
+            Assert.Equal(1, pool.CurrentlyRentedBlocks);
+            Assert.Equal(2, pool.DisposedBlocks);
+        }
+
+        [Fact]
         public async Task CanWriteAfterReturningMultipleBlocks()
         {
             var pool = new DisposeTrackingBufferPool();
 
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
 
             // Write two blocks
             Memory<byte> buffer = pipe.Writer.GetMemory(writeSize);
@@ -131,7 +154,7 @@ namespace System.IO.Pipelines.Tests
         {
             var pool = new DisposeTrackingBufferPool();
 
-            var readerWriter = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
+            var readerWriter = new Pipe(CreatePipeWithInlineSchedulers(pool));
             await readerWriter.Writer.WriteAsync(new byte[] { 1 });
 
             readerWriter.Writer.Complete();
@@ -169,7 +192,7 @@ namespace System.IO.Pipelines.Tests
         public void ReturnsWriteHeadOnComplete()
         {
             var pool = new DisposeTrackingBufferPool();
-            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
             pipe.Writer.GetMemory(512);
 
             pipe.Reader.Complete();
@@ -182,7 +205,7 @@ namespace System.IO.Pipelines.Tests
         public void ReturnsWriteHeadWhenRequestingLargerBlock()
         {
             var pool = new DisposeTrackingBufferPool();
-            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
             pipe.Writer.GetMemory(512);
             pipe.Writer.GetMemory(4096);
 
@@ -199,7 +222,7 @@ namespace System.IO.Pipelines.Tests
 
             var writeSize = 512;
 
-            var pipe = new Pipe(new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false));
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
             await pipe.Writer.WriteAsync(new byte[writeSize]);
 
             pipe.Writer.GetMemory(writeSize);
@@ -209,6 +232,43 @@ namespace System.IO.Pipelines.Tests
             await pipe.Writer.FlushAsync();
 
             Assert.Equal(1, pool.CurrentlyRentedBlocks);
+        }
+
+        [Fact]
+        public async Task OnWriterCompletedCalledAfterBlocksReturned()
+        {
+            var pool = new DisposeTrackingBufferPool();
+
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
+            await pipe.Writer.WriteAsync(new byte[1]);
+
+            Assert.Equal(1, pool.CurrentlyRentedBlocks);
+
+            pipe.Reader.OnWriterCompleted((exception, o) => Assert.Equal(0, pool.CurrentlyRentedBlocks), null);
+
+            pipe.Reader.Complete();
+            pipe.Writer.Complete();
+        }
+
+        [Fact]
+        public async Task OnReaderCompletedCalledAfterBlocksReturned()
+        {
+            var pool = new DisposeTrackingBufferPool();
+
+            var pipe = new Pipe(CreatePipeWithInlineSchedulers(pool));
+            await pipe.Writer.WriteAsync(new byte[1]);
+
+            Assert.Equal(1, pool.CurrentlyRentedBlocks);
+
+            pipe.Writer.OnReaderCompleted((exception, o) => Assert.Equal(0, pool.CurrentlyRentedBlocks), null);
+
+            pipe.Writer.Complete();
+            pipe.Reader.Complete();
+        }
+
+        private static PipeOptions CreatePipeWithInlineSchedulers(DisposeTrackingBufferPool pool)
+        {
+            return new PipeOptions(pool, readerScheduler: PipeScheduler.Inline, writerScheduler: PipeScheduler.Inline, useSynchronizationContext: false);
         }
     }
 }

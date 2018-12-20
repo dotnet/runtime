@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.Tests"
 		{635F30B9-5566-4096-B772-68FAA9B00DF4} = {635F30B9-5566-4096-B772-68FAA9B00DF4}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.Performance.Tests", "tests\Performance\System.Text.Encoding.Performance.Tests.csproj", "{859C92CB-72FB-453C-A363-7CD025E29B1D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encoding.PerformanceTests", "tests\Performance\System.Text.Encoding.PerformanceTests.csproj", "{859C92CB-72FB-453C-A363-7CD025E29B1D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{635F30B9-5566-4096-B772-68FAA9B00DF4} = {635F30B9-5566-4096-B772-68FAA9B00DF4}
 	EndProjectSection

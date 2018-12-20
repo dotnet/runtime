@@ -79,7 +79,7 @@ namespace System.Reflection.Tests
         private static void VerifyInterfaces(Type type, params Type[] expected)
         {
             //Fix to initialize Reflection
-            String str = typeof(Object).Project().Name;
+            string str = typeof(Object).Project().Name;
 
             TypeInfo typeInfo = type.GetTypeInfo();
             List<Type> list = new List<Type>();

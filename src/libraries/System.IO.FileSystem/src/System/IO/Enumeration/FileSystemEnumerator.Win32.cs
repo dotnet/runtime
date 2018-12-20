@@ -28,7 +28,7 @@ namespace System.IO.Enumeration
                 ApcContext: IntPtr.Zero,
                 IoStatusBlock: out Interop.NtDll.IO_STATUS_BLOCK statusBlock,
                 FileInformation: _buffer,
-                Length: (uint)_buffer.Length,
+                Length: (uint)_bufferLength,
                 FileInformationClass: Interop.NtDll.FILE_INFORMATION_CLASS.FileFullDirectoryInformation,
                 ReturnSingleEntry: Interop.BOOLEAN.FALSE,
                 FileName: null,

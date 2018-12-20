@@ -1,0 +1,121 @@
+<Project>
+  <Import Project="..\Directory.Build.props" />
+  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
+
+  <!-- We need to import Directory.Build.targets at the beginning because there is where we import the restored tools targets, in 
+  this case we need Microsoft.DotNet.Build.Tasks.Feed targets to be imported. -->
+  <Import Project="..\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
+    <AssetManifestFileName Condition="'$(AssetsManifestFileName)' == '' AND '$(ManifestBuildId)' != ''">$(GitHubRepositoryName)-$(ManifestBuildId)</AssetManifestFileName>
+    <AssetManifestFileName Condition="'$(AssetsManifestFileName)' == ''">$(GitHubRepositoryName)</AssetManifestFileName>
+    <AssetManifestFilePath>$(ArtifactsDir)AssetManifests\$(AssetManifestFileName).xml</AssetManifestFilePath>
+
+    <PackageOutputRoot Condition="'$(PackagesOutputRoot)' == ''">$(ArtifactsDir)/packages/</PackageOutputRoot>
+    <FinalPublishPattern>$(PackageOutputRoot)*.nupkg</FinalPublishPattern>
+    <FinalPublishPrivatePattern>$(PackageOutputRoot)*Private*.nupkg</FinalPublishPrivatePattern>
+    <FinalPublishExperimentalPattern>$(PackageOutputRoot)*Experimental*.nupkg</FinalPublishExperimentalPattern>
+
+    <SymbolsOutputRoot Condition="'$(SymbolsOutputRoot)' == ''">$(PackageOutputRoot)/symbols/</SymbolsOutputRoot>
+    <SymbolsPublishPattern>$(SymbolsOutputRoot)*.nupkg</SymbolsPublishPattern>
+  </PropertyGroup>
+
+
+  <ItemGroup Condition="'$(PackagesGlob)' != ''">
+    <PackagesToPublish Include="$(PackagesGlob)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackagesGlob)' == ''">
+    <PackagesToPublish Include="$(FinalPublishPrivatePattern);$(FinalPublishExperimentalPattern)">
+      <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
+    </PackagesToPublish>
+    <PackagesToPublish Include="$(FinalPublishPattern)" Exclude="@(PackagesToPublish)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <SymbolPackagesToPublish  Include="$(SymbolsPublishPattern)">
+      <ManifestArtifactData>NonShipping=true</ManifestArtifactData>
+    </SymbolPackagesToPublish>
+
+    <PublishSymbolsDependsOn Include="SetupPublishSymbols" />
+  </ItemGroup>
+
+  <Target Name="PublishToAzureBlobFeed">
+    <Error Condition="'@(PackagesToPublish)'==''" Text="PackagesToPublish for packages is empty." />
+
+    <!-- Include Symbols when publishing to blob feed so that the manifest contains symbols and we send all the assets to BAR -->
+    <ItemGroup>
+      <PackagesToPublish Include="@(SymbolPackagesToPublish)" />
+    </ItemGroup>
+
+    <PushToBlobFeed ExpectedFeedUrl="$(ExpectedFeedUrl)"
+                    AccountKey="$(AccountKey)"
+                    ItemsToPush="@(PackagesToPublish)"
+                    Overwrite="$(PublishOverwrite)"
+                    AssetManifestPath="$(AssetManifestFilePath)"
+                    ManifestBuildId="$(ManifestBuildId)"
+                    ManifestBranch="$(ManifestBranch)"
+                    ManifestCommit="$(ManifestCommit)"
+                    ManifestRepoUri="$(ManifestRepoUri)" />
+  </Target>
+
+  <Target Name="NuGetPush">
+
+    <Error Condition="'$(NuGetSource)' == ''" Text="NuGetSource property is not defined." />
+    <Error Condition="'@(PackagesToPublish)' == ''" Text="PackagesToPublish for packages is empty." />
+
+    <PropertyGroup>
+      <DotnetCliExe Condition="'$(DotnetCliExe)' == ''">$(RepoRoot)\.dotnet\dotnet.exe</DotnetCliExe>
+      <NuGetTimeout Condition="'$(NuGetTimeout)' == ''">600</NuGetTimeout>
+
+      <NuGetPushArgsBase>nuget push</NuGetPushArgsBase>
+      <NuGetPushArgsBase>$(NuGetPushArgsBase) --source $(NuGetSource)</NuGetPushArgsBase>
+      <NuGetPushArgsBase>$(NuGetPushArgsBase) --timeout $(NuGetTimeout)</NuGetPushArgsBase>
+      <NuGetPushArgsBase Condition="'$(NuGetApiKey)'!=''">$(NuGetPushArgsBase) --api-key $(NuGetApiKey)</NuGetPushArgsBase>
+
+      <IgnorableErrorMessagesExistingPackageMessage>Overwriting existing packages is forbidden according to the package retention settings for this feed.</IgnorableErrorMessagesExistingPackageMessage>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <NuGetPushCommand Include="@(PackagesToPublish -> '$(DotnetCliExe) $(NuGetPushArgsBase) %(Identity)')">
+        <PackageToPush>%(Identity)</PackageToPush>
+      </NuGetPushCommand>
+
+      <!-- There are special failure scenarios that we want to ignore.  Those scenarios are
+           when NuGet reports a failure during a push attempt for something server or timeout related, 
+           and then gets a "Forbidden" response on the next attempt because the package "already exists".  
+           This indicates that the failure was reported, but the push was actually successful.
+      -->
+      <IgnorableErrorMessages Include="$(IgnorableErrorMessagesExistingPackageMessage)">
+        <ConditionalErrorMessage>Pushing took too long</ConditionalErrorMessage>
+      </IgnorableErrorMessages>
+      <IgnorableErrorMessages Include="$(IgnorableErrorMessagesExistingPackageMessage)">
+        <ConditionalErrorMessage>The connection with the server was terminated abnormally</ConditionalErrorMessage>
+      </IgnorableErrorMessages>
+      <IgnorableErrorMessages Include="$(IgnorableErrorMessagesExistingPackageMessage)">
+        <ConditionalErrorMessage>An existing connection was forcibly closed by the remote host</ConditionalErrorMessage>
+      </IgnorableErrorMessages>
+    </ItemGroup>
+
+    <ExecWithRetriesForNuGetPush
+      Command="%(NuGetPushCommand.Identity)"
+      MaxAttempts="$(MaxAttempts)"
+      RetryDelayBase="$(RetryDelayBase)"
+      RetryDelayConstant="$(RetryDelayConstant)"
+      IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)"
+      PackageFile="%(NuGetPushCommand.PackageToPush)"
+      PassIfIdenticalV2Feed="$(PassIfIdenticalV2Feed)" />
+  </Target>
+
+  <Target Name="SetupPublishSymbols">
+    <PropertyGroup>
+      <ConvertPortablePdbsToWindowsPdbs Condition="'$(ConvertPortablePdbsToWindowsPdbs)'==''">true</ConvertPortablePdbsToWindowsPdbs>
+    </PropertyGroup>
+
+    <Error Condition="'$(SymbolServerPath)'==''" Text="Missing property SymbolServerPath" />
+    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
+
+    <Message Importance="High" Text="Publishing %(SymbolPackagesToPublish.Identity) to $(SymbolServerPath)"/>
+  </Target>
+</Project>

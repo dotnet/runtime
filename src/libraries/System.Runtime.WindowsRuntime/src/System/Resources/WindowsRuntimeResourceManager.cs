@@ -137,9 +137,9 @@ namespace System.Resources
 
         // Returns the CultureInfo representing the first language in the list that we can construct a CultureInfo for or null if
         // no such culture exists.
-        private static CultureInfo GetBestFitCultureFromLanguageList(List<string> languages)
+        private static unsafe CultureInfo GetBestFitCultureFromLanguageList(List<string> languages)
         {
-            StringBuilder localeNameBuffer = new StringBuilder(Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
+            char* localeNameBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH]; // LOCALE_NAME_MAX_LENGTH includes null terminator
 
             for (int i = 0; i < languages.Count; i++)
             {
@@ -148,9 +148,10 @@ namespace System.Resources
                     return new CultureInfo(languages[i]);
                 }
 
-                if (Interop.Kernel32.ResolveLocaleName(languages[i], localeNameBuffer, localeNameBuffer.MaxCapacity) != 0)
+                int result = Interop.Kernel32.ResolveLocaleName(languages[i], localeNameBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH); 
+                if (result != 0)
                 {
-                    string localeName = localeNameBuffer.ToString();
+                    string localeName = new string(localeNameBuffer, 0, result - 1); // result length includes null terminator
 
                     if (WindowsRuntimeResourceManagerBase.IsValidCulture(localeName))
                     {

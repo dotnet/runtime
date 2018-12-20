@@ -98,7 +98,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
-    <TargetingPackExclusions Include="System.Collections.Immutable" />
+    <DefaultReferenceExclusions Include="System.Collections.Immutable" />
     <ReferenceFromRuntime Include="System.Collections.Immutable" />
     <Compile Include="ImmutableListTestBase.cs" />
     <Compile Include="ImmutableListTest.cs" />

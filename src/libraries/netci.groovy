@@ -71,7 +71,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
         // Set the machine affinity to windows machines
         Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
         // Publish reports
-        Utilities.addHtmlPublisher(newJob, 'artifacts/bin/tests/coverage', 'Code Coverage Report', 'index.htm')
+        Utilities.addHtmlPublisher(newJob, 'artifacts/coverage', 'Code Coverage Report', 'index.htm')
         // Archive results.
         Utilities.addArchival(newJob, '**/coverage/*,msbuild.log')
         // Timeout. Code coverage runs take longer, so we set the timeout to be longer.

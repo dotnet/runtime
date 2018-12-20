@@ -708,11 +708,11 @@ namespace System.Collections.Concurrent
             {
                 get
                 {
-                    /// _tailIndex can be decremented even while the bag is frozen, as the decrement in TryLocalPop happens prior
-                    /// to the check for _frozen.  But that's ok, as if _tailIndex is being decremented such that _headIndex becomes
-                    /// >= _tailIndex, then the queue is about to be empty.  This does mean, though, that while holding the lock,
-                    /// it is possible to observe Count == 1 but IsEmpty == true.  As such, we simply need to avoid doing any operation
-                    /// while the bag is frozen that requires those values to be consistent.
+                    // _tailIndex can be decremented even while the bag is frozen, as the decrement in TryLocalPop happens prior
+                    // to the check for _frozen.  But that's ok, as if _tailIndex is being decremented such that _headIndex becomes
+                    // >= _tailIndex, then the queue is about to be empty.  This does mean, though, that while holding the lock,
+                    // it is possible to observe Count == 1 but IsEmpty == true.  As such, we simply need to avoid doing any operation
+                    // while the bag is frozen that requires those values to be consistent.
                     return _headIndex >= _tailIndex;
                 }
             }
@@ -721,6 +721,7 @@ namespace System.Collections.Concurrent
             /// Add new item to the tail of the queue.
             /// </summary>
             /// <param name="item">The item to add.</param>
+            /// <param name="emptyToNonEmptyListTransitionCount"></param>
             internal void LocalPush(T item, ref long emptyToNonEmptyListTransitionCount)
             {
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);

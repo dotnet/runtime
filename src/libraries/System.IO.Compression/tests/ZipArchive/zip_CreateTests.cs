@@ -115,6 +115,44 @@ namespace System.IO.Compression.Tests
                 IsZipSameAsDir(s, zfolder("unicode"), ZipArchiveMode.Read, requireExplicit: true, checkTimes: true);
             }
         }
+
+        [Fact]
+        public static void CreateUncompressedArchive()
+        {
+            using (var testStream = new MemoryStream())
+            {
+                var testfilename = "testfile";
+                var testFileContent = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+                using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create))
+                {
+                    var utf8WithoutBom = new Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+                    ZipArchiveEntry newEntry = zip.CreateEntry(testfilename, CompressionLevel.NoCompression);
+                    using (var writer = new StreamWriter(newEntry.Open(), utf8WithoutBom))
+                    {
+                        writer.Write(testFileContent);
+                        writer.Flush();
+                    }
+                    byte[] fileContent = testStream.ToArray();
+                    // zip file header stores values as little-endian
+                    byte compressionMethod = fileContent[8];
+                    Assert.Equal(0, compressionMethod); // stored => 0, deflate => 8
+                    uint compressedSize = BitConverter.ToUInt32(fileContent, 18);
+                    uint uncompressedSize = BitConverter.ToUInt32(fileContent, 22);
+                    Assert.Equal(uncompressedSize, compressedSize);
+                    byte filenamelength = fileContent[26];
+                    Assert.Equal(testfilename.Length, filenamelength);
+                    string readFileName = ReadStringFromSpan(fileContent.AsSpan(30, filenamelength));
+                    Assert.Equal(testfilename, readFileName);
+                    string readFileContent = ReadStringFromSpan(fileContent.AsSpan(30 + filenamelength, testFileContent.Length));
+                    Assert.Equal(testFileContent, readFileContent);
+                }
+            }
+        }
+
+        private static string ReadStringFromSpan(Span<byte> input)
+        {
+            return Text.Encoding.UTF8.GetString(input.ToArray());
+        }
     }
 }
 

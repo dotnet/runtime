@@ -249,9 +249,9 @@ namespace System.Diagnostics
                             case Interop.Errors.ERROR_INVALID_HANDLE:
                             case Interop.Advapi32.RPCStatus.RPC_S_SERVER_UNAVAILABLE:
                                 Init();
-                                goto case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT;
+                                goto case Interop.Kernel32.WAIT_TIMEOUT;
 
-                            case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT:
+                            case Interop.Kernel32.WAIT_TIMEOUT:
                             case Interop.Errors.ERROR_NOT_READY:
                             case Interop.Errors.ERROR_LOCK_FAILED:
                             case Interop.Errors.ERROR_BUSY:

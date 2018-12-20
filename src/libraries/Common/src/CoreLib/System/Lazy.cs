@@ -218,7 +218,7 @@ namespace System
         /// </summary>
         /// <remarks>
         /// An instance created with this constructor should be usable by multiple threads
-        //  concurrently.
+        /// concurrently.
         /// </remarks>
         public Lazy(T value)
         {
@@ -499,7 +499,7 @@ namespace System
         /// </exception>
         /// <remarks>
         /// If <see cref="IsValueCreated"/> is false, accessing <see cref="Value"/> will force initialization.
-        /// Please <see cref="System.Threading.LazyThreadSafetyMode"> for more information on how <see cref="T:System.Threading.Lazy{T}"/> will behave if an exception is thrown
+        /// Please <see cref="System.Threading.LazyThreadSafetyMode"/> for more information on how <see cref="T:System.Threading.Lazy{T}"/> will behave if an exception is thrown
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]

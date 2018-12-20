@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serializatio
 		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9} = {AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Json.Performance.Tests", "tests\Performance\System.Runtime.Serialization.Json.Performance.Tests.csproj", "{F6836E5C-BFA0-4E92-ADEE-87E797D7C90C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.Serialization.Json.PerformanceTests", "tests\Performance\System.Runtime.Serialization.Json.PerformanceTests.csproj", "{F6836E5C-BFA0-4E92-ADEE-87E797D7C90C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{AAFFA8F4-BDA9-4107-A650-9014F64EDAE9} = {AAFFA8F4-BDA9-4107-A650-9014F64EDAE9}
 	EndProjectSection

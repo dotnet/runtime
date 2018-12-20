@@ -323,7 +323,7 @@ namespace System
         }
 
         /// <summary>
-        /// Helper function for retrieving a TimeZoneInfo object by <time_zone_name>.
+        /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
         /// This function wraps the logic necessary to keep the private
         /// SystemTimeZones cache in working order
         ///
@@ -521,7 +521,7 @@ namespace System
 
         /// <summary>
         /// Helper function that takes:
-        ///  1. A string representing a <time_zone_name> registry key name.
+        ///  1. A string representing a time_zone_name registry key name.
         ///  2. A REG_TZI_FORMAT struct containing the default rule.
         ///  3. An AdjustmentRule[] out-parameter.
         /// </summary>
@@ -806,22 +806,21 @@ namespace System
 
             try
             {
-                StringBuilder fileMuiPath = StringBuilderCache.Acquire(Interop.Kernel32.MAX_PATH);
-                fileMuiPath.Length = Interop.Kernel32.MAX_PATH;
-                int fileMuiPathLength = Interop.Kernel32.MAX_PATH;
-                int languageLength = 0;
-                long enumerator = 0;
-
-                bool succeeded = Interop.Kernel32.GetFileMUIPath(
-                                        Interop.Kernel32.MUI_PREFERRED_UI_LANGUAGES,
-                                        filePath, null /* language */, ref languageLength,
-                                        fileMuiPath, ref fileMuiPathLength, ref enumerator);
-                if (!succeeded)
+                unsafe
                 {
-                    StringBuilderCache.Release(fileMuiPath);
-                    return string.Empty;
+                    char* fileMuiPath = stackalloc char[Interop.Kernel32.MAX_PATH];
+                    int fileMuiPathLength = Interop.Kernel32.MAX_PATH;
+                    int languageLength = 0;
+                    long enumerator = 0;
+
+                    bool succeeded = Interop.Kernel32.GetFileMUIPath(
+                                            Interop.Kernel32.MUI_PREFERRED_UI_LANGUAGES,
+                                            filePath, null /* language */, ref languageLength,
+                                            fileMuiPath, ref fileMuiPathLength, ref enumerator);
+                    return succeeded ?
+                        TryGetLocalizedNameByNativeResource(new string(fileMuiPath, 0, fileMuiPathLength), resourceId) :
+                        string.Empty;
                 }
-                return TryGetLocalizedNameByNativeResource(StringBuilderCache.GetStringAndRelease(fileMuiPath), resourceId);
             }
             catch (EntryPointNotFoundException)
             {
@@ -836,26 +835,23 @@ namespace System
         /// "resource.dll" is a language-specific resource DLL.
         /// If the localized resource DLL exists, LoadString(resource) is returned.
         /// </summary>
-        private static string TryGetLocalizedNameByNativeResource(string filePath, int resource)
+        private static unsafe string TryGetLocalizedNameByNativeResource(string filePath, int resource)
         {
-            using (SafeLibraryHandle handle =
-                       Interop.Kernel32.LoadLibraryEx(filePath, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_AS_DATAFILE))
+            using (SafeLibraryHandle handle = Interop.Kernel32.LoadLibraryEx(filePath, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_AS_DATAFILE))
             {
                 if (!handle.IsInvalid)
                 {
                     const int LoadStringMaxLength = 500;
+                    char* localizedResource = stackalloc char[LoadStringMaxLength];
 
-                    StringBuilder localizedResource = StringBuilderCache.Acquire(LoadStringMaxLength);
-
-                    int result = Interop.User32.LoadString(handle, resource,
-                                     localizedResource, LoadStringMaxLength);
-
-                    if (result != 0)
+                    int charsWritten = Interop.User32.LoadString(handle, (uint)resource, localizedResource, LoadStringMaxLength);
+                    if (charsWritten != 0)
                     {
-                        return StringBuilderCache.GetStringAndRelease(localizedResource);
+                        return new string(localizedResource, 0, charsWritten);
                     }
                 }
             }
+
             return string.Empty;
         }
 
@@ -909,7 +905,7 @@ namespace System
         }
 
         /// <summary>
-        /// Helper function that takes a string representing a <time_zone_name> registry key name
+        /// Helper function that takes a string representing a time_zone_name registry key name
         /// and returns a TimeZoneInfo instance.
         /// </summary>
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo value, out Exception e)

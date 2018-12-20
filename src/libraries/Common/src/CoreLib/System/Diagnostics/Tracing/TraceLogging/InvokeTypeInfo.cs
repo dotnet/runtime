@@ -16,9 +16,6 @@ namespace System.Diagnostics.Tracing
     /// for arbitrary types. It writes all public instance properties of
     /// the type.
     /// </summary>
-    /// <typeparam name="ContainerType">
-    /// Type from which to read values.
-    /// </typeparam>
     internal sealed class InvokeTypeInfo : TraceLoggingTypeInfo
     {
         internal readonly PropertyAnalysis[] properties;

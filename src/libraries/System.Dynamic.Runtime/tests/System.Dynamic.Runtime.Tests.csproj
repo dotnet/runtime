@@ -6,8 +6,8 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" />
-    <AdditionalCodeCoverageAssemblies Include="System.Linq.Expressions" />
+    <AssembliesBeingTested Include="Microsoft.CSharp" />
+    <AssembliesBeingTested Include="System.Linq.Expressions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CallInfoTests.cs" />

@@ -1,6 +1,6 @@
 # System.Private.CoreLib Shared Sources
 
-This directory contains the shared sources for System.Private.CoreLib. These are shared between [dotnet/corert](https://github.com/dotnet/corert/tree/master/src/System.Private.CoreLib/shared), [dotnet/coreclr](https://github.com/dotnet/coreclr/tree/master/src/mscorlib/shared) and [dotnet/corefx](https://github.com/dotnet/corefx/tree/master/src/Common/src/CoreLib).
+This directory contains the shared sources for System.Private.CoreLib. These are shared between [dotnet/corert](https://github.com/dotnet/corert/tree/master/src/System.Private.CoreLib/shared), [dotnet/coreclr](https://github.com/dotnet/coreclr/tree/master/src/System.Private.CoreLib/shared) and [dotnet/corefx](https://github.com/dotnet/corefx/tree/master/src/Common/src/CoreLib).
 
 The sources are synchronized with a mirroring tool that watches for new commits on either side and creates new pull requests (as @dotnet-bot) in the other repository.
 

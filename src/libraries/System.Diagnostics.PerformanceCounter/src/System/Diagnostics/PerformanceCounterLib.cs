@@ -147,7 +147,7 @@ namespace System.Diagnostics
                                 int index3 = 0;
                                 int previousCounterIndex = -1;
                                 //Need to filter out counters that are repeated, some providers might
-                                //return several adyacent copies of the same counter.
+                                //return several adjacent copies of the same counter.
                                 for (int index2 = 0; index2 < newCategoryEntry.CounterIndexes.Length; ++index2)
                                 {
                                     ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
@@ -1248,7 +1248,7 @@ namespace System.Diagnostics
                 res = 0;
 
             if (res != 0)
-                throw SharedUtils.CreateSafeWin32Exception(res);
+                throw new Win32Exception(res);
         }
 
         internal static void UnregisterCategory(string categoryName)
@@ -1335,9 +1335,9 @@ namespace System.Diagnostics
                         case Interop.Errors.ERROR_INVALID_HANDLE:
                         case Interop.Advapi32.RPCStatus.RPC_S_SERVER_UNAVAILABLE:
                             Init();
-                            goto case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT;
+                            goto case Interop.Kernel32.WAIT_TIMEOUT;
 
-                        case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT:
+                        case Interop.Kernel32.WAIT_TIMEOUT:
                         case Interop.Errors.ERROR_NOT_READY:
                         case Interop.Errors.ERROR_LOCK_FAILED:
                         case Interop.Errors.ERROR_BUSY:
@@ -1354,7 +1354,7 @@ namespace System.Diagnostics
                             break;
 
                         default:
-                            throw SharedUtils.CreateSafeWin32Exception(error);
+                            throw new Win32Exception(error);
                     }
                 }
                 catch (InvalidCastException e)
@@ -1363,7 +1363,7 @@ namespace System.Diagnostics
                 }
             }
 
-            throw SharedUtils.CreateSafeWin32Exception(error);
+            throw new Win32Exception(error);
         }
 
     }

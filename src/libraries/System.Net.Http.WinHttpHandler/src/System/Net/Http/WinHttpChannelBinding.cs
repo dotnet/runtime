@@ -21,7 +21,7 @@ namespace System.Net.Http
             IntPtr data = IntPtr.Zero;
             uint dataSize = 0;
 
-            if (!Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, null, ref dataSize))
+            if (!Interop.WinHttp.WinHttpQueryOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_SERVER_CBT, IntPtr.Zero, ref dataSize))
             {
                 if (Marshal.GetLastWin32Error() == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER)
                 {

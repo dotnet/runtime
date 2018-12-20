@@ -111,7 +111,7 @@ namespace System.Reflection.TypeLoading.Ecma
                         string moduleName = ((ModuleReferenceHandle)scope).GetModuleReference(module.Reader).Name.GetString(module.Reader);
                         RoModule targetModule = module.GetRoAssembly().GetRoModule(moduleName);
                         if (targetModule == null)
-                            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_TypeRefModuleNotInManifest, module.Assembly.FullName, handle.GetToken().ToString("x8")));
+                            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_TypeRefModuleNotInManifest, module.Assembly.FullName, $"0x{handle.GetToken():x8}"));
 
                         RoDefinitionType type = targetModule.GetTypeCore(ns, name, ignoreCase: false, out Exception e);
                         if (type == null)
@@ -120,7 +120,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     }
 
                 default:
-                    throw new BadImageFormatException(SR.Format(SR.BadImageFormat_TypeRefBadScopeType, module.Assembly.FullName, handle.GetToken().ToString("x8")));
+                    throw new BadImageFormatException(SR.Format(SR.BadImageFormat_TypeRefBadScopeType, module.Assembly.FullName, $"0x{handle.GetToken():x8}"));
             }
         }
 

@@ -18,7 +18,7 @@ namespace System.Reflection.Tests
                 Assert.NotNull(a);
 
                 string fullName = a.GetName().FullName;
-                Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
 
                 Guid mvid = a.ManifestModule.ModuleVersionId;
                 Assert.Equal(TestData.s_SimpleAssemblyMvid, mvid);
@@ -38,7 +38,7 @@ namespace System.Reflection.Tests
                     Assert.NotNull(a);
 
                     string fullName = a.GetName().FullName;
-                    Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                    Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
 
                     Guid mvid = a.ManifestModule.ModuleVersionId;
                     Assert.Equal(TestData.s_SimpleAssemblyMvid, mvid);
@@ -58,7 +58,7 @@ namespace System.Reflection.Tests
                 Assert.NotNull(a);
 
                 string fullName = a.GetName().FullName;
-                Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
 
                 Guid mvid = a.ManifestModule.ModuleVersionId;
                 Assert.Equal(TestData.s_SimpleAssemblyMvid, mvid);
@@ -79,7 +79,7 @@ namespace System.Reflection.Tests
                     Assert.NotNull(a);
 
                     string fullName = a.GetName().FullName;
-                    Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                    Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
 
                     Guid mvid = a.ManifestModule.ModuleVersionId;
                     Assert.Equal(TestData.s_SimpleAssemblyMvid, mvid);
@@ -102,7 +102,7 @@ namespace System.Reflection.Tests
                 Assert.NotNull(a);
 
                 string fullName = a.GetName().FullName;
-                Assert.Equal(TestData.s_SimpleAssemblyName, fullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, fullName);
 
                 Guid mvid = a.ManifestModule.ModuleVersionId;
                 Assert.Equal(TestData.s_SimpleAssemblyMvid, mvid);
@@ -114,16 +114,17 @@ namespace System.Reflection.Tests
         [Fact]
         public static void LoadFromAssemblyName()
         {
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            // Note this is using SimpleAssemblyResolver in order to resolve LoadFromAssemblyName.
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
             {
                 Stream peStream = new MemoryStream(TestData.s_SimpleAssemblyImage);
                 Assembly a = lc.LoadFromStream(peStream);
                 Assert.NotNull(a);
 
-                Assembly a1 = lc.LoadFromAssemblyName(TestData.s_SimpleAssemblyName);
+                Assembly a1 = lc.LoadFromAssemblyName(TestData.s_SimpleAssemblyFullName);
                 Assert.Equal(a, a1);
 
-                Assembly a2 = lc.LoadFromAssemblyName(new AssemblyName(TestData.s_SimpleAssemblyName));
+                Assembly a2 = lc.LoadFromAssemblyName(new AssemblyName(TestData.s_SimpleAssemblyFullName));
                 Assert.Equal(a, a2);
             }
         }
@@ -133,16 +134,16 @@ namespace System.Reflection.Tests
         {
             using (TempFile tf1 = TempFile.Create(TestData.s_SimpleAssemblyImage))
             using (TempFile tf2 = TempFile.Create(TestData.s_SimpleAssemblyImage))
-            using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
+            // Note this is using SimpleAssemblyResolver in order to resolve LoadFromAssemblyName.
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
             {
-                // As long as the MVID matches, you can load the same assembly from multiple locations.
                 Assembly a = lc.LoadFromByteArray(TestData.s_SimpleAssemblyImage);
                 Assert.NotNull(a);
 
                 Assembly a1 = lc.LoadFromByteArray(TestData.s_SimpleAssemblyImage);
                 Assert.Equal(a, a1);
 
-                Assembly a2 = lc.LoadFromAssemblyName(new AssemblyName(TestData.s_SimpleAssemblyName));
+                Assembly a2 = lc.LoadFromAssemblyName(new AssemblyName(TestData.s_SimpleAssemblyFullName));
                 Assert.Equal(a, a2);
 
                 Assembly a3 = lc.LoadFromAssemblyPath(tf1.Path);
@@ -159,7 +160,7 @@ namespace System.Reflection.Tests
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
             {
                 Assembly a = lc.LoadFromByteArray(TestData.s_SimpleAssemblyImage);
-                Assert.Equal(TestData.s_SimpleAssemblyName, a.GetName().FullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, a.GetName().FullName);
                 Guid mvid = a.ManifestModule.ModuleVersionId;
                 Assert.Equal(TestData.s_SimpleAssemblyMvid, mvid);
             }
@@ -167,7 +168,7 @@ namespace System.Reflection.Tests
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
             {
                 Assembly a = lc.LoadFromByteArray(TestData.s_SimpleAssemblyRecompiledImage);
-                Assert.Equal(TestData.s_SimpleAssemblyName, a.GetName().FullName);
+                Assert.Equal(TestData.s_SimpleAssemblyFullName, a.GetName().FullName);
                 Guid mvid = a.ManifestModule.ModuleVersionId;
                 Assert.Equal(TestData.s_SimpleAssemblyRecompiledMvid, mvid);
             }

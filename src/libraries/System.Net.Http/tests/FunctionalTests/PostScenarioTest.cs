@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -147,11 +148,20 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: false);
         }
 
+        public static IEnumerable<object[]> EchoServersAndLargeContentSizes()
+        {
+            foreach (Uri uri in Configuration.Http.EchoServerList)
+            {
+                yield return new object[] { uri, 5 * 1024 };
+                yield return new object[] { uri, 63 * 1024 };
+                yield return new object[] { uri, 129 * 1024 };
+            }
+        }
+
         [OuterLoop("Uses external server")]
         [Theory]
-        [InlineData(5 * 1024)]
-        [InlineData(63 * 1024)]
-        public async Task PostLargeContentUsingContentLengthSemantics_Success(int contentLength)
+        [MemberData(nameof(EchoServersAndLargeContentSizes))]
+        public async Task PostLargeContentUsingContentLengthSemantics_Success(Uri serverUri, int contentLength)
         {
             var rand = new Random(42);
             var sb = new StringBuilder(contentLength);
@@ -161,7 +171,7 @@ namespace System.Net.Http.Functional.Tests
             }
             string content = sb.ToString();
 
-            await PostHelper(Configuration.Http.RemoteEchoServer, content, new StringContent(content),
+            await PostHelper(serverUri, content, new StringContent(content),
                 useContentLengthUpload: true, useChunkedEncodingUpload: false);
         }
 

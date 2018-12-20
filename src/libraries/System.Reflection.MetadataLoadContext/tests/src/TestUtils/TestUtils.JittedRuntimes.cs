@@ -66,5 +66,10 @@ namespace System.Reflection.Tests
         {
             return typeof(object).Assembly.Location;
         }
+
+        public static string GetNameOfCoreAssembly()
+        {
+            return typeof(object).Assembly.GetName().Name;
+        }
     }
 }

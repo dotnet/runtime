@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.Functional.
 		{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE} = {1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.Performance.Tests", "tests\Performance\System.Net.Http.Performance.Tests.csproj", "{981FC867-9071-444D-9388-BC5826609F76}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Http.PerformanceTests", "tests\Performance\System.Net.Http.PerformanceTests.csproj", "{981FC867-9071-444D-9388-BC5826609F76}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1D422B1D-D7C4-41B9-862D-EB3D98DF37DE} = {1D422B1D-D7C4-41B9-862D-EB3D98DF37DE}
 	EndProjectSection

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>System.Net.Primitives</AssemblyName>
     <OutputType>Library</OutputType>
@@ -29,11 +29,9 @@
     <Compile Include="System\Net\IPAddress.cs" />
     <Compile Include="System\Net\IPAddressParser.cs" />
     <Compile Include="System\Net\IPEndPoint.cs" />
-    <Compile Include="System\Net\IPv4AddressHelper.cs" />
     <Compile Include="$(CommonPath)\System\Net\IPv4AddressHelper.Common.cs">
       <Link>System\Net\IPv4AddressHelper.Common.cs</Link>
     </Compile>
-    <Compile Include="System\Net\IPv6AddressHelper.cs" />
     <Compile Include="$(CommonPath)\System\Net\IPv6AddressHelper.Common.cs">
       <Link>System\Net\IPv6AddressHelper.Common.cs</Link>
     </Compile>

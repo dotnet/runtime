@@ -211,7 +211,7 @@ internal static partial class Interop
         }
 
         /// <summary>
-        ///     Derive key material from a secret agreeement using the TLS KDF
+        ///     Derive key material from a secret agreement using the TLS KDF
         /// </summary>
         internal static byte[] DeriveKeyMaterialTls(
             SafeNCryptSecretHandle secretAgreement,

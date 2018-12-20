@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Buffers;
 using System.Text;
 
 internal static partial class Interop
@@ -13,39 +15,33 @@ internal static partial class Interop
     /// increasing buffer until the size is big enough.
     /// </summary>
     internal static bool CallStringMethod<TArg1, TArg2, TArg3>(
-        Func<TArg1, TArg2, TArg3, StringBuilder, Interop.Globalization.ResultCode> interopCall,
-        TArg1 arg1,
-        TArg2 arg2,
-        TArg3 arg3,
+        SpanFunc<char, TArg1, TArg2, TArg3, Interop.Globalization.ResultCode> interopCall,
+        TArg1 arg1, TArg2 arg2, TArg3 arg3,
         out string result)
     {
-        const int initialStringSize = 80;
-        const int maxDoubleAttempts = 5;
+        const int InitialSize = 256; // arbitrary stack allocation size
+        const int MaxHeapSize = 1280; // max from previous version of the code, starting at 80 and doubling four times
 
-        StringBuilder stringBuilder = StringBuilderCache.Acquire(initialStringSize);
+        Span<char> buffer = stackalloc char[InitialSize];
+        Interop.Globalization.ResultCode resultCode = interopCall(buffer, arg1, arg2, arg3);
 
-        for (int i = 0; i < maxDoubleAttempts; i++)
+        if (resultCode == Interop.Globalization.ResultCode.Success)
         {
-            Interop.Globalization.ResultCode resultCode = interopCall(arg1, arg2, arg3, stringBuilder);
+            result = buffer.Slice(0, buffer.IndexOf('\0')).ToString();
+            return true;
+        }
 
-            if (resultCode == Interop.Globalization.ResultCode.Success)
+        if (resultCode == Interop.Globalization.ResultCode.InsufficentBuffer)
+        {
+            // Increase the string size and try again
+            buffer = new char[MaxHeapSize];
+            if (interopCall(buffer, arg1, arg2, arg3) == Interop.Globalization.ResultCode.Success)
             {
-                result = StringBuilderCache.GetStringAndRelease(stringBuilder);
+                result = buffer.Slice(0, buffer.IndexOf('\0')).ToString();
                 return true;
-            }
-            else if (resultCode == Interop.Globalization.ResultCode.InsufficentBuffer)
-            {
-                // increase the string size and loop
-                stringBuilder.EnsureCapacity(stringBuilder.Capacity * 2);
-            }
-            else
-            {
-                // if there is an unknown error, don't proceed
-                break;
             }
         }
 
-        StringBuilderCache.Release(stringBuilder);
         result = null;
         return false;
     }

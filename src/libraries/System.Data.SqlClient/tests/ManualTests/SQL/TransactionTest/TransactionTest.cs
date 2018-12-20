@@ -8,7 +8,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class TransactionTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void TestMain()
         {
             new TransactionTestWorker((new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString).StartTest();

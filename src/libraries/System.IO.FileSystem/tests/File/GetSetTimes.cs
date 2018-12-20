@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -21,7 +22,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
         {
-            // On Linux, we synthesize CreationTime from the oldest of statuc changed time and write time
+            // On Linux, we synthesize CreationTime from the oldest of status changed time and write time
             //  if birth time is not available. So WriteTime should never be earlier.
 
             // Set different values for all three
@@ -32,6 +33,27 @@ namespace System.IO.Tests
 
             // Assert.InRange is inclusive.
             Assert.InRange(File.GetCreationTimeUtc(path), DateTime.MinValue, File.GetLastWriteTimeUtc(path));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture()
+        {
+            // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
+            // Changing the CreationTime, updates mtime and causes ctime to change to the current time.
+            // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
+
+            string path = GetTestFilePath();
+            File.WriteAllText(path, "");
+
+            // Set the creation time to a value in the past that is between ctime and now.
+            await Task.Delay(600);
+            DateTime newCreationTimeUTC = System.DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(300));
+            File.SetCreationTimeUtc(path, newCreationTimeUTC);
+
+            Assert.Equal(newCreationTimeUTC, File.GetLastWriteTimeUtc(path));
+
+            Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(path));
         }
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)

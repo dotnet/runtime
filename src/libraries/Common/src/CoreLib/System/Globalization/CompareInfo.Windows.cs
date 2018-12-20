@@ -4,9 +4,9 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Security;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -327,37 +327,13 @@ namespace System.Globalization
             Debug.Assert(source != null);
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
+            Debug.Assert((options & CompareOptions.Ordinal) == 0);
 
-            if (target.Length == 0)
+            int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options), source, startIndex, count,
+                                                            target, 0, target.Length, matchLengthPtr);
+            if (retValue >= 0)
             {
-                if (matchLengthPtr != null)
-                    *matchLengthPtr = 0;
-                return startIndex;
-            }
-
-            if (source.Length == 0)
-            {
-                return -1;
-            }
-
-            if ((options & CompareOptions.Ordinal) != 0)
-            {
-                int retValue = FastIndexOfString(source, target, startIndex, count, target.Length, findLastIndex: false);
-                if (retValue >= 0)
-                {
-                    if (matchLengthPtr != null)
-                        *matchLengthPtr = target.Length;
-                }
-                return retValue;
-            }
-            else
-            {
-                int retValue = FindString(FIND_FROMSTART | (uint)GetNativeCompareFlags(options), source, startIndex, count,
-                                                               target, 0, target.Length, matchLengthPtr);
-                if (retValue >= 0)
-                {
-                    return retValue + startIndex;
-                }
+                return retValue + startIndex;
             }
 
             return -1;
@@ -388,7 +364,7 @@ namespace System.Globalization
 
             if ((options & CompareOptions.Ordinal) != 0)
             {
-                return FastIndexOfString(source, target, startIndex, count, target.Length, findLastIndex: true);
+                return FastLastIndexOfString(source, target, startIndex, count, target.Length);
             }
             else
             {
@@ -462,75 +438,44 @@ namespace System.Globalization
         private const int FIND_FROMSTART = 0x00400000;
         private const int FIND_FROMEND = 0x00800000;
 
-        // TODO: Instead of this method could we just have upstack code call IndexOfOrdinal with ignoreCase = false?
-        private static unsafe int FastIndexOfString(string source, string target, int startIndex, int sourceCount, int targetCount, bool findLastIndex)
+        // TODO: Instead of this method could we just have upstack code call LastIndexOfOrdinal with ignoreCase = false?
+        private static unsafe int FastLastIndexOfString(string source, string target, int startIndex, int sourceCount, int targetCount)
         {
             int retValue = -1;
 
-            int sourceStartIndex = findLastIndex ? startIndex - sourceCount + 1 : startIndex;
+            int sourceStartIndex = startIndex - sourceCount + 1;
 
             fixed (char* pSource = source, spTarget = target)
             {
                 char* spSubSource = pSource + sourceStartIndex;
 
-                if (findLastIndex)
+                int endPattern = sourceCount - targetCount;
+                if (endPattern < 0)
+                    return -1;
+
+                Debug.Assert(target.Length >= 1);
+                char patternChar0 = spTarget[0];
+                for (int ctrSrc = endPattern; ctrSrc >= 0; ctrSrc--)
                 {
-                    int startPattern = (sourceCount - 1) - targetCount + 1;
-                    if (startPattern < 0)
-                        return -1;
+                    if (spSubSource[ctrSrc] != patternChar0)
+                        continue;
 
-                    char patternChar0 = spTarget[0];
-                    for (int ctrSrc = startPattern; ctrSrc >= 0; ctrSrc--)
+                    int ctrPat;
+                    for (ctrPat = 1; ctrPat < targetCount; ctrPat++)
                     {
-                        if (spSubSource[ctrSrc] != patternChar0)
-                            continue;
-
-                        int ctrPat;
-                        for (ctrPat = 1; ctrPat < targetCount; ctrPat++)
-                        {
-                            if (spSubSource[ctrSrc + ctrPat] != spTarget[ctrPat])
-                                break;
-                        }
-                        if (ctrPat == targetCount)
-                        {
-                            retValue = ctrSrc;
+                        if (spSubSource[ctrSrc + ctrPat] != spTarget[ctrPat])
                             break;
-                        }
                     }
-
-                    if (retValue >= 0)
+                    if (ctrPat == targetCount)
                     {
-                        retValue += startIndex - sourceCount + 1;
+                        retValue = ctrSrc;
+                        break;
                     }
                 }
-                else
+
+                if (retValue >= 0)
                 {
-                    int endPattern = (sourceCount - 1) - targetCount + 1;
-                    if (endPattern < 0)
-                        return -1;
-
-                    char patternChar0 = spTarget[0];
-                    for (int ctrSrc = 0; ctrSrc <= endPattern; ctrSrc++)
-                    {
-                        if (spSubSource[ctrSrc] != patternChar0)
-                            continue;
-                        int ctrPat;
-                        for (ctrPat = 1; ctrPat < targetCount; ctrPat++)
-                        {
-                            if (spSubSource[ctrSrc + ctrPat] != spTarget[ctrPat])
-                                break;
-                        }
-                        if (ctrPat == targetCount)
-                        {
-                            retValue = ctrSrc;
-                            break;
-                        }
-                    }
-
-                    if (retValue >= 0)
-                    {
-                        retValue += startIndex;
-                    }
+                    retValue += startIndex - sourceCount + 1;
                 }
             }
 

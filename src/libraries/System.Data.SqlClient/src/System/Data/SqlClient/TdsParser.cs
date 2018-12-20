@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Buffers;
 using System.Data.Common;
 using System.Data.Sql;
 using System.Data.SqlTypes;
@@ -136,7 +137,7 @@ namespace System.Data.SqlClient
         internal TdsParser(bool MARS, bool fAsynchronous)
         {
             _fMARS = MARS; // may change during Connect to pre Yukon servers
-            
+
             _physicalStateObj = TdsParserStateObjectFactory.Singleton.CreateTdsParserStateObject(this);
         }
 
@@ -388,7 +389,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(retCode == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SniGetConnectionId");
 
                 SendPreLoginHandshake(instanceName, encrypt);
-                status = ConsumePreLoginHandshake(encrypt, trustServerCert, integratedSecurity, out marsCapable, out _connHandler._fedAuthRequired); 
+                status = ConsumePreLoginHandshake(encrypt, trustServerCert, integratedSecurity, out marsCapable, out _connHandler._fedAuthRequired);
 
                 // Don't need to check for Sphinx failure, since we've already consumed
                 // one pre-login packet and know we are connecting to Shiloh.
@@ -424,7 +425,7 @@ namespace System.Data.SqlClient
 
             // create a new packet encryption changes the internal packet size
             _physicalStateObj.ClearAllWritePackets();
-            
+
         }
 
         internal void EnableMars()
@@ -434,7 +435,7 @@ namespace System.Data.SqlClient
                 // Cache physical stateObj and connection.
                 _pMarsPhysicalConObj = _physicalStateObj;
 
-                if(TdsParserStateObjectFactory.UseManagedSNI) _pMarsPhysicalConObj.IncrementPendingCallbacks();
+                if (TdsParserStateObjectFactory.UseManagedSNI) _pMarsPhysicalConObj.IncrementPendingCallbacks();
 
                 uint info = 0;
                 uint error = _pMarsPhysicalConObj.EnableMars(ref info);
@@ -658,7 +659,7 @@ namespace System.Data.SqlClient
             _physicalStateObj.WritePacket(TdsEnums.HARDFLUSH);
         }
 
-        private PreLoginHandshakeStatus ConsumePreLoginHandshake(bool encrypt, bool trustServerCert, bool integratedSecurity, out bool marsCapable, out bool fedAuthRequired )
+        private PreLoginHandshakeStatus ConsumePreLoginHandshake(bool encrypt, bool trustServerCert, bool integratedSecurity, out bool marsCapable, out bool fedAuthRequired)
         {
             marsCapable = _fMARS; // Assign default value
             fedAuthRequired = false;
@@ -802,7 +803,7 @@ namespace System.Data.SqlClient
                             }
 
                             WaitForSSLHandShakeToComplete(ref error);
-                            
+
                             // create a new packet encryption changes the internal packet size
                             _physicalStateObj.ClearAllWritePackets();
                         }
@@ -1149,7 +1150,7 @@ namespace System.Data.SqlClient
             Debug.Assert(SniContext.Undefined != stateObj.DebugOnlyCopyOfSniContext || ((_fMARS) && ((_state == TdsParserState.Closed) || (_state == TdsParserState.Broken))), "SniContext must not be None");
 #endif
             SNIErrorDetails details = GetSniErrorDetails();
-            
+
             if (details.sniErrorNumber != 0)
             {
                 // handle special SNI error codes that are converted into exception which is not a SqlException.
@@ -1419,9 +1420,14 @@ namespace System.Data.SqlClient
         //
         internal void WriteFloat(float v, TdsParserStateObject stateObj)
         {
+#if netcoreapp // BitConverter.TryGetBytes is only availble in netcoreapp 2.1> at this time, review support when changing
+            Span<byte> bytes = stackalloc byte[sizeof(float)];
+            BitConverter.TryWriteBytes(bytes, v);
+            stateObj.WriteByteSpan(bytes);
+#else
             byte[] bytes = BitConverter.GetBytes(v);
-
-            stateObj.WriteByteArray(bytes, bytes.Length, 0);
+            stateObj.WriteByteArray(bytes, bytes.Length, 0); 
+#endif
         }
 
         //
@@ -1493,9 +1499,14 @@ namespace System.Data.SqlClient
         //
         internal void WriteDouble(double v, TdsParserStateObject stateObj)
         {
+#if netcoreapp // BitConverter.TryGetBytes is only availble in netcoreapp 2.1> at this time, review support when changing
+            Span<byte> bytes = stackalloc byte[sizeof(double)];
+            BitConverter.TryWriteBytes(bytes, v);
+            stateObj.WriteByteSpan(bytes);
+#else
             byte[] bytes = BitConverter.GetBytes(v);
-
             stateObj.WriteByteArray(bytes, bytes.Length, 0);
+#endif
         }
 
         internal void PrepareResetConnection(bool preserveTransaction)
@@ -2135,7 +2146,7 @@ namespace System.Data.SqlClient
             {
                 // Dev11 #344723: SqlClient stress hang System_Data!Tcp::ReadSync via a call to SqlDataReader::Close
                 // Spin until SendAttention has cleared _attentionSending, this prevents a race condition between receiving the attention ACK and setting _attentionSent
-                SpinWait.SpinUntil(() => !stateObj._attentionSending);
+                TryRunSetupSpinWaitContinuation(stateObj);
 
                 Debug.Assert(stateObj._attentionSent, "Attention ACK has been received without attention sent");
                 if (stateObj._attentionSent)
@@ -2158,6 +2169,9 @@ namespace System.Data.SqlClient
             }
             return true;
         }
+
+        // This is in its own method to avoid always allocating the lambda in TryRun 
+        private static void TryRunSetupSpinWaitContinuation(TdsParserStateObject stateObj) => SpinWait.SpinUntil(() => !stateObj._attentionSending);
 
         private bool TryProcessEnvChange(int tokenLength, TdsParserStateObject stateObj, out SqlEnvChange[] sqlEnvChange)
         {
@@ -2281,7 +2295,7 @@ namespace System.Data.SqlClient
                             {
                                 return false;
                             }
-                            
+
                             // Give the parser the new collation values in case parameters don't specify one
                             _defaultCollation = env.newCollation;
 
@@ -6190,6 +6204,7 @@ namespace System.Data.SqlClient
             }
 
             // allocate memory for SSPI variables
+            byte[] rentedSSPIBuff = null;
             byte[] outSSPIBuff = null;
             uint outSSPILength = 0;
 
@@ -6207,7 +6222,8 @@ namespace System.Data.SqlClient
                 if (rec.useSSPI)
                 {
                     // now allocate proper length of buffer, and set length
-                    outSSPIBuff = new byte[s_maxSSPILength];
+                    rentedSSPIBuff = ArrayPool<byte>.Shared.Rent((int)s_maxSSPILength);
+                    outSSPIBuff = rentedSSPIBuff;
                     outSSPILength = s_maxSSPILength;
 
                     // Call helper function for SSPI data and actual length.
@@ -6217,7 +6233,7 @@ namespace System.Data.SqlClient
                     _physicalStateObj.SniContext = SniContext.Snix_LoginSspi;
 
                     SSPIData(null, 0, ref outSSPIBuff, ref outSSPILength);
-                    
+
                     if (outSSPILength > int.MaxValue)
                     {
                         throw SQL.InvalidSSPIPacketSize();  // SqlBu 332503
@@ -6515,6 +6531,11 @@ namespace System.Data.SqlClient
                 throw;
             }
 
+            if (rentedSSPIBuff != null)
+            {
+                ArrayPool<byte>.Shared.Return(rentedSSPIBuff, clearArray: true);
+            }
+
             _physicalStateObj.WritePacket(TdsEnums.HARDFLUSH);
             _physicalStateObj.ResetSecurePasswordsInformation();
             _physicalStateObj._pendingData = true;
@@ -6541,7 +6562,7 @@ namespace System.Data.SqlClient
                 }
             }
             else
-            { 
+            {
                 if (receivedBuff == null)
                 {
                     // if we do not have SSPI data coming from server, send over 0's for pointer and length
@@ -6569,7 +6590,8 @@ namespace System.Data.SqlClient
             if (!result) { throw SQL.SynchronousCallMayNotPend(); }
 
             // allocate send buffer and initialize length
-            byte[] sendBuff = new byte[s_maxSSPILength];
+            byte[] rentedSendBuff = ArrayPool<byte>.Shared.Rent((int)s_maxSSPILength);
+            byte[] sendBuff = rentedSendBuff;
             uint sendLength = s_maxSSPILength;
 
             // make call for SSPI data
@@ -6578,6 +6600,8 @@ namespace System.Data.SqlClient
 
             // DO NOT SEND LENGTH - TDS DOC INCORRECT!  JUST SEND SSPI DATA!
             _physicalStateObj.WriteByteArray(sendBuff, (int)sendLength, 0);
+
+            ArrayPool<byte>.Shared.Return(rentedSendBuff, clearArray: true);
 
             // set message type so server knows its a SSPI response
             _physicalStateObj._outputMessageType = TdsEnums.MT_SSPI;
@@ -6972,29 +6996,34 @@ namespace System.Data.SqlClient
                     // Need to wait for flush - continuation will unlock the connection                    
                     bool taskReleaseConnectionLock = releaseConnectionLock;
                     releaseConnectionLock = false;
-                    return executeTask.ContinueWith(t =>
-                    {
-                        Debug.Assert(!t.IsCanceled, "Task should not be canceled");
-                        try
+                    return executeTask.ContinueWith(
+                        (task, state) =>
                         {
-                            if (t.IsFaulted)
+                            Debug.Assert(!task.IsCanceled, "Task should not be canceled");
+                            var parameters = (Tuple<TdsParser, TdsParserStateObject, SqlInternalConnectionTds>)state;
+                            TdsParser parser = parameters.Item1;
+                            TdsParserStateObject tdsParserStateObject = parameters.Item2;
+                            SqlInternalConnectionTds internalConnectionTds = parameters.Item3;
+                            try
                             {
-                                FailureCleanup(stateObj, t.Exception.InnerException);
-                                throw t.Exception.InnerException;
+                                if (task.IsFaulted)
+                                {
+                                    parser.FailureCleanup(tdsParserStateObject, task.Exception.InnerException);
+                                    throw task.Exception.InnerException;
+                                }
+                                else
+                                {
+                                    tdsParserStateObject.SniContext = SniContext.Snix_Read;
+                                }
                             }
-                            else
+                            finally
                             {
-                                stateObj.SniContext = SniContext.Snix_Read;
+                                internalConnectionTds?._parserLock.Release();
                             }
-                        }
-                        finally
-                        {
-                            if (taskReleaseConnectionLock)
-                            {
-                                _connHandler._parserLock.Release();
-                            }
-                        }
-                    }, TaskScheduler.Default);
+                        },
+                        Tuple.Create(this, stateObj, taskReleaseConnectionLock ? _connHandler : null),
+                        TaskScheduler.Default
+                    );
                 }
 
                 // Finished sync
@@ -7494,11 +7523,19 @@ namespace System.Data.SqlClient
                                         task = completion.Task;
                                     }
 
-                                    AsyncHelper.ContinueTask(writeParamTask, completion,
-                                        () => TdsExecuteRPC(rpcArray, timeout, inSchema, notificationRequest, stateObj, isCommandProc, sync, completion,
-                                                              startRpc: ii, startParam: i + 1),
-                                        connectionToDoom: _connHandler,
-                                        onFailure: exc => TdsExecuteRPC_OnFailure(exc, stateObj));
+                                    TDSExecuteRPCParameterSetupWriteCompletion(
+                                        rpcArray, 
+                                        timeout, 
+                                        inSchema, 
+                                        notificationRequest, 
+                                        stateObj, 
+                                        isCommandProc, 
+                                        sync, 
+                                        completion, 
+                                        ii, 
+                                        i+1, 
+                                        writeParamTask
+                                    );
 
                                     // Take care of releasing the locks
                                     if (releaseConnectionLock)
@@ -7547,10 +7584,9 @@ namespace System.Data.SqlClient
                             task = completion.Task;
                         }
 
-                        bool taskReleaseConnectionLock = releaseConnectionLock;
-                        execFlushTask.ContinueWith(tsk => ExecuteFlushTaskCallback(tsk, stateObj, completion, taskReleaseConnectionLock), TaskScheduler.Default);
+                        TDSExecuteRPCParameterSetupFlushCompletion(stateObj, completion, execFlushTask, releaseConnectionLock);
 
-                        // ExecuteFlushTaskCallback will take care of the locks for us
+                        // TDSExecuteRPCParameterSetupFlushCompletion calling ExecuteFlushTaskCallback will take care of the locks for us
                         releaseConnectionLock = false;
 
                         return task;
@@ -7595,6 +7631,36 @@ namespace System.Data.SqlClient
                     _connHandler._parserLock.Release();
                 }
             }
+        }
+
+
+        // This is in its own method to avoid always allocating the lambda in TDSExecuteRPCParameter
+        private void TDSExecuteRPCParameterSetupWriteCompletion(_SqlRPC[] rpcArray, int timeout, bool inSchema, SqlNotificationRequest notificationRequest, TdsParserStateObject stateObj, bool isCommandProc, bool sync, TaskCompletionSource<object> completion, int startRpc, int startParam, Task writeParamTask)
+        {
+            AsyncHelper.ContinueTask(
+                writeParamTask,
+                completion,
+                () => TdsExecuteRPC(
+                        rpcArray,
+                        timeout,
+                        inSchema,
+                        notificationRequest,
+                        stateObj,
+                        isCommandProc,
+                        sync,
+                        completion,
+                        startRpc,
+                        startParam
+                      ),
+                connectionToDoom: _connHandler,
+                onFailure: exc => TdsExecuteRPC_OnFailure(exc, stateObj)
+            );
+        }
+
+        // This is in its own method to avoid always allocating the lambda in  TDSExecuteRPCParameter 
+        private void TDSExecuteRPCParameterSetupFlushCompletion(TdsParserStateObject stateObj, TaskCompletionSource<object> completion, Task execFlushTask, bool taskReleaseConnectionLock)
+        {
+            execFlushTask.ContinueWith(tsk => ExecuteFlushTaskCallback(tsk, stateObj, completion, taskReleaseConnectionLock), TaskScheduler.Default);
         }
 
         private void FinalizeExecuteRPC(TdsParserStateObject stateObj)

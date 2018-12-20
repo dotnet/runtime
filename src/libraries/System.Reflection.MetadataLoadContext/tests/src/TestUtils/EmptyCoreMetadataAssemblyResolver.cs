@@ -4,11 +4,14 @@
 
 namespace System.Reflection.Tests
 {
+    /// <summary>
+    /// Resolves the core assembly with a dummy assembly that has no types.
+    /// </summary>
     public class EmptyCoreMetadataAssemblyResolver : MetadataAssemblyResolver
     {
         public EmptyCoreMetadataAssemblyResolver() { }
 
-        public override Assembly Resolve(System.Reflection.MetadataLoadContext context, AssemblyName assemblyName)
+        public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName)
         {
             if (assemblyName.Name == "mscorlib")
             {
@@ -27,4 +30,3 @@ namespace System.Reflection.Tests
         private Assembly _coreAssembly;
     }
 }
-

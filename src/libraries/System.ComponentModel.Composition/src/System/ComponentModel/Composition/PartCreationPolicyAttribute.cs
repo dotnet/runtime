@@ -5,7 +5,7 @@
 namespace System.ComponentModel.Composition
 {
     /// <summary>
-    ///     Specifies <see cref="CreationPolicy"/> for a given <see cref="ComposablePart" />.
+    ///     Specifies <see cref="CreationPolicy"/> for a given <see cref="Primitives.ComposablePart" />.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public sealed class PartCreationPolicyAttribute : Attribute

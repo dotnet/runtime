@@ -544,8 +544,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start'/> method for the <see cref='System.Diagnostics.Process'/>
-        ///       .
+        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start(System.Diagnostics.ProcessStartInfo)'/> method for the <see cref='System.Diagnostics.Process'/>.
         ///    </para>
         /// </devdoc>
         public ProcessStartInfo StartInfo
@@ -618,7 +617,6 @@ namespace System.Diagnostics
 
         partial void EnsureHandleCountPopulated();
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public long VirtualMemorySize64
         {
             get
@@ -628,6 +626,7 @@ namespace System.Diagnostics
             }
         }
 
+        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int VirtualMemorySize
         {
             get

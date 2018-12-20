@@ -4,7 +4,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>CS3016</NoWarn>
+    <NoWarn>$(NoWarn);CS3016</NoWarn>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets"/>
@@ -252,11 +252,17 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertCloseStore.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertCloseStore.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertNameToStr.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CertNameToStr.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CryptMsgClose.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptFormatObject.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptFormatObject.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>

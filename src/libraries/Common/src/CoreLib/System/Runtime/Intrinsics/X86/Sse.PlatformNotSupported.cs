@@ -290,39 +290,18 @@ namespace System.Runtime.Intrinsics.X86
         ///   CVTSS2SI r32, xmm/m32
         /// </summary>
         public static int ConvertToInt32(Vector128<float> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int64 _mm_cvtss_si64 (__m128 a)
-        ///   CVTSS2SI r64, xmm/m32
-        /// </summary>
-        public static long ConvertToInt64(Vector128<float> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// float _mm_cvtss_f32 (__m128 a)
-        ///   HELPER: MOVSS
-        /// </summary>
-        public static float ConvertToSingle(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_cvtsi32_ss (__m128 a, int b)
         ///   CVTSI2SS xmm, reg/m32
         /// </summary>
         public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, int value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __m128 _mm_cvtsi64_ss (__m128 a, __int64 b)
-        ///   CVTSI2SS xmm, reg/m64
-        /// </summary>
-        public static Vector128<float> ConvertScalarToVector128Single(Vector128<float> upper, long value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_cvttss_si32 (__m128 a)
         ///   CVTTSS2SI r32, xmm/m32
         /// </summary>
         public static int ConvertToInt32WithTruncation(Vector128<float> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __int64 _mm_cvttss_si64 (__m128 a)
-        ///   CVTTSS2SI r64, xmm/m32
-        /// </summary>
-        public static long ConvertToInt64WithTruncation(Vector128<float> value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128 _mm_div_ps (__m128 a,  __m128 b)
@@ -493,46 +472,6 @@ namespace System.Runtime.Intrinsics.X86
         /// The above native signature does not exist. We provide this additional overload for consistency with the other scalar APIs.
         /// </summary>
         public static Vector128<float> ReciprocalSqrtScalar(Vector128<float> upper, Vector128<float> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128 _mm_set_ps (float e3, float e2, float e1, float e0)
-        /// </summary>
-        public static Vector128<float> SetVector128(float e3, float e2, float e1, float e0) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128 _mm_set_ss (float a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<float> SetScalarVector128(float value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128 _mm_set1_ps (float a)
-        ///   HELPER
-        /// </summary>
-        public static Vector128<float> SetAllVector128(float value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128d _mm_setzero_ps (void)
-        ///   HELPER - XORPS
-        /// </summary>
-        public static Vector128<float> SetZeroVector128() { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// __m128 _mm_castpd_ps (__m128d a)
-        ///   HELPER - No Codegen
-        /// __m128i _mm_castpd_si128 (__m128d a)
-        ///   HELPER - No Codegen
-        /// __m128d _mm_castps_pd (__m128 a)
-        ///   HELPER - No Codegen
-        /// __m128i _mm_castps_si128 (__m128 a)
-        ///   HELPER - No Codegen
-        /// __m128d _mm_castsi128_pd (__m128i a)
-        ///   HELPER - No Codegen
-        /// __m128 _mm_castsi128_ps (__m128i a)
-        ///   HELPER - No Codegen
-        /// </summary>
-        public static Vector128<U> StaticCast<T, U>(Vector128<T> value) where T : struct where U : struct { throw new PlatformNotSupportedException(); }
-
 
         /// <summary>
         /// __m128 _mm_shuffle_ps (__m128 a,  __m128 b, unsigned int control)

@@ -1003,7 +1003,7 @@ namespace System.Xml.Xsl.Runtime
         }
 
         /// <summary>
-        /// End construction of a nested sequence of items and return the items as an IList<XPathItem>
+        /// End construction of a nested sequence of items and return the items as an IList{XPathItem}
         /// internal class.  Return previous XmlQueryOutput.
         /// </summary>
         public IList<XPathItem> EndSequenceConstruction(out XmlQueryOutput output)

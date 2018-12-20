@@ -153,7 +153,7 @@ namespace System.Globalization
                         {
                             return m_EraInfo[i].yearOffset;
                         }
-                        else if (!AppContextSwitches.EnforceJapaneseEraYearRanges)
+                        else if (!LocalAppContextSwitches.EnforceJapaneseEraYearRanges)
                         {
                             // If we got the year number exceeding the era max year number, this still possible be valid as the date can be created before
                             // introducing new eras after the era we are checking. we'll loop on the eras after the era we have and ensure the year

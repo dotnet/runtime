@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Binary;
+
 namespace System.Buffers.Text
 {
     public static partial class Utf8Parser
@@ -112,32 +114,66 @@ namespace System.Buffers.Text
         // Assuming the text doesn't look like a normal floating point, we attempt to parse it as one the special floating point values.
         //
         private static bool TryParseAsSpecialFloatingPoint<T>(ReadOnlySpan<byte> source, T positiveInfinity, T negativeInfinity, T nan, out T value, out int bytesConsumed)
-        {
-            if (source.Length >= 8 &&
-                source[0] == 'I' && source[1] == 'n' && source[2] == 'f' && source[3] == 'i' &&
-                source[4] == 'n' && source[5] == 'i' && source[6] == 't' && source[7] == 'y')
+        {            
+            int srcIndex = 0;
+            int remaining = source.Length;
+            bool isNegative = false;
+
+            // We need at least 4 characters to process a sign
+            if (remaining >= 4)
             {
-                value = positiveInfinity;
-                bytesConsumed = 8;
-                return true;
+                byte c = source[srcIndex];
+
+                switch (c)
+                {
+                    case Utf8Constants.Minus:
+                    {
+                        isNegative = true;
+                        goto case Utf8Constants.Plus;
+                    }
+
+                    case Utf8Constants.Plus:
+                    {
+                        srcIndex++;
+                        remaining--;
+                        break;
+                    }
+                }
             }
 
-            if (source.Length >= 9 &&
-                source[0] == Utf8Constants.Minus &&
-                source[1] == 'I' && source[2] == 'n' && source[3] == 'f' && source[4] == 'i' &&
-                source[5] == 'n' && source[6] == 'i' && source[7] == 't' && source[8] == 'y')
-            {
-                value = negativeInfinity;
-                bytesConsumed = 9;
-                return true;
-            }
+            // We can efficiently do an ASCII IsLower check by xor'ing with the expected
+            // result and validating that it returns either 0 or exactly 0x20 (which is the
+            // delta between lowercase and uppercase ASCII characters).
 
-            if (source.Length >= 3 &&
-                source[0] == 'N' && source[1] == 'a' && source[2] == 'N')
+            if (remaining >= 3)
             {
-                value = nan;
-                bytesConsumed = 3;
-                return true;
+                if ((((source[srcIndex] ^ (byte)('n')) & ~0x20) == 0) &&
+                    (((source[srcIndex + 1] ^ (byte)('a')) & ~0x20) == 0) &&
+                    (((source[srcIndex + 2] ^ (byte)('n')) & ~0x20) == 0))
+                {
+                    value = nan;
+                    bytesConsumed = 3 + srcIndex;
+                    return true;
+                }
+
+                if (remaining >= 8)
+                {
+                    const int infi = 0x69666E69;
+                    int diff = (BinaryPrimitives.ReadInt32LittleEndian(source.Slice(srcIndex)) ^ infi);
+
+                    if ((diff & ~0x20202020) == 0)
+                    {
+                        const int nity = 0x7974696E;
+                        diff = (BinaryPrimitives.ReadInt32LittleEndian(source.Slice(srcIndex + 4)) ^ nity);
+
+                        if ((diff & ~0x20202020) == 0)
+                        {
+                            value = isNegative ? negativeInfinity : positiveInfinity;
+                            bytesConsumed = 8 + srcIndex;
+                            return true;
+                        }
+                    }
+                }
             }
 
             value = default;

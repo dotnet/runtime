@@ -5,11 +5,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Avoid warnings about type conflicts for types we're building in -->
     <NoWarn>0436</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <TargetingPackExclusions Include="System.Net.NameResolution" />
+    <DefaultReferenceExclusions Include="System.Net.NameResolution" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\System\Net\IPHostEntry.cs">

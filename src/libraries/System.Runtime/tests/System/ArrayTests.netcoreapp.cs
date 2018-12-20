@@ -49,6 +49,7 @@ namespace System.Tests
             yield return new object[] { transformed, repeatedValue, 0, count / 2 }; // Fill the beginning of the array.
             yield return new object[] { transformed, repeatedValue, count / 2, count / 2 }; // Fill the end of the array, assuming `length` is even.
             yield return new object[] { transformed, repeatedValue, count / 4, count / 2 }; // Fill the middle of the array.
+            yield return new object[] { transformed, repeatedValue, count, 0 }; // Fill nothing.
         }
 
         [Theory]
@@ -77,6 +78,33 @@ namespace System.Tests
                 Assert.Equal(Enumerable.Repeat(value, count), array.Skip(startIndex).Take(count));
                 Assert.Equal(after, array.Skip(startIndex + count));
             }
+        }
+
+        [Fact]
+        public void Fill_NullArray_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Fill(null, 1));
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Fill(null, 1, 0, 0));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public void Fill_InvalidStartIndex_ThrowsArgumentOutOfRangeException(int startIndex)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.Fill(new string[1], "", startIndex, 0));
+        }
+
+        [Theory]
+        [InlineData(1, 0, -1)]
+        [InlineData(0, 0, 1)]
+        [InlineData(3, 3, 1)]
+        [InlineData(3, 2, 2)]
+        [InlineData(3, 1, 3)]
+        [InlineData(3, 0, 4)]
+        public void Fill_InvalidStartIndexCount_ThrowsArgumentOutOfRangeException(int arrayLength, int startIndex, int count)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Array.Fill(new string[arrayLength], "", startIndex, count));
         }
 
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()

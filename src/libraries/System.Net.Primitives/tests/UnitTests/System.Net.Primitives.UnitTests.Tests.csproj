@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>169,649</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
@@ -13,9 +13,9 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <TargetingPackExclusions Include="System.Net.Primitives" />
+    <DefaultReferenceExclusions Include="System.Net.Primitives" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' ">
+  <ItemGroup>
     <Compile Include="CookieInternalTest.cs" />
     <Compile Include="CookieContainerTest.cs" />
     <Compile Include="..\..\src\System\Net\CookieCollection.cs">
@@ -67,7 +67,6 @@
     <Compile Include="Fakes\HostInformation.cs" />
     <Compile Include="Fakes\IPv4AddressHelper.cs" />
     <Compile Include="Fakes\IPv6AddressHelper.cs" />
-    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard' And '$(TargetGroup)' != 'netcoreapp'" />
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
@@ -106,7 +105,7 @@
       <Link>ProductionCode\Common\Interop\Windows\Winsock\Interop.ErrorCodes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="..\..\src\System\Net\SocketException.Windows.cs">
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
     </Compile>

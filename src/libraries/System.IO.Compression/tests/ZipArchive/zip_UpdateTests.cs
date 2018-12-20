@@ -298,6 +298,45 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<ObjectDisposedException>(() => { e.LastWriteTime = new DateTimeOffset(); });
             }
         }
+
+        [Fact]
+        public void UpdateUncompressedArchive()
+        {
+            var utf8WithoutBom = new Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            byte[] fileContent;
+            using (var memStream = new MemoryStream())
+            {
+                using (var zip = new ZipArchive(memStream, ZipArchiveMode.Create))
+                {
+                    ZipArchiveEntry entry = zip.CreateEntry("testing", CompressionLevel.NoCompression);
+                    using (var writer = new StreamWriter(entry.Open(), utf8WithoutBom))
+                    {
+                        writer.Write("hello");
+                        writer.Flush();
+                    }
+                }
+                fileContent = memStream.ToArray();
+            }
+            byte compressionMethod = fileContent[8];
+            Assert.Equal(0, compressionMethod); // stored => 0, deflate => 8
+            using (var memStream = new MemoryStream())
+            {
+                memStream.Write(fileContent);
+                memStream.Position = 0;
+                using (var archive = new ZipArchive(memStream, ZipArchiveMode.Update))
+                {
+                    ZipArchiveEntry entry = archive.GetEntry("testing");
+                    using (var writer = new StreamWriter(entry.Open(), utf8WithoutBom))
+                    {
+                        writer.Write("new");
+                        writer.Flush();
+                    }
+                }
+                byte[] modifiedTestContent = memStream.ToArray();
+                compressionMethod = modifiedTestContent[8];
+                Assert.Equal(0, compressionMethod); // stored => 0, deflate => 8
+            }
+        }
     }
 }
 
