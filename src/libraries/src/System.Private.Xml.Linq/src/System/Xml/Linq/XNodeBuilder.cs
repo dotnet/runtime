@@ -68,7 +68,7 @@ namespace System.Xml.Linq
 
         public override void WriteCharEntity(char ch)
         {
-            AddString(new string(ch, 1));
+            AddString(char.ToString(ch));
         }
 
         public override void WriteChars(char[] buffer, int index, int count)
