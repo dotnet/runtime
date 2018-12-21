@@ -111,6 +111,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpan.LittleG.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Parser\Utf8Parser.TimeSpanSplitter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Byte.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ByReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Char.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs" />
