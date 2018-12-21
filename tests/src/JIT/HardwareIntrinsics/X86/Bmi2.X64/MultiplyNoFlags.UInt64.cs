@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void {Method}{RetBaseType}()
+        private static void MultiplyNoFlagsUInt64()
         {
-            var test = new ScalarBinaryOpTest__{Method}{RetBaseType}();
+            var test = new ScalarBinaryOpTest__MultiplyNoFlagsUInt64();
 
             if (test.IsSupported)
             {
@@ -62,57 +62,57 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarBinaryOpTest__{Method}{RetBaseType}
+    public sealed unsafe class ScalarBinaryOpTest__MultiplyNoFlagsUInt64
     {
         private struct TestStruct
         {
-            public {Op1BaseType} _fld1;
-            public {Op2BaseType} _fld2;
+            public UInt64 _fld1;
+            public UInt64 _fld2;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                testStruct._fld1 = {NextValueOp1};
-                testStruct._fld2 = {NextValueOp2};
+                testStruct._fld1 = UInt64.MaxValue;
+                testStruct._fld2 = UInt64.MaxValue;
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarBinaryOpTest__{Method}{RetBaseType} testClass)
+            public void RunStructFldScenario(ScalarBinaryOpTest__MultiplyNoFlagsUInt64 testClass)
             {
-                var result = {Isa}.{Method}(_fld1, _fld2);
+                var result = Bmi2.X64.MultiplyNoFlags(_fld1, _fld2);
                 testClass.ValidateResult(_fld1, _fld2, result);
             }
         }
 
-        private static {Op1BaseType} _data1;
-        private static {Op2BaseType} _data2;
+        private static UInt64 _data1;
+        private static UInt64 _data2;
 
-        private static {Op1BaseType} _clsVar1;
-        private static {Op2BaseType} _clsVar2;
+        private static UInt64 _clsVar1;
+        private static UInt64 _clsVar2;
 
-        private {Op1BaseType} _fld1;
-        private {Op2BaseType} _fld2;
+        private UInt64 _fld1;
+        private UInt64 _fld2;
 
-        static ScalarBinaryOpTest__{Method}{RetBaseType}()
+        static ScalarBinaryOpTest__MultiplyNoFlagsUInt64()
         {
-            _clsVar1 = {NextValueOp1};
-            _clsVar2 = {NextValueOp2};
+            _clsVar1 = UInt64.MaxValue;
+            _clsVar2 = UInt64.MaxValue;
         }
 
-        public ScalarBinaryOpTest__{Method}{RetBaseType}()
+        public ScalarBinaryOpTest__MultiplyNoFlagsUInt64()
         {
             Succeeded = true;
 
-            _fld1 = {NextValueOp1};
-            _fld2 = {NextValueOp2};
+            _fld1 = UInt64.MaxValue;
+            _fld2 = UInt64.MaxValue;
 
-            _data1 = {NextValueOp1};
-            _data2 = {NextValueOp2};
+            _data1 = UInt64.MaxValue;
+            _data2 = UInt64.MaxValue;
         }
 
-        public bool IsSupported => {Isa}.IsSupported;
+        public bool IsSupported => Bmi2.X64.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -120,9 +120,9 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = {Isa}.{Method}(
-                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1)),
-                Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2))
+            var result = Bmi2.X64.MultiplyNoFlags(
+                Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data1)),
+                Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data2))
             );
 
             ValidateResult(_data1, _data2, result);
@@ -132,20 +132,20 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}), typeof({Op2BaseType}) })
+            var result = typeof(Bmi2.X64).GetMethod(nameof(Bmi2.X64.MultiplyNoFlags), new Type[] { typeof(UInt64), typeof(UInt64) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1)),
-                                        Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2))
+                                        Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data1)),
+                                        Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data2))
                                      });
 
-            ValidateResult(_data1, _data2, ({RetBaseType})result);
+            ValidateResult(_data1, _data2, (UInt64)result);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = {Isa}.{Method}(
+            var result = Bmi2.X64.MultiplyNoFlags(
                 _clsVar1,
                 _clsVar2
             );
@@ -157,9 +157,9 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data1 = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1));
-            var data2 = Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2));
-            var result = {Isa}.{Method}(data1, data2);
+            var data1 = Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data1));
+            var data2 = Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data2));
+            var result = Bmi2.X64.MultiplyNoFlags(data1, data2);
 
             ValidateResult(data1, data2, result);
         }
@@ -168,8 +168,8 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarBinaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld1, test._fld2);
+            var test = new ScalarBinaryOpTest__MultiplyNoFlagsUInt64();
+            var result = Bmi2.X64.MultiplyNoFlags(test._fld1, test._fld2);
 
             ValidateResult(test._fld1, test._fld2, result);
         }
@@ -178,7 +178,7 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld1, _fld2);
+            var result = Bmi2.X64.MultiplyNoFlags(_fld1, _fld2);
             ValidateResult(_fld1, _fld2, result);
         }
 
@@ -187,7 +187,7 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld1, test._fld2);
+            var result = Bmi2.X64.MultiplyNoFlags(test._fld1, test._fld2);
 
             ValidateResult(test._fld1, test._fld2, result);
         }
@@ -221,15 +221,15 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult({Op1BaseType} left, {Op2BaseType} right, {RetBaseType} result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt64 left, UInt64 right, UInt64 result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
-            {ValidateResult}
+            ulong expectedResult = 18446744073709551614; isUnexpectedResult = (expectedResult != result);
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {Method} failed:");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi2.X64)}.{nameof(Bmi2.X64.MultiplyNoFlags)}<UInt64>(UInt64, UInt64): MultiplyNoFlags failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: {left}");
                 TestLibrary.TestFramework.LogInformation($"   right: {right}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");

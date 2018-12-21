@@ -17,6 +17,8 @@ namespace JIT.HardwareIntrinsics.X86
                 ["GetMaskUpToLowestSetBit.UInt32"] = GetMaskUpToLowestSetBitUInt32,
                 ["ResetLowestSetBit.UInt32"] = ResetLowestSetBitUInt32,
                 ["TrailingZeroCount.UInt32"] = TrailingZeroCountUInt32,
+                ["BitFieldExtract.UInt32.3Op"] = BitFieldExtractUInt323Op,
+                ["BitFieldExtract.UInt32"] = BitFieldExtractUInt32,
             };
         }
     }
