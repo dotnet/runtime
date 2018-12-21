@@ -85,58 +85,19 @@ namespace System.Runtime.CompilerServices
             return new StackCrawlMarkHandle((IntPtr)Unsafe.AsPointer(ref stackMark));
         }
 
-#if DEBUG
-        internal static int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
+        internal static bool EnumEquals<T>(T x, T y) where T : struct, Enum
         {
-            Debug.Assert(typeof(T).IsEnum
-                              && (Enum.GetUnderlyingType(typeof(T)) == typeof(int)
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(uint)
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(short)
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(ushort)
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(byte)
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(sbyte)),
-                "Error, T must be an 4 byte (or less) enum JitHelpers.UnsafeEnumCast!");
-            return UnsafeEnumCastInternal<T>(val);
+            // The body of this function will be replaced by the EE with unsafe code
+            // See getILIntrinsicImplementation for how this happens.
+            return x.Equals(y);
         }
 
-        private static int UnsafeEnumCastInternal<T>(T val) where T : struct		// Actually T must be 4 (or less) byte enum
+        internal static int EnumCompareTo<T>(T x, T y) where T : struct, Enum
         {
-            // should be return (int) val; but C# does not allow, runtime does this magically
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
+            // The body of this function will be replaced by the EE with unsafe code
+            // See getILIntrinsicImplementation for how this happens.
+            return x.CompareTo(y);
         }
-
-        internal static long UnsafeEnumCastLong<T>(T val) where T : struct		// Actually T must be 8 byte enum
-        {
-            Debug.Assert(typeof(T).IsEnum
-                              && (Enum.GetUnderlyingType(typeof(T)) == typeof(long)
-                                  || Enum.GetUnderlyingType(typeof(T)) == typeof(ulong)),
-                "Error, T must be an 8 byte enum JitHelpers.UnsafeEnumCastLong!");
-            return UnsafeEnumCastLongInternal<T>(val);
-        }
-
-        private static long UnsafeEnumCastLongInternal<T>(T val) where T : struct	// Actually T must be 8 byte enum
-        {
-            // should be return (int) val; but C# does not allow, runtime does this magically
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
-#else // DEBUG
-
-        internal static int UnsafeEnumCast<T>(T val) where T : struct		// Actually T must be 4 byte (or less) enum
-        {
-            // should be return (int) val; but C# does not allow, runtime does this magically
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
-
-        internal static long UnsafeEnumCastLong<T>(T val) where T : struct	// Actually T must be 8 byte enum
-        {
-            // should be return (long) val; but C# does not allow, runtime does this magically
-            // See getILIntrinsicImplementation for how this happens.  
-            throw new InvalidOperationException();
-        }
-#endif // DEBUG
 
         // Set the given element in the array without any type or range checks
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
