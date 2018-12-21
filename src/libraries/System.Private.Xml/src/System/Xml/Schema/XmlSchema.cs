@@ -12,22 +12,10 @@ namespace System.Xml.Schema
     using System.Diagnostics;
     using System.Collections.Generic;
 
-    /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     [XmlRoot("schema", Namespace = XmlSchema.Namespace)]
     public class XmlSchema : XmlSchemaObject
     {
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Namespace"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public const string Namespace = XmlReservedNs.NsXs;
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.InstanceNamespace"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public const string InstanceNamespace = XmlReservedNs.NsXsi;
 
         private XmlSchemaForm _attributeFormDefault = XmlSchemaForm.None;
@@ -66,34 +54,18 @@ namespace System.Xml.Schema
         private XmlDocument _document;
         private XmlNameTable _nameTable;
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.XmlSchema"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchema() { }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Read"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static XmlSchema Read(TextReader reader, ValidationEventHandler validationEventHandler)
         {
             return Read(new XmlTextReader(reader), validationEventHandler);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Read1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static XmlSchema Read(Stream stream, ValidationEventHandler validationEventHandler)
         {
             return Read(new XmlTextReader(stream), validationEventHandler);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Read2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static XmlSchema Read(XmlReader reader, ValidationEventHandler validationEventHandler)
         {
             XmlNameTable nameTable = reader.NameTable;
@@ -117,19 +89,11 @@ namespace System.Xml.Schema
             return parser.XmlSchema;
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Write"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Write(Stream stream)
         {
             Write(stream, null);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Write1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Write(Stream stream, XmlNamespaceManager namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(stream, null);
@@ -137,19 +101,11 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Write2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Write(TextWriter writer)
         {
             Write(writer, null);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Write3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Write(TextWriter writer, XmlNamespaceManager namespaceManager)
         {
             XmlTextWriter xmlWriter = new XmlTextWriter(writer);
@@ -157,19 +113,11 @@ namespace System.Xml.Schema
             Write(xmlWriter, namespaceManager);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Write4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Write(XmlWriter writer)
         {
             Write(writer, null);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Write5"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Write(XmlWriter writer, XmlNamespaceManager namespaceManager)
         {
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));
@@ -217,10 +165,6 @@ namespace System.Xml.Schema
             serializer.Serialize(writer, this, ns);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Compile"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
         public void Compile(ValidationEventHandler validationEventHandler)
         {
@@ -229,10 +173,6 @@ namespace System.Xml.Schema
             CompileSchema(null, null, sInfo, null, validationEventHandler, NameTable, false);
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Compileq"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("Use System.Xml.Schema.XmlSchemaSet for schema compilation and validation. https://go.microsoft.com/fwlink/?linkid=14202")]
         public void Compile(ValidationEventHandler validationEventHandler, XmlResolver resolver)
         {
@@ -272,10 +212,6 @@ namespace System.Xml.Schema
             _isCompiledBySet = setCompiler.Compile();
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.AttributeFormDefault"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("attributeFormDefault"), DefaultValue(XmlSchemaForm.None)]
         public XmlSchemaForm AttributeFormDefault
         {
@@ -283,10 +219,6 @@ namespace System.Xml.Schema
             set { _attributeFormDefault = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.BlockDefault"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("blockDefault"), DefaultValue(XmlSchemaDerivationMethod.None)]
         public XmlSchemaDerivationMethod BlockDefault
         {
@@ -294,10 +226,6 @@ namespace System.Xml.Schema
             set { _blockDefault = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.FinalDefault"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("finalDefault"), DefaultValue(XmlSchemaDerivationMethod.None)]
         public XmlSchemaDerivationMethod FinalDefault
         {
@@ -305,10 +233,6 @@ namespace System.Xml.Schema
             set { _finalDefault = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.ElementFormDefault"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("elementFormDefault"), DefaultValue(XmlSchemaForm.None)]
         public XmlSchemaForm ElementFormDefault
         {
@@ -316,10 +240,6 @@ namespace System.Xml.Schema
             set { _elementFormDefault = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.TargetNamespace"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("targetNamespace", DataType = "anyURI")]
         public string TargetNamespace
         {
@@ -327,10 +247,6 @@ namespace System.Xml.Schema
             set { _targetNs = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Version"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("version", DataType = "token")]
         public string Version
         {
@@ -338,10 +254,6 @@ namespace System.Xml.Schema
             set { _version = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Includes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("include", typeof(XmlSchemaInclude)),
          XmlElement("import", typeof(XmlSchemaImport)),
          XmlElement("redefine", typeof(XmlSchemaRedefine))]
@@ -350,10 +262,6 @@ namespace System.Xml.Schema
             get { return _includes; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Items"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("annotation", typeof(XmlSchemaAnnotation)),
          XmlElement("attribute", typeof(XmlSchemaAttribute)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroup)),
@@ -368,10 +276,6 @@ namespace System.Xml.Schema
         }
 
         // Compiled info
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.IsCompiled"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public bool IsCompiled
         {
@@ -402,10 +306,6 @@ namespace System.Xml.Schema
             set { _isRedefined = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Attributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable Attributes
         {
@@ -419,10 +319,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.AttributeGroups"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable AttributeGroups
         {
@@ -436,10 +332,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.SchemaTypes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable SchemaTypes
         {
@@ -453,10 +345,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Elements"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable Elements
         {
@@ -470,10 +358,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Id"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("id", DataType = "ID")]
         public string Id
         {
@@ -481,10 +365,6 @@ namespace System.Xml.Schema
             set { _id = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.UnhandledAttributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAnyAttribute]
         public XmlAttribute[] UnhandledAttributes
         {
@@ -492,20 +372,12 @@ namespace System.Xml.Schema
             set { _moreAttributes = value; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Groups"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable Groups
         {
             get { return _groups; }
         }
 
-        /// <include file='doc\XmlSchema.uex' path='docs/doc[@for="XmlSchema.Notations"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable Notations
         {

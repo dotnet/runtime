@@ -8,12 +8,10 @@ using System.Threading;
 
 namespace System.Xml
 {
-    /// <include file='doc\XmlCharType.uex' path='docs/doc[@for="XmlCharType"]/*' />
-    /// <internalonly/>
-    /// <devdoc>
+    /// <summary>
     ///  The XmlCharType class is used for quick character type recognition
     ///  which is optimized for the first 127 ascii characters.
-    /// </devdoc>
+    /// </summary>
     unsafe internal struct XmlCharType
     {
         // Surrogate constants

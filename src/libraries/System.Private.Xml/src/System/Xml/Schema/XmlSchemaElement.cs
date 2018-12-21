@@ -8,10 +8,6 @@ using System.Diagnostics;
 
 namespace System.Xml.Schema
 {
-    /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaElement : XmlSchemaParticle
     {
         private bool _isAbstract;
@@ -40,10 +36,6 @@ namespace System.Xml.Schema
         private SchemaElementDecl _elementDecl;
 
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.IsAbstract"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("abstract"), DefaultValue(false)]
         public bool IsAbstract
         {
@@ -55,10 +47,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.Block"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("block"), DefaultValue(XmlSchemaDerivationMethod.None)]
         public XmlSchemaDerivationMethod Block
         {
@@ -66,10 +54,6 @@ namespace System.Xml.Schema
             set { _block = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.DefaultValue"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("default")]
         [DefaultValue(null)]
         public string DefaultValue
@@ -78,10 +62,6 @@ namespace System.Xml.Schema
             set { _defaultValue = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.Final"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("final"), DefaultValue(XmlSchemaDerivationMethod.None)]
         public XmlSchemaDerivationMethod Final
         {
@@ -89,10 +69,6 @@ namespace System.Xml.Schema
             set { _final = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.FixedValue"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("fixed")]
         [DefaultValue(null)]
         public string FixedValue
@@ -101,10 +77,6 @@ namespace System.Xml.Schema
             set { _fixedValue = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.Form"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("form"), DefaultValue(XmlSchemaForm.None)]
         public XmlSchemaForm Form
         {
@@ -112,10 +84,6 @@ namespace System.Xml.Schema
             set { _form = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.Name"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("name"), DefaultValue("")]
         public string Name
         {
@@ -123,10 +91,6 @@ namespace System.Xml.Schema
             set { _name = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.IsNillable"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("nillable"), DefaultValue(false)]
         public bool IsNillable
         {
@@ -145,10 +109,7 @@ namespace System.Xml.Schema
         {
             get { return _hasAbstractAttribute; }
         }
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.RefName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         [XmlAttribute("ref")]
         public XmlQualifiedName RefName
         {
@@ -156,10 +117,6 @@ namespace System.Xml.Schema
             set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.SubstitutionGroup"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("substitutionGroup")]
         public XmlQualifiedName SubstitutionGroup
         {
@@ -167,10 +124,6 @@ namespace System.Xml.Schema
             set { _substitutionGroup = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.SchemaTypeName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("type")]
         public XmlQualifiedName SchemaTypeName
         {
@@ -178,10 +131,6 @@ namespace System.Xml.Schema
             set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.SchemaType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("complexType", typeof(XmlSchemaComplexType)),
          XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
         public XmlSchemaType SchemaType
@@ -190,10 +139,6 @@ namespace System.Xml.Schema
             set { _type = value; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.Constraints"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("key", typeof(XmlSchemaKey)),
          XmlElement("keyref", typeof(XmlSchemaKeyref)),
          XmlElement("unique", typeof(XmlSchemaUnique))]
@@ -209,20 +154,12 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.QualifiedName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlQualifiedName QualifiedName
         {
             get { return _qualifiedName; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.ElementType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         [Obsolete("This property has been deprecated. Please use ElementSchemaType property that returns a strongly typed element type. https://go.microsoft.com/fwlink/?linkid=14202")]
         public object ElementType
@@ -240,30 +177,18 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.ElementType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaType ElementSchemaType
         {
             get { return _elementType; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.BlockResolved"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaDerivationMethod BlockResolved
         {
             get { return _blockResolved; }
         }
 
-        /// <include file='doc\XmlSchemaElement.uex' path='docs/doc[@for="XmlSchemaElement.FinalResolved"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaDerivationMethod FinalResolved
         {

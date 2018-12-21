@@ -6,10 +6,6 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaRedefine.uex' path='docs/doc[@for="XmlSchemaRedefine"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaRedefine : XmlSchemaExternal
     {
         private XmlSchemaObjectCollection _items = new XmlSchemaObjectCollection();
@@ -17,20 +13,11 @@ namespace System.Xml.Schema
         private XmlSchemaObjectTable _types = new XmlSchemaObjectTable();
         private XmlSchemaObjectTable _groups = new XmlSchemaObjectTable();
 
-
-        /// <include file='doc\XmlSchemaRedefine.uex' path='docs/doc[@for="XmlSchemaRedefine.XmlSchemaRedefine"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public XmlSchemaRedefine()
         {
             Compositor = Compositor.Redefine;
         }
 
-        /// <include file='doc\XmlSchemaRedefine.uex' path='docs/doc[@for="XmlSchemaRedefine.Items"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("annotation", typeof(XmlSchemaAnnotation)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroup)),
          XmlElement("complexType", typeof(XmlSchemaComplexType)),
@@ -41,30 +28,18 @@ namespace System.Xml.Schema
             get { return _items; }
         }
 
-        /// <include file='doc\XmlSchemaRedefine.uex' path='docs/doc[@for="XmlSchemaRedefine.AttributeGroups"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable AttributeGroups
         {
             get { return _attributeGroups; }
         }
 
-        /// <include file='doc\XmlSchemaRedefine.uex' path='docs/doc[@for="XmlSchemaRedefine.SchemaTypes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable SchemaTypes
         {
             get { return _types; }
         }
 
-        /// <include file='doc\XmlSchemaRedefine.uex' path='docs/doc[@for="XmlSchemaRedefine.Groups"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public XmlSchemaObjectTable Groups
         {
