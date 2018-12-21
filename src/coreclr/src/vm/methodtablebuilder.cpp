@@ -5120,7 +5120,7 @@ MethodTableBuilder::InitNewMethodDesc(
     }
 
     // Check for methods marked as [Intrinsic]
-    if (GetModule()->IsSystem())
+    if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
     {
         HRESULT hr = GetMDImport()->GetCustomAttributeByName(pMethod->GetMethodSignature().GetToken(),
             g_CompilerServicesIntrinsicAttribute,
