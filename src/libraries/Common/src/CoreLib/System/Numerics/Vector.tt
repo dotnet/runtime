@@ -792,86 +792,28 @@ namespace System.Numerics
             }
         }
 
-        // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
         /// Multiplies a vector by the given scalar.
         /// </summary>
         /// <param name="value">The source vector.</param>
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(Vector<T> value, T factor)
         {
-            unchecked
-            {
-                if (Vector.IsHardwareAccelerated)
-                {
-                    return new Vector<T>(factor) * value;
-                }
-                else
-                {
-                    Vector<T> product = new Vector<T>();
-<#
-    foreach (Type type in supportedTypes)
-    {
-#>
-                    <#=GenerateIfStatementHeader(type)#>
-                    {
-<#
-        for (int g = 0; g < GetNumFields(type, totalSize); g++)
-        {
-#>
-                        product.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(value.<#= GetRegisterFieldName(type, g) #> * (<#=typeAliases[type]#>)(object)factor);
-<#
-        }
-#>
-                    }
-<#
-    }
-#>
-                    return product;
-                }
-            }
+            return new Vector<T>(factor) * value;
         }
 
-        // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
         /// Multiplies a vector by the given scalar.
         /// </summary>
         /// <param name="factor">The scalar value.</param>
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(T factor, Vector<T> value)
         {
-            unchecked
-            {
-                if (Vector.IsHardwareAccelerated)
-                {
-                    return new Vector<T>(factor) * value;
-                }
-                else
-                {
-                    Vector<T> product = new Vector<T>();
-<#
-    foreach (Type type in supportedTypes)
-    {
-#>
-                    <#=GenerateIfStatementHeader(type)#>
-                    {
-<#
-        for (int g = 0; g < GetNumFields(type, totalSize); g++)
-        {
-#>
-                        product.<#= GetRegisterFieldName(type, g) #> = (<#=typeAliases[type]#>)(value.<#= GetRegisterFieldName(type, g) #> * (<#=typeAliases[type]#>)(object)factor);
-<#
-        }
-#>
-                    }
-<#
-    }
-#>
-                    return product;
-                }
-            }
+            return new Vector<T>(factor) * value;
         }
 
         // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
