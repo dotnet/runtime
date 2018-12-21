@@ -298,8 +298,42 @@ protected:
 
     void genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, regNumber tmpReg, bool* pTmpRegIsZero);
 
-    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
+#ifdef DEBUG
+    static void genCheckSPOffset(bool isRegsCountOdd, int spOffset, int slotSize);
+#endif // DEBUG
 
+    // A simple struct to keep register pairs for prolog and epilog.
+    struct RegPair
+    {
+        regNumber reg1;
+        regNumber reg2;
+
+        RegPair() : reg1(REG_NA), reg2(REG_NA)
+        {
+        }
+
+        RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA)
+        {
+        }
+
+        RegPair(regNumber reg1, regNumber reg2) : reg1(reg1), reg2(reg2)
+        {
+            assert(reg2 == REG_NEXT(reg1));
+        }
+    };
+
+    static void genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack);
+
+    static int genGetSlotSizeForRegsInMask(regMaskTP regsMask);
+
+    int genSaveCalleeSavedRegisterGroup(regMaskTP regsMask,
+                                        int       spDelta,
+                                        int spOffset DEBUGARG(bool isRegsToSaveCountOdd));
+    int genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask,
+                                           int       spDelta,
+                                           int spOffset DEBUGARG(bool isRegsToRestoreCountOdd));
+
+    void genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta);
     void genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, int lowestCalleeSavedOffset, int spDelta);
 
     void genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed);
