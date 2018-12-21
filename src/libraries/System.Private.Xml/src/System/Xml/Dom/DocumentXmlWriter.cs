@@ -305,7 +305,7 @@ namespace System.Xml
 
         public override void WriteCharEntity(char ch)
         {
-            WriteString(new string(ch, 1));
+            WriteString(char.ToString(ch));
         }
 
         public override void WriteWhitespace(string text)
