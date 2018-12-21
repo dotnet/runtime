@@ -315,7 +315,7 @@ namespace System.Collections.Generic
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     // Needs to be public to support binary serialization compatibility
-    public sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
+    public sealed class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct, Enum
     {
         internal EnumEqualityComparer() { }
 
@@ -333,9 +333,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(T x, T y)
         {
-            int x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(x);
-            int y_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCast(y);
-            return x_final == y_final;
+            return System.Runtime.CompilerServices.JitHelpers.EnumEquals(x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -353,85 +351,20 @@ namespace System.Collections.Generic
 
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
         {
-            int toFind = JitHelpers.UnsafeEnumCast(value);
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                int current = JitHelpers.UnsafeEnumCast(array[i]);
-                if (toFind == current) return i;
+                if (System.Runtime.CompilerServices.JitHelpers.EnumEquals(array[i], value)) return i;
             }
             return -1;
         }
 
         internal override int LastIndexOf(T[] array, T value, int startIndex, int count)
         {
-            int toFind = JitHelpers.UnsafeEnumCast(value);
             int endIndex = startIndex - count + 1;
             for (int i = startIndex; i >= endIndex; i--)
             {
-                int current = JitHelpers.UnsafeEnumCast(array[i]);
-                if (toFind == current) return i;
-            }
-            return -1;
-        }
-    }
-
-    [Serializable]
-    internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
-    {
-        internal LongEnumEqualityComparer() { }
-
-        // This is used by the serialization engine.
-        private LongEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            // The LongEnumEqualityComparer does not exist on 4.0 so we need to serialize this comparer as ObjectEqualityComparer
-            // to allow for roundtrip between 4.0 and 4.5.
-            info.SetType(typeof(ObjectEqualityComparer<T>));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(T x, T y)
-        {
-            long x_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCastLong(x);
-            long y_final = System.Runtime.CompilerServices.JitHelpers.UnsafeEnumCastLong(y);
-            return x_final == y_final;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode(T obj)
-        {
-            return obj.GetHashCode();
-        }
-
-        // Equals method for the comparer itself.
-        public override bool Equals(object obj) =>
-            obj != null && GetType() == obj.GetType();
-
-        public override int GetHashCode() =>
-            GetType().GetHashCode();
-
-        internal override int IndexOf(T[] array, T value, int startIndex, int count)
-        {
-            long toFind = JitHelpers.UnsafeEnumCastLong(value);
-            int endIndex = startIndex + count;
-            for (int i = startIndex; i < endIndex; i++)
-            {
-                long current = JitHelpers.UnsafeEnumCastLong(array[i]);
-                if (toFind == current) return i;
-            }
-            return -1;
-        }
-
-        internal override int LastIndexOf(T[] array, T value, int startIndex, int count)
-        {
-            long toFind = JitHelpers.UnsafeEnumCastLong(value);
-            int endIndex = startIndex - count + 1;
-            for (int i = startIndex; i >= endIndex; i--)
-            {
-                long current = JitHelpers.UnsafeEnumCastLong(array[i]);
-                if (toFind == current) return i;
+                if (System.Runtime.CompilerServices.JitHelpers.EnumEquals(array[i], value)) return i;
             }
             return -1;
         }
