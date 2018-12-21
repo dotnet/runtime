@@ -130,21 +130,16 @@ namespace System.Collections.Generic
     // since we want to serialize as ObjectComparer for
     // back-compat reasons (see below).
     [Serializable]
-    internal sealed class Int32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
+    internal sealed class EnumComparer<T> : Comparer<T>, ISerializable where T : struct, Enum
     {
-        public Int32EnumComparer()
-        {
-            Debug.Assert(typeof(T).IsEnum);
-        }
+        internal EnumComparer() { }
 
         // Used by the serialization engine.
-        private Int32EnumComparer(SerializationInfo info, StreamingContext context) { }
+        private EnumComparer(SerializationInfo info, StreamingContext context) { }
 
         public override int Compare(T x, T y)
         {
-            int ix = JitHelpers.UnsafeEnumCast(x);
-            int iy = JitHelpers.UnsafeEnumCast(y);
-            return ix.CompareTo(iy);
+            return System.Runtime.CompilerServices.JitHelpers.EnumCompareTo(x, y);
         }
 
         // Equals method for the comparer itself. 
@@ -160,96 +155,6 @@ namespace System.Collections.Generic
             // and instead fell back to ObjectComparer which uses boxing.
             // Set the type as ObjectComparer here so code that serializes
             // Comparer for enums will not break.
-            info.SetType(typeof(ObjectComparer<T>));
-        }
-    }
-
-    [Serializable]
-    internal sealed class UInt32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
-    {
-        public UInt32EnumComparer()
-        {
-            Debug.Assert(typeof(T).IsEnum);
-        }
-
-        // Used by the serialization engine.
-        private UInt32EnumComparer(SerializationInfo info, StreamingContext context) { }
-
-        public override int Compare(T x, T y)
-        {
-            uint ix = (uint)JitHelpers.UnsafeEnumCast(x);
-            uint iy = (uint)JitHelpers.UnsafeEnumCast(y);
-            return ix.CompareTo(iy);
-        }
-
-        // Equals method for the comparer itself. 
-        public override bool Equals(object obj) =>
-            obj != null && GetType() == obj.GetType();
-
-        public override int GetHashCode() =>
-            GetType().GetHashCode();
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.SetType(typeof(ObjectComparer<T>));
-        }
-    }
-
-    [Serializable]
-    internal sealed class Int64EnumComparer<T> : Comparer<T>, ISerializable where T : struct
-    {
-        public Int64EnumComparer()
-        {
-            Debug.Assert(typeof(T).IsEnum);
-        }
-
-        public override int Compare(T x, T y)
-        {
-            long lx = JitHelpers.UnsafeEnumCastLong(x);
-            long ly = JitHelpers.UnsafeEnumCastLong(y);
-            return lx.CompareTo(ly);
-        }
-
-        // Equals method for the comparer itself. 
-        public override bool Equals(object obj) =>
-            obj != null && GetType() == obj.GetType();
-
-        public override int GetHashCode() =>
-            GetType().GetHashCode();
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.SetType(typeof(ObjectComparer<T>));
-        }
-    }
-
-    [Serializable]
-    internal sealed class UInt64EnumComparer<T> : Comparer<T>, ISerializable where T : struct
-    {
-        public UInt64EnumComparer()
-        {
-            Debug.Assert(typeof(T).IsEnum);
-        }
-
-        // Used by the serialization engine.
-        private UInt64EnumComparer(SerializationInfo info, StreamingContext context) { }
-
-        public override int Compare(T x, T y)
-        {
-            ulong lx = (ulong)JitHelpers.UnsafeEnumCastLong(x);
-            ulong ly = (ulong)JitHelpers.UnsafeEnumCastLong(y);
-            return lx.CompareTo(ly);
-        }
-
-        // Equals method for the comparer itself. 
-        public override bool Equals(object obj) =>
-            obj != null && GetType() == obj.GetType();
-
-        public override int GetHashCode() =>
-            GetType().GetHashCode();
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
             info.SetType(typeof(ObjectComparer<T>));
         }
     }
