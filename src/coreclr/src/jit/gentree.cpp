@@ -16449,9 +16449,23 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
         switch (simdType)
         {
             case TYP_SIMD16:
-                return gtNewSimdHWIntrinsicNode(simdType, NI_Base_Vector128_Zero, baseType, size);
+                if (compSupports(InstructionSet_SSE))
+                {
+                    // We only return the HWIntrinsicNode if SSE is supported, since it is possible for
+                    // the user to disable the SSE HWIntrinsic support via the COMPlus configuration knobs
+                    // even though the hardware vector types are still available.
+                    return gtNewSimdHWIntrinsicNode(simdType, NI_Base_Vector128_Zero, baseType, size);
+                }
+                return nullptr;
             case TYP_SIMD32:
-                return gtNewSimdHWIntrinsicNode(simdType, NI_Base_Vector256_Zero, baseType, size);
+                if (compSupports(InstructionSet_AVX))
+                {
+                    // We only return the HWIntrinsicNode if AVX is supported, since it is possible for
+                    // the user to disable the AVX HWIntrinsic support via the COMPlus configuration knobs
+                    // even though the hardware vector types are still available.
+                    return gtNewSimdHWIntrinsicNode(simdType, NI_Base_Vector256_Zero, baseType, size);
+                }
+                return nullptr;
             default:
                 break;
         }
