@@ -2289,7 +2289,7 @@ ZapImport * ZapImportTable::GetHelperImport(ReadyToRunHelper helperNum)
     {
         SigBuilder sigBuilder;
 
-        sigBuilder.AppendData(ENCODE_READYTORUN_HELPER);
+        sigBuilder.AppendByte(ENCODE_READYTORUN_HELPER);
         sigBuilder.AppendData(helperNum);
 
         pImport->SetBlob(GetBlob(&sigBuilder));
