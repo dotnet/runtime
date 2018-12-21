@@ -231,11 +231,16 @@ namespace System.Net.Http
             }
         }
 
-        // Note, this will return null for a streamId that's not in use.
+        // Note, this will return null for a streamId that's no longer in use.
         // Callers must check for this and send a RST_STREAM or ignore as appropriate.
+        // If the streamId is invalid or the stream is idle, calling this function
+        // will result in a connection level error.
         private Http2Stream GetStream(int streamId)
         {
-            if (streamId <= 0)
+            // TODO: ISSUE 34192: If we implement support for Push Promise, this will
+            // need to be updated to track the highest stream ID used by the server in
+            // addition to the highest ID used by the client.
+            if (streamId <= 0 || streamId >= _nextStream)
             {
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
             }
@@ -588,6 +593,13 @@ namespace System.Net.Http
             if (frameHeader.Length < FrameHeader.GoAwayMinLength)
             {
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
+            }
+
+            // GoAway frames always apply to the whole connection, never to a single stream.
+            // According to RFC 7540 section 6.8, this should be a connection error.
+            if (frameHeader.StreamId != 0)
+            {
+                throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
             }
 
             int lastValidStream = (int)((uint)((_incomingBuffer.ActiveSpan[0] << 24) | (_incomingBuffer.ActiveSpan[1] << 16) | (_incomingBuffer.ActiveSpan[2] << 8) | _incomingBuffer.ActiveSpan[3]) & 0x7FFFFFFF);
