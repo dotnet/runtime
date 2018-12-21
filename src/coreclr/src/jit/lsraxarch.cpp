@@ -2513,6 +2513,25 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
             }
 #endif // _TARGET_X86_
 
+            case NI_BMI2_MultiplyNoFlags:
+            case NI_BMI2_X64_MultiplyNoFlags:
+            {
+                assert(numArgs == 2 || numArgs == 3);
+                srcCount += BuildOperandUses(op1, RBM_EDX);
+                srcCount += BuildOperandUses(op2);
+                if (numArgs == 3)
+                {
+                    // op3 reg should be different from target reg to
+                    // store the lower half result after executing the instruction
+                    srcCount += BuildDelayFreeUses(op3);
+                    // Need a internal register different from the dst to take the lower half result
+                    buildInternalIntRegisterDefForNode(intrinsicTree);
+                    setInternalRegsDelayFree = true;
+                }
+                buildUses = false;
+                break;
+            }
+
             case NI_FMA_MultiplyAdd:
             case NI_FMA_MultiplyAddNegated:
             case NI_FMA_MultiplyAddNegatedScalar:

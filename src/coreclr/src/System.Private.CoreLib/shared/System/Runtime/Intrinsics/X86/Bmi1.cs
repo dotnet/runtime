@@ -35,7 +35,7 @@ namespace System.Runtime.Intrinsics.X86
             ///   BEXTR r64a, reg/m64, r64b
             /// This intrinisc is only available on 64-bit processes
             /// </summary>
-            public static ulong BitFieldExtract(ulong value, byte start, byte length) => BitFieldExtract(value, start, length);
+            public static ulong BitFieldExtract(ulong value, byte start, byte length) => BitFieldExtract(value, (ushort)(start | (length << 8)));
 
             /// <summary>
             /// unsigned __int64 _bextr2_u64 (unsigned __int64 a, unsigned __int64 control)
@@ -83,7 +83,7 @@ namespace System.Runtime.Intrinsics.X86
         /// unsigned int _bextr_u32 (unsigned int a, unsigned int start, unsigned int len)
         ///   BEXTR r32a, reg/m32, r32b
         /// </summary>
-        public static uint BitFieldExtract(uint value, byte start, byte length) => BitFieldExtract(value, start, length);
+        public static uint BitFieldExtract(uint value, byte start, byte length) => BitFieldExtract(value, (ushort)(start | (length << 8)));
 
         /// <summary>
         /// unsigned int _bextr2_u32 (unsigned int a, unsigned int control)
