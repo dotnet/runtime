@@ -374,18 +374,177 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
     }
 }
 
+#ifdef DEBUG
+//------------------------------------------------------------------------
+// genCheckSPOffset: Check Stack Pointer(SP) offset value,
+// it must be 8 to account for alignment for the odd count
+// or it must be 0 for the even count.
+//
+// Arguments:
+//   isRegsCountOdd - true if number of registers to save/restore is odd;
+//   spOffset       - stack pointer offset value;
+//   slotSize       - stack slot size in bytes.
+//
+// static
+void CodeGen::genCheckSPOffset(bool isRegsCountOdd, int spOffset, int slotSize)
+{
+    if (isRegsCountOdd)
+    {
+        // The offset must be 8 to account for alignment for the odd count.
+        assert(spOffset == slotSize);
+    }
+    else
+    {
+        // The offset must be 0 for the even count.
+        assert(spOffset == 0);
+    }
+}
+#endif // DEBUG
+
+//------------------------------------------------------------------------
+// genBuildRegPairsStack: Build a stack of register pairs for prolog/epilog save/restore for the given mask.
+// The first register pair will contain the lowest register. Register pairs will combine neighbor
+// registers in pairs. If it can't be done (for example if we have a hole or this is the last reg in a mask with
+// odd number of regs) then the second element of that RegPair will be REG_NA.
+//
+// Arguments:
+//   regsMask - a mask of registers for prolog/epilog generation;
+//   regStack - a regStack instance to build the stack in, used to save temp copyings.
+//
+// Return value:
+//   no return value; the regStack argument is modified.
+//
+// static
+void CodeGen::genBuildRegPairsStack(regMaskTP regsMask, ArrayStack<RegPair>* regStack)
+{
+    assert(regStack != nullptr);
+    assert(regStack->Height() == 0);
+
+    unsigned regsCount = genCountBits(regsMask);
+
+    while (regsMask != RBM_NONE)
+    {
+        regMaskTP reg1Mask = genFindLowestBit(regsMask);
+        regNumber reg1     = genRegNumFromMask(reg1Mask);
+        regsMask &= ~reg1Mask;
+        regsCount -= 1;
+
+        bool isPairSave = false;
+        if (regsCount > 0)
+        {
+            regMaskTP reg2Mask = genFindLowestBit(regsMask);
+            regNumber reg2     = genRegNumFromMask(reg2Mask);
+            if (reg2 == REG_NEXT(reg1))
+            {
+                isPairSave = true;
+
+                regsMask &= ~reg2Mask;
+                regsCount -= 1;
+
+                regStack->Push(RegPair(reg1, reg2));
+            }
+        }
+        if (!isPairSave)
+        {
+            regStack->Push(RegPair(reg1));
+        }
+    }
+    assert(regsCount == 0 && regsMask == RBM_NONE);
+}
+
+//------------------------------------------------------------------------
+// genGetSlotSizeForRegsInMask: Get the stack slot size appropriate for the register type from the mask.
+//
+// Arguments:
+//   regsMask - a mask of registers for prolog/epilog generation.
+//
+// Return value:
+//   stack slot size in bytes.
+//
+// static
+int CodeGen::genGetSlotSizeForRegsInMask(regMaskTP regsMask)
+{
+    assert((regsMask & (RBM_CALLEE_SAVED | RBM_LR)) == regsMask); // Do not expect anything else.
+
+    bool isIntMask = ((regsMask & RBM_ALLFLOAT) == 0);
+#ifdef DEBUG
+    bool isFloatMask = ((regsMask & RBM_ALLFLOAT) == regsMask);
+    // Has to be either int or float.
+    assert(isIntMask != isFloatMask);
+#endif // DEBUG
+
+    int slotSize = isIntMask ? REGSIZE_BYTES : FPSAVE_REGSIZE_BYTES;
+    return slotSize;
+}
+
+//------------------------------------------------------------------------
+// genSaveCalleeSavedRegisterGroup: Saves the group of registers described by the mask.
+// All registers in the mask must be the same type (int or float).
+//
+// Arguments:
+//   regsMask             - a mask of registers for prolog generation;
+//   spDelta              - if non-zero, the amount to add to SP before the first register save (or together with it);
+//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//   isRegsToSaveCountOdd - (DEBUG only) true if number of registers to save is odd.
+//
+// Return Value:
+//   SP offset after saving registers from this group.
+//
+int CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask,
+                                             int       spDelta,
+                                             int spOffset DEBUGARG(bool isRegsToSaveCountOdd))
+{
+    const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
+
+#ifdef DEBUG
+    if (spDelta != 0) // The first store change SP offset, check its value before.
+    {
+        genCheckSPOffset(isRegsToSaveCountOdd, spOffset, slotSize);
+    }
+#endif // DEBUG
+
+    ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
+    genBuildRegPairsStack(regsMask, &regStack);
+
+    bool lastSavedWasPair = false; // currently unused, see the comment below.
+    for (int i = 0; i < regStack.Height(); ++i)
+    {
+        RegPair regPair = regStack.Bottom(i);
+        if (regPair.reg2 != REG_NA)
+        {
+            // We can use a STP instruction.
+            genPrologSaveRegPair(regPair.reg1, regPair.reg2, spOffset, spDelta, lastSavedWasPair, REG_IP0, nullptr);
+
+            // TODO-ARM64-CQ: this code works in the prolog, but it's a bit weird to think about "next" when generating
+            // this epilog, to get the codes to match. Turn this off until that is better understood.
+            // lastSavedWasPair = true;
+
+            spOffset += 2 * slotSize;
+        }
+        else
+        {
+            // No register pair; we use a STR instruction.
+            genPrologSaveReg(regPair.reg1, spOffset, spDelta, REG_IP0, nullptr);
+
+            lastSavedWasPair = false;
+            spOffset += slotSize;
+        }
+
+        spDelta = 0; // We've now changed SP already, if necessary; don't do it again.
+    }
+    return spOffset;
+}
+
 //------------------------------------------------------------------------
 // genSaveCalleeSavedRegistersHelp: Save the callee-saved registers in 'regsToSaveMask' to the stack frame
 // in the function or funclet prolog. The save set does not contain FP, since that is
 // guaranteed to be saved separately, so we can set up chaining. We can only use the instructions
 // that are allowed by the unwind codes. Integer registers are stored at lower addresses,
-// FP/SIMD registers are stored at higher addresses. There are no gaps. The caller ensures that
+// FP/SIMD registers are stored at higher addresses. The caller ensures that
 // there is enough space on the frame to store these registers, and that the store instructions
 // we need to use (STR or STP) are encodable with the stack-pointer immediate offsets we need to
-// use. Note that the save set can contain LR if this is a frame without a frame pointer, in
-// which case LR is saved along with the other callee-saved registers. The caller can tell us
-// to fold in a stack pointer adjustment, which we will do with the first instruction. Note that
-// the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
+// use. The caller can tell us to fold in a stack pointer adjustment, which we will do with the first instruction. Note
+// that the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
 // stack pointer is always 16 byte aligned. If we are saving an odd number of callee-saved
 // registers, though, we will have an empty aligment slot somewhere. It turns out we will put
 // it below (at a lower address) the callee-saved registers, as that is currently how we
@@ -400,9 +559,10 @@ void CodeGen::genEpilogRestoreReg(regNumber reg1, int spOffset, int spDelta, reg
 //    spDelta                 - If non-zero, the amount to add to SP before the register saves (must be negative or
 //                              zero).
 //
-// Return Value:
-//    None.
-
+// Notes:
+//    the save set can contain LR in which case LR is saved along with the other callee-saved registers.
+//    But currently Jit doesn't use frames without frame pointer on arm64.
+//
 void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowestCalleeSavedOffset, int spDelta)
 {
     assert(spDelta <= 0);
@@ -419,123 +579,95 @@ void CodeGen::genSaveCalleeSavedRegistersHelp(regMaskTP regsToSaveMask, int lowe
     }
 
     assert((spDelta % 16) == 0);
-    assert((regsToSaveMask & RBM_FP) == 0);                             // we never save FP here
-    assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_LR)); // We also save LR, even though it is not in
-                                                                        // RBM_CALLEE_SAVED.
+    assert((regsToSaveMask & RBM_FP) == 0); // We never save FP here.
+
+    // We also save LR, even though it is not in RBM_CALLEE_SAVED.
+    assert(regsToSaveCount <= genCountBits(RBM_CALLEE_SAVED | RBM_LR));
+
+#ifdef DEBUG
+    bool isRegsToSaveCountOdd = ((regsToSaveCount % 2) != 0);
+#endif // DEBUG
+
+    int spOffset = lowestCalleeSavedOffset; // this is the offset *after* we change SP.
 
     regMaskTP maskSaveRegsFloat = regsToSaveMask & RBM_ALLFLOAT;
     regMaskTP maskSaveRegsInt   = regsToSaveMask & ~maskSaveRegsFloat;
 
-    int spOffset = lowestCalleeSavedOffset; // this is the offset *after* we change SP.
+    bool floatSavesSp = (maskSaveRegsInt == 0);
 
-    unsigned intRegsToSaveCount   = genCountBits(maskSaveRegsInt);
-    unsigned floatRegsToSaveCount = genCountBits(maskSaveRegsFloat);
-    bool     isPairSave           = false;
+    if (maskSaveRegsInt != 0)
+    {
+        assert(!floatSavesSp); // We always change SP only once with the first save/last load.
+
+        // Save the integer registers.
+        spOffset = genSaveCalleeSavedRegisterGroup(maskSaveRegsInt, spDelta, spOffset DEBUGARG(isRegsToSaveCountOdd));
+    }
+
+    if (maskSaveRegsFloat != 0)
+    {
+        int floatSpDelta = floatSavesSp ? spDelta : 0;
+
+        // Save the floating-point/SIMD registers
+        spOffset =
+            genSaveCalleeSavedRegisterGroup(maskSaveRegsFloat, floatSpDelta, spOffset DEBUGARG(isRegsToSaveCountOdd));
+        spDelta = 0;
+    }
+}
+
+//------------------------------------------------------------------------
+// genRestoreCalleeSavedRegisterGroup: Saves the group of registers described by the mask.
+// All registers in the mask must be the same type (int or float).
+//
+// Arguments:
+//   regsMask             - a mask of registers for epilog generation;
+//   spDelta              - if non-zero, the amount to add to SP after the last register restore (or together with it);
+//   spOffset             - the offset from SP that is the beginning of the callee-saved register area;
+//
+// Return Value:
+//   SP offset after restoring registers from this group.
+//
+int CodeGen::genRestoreCalleeSavedRegisterGroup(regMaskTP regsMask,
+                                                int       spDelta,
+                                                int spOffset DEBUGARG(bool isRegsToRestoreCountOdd))
+{
+    const int slotSize = genGetSlotSizeForRegsInMask(regsMask);
+
+    ArrayStack<RegPair> regStack(compiler->getAllocator(CMK_Codegen));
+    genBuildRegPairsStack(regsMask, &regStack);
+
+    int stackDelta = 0;
+    for (int i = 0; i < regStack.Height(); ++i)
+    {
+        bool lastRestoreInTheGroup = (i == regStack.Height() - 1);
+        bool updateStackDelta      = lastRestoreInTheGroup && (spDelta != 0);
+        if (updateStackDelta)
+        {
+            // Update stack delta only if it is the last restore (the first save).
+            assert(stackDelta == 0);
+            stackDelta = spDelta;
+        }
+
+        RegPair regPair = regStack.Index(i);
+        if (regPair.reg2 != REG_NA)
+        {
+            spOffset -= 2 * slotSize;
+
+            genEpilogRestoreRegPair(regPair.reg1, regPair.reg2, spOffset, stackDelta, REG_IP1, nullptr);
+        }
+        else
+        {
+            spOffset -= slotSize;
+            genEpilogRestoreReg(regPair.reg1, spOffset, stackDelta, REG_IP1, nullptr);
+        }
+    }
+
 #ifdef DEBUG
-    bool isRegsToSaveCountOdd = ((intRegsToSaveCount + floatRegsToSaveCount) % 2 != 0);
-#endif
-
-    // Save the integer registers
-
-    bool lastSavedWasPair = false;
-
-    while (maskSaveRegsInt != RBM_NONE)
+    if (stackDelta != 0) // The last restore (the first save) changes SP offset, check its value after.
     {
-        // If this is the first store that needs to change SP (spDelta != 0),
-        // then the offset must be 8 to account for alignment for the odd count
-        // or it must be 0 for the even count.
-        assert((spDelta == 0) || (isRegsToSaveCountOdd && spOffset == REGSIZE_BYTES) ||
-               (!isRegsToSaveCountOdd && spOffset == 0));
-
-        isPairSave         = (intRegsToSaveCount >= 2);
-        regMaskTP reg1Mask = genFindLowestBit(maskSaveRegsInt);
-        regNumber reg1     = genRegNumFromMask(reg1Mask);
-        maskSaveRegsInt &= ~reg1Mask;
-        intRegsToSaveCount -= 1;
-
-        if (isPairSave)
-        {
-            // We can use a STP instruction.
-
-            regMaskTP reg2Mask = genFindLowestBit(maskSaveRegsInt);
-            regNumber reg2     = genRegNumFromMask(reg2Mask);
-            assert((reg2 == REG_NEXT(reg1)) || (reg2 == REG_LR));
-            maskSaveRegsInt &= ~reg2Mask;
-            intRegsToSaveCount -= 1;
-
-            genPrologSaveRegPair(reg1, reg2, spOffset, spDelta, lastSavedWasPair, REG_IP0, nullptr);
-
-            // TODO-ARM64-CQ: this code works in the prolog, but it's a bit weird to think about "next" when generating
-            // this epilog, to get the codes to match. Turn this off until that is better understood.
-            // lastSavedWasPair = true;
-
-            spOffset += 2 * REGSIZE_BYTES;
-        }
-        else
-        {
-            // No register pair; we use a STR instruction.
-
-            genPrologSaveReg(reg1, spOffset, spDelta, REG_IP0, nullptr);
-
-            lastSavedWasPair = false;
-            spOffset += REGSIZE_BYTES;
-        }
-
-        spDelta = 0; // We've now changed SP already, if necessary; don't do it again.
+        genCheckSPOffset(isRegsToRestoreCountOdd, spOffset, slotSize);
     }
-
-    assert(intRegsToSaveCount == 0);
-
-    // Save the floating-point/SIMD registers
-
-    lastSavedWasPair = false;
-
-    while (maskSaveRegsFloat != RBM_NONE)
-    {
-        // If this is the first store that needs to change SP (spDelta != 0),
-        // then the offset must be 8 to account for alignment for the odd count
-        // or it must be 0 for the even count.
-        assert((spDelta == 0) || (isRegsToSaveCountOdd && spOffset == REGSIZE_BYTES) ||
-               (!isRegsToSaveCountOdd && spOffset == 0));
-
-        isPairSave         = (floatRegsToSaveCount >= 2);
-        regMaskTP reg1Mask = genFindLowestBit(maskSaveRegsFloat);
-        regNumber reg1     = genRegNumFromMask(reg1Mask);
-        maskSaveRegsFloat &= ~reg1Mask;
-        floatRegsToSaveCount -= 1;
-
-        if (isPairSave)
-        {
-            // We can use a STP instruction.
-
-            regMaskTP reg2Mask = genFindLowestBit(maskSaveRegsFloat);
-            regNumber reg2     = genRegNumFromMask(reg2Mask);
-            assert(reg2 == REG_NEXT(reg1));
-            maskSaveRegsFloat &= ~reg2Mask;
-            floatRegsToSaveCount -= 1;
-
-            genPrologSaveRegPair(reg1, reg2, spOffset, spDelta, lastSavedWasPair, REG_IP0, nullptr);
-
-            // TODO-ARM64-CQ: this code works in the prolog, but it's a bit weird to think about "next" when generating
-            // this epilog, to get the codes to match. Turn this off until that is better understood.
-            // lastSavedWasPair = true;
-
-            spOffset += 2 * FPSAVE_REGSIZE_BYTES;
-        }
-        else
-        {
-            // No register pair; we use a STR instruction.
-
-            genPrologSaveReg(reg1, spOffset, spDelta, REG_IP0, nullptr);
-
-            lastSavedWasPair = false;
-            spOffset += FPSAVE_REGSIZE_BYTES;
-        }
-
-        spDelta = 0; // We've now changed SP already, if necessary; don't do it again.
-    }
-
-    assert(floatRegsToSaveCount == 0);
+#endif // DEBUG
+    return spOffset;
 }
 
 //------------------------------------------------------------------------
@@ -585,130 +717,44 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
     }
 
     assert((spDelta % 16) == 0);
-    assert((regsToRestoreMask & RBM_FP) == 0); // we never restore FP here
-    assert(regsToRestoreCount <=
-           genCountBits(RBM_CALLEE_SAVED | RBM_LR)); // We also save LR, even though it is not in RBM_CALLEE_SAVED.
+    assert((regsToRestoreMask & RBM_FP) == 0); // We never restore FP here.
 
-    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
-    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
+    // We also restore LR, even though it is not in RBM_CALLEE_SAVED.
+    assert(regsToRestoreCount <= genCountBits(RBM_CALLEE_SAVED | RBM_LR));
+
+#ifdef DEBUG
+    bool isRegsToRestoreCountOdd = ((regsToRestoreCount % 2) != 0);
+#endif // DEBUG
 
     assert(REGSIZE_BYTES == FPSAVE_REGSIZE_BYTES);
     int spOffset = lowestCalleeSavedOffset + regsToRestoreCount * REGSIZE_BYTES; // Point past the end, to start. We
                                                                                  // predecrement to find the offset to
                                                                                  // load from.
 
-    unsigned floatRegsToRestoreCount         = genCountBits(maskRestoreRegsFloat);
-    unsigned intRegsToRestoreCount           = genCountBits(maskRestoreRegsInt);
-    int      stackDelta                      = 0;
-    bool     isPairRestore                   = false;
-    bool     thisIsTheLastRestoreInstruction = false;
-#ifdef DEBUG
-    bool isRegsToRestoreCountOdd = ((floatRegsToRestoreCount + intRegsToRestoreCount) % 2 != 0);
-#endif
-
     // We want to restore in the opposite order we saved, so the unwind codes match. Be careful to handle odd numbers of
     // callee-saved registers properly.
 
-    // Restore the floating-point/SIMD registers
+    regMaskTP maskRestoreRegsFloat = regsToRestoreMask & RBM_ALLFLOAT;
+    regMaskTP maskRestoreRegsInt   = regsToRestoreMask & ~maskRestoreRegsFloat;
 
-    while (maskRestoreRegsFloat != RBM_NONE)
+    bool floatRestoresSp = (maskRestoreRegsInt == 0);
+
+    if (maskRestoreRegsFloat != 0)
     {
-        thisIsTheLastRestoreInstruction = (floatRegsToRestoreCount <= 2) && (maskRestoreRegsInt == RBM_NONE);
-        isPairRestore                   = (floatRegsToRestoreCount % 2) == 0;
-
-        // Update stack delta only if it is the last restore (the first save).
-        if (thisIsTheLastRestoreInstruction)
-        {
-            assert(stackDelta == 0);
-            stackDelta = spDelta;
-        }
-
-        // Update stack offset.
-        if (isPairRestore)
-        {
-            spOffset -= 2 * FPSAVE_REGSIZE_BYTES;
-        }
-        else
-        {
-            spOffset -= FPSAVE_REGSIZE_BYTES;
-        }
-
-        // If this is the last restore (the first save) that needs to change SP (stackDelta != 0),
-        // then the offset must be 8 to account for alignment for the odd count
-        // or it must be 0 for the even count.
-        assert((stackDelta == 0) || (isRegsToRestoreCountOdd && spOffset == FPSAVE_REGSIZE_BYTES) ||
-               (!isRegsToRestoreCountOdd && spOffset == 0));
-
-        regMaskTP reg2Mask = genFindHighestBit(maskRestoreRegsFloat);
-        regNumber reg2     = genRegNumFromMask(reg2Mask);
-        maskRestoreRegsFloat &= ~reg2Mask;
-        floatRegsToRestoreCount -= 1;
-
-        if (isPairRestore)
-        {
-            regMaskTP reg1Mask = genFindHighestBit(maskRestoreRegsFloat);
-            regNumber reg1     = genRegNumFromMask(reg1Mask);
-            maskRestoreRegsFloat &= ~reg1Mask;
-            floatRegsToRestoreCount -= 1;
-
-            genEpilogRestoreRegPair(reg1, reg2, spOffset, stackDelta, REG_IP1, nullptr);
-        }
-        else
-        {
-            genEpilogRestoreReg(reg2, spOffset, stackDelta, REG_IP1, nullptr);
-        }
+        int floatSpDelta = floatRestoresSp ? spDelta : 0;
+        // Restore the floating-point/SIMD registers
+        spOffset = genRestoreCalleeSavedRegisterGroup(maskRestoreRegsFloat, floatSpDelta,
+                                                      spOffset DEBUGARG(isRegsToRestoreCountOdd));
     }
 
-    assert(floatRegsToRestoreCount == 0);
-
-    // Restore the integer registers
-
-    while (maskRestoreRegsInt != RBM_NONE)
+    if (maskRestoreRegsInt != 0)
     {
-        thisIsTheLastRestoreInstruction = (intRegsToRestoreCount <= 2);
-        isPairRestore                   = (intRegsToRestoreCount % 2) == 0;
+        assert(!floatRestoresSp); // We always change SP only once with the first save/last load.
 
-        // Update stack delta only if it is the last restore (the first save).
-        if (thisIsTheLastRestoreInstruction)
-        {
-            assert(stackDelta == 0);
-            stackDelta = spDelta;
-        }
-
-        // Update stack offset.
-        spOffset -= REGSIZE_BYTES;
-        if (isPairRestore)
-        {
-            spOffset -= REGSIZE_BYTES;
-        }
-
-        // If this is the last restore (the first save) that needs to change SP (stackDelta != 0),
-        // then the offset must be 8 to account for alignment for the odd count
-        // or it must be 0 for the even count.
-        assert((stackDelta == 0) || (isRegsToRestoreCountOdd && spOffset == REGSIZE_BYTES) ||
-               (!isRegsToRestoreCountOdd && spOffset == 0));
-
-        regMaskTP reg2Mask = genFindHighestBit(maskRestoreRegsInt);
-        regNumber reg2     = genRegNumFromMask(reg2Mask);
-        maskRestoreRegsInt &= ~reg2Mask;
-        intRegsToRestoreCount -= 1;
-
-        if (isPairRestore)
-        {
-            regMaskTP reg1Mask = genFindHighestBit(maskRestoreRegsInt);
-            regNumber reg1     = genRegNumFromMask(reg1Mask);
-            maskRestoreRegsInt &= ~reg1Mask;
-            intRegsToRestoreCount -= 1;
-
-            genEpilogRestoreRegPair(reg1, reg2, spOffset, stackDelta, REG_IP1, nullptr);
-        }
-        else
-        {
-            genEpilogRestoreReg(reg2, spOffset, stackDelta, REG_IP1, nullptr);
-        }
+        // Restore the integer registers
+        spOffset =
+            genRestoreCalleeSavedRegisterGroup(maskRestoreRegsInt, spDelta, spOffset DEBUGARG(isRegsToRestoreCountOdd));
     }
-
-    assert(intRegsToRestoreCount == 0);
 }
 
 // clang-format off
