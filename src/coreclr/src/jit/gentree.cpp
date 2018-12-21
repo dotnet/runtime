@@ -17957,18 +17957,30 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore()
     {
         return true;
     }
-    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) && category == HW_Category_IMM)
+    else if (HWIntrinsicInfo::MaybeMemoryStore(gtHWIntrinsicId) &&
+             (category == HW_Category_IMM || category == HW_Category_Scalar))
     {
         // Some AVX intrinsic (without HW_Category_MemoryStore) also have MemoryStore semantics
 
         // Avx/Avx2.InsertVector128 have vector and pointer overloads both, e.g.,
         // Vector128<sbyte> ExtractVector128(Vector256<sbyte> value, byte index)
         // void ExtractVector128(sbyte* address, Vector256<sbyte> value, byte index)
+        // Bmi2/Bmi2.X64.MultiplyNoFlags may return the lower half result by a out argument
+        // unsafe ulong MultiplyNoFlags(ulong left, ulong right, ulong* low)
+        //
         // So, the 3-argument form is MemoryStore
-        if ((HWIntrinsicInfo::lookupNumArgs(this) == 3) &&
-            (gtHWIntrinsicId == NI_AVX_ExtractVector128 || gtHWIntrinsicId == NI_AVX2_ExtractVector128))
+        if (HWIntrinsicInfo::lookupNumArgs(this) == 3)
         {
-            return true;
+            switch (gtHWIntrinsicId)
+            {
+                case NI_AVX_ExtractVector128:
+                case NI_AVX2_ExtractVector128:
+                case NI_BMI2_MultiplyNoFlags:
+                case NI_BMI2_X64_MultiplyNoFlags:
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 #endif // _TARGET_XARCH_

@@ -2835,7 +2835,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         MakeSrcContained(node, op2);
                     }
-                    else if (isCommutative && IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                    else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
+                              (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
+                             IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
                     {
                         MakeSrcContained(node, op1);
 
@@ -2988,7 +2990,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             assert(op1->OperIsList());
             assert(op2 == nullptr);
 
-            GenTreeArgList* argList = op1->AsArgList();
+            GenTreeArgList* argList         = op1->AsArgList();
+            GenTreeArgList* originalArgList = argList;
 
             op1     = argList->Current();
             argList = argList->Rest();
@@ -3003,6 +3006,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case HW_Category_SimpleSIMD:
                 case HW_Category_SIMDScalar:
+                case HW_Category_Scalar:
                 {
                     if ((intrinsicId >= NI_FMA_MultiplyAdd) && (intrinsicId <= NI_FMA_MultiplySubtractNegatedScalar))
                     {
@@ -3054,6 +3058,28 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
                                 {
                                     MakeSrcContained(node, op2);
+                                }
+                                else if (supportsRegOptional)
+                                {
+                                    op2->SetRegOptional();
+                                }
+                                break;
+                            }
+
+                            case NI_BMI2_MultiplyNoFlags:
+                            case NI_BMI2_X64_MultiplyNoFlags:
+                            {
+                                if (IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op2);
+                                }
+                                else if (IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional))
+                                {
+                                    MakeSrcContained(node, op1);
+                                    // MultiplyNoFlags is a Commutative operation, so swap the first two operands here
+                                    // to make the containment checks in codegen significantly simpler
+                                    *(originalArgList->pCurrent())         = op2;
+                                    *(originalArgList->Rest()->pCurrent()) = op1;
                                 }
                                 else if (supportsRegOptional)
                                 {

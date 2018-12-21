@@ -931,6 +931,8 @@ protected:
     void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
     void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
+    void genHWIntrinsic_R_R_RM(
+        GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2);
     void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
     void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins);
     void genHWIntrinsic_R_R_R_RM(
@@ -942,8 +944,7 @@ protected:
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
     void genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
-    void genBMI1Intrinsic(GenTreeHWIntrinsic* node);
-    void genBMI2Intrinsic(GenTreeHWIntrinsic* node);
+    void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
     void genLZCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);

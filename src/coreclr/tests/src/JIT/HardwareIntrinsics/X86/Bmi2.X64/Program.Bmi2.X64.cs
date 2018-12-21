@@ -14,6 +14,9 @@ namespace JIT.HardwareIntrinsics.X86
             TestList = new Dictionary<string, Action>() {
                 ["ParallelBitDeposit.UInt64"] = ParallelBitDepositUInt64,
                 ["ParallelBitExtract.UInt64"] = ParallelBitExtractUInt64,
+                ["ZeroHighBits.UInt64"] = ZeroHighBitsUInt64,
+                ["MultiplyNoFlags.UInt64"] = MultiplyNoFlagsUInt64,
+                ["MultiplyNoFlags.UInt64.BinRes"] = MultiplyNoFlagsUInt64BinRes,
             };
         }
     }

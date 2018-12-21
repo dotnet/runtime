@@ -19,9 +19,9 @@ namespace JIT.HardwareIntrinsics.X86
 {
     public static partial class Program
     {
-        private static void {Method}{RetBaseType}()
+        private static void BitFieldExtractUInt643Op()
         {
-            var test = new ScalarBinaryOpTest__{Method}{RetBaseType}();
+            var test = new ScalarTernOpTest__BitFieldExtractUInt64();
 
             if (test.IsSupported)
             {
@@ -62,57 +62,65 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ScalarBinaryOpTest__{Method}{RetBaseType}
+    public sealed unsafe class ScalarTernOpTest__BitFieldExtractUInt64
     {
         private struct TestStruct
         {
-            public {Op1BaseType} _fld1;
-            public {Op2BaseType} _fld2;
+            public UInt64 _fld1;
+            public Byte _fld2;
+            public Byte _fld3;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                testStruct._fld1 = {NextValueOp1};
-                testStruct._fld2 = {NextValueOp2};
+                testStruct._fld1 = 0x1E00000000000000;
+                testStruct._fld2 = 57;
+                testStruct._fld3 = 4;
 
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ScalarBinaryOpTest__{Method}{RetBaseType} testClass)
+            public void RunStructFldScenario(ScalarTernOpTest__BitFieldExtractUInt64 testClass)
             {
-                var result = {Isa}.{Method}(_fld1, _fld2);
-                testClass.ValidateResult(_fld1, _fld2, result);
+                var result = Bmi1.X64.BitFieldExtract(_fld1, _fld2, _fld3);
+                testClass.ValidateResult(_fld1, _fld2, _fld3, result);
             }
         }
 
-        private static {Op1BaseType} _data1;
-        private static {Op2BaseType} _data2;
+        private static UInt64 _data1;
+        private static Byte _data2;
+        private static Byte _data3;
 
-        private static {Op1BaseType} _clsVar1;
-        private static {Op2BaseType} _clsVar2;
+        private static UInt64 _clsVar1;
+        private static Byte _clsVar2;
+        private static Byte _clsVar3;
 
-        private {Op1BaseType} _fld1;
-        private {Op2BaseType} _fld2;
+        private UInt64 _fld1;
+        private Byte _fld2;
+        private Byte _fld3;
 
-        static ScalarBinaryOpTest__{Method}{RetBaseType}()
+        static ScalarTernOpTest__BitFieldExtractUInt64()
         {
-            _clsVar1 = {NextValueOp1};
-            _clsVar2 = {NextValueOp2};
+            _clsVar1 = 0x1E00000000000000;
+            _clsVar2 = 57;
+            _clsVar3 = 4;
         }
 
-        public ScalarBinaryOpTest__{Method}{RetBaseType}()
+        public ScalarTernOpTest__BitFieldExtractUInt64()
         {
             Succeeded = true;
 
-            _fld1 = {NextValueOp1};
-            _fld2 = {NextValueOp2};
+            _fld1 = 0x1E00000000000000;
+            _fld2 = 57;
+            _fld3 = 4;
 
-            _data1 = {NextValueOp1};
-            _data2 = {NextValueOp2};
+            _data1 = 0x1E00000000000000;
+            _data2 = 57;
+            _data3 = 4;
         }
 
-        public bool IsSupported => {Isa}.IsSupported;
+        public bool IsSupported => Bmi1.X64.IsSupported;
 
         public bool Succeeded { get; set; }
 
@@ -120,66 +128,70 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
-            var result = {Isa}.{Method}(
-                Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1)),
-                Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2))
+            var result = Bmi1.X64.BitFieldExtract(
+                Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data1)),
+                Unsafe.ReadUnaligned<Byte>(ref Unsafe.As<Byte, byte>(ref _data2)),
+                Unsafe.ReadUnaligned<Byte>(ref Unsafe.As<Byte, byte>(ref _data3))
             );
 
-            ValidateResult(_data1, _data2, result);
+            ValidateResult(_data1, _data2, _data3, result);
         }
 
         public void RunReflectionScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}), typeof({Op2BaseType}) })
+            var result = typeof(Bmi1.X64).GetMethod(nameof(Bmi1.X64.BitFieldExtract), new Type[] { typeof(UInt64), typeof(Byte), typeof(Byte) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1)),
-                                        Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2))
+                                        Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data1)),
+                                        Unsafe.ReadUnaligned<Byte>(ref Unsafe.As<Byte, byte>(ref _data2)),
+                                        Unsafe.ReadUnaligned<Byte>(ref Unsafe.As<Byte, byte>(ref _data3))
                                      });
 
-            ValidateResult(_data1, _data2, ({RetBaseType})result);
+            ValidateResult(_data1, _data2, _data3, (UInt64)result);
         }
 
         public void RunClsVarScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
-            var result = {Isa}.{Method}(
+            var result = Bmi1.X64.BitFieldExtract(
                 _clsVar1,
-                _clsVar2
+                _clsVar2,
+                _clsVar3
             );
 
-            ValidateResult(_clsVar1, _clsVar2, result);
+            ValidateResult(_clsVar1, _clsVar2, _clsVar3, result);
         }
 
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var data1 = Unsafe.ReadUnaligned<{Op1BaseType}>(ref Unsafe.As<{Op1BaseType}, byte>(ref _data1));
-            var data2 = Unsafe.ReadUnaligned<{Op2BaseType}>(ref Unsafe.As<{Op2BaseType}, byte>(ref _data2));
-            var result = {Isa}.{Method}(data1, data2);
+            var data1 = Unsafe.ReadUnaligned<UInt64>(ref Unsafe.As<UInt64, byte>(ref _data1));
+            var data2 = Unsafe.ReadUnaligned<Byte>(ref Unsafe.As<Byte, byte>(ref _data2));
+            var data3 = Unsafe.ReadUnaligned<Byte>(ref Unsafe.As<Byte, byte>(ref _data3));
+            var result = Bmi1.X64.BitFieldExtract(data1, data2, data3);
 
-            ValidateResult(data1, data2, result);
+            ValidateResult(data1, data2, data3, result);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ScalarBinaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld1, test._fld2);
+            var test = new ScalarTernOpTest__BitFieldExtractUInt64();
+            var result = Bmi1.X64.BitFieldExtract(test._fld1, test._fld2, test._fld3);
 
-            ValidateResult(test._fld1, test._fld2, result);
+            ValidateResult(test._fld1, test._fld2, test._fld3, result);
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = {Isa}.{Method}(_fld1, _fld2);
-            ValidateResult(_fld1, _fld2, result);
+            var result = Bmi1.X64.BitFieldExtract(_fld1, _fld2, _fld3);
+            ValidateResult(_fld1, _fld2, _fld3, result);
         }
 
         public void RunStructLclFldScenario()
@@ -187,9 +199,9 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = {Isa}.{Method}(test._fld1, test._fld2);
+            var result = Bmi1.X64.BitFieldExtract(test._fld1, test._fld2, test._fld3);
 
-            ValidateResult(test._fld1, test._fld2, result);
+            ValidateResult(test._fld1, test._fld2, test._fld3, result);
         }
 
         public void RunStructFldScenario()
@@ -221,17 +233,18 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult({Op1BaseType} left, {Op2BaseType} right, {RetBaseType} result, [CallerMemberName] string method = "")
+        private void ValidateResult(UInt64 op1, Byte op2, Byte op3, UInt64 result, [CallerMemberName] string method = "")
         {
             var isUnexpectedResult = false;
 
-            {ValidateResult}
+            ulong expectedResult = 15; isUnexpectedResult = (expectedResult != result);
 
             if (isUnexpectedResult)
             {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {Method} failed:");
-                TestLibrary.TestFramework.LogInformation($"    left: {left}");
-                TestLibrary.TestFramework.LogInformation($"   right: {right}");
+                TestLibrary.TestFramework.LogInformation($"{nameof(Bmi1.X64)}.{nameof(Bmi1.X64.BitFieldExtract)}<UInt64>(UInt64, Byte, Byte): BitFieldExtract failed:");
+                TestLibrary.TestFramework.LogInformation($"   op1: {op1}");
+                TestLibrary.TestFramework.LogInformation($"   op2: {op2}");
+                TestLibrary.TestFramework.LogInformation($"   op3: {op3}");
                 TestLibrary.TestFramework.LogInformation($"  result: {result}");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
