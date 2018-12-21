@@ -55,6 +55,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float Floor(float x);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern float FusedMultiplyAdd(float x, float y, float z);
 
