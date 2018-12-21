@@ -901,7 +901,7 @@ namespace System.Xml
                             {
                                 case NewLineHandling.Replace:
                                     // Replace "\r\n", or "\r" with NewLineChars
-                                    if (pSrc[1] == '\n')
+                                    if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                     {
                                         pSrc++;
                                     }
@@ -1041,7 +1041,7 @@ namespace System.Xml
                             if (newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
-                                if (pSrc[1] == '\n')
+                                if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                 {
                                     pSrc++;
                                 }
@@ -1166,7 +1166,7 @@ namespace System.Xml
                             if (newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
-                                if (pSrc[1] == '\n')
+                                if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                 {
                                     pSrc++;
                                 }
@@ -1291,7 +1291,7 @@ namespace System.Xml
                             if (newLineHandling == NewLineHandling.Replace)
                             {
                                 // Normalize "\r\n", or "\r" to NewLineChars
-                                if (pSrc[1] == '\n')
+                                if (pSrc + 1 < pSrcEnd && pSrc[1] == '\n')
                                 {
                                     pSrc++;
                                 }
