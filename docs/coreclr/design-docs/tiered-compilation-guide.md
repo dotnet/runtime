@@ -38,15 +38,15 @@ Tiered compilation is enabled by default from .NET Core 2.2 preview 2 and in 3.0
 # Known issues
 
 - There is a known issue with benchmarks written in a simple way (single method with loop), which may run slower with tiered compilation. See the [cold method with hot loops issue](https://github.com/dotnet/coreclr/issues/19751) for information on how to identify the issue and some options for working around it.
-- See other known issues in this [known issues query](https://github.com/dotnet/coreclr/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aarea-CodeVersioning)
+- See known [tiered compilation issues](https://github.com/dotnet/coreclr/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aarea-TieredCompilation)
 
 # Providing feedback
 
 - Mention [@noahfalk](https://github.com/noahfalk) and [@kouvel](https://github.com/kouvel) in your feedback
 - Share your experiences by posting on the [2.2 issue](https://github.com/dotnet/coreclr/issues/18973)
 - For issues:
-  - Check existing [area-CodeVersioning issues in the CoreCLR repo](https://github.com/dotnet/coreclr/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3Aarea-CodeVersioning+), some may have guidance on how to identify and work around the issue
-  - File a new issue in the [CoreCLR repo](https://github.com/dotnet/coreclr) with the `area-CodeVersioning` label
+  - Check existing issues in the CoreCLR repo (see known issues above), some may have guidance on how to identify and work around the issue
+  - File a new issue in the [CoreCLR repo](https://github.com/dotnet/coreclr) with the `area-TieredCompilation` label
   - Tiered compilation may be disabled using the instructions in the "Using Tiered Compilation" section above, just flip the value from 1 to 0 or true to false as appropriate
 
 # Other links
