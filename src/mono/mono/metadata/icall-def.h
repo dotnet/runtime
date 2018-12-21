@@ -329,7 +329,8 @@ HANDLES(ENV_18, "internalGetGacPath", ves_icall_System_Environment_GetGacPath, M
 HANDLES(ENV_19, "internalGetHome", ves_icall_System_Environment_InternalGetHome, MonoString, 0, ())
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
-ICALL_TYPE(GC, "System.GC", GC_0)
+ICALL_TYPE(GC, "System.GC", GC_10)
+NOHANDLES(ICALL(GC_10, "GetAllocatedBytesForCurrentThread", ves_icall_System_GC_GetAllocatedBytesForCurrentThread))
 NOHANDLES(ICALL(GC_0, "GetCollectionCount", ves_icall_System_GC_GetCollectionCount))
 HANDLES(GC_0a, "GetGeneration", ves_icall_System_GC_GetGeneration, int, 1, (MonoObject))
 NOHANDLES(ICALL(GC_0b, "GetMaxGeneration", ves_icall_System_GC_GetMaxGeneration))

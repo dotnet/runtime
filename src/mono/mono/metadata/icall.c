@@ -8758,6 +8758,12 @@ ves_icall_System_GC_GetMaxGeneration (void)
 	return mono_gc_max_generation ();
 }
 
+gint64
+ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void)
+{
+	return 0; // TODO: implement https://github.com/mono/mono/issues/8397
+}
+
 void
 ves_icall_System_GC_RecordPressure (gint64 value)
 {

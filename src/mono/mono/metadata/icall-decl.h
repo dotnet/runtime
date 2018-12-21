@@ -156,6 +156,7 @@ ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int
 ICALL_EXPORT int ves_icall_System_Environment_get_Platform (void);
 ICALL_EXPORT int ves_icall_System_GC_GetCollectionCount (int);
 ICALL_EXPORT int ves_icall_System_GC_GetMaxGeneration (void);
+ICALL_EXPORT gint64 ves_icall_System_GC_GetAllocatedBytesForCurrentThread (void);
 ICALL_EXPORT int ves_icall_System_Threading_Thread_SystemMaxStackSize (void);
 ICALL_EXPORT int ves_icall_get_method_attributes (MonoMethod* method);
 ICALL_EXPORT void ves_icall_Mono_Runtime_RegisterReportingForNativeLib (const char*, const char*);
