@@ -29,6 +29,9 @@
   <ItemGroup>
     <Compile Include="ParallelBitDeposit.UInt64.cs" />
     <Compile Include="ParallelBitExtract.UInt64.cs" />
+    <Compile Include="ZeroHighBits.UInt64.cs" />
+    <Compile Include="MultiplyNoFlags.UInt64.cs" />
+    <Compile Include="MultiplyNoFlags.UInt64.BinRes.cs" />
     <Compile Include="Program.Bmi2.X64.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

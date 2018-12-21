@@ -32,6 +32,8 @@
     <Compile Include="GetMaskUpToLowestSetBit.UInt64.cs" />
     <Compile Include="ResetLowestSetBit.UInt64.cs" />
     <Compile Include="TrailingZeroCount.UInt64.cs" />
+    <Compile Include="BitFieldExtract.UInt64.3Op.cs" />
+    <Compile Include="BitFieldExtract.UInt64.cs" />
     <Compile Include="Program.Bmi1.X64.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
