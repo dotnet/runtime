@@ -64,6 +64,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double Floor(double d);
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern double FusedMultiplyAdd(double x, double y, double z);
 
