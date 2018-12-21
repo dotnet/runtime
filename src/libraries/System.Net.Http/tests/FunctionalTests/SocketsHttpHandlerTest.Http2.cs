@@ -217,6 +217,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        // This test is based on RFC 7540 section 6.1:
+        // "If a DATA frame is received whose stream identifier field is 0x0, the recipient MUST
+        // respond with a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task DataFrame_NoStream_ConnectionError()
         {
@@ -233,6 +236,83 @@ namespace System.Net.Http.Functional.Tests
 
                 // Send a malformed frame (streamId is 0)
                 DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, 0);
+                await server.WriteFrameAsync(invalidFrame);
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+            }
+        }
+
+        // This test is based on RFC 7540 section 5.1:
+        // "Receiving any frame other than HEADERS or PRIORITY on a stream in this state MUST
+        // be treated as a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task DataFrame_IdleStream_ConnectionError()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
+
+                // Send a data frame on stream 5, which is in the idle state.
+                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, 5);
+                await server.WriteFrameAsync(invalidFrame);
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+            }
+        }
+
+        // The spec does not clearly define how a client should behave when it receives unsolicited
+        // headers from the server on an idle stream. We fall back to treating this as a connection
+        // level error, as we do for other unexpected frames on idle streams.
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task HeadersFrame_IdleStream_ConnectionError()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
+
+                // Send a headers frame on stream 5, which is in the idle state.
+                await server.SendDefaultResponseHeadersAsync(5);
+
+                // As this is a connection level error, the client should see the request fail.
+                await Assert.ThrowsAsync<HttpRequestException>(async () => await sendTask);
+            }
+        }
+
+        // This test is based on RFC 7540 section 6.8:
+        // "An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0 as a
+        // connection error (Section 5.4.1) of type PROTOCOL_ERROR."
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_NonzeroStream_ConnectionError()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                await server.ReadRequestHeaderAsync();
+
+                // Send a GoAway frame on stream 1.
+                GoAwayFrame invalidFrame = new GoAwayFrame(0, 0, new byte[0], 1);
                 await server.WriteFrameAsync(invalidFrame);
 
                 // As this is a connection level error, the client should see the request fail.

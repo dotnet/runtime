@@ -139,6 +139,8 @@ namespace System.Net.Test.Common
                     return RstStreamFrame.ReadFrom(header, data);
                 case FrameType.Ping:
                     return PingFrame.ReadFrom(header, data);
+                case FrameType.GoAway:
+                    return GoAwayFrame.ReadFrom(header, data);
                 default:
                     return header;
             }
