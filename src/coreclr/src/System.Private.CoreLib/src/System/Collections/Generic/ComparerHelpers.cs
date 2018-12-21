@@ -96,16 +96,12 @@ namespace System.Collections.Generic
                 case TypeCode.SByte:
                 case TypeCode.Int16:
                 case TypeCode.Int32:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(Int32EnumComparer<int>), enumType);
                 case TypeCode.Byte:
                 case TypeCode.UInt16:
                 case TypeCode.UInt32:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(UInt32EnumComparer<uint>), enumType);
-                // 64-bit enums: Use `UnsafeEnumCastLong`
                 case TypeCode.Int64:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(Int64EnumComparer<long>), enumType);
                 case TypeCode.UInt64:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(UInt64EnumComparer<ulong>), enumType);
+                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumComparer<>), enumType);
             }
             
             return null;
@@ -194,11 +190,10 @@ namespace System.Collections.Generic
                 case TypeCode.SByte:
                 case TypeCode.Byte:
                 case TypeCode.Int16:
-                case TypeCode.UInt16:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<int>), enumType);
                 case TypeCode.Int64:
                 case TypeCode.UInt64:
-                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(LongEnumEqualityComparer<long>), enumType);
+                case TypeCode.UInt16:
+                    return RuntimeTypeHandle.CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(EnumEqualityComparer<>), enumType);
             }
             
             return null;
