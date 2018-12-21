@@ -655,113 +655,65 @@ namespace System.Xml
         // Guid                                                                    x
         // -----------------------------------------------------------------------------
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(bool value)
         {
             return value ? "true" : "false";
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(char value)
         {
             return value.ToString();
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(decimal value)
         {
             return value.ToString(null, NumberFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(short value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString5"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(int value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString15"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(long value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString6"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(byte value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString7"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString8"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString9"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(float value)
         {
             if (float.IsNegativeInfinity(value)) return "-INF";
@@ -773,10 +725,6 @@ namespace System.Xml
             return value.ToString("R", NumberFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString10"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(double value)
         {
             if (double.IsNegativeInfinity(value)) return "-INF";
@@ -788,38 +736,22 @@ namespace System.Xml
             return value.ToString("R", NumberFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString11"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(TimeSpan value)
         {
             return new XsdDuration(value).ToString();
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString12"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("Use XmlConvert.ToString() that takes in XmlDateTimeSerializationMode")]
         public static string ToString(DateTime value)
         {
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString13"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(DateTime value, string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString14"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(DateTime value, XmlDateTimeSerializationMode dateTimeOption)
         {
             switch (dateTimeOption)
@@ -857,19 +789,11 @@ namespace System.Xml
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString15"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(Guid value)
         {
             return value.ToString();
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToBoolean"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static bool ToBoolean(string s)
         {
             s = TrimString(s);
@@ -895,10 +819,6 @@ namespace System.Xml
             return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToChar"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static char ToChar(string s)
         {
             if (s == null)
@@ -921,10 +841,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDecimal"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static decimal ToDecimal(string s)
         {
             return decimal.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -953,10 +869,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToSByte"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static sbyte ToSByte(string s)
         {
@@ -972,10 +884,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static short ToInt16(string s)
         {
             return short.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -990,10 +898,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt32"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static int ToInt32(string s)
         {
             return int.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -1008,10 +912,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt64"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static long ToInt64(string s)
         {
             return long.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -1026,10 +926,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToByte"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static byte ToByte(string s)
         {
             return byte.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -1044,10 +940,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static ushort ToUInt16(string s)
         {
@@ -1063,10 +955,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt32"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static uint ToUInt32(string s)
         {
@@ -1083,10 +971,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt64"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static ulong ToUInt64(string s)
         {
@@ -1102,10 +986,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToSingle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static float ToSingle(string s)
         {
             s = TrimString(s);
@@ -1143,10 +1023,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDouble"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static double ToDouble(string s)
         {
             s = TrimString(s);
@@ -1249,10 +1125,6 @@ namespace System.Xml
             return (value - temp == 0.5) ? temp + 1 : temp;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToTimeSpan"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static TimeSpan ToTimeSpan(string s)
         {
             XsdDuration duration;
@@ -1340,38 +1212,22 @@ namespace System.Xml
             }
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("Use XmlConvert.ToDateTime() that takes in XmlDateTimeSerializationMode")]
         public static DateTime ToDateTime(string s)
         {
             return ToDateTime(s, AllDateTimeFormats);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static DateTime ToDateTime(string s, string format)
         {
             return DateTime.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static DateTime ToDateTime(string s, string[] formats)
         {
             return DateTime.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static DateTime ToDateTime(string s, XmlDateTimeSerializationMode dateTimeOption)
         {
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
@@ -1429,10 +1285,6 @@ namespace System.Xml
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToGuid"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static Guid ToGuid(string s)
         {
             return new Guid(s);

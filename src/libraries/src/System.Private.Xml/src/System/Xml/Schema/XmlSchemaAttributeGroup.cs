@@ -7,10 +7,6 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaAttributeGroup.uex' path='docs/doc[@for="XmlSchemaAttributeGroup"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaAttributeGroup : XmlSchemaAnnotated
     {
         private string _name;
@@ -22,10 +18,6 @@ namespace System.Xml.Schema
         private XmlSchemaAnyAttribute _attributeWildcard;
         private int _selfReferenceCount;
 
-        /// <include file='doc\XmlSchemaAttributeGroup.uex' path='docs/doc[@for="XmlSchemaAttributeGroup.Name"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("name")]
         public string Name
         {
@@ -33,10 +25,6 @@ namespace System.Xml.Schema
             set { _name = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttributeGroup.uex' path='docs/doc[@for="XmlSchemaAttributeGroup.Attributes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("attribute", typeof(XmlSchemaAttribute)),
          XmlElement("attributeGroup", typeof(XmlSchemaAttributeGroupRef))]
         public XmlSchemaObjectCollection Attributes
@@ -44,10 +32,6 @@ namespace System.Xml.Schema
             get { return _attributes; }
         }
 
-        /// <include file='doc\XmlSchemaAttributeGroup.uex' path='docs/doc[@for="XmlSchemaAttributeGroup.AnyAttribute"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("anyAttribute")]
         public XmlSchemaAnyAttribute AnyAttribute
         {
@@ -81,7 +65,6 @@ namespace System.Xml.Schema
             set { _attributeWildcard = value; }
         }
 
-        /// <include file='doc\XmlSchemaAttributeGroup.uex' path='docs/doc[@for="XmlSchemaAttributeGroup.RedefinedAttributeGroup"]/*' />
         [XmlIgnore]
         public XmlSchemaAttributeGroup RedefinedAttributeGroup
         {

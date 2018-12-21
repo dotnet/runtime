@@ -11,40 +11,33 @@ using System.Diagnostics;
 
 namespace System.Xml.Schema
 {
-    /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException"]/*' />
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class XmlSchemaValidationException : XmlSchemaException
     {
         private object _sourceNodeObject;
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException5"]/*' />
         protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.GetObjectData"]/*' />
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException1"]/*' />
         public XmlSchemaValidationException() : base(null)
         {
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException2"]/*' />
         public XmlSchemaValidationException(string message) : base(message, ((Exception)null), 0, 0)
         {
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException0"]/*' />
         public XmlSchemaValidationException(string message, Exception innerException) : base(message, innerException, 0, 0)
         {
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException3"]/*' />
         public XmlSchemaValidationException(string message, Exception innerException, int lineNumber, int linePosition) :
             base(message, innerException, lineNumber, linePosition)
         {
@@ -71,7 +64,6 @@ namespace System.Xml.Schema
             _sourceNodeObject = sourceNode;
         }
 
-        /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.SourceUri"]/*' />
         public object SourceObject
         {
             get { return _sourceNodeObject; }
