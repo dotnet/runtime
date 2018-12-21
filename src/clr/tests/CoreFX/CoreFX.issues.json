@@ -358,6 +358,10 @@
                 {
                     "name": "System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandlerTest.GetAsync_AllowAutoRedirectTrue_RetainsOriginalFragmentIfAppropriate",
                     "reason": "outdated"
+                },
+                {
+                    "name": "System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_Http2_Test.Http2_InitialSettings_SentAndAcked",
+                    "reason": "outdated"
                 }
             ]
         }
