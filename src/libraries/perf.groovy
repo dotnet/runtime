@@ -97,8 +97,8 @@ def osShortName = ['Windows 10': 'win10',
                         "${python} \"%WORKSPACE%\\artifacts\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
                         batchFile("${python} \"%WORKSPACE%\\artifacts\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
 
-                        batchFile("powershell -ExecutionPolicy ByPass -NoProfile eng/common/build.ps1 -ci -configuration Release -includetests /p:ConfigurationGroup=Release /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
-                        batchFile("powershell -ExecutionPolicy ByPass -NoProfile eng/common/build.ps1 -ci -configuration Release -includetests /p:ConfigurationGroup=Release /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic")
+                        batchFile("powershell -ExecutionPolicy ByPass -NoProfile eng/common/build.ps1 -restore -build -warnaserror:0 -ci -configuration Release /p:BuildTests=true /p:ConfigurationGroup=Release /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Profile")
+                        batchFile("powershell -ExecutionPolicy ByPass -NoProfile eng/common/build.ps1 -restore -build -warnaserror:0 -ci -configuration Release /p:BuildTests=true /p:ConfigurationGroup=Release /p:BuildNative=false /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType} /p:PerformanceType=Diagnostic")
                     }
                 }
                 else {
