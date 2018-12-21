@@ -14,8 +14,6 @@ namespace System.Collections.ObjectModel
     public class Collection<T> : IList<T>, IList, IReadOnlyList<T>
     {
         private IList<T> items; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         public Collection()
         {
@@ -186,19 +184,7 @@ namespace System.Collections.ObjectModel
         {
             get
             {
-                if (_syncRoot == null)
-                {
-                    ICollection c = items as ICollection;
-                    if (c != null)
-                    {
-                        _syncRoot = c.SyncRoot;
-                    }
-                    else
-                    {
-                        System.Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                    }
-                }
-                return _syncRoot;
+                return (items is ICollection coll) ? coll.SyncRoot : this;
             }
         }
 
