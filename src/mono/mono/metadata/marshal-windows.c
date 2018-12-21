@@ -13,6 +13,7 @@
 #include <windows.h>
 #include <objbase.h>
 #include "mono/metadata/marshal-windows-internals.h"
+#include "icall-decl.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 void*
@@ -79,7 +80,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const guni
 }
 
 gpointer
-mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
+mono_string_to_utf8str_impl (MonoStringHandle s, MonoError *error)
 {
 	char *as, *tmp;
 	glong len;

@@ -46,9 +46,9 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
-
 #include <string.h>
 #include <errno.h>
+#include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -562,6 +562,11 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 static gpointer
 conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 {
+	// FIXME This or its caller might be a good place to inline some
+	// of the wrapper logic. In particular, to produce
+	// volatile stack-based handles. Being data-driven,
+	// from icall-def.h.
+
 	int dummy;
 	if (!ind_store_type)
 		ind_store_type = &dummy;

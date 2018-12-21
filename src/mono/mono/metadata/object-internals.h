@@ -69,9 +69,6 @@
 	} 							\
 } while (0)
 
-#define mono_string_builder_capacity(sb) sb->chunkOffset + sb->chunkChars->max_length
-#define mono_string_builder_string_length(sb) sb->chunkOffset + sb->chunkLength
-
 /* 
  * Macros which cache the results of lookups locally.
  * These should be used instead of the original versions, if the __GNUC__
@@ -258,6 +255,7 @@ TYPED_HANDLE_DECL (MonoAppDomain);
 TYPED_HANDLE_DECL (MonoAppDomainSetup);
 
 typedef struct _MonoStringBuilder MonoStringBuilder;
+TYPED_HANDLE_DECL (MonoStringBuilder);
 
 struct _MonoStringBuilder {
 	MonoObject object;
@@ -267,6 +265,20 @@ struct _MonoStringBuilder {
 	int chunkOffset;                  // The logial offset (sum of all characters in previous blocks)
 	int maxCapacity;
 };
+
+static inline int
+mono_string_builder_capacity (MonoStringBuilderHandle sbh)
+{
+	MonoStringBuilder *sb = MONO_HANDLE_RAW (sbh);
+	return sb->chunkOffset + sb->chunkChars->max_length;
+}
+
+static inline int
+mono_string_builder_string_length (MonoStringBuilderHandle sbh)
+{
+	MonoStringBuilder *sb = MONO_HANDLE_RAW (sbh);
+	return sb->chunkOffset + sb->chunkLength;
+}
 
 typedef struct {
 	MonoType *type;
@@ -2015,11 +2027,11 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 MonoStringHandle
 mono_string_new_size_handle (MonoDomain *domain, gint32 len, MonoError *error);
 
+MonoString*
+mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
+
 MonoString *
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
-
-MonoString*
-mono_string_new_internal (MonoDomain *domain, const char *text);
 
 MonoString*
 mono_ldstr_checked (MonoDomain *domain, MonoImage *image, uint32_t str_index, MonoError *error);
@@ -2218,17 +2230,8 @@ mono_string_length_internal (MonoString *s);
 MonoString*
 mono_string_empty_internal (MonoDomain *domain);
 
-MonoString*
-mono_string_new_wrapper_internal (const char *text);
-
 char*
 mono_string_to_utf8_checked_internal (MonoString *string_obj, MonoError *error);
-
-mono_unichar2*
-mono_string_to_utf16_internal (MonoString *string_obj);
-
-mono_unichar4*
-mono_string_to_utf32_internal (MonoString *string_obj);
 
 mono_bool
 mono_string_equal_internal (MonoString *s1, MonoString *s2);

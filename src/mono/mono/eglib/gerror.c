@@ -73,7 +73,8 @@ g_clear_error (GError **gerror)
 void
 g_error_free (GError *gerror)
 {
-	g_return_if_fail (gerror != NULL);
+	if (!gerror)
+		return;
 	
 	g_free (gerror->message);
 	g_free (gerror);

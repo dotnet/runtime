@@ -1170,3 +1170,55 @@ HANDLES(COMOBJ_1, "CreateRCW", ves_icall_System_ComObject_CreateRCW, MonoObject,
 HANDLES(COMOBJ_2, "GetInterfaceInternal", ves_icall_System_ComObject_GetInterfaceInternal, gpointer, 3, (MonoComObject, MonoReflectionType, MonoBoolean))
 HANDLES(COMOBJ_3, "ReleaseInterfaces", ves_icall_System_ComObject_ReleaseInterfaces, void, 1, (MonoComObject))
 #endif
+
+// This is similar to HANDLES() but is for icalls passed to register_jit_icall.
+// There is no metadata for these. No signature matching.
+// Presently their wrappers are less efficient, but hopefully that can be fixed,
+// by making a direct call to them, inserting the LMF below them (possibly,
+// providing it to them via a function pointer, if it cannot be done in C),
+// and of course using managed-style coop handles within them.
+// Alternately, ilgen.
+//
+// This is not just for register_icall, for any time coop wrappers are needed,
+// that there is no metadata for. For example embedding API.
+
+// helper for the managed alloc support
+MONO_HANDLE_REGISTER_ICALL (ves_icall_string_alloc, MonoString, 1, (int))
+
+// Windows: Allocates with CoTaskMemAlloc.
+// Unix: Allocates with g_malloc.
+// Either way: Free with mono_marshal_free (Windows:CoTaskMemFree, Unix:g_free).
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_utf8str, gpointer, 1, (MonoString))
+
+MONO_HANDLE_REGISTER_ICALL (mono_array_to_byte_byvalarray, void, 3, (gpointer, MonoArray, guint32))
+MONO_HANDLE_REGISTER_ICALL (mono_array_to_lparray, gpointer, 1, (MonoArray))
+MONO_HANDLE_REGISTER_ICALL (mono_array_to_savearray, gpointer, 1, (MonoArray))
+MONO_HANDLE_REGISTER_ICALL (mono_byvalarray_to_byte_array, void, 3, (MonoArray, const_char_ptr, guint32))
+MONO_HANDLE_REGISTER_ICALL (mono_delegate_to_ftnptr, gpointer, 1, (MonoDelegate))
+MONO_HANDLE_REGISTER_ICALL (mono_free_lparray, void, 2, (MonoArray, gpointer_ptr))
+MONO_HANDLE_REGISTER_ICALL (mono_ftnptr_to_delegate, MonoDelegate, 2, (MonoClass_ptr, gpointer))
+MONO_HANDLE_REGISTER_ICALL (mono_marshal_asany, gpointer, 3, (MonoObject, MonoMarshalNative, int))
+MONO_HANDLE_REGISTER_ICALL (mono_marshal_free_asany, void, 4, (MonoObject, gpointer, MonoMarshalNative, int))
+MONO_HANDLE_REGISTER_ICALL (mono_marshal_string_to_utf16_copy, gunichar2_ptr, 1, (MonoString))
+MONO_HANDLE_REGISTER_ICALL (mono_string_builder_to_utf16, gunichar2_ptr, 1, (MonoStringBuilder))
+MONO_HANDLE_REGISTER_ICALL (mono_string_builder_to_utf8, char_ptr, 1, (MonoStringBuilder))
+MONO_HANDLE_REGISTER_ICALL (mono_string_from_bstr_icall, MonoString, 1, (mono_bstr_const))
+MONO_HANDLE_REGISTER_ICALL (mono_string_from_byvalstr, MonoString, 2, (const_char_ptr, int))
+MONO_HANDLE_REGISTER_ICALL (mono_string_from_byvalwstr, MonoString, 2, (const_gunichar2_ptr, int))
+MONO_HANDLE_REGISTER_ICALL (mono_string_new_len_wrapper, MonoString, 2, (const_char_ptr, guint))
+MONO_HANDLE_REGISTER_ICALL (mono_string_new_wrapper_internal, MonoString, 1, (const_char_ptr))
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_ansibstr, gpointer, 1, (MonoString))
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_bstr, mono_bstr, 1, (MonoString))
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_byvalstr, void, 3, (char_ptr, MonoString, int))
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_byvalwstr, void, 3, (gunichar2_ptr, MonoString, int))
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_utf16_internal, mono_unichar2_ptr, 1, (MonoString))
+MONO_HANDLE_REGISTER_ICALL (mono_string_to_utf32_internal, mono_unichar4_ptr, 1, (MonoString))
+MONO_HANDLE_REGISTER_ICALL (mono_string_utf16_to_builder, void, 2, (MonoStringBuilder, const_gunichar2_ptr))
+MONO_HANDLE_REGISTER_ICALL (mono_string_utf16_to_builder2, MonoStringBuilder, 1, (const_gunichar2_ptr))
+MONO_HANDLE_REGISTER_ICALL (mono_string_utf8_to_builder, void, 2, (MonoStringBuilder, const_char_ptr))
+MONO_HANDLE_REGISTER_ICALL (mono_string_utf8_to_builder2, MonoStringBuilder, 1, (const_char_ptr))
+MONO_HANDLE_REGISTER_ICALL (ves_icall_marshal_alloc, gpointer, 1, (gsize))
+MONO_HANDLE_REGISTER_ICALL (ves_icall_mono_marshal_xdomain_copy_value, MonoObject, 1, (MonoObject))
+MONO_HANDLE_REGISTER_ICALL (ves_icall_mono_string_from_utf16, MonoString, 1, (const_gunichar2_ptr))
+MONO_HANDLE_REGISTER_ICALL (ves_icall_mono_string_to_utf8, char_ptr, 1, (MonoString))
+MONO_HANDLE_REGISTER_ICALL (ves_icall_string_new_wrapper, MonoString, 1, (const_char_ptr))

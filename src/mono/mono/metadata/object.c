@@ -56,6 +56,7 @@
 #include <mono/utils/unlocked.h>
 #include "external-only.h"
 #include "monitor.h"
+#include "icall-decl.h"
 
 // If no symbols in an object file in a static library are referenced, its exports will not be exported.
 // There are a few workarounds:
@@ -1070,14 +1071,12 @@ mono_class_insecure_overlapping (MonoClass *klass)
 }
 #endif
 
-MonoString*
-ves_icall_string_alloc (int length)
+MonoStringHandle
+ves_icall_string_alloc_impl (int length, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, error);
-	mono_error_set_pending_exception (error);
-
-	return str;
+	MonoString *s = mono_string_new_size_checked (mono_domain_get (), length, error);
+	return_val_if_nok (error, NULL_HANDLE_STRING);
+	return MONO_HANDLE_NEW (MonoString, s);
 }
 
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
@@ -6673,6 +6672,15 @@ mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, Mo
 }
 
 MonoString*
+mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_utf8_len (domain, text, length, error));
+}
+
+static
+MonoString*
 mono_string_new_internal (MonoDomain *domain, const char *text)
 {
 	ERROR_DECL (error);
@@ -6796,10 +6804,10 @@ mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint le
 	return o;
 }
 
-MonoString*
-mono_string_new_wrapper_internal (const char *text)
+MonoStringHandle
+mono_string_new_wrapper_internal_impl (const char *text, MonoError *error)
 {
-	return mono_string_new_internal (mono_domain_get (), text);
+	return MONO_HANDLE_NEW (MonoString, mono_string_new_internal (mono_domain_get (), text));
 }
 
 /**
@@ -7643,19 +7651,20 @@ mono_string_to_utf8_ignore (MonoString *s)
 }
 
 mono_unichar2*
-mono_string_to_utf16_internal (MonoString *s)
+mono_string_to_utf16_internal_impl (MonoStringHandle s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	if (s == NULL)
+	// FIXME This optimization ok to miss before wrapper? Or null is rare?
+	if (MONO_HANDLE_RAW (s) == NULL)
 		return NULL;
 
-	int const length = s->length;
+	int const length = mono_string_handle_length (s);
 	mono_unichar2* const as = (mono_unichar2*)g_malloc ((length + 1) * sizeof (*as));
 	if (as) {
 		as [length] = 0;
 		if (length)
-			memcpy (as, mono_string_chars_internal (s), length * sizeof (*as));
+			memcpy (as, mono_string_chars_internal (MONO_HANDLE_RAW (s)), length * sizeof (*as));
 	}
 	return as;
 }
@@ -7671,18 +7680,21 @@ mono_string_to_utf16_internal (MonoString *s)
 mono_unichar2*
 mono_string_to_utf16 (MonoString *string_obj)
 {
+	if (!string_obj)
+		return NULL;
 	MONO_EXTERNAL_ONLY (mono_unichar2*, mono_string_to_utf16_internal (string_obj));
 }
 
 mono_unichar4*
-mono_string_to_utf32_internal (MonoString *s)
+mono_string_to_utf32_internal_impl (MonoStringHandle s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	
-	if (s == NULL)
+	// FIXME This optimization ok to miss before wrapper? Or null is rare?
+	if (MONO_HANDLE_RAW (s) == NULL)
 		return NULL;
 		
-	return g_utf16_to_ucs4 (s->chars, s->length, NULL, NULL, NULL);
+	return g_utf16_to_ucs4 (MONO_HANDLE_RAW (s)->chars, mono_string_handle_length (s), NULL, NULL, NULL);
 }
 
 /**
@@ -7722,19 +7734,11 @@ mono_string_from_utf16 (gunichar2 *data)
 MonoString *
 mono_string_from_utf16_checked (const gunichar2 *data, MonoError *error)
 {
-
 	MONO_REQ_GC_UNSAFE_MODE;
-
 	error_init (error);
-	MonoDomain *domain = mono_domain_get ();
-	int len = 0;
-
 	if (!data)
 		return NULL;
-
-	while (data [len]) len++;
-
-	return mono_string_new_utf16_checked (domain, data, len, error);
+	return mono_string_new_utf16_checked (mono_domain_get (), data, g_utf16_len (data), error);
 }
 
 /**

@@ -42,6 +42,7 @@
 #define NOHANDLES(inner) inner
 #define HANDLES(id, name, func, ...)	ICALL (id, name, func ## _raw)
 #define HANDLES_REUSE_WRAPPER		HANDLES
+#define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
 
 // Generate Icall_ constants
 enum {
@@ -169,6 +170,7 @@ static const guchar icall_uses_handles [] = {
 #undef HANDLES
 #undef HANDLES_REUSE_WRAPPER
 #undef NOHANDLES
+#undef MONO_HANDLE_REGISTER_ICALL
 
 static int
 compare_method_imap (const void *key, const void *elem)

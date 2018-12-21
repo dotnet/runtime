@@ -24,6 +24,7 @@
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/assembly.h"
+#include "icall-decl.h"
 
 typedef enum {
 	MONO_MARSHAL_NONE,			/* No marshalling needed */
@@ -82,6 +83,8 @@ mono_context_set_icall (MonoAppContext *new_context);
 static MonoAppContext*
 mono_context_get_icall (void);
 
+static MonoObject*
+mono_marshal_xdomain_copy_value (MonoObject* val_raw, MonoError *error);
 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (remoting_services, "System.Runtime.Remoting", "RemotingServices")
@@ -2130,13 +2133,10 @@ mono_marshal_xdomain_copy_value (MonoObject* val_raw, MonoError *error)
 /* mono_marshal_xdomain_copy_value
  * Makes a copy of "val" suitable for the current domain.
  */
-MonoObject *
-ves_icall_mono_marshal_xdomain_copy_value (MonoObject *val)
+MonoObjectHandle
+ves_icall_mono_marshal_xdomain_copy_value_impl (MonoObjectHandle val, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoObject *result = mono_marshal_xdomain_copy_value (val, error);
-	mono_error_set_pending_exception (error);
-	return result;
+	return mono_marshal_xdomain_copy_value_handle (val, error);
 }
 
 static void

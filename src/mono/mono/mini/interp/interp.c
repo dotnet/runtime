@@ -73,6 +73,7 @@
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
 #endif
+#include <mono/metadata/icall-decl.h>
 
 #ifdef _MSC_VER
 #pragma warning(disable:4102) // label' : unreferenced label

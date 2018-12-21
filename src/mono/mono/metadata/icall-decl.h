@@ -30,8 +30,8 @@
 #include "string-icalls.h"
 #include "threadpool-io.h"
 #include "threadpool.h"
-#include "utils/mono-digest.h"
-#include "utils/mono-forward-internal.h"
+#include "mono/utils/mono-digest.h"
+#include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
 #include "w32file.h"
 #include "w32mutex.h"
@@ -54,7 +54,10 @@ typedef enum {
 #define NOHANDLES(inner) inner
 #define HANDLES_REUSE_WRAPPER(...) /* nothing */
 
-// Generate prototypes for coop icall wrappers.
+// Generate prototypes for coop icall wrappers and coop icalls.
+#define MONO_HANDLE_REGISTER_ICALL(func, ret, nargs, argtypes) \
+	MONO_HANDLE_DECLARE (,,func ## _impl, ret, nargs, argtypes); \
+	MONO_HANDLE_REGISTER_ICALL_DECLARE_RAW (func, ret, nargs, argtypes);
 #define ICALL_TYPE(id, name, first)	/* nothing */
 #define ICALL(id, name, func) 		/* nothing */
 #define HANDLES(id, name, func, ret, nargs, argtypes) \
@@ -66,6 +69,7 @@ typedef enum {
 #undef HANDLES
 #undef HANDLES_REUSE_WRAPPER
 #undef NOHANDLES
+#undef MONO_HANDLE_REGISTER_ICALL
 
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq

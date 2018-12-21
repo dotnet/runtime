@@ -43,11 +43,16 @@
 #include <string.h>
 #include <errno.h>
 #include <mono/utils/w32api.h>
-
-#if defined(HOST_WIN32)
+#if defined (HOST_WIN32)
 #include <oleauto.h>
 #include "mono/metadata/cominterop-win32-internals.h"
 #endif
+#include "icall-decl.h"
+
+typedef guint32 gchandle_t; // FIXME use this more
+
+static void
+mono_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj);
 
 #ifndef DISABLE_COM
 
@@ -94,28 +99,16 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	mono_register_jit_icall_full (func, name, sig, save, name);
 }
 
-static mono_bstr
-mono_string_to_bstr_handle (MonoStringHandle s)
+mono_bstr
+mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (s))
 		return NULL;
 
-	uint32_t gchandle = 0;
+	gchandle_t gchandle = 0;
 	mono_bstr const res = mono_ptr_to_bstr (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s));
 	mono_gchandle_free_internal (gchandle);
 	return res;
-}
-
-gpointer
-mono_string_to_bstr (MonoString* s_raw)
-{
-	if (!s_raw)
-		return NULL;
-
-	HANDLE_FUNCTION_ENTER ();
-	MONO_HANDLE_DCL (MonoString, s);
-	gpointer result = mono_string_to_bstr_handle (s);
-	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 static void*
@@ -1812,7 +1805,7 @@ ves_icall_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj, MonoError
 static gboolean    
 cominterop_rcw_finalizer (gpointer key, gpointer value, gpointer user_data)
 {
-	guint32 gchandle = 0;
+	gchandle_t gchandle = 0;
 
 	gchandle = GPOINTER_TO_UINT (value);
 	if (gchandle) {
@@ -1889,7 +1882,7 @@ MonoComInteropProxyHandle
 ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *error)
 {
 #ifndef DISABLE_COM
-	guint32 gchandle = 0;
+	gchandle_t gchandle = 0;
 
 	mono_cominterop_lock ();
 	if (rcw_hash)
@@ -1909,8 +1902,6 @@ ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoError *erro
 	g_assert_not_reached ();
 #endif
 }
-
-typedef guint32 gchandle_t; // FIXME use this more
 
 /**
  * cominterop_get_ccw_object:
@@ -2934,29 +2925,21 @@ mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 #endif // HOST_WIN32
 }
 
-static MonoString *
-mono_string_from_bstr_common (gboolean icall, mono_bstr_const bstr)
-{
-	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL (error);
-	MonoStringHandle result = mono_string_from_bstr_checked (bstr, error);
-	if (icall)
-		mono_error_set_pending_exception (error);
-	else
-		mono_error_cleanup (error);
-	HANDLE_FUNCTION_RETURN_OBJ (result);
-}
-
 MonoString *
 mono_string_from_bstr (/*mono_bstr_const*/gpointer bstr)
 {
-	return mono_string_from_bstr_common (FALSE, (mono_bstr_const)bstr);
+	// FIXME gcmode
+	HANDLE_FUNCTION_ENTER ();
+	ERROR_DECL (error);
+	MonoStringHandle result = mono_string_from_bstr_checked ((mono_bstr_const)bstr, error);
+	mono_error_cleanup (error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
-MonoString *
-mono_string_from_bstr_icall (mono_bstr_const bstr)
+MonoStringHandle
+mono_string_from_bstr_icall_impl (mono_bstr_const bstr, MonoError *error)
 {
-	return mono_string_from_bstr_common (TRUE, bstr);
+	return mono_string_from_bstr_checked (bstr, error);
 }
 
 MONO_API void 

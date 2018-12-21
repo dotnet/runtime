@@ -40,7 +40,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/unlocked.h>
-
+#include <mono/metadata/icall-decl.h>
 
 #if HAVE_BOEHM_GC
 

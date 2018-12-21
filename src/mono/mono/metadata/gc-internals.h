@@ -231,12 +231,6 @@ typedef void (*MonoRangeCopyFunction)(gpointer, gconstpointer, int size);
 MonoRangeCopyFunction
 mono_gc_get_range_copy_func (void);
 
-
-/* helper for the managed alloc support */
-ICALL_EXPORT
-MonoString *
-ves_icall_string_alloc (int length);
-
 /* 
  * Functions supplied by the runtime and called by the GC. Currently only used
  * by SGEN.

@@ -8839,6 +8839,8 @@ ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpoint
 #define ICALL(id,name,func) /* nothing */
 #define NOHANDLES(inner)  /* nothing */
 
+#define MONO_HANDLE_REGISTER_ICALL(func, ret, nargs, argtypes) MONO_HANDLE_REGISTER_ICALL_IMPLEMENT (func, ret, nargs, argtypes)
+
 // Some native functions are exposed via multiple managed names.
 // Producing a wrapper for these results in duplicate wrappers with the same names,
 // which fails to compile. Do not produce such duplicate wrappers. Alternatively,
@@ -8857,3 +8859,4 @@ ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpoint
 #undef ICALL_TYPE
 #undef ICALL
 #undef NOHANDLES
+#undef MONO_HANDLE_REGISTER_ICALL

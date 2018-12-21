@@ -60,8 +60,10 @@ typedef MonoPropertyInfo *MonoPropertyInfo_ref;
 typedef MonoType *MonoType_ptr;
 typedef MonoTypedRef *MonoTypedRef_ptr;
 typedef MonoStackCrawlMark *MonoStackCrawlMark_ptr;
+typedef MonoVTable *MonoVTable_ptr;
 typedef unsigned *unsigned_ptr;
 typedef mono_unichar2 *mono_unichar2_ptr;
+typedef mono_unichar4 *mono_unichar4_ptr;
 typedef WSABUF *WSABUF_ptr;
 
 typedef char **char_ptr_ref;
@@ -126,6 +128,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_gsize   			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gssize   			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guchar_ptr		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_guint     		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_const_guchar_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint32  			ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_guint64  			ICALL_HANDLES_WRAP_NONE
@@ -136,10 +139,14 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_mono_bstr_const		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_unsigned_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_mono_unichar2_ptr		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_mono_unichar4_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoImage_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoClassField_ptr	ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_MonoMarshalNative		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoProperty_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoProtocolType		ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_size_t			ICALL_HANDLES_WRAP_NONE
+#define MONO_HANDLE_TYPE_WRAP_MonoVTable_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_WSABUF_ptr		ICALL_HANDLES_WRAP_NONE
 
 #define MONO_HANDLE_TYPE_WRAP_MonoAssemblyName_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
@@ -210,6 +217,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoReflectionType		ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoReflectionTypeBuilder		ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoString			ICALL_HANDLES_WRAP_OBJ
+#define MONO_HANDLE_TYPE_WRAP_MonoStringBuilder			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoThreadObject			ICALL_HANDLES_WRAP_OBJ
 #define MONO_HANDLE_TYPE_WRAP_MonoW32ProcessStartInfo		ICALL_HANDLES_WRAP_OBJ
 
@@ -241,12 +249,53 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_NONE   	HANDLE_FUNCTION_RETURN_VAL (icall_result)
 #define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_OBJ		HANDLE_FUNCTION_RETURN_OBJ (icall_result)
 
+// Convert raw handles to typed handles, just by casting and copying a pointer.
 #define MONO_HANDLE_MARSHAL(type, n)					MONO_HANDLE_DO (MONO_HANDLE_MARSHAL_, type) (type, n)
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_NONE(type, n)     	a ## n
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_OBJ(type, n)		*(type ## Handle*)&a ## n
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_OBJ_OUT(type, n)		*(type ## Handle*)&a ## n
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_OBJ_INOUT(type, n)	*(type ## Handle*)&a ## n
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_VALUETYPE_REF(type, n)	a ## n
+
+// Declare and initialize a local for an object in, out, inout parameters, upon input.
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS(type, n)					MONO_HANDLE_DO (MONO_HANDLE_REGISTER_ICALL_LOCALS_, type) (type, n)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_ICALL_HANDLES_WRAP_NONE(type, n)     		/* nothing */
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_ICALL_HANDLES_WRAP_OBJ(type, n)		type ## Handle a ## n = MONO_HANDLE_NEW (type, a ## n ## _raw);
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_ICALL_HANDLES_WRAP_OBJ_OUT(type, n)		unused_untested_looks_correct1 type ## Handle a ## n = MONO_HANDLE_NEW (type, NULL);
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_ICALL_HANDLES_WRAP_OBJ_INOUT(type, n)		unused_untested_looks_correct2 type ## Handle a ## n = MONO_HANDLE_NEW (type, *a ## n ## _raw);
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_ICALL_HANDLES_WRAP_VALUETYPE_REF(type, n)	FIXME restore mono_icall_handle_new_interior from e8b037642104527bd9b9ba70d502210b9c12d2b8 \
+											type ## Handle a ## n = mono_icall_handle_new_interior (a ## n ## _raw);
+// Produce all the locals, i.e. up to one per parameter.
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_0()					/* nothing  */
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_1(t0)					MONO_HANDLE_REGISTER_ICALL_LOCALS (t0, 0)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_2(t0, t1)				MONO_HANDLE_REGISTER_ICALL_LOCALS_1 (t0) 				MONO_HANDLE_REGISTER_ICALL_LOCALS (t1, 1)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_3(t0, t1, t2)				MONO_HANDLE_REGISTER_ICALL_LOCALS_2 (t0, t1) 				MONO_HANDLE_REGISTER_ICALL_LOCALS (t2, 2)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_4(t0, t1, t2, t3)			MONO_HANDLE_REGISTER_ICALL_LOCALS_3 (t0, t1, t2)			MONO_HANDLE_REGISTER_ICALL_LOCALS (t3, 3)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_5(t0, t1, t2, t3, t4)			MONO_HANDLE_REGISTER_ICALL_LOCALS_4 (t0, t1, t2, t3)			MONO_HANDLE_REGISTER_ICALL_LOCALS (t4, 4)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_6(t0, t1, t2, t3, t4, t5)		MONO_HANDLE_REGISTER_ICALL_LOCALS_5 (t0, t1, t2, t3, t4) 		MONO_HANDLE_REGISTER_ICALL_LOCALS (t5, 5)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_7(t0, t1, t2, t3, t4, t5, t6)		MONO_HANDLE_REGISTER_ICALL_LOCALS_6 (t0, t1, t2, t3, t4, t5) 		MONO_HANDLE_REGISTER_ICALL_LOCALS (t6, 6)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_8(t0, t1, t2, t3, t4, t5, t6, t7)	MONO_HANDLE_REGISTER_ICALL_LOCALS_7 (t0, t1, t2, t3, t4, t5, t6) 	MONO_HANDLE_REGISTER_ICALL_LOCALS (t7, 7)
+#define MONO_HANDLE_REGISTER_ICALL_LOCALS_9(t0, t1, t2, t3, t4, t5, t6, t7, t8)	MONO_HANDLE_REGISTER_ICALL_LOCALS_8 (t0, t1, t2, t3, t4, t5, t6, t7)	MONO_HANDLE_REGISTER_ICALL_LOCALS (t8, 8)
+
+// Convert a typed handle to raw pointer upon output.
+#define MONO_HANDLE_REGISTER_ICALL_OUT(type, n)					MONO_HANDLE_DO (MONO_HANDLE_REGISTER_ICALL_OUT_, type) (type, n)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_ICALL_HANDLES_WRAP_NONE(type, n)		/* nothing */
+#define MONO_HANDLE_REGISTER_ICALL_OUT_ICALL_HANDLES_WRAP_OBJ(type, n)		/* nothing */
+#define MONO_HANDLE_REGISTER_ICALL_OUT_ICALL_HANDLES_WRAP_OBJ_OUT(type, n)	unused_untested_looks_correct3 *a ## n ## _raw = MONO_HANDLE_RAW (a ## n);
+#define MONO_HANDLE_REGISTER_ICALL_OUT_ICALL_HANDLES_WRAP_OBJ_INOUT		unused_untested_looks_correct4 *a ## n ## _raw = MONO_HANDLE_RAW (a ## n);
+#define MONO_HANDLE_REGISTER_ICALL_OUT_ICALL_HANDLES_VALUETYPE_REF(type, n)	/* nothing */
+
+// Convert all the typed handles to raw pointers upon output, i.e. up to one per parameter.
+#define MONO_HANDLE_REGISTER_ICALL_OUT_0()					/* nothing  */
+#define MONO_HANDLE_REGISTER_ICALL_OUT_1(t0)					MONO_HANDLE_REGISTER_ICALL_OUT (t0, 0)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_2(t0, t1)				MONO_HANDLE_REGISTER_ICALL_OUT_1 (t0) 					MONO_HANDLE_REGISTER_ICALL_OUT (t1, 1)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_3(t0, t1, t2)				MONO_HANDLE_REGISTER_ICALL_OUT_2 (t0, t1) 				MONO_HANDLE_REGISTER_ICALL_OUT (t2, 2)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_4(t0, t1, t2, t3)			MONO_HANDLE_REGISTER_ICALL_OUT_3 (t0, t1, t2)				MONO_HANDLE_REGISTER_ICALL_OUT (t3, 3)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_5(t0, t1, t2, t3, t4)			MONO_HANDLE_REGISTER_ICALL_OUT_4 (t0, t1, t2, t3)			MONO_HANDLE_REGISTER_ICALL_OUT (t4, 4)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_6(t0, t1, t2, t3, t4, t5)		MONO_HANDLE_REGISTER_ICALL_OUT_5 (t0, t1, t2, t3, t4) 			MONO_HANDLE_REGISTER_ICALL_OUT (t5, 5)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_7(t0, t1, t2, t3, t4, t5, t6)		MONO_HANDLE_REGISTER_ICALL_OUT_6 (t0, t1, t2, t3, t4, t5) 		MONO_HANDLE_REGISTER_ICALL_OUT (t6, 6)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_8(t0, t1, t2, t3, t4, t5, t6, t7)	MONO_HANDLE_REGISTER_ICALL_OUT_7 (t0, t1, t2, t3, t4, t5, t6) 		MONO_HANDLE_REGISTER_ICALL_OUT (t7, 7)
+#define MONO_HANDLE_REGISTER_ICALL_OUT_9(t0, t1, t2, t3, t4, t5, t6, t7, t8)	MONO_HANDLE_REGISTER_ICALL_OUT_8 (t0, t1, t2, t3, t4, t5, t6, t7)	MONO_HANDLE_REGISTER_ICALL_OUT (t8, 8)
 
 #define MONO_HANDLE_TYPE_TYPED(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_TYPED_, type) (type)
 #define MONO_HANDLE_TYPE_TYPED_Void(type)				type
@@ -256,14 +305,16 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_TYPED_ICALL_HANDLES_WRAP_OBJ_INOUT(type)	type ## Handle
 #define MONO_HANDLE_TYPE_TYPED_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
 
+// Map a type to a raw handle, or itself.
 #define MONO_HANDLE_TYPE_RAWHANDLE(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_RAWHANDLE_, type) (type)
 #define MONO_HANDLE_TYPE_RAWHANDLE_Void(type)					type
 #define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_NONE(type)		type
-#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ(type)		MonoRawHandle
+#define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ(type)			MonoRawHandle
 #define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_OUT(type)		MonoRawHandle
 #define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_INOUT(type)		MonoRawHandle
 #define MONO_HANDLE_TYPE_RAWHANDLE_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
 
+// Map a type to a raw pointer, or itself.
 #define MONO_HANDLE_TYPE_RAWPOINTER(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_RAWPOINTER_, type) (type)
 #define MONO_HANDLE_TYPE_RAWPOINTER_Void(type)					type
 #define MONO_HANDLE_TYPE_RAWPOINTER_ICALL_HANDLES_WRAP_NONE(type)		type
@@ -281,6 +332,14 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_OBJ_INOUT(type, n)	MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
 #define MONO_HANDLE_ARG_RAWHANDLE_ICALL_HANDLES_WRAP_VALUETYPE_REF(type, n)	MONO_HANDLE_TYPE_RAWHANDLE (type) a ## n
 
+// Type/name in raw pointer prototype and implementation.
+#define MONO_HANDLE_ARG_RAWPOINTER(type, n)					MONO_HANDLE_DO (MONO_HANDLE_ARG_RAWPOINTER_, type) (type, n)
+#define MONO_HANDLE_ARG_RAWPOINTER_ICALL_HANDLES_WRAP_NONE(type, n)		MONO_HANDLE_TYPE_RAWPOINTER (type) a ## n
+#define MONO_HANDLE_ARG_RAWPOINTER_ICALL_HANDLES_WRAP_OBJ(type, n)		MONO_HANDLE_TYPE_RAWPOINTER (type) a ## n ## _raw
+#define MONO_HANDLE_ARG_RAWPOINTER_ICALL_HANDLES_WRAP_OBJ_OUT(type, n)		unused_untested_looks_correct5 MONO_HANDLE_TYPE_RAWPOINTER (type) a ## n ## _raw
+#define MONO_HANDLE_ARG_RAWPOINTER_ICALL_HANDLES_WRAP_OBJ_INOUT(type, n)	unused_untested_looks_correct6 MONO_HANDLE_TYPE_RAWPOINTER (type) a ## n ## _raw
+#define MONO_HANDLE_ARG_RAWPOINTER_ICALL_HANDLES_WRAP_VALUETYPE_REF(type, n)	FIXME //MONO_HANDLE_TYPE_RAWPOINTER (type) a ## n
+
 // Generate a parameter list, types only, for a function accepting/returning typed handles.
 #define MONO_HANDLE_FOREACH_TYPE_TYPED_0()	   			     /* nothing */
 #define MONO_HANDLE_FOREACH_TYPE_TYPED_1(t0) 	   			     MONO_HANDLE_TYPE_TYPED (t0)
@@ -294,7 +353,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_FOREACH_TYPE_TYPED_9(t0, t1, t2, t3, t4, t5, t6, t7, t8) MONO_HANDLE_FOREACH_TYPE_TYPED_8 (t0, t1, t2, t3, t4, t5, t6, t7)	,MONO_HANDLE_TYPE_TYPED (t8)
 
 // Generate a parameter list, types and names, for a function accepting raw handles and a MonoError,
-// and returning a raw pointer.
+// and returning a raw pointer. MonoError is not here, but added elsewhere.
 #define MONO_HANDLE_FOREACH_ARG_RAW_0()		  				/* nothing */
 #define MONO_HANDLE_FOREACH_ARG_RAW_1(t0) 	   	  			MONO_HANDLE_ARG_RAWHANDLE (t0, 0)
 #define MONO_HANDLE_FOREACH_ARG_RAW_2(t0, t1)	  				MONO_HANDLE_FOREACH_ARG_RAW_1 (t0),             		MONO_HANDLE_ARG_RAWHANDLE (t1, 1)
@@ -305,6 +364,30 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_FOREACH_ARG_RAW_7(t0, t1, t2, t3, t4, t5, t6)		MONO_HANDLE_FOREACH_ARG_RAW_6 (t0, t1, t2, t3, t4, t5), 	MONO_HANDLE_ARG_RAWHANDLE (t6, 6)
 #define MONO_HANDLE_FOREACH_ARG_RAW_8(t0, t1, t2, t3, t4, t5, t6, t7)		MONO_HANDLE_FOREACH_ARG_RAW_7 (t0, t1, t2, t3, t4, t5, t6),	MONO_HANDLE_ARG_RAWHANDLE (t7, 7)
 #define MONO_HANDLE_FOREACH_ARG_RAW_9(t0, t1, t2, t3, t4, t5, t6, t7, t8)  	MONO_HANDLE_FOREACH_ARG_RAW_8 (t0, t1, t2, t3, t4, t5, t6, t7),	MONO_HANDLE_ARG_RAWHANDLE (t8, 8)
+
+// Generate a parameter list, types and names, for a function accepting raw pointers and no MonoError,
+// and returning a raw pointer.
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_0()		  				/* nothing */
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_1(t0) 	   	  			MONO_HANDLE_ARG_RAWPOINTER (t0, 0)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_2(t0, t1)	  				MONO_HANDLE_FOREACH_ARG_RAWPOINTER_1 (t0),             			MONO_HANDLE_ARG_RAWPOINTER (t1, 1)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_3(t0, t1, t2)	  			MONO_HANDLE_FOREACH_ARG_RAWPOINTER_2 (t0, t1),         			MONO_HANDLE_ARG_RAWPOINTER (t2, 2)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_4(t0, t1, t2, t3)				MONO_HANDLE_FOREACH_ARG_RAWPOINTER_3 (t0, t1, t2),     			MONO_HANDLE_ARG_RAWPOINTER (t3, 3)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_5(t0, t1, t2, t3, t4)			MONO_HANDLE_FOREACH_ARG_RAWPOINTER_4 (t0, t1, t2, t3), 			MONO_HANDLE_ARG_RAWPOINTER (t4, 4)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_6(t0, t1, t2, t3, t4, t5)			MONO_HANDLE_FOREACH_ARG_RAWPOINTER_5 (t0, t1, t2, t3, t4), 		MONO_HANDLE_ARG_RAWPOINTER (t5, 5)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_7(t0, t1, t2, t3, t4, t5, t6)		MONO_HANDLE_FOREACH_ARG_RAWPOINTER_6 (t0, t1, t2, t3, t4, t5), 		MONO_HANDLE_ARG_RAWPOINTER (t6, 6)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_8(t0, t1, t2, t3, t4, t5, t6, t7)		MONO_HANDLE_FOREACH_ARG_RAWPOINTER_7 (t0, t1, t2, t3, t4, t5, t6),	MONO_HANDLE_ARG_RAWPOINTER (t7, 7)
+#define MONO_HANDLE_FOREACH_ARG_RAWPOINTER_9(t0, t1, t2, t3, t4, t5, t6, t7, t8)	MONO_HANDLE_FOREACH_ARG_RAWPOINTER_8 (t0, t1, t2, t3, t4, t5, t6, t7),	MONO_HANDLE_ARG_RAWPOINTER (t8, 8)
+
+#define MONO_HANDLE_REGISTER_ICALL_CALL_0 /*  nothing */
+#define MONO_HANDLE_REGISTER_ICALL_CALL_1 a0,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_2 MONO_HANDLE_REGISTER_ICALL_CALL_1 a1,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_3 MONO_HANDLE_REGISTER_ICALL_CALL_2 a2,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_4 MONO_HANDLE_REGISTER_ICALL_CALL_3 a3,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_5 MONO_HANDLE_REGISTER_ICALL_CALL_4 a4,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_6 MONO_HANDLE_REGISTER_ICALL_CALL_5 a5,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_7 MONO_HANDLE_REGISTER_ICALL_CALL_6 a6,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_8 MONO_HANDLE_REGISTER_ICALL_CALL_7 a7,
+#define MONO_HANDLE_REGISTER_ICALL_CALL_9 MONO_HANDLE_REGISTER_ICALL_CALL_8 a8,
 
 // Call from the wrapper to the actual icall, passing on the
 // WRAP_NONE parameters directly, casting handles from raw to typed.
@@ -348,6 +431,7 @@ func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## 
 
 // Implement ves_icall_foo_raw over ves_icall_foo.
 // Raw handles are converted to/from typed handles and the rest is passed through.
+// This is for functions in icall-def.h.
 
 #define MONO_HANDLE_IMPLEMENT(id, name, func, rettype, n, argtypes)	\
 										\
@@ -361,6 +445,48 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 	MONO_HANDLE_RETURN_BEGIN (rettype)					\
 										\
 	func (MONO_HANDLE_CALL_ ## n argtypes MONO_HANDLE_COMMA_ ## n error);	\
+										\
+	mono_error_set_pending_exception (error);				\
+										\
+	MONO_HANDLE_RETURN_END (rettype)					\
+}										\
+
+// Declare the function that takes/returns raw pointers and no MonoError.
+#define MONO_HANDLE_REGISTER_ICALL_DECLARE_RAW(func, rettype, n, argtypes)	\
+ICALL_EXPORT MONO_HANDLE_TYPE_RAWPOINTER (rettype)				\
+func ( MONO_HANDLE_FOREACH_ARG_RAWPOINTER_ ## n argtypes)
+
+// Implement ves_icall_foo_raw over ves_icall_foo.
+//
+// Raw pointers are converted to/from handles and the rest is passed through.
+// The in/out/inout-ness of parameters must be correct. (unlike MONO_HANDLE_IMPLEMENT)
+// Valuetype-refs are not handled. (unlike MONO_HANDLE_IMPLEMENT)
+// Handle creation is less efficient than MONO_HANDLE_IMPLEMENT (marshal-ilgen.c) -- using TLS
+// and per-handle work.
+//
+// In future this should produce an array of IcallHandlesWrap and send that through
+// to emit_native_icall_wrapper_ilgen to gain its efficient handles.
+//
+// Or put the handles directly in the coop frame, or pointers to them.
+// i.e. one TLS access at function start and end.
+//
+// This is for functions passed to mono_register_jit_icall, etc.
+
+#define MONO_HANDLE_REGISTER_ICALL_IMPLEMENT(func, rettype, n, argtypes)	\
+										\
+MONO_HANDLE_REGISTER_ICALL_DECLARE_RAW (func, rettype, n, argtypes)		\
+{										\
+	HANDLE_FUNCTION_ENTER ();						\
+										\
+	ERROR_DECL (error);							\
+										\
+	MONO_HANDLE_REGISTER_ICALL_LOCALS_ ## n argtypes			\
+										\
+	MONO_HANDLE_RETURN_BEGIN (rettype)					\
+										\
+	func ## _impl (MONO_HANDLE_REGISTER_ICALL_CALL_ ## n error);			\
+										\
+	MONO_HANDLE_REGISTER_ICALL_OUT_ ## n argtypes				\
 										\
 	mono_error_set_pending_exception (error);				\
 										\

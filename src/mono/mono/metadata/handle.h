@@ -356,6 +356,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		} while (0);						\
 	} while (0)
 
+// resultHandle = handle->field
 /* N.B. RESULT is evaluated before HANDLE */
 #define MONO_HANDLE_GET(RESULT, HANDLE, FIELD) do {			\
 		MonoObjectHandle __dest = MONO_HANDLE_CAST (MonoObject, RESULT);	\
@@ -495,8 +496,9 @@ be reviewed and probably changed FIXME.
 extern const MonoObjectHandle mono_null_value_handle;
 #define NULL_HANDLE mono_null_value_handle
 #define NULL_HANDLE_INIT { 0 }
-#define NULL_HANDLE_STRING (MONO_HANDLE_CAST (MonoString, NULL_HANDLE))
-#define NULL_HANDLE_ARRAY  (MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
+#define NULL_HANDLE_STRING 		(MONO_HANDLE_CAST (MonoString, NULL_HANDLE))
+#define NULL_HANDLE_ARRAY  		(MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
+#define NULL_HANDLE_STRING_BUILDER	(MONO_HANDLE_CAST (MonoStringBuilder, NULL_HANDLE))
 
 static inline MonoObjectHandle
 mono_handle_assign_raw (MonoObjectHandleOut dest, void *src)

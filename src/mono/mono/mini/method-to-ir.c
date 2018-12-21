@@ -69,6 +69,7 @@
 #include <mono/utils/mono-utils-debug.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/verify-internals.h>
+#include <mono/metadata/icall-decl.h>
 
 #include "trace.h"
 
