@@ -20,8 +20,6 @@ namespace System.Data.SqlClient.SNI
         private int _offset;
         private string _description;
         private SNIAsyncCallback _completionCallback;
-
-        private ArrayPool<byte>  _arrayPool = ArrayPool<byte>.Shared;
         private bool _isBufferFromArrayPool = false;
 
         public SNIPacket() { }
@@ -98,14 +96,14 @@ namespace System.Data.SqlClient.SNI
             {
                 if (_isBufferFromArrayPool)
                 {
-                    _arrayPool.Return(_data);
+                    ArrayPool<byte>.Shared.Return(_data);
                 }
                 _data = null;
             }
 
             if (_data == null)
             {
-                _data = _arrayPool.Rent(capacity);
+                _data = ArrayPool<byte>.Shared.Rent(capacity);
                 _isBufferFromArrayPool = true;
             }
 
@@ -221,7 +219,7 @@ namespace System.Data.SqlClient.SNI
             {
                 if(_isBufferFromArrayPool)
                 {
-                    _arrayPool.Return(_data);
+                    ArrayPool<byte>.Shared.Return(_data);
                 }
                 _data = null;
                 _capacity = 0;

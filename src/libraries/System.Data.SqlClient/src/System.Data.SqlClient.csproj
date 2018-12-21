@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{D4550556-4745-457F-BA8F-3EBF3836D6B4}</ProjectGuid>
     <AssemblyName>System.Data.SqlClient</AssemblyName>
@@ -280,6 +280,8 @@
     <!-- Manage the SNI toggle for Windows netstandard and UWP -->
     <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\PacketHandle.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\SessionHandle.Windows.cs" />
     <AdditionalFiles Include="$(MSBuildProjectDirectory)/*.analyzerdata.windows" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsUAPAssembly)' == 'true'">
@@ -289,6 +291,8 @@
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.uap.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\PacketHandle.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\SessionHandle.Unix.cs" />
   </ItemGroup>
   <!-- Assets needed on Windows but should be avoided on UAP to avoid sni.dll -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(IsUAPAssembly)' != 'true'">
@@ -483,6 +487,8 @@
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\PacketHandle.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\SessionHandle.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(IsUAPAssembly)' != 'true'">
     <Reference Include="Microsoft.Win32.Registry" />
