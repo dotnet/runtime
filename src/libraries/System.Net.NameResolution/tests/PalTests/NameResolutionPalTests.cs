@@ -105,7 +105,7 @@ namespace System.Net.NameResolution.PalTests
             {
                 // On Unix, getaddrinfo returns host not found, if all the machine discovery settings on the local network
                 // is turned off. Hence dns lookup for it's own hostname fails.
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                Assert.Equal(PlatformID.Unix, Environment.OSVersion.Platform);
                 return;
             }
 
@@ -117,7 +117,7 @@ namespace System.Net.NameResolution.PalTests
             {
                 // On Unix, getaddrinfo returns private ipv4 address for hostname. If the OS doesn't have the
                 // reverse dns lookup entry for this address, getnameinfo returns host not found.
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                Assert.Equal(PlatformID.Unix, Environment.OSVersion.Platform);
                 return;
             }
 
