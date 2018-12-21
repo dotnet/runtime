@@ -318,7 +318,7 @@ namespace System.Data.SqlClient.SNI
                 _packetEvent.Set();
             }
 
-            ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(packet, 1);
+            ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(PacketHandle.FromManagedPacket(packet), 1);
         }
 
         /// <summary>
@@ -332,7 +332,7 @@ namespace System.Data.SqlClient.SNI
             {
                 Debug.Assert(_callbackObject != null);
 
-                ((TdsParserStateObject)_callbackObject).WriteAsyncCallback(packet, sniErrorCode);
+                ((TdsParserStateObject)_callbackObject).WriteAsyncCallback(PacketHandle.FromManagedPacket(packet), sniErrorCode);
             }
         }
 
@@ -378,7 +378,7 @@ namespace System.Data.SqlClient.SNI
                     _asyncReceives--;
                     Debug.Assert(_callbackObject != null);
 
-                    ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(packet, 0);
+                    ((TdsParserStateObject)_callbackObject).ReadAsyncCallback(PacketHandle.FromManagedPacket(packet), 0);
                 }
             }
 
