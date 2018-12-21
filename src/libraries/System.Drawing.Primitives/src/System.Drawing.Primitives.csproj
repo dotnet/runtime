@@ -5,7 +5,6 @@
     <AssemblyName>System.Drawing.Primitives</AssemblyName>
     <ProjectGuid>{8F472B93-574C-4AEC-9D28-6C2360A55BBF}</ProjectGuid>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
-    <NoWarn>$(NoWarn);CS1589</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>

@@ -11,27 +11,15 @@ namespace System.Xml.Serialization
     using System;
     using System.ComponentModel;
 
-    /// <include file='doc\SoapAttributeOverrides.uex' path='docs/doc[@for="SoapAttributeOverrides"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class SoapAttributeOverrides
     {
         private Hashtable _types = new Hashtable();
 
-        /// <include file='doc\SoapAttributeOverrides.uex' path='docs/doc[@for="SoapAttributeOverrides.Add"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Add(Type type, SoapAttributes attributes)
         {
             Add(type, string.Empty, attributes);
         }
 
-        /// <include file='doc\SoapAttributeOverrides.uex' path='docs/doc[@for="SoapAttributeOverrides.Add1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Add(Type type, string member, SoapAttributes attributes)
         {
             Hashtable members = (Hashtable)_types[type];
@@ -47,10 +35,6 @@ namespace System.Xml.Serialization
             members.Add(member, attributes);
         }
 
-        /// <include file='doc\SoapAttributeOverrides.uex' path='docs/doc[@for="SoapAttributeOverrides.this"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapAttributes this[Type type]
         {
             get
@@ -59,10 +43,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        /// <include file='doc\SoapAttributeOverrides.uex' path='docs/doc[@for="SoapAttributeOverrides.this1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public SoapAttributes this[Type type, string member]
         {
             get

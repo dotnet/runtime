@@ -8,20 +8,12 @@ namespace System.Xml.Schema
     using System.Xml.Serialization;
     using System.Text;
 
-    /// <include file='doc\XmlSchemaAny.uex' path='docs/doc[@for="XmlSchemaAny"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaAny : XmlSchemaParticle
     {
         private string _ns;
         private XmlSchemaContentProcessing _processContents = XmlSchemaContentProcessing.None;
         private NamespaceList _namespaceList;
 
-        /// <include file='doc\XmlSchemaAny.uex' path='docs/doc[@for="XmlSchemaAny.Namespaces"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("namespace")]
         public string Namespace
         {
@@ -29,10 +21,6 @@ namespace System.Xml.Schema
             set { _ns = value; }
         }
 
-        /// <include file='doc\XmlSchemaAny.uex' path='docs/doc[@for="XmlSchemaAny.ProcessContents"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("processContents"), DefaultValue(XmlSchemaContentProcessing.None)]
         public XmlSchemaContentProcessing ProcessContents
         {

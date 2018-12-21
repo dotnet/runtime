@@ -5,14 +5,15 @@
 namespace System.Xml.Schema
 {
     //UE Atention
-    /// <include file='doc\XmlSeverityType.uex' path='docs/doc[@for="XmlSeverityType"]/*' />
     public enum XmlSeverityType
     {
+        /// <summary>
         /// Errors that can be recovered from. 
-        /// <include file='doc\XmlSeverityType.uex' path='docs/doc[@for="XmlSeverityType.Error"]/*' />
+        /// </summary>
         Error,
-        /// Errors that can be ignored
-        /// <include file='doc\XmlSeverityType.uex' path='docs/doc[@for="XmlSeverityType.Warning"]/*' />
+        /// <summary>
+        /// Errors that can be ignored.
+        /// </summary>
         Warning
     }
 }

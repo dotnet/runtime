@@ -8,64 +8,46 @@ namespace System.Xml.Serialization
     using System.ComponentModel;
     using System.Xml.Serialization;
 
-    /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions"]/*' />
-    /// <devdoc>
-    ///    Specifies various flavours of XmlCodeExporter generated code.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies various flavours of XmlCodeExporter generated code.
+    /// </summary>
     [Flags]
     public enum CodeGenerationOptions
     {
-        /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.None"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Default: use clr primitives for xsd primitives, generate fields and arrays.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Default: use clr primitives for xsd primitives, generate fields and arrays.
+        /// </summary>
         [XmlIgnore]
         None = 0,
-        /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.GenerateProperties"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Generate propertyes instead of fields.
-        ///    </para>
-        /// </devdoc>
+
+        /// <summary>
+        /// Generate propertyes instead of fields
+        /// </summary>
         [XmlEnum("properties")]
         GenerateProperties = 0x1,
 
-        /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.GenerateNewAsync"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Generate new RAD asynchronous pattern. The feature allows customers to use an event-based model for invoking Web services asynchronously.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Generate new RAD asynchronous pattern. The feature allows customers to use an event-based model for invoking Web services asynchronously
+        /// </summary>
         [XmlEnum("newAsync")]
         GenerateNewAsync = 0x2,
 
-        /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.GenerateOldAsync"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Generate old asynchronous pattern: BeginXXX/EndXXX.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Generate old asynchronous pattern: BeginXXX/EndXXX.
+        /// </summary>
         [XmlEnum("oldAsync")]
         GenerateOldAsync = 0x4,
 
 
-        /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.GenerateOrder"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Generate OM using explicit ordering feature.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Generate OM using explicit ordering feature.
+        /// </summary>
         [XmlEnum("order")]
         GenerateOrder = 0x08,
 
-        /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions.EnableDataBinding"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Generate OM INotifyPropertyChanged interface to enable data binding.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Generate OM INotifyPropertyChanged interface to enable data binding.
+        /// </summary>
         [XmlEnum("enableDataBinding")]
         EnableDataBinding = 0x10,
     }

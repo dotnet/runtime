@@ -6,10 +6,6 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaParticle.uex' path='docs/doc[@for="XmlSchemaParticle"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public abstract class XmlSchemaParticle : XmlSchemaAnnotated
     {
         [Flags]
@@ -23,10 +19,6 @@ namespace System.Xml.Schema
         private decimal _maxOccurs = decimal.One;
         private Occurs _flags = Occurs.None;
 
-        /// <include file='doc\XmlSchemaParticle.uex' path='docs/doc[@for="XmlSchemaParticle.MinOccursString"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("minOccurs")]
         public string MinOccursString
         {
@@ -53,10 +45,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaParticle.uex' path='docs/doc[@for="XmlSchemaParticle.MaxOccursString"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlAttribute("maxOccurs")]
         public string MaxOccursString
         {
@@ -94,10 +82,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaParticle.uex' path='docs/doc[@for="XmlSchemaParticle.MinOccurs"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public decimal MinOccurs
         {
@@ -113,10 +97,6 @@ namespace System.Xml.Schema
             }
         }
 
-        /// <include file='doc\XmlSchemaParticle.uex' path='docs/doc[@for="XmlSchemaParticle.MaxOccurs"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlIgnore]
         public decimal MaxOccurs
         {

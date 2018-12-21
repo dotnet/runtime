@@ -6,27 +6,18 @@ namespace System.Xml.Schema
 {
     using System.Xml.Serialization;
 
-    /// <include file='doc\XmlSchemaSimpleTypeUnion.uex' path='docs/doc[@for="XmlSchemaSimpleTypeUnion"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public class XmlSchemaSimpleTypeUnion : XmlSchemaSimpleTypeContent
     {
         private XmlSchemaObjectCollection _baseTypes = new XmlSchemaObjectCollection();
         private XmlQualifiedName[] _memberTypes;
         private XmlSchemaSimpleType[] _baseMemberTypes; // Compiled
 
-        /// <include file='doc\XmlSchemaSimpleTypeUnion.uex' path='docs/doc[@for="XmlSchemaSimpleTypeUnion.BaseTypes"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [XmlElement("simpleType", typeof(XmlSchemaSimpleType))]
         public XmlSchemaObjectCollection BaseTypes
         {
             get { return _baseTypes; }
         }
 
-        /// <include file='doc\XmlSchemaSimpleTypeUnion.uex' path='docs/doc[@for="XmlSchemaSimpleTypeUnion.MemberTypes"]/*' />
         [XmlAttribute("memberTypes")]
         public XmlQualifiedName[] MemberTypes
         {
@@ -35,7 +26,6 @@ namespace System.Xml.Schema
         }
 
         //Compiled Information
-        /// <include file='doc\XmlSchemaSimpleTypeUnion.uex' path='docs/doc[@for="XmlSchemaSimpleTypeUnion.BaseMemberTypes"]/*' />
         [XmlIgnore]
         public XmlSchemaSimpleType[] BaseMemberTypes
         {
