@@ -2219,242 +2219,28 @@ namespace System.Numerics
             }
         }
 
-        // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
         /// Multiplies a vector by the given scalar.
         /// </summary>
         /// <param name="value">The source vector.</param>
         /// <param name="factor">The scalar value.</param>
         /// <returns>The scaled vector.</returns>
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(Vector<T> value, T factor)
         {
-            unchecked
-            {
-                if (Vector.IsHardwareAccelerated)
-                {
-                    return new Vector<T>(factor) * value;
-                }
-                else
-                {
-                    Vector<T> product = new Vector<T>();
-                    if (typeof(T) == typeof(byte))
-                    {
-                        product.register.byte_0 = (byte)(value.register.byte_0 * (byte)(object)factor);
-                        product.register.byte_1 = (byte)(value.register.byte_1 * (byte)(object)factor);
-                        product.register.byte_2 = (byte)(value.register.byte_2 * (byte)(object)factor);
-                        product.register.byte_3 = (byte)(value.register.byte_3 * (byte)(object)factor);
-                        product.register.byte_4 = (byte)(value.register.byte_4 * (byte)(object)factor);
-                        product.register.byte_5 = (byte)(value.register.byte_5 * (byte)(object)factor);
-                        product.register.byte_6 = (byte)(value.register.byte_6 * (byte)(object)factor);
-                        product.register.byte_7 = (byte)(value.register.byte_7 * (byte)(object)factor);
-                        product.register.byte_8 = (byte)(value.register.byte_8 * (byte)(object)factor);
-                        product.register.byte_9 = (byte)(value.register.byte_9 * (byte)(object)factor);
-                        product.register.byte_10 = (byte)(value.register.byte_10 * (byte)(object)factor);
-                        product.register.byte_11 = (byte)(value.register.byte_11 * (byte)(object)factor);
-                        product.register.byte_12 = (byte)(value.register.byte_12 * (byte)(object)factor);
-                        product.register.byte_13 = (byte)(value.register.byte_13 * (byte)(object)factor);
-                        product.register.byte_14 = (byte)(value.register.byte_14 * (byte)(object)factor);
-                        product.register.byte_15 = (byte)(value.register.byte_15 * (byte)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(sbyte))
-                    {
-                        product.register.sbyte_0 = (sbyte)(value.register.sbyte_0 * (sbyte)(object)factor);
-                        product.register.sbyte_1 = (sbyte)(value.register.sbyte_1 * (sbyte)(object)factor);
-                        product.register.sbyte_2 = (sbyte)(value.register.sbyte_2 * (sbyte)(object)factor);
-                        product.register.sbyte_3 = (sbyte)(value.register.sbyte_3 * (sbyte)(object)factor);
-                        product.register.sbyte_4 = (sbyte)(value.register.sbyte_4 * (sbyte)(object)factor);
-                        product.register.sbyte_5 = (sbyte)(value.register.sbyte_5 * (sbyte)(object)factor);
-                        product.register.sbyte_6 = (sbyte)(value.register.sbyte_6 * (sbyte)(object)factor);
-                        product.register.sbyte_7 = (sbyte)(value.register.sbyte_7 * (sbyte)(object)factor);
-                        product.register.sbyte_8 = (sbyte)(value.register.sbyte_8 * (sbyte)(object)factor);
-                        product.register.sbyte_9 = (sbyte)(value.register.sbyte_9 * (sbyte)(object)factor);
-                        product.register.sbyte_10 = (sbyte)(value.register.sbyte_10 * (sbyte)(object)factor);
-                        product.register.sbyte_11 = (sbyte)(value.register.sbyte_11 * (sbyte)(object)factor);
-                        product.register.sbyte_12 = (sbyte)(value.register.sbyte_12 * (sbyte)(object)factor);
-                        product.register.sbyte_13 = (sbyte)(value.register.sbyte_13 * (sbyte)(object)factor);
-                        product.register.sbyte_14 = (sbyte)(value.register.sbyte_14 * (sbyte)(object)factor);
-                        product.register.sbyte_15 = (sbyte)(value.register.sbyte_15 * (sbyte)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(ushort))
-                    {
-                        product.register.uint16_0 = (ushort)(value.register.uint16_0 * (ushort)(object)factor);
-                        product.register.uint16_1 = (ushort)(value.register.uint16_1 * (ushort)(object)factor);
-                        product.register.uint16_2 = (ushort)(value.register.uint16_2 * (ushort)(object)factor);
-                        product.register.uint16_3 = (ushort)(value.register.uint16_3 * (ushort)(object)factor);
-                        product.register.uint16_4 = (ushort)(value.register.uint16_4 * (ushort)(object)factor);
-                        product.register.uint16_5 = (ushort)(value.register.uint16_5 * (ushort)(object)factor);
-                        product.register.uint16_6 = (ushort)(value.register.uint16_6 * (ushort)(object)factor);
-                        product.register.uint16_7 = (ushort)(value.register.uint16_7 * (ushort)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(short))
-                    {
-                        product.register.int16_0 = (short)(value.register.int16_0 * (short)(object)factor);
-                        product.register.int16_1 = (short)(value.register.int16_1 * (short)(object)factor);
-                        product.register.int16_2 = (short)(value.register.int16_2 * (short)(object)factor);
-                        product.register.int16_3 = (short)(value.register.int16_3 * (short)(object)factor);
-                        product.register.int16_4 = (short)(value.register.int16_4 * (short)(object)factor);
-                        product.register.int16_5 = (short)(value.register.int16_5 * (short)(object)factor);
-                        product.register.int16_6 = (short)(value.register.int16_6 * (short)(object)factor);
-                        product.register.int16_7 = (short)(value.register.int16_7 * (short)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(uint))
-                    {
-                        product.register.uint32_0 = (uint)(value.register.uint32_0 * (uint)(object)factor);
-                        product.register.uint32_1 = (uint)(value.register.uint32_1 * (uint)(object)factor);
-                        product.register.uint32_2 = (uint)(value.register.uint32_2 * (uint)(object)factor);
-                        product.register.uint32_3 = (uint)(value.register.uint32_3 * (uint)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(int))
-                    {
-                        product.register.int32_0 = (int)(value.register.int32_0 * (int)(object)factor);
-                        product.register.int32_1 = (int)(value.register.int32_1 * (int)(object)factor);
-                        product.register.int32_2 = (int)(value.register.int32_2 * (int)(object)factor);
-                        product.register.int32_3 = (int)(value.register.int32_3 * (int)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(ulong))
-                    {
-                        product.register.uint64_0 = (ulong)(value.register.uint64_0 * (ulong)(object)factor);
-                        product.register.uint64_1 = (ulong)(value.register.uint64_1 * (ulong)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(long))
-                    {
-                        product.register.int64_0 = (long)(value.register.int64_0 * (long)(object)factor);
-                        product.register.int64_1 = (long)(value.register.int64_1 * (long)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(float))
-                    {
-                        product.register.single_0 = (float)(value.register.single_0 * (float)(object)factor);
-                        product.register.single_1 = (float)(value.register.single_1 * (float)(object)factor);
-                        product.register.single_2 = (float)(value.register.single_2 * (float)(object)factor);
-                        product.register.single_3 = (float)(value.register.single_3 * (float)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(double))
-                    {
-                        product.register.double_0 = (double)(value.register.double_0 * (double)(object)factor);
-                        product.register.double_1 = (double)(value.register.double_1 * (double)(object)factor);
-                    }
-                    return product;
-                }
-            }
+            return new Vector<T>(factor) * value;
         }
 
-        // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
         /// <summary>
         /// Multiplies a vector by the given scalar.
         /// </summary>
         /// <param name="factor">The scalar value.</param>
         /// <param name="value">The source vector.</param>
         /// <returns>The scaled vector.</returns>
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static Vector<T> operator *(T factor, Vector<T> value)
         {
-            unchecked
-            {
-                if (Vector.IsHardwareAccelerated)
-                {
-                    return new Vector<T>(factor) * value;
-                }
-                else
-                {
-                    Vector<T> product = new Vector<T>();
-                    if (typeof(T) == typeof(byte))
-                    {
-                        product.register.byte_0 = (byte)(value.register.byte_0 * (byte)(object)factor);
-                        product.register.byte_1 = (byte)(value.register.byte_1 * (byte)(object)factor);
-                        product.register.byte_2 = (byte)(value.register.byte_2 * (byte)(object)factor);
-                        product.register.byte_3 = (byte)(value.register.byte_3 * (byte)(object)factor);
-                        product.register.byte_4 = (byte)(value.register.byte_4 * (byte)(object)factor);
-                        product.register.byte_5 = (byte)(value.register.byte_5 * (byte)(object)factor);
-                        product.register.byte_6 = (byte)(value.register.byte_6 * (byte)(object)factor);
-                        product.register.byte_7 = (byte)(value.register.byte_7 * (byte)(object)factor);
-                        product.register.byte_8 = (byte)(value.register.byte_8 * (byte)(object)factor);
-                        product.register.byte_9 = (byte)(value.register.byte_9 * (byte)(object)factor);
-                        product.register.byte_10 = (byte)(value.register.byte_10 * (byte)(object)factor);
-                        product.register.byte_11 = (byte)(value.register.byte_11 * (byte)(object)factor);
-                        product.register.byte_12 = (byte)(value.register.byte_12 * (byte)(object)factor);
-                        product.register.byte_13 = (byte)(value.register.byte_13 * (byte)(object)factor);
-                        product.register.byte_14 = (byte)(value.register.byte_14 * (byte)(object)factor);
-                        product.register.byte_15 = (byte)(value.register.byte_15 * (byte)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(sbyte))
-                    {
-                        product.register.sbyte_0 = (sbyte)(value.register.sbyte_0 * (sbyte)(object)factor);
-                        product.register.sbyte_1 = (sbyte)(value.register.sbyte_1 * (sbyte)(object)factor);
-                        product.register.sbyte_2 = (sbyte)(value.register.sbyte_2 * (sbyte)(object)factor);
-                        product.register.sbyte_3 = (sbyte)(value.register.sbyte_3 * (sbyte)(object)factor);
-                        product.register.sbyte_4 = (sbyte)(value.register.sbyte_4 * (sbyte)(object)factor);
-                        product.register.sbyte_5 = (sbyte)(value.register.sbyte_5 * (sbyte)(object)factor);
-                        product.register.sbyte_6 = (sbyte)(value.register.sbyte_6 * (sbyte)(object)factor);
-                        product.register.sbyte_7 = (sbyte)(value.register.sbyte_7 * (sbyte)(object)factor);
-                        product.register.sbyte_8 = (sbyte)(value.register.sbyte_8 * (sbyte)(object)factor);
-                        product.register.sbyte_9 = (sbyte)(value.register.sbyte_9 * (sbyte)(object)factor);
-                        product.register.sbyte_10 = (sbyte)(value.register.sbyte_10 * (sbyte)(object)factor);
-                        product.register.sbyte_11 = (sbyte)(value.register.sbyte_11 * (sbyte)(object)factor);
-                        product.register.sbyte_12 = (sbyte)(value.register.sbyte_12 * (sbyte)(object)factor);
-                        product.register.sbyte_13 = (sbyte)(value.register.sbyte_13 * (sbyte)(object)factor);
-                        product.register.sbyte_14 = (sbyte)(value.register.sbyte_14 * (sbyte)(object)factor);
-                        product.register.sbyte_15 = (sbyte)(value.register.sbyte_15 * (sbyte)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(ushort))
-                    {
-                        product.register.uint16_0 = (ushort)(value.register.uint16_0 * (ushort)(object)factor);
-                        product.register.uint16_1 = (ushort)(value.register.uint16_1 * (ushort)(object)factor);
-                        product.register.uint16_2 = (ushort)(value.register.uint16_2 * (ushort)(object)factor);
-                        product.register.uint16_3 = (ushort)(value.register.uint16_3 * (ushort)(object)factor);
-                        product.register.uint16_4 = (ushort)(value.register.uint16_4 * (ushort)(object)factor);
-                        product.register.uint16_5 = (ushort)(value.register.uint16_5 * (ushort)(object)factor);
-                        product.register.uint16_6 = (ushort)(value.register.uint16_6 * (ushort)(object)factor);
-                        product.register.uint16_7 = (ushort)(value.register.uint16_7 * (ushort)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(short))
-                    {
-                        product.register.int16_0 = (short)(value.register.int16_0 * (short)(object)factor);
-                        product.register.int16_1 = (short)(value.register.int16_1 * (short)(object)factor);
-                        product.register.int16_2 = (short)(value.register.int16_2 * (short)(object)factor);
-                        product.register.int16_3 = (short)(value.register.int16_3 * (short)(object)factor);
-                        product.register.int16_4 = (short)(value.register.int16_4 * (short)(object)factor);
-                        product.register.int16_5 = (short)(value.register.int16_5 * (short)(object)factor);
-                        product.register.int16_6 = (short)(value.register.int16_6 * (short)(object)factor);
-                        product.register.int16_7 = (short)(value.register.int16_7 * (short)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(uint))
-                    {
-                        product.register.uint32_0 = (uint)(value.register.uint32_0 * (uint)(object)factor);
-                        product.register.uint32_1 = (uint)(value.register.uint32_1 * (uint)(object)factor);
-                        product.register.uint32_2 = (uint)(value.register.uint32_2 * (uint)(object)factor);
-                        product.register.uint32_3 = (uint)(value.register.uint32_3 * (uint)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(int))
-                    {
-                        product.register.int32_0 = (int)(value.register.int32_0 * (int)(object)factor);
-                        product.register.int32_1 = (int)(value.register.int32_1 * (int)(object)factor);
-                        product.register.int32_2 = (int)(value.register.int32_2 * (int)(object)factor);
-                        product.register.int32_3 = (int)(value.register.int32_3 * (int)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(ulong))
-                    {
-                        product.register.uint64_0 = (ulong)(value.register.uint64_0 * (ulong)(object)factor);
-                        product.register.uint64_1 = (ulong)(value.register.uint64_1 * (ulong)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(long))
-                    {
-                        product.register.int64_0 = (long)(value.register.int64_0 * (long)(object)factor);
-                        product.register.int64_1 = (long)(value.register.int64_1 * (long)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(float))
-                    {
-                        product.register.single_0 = (float)(value.register.single_0 * (float)(object)factor);
-                        product.register.single_1 = (float)(value.register.single_1 * (float)(object)factor);
-                        product.register.single_2 = (float)(value.register.single_2 * (float)(object)factor);
-                        product.register.single_3 = (float)(value.register.single_3 * (float)(object)factor);
-                    }
-                    else if (typeof(T) == typeof(double))
-                    {
-                        product.register.double_0 = (double)(value.register.double_0 * (double)(object)factor);
-                        product.register.double_1 = (double)(value.register.double_1 * (double)(object)factor);
-                    }
-                    return product;
-                }
-            }
+            return new Vector<T>(factor) * value;
         }
 
         // This method is intrinsic only for certain types. It cannot access fields directly unless we are sure the context is unaccelerated.
