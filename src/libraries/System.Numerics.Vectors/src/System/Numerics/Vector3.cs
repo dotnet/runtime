@@ -18,11 +18,25 @@ namespace System.Numerics
         /// <summary>
         /// Returns the vector (0,0,0).
         /// </summary>
-        public static Vector3 Zero { get { return new Vector3(); } }
+        public static Vector3 Zero
+        {
+            [Intrinsic]
+            get
+            {
+                return new Vector3();
+            }
+        }
         /// <summary>
         /// Returns the vector (1,1,1).
         /// </summary>
-        public static Vector3 One { get { return new Vector3(1.0f, 1.0f, 1.0f); } }
+        public static Vector3 One
+        {
+            [Intrinsic]
+            get
+            {
+                return new Vector3(1.0f, 1.0f, 1.0f);
+            }
+        }
         /// <summary>
         /// Returns the vector (1,0,0).
         /// </summary>
