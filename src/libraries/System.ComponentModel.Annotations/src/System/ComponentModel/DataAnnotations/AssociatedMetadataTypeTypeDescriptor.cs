@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -95,7 +95,6 @@ namespace System.ComponentModel.DataAnnotations
 
         private static class TypeDescriptorCache
         {
-            private static readonly Attribute[] emptyAttributes = new Attribute[0];
             // Stores the associated metadata type for a type
             private static readonly ConcurrentDictionary<Type, Type> _metadataTypeCache = new ConcurrentDictionary<Type, Type>();
 
@@ -176,7 +175,7 @@ namespace System.ComponentModel.DataAnnotations
                 }
                 else
                 {
-                    attributes = emptyAttributes;
+                    attributes = Array.Empty<Attribute>();
                 }
 
                 _typeMemberCache.TryAdd(memberTuple, attributes);
