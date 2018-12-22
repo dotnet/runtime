@@ -71,7 +71,7 @@ namespace System.Collections
         private KeyList keyList; // Do not rename (binary serialization)
         private ValueList valueList; // Do not rename (binary serialization)
         [NonSerialized]
-        private object _syncRoot;
+        private object _syncRoot; // Serialized indirectly in SyncSortedList
 
         private const int _defaultCapacity = 16;
 

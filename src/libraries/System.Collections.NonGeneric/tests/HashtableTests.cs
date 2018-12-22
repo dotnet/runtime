@@ -1194,6 +1194,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
     public class Hashtable_SyncRootTests
     {
         private Hashtable _hashDaughter;
