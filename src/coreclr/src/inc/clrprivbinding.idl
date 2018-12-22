@@ -51,21 +51,6 @@ interface ICLRPrivBinder : IUnknown
         [out, retval] ICLRPrivAssembly ** ppAssembly);
 
     /**********************************************************************************
-     ** VerifyBind
-     **********************************************************************************/
-    HRESULT VerifyBind(
-        [in] IAssemblyName * AssemblyName,
-        [in] ICLRPrivAssembly * pAssembly,
-        [in] ICLRPrivAssemblyInfo * pAssemblyInfo);
-
-    /**********************************************************************************
-     ** GetBinderFlags
-     **  pBinderFlags, pointer to binder flags.
-     **********************************************************************************/
-    HRESULT GetBinderFlags(
-        [out, retval] DWORD *pBinderFlags);
-
-    /**********************************************************************************
      ** GetBinderID
      **  pBinderId, pointer to binder id. The binder id has the following properties
      **        It is a pointer that does not change over the lifetime of a binder object
@@ -74,23 +59,6 @@ interface ICLRPrivBinder : IUnknown
      **********************************************************************************/
     HRESULT GetBinderID(
         [out, retval] UINT_PTR *pBinderId);
-
-    /**********************************************************************************
-     ** FindAssemblyBySpec -- if it has been previously bound, guarantees that the same
-     ** result will be returned; if previous result was successful, the bound
-     ** ICLRPrivAssembly will be returned, and if previous result was not successful
-     ** the same failure HRESULT will be assigned to *pResult. Returns failure HR if
-     ** identity has not been requested previously.
-     **
-     **  pvAssemblySpec - the AssemblySpec identity to bind.
-     **  pResult        - the result of the previous bind request.
-     **  ppAssembly     - when successful, contains the corresponding assembly object.
-     **********************************************************************************/
-    HRESULT FindAssemblyBySpec(
-        [in]          LPVOID pvAppDomain,
-        [in]          LPVOID pvAssemblySpec,
-        [out]         HRESULT * pResult,
-        [out]         ICLRPrivAssembly ** ppAssembly);
 
     /**********************************************************************************
      ** GetLoaderAllocator
@@ -103,13 +71,6 @@ interface ICLRPrivBinder : IUnknown
         [out, retval] LPVOID * pLoaderAllocator);
 };
 
-enum CLR_PRIV_BINDER_FLAGS
-{
-    BINDER_NONE                     = 0x0,
-    BINDER_DESIGNER_BINDING_CONTEXT = 0x1,
-    BINDER_FINDASSEMBLYBYSPEC_REQUIRES_EXACT_MATCH = 0x2,
-};
-    
 /**************************************************************************************
  ** ASSEMBLY_IMAGE_TYPES - The set of assembly image formats.
  **************************************************************************************/

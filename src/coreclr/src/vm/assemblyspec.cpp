@@ -920,18 +920,6 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
         pBinder = GetBindingContextFromParentAssembly(pDomain);
     }
 
-
-    if (pBinder != nullptr)
-    {
-        ReleaseHolder<ICLRPrivAssembly> pPrivAssembly;
-        HRESULT hrCachedResult;
-        if (SUCCEEDED(pBinder->FindAssemblyBySpec(GetAppDomain(), this, &hrCachedResult, &pPrivAssembly)) &&
-            SUCCEEDED(hrCachedResult))
-        {
-            pAssembly = pDomain->FindAssembly(pPrivAssembly);
-        }
-    }
-
     if ((pAssembly == nullptr) && CanUseWithBindingCache())
     {
         pAssembly = pDomain->FindCachedAssembly(this);
