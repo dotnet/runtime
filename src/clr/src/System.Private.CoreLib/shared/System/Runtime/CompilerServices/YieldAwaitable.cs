@@ -46,10 +46,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Provides an awaiter that switches into a target environment.</summary>
         /// <remarks>This type is intended for compiler use only.</remarks>
-        public readonly struct YieldAwaiter : ICriticalNotifyCompletion
-#if CORECLR
-            , IStateMachineBoxAwareAwaiter
-#endif
+        public readonly struct YieldAwaiter : ICriticalNotifyCompletion, IStateMachineBoxAwareAwaiter
         {
             /// <summary>Gets whether a yield is not required.</summary>
             /// <remarks>This property is intended for compiler user rather than use directly in code.</remarks>
@@ -118,7 +115,6 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-#if CORECLR
             void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
             {
                 Debug.Assert(box != null);
@@ -151,7 +147,6 @@ namespace System.Runtime.CompilerServices
                     }
                 }
             }
-#endif
 
             private static Action OutputCorrelationEtwEvent(Action continuation)
             {
