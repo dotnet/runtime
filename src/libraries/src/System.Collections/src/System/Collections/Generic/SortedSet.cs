@@ -54,8 +54,7 @@ namespace System.Collections.Generic
         private IComparer<T> comparer;
         private int count;
         private int version;
-        [NonSerialized]
-        private object _syncRoot;
+
         private SerializationInfo siInfo; // A temporary variable which we need during deserialization.
 
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
@@ -293,18 +292,7 @@ namespace System.Collections.Generic
 
         bool ICollection.IsSynchronized => false;
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         #endregion
 

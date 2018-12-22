@@ -540,6 +540,7 @@ namespace System.Collections.Tests
         }
     }
 
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
     public class Stack_SyncRootTests
     {
         private Stack _stackDaughter;
@@ -563,7 +564,7 @@ namespace System.Collections.Tests
                 stackMother.Push(i);
             }
 
-            Assert.Equal(typeof(object), stackMother.SyncRoot.GetType());
+            Assert.IsType<Stack>(stackMother.SyncRoot);
 
             Stack stackSon = Stack.Synchronized(stackMother);
             _stackGrandDaughter = Stack.Synchronized(stackSon);

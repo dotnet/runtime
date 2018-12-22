@@ -18,7 +18,6 @@ namespace System.Collections.Generic
         internal LinkedListNode<T> head;
         internal int count;
         internal int version;
-        private object _syncRoot;
         private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.  
 
         // names for serialization
@@ -460,17 +459,7 @@ namespace System.Collections.Generic
             get { return false; }
         }
 
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
         void ICollection.CopyTo(Array array, int index)
         {

@@ -29,8 +29,6 @@ namespace System.Collections
         private int _size; // Number of elements. Do not rename (binary serialization)
         private int _growFactor; // 100 == 1.0, 130 == 1.3, 200 == 2.0. Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         private const int _MinimumGrow = 4;
         private const int _ShrinkThreshold = 32;
@@ -107,17 +105,7 @@ namespace System.Collections
             get { return false; }
         }
 
-        public virtual object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public virtual object SyncRoot => this;
 
         // Removes all Objects from the queue.
         public virtual void Clear()
