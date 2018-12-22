@@ -35,23 +35,9 @@ public:
             /* [in] */ IAssemblyName *pIAssemblyName,
             /* [retval][out] */ ICLRPrivAssembly **ppAssembly);
         
-    STDMETHOD(VerifyBind)( 
-            /* [in] */ IAssemblyName *pIAssemblyName,
-            /* [in] */ ICLRPrivAssembly *pAssembly,
-            /* [in] */ ICLRPrivAssemblyInfo *pAssemblyInfo);
-
-    STDMETHOD(GetBinderFlags)( 
-            /* [retval][out] */ DWORD *pBinderFlags);
-         
     STDMETHOD(GetBinderID)( 
             /* [retval][out] */ UINT_PTR *pBinderId);
          
-    STDMETHOD(FindAssemblyBySpec)( 
-            /* [in] */ LPVOID pvAppDomain,
-            /* [in] */ LPVOID pvAssemblySpec,
-            /* [out] */ HRESULT *pResult,
-            /* [out] */ ICLRPrivAssembly **ppAssembly);
-
     STDMETHOD(GetLoaderAllocator)(
         /* [retval][out] */ LPVOID *pLoaderAllocator);
 

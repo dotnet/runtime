@@ -39,64 +39,6 @@ LPWSTR CopyStringThrowing(
 
 namespace CLRPrivBinderUtil
 {
-
-    //-----------------------------------------------------------------------------------------------------------------
-    HRESULT VerifyBind(
-        IAssemblyName *pRefAssemblyName,
-        ICLRPrivAssemblyInfo *pDefAssemblyInfo)
-    {
-        STANDARD_BIND_CONTRACT;
-
-        HRESULT hr = S_OK;
-        VALIDATE_PTR_RET(pRefAssemblyName);
-        VALIDATE_PTR_RET(pDefAssemblyInfo);
-
-        AssemblyIdentity refIdentity;
-        IfFailRet(refIdentity.Initialize(pRefAssemblyName));
-
-        AssemblyIdentity defIdentity;
-        IfFailRet(defIdentity.Initialize(pDefAssemblyInfo));
-
-        return VerifyBind(refIdentity, defIdentity);
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------
-    HRESULT VerifyBind(
-        CLRPrivBinderUtil::AssemblyIdentity const & refIdentity,
-        CLRPrivBinderUtil::AssemblyIdentity const & defIdentity)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        //
-        // Compare versions. Success conditions are the same as those in Silverlight:
-        //  1. Reference identity has no version.
-        //  2. Both identities have versions, and ref.version <= def.version.
-        //
-        // Since the default value of AssemblyVersion is 0.0.0.0, then if the
-        // ref has no value set then the comparison will use 0.0.0.0, which will
-        // always compare as true to the version contained in the def.
-        //
-
-        if (defIdentity.Version < refIdentity.Version)
-        {   // Bound assembly has a lower version number than the reference.
-            return CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW;
-        }
-
-        //
-        // Compare public key tokens. Success conditions are:
-        //  1. Reference identity has no PKT.
-        //  2. Both identities have identical PKT values.
-        //
-
-        if (refIdentity.KeyToken.GetSize() != 0 &&          // Ref without PKT always passes.
-            refIdentity.KeyToken != defIdentity.KeyToken)   // Otherwise Def must have matching PKT.
-        {
-            return CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH;
-        }
-
-        return S_OK;
-    }
-
     //---------------------------------------------------------------------------------------------
     CLRPrivResourcePathImpl::CLRPrivResourcePathImpl(LPCWSTR wzPath)
         : m_wzPath(CopyStringThrowing(wzPath))

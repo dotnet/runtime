@@ -181,21 +181,6 @@ Exit:;
 }
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
-HRESULT CLRPrivBinderCoreCLR::VerifyBind(IAssemblyName        *AssemblyName,
-                                         ICLRPrivAssembly     *pAssembly,
-                                         ICLRPrivAssemblyInfo *pAssemblyInfo)
-{
-    return E_FAIL;
-}
-         
-HRESULT CLRPrivBinderCoreCLR::GetBinderFlags(DWORD *pBinderFlags)
-{
-    if (pBinderFlags == NULL)
-        return E_INVALIDARG;
-    *pBinderFlags = BINDER_NONE;
-    return S_OK;
-}
-         
 HRESULT CLRPrivBinderCoreCLR::GetBinderID( 
         UINT_PTR *pBinderId)
 {
@@ -203,18 +188,6 @@ HRESULT CLRPrivBinderCoreCLR::GetBinderID(
     return S_OK;
 }
          
-HRESULT CLRPrivBinderCoreCLR::FindAssemblyBySpec( 
-            LPVOID pvAppDomain,
-            LPVOID pvAssemblySpec,
-            HRESULT *pResult,
-            ICLRPrivAssembly **ppAssembly)
-{
-    // We are not using a cache at this level
-    // However, assemblies bound by the CoreCLR binder is already cached in the
-    // AppDomain and will be resolved from there if required
-    return E_FAIL;
-}
-
 HRESULT CLRPrivBinderCoreCLR::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
                                                 SString  &sPlatformResourceRoots,
                                                 SString  &sAppPaths,
