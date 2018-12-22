@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices; // Do not remove. This is necessary for netstandard, since this file is mirrored into corefx
-using System.Numerics;
 
 #if !netstandard
 using Internal.Runtime.CompilerServices;
@@ -51,54 +50,69 @@ namespace System
         }
 
         // Adapted from IndexOf(...)
-        public static bool Contains<T>(ref T searchSpace, T value, int length)
+        public unsafe static bool Contains<T>(ref T searchSpace, T value, int length)
                where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            while (length >= 8)
-            {
-                length -= 8;
 
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 3)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 4)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 5)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 6)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+            if (default(T) != null || (object)value != null)
+            {
+                while (length >= 8)
                 {
-                    goto Found;
+                    length -= 8;
+
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 3)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 4)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 5)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 6)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                    {
+                        goto Found;
+                    }
+
+                    index += 8;
                 }
 
-                index += 8;
-            }
-
-            if (length >= 4)
-            {
-                length -= 4;
-
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
-                    value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                if (length >= 4)
                 {
-                    goto Found;
+                    length -= 4;
+
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 0)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 1)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 2)) ||
+                        value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    {
+                        goto Found;
+                    }
+
+                    index += 4;
                 }
 
-                index += 4;
+                while (length > 0)
+                {
+                    length -= 1;
+
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                        goto Found;
+
+                    index += 1;
+                }
             }
-
-            while (length > 0)
+            else
             {
-                length -= 1;
-
-                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                    goto Found;
-
-                index += 1;
+                byte* len = (byte*)length;
+                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                {
+                    if ((object)Unsafe.Add(ref searchSpace, index) is null)
+                    {
+                        goto Found;
+                    }
+                }
             }
 
             return false;
@@ -113,53 +127,67 @@ namespace System
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            while (length >= 8)
+            if (default(T) != null || (object)value != null)
             {
-                length -= 8;
+                while (length >= 8)
+                {
+                    length -= 8;
 
-                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                    goto Found;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
-                    goto Found1;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
-                    goto Found2;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
-                    goto Found3;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
-                    goto Found4;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
-                    goto Found5;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
-                    goto Found6;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
-                    goto Found7;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                        goto Found;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                        goto Found1;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                        goto Found2;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                        goto Found3;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
+                        goto Found4;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
+                        goto Found5;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
+                        goto Found6;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                        goto Found7;
 
-                index += 8;
+                    index += 8;
+                }
+
+                if (length >= 4)
+                {
+                    length -= 4;
+
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                        goto Found;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                        goto Found1;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                        goto Found2;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                        goto Found3;
+
+                    index += 4;
+                }
+
+                while (length > 0)
+                {
+                    if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                        goto Found;
+
+                    index += 1;
+                    length--;
+                }
             }
-
-            if (length >= 4)
+            else
             {
-                length -= 4;
-
-                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                    goto Found;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
-                    goto Found1;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
-                    goto Found2;
-                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
-                    goto Found3;
-
-                index += 4;
-            }
-
-            while (length > 0)
-            {
-                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
-                    goto Found;
-
-                index += 1;
-                length--;
+                byte* len = (byte*)length;
+                for (index = (IntPtr)0; index.ToPointer() < len; index += 1)
+                {
+                    if ((object)Unsafe.Add(ref searchSpace, index) is null)
+                    {
+                        goto Found;
+                    }
+                }
             }
             return -1;
 
@@ -188,62 +216,84 @@ namespace System
 
             T lookUp;
             int index = 0;
-            while ((length - index) >= 8)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
-                lookUp = Unsafe.Add(ref searchSpace, index);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found;
-                lookUp = Unsafe.Add(ref searchSpace, index + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, index + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, index + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found3;
-                lookUp = Unsafe.Add(ref searchSpace, index + 4);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found4;
-                lookUp = Unsafe.Add(ref searchSpace, index + 5);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found5;
-                lookUp = Unsafe.Add(ref searchSpace, index + 6);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found6;
-                lookUp = Unsafe.Add(ref searchSpace, index + 7);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found7;
+                while ((length - index) >= 8)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found3;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found4;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found5;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found6;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found7;
 
-                index += 8;
+                    index += 8;
+                }
+
+                if ((length - index) >= 4)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found3;
+
+                    index += 4;
+                }
+
+                while (index < length)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found;
+
+                    index++;
+                }
+            }
+            else
+            {
+                for (index = 0; index < length; index++)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if ((object)lookUp is null)
+                    {
+                        if ((object)value0 is null || (object)value1 is null)
+                        {
+                            goto Found;
+                        }
+                    }
+                    else if (lookUp.Equals(value0) || lookUp.Equals(value1))
+                    {
+                        goto Found;
+                    }
+                }
             }
 
-            if ((length - index) >= 4)
-            {
-                lookUp = Unsafe.Add(ref searchSpace, index);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found;
-                lookUp = Unsafe.Add(ref searchSpace, index + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, index + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, index + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found3;
-
-                index += 4;
-            }
-
-            while (index < length)
-            {
-                lookUp = Unsafe.Add(ref searchSpace, index);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found;
-
-                index++;
-            }
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
@@ -271,61 +321,82 @@ namespace System
 
             T lookUp;
             int index = 0;
-            while ((length - index) >= 8)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null))
             {
-                lookUp = Unsafe.Add(ref searchSpace, index);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found;
-                lookUp = Unsafe.Add(ref searchSpace, index + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, index + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, index + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found3;
-                lookUp = Unsafe.Add(ref searchSpace, index + 4);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found4;
-                lookUp = Unsafe.Add(ref searchSpace, index + 5);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found5;
-                lookUp = Unsafe.Add(ref searchSpace, index + 6);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found6;
-                lookUp = Unsafe.Add(ref searchSpace, index + 7);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found7;
+                while ((length - index) >= 8)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found3;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 4);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found4;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 5);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found5;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 6);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found6;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 7);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found7;
 
-                index += 8;
+                    index += 8;
+                }
+
+                if ((length - index) >= 4)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, index + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found3;
+
+                    index += 4;
+                }
+
+                while (index < length)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found;
+
+                    index++;
+                }
             }
-
-            if ((length - index) >= 4)
+            else
             {
-                lookUp = Unsafe.Add(ref searchSpace, index);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found;
-                lookUp = Unsafe.Add(ref searchSpace, index + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, index + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, index + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found3;
-
-                index += 4;
-            }
-
-            while (index < length)
-            {
-                lookUp = Unsafe.Add(ref searchSpace, index);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found;
-
-                index++;
+                for (index = 0; index < length; index++)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, index);
+                    if ((object)lookUp is null)
+                    {
+                        if ((object)value0 is null || (object)value1 is null || (object)value2 is null)
+                        {
+                            goto Found;
+                        }
+                    }
+                    else if (lookUp.Equals(value0) || lookUp.Equals(value1) || lookUp.Equals(value2))
+                    {
+                        goto Found;
+                    }
+                }
             }
             return -1;
 
@@ -413,49 +484,63 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            while (length >= 8)
+            if (default(T) != null || (object)value != null)
             {
-                length -= 8;
+                while (length >= 8)
+                {
+                    length -= 8;
 
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 7)))
-                    goto Found7;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 6)))
-                    goto Found6;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 5)))
-                    goto Found5;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 4)))
-                    goto Found4;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
-                    goto Found3;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
-                    goto Found2;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
-                    goto Found1;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length)))
-                    goto Found;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 7)))
+                        goto Found7;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 6)))
+                        goto Found6;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 5)))
+                        goto Found5;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 4)))
+                        goto Found4;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
+                        goto Found3;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
+                        goto Found2;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
+                        goto Found1;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length)))
+                        goto Found;
+                }
+
+                if (length >= 4)
+                {
+                    length -= 4;
+
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
+                        goto Found3;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
+                        goto Found2;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
+                        goto Found1;
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length)))
+                        goto Found;
+                }
+
+                while (length > 0)
+                {
+                    length--;
+
+                    if (value.Equals(Unsafe.Add(ref searchSpace, length)))
+                        goto Found;
+                }
+            }
+            else
+            {
+                for (length--; length >= 0; length--)
+                {
+                    if ((object)Unsafe.Add(ref searchSpace, length) is null)
+                    {
+                        goto Found;
+                    }
+                }
             }
 
-            if (length >= 4)
-            {
-                length -= 4;
-
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 3)))
-                    goto Found3;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 2)))
-                    goto Found2;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length + 1)))
-                    goto Found1;
-                if (value.Equals(Unsafe.Add(ref searchSpace, length)))
-                    goto Found;
-            }
-
-            while (length > 0)
-            {
-                length--;
-
-                if (value.Equals(Unsafe.Add(ref searchSpace, length)))
-                    goto Found;
-            }
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
@@ -482,62 +567,84 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            while (length >= 8)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
-                length -= 8;
+                while (length >= 8)
+                {
+                    length -= 8;
 
-                lookUp = Unsafe.Add(ref searchSpace, length + 7);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found7;
-                lookUp = Unsafe.Add(ref searchSpace, length + 6);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found6;
-                lookUp = Unsafe.Add(ref searchSpace, length + 5);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found5;
-                lookUp = Unsafe.Add(ref searchSpace, length + 4);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found4;
-                lookUp = Unsafe.Add(ref searchSpace, length + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found3;
-                lookUp = Unsafe.Add(ref searchSpace, length + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, length + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, length);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 7);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found7;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 6);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found6;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 5);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found5;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 4);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found4;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found3;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found;
+                }
+
+                if (length >= 4)
+                {
+                    length -= 4;
+
+                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found3;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found;
+                }
+
+                while (length > 0)
+                {
+                    length--;
+
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp))
+                        goto Found;
+                }
+            }
+            else
+            {
+                for (length--; length >= 0; length--)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if ((object)lookUp is null)
+                    {
+                        if ((object)value0 is null || (object)value1 is null)
+                        {
+                            goto Found;
+                        }
+                    }
+                    else if (lookUp.Equals(value0) || lookUp.Equals(value1))
+                    {
+                        goto Found;
+                    }
+                }
             }
 
-            if (length >= 4)
-            {
-                length -= 4;
-
-                lookUp = Unsafe.Add(ref searchSpace, length + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found3;
-                lookUp = Unsafe.Add(ref searchSpace, length + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, length + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, length);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found;
-            }
-
-            while (length > 0)
-            {
-                length--;
-
-                lookUp = Unsafe.Add(ref searchSpace, length);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp))
-                    goto Found;
-            }
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
@@ -564,62 +671,84 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            while (length >= 8)
+            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
             {
-                length -= 8;
+                while (length >= 8)
+                {
+                    length -= 8;
 
-                lookUp = Unsafe.Add(ref searchSpace, length + 7);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found7;
-                lookUp = Unsafe.Add(ref searchSpace, length + 6);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found6;
-                lookUp = Unsafe.Add(ref searchSpace, length + 5);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found5;
-                lookUp = Unsafe.Add(ref searchSpace, length + 4);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found4;
-                lookUp = Unsafe.Add(ref searchSpace, length + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found3;
-                lookUp = Unsafe.Add(ref searchSpace, length + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, length + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, length);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 7);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found7;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 6);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found6;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 5);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found5;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 4);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found4;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found3;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found;
+                }
+
+                if (length >= 4)
+                {
+                    length -= 4;
+
+                    lookUp = Unsafe.Add(ref searchSpace, length + 3);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found3;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 2);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found2;
+                    lookUp = Unsafe.Add(ref searchSpace, length + 1);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found1;
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found;
+                }
+
+                while (length > 0)
+                {
+                    length--;
+
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
+                        goto Found;
+                }
+            }
+            else
+            {
+                for (length--; length >= 0; length--)
+                {
+                    lookUp = Unsafe.Add(ref searchSpace, length);
+                    if ((object)lookUp is null)
+                    {
+                        if ((object)value0 is null || (object)value1 is null || (object)value2 is null)
+                        {
+                            goto Found;
+                        }
+                    }
+                    else if (lookUp.Equals(value0) || lookUp.Equals(value1) || lookUp.Equals(value2))
+                    {
+                        goto Found;
+                    }
+                }
             }
 
-            if (length >= 4)
-            {
-                length -= 4;
-
-                lookUp = Unsafe.Add(ref searchSpace, length + 3);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found3;
-                lookUp = Unsafe.Add(ref searchSpace, length + 2);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found2;
-                lookUp = Unsafe.Add(ref searchSpace, length + 1);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found1;
-                lookUp = Unsafe.Add(ref searchSpace, length);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found;
-            }
-
-            while (length > 0)
-            {
-                length--;
-
-                lookUp = Unsafe.Add(ref searchSpace, length);
-                if (value0.Equals(lookUp) || value1.Equals(lookUp) || value2.Equals(lookUp))
-                    goto Found;
-            }
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
@@ -668,25 +797,43 @@ namespace System
                 goto Equal;
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
+            T lookUp0;
+            T lookUp1;
             while (length >= 8)
             {
                 length -= 8;
 
-                if (!Unsafe.Add(ref first, index).Equals(Unsafe.Add(ref second, index)))
+                lookUp0 = Unsafe.Add(ref first, index);
+                lookUp1 = Unsafe.Add(ref second, index);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 1).Equals(Unsafe.Add(ref second, index + 1)))
+                lookUp0 = Unsafe.Add(ref first, index + 1);
+                lookUp1 = Unsafe.Add(ref second, index + 1);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 2).Equals(Unsafe.Add(ref second, index + 2)))
+                lookUp0 = Unsafe.Add(ref first, index + 2);
+                lookUp1 = Unsafe.Add(ref second, index + 2);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 3).Equals(Unsafe.Add(ref second, index + 3)))
+                lookUp0 = Unsafe.Add(ref first, index + 3);
+                lookUp1 = Unsafe.Add(ref second, index + 3);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 4).Equals(Unsafe.Add(ref second, index + 4)))
+                lookUp0 = Unsafe.Add(ref first, index + 4);
+                lookUp1 = Unsafe.Add(ref second, index + 4);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 5).Equals(Unsafe.Add(ref second, index + 5)))
+                lookUp0 = Unsafe.Add(ref first, index + 5);
+                lookUp1 = Unsafe.Add(ref second, index + 5);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 6).Equals(Unsafe.Add(ref second, index + 6)))
+                lookUp0 = Unsafe.Add(ref first, index + 6);
+                lookUp1 = Unsafe.Add(ref second, index + 6);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 7).Equals(Unsafe.Add(ref second, index + 7)))
+                lookUp0 = Unsafe.Add(ref first, index + 7);
+                lookUp1 = Unsafe.Add(ref second, index + 7);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
 
                 index += 8;
@@ -696,13 +843,21 @@ namespace System
             {
                 length -= 4;
 
-                if (!Unsafe.Add(ref first, index).Equals(Unsafe.Add(ref second, index)))
+                lookUp0 = Unsafe.Add(ref first, index);
+                lookUp1 = Unsafe.Add(ref second, index);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 1).Equals(Unsafe.Add(ref second, index + 1)))
+                lookUp0 = Unsafe.Add(ref first, index + 1);
+                lookUp1 = Unsafe.Add(ref second, index + 1);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 2).Equals(Unsafe.Add(ref second, index + 2)))
+                lookUp0 = Unsafe.Add(ref first, index + 2);
+                lookUp1 = Unsafe.Add(ref second, index + 2);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
-                if (!Unsafe.Add(ref first, index + 3).Equals(Unsafe.Add(ref second, index + 3)))
+                lookUp0 = Unsafe.Add(ref first, index + 3);
+                lookUp1 = Unsafe.Add(ref second, index + 3);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
 
                 index += 4;
@@ -710,7 +865,9 @@ namespace System
 
             while (length > 0)
             {
-                if (!Unsafe.Add(ref first, index).Equals(Unsafe.Add(ref second, index)))
+                lookUp0 = Unsafe.Add(ref first, index);
+                lookUp1 = Unsafe.Add(ref second, index);
+                if (!(lookUp0?.Equals(lookUp1) ?? (object)lookUp1 is null))
                     goto NotEqual;
                 index += 1;
                 length--;
@@ -734,7 +891,8 @@ namespace System
                 minLength = secondLength;
             for (int i = 0; i < minLength; i++)
             {
-                int result = Unsafe.Add(ref first, i).CompareTo(Unsafe.Add(ref second, i));
+                T lookUp = Unsafe.Add(ref second, i);
+                int result = (Unsafe.Add(ref first, i)?.CompareTo(lookUp) ?? (((object)lookUp is null) ? 0 : -1));
                 if (result != 0)
                     return result;
             }
