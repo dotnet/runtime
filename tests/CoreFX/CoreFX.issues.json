@@ -235,6 +235,40 @@
         }
     },
     {
+        "name": "System.Collections.NonGeneric.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Collections.Tests.HashtableBasicTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx update"
+                },
+                {
+                    "name": "System.Collections.Tests.HashtableValuesTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx update"
+                },
+                {
+                    "name": "System.Collections.Tests.Hashtable_SyncRootTests.SyncRoot",
+                    "reason": "waiting on corefx update"
+                },
+                {
+                    "name": "System.Collections.Tests.HashtableSynchronizedTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx update"
+                },
+                {
+                    "name": "System.Collections.Tests.DictionaryBaseTests.SyncRoot",
+                    "reason": "waiting on corefx update"
+                },
+                {
+                    "name": "System.Collections.Tests.HashtableKeysTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx update"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Collections.Tests",
         "enabled": true,
         "exclusions": {
@@ -336,38 +370,6 @@
                 {
                     "name": "System.Collections.Tests.Dictionary_Generic_Tests_int_int.IEnumerable_Generic_Enumerator_MoveNext_ModifiedDuringEnumeration_ThrowsInvalidOperationException",
                     "reason": "outdated"
-                },
-                {
-                    "name": "System.Collections.Tests.HashtableBasicTests.ICollection_NonGeneric_SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.HashtableValuesTests.ICollection_NonGeneric_SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.Hashtable_SyncRootTests.SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.HashtableBasicTests.ICollection_NonGeneric_SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.HashtableValuesTests.ICollection_NonGeneric_SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.HashtableSynchronizedTests.ICollection_NonGeneric_SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.DictionaryBaseTests.SyncRoot",
-                    "reason": "waiting on corefx update"
-                },
-                {
-                    "name": "System.Collections.Tests.HashtableKeysTests.ICollection_NonGeneric_SyncRoot",
-                    "reason": "waiting on corefx update"
                 },
                 {
                     "name": "System.Collections.Tests.Dictionary_IDictionary_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
