@@ -317,8 +317,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.cs" Condition="'$(FeatureCoreFxGlobalization)' != 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncodingTable.Unix.cs" Condition="'$(FeatureCoreFxGlobalization)' == 'true'" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenRegistration.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenSource.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
@@ -327,15 +325,10 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\AsyncCausalityTracer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\future.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\FutureFactory.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ProducerConsumerQueues.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\Task.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskContinuation.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskExceptionHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskFactory.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskScheduler.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TPLETWProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
