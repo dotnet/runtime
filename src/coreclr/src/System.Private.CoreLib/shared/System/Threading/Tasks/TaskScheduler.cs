@@ -12,12 +12,7 @@
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
 
-using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Threading;
-using System.Security;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -202,10 +197,12 @@ namespace System.Threading.Tasks
             bool bInlined = false;
             try
             {
+#if CORECLR
                 if (TplEtwProvider.Log.IsEnabled())
                 {
                     task.FireTaskScheduledIfNeeded(this);
                 }
+#endif
                 bInlined = TryExecuteTaskInline(task, taskWasPreviouslyQueued);
             }
             finally
@@ -258,10 +255,12 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null);
 
+#if CORECLR
             if (TplEtwProvider.Log.IsEnabled())
             {
                 task.FireTaskScheduledIfNeeded(this);
             }
+#endif
 
             this.QueueTask(task);
         }
@@ -296,6 +295,7 @@ namespace System.Threading.Tasks
         /// </summary>
         protected TaskScheduler()
         {
+#if CORECLR // Debugger support
             // Register the scheduler in the active scheduler list.  This is only relevant when debugging, 
             // so we only pay the cost if the debugger is attached when the scheduler is created.  This
             // means that the internal TaskScheduler.GetTaskSchedulersForDebugger() will only include
@@ -304,6 +304,7 @@ namespace System.Threading.Tasks
             {
                 AddToActiveTaskSchedulers();
             }
+#endif
         }
 
         /// <summary>Adds this scheduler ot the active schedulers tracking collection for debugging purposes.</summary>
@@ -453,9 +454,6 @@ namespace System.Threading.Tasks
         // Events
         //
 
-        private static EventHandler<UnobservedTaskExceptionEventArgs> _unobservedTaskException;
-        private static readonly object _unobservedTaskExceptionLockObject = new object();
-
         /// <summary>
         /// Occurs when a faulted <see cref="System.Threading.Tasks.Task"/>'s unobserved exception is about to trigger exception escalation
         /// policy, which, by default, would terminate the process.
@@ -466,27 +464,7 @@ namespace System.Threading.Tasks
         /// Each handler is passed a <see cref="T:System.Threading.Tasks.UnobservedTaskExceptionEventArgs"/>
         /// instance, which may be used to examine the exception and to mark it as observed.
         /// </remarks>
-        public static event EventHandler<UnobservedTaskExceptionEventArgs> UnobservedTaskException
-        {
-            add
-            {
-                if (value != null)
-                {
-                    RuntimeHelpers.PrepareContractedDelegate(value);
-                    lock (_unobservedTaskExceptionLockObject) _unobservedTaskException += value;
-                }
-            }
-
-            remove
-            {
-                lock (_unobservedTaskExceptionLockObject) _unobservedTaskException -= value;
-            }
-        }
-
-
-
-
-
+        public static event EventHandler<UnobservedTaskExceptionEventArgs> UnobservedTaskException;
 
         ////////////////////////////////////////////////////////////
         //
@@ -496,17 +474,7 @@ namespace System.Threading.Tasks
         // This is called by the TaskExceptionHolder finalizer.
         internal static void PublishUnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs ueea)
         {
-            // Lock this logic to prevent just-unregistered handlers from being called.
-            lock (_unobservedTaskExceptionLockObject)
-            {
-                // Since we are under lock, it is technically no longer necessary
-                // to make a copy.  It is done here for convenience.
-                EventHandler<UnobservedTaskExceptionEventArgs> handler = _unobservedTaskException;
-                if (handler != null)
-                {
-                    handler(sender, ueea);
-                }
-            }
+            UnobservedTaskException?.Invoke(sender, ueea);
         }
 
         /// <summary>
@@ -597,13 +565,13 @@ namespace System.Threading.Tasks
                 m_taskScheduler = scheduler;
             }
 
-            // returns the scheduler�s Id
+            // returns the scheduler's Id
             public int Id
             {
                 get { return m_taskScheduler.Id; }
             }
 
-            // returns the scheduler�s GetScheduledTasks
+            // returns the scheduler's GetScheduledTasks
             public IEnumerable<Task> ScheduledTasks
             {
                 get { return m_taskScheduler.GetScheduledTasks(); }

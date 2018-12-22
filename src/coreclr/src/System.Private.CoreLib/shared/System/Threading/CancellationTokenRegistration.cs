@@ -93,7 +93,7 @@ namespace System.Threading
             CancellationTokenSource source = _node.Partition.Source;
             if (source.IsCancellationRequested && // Running callbacks has commenced.
                 !source.IsCancellationCompleted && // Running callbacks hasn't finished.
-                source.ThreadIDExecutingCallbacks != Thread.CurrentThread.ManagedThreadId) // The executing thread ID is not this thread's ID.
+                source.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
             {
                 // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
                 // so observe and wait until this target callback is no longer the executing callback.
@@ -108,7 +108,7 @@ namespace System.Threading
             CancellationTokenSource source = _node.Partition.Source;
             if (source.IsCancellationRequested && // Running callbacks has commenced.
                 !source.IsCancellationCompleted && // Running callbacks hasn't finished.
-                source.ThreadIDExecutingCallbacks != Thread.CurrentThread.ManagedThreadId) // The executing thread ID is not this thread's ID.
+                source.ThreadIDExecutingCallbacks != Environment.CurrentManagedThreadId) // The executing thread ID is not this thread's ID.
             {
                 // Callback execution is in progress, the executing thread is different from this thread and has taken the callback for execution
                 // so get a task that'll complete when this target callback is no longer the executing callback.
