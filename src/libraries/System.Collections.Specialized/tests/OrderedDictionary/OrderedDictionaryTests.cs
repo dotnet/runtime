@@ -144,7 +144,7 @@ namespace System.Collections.Specialized.Tests
             ICollection keys = d.Keys;
 
             Assert.False(keys.IsSynchronized);
-            Assert.NotEqual(d, keys.SyncRoot);
+            Assert.NotSame(d, keys.SyncRoot);
             Assert.Equal(d.Count, keys.Count);
 
             foreach (var key in d.Keys)
@@ -186,16 +186,12 @@ namespace System.Collections.Specialized.Tests
             object sync1 = orderedDictionary1.SyncRoot;
             object sync2 = orderedDictionary2.SyncRoot;
 
-            // Sync root does not refer to the dictionary
-            Assert.NotEqual(sync1, orderedDictionary1);
-            Assert.NotEqual(sync2, orderedDictionary2);
-
             // Sync root objects for the same dictionaries are equivalent
-            Assert.Equal(orderedDictionary1.SyncRoot, orderedDictionary1.SyncRoot);
-            Assert.Equal(orderedDictionary2.SyncRoot, orderedDictionary2.SyncRoot);
+            Assert.Same(orderedDictionary1.SyncRoot, orderedDictionary1.SyncRoot);
+            Assert.Same(orderedDictionary2.SyncRoot, orderedDictionary2.SyncRoot);
 
             // Sync root objects for different dictionaries are not equivalent
-            Assert.NotEqual(sync1, sync2);
+            Assert.NotSame(sync1, sync2);
         }
 
         // bool System.Collections.IDictionary.IsFixedSize { get; }
@@ -274,7 +270,7 @@ namespace System.Collections.Specialized.Tests
             ICollection values = d.Values;
 
             Assert.False(values.IsSynchronized);
-            Assert.NotEqual(d, values.SyncRoot);
+            Assert.NotSame(d, values.SyncRoot);
             Assert.Equal(d.Count, values.Count);
 
             foreach (var val in values)

@@ -18,8 +18,6 @@ namespace System.Collections
         private int[] m_array; // Do not rename (binary serialization)
         private int m_length; // Do not rename (binary serialization)
         private int _version; // Do not rename (binary serialization)
-        [NonSerialized]
-        private object _syncRoot;
 
         private const int _ShrinkThreshold = 256;
 
@@ -676,17 +674,7 @@ namespace System.Collections
 
         public int Count => m_length;
 
-        public object SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    Threading.Interlocked.CompareExchange<object>(ref _syncRoot, new object(), null);
-                }
-                return _syncRoot;
-            }
-        }
+        public object SyncRoot => this;
 
         public bool IsSynchronized => false;
 

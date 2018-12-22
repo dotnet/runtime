@@ -68,8 +68,7 @@ call "%_VSCOMNTOOLS%\VsDevCmd.bat"
 :RunVCVars
 if "%VisualStudioVersion%"=="16.0" (
     goto :VS2019
-)
-else if "%VisualStudioVersion%"=="15.0" (
+) else if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
 ) else if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
