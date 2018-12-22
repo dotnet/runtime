@@ -299,33 +299,11 @@ Exit:
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->BindAssemblyByName(pIAssemblyName, ppAssembly);
     }
 
-    HRESULT Assembly::FindAssemblyBySpec(
-                LPVOID pvAppDomain,
-                LPVOID pvAssemblySpec,
-                HRESULT * pResult,
-                ICLRPrivAssembly ** ppAssembly)
-    { 
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->FindAssemblyBySpec(pvAppDomain, pvAssemblySpec, pResult, ppAssembly); 
-    }
-
-    HRESULT Assembly::VerifyBind (
-                IAssemblyName * pIAssemblyName,
-                ICLRPrivAssembly *pAssembly,
-                ICLRPrivAssemblyInfo *pAssemblyInfo)
-    {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->VerifyBind(pIAssemblyName, pAssembly, pAssemblyInfo);
-    }
-
     HRESULT Assembly::GetBinderID(UINT_PTR *pBinderId)
     {
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetBinderID(pBinderId);
     }
  
-    HRESULT Assembly::GetBinderFlags(DWORD *pBinderFlags)
-    {
-        return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetBinderFlags(pBinderFlags);
-    }
-
     HRESULT Assembly::GetLoaderAllocator(LPVOID* pLoaderAllocator)
     {
         return (m_pBinder == NULL) ? E_FAIL : m_pBinder->GetLoaderAllocator(pLoaderAllocator);

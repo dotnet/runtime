@@ -4922,21 +4922,11 @@ Assembly * Module::GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(md
                 }
                 else
                 {
-                    DWORD binderFlags = 0;
-                    ICLRPrivAssembly * pPrivBinder = pAssemblyCandidate->GetManifestFile()->GetHostAssembly();
-                    HRESULT hrBinderFlagCheck = pPrivBinder->GetBinderFlags(&binderFlags);
-                    if (SUCCEEDED(hrBinderFlagCheck) && (binderFlags & BINDER_FINDASSEMBLYBYSPEC_REQUIRES_EXACT_MATCH))
-                    {
-                        pAssembly = pAssemblyCandidate;
-                    }
-                    else
-                    {
-                        // This should only happen in the generic instantiation case when multiple threads are racing and
-                        // the assembly found is one which we will determine is the wrong assembly.
-                        //
-                        // We can't assert that (as its possible under stress); however it shouldn't happen in the stack walk or GC case, so we assert in those cases.
-                        _ASSERTE("Non-AssemblySpecBindingCache based assembly found with extended search" && !(IsStackWalkerThread() || IsGCThread()) && IsGenericInstantiationLookupCompareThread());
-                    }
+                    // This should only happen in the generic instantiation case when multiple threads are racing and
+                    // the assembly found is one which we will determine is the wrong assembly.
+                    //
+                    // We can't assert that (as its possible under stress); however it shouldn't happen in the stack walk or GC case, so we assert in those cases.
+                    _ASSERTE("Non-AssemblySpecBindingCache based assembly found with extended search" && !(IsStackWalkerThread() || IsGCThread()) && IsGenericInstantiationLookupCompareThread());
                 }
             }
         }
@@ -5113,16 +5103,6 @@ Module::GetAssemblyIfLoaded(
         BOOL eligibleForAdditionalChecks = TRUE;
         if (szWinRtNamespace != NULL)
             eligibleForAdditionalChecks = FALSE; // WinRT binds do not support this scan
-        else if (this->GetAssembly()->GetManifestFile()->IsDesignerBindingContext())
-        {
-            eligibleForAdditionalChecks = FALSE; 
-            // assemblies loaded into leaf designer binding contexts cannot be ngen images, or be depended on by ngen assemblies that bind to different versions of assemblies.
-            // However, in the shared designer binding context assemblies can be loaded with ngen images, and therefore can depend on assemblies in a designer binding context. (the shared context)
-            // A more correct version of this check would probably allow assemblies loaded into the shared designer binding context to be eligibleForAdditionalChecks; however
-            // there are problems. In particular, the logic below which scans through all native images is not strictly correct for scenarios involving a shared assembly context
-            // as the shared assembly context may have different binding rules as compared to the root context. At this time, we prefer to not fix this scenario until
-            // there is customer need for a fix.
-        }
 
         AssemblySpec specSearchAssemblyRef;
 
