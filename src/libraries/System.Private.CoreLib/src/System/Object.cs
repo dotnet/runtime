@@ -22,6 +22,14 @@ namespace System
         {
         }
 
+        // Allow an object to free resources before the object is reclaimed by the GC.
+        // This method's virtual slot number is hardcoded in runtimes. Do not add any virtual methods ahead of this.
+        [NonVersionable]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
+        ~Object()
+        {
+        }
+
         // Returns a String which represents the object instance.  The default
         // for an object is to return the fully qualified name of the class.
         public virtual string ToString()
@@ -68,12 +76,6 @@ namespace System
         public virtual int GetHashCode()
         {
             return RuntimeHelpers.GetHashCode(this);
-        }
-
-        // Allow an object to free resources before the object is reclaimed by the GC.
-        [NonVersionable]
-        ~Object()
-        {
         }
     }
 }
