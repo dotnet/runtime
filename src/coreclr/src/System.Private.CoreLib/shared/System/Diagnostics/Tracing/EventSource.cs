@@ -3623,7 +3623,7 @@ namespace System.Diagnostics.Tracing
         {
 #if !ES_BUILD_PCL
             msg = msg.TrimEnd('\r', '\n') +
-                    string.Format(CultureInfo.InvariantCulture, ", Thrd({0})" + Environment.NewLine, Thread.CurrentThread.ManagedThreadId);
+                    string.Format(CultureInfo.InvariantCulture, ", Thrd({0})" + Environment.NewLine, Environment.CurrentManagedThreadId);
             System.Diagnostics.Debugger.Log(0, null, msg);
 #endif
         }

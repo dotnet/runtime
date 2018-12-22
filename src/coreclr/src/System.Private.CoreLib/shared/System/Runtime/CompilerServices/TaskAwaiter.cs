@@ -224,7 +224,6 @@ namespace System.Runtime.CompilerServices
             task.SetContinuationForAwait(continuation, continueOnCapturedContext, flowExecutionContext);
         }
 
-#if CORECLR
         /// <summary>Schedules the continuation onto the <see cref="System.Threading.Tasks.Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="task">The task being awaited.</param>
         /// <param name="stateMachineBox">The box to invoke when the await operation completes.</param>
@@ -235,7 +234,13 @@ namespace System.Runtime.CompilerServices
 
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
-            if (TplEtwProvider.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)
+            if (
+#if CORECLR
+                TplEtwProvider.Log.IsEnabled() || Task.s_asyncDebuggingEnabled
+#else
+                TaskTrace.Enabled
+#endif
+                )
             {
                 task.SetContinuationForAwait(OutputWaitEtwEvents(task, stateMachineBox.MoveNextAction), continueOnCapturedContext, flowExecutionContext: false);
             }
@@ -244,7 +249,7 @@ namespace System.Runtime.CompilerServices
                 task.UnsafeSetContinuationForAwait(stateMachineBox, continueOnCapturedContext);
             }
         }
-#endif
+
         /// <summary>
         /// Outputs a WaitBegin ETW event, and augments the continuation action to output a WaitEnd ETW event.
         /// </summary>
