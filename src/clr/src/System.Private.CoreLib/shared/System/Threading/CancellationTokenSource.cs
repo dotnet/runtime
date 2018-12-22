@@ -595,7 +595,7 @@ namespace System.Threading
             Debug.Assert(IsCancellationRequested, "ExecuteCallbackHandlers should only be called after setting IsCancellationRequested->true");
 
             // Record the threadID being used for running the callbacks.
-            ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId;
+            ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
 
             // If there are no callbacks to run, we can safely exit.  Any race conditions to lazy initialize it
             // will see IsCancellationRequested and will then run the callback themselves.
@@ -669,10 +669,10 @@ namespace System.Threading
                                 node.SynchronizationContext.Send(s =>
                                 {
                                     var n = (CallbackNode)s;
-                                    n.Partition.Source.ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId;
+                                    n.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
                                     n.ExecuteCallback();
                                 }, node);
-                                ThreadIDExecutingCallbacks = Thread.CurrentThread.ManagedThreadId; // above may have altered ThreadIDExecutingCallbacks, so reset it
+                                ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId; // above may have altered ThreadIDExecutingCallbacks, so reset it
                             }
                             else
                             {
