@@ -218,14 +218,14 @@
   </ItemGroup>
   <!-- SqlFileStream Windows Netcoreapp only -->
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' AND '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.FileTypes.cs">
-      <Link>Common\CoreLib\Interop\Windows\kernel32\Interop.FileTypes.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FileTypes.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.FileTypes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs">
-      <Link>Common\CoreLib\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Common\CoreLib\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\CoreLib\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PathInternal.Windows.cs">
       <Link>Common\CoreLib\System\IO\PathInternal.Windows.cs</Link>
@@ -237,10 +237,10 @@
       <Link>Common\Interop\Windows\Interop.UNICODE_STRING.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.IoControlCodeAccess.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.IoControlCodeAccess.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.IoControlCodeAccess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CTL_CODE.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CTL_CODE.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.CTL_CODE.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeviceIoControl.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.DeviceIoControl.cs</Link>
@@ -249,7 +249,7 @@
       <Link>Common\Interop\Windows\kernel32\Interop.FileOperations.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.IoControlTransferType.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.IoControlTransferType.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.IoControlTransferType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.FILE_FULL_EA_INFORMATION.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.FILE_FULL_EA_INFORMATION.cs</Link>
