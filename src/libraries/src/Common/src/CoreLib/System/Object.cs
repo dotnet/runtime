@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System
@@ -25,7 +24,6 @@ namespace System
 
         // Returns a String which represents the object instance.  The default
         // for an object is to return the fully qualified name of the class.
-        // 
         public virtual string ToString()
         {
             return GetType().ToString();
@@ -35,8 +33,6 @@ namespace System
         // Equal to this.  Equality is defined as object equality for reference
         // types and bitwise equality for value types using a loader trick to
         // replace Equals with EqualsValue for value types).
-        // 
-
         public virtual bool Equals(object obj)
         {
             return RuntimeHelpers.Equals(this, obj);
@@ -69,14 +65,12 @@ namespace System
         // Calling it on the same object multiple times will return the same value, so
         // it will technically meet the needs of a hash function, but it's less than ideal.
         // Objects (& especially value classes) should override this method.
-        // 
         public virtual int GetHashCode()
         {
             return RuntimeHelpers.GetHashCode(this);
         }
 
         // Allow an object to free resources before the object is reclaimed by the GC.
-        // 
         [NonVersionable]
         ~Object()
         {
