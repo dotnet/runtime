@@ -57,34 +57,8 @@ namespace System.Threading.Tasks
         /// </summary>
         ~TaskExceptionHolder()
         {
-            // Raise unhandled exceptions only when we know that neither the process or nor the appdomain is being torn down.
-            // We need to do this filtering because all TaskExceptionHolders will be finalized during shutdown or unload
-            // regardles of reachability of the task (i.e. even if the user code was about to observe the task's exception),
-            // which can otherwise lead to spurious crashes during shutdown.
-            if (m_faultExceptions != null && !m_isHandled && !Environment.HasShutdownStarted)
+            if (m_faultExceptions != null && !m_isHandled)
             {
-                // We don't want to crash the finalizer thread if any ThreadAbortExceptions 
-                // occur in the list or in any nested AggregateExceptions.  
-                // (Don't rethrow ThreadAbortExceptions.)
-                foreach (ExceptionDispatchInfo edi in m_faultExceptions)
-                {
-                    var exp = edi.SourceException;
-                    AggregateException aggExp = exp as AggregateException;
-                    if (aggExp != null)
-                    {
-                        AggregateException flattenedAggExp = aggExp.Flatten();
-                        foreach (Exception innerExp in flattenedAggExp.InnerExceptions)
-                        {
-                            if (innerExp is ThreadAbortException)
-                                return;
-                        }
-                    }
-                    else if (exp is ThreadAbortException)
-                    {
-                        return;
-                    }
-                }
-
                 // We will only propagate if this is truly unhandled. The reason this could
                 // ever occur is somewhat subtle: if a Task's exceptions are observed in some
                 // other finalizer, and the Task was finalized before the holder, the holder
@@ -239,25 +213,8 @@ namespace System.Threading.Tasks
                 }
             }
 
-
-            // If all of the exceptions are ThreadAbortExceptions and/or
-            // AppDomainUnloadExceptions, we do not want the finalization
-            // probe to propagate them, so we consider the holder to be
-            // handled.  If a subsequent exception comes in of a different
-            // kind, we will reactivate the holder.
-            for (int i = 0; i < exceptions.Count; i++)
-            {
-                var t = exceptions[i].SourceException.GetType();
-                if (t != typeof(ThreadAbortException))
-                {
-                    MarkAsUnhandled();
-                    break;
-                }
-                else if (i == exceptions.Count - 1)
-                {
-                    MarkAsHandled(false);
-                }
-            }
+            if (exceptions.Count > 0)
+                MarkAsUnhandled();
         }
 
         /// <summary>
