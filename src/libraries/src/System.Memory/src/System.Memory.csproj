@@ -6,9 +6,6 @@
     <ILLinkClearInitLocals>true</ILLinkClearInitLocals>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreappaot' OR '$(TargetGroup)' == 'uapaot'">
-    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\SequencePosition.cs" />
     <Compile Include="System\ThrowHelper.cs" />
@@ -34,31 +31,8 @@
     <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Collections\HashHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\NotImplemented.cs">
-      <Link>Common\System\NotImplemented.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\MutableDecimal.cs">
-      <Link>Common\System\MutableDecimal.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
-    <ProjectReference Include="..\..\System.Numerics.Vectors\src\System.Numerics.Vectors.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="$(CommonPath)\CoreLib\System\MemoryExtensions.Fast.cs">
-      <Link>System\MemoryExtensions.Fast.cs</Link>
-    </None>
-    <None Include="$(CommonPath)\CoreLib\System\Runtime\InteropServices\MemoryMarshal.Fast.cs">
-      <Link>System\Runtime\InteropServices\MemoryMarshal.Fast.cs</Link>
-    </None>
-    <None Include="$(CommonPath)\CoreLib\System\ReadOnlySpan.Fast.cs">
-      <Link>System\ReadOnlySpan.Fast.cs</Link>
-    </None>
-    <None Include="$(CommonPath)\CoreLib\System\Span.Fast.cs">
-      <Link>System\Span.Fast.cs</Link>
-    </None>
   </ItemGroup>
 </Project>

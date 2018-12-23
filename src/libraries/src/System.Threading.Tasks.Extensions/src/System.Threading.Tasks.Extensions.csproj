@@ -1,44 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{DE90AD0B-649D-4062-B8D9-9658DE140532}</ProjectGuid>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetStandard)' != 'true'">true</IsPartialFacadeAssembly>
-    <DefineConstants Condition="'$(IsPartialFacadeAssembly)' != 'true'">$(DefineConstants);netstandard</DefineConstants>
-    <ExcludeResourcesImport Condition="'$(IsPartialFacadeAssembly)' == 'true'">true</ExcludeResourcesImport>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreappaot-Windows_NT-Debug;netcoreappaot-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
+  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\ThrowHelper.cs" />
-    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\StackTraceHiddenAttribute.cs">
-      <Link>Common\CoreLib\System\Diagnostics\StackTraceHiddenAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\AsyncMethodBuilderAttribute.cs">
-      <Link>Common\CoreLib\System\Runtime\CompilerServices\AsyncMethodBuilderAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs">
-      <Link>Common\CoreLib\System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\ConfiguredValueTaskAwaitable.cs">
-      <Link>Common\CoreLib\System\Runtime\CompilerServices\ConfiguredValueTaskAwaitable.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\ValueTaskAwaiter.cs">
-      <Link>Common\CoreLib\System\Runtime\CompilerServices\ValueTaskAwaiter.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\ValueTask.cs">
-      <Link>Common\CoreLib\System\Threading\Tasks\ValueTask.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\Sources\IValueTaskSource.cs">
-      <Link>Common\CoreLib\System\Threading\Tasks\Sources\IValueTaskSource.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
 </Project>
