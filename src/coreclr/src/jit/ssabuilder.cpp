@@ -197,7 +197,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     blocks.Emplace(comp, block);
     DumpBlockAndSuccessors(comp, block);
 
-    while (blocks.Height() > 0)
+    while (!blocks.Empty())
     {
         BasicBlock* block = blocks.TopRef().Block();
         BasicBlock* succ  = blocks.TopRef().NextSuccessor(comp);

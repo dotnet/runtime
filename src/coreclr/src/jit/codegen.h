@@ -308,10 +308,6 @@ protected:
         regNumber reg1;
         regNumber reg2;
 
-        RegPair() : reg1(REG_NA), reg2(REG_NA)
-        {
-        }
-
         RegPair(regNumber reg1) : reg1(reg1), reg2(REG_NA)
         {
         }

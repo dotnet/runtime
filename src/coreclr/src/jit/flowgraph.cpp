@@ -2341,7 +2341,7 @@ void Compiler::fgDfsInvPostOrderHelper(BasicBlock* block, BlockSet& visited, uns
     BlockSetOps::AddElemD(this, visited, block->bbNum);
 
     // The search is terminated once all the actions have been processed.
-    while (stack.Height() != 0)
+    while (!stack.Empty())
     {
         DfsBlockEntry current      = stack.Pop();
         BasicBlock*   currentBlock = current.dfsBlock;
@@ -2780,7 +2780,7 @@ void Compiler::fgTraverseDomTree(unsigned bbNum, BasicBlockList** domTree, unsig
         stack.Push(DfsNumEntry(DSS_Pre, bbNum));
 
         // The search is terminated once all the actions have been processed.
-        while (stack.Height() != 0)
+        while (!stack.Empty())
         {
             DfsNumEntry current    = stack.Pop();
             unsigned    currentNum = current.dfsNum;
@@ -21140,7 +21140,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
                     fgDebugCheckFlags(tree);
 
-                    while (stack.Height() > 0)
+                    while (!stack.Empty())
                     {
                         tree = stack.Pop();
                         assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
