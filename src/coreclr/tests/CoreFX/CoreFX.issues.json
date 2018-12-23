@@ -264,7 +264,63 @@
                 {
                     "name": "System.Collections.Tests.HashtableKeysTests.ICollection_NonGeneric_SyncRoot",
                     "reason": "waiting on corefx update"
-                }
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayList_SyncRootTests.GetSyncRoot ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListAdapterTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListBasicTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListFixedIListSizeTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListFixedSizeTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListRangeTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListReadOnlyIListTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListReadOnlyTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListSynchronizedILstTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ArrayListSynchronizedTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.CollectionBaseTests.SyncRoot ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.Queue_SyncRootTests.SyncRoot ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.ReadOnlyCollectionBaseTests.SyncRoot ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.Stack_SyncRootTests.GetSyncRootBasic ",
+                    "reason": "waiting on corefx test update"
+                },
             ]
         }
     },
@@ -383,6 +439,46 @@
                     "name": "System.Collections.Tests.Dictionary_Generic_Tests_Values_AsICollection.ICollection_NonGeneric_SyncRoot",
                     "reason": "waiting on corefx update"
                 },
+                {
+                    "name": "System.Collections.Tests.LinkedList_ICollection_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.Queue_ICollection_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedDictionary_Generic_Tests_Keys_AsICollection.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedDictionary_Generic_Tests_Values_AsICollection.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedDictionary_IDictionary_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedList_Generic_Tests_Keys_AsICollection.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedList_Generic_Tests_Values_AsICollection.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedList_IDictionary_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.SortedSet_ICollection_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Tests.Stack_ICollection_NonGeneric_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
             ]
         }
     },
@@ -404,6 +500,42 @@
                 {
                     "name": "System.Collections.Specialized.Tests.HybridDictionaryKeysTests.ICollection_NonGeneric_SyncRoot",
                     "reason": "waiting on corefx update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.ListDictionary_CustomComparer_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.ListDictionary_NoComparer_Tests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.ListDictionaryKeysTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.ListDictionaryValuesTests.ICollection_NonGeneric_SyncRoot",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.NameObjectCollectionBaseSyncRootTests.SyncRoot ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.OrderedDictionaryTests.KeysPropertyContainsAllKeys ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.OrderedDictionaryTests.SyncRootTests ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.OrderedDictionaryTests.ValuesPropertyContainsAllValues ",
+                    "reason": "waiting on corefx test update"
+                },
+                {
+                    "name": "System.Collections.Specialized.Tests.StringCollectionTests.SyncRootTest",
+                    "reason": "waiting on corefx test update"
                 },
             ]
         }
