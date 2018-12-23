@@ -917,12 +917,6 @@ namespace System.Threading
 
     public delegate void WaitOrTimerCallback(object state, bool timedOut);  // signaled or timed out
 
-    /// <summary>Represents a work item that can be executed by the ThreadPool.</summary>
-    public interface IThreadPoolWorkItem
-    {
-        void Execute();
-    }
-
     //
     // This type is necessary because VS 2010's debugger looks for a method named _ThreadPoolWaitCallbacck.PerformWaitCallback
     // on the stack to determine if a thread is a ThreadPool thread or not.  We have a better way to do this for .NET 4.5, but
