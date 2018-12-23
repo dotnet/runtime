@@ -138,7 +138,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\CoreLib.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DefaultBinder.CanConvert.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
