@@ -5,7 +5,7 @@
 namespace System
 {
     // This class is used to define the name of the base class library
-    internal class CoreLib
+    internal static class CoreLib
     {
         public const string Name = "System.Private.CoreLib";
 
