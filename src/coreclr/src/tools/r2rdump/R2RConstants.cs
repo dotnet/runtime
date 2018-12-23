@@ -32,6 +32,14 @@ namespace R2RDump
     };
 
     /// <summary>
+    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/corcompile.h">src/inc/corcompile.h</a> CorCompileImportFlags
+    /// </summary>
+    public enum CORCOMPILE_FIXUP_BLOB_KIND
+    {
+        ENCODE_MODULE_OVERRIDE = 0x80,     /* When the high bit is set, override of the module immediately follows */
+    }
+
+    /// <summary>
     /// Constants for method and field encoding
     /// </summary>
     [Flags]

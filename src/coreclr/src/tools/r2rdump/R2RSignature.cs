@@ -460,7 +460,17 @@ namespace R2RDump
         /// <param name="builder"></param>
         private void ParseSignature(StringBuilder builder)
         {
-            uint fixupType = ReadUInt();
+            uint fixupType = ReadByte();
+            bool moduleOverride = (fixupType & (byte)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE) != 0;
+            // Check first byte for a module override being encoded
+            if (moduleOverride)
+            {
+                builder.Append("ENCODE_MODULE_OVERRIDE @ ");
+                fixupType &= ~(uint)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE;
+                uint moduleIndex = ReadUInt();
+                builder.Append(string.Format(" Index:  {0:X2}", moduleIndex));
+            }
+
             switch ((ReadyToRunFixupKind)fixupType)
             {
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup:
@@ -502,7 +512,10 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken:
-                    ParseMethodDefToken(builder, owningTypeOverride: null);
+                    if (!moduleOverride)
+                    {
+                        ParseMethodDefToken(builder, owningTypeOverride: null);
+                    }
                     builder.Append(" (METHOD_ENTRY_DEF_TOKEN)");
                     break;
 
@@ -513,7 +526,10 @@ namespace R2RDump
 
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry:
-                    ParseMethod(builder);
+                    if(!moduleOverride)
+                    {
+                        ParseMethod(builder);
+                    }
                     builder.Append(" (VIRTUAL_ENTRY)");
                     break;
 
@@ -530,7 +546,11 @@ namespace R2RDump
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_Slot:
                     {
                         uint slot = ReadUInt();
-                        ParseType(builder);
+                        if (!moduleOverride)
+                        {
+                            ParseType(builder);
+                        }
+
                         builder.Append($@" #{slot} (VIRTUAL_ENTRY_SLOT)");
                     }
                     break;
